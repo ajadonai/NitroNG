@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const ROLES = {
   superadmin: { label: "Super Admin", color: "#c47d8e", pages: ["overview","orders","users","services","api","paystack","tickets","admins","activity"] },
@@ -22,11 +22,7 @@ const Card=({children,style,d=0,dark})=><div style={{background:dark?"rgba(15,18
 const Hdr=({title,sub,action,t})=><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24,animation:"fu .4s ease",flexWrap:"wrap",gap:12}}><div><h1 className="serif" style={{fontSize:26,fontWeight:600,color:t.text,letterSpacing:"-0.3px"}}>{title}</h1>{sub&&<p style={{fontSize:13,color:t.textSoft,marginTop:4}}>{sub}</p>}</div>{action}</div>;
 const Stat=({l,v,sub,c,ic,d=0,t,dark})=><Card d={d} dark={dark}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5}}>{l}</div>{ic&&<span style={{fontSize:16}}>{ic}</span>}</div><div className="m" style={{fontSize:18,fontWeight:700,color:c||t.accent,marginTop:5,wordBreak:"break-all"}}>{v}</div>{sub&&<div style={{fontSize:11,color:t.textMuted,marginTop:3}}>{sub}</div>}</Card>;
 const ATYPE={"credit":"💰","cancel":"✕","ticket":"💬","ban":"🚫","sync":"🔄","settings":"⚙️","refill":"🔁","admin":"🛡️"};
-class ErrorBoundary extends React.Component{
-  constructor(props){super(props);this.state={hasError:false,error:null};}
-  static getDerivedStateFromError(error){return{hasError:true,error};}
-  render(){if(this.state.hasError){const t=this.props.t||{};return <div style={{padding:40,textAlign:"center"}}><div style={{fontSize:48,marginBottom:16}}>⚠️</div><h2 style={{fontSize:20,fontWeight:600,color:t.text||"#333",marginBottom:8}}>Something went wrong</h2><p style={{fontSize:14,color:t.textMuted||"#888",marginBottom:20}}>{this.state.error?.message||"An unexpected error occurred"}</p><button onClick={()=>this.setState({hasError:false,error:null})} style={{padding:"10px 24px",borderRadius:10,background:"linear-gradient(135deg,#c47d8e,#a3586b)",color:"#fff",fontSize:14,fontWeight:600,border:"none",cursor:"pointer"}}>Try Again</button></div>;}return this.props.children;}
-}
+function ErrorBoundary({children}){return <>{children}</>;}
 
 function ThemeToggle({dark,onToggle,compact}){return <button onClick={onToggle} style={{display:"flex",alignItems:"center",background:dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)",borderRadius:20,padding:3,width:compact?52:64,height:compact?28:32,border:`1px solid ${dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)"}`,position:"relative",flexShrink:0,transition:"background 1.5s cubic-bezier(.4,0,.2,1),border-color 1.5s ease"}}><div style={{width:compact?22:26,height:compact?22:26,borderRadius:"50%",background:dark?"#c47d8e":"#e0a458",display:"flex",alignItems:"center",justifyContent:"center",fontSize:compact?12:14,position:"absolute",left:dark?3:(compact?27:35),transition:"left 0.4s cubic-bezier(.4,0,.2,1),background 1.5s cubic-bezier(.4,0,.2,1)",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}>{dark?"🌙":"☀️"}</div></button>;}
 
