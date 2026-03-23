@@ -2,10 +2,10 @@
 import { useState, useEffect, useRef } from "react";
 
 const ROLES = {
-  superadmin: { label: "Super Admin", color: "#c47d8e", pages: ["overview","orders","users","services","api","paystack","payments","tickets","admins","activity","alerts","maintenance","site-settings"] },
-  admin: { label: "Admin", color: "#a5b4fc", pages: ["overview","orders","users","services","tickets","activity","alerts","maintenance"] },
-  support: { label: "Support", color: "#6ee7b7", pages: ["overview","tickets","orders","activity"] },
-  finance: { label: "Finance", color: "#fcd34d", pages: ["overview","orders","paystack","payments","activity"] },
+  superadmin: { label: "Super Admin", color: "#c47d8e", pages: ["overview","orders","users","tickets","---1","services","api","payments","---2","analytics","alerts","coupons","notifications","maintenance","activity","---3","team","settings"] },
+  admin: { label: "Admin", color: "#a5b4fc", pages: ["overview","orders","users","tickets","---1","services","analytics","alerts","coupons","notifications","activity"] },
+  support: { label: "Support", color: "#6ee7b7", pages: ["overview","orders","users","tickets","activity"] },
+  finance: { label: "Finance", color: "#fcd34d", pages: ["overview","orders","payments","analytics","activity"] },
 };
 
 const MOCK_ORDERS=[{id:"ORD-28491",user:"Chidi Okafor",email:"chidi@gmail.com",service:"Instagram Followers [Real]",link:"instagram.com/coolbrand",quantity:5000,charge:19375,cost:12594,status:"Completed",created:"2026-03-22T14:30:00",apiOrderId:"MTP-991204"},{id:"ORD-28490",user:"Amina Bello",email:"amina@yahoo.com",service:"TikTok Views [Instant]",link:"tiktok.com/@user/video/123",quantity:50000,charge:23250,cost:15113,status:"Processing",created:"2026-03-22T12:15:00",apiOrderId:"MTP-991203"},{id:"ORD-28489",user:"Tunde Adeyemi",email:"tunde@outlook.com",service:"YouTube Subscribers [Lifetime]",link:"youtube.com/@mychannel",quantity:1000,charge:12400,cost:8060,status:"Pending",created:"2026-03-21T22:00:00",apiOrderId:"MTP-991202"},{id:"ORD-28488",user:"Ngozi Eze",email:"ngozi@gmail.com",service:"Twitter/X Followers",link:"x.com/mybrand",quantity:2000,charge:12400,cost:8060,status:"Completed",created:"2026-03-21T10:45:00",apiOrderId:"MTP-991201"},{id:"ORD-28487",user:"Segun Akinola",email:"segun@mail.com",service:"Instagram Likes [Instant]",link:"instagram.com/p/ABC123",quantity:10000,charge:18600,cost:12090,status:"Partial",created:"2026-03-20T18:00:00",apiOrderId:"MTP-991200"},{id:"ORD-28486",user:"Fatima Yusuf",email:"fatima@gmail.com",service:"Spotify Plays [Premium]",link:"open.spotify.com/track/xyz",quantity:100000,charge:279000,cost:181350,status:"Completed",created:"2026-03-19T09:00:00",apiOrderId:"MTP-991199"},{id:"ORD-28485",user:"Emeka Nwankwo",email:"emeka@live.com",service:"Facebook Page Likes",link:"facebook.com/mybiz",quantity:3000,charge:23250,cost:15113,status:"Completed",created:"2026-03-18T16:20:00",apiOrderId:"MTP-991198"},{id:"ORD-28484",user:"Blessing Okoro",email:"blessing@gmail.com",service:"Telegram Members",link:"t.me/mychannel",quantity:5000,charge:27125,cost:17631,status:"Processing",created:"2026-03-18T11:00:00",apiOrderId:"MTP-991197"}];
@@ -57,7 +57,7 @@ export default function AdminPanel(){
     {id:"monnify",name:"Monnify",icon:"🏦",desc:"Bank Transfer, USSD",enabled:true,priority:3},
     {id:"korapay",name:"Korapay",icon:"💠",desc:"Cards, Bank Transfer",enabled:false,priority:4},
   ]);const [activityLog,setActivityLog]=useState(MOCK_ACTIVITY);const [adminList,setAdminList]=useState(MOCK_ADMINS.map(a=>({...a,customPages:null})));const [sb,setSb]=useState(false);const [mini,setMini]=useState(false);const [toast,setToast]=useState(null);const [currentAdmin]=useState(MOCK_ADMINS[0]);const role=ROLES[currentAdmin.role];
-  const [siteSettings,setSiteSettings]=useState({whatsapp:"2348012345678",twitter:"boostpanel",instagram:"boostpanel.ng",siteName:"BoostPanel",supportEmail:"support@boostpanel.ng",minDeposit:"500",defaultMarkup:"54",referralBonus:"500"});
+  const [siteSettings,setSiteSettings]=useState({whatsapp:"2348012345678",twitter:"boostpanel",instagram:"boostpanel.ng",siteName:"BoostPanel",supportEmail:"support@boostpanel.ng",minDeposit:"500",defaultMarkup:"54",referralBonus:"500",promoEnabled:true,promoMessage:"Sign up today and get 10% bonus on your first deposit.",promoType:"info"});
   const getAutoTheme=()=>{const h=new Date().getHours(),m=new Date().getMinutes();if(h>=7&&h<18)return false;if(h>=19||h<6)return true;if(h===6)return m<30;if(h===18)return m>=30;return true;};
   const [dark,setDark]=useState(getAutoTheme);const [manualOverride,setManualOverride]=useState(false);
   useEffect(()=>{if(manualOverride)return;const iv=setInterval(()=>setDark(getAutoTheme()),60000);return()=>clearInterval(iv);},[manualOverride]);
@@ -66,7 +66,7 @@ export default function AdminPanel(){
   const logAction=(action,type)=>{setActivityLog(p=>[{id:Date.now(),admin:currentAdmin.name,action,type,time:new Date().toISOString()},...p]);};
   const dismissToast=()=>{setToast(null);if(toastTimer.current)clearTimeout(toastTimer.current);};
   const go=(p)=>{if(role.pages.includes(p)){setPg(p);setSb(false);}};
-  const ALL_NAV=[["overview","📊","Overview"],["orders","📋","Orders"],["users","👥","Users"],["tickets","💬","Tickets"],["services","📦","Services"],["api","🔌","API"],["paystack","💳","Paystack"],["payments","💰","Gateways"],["alerts","📢","Alerts"],["maintenance","🔧","Maintenance"],["activity","📝","Activity"],["admins","🛡️","Admins"],["site-settings","⚙️","Site Settings"]];
+  const ALL_NAV=[["overview","📊","Overview"],["orders","📋","Orders"],["users","👥","Users"],["tickets","💬","Tickets"],["---1","",""],["services","📦","Services"],["api","🔌","API"],["payments","💳","Payments"],["---2","",""],["analytics","📈","Analytics"],["alerts","📢","Alerts"],["coupons","🎟️","Coupons"],["notifications","📣","Notifications"],["maintenance","🔧","Maintenance"],["activity","📝","Activity"],["---3","",""],["team","🛡️","Team"],["settings","⚙️","Settings"]];
   const NAV=ALL_NAV.filter(([id])=>role.pages.includes(id));
   const t={bg:dark?"#080b14":"#f4f1ed",text:dark?"#e8e4df":"#1a1a1a",textSoft:dark?"#8a8680":"#888580",textMuted:dark?"#555250":"#b0ada8",surface:dark?"rgba(15,18,30,0.97)":"rgba(255,255,255,0.97)",surfaceBorder:dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.08)",inputBg:dark?"#0d1020":"#fff",inputBorder:dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)",accent:"#c47d8e",accentLight:dark?"rgba(196,125,142,0.12)":"rgba(196,125,142,0.08)",accentBorder:dark?"rgba(196,125,142,0.3)":"rgba(196,125,142,0.25)",accentShadow:dark?"inset 0 0 0 1px rgba(196,125,142,0.35)":"inset 0 0 0 1px rgba(196,125,142,0.3)",green:dark?"#6ee7b7":"#059669",red:dark?"#fca5a5":"#dc2626",btnPrimary:"linear-gradient(135deg,#c47d8e,#a3586b)",btnSecondary:dark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",btnSecBorder:dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)",logoGrad:"linear-gradient(135deg,#c47d8e,#8b5e6b)",gradBg:dark?"radial-gradient(ellipse at 20% 0%,rgba(196,125,142,0.06) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(100,120,180,0.04) 0%,transparent 50%)":"radial-gradient(ellipse at 20% 0%,rgba(196,125,142,0.05) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(180,160,140,0.04) 0%,transparent 50%)"};
   const Btn=({children,primary,onClick,style:s})=><button onClick={onClick} style={{padding:"7px 14px",borderRadius:8,fontSize:12,fontWeight:600,color:primary?"#fff":t.textSoft,background:primary?t.btnPrimary:t.btnSecondary,border:`1px solid ${primary?"transparent":t.btnSecBorder}`,whiteSpace:"nowrap",...s}}>{children}</button>;
@@ -79,7 +79,7 @@ export default function AdminPanel(){
   <aside className={`sb${sb?" open":""}${mini?" collapsed":""}`}><div style={{padding:mini?"16px 10px 12px":"20px 16px 12px",borderBottom:`1px solid ${t.surfaceBorder}`,display:"flex",alignItems:"center",justifyContent:mini?"center":"space-between"}}>{!mini&&<button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} style={{display:"flex",alignItems:"center",gap:10,background:"none",padding:0,border:"none",outline:"none",cursor:"pointer"}}><div style={{width:32,height:32,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:"#fff"}}>B</div><div className="sb-hide"><div className="serif" style={{fontSize:16,fontWeight:600,color:t.text}}>BoostPanel</div><div style={{fontSize:9,color:t.textMuted,letterSpacing:2,textTransform:"uppercase"}}>Admin Panel</div></div></button>}{mini&&<button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} style={{background:"none",padding:0,border:"none",outline:"none",cursor:"pointer"}}><div style={{width:32,height:32,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:"#fff"}}>B</div></button>}<button className="sb-close" onClick={()=>setSb(false)} style={{background:"none",color:t.textMuted,fontSize:20,padding:4}}>✕</button>{!mini&&<button className="sb-collapse" onClick={()=>setMini(true)} style={{background:t.btnSecondary,color:t.textSoft,fontSize:14,padding:"6px 8px",borderRadius:6,border:`1px solid ${t.btnSecBorder}`}}>⟨⟨</button>}</div>
   {!mini&&<div className="sb-hide" style={{margin:"10px 12px 4px",padding:"10px 12px",borderRadius:12,background:t.accentLight,border:`1px solid ${t.accentBorder}`}}><div style={{fontSize:10,color:t.textMuted,textTransform:"uppercase",letterSpacing:1.5}}>Logged in as</div><div style={{fontSize:13,fontWeight:600,color:t.text,marginTop:2}}>{currentAdmin.name}</div><div style={{marginTop:5}}><span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:role.color+"22",color:role.color,border:`1px solid ${role.color}44`}}>{role.label}</span></div></div>}
   {mini&&<div style={{padding:"10px 0",display:"flex",justifyContent:"center"}}><button onClick={()=>setMini(false)} style={{background:t.accentLight,color:t.accent,fontSize:14,padding:"8px 10px",borderRadius:6,border:`1px solid ${t.accentBorder}`}}>⟩⟩</button></div>}
-  <nav style={{flex:1,padding:mini?"6px 6px":"6px 10px",display:"flex",flexDirection:"column",gap:1,overflowY:"auto"}}>{NAV.map(([id,ic,lb])=><button key={id} onClick={()=>go(id)} title={lb} style={{display:"flex",alignItems:"center",gap:12,padding:mini?"10px 0":"10px 14px",borderRadius:10,width:"100%",textAlign:"left",justifyContent:mini?"center":"flex-start",background:pg===id?t.accentLight:"transparent",color:pg===id?t.accent:t.textSoft,fontSize:13,fontWeight:500,border:"1px solid transparent",boxShadow:pg===id?t.accentShadow:"none"}}><span style={{fontSize:15,width:20,textAlign:"center"}}>{ic}</span><span className="sb-nav-label">{lb}</span></button>)}</nav>
+  <nav style={{flex:1,padding:mini?"6px 6px":"6px 10px",display:"flex",flexDirection:"column",gap:1,overflowY:"auto"}}>{NAV.map(([id,ic,lb])=>id.startsWith("---")?<div key={id} style={{height:1,background:t.surfaceBorder,margin:mini?"8px 4px":"8px 14px"}}/>:<button key={id} onClick={()=>go(id)} title={lb} style={{display:"flex",alignItems:"center",gap:12,padding:mini?"10px 0":"10px 14px",borderRadius:10,width:"100%",textAlign:"left",justifyContent:mini?"center":"flex-start",background:pg===id?t.accentLight:"transparent",color:pg===id?t.accent:t.textSoft,fontSize:13,fontWeight:500,border:"1px solid transparent",boxShadow:pg===id?t.accentShadow:"none"}}><span style={{fontSize:15,width:20,textAlign:"center"}}>{ic}</span><span className="sb-nav-label">{lb}</span></button>)}</nav>
   <div style={{padding:mini?"10px 6px":"10px 14px",borderTop:`1px solid ${t.surfaceBorder}`,display:"flex",alignItems:"center",justifyContent:mini?"center":"space-between"}}>{!mini&&<span style={{fontSize:12,color:t.textMuted}}>{dark?"Night":"Day"}</span>}<ThemeToggle dark={dark} onToggle={toggleTheme} compact={mini}/></div></aside>
   <main className={`mn${mini?" shifted":""}`}>
     <div style={{position:"sticky",top:0,zIndex:40,paddingBottom:alerts.filter(a=>a.active&&(a.target==="both"||a.target==="dashboard")).length?4:0}}>
@@ -91,14 +91,16 @@ export default function AdminPanel(){
     {pg==="users"&&<UsersPage t={t} dark={dark} users={MOCK_USERS} Btn={Btn} FilterBtn={FilterBtn} notify={notify}/>}
     {pg==="services"&&<ServiceMgmt t={t} dark={dark} services={MOCK_SERVICES} Btn={Btn} notify={notify}/>}
     {pg==="api"&&<ApiSettings t={t} dark={dark} Btn={Btn} notify={notify}/>}
-    {pg==="paystack"&&<PaystackSettings t={t} dark={dark} Btn={Btn} notify={notify}/>}
+    {pg==="payments"&&<PaymentsPage t={t} dark={dark} gateways={gateways} setGateways={setGateways} Btn={Btn} FilterBtn={FilterBtn} notify={notify} logAction={logAction} isSuperAdmin={currentAdmin.role==="superadmin"}/>}
     {pg==="tickets"&&<TicketsPage t={t} dark={dark} tickets={MOCK_TICKETS} Btn={Btn} FilterBtn={FilterBtn} notify={notify}/>}
     {pg==="activity"&&<ActivityLog t={t} dark={dark} activity={activityLog}/>}
-    {pg==="payments"&&<PaymentGateways t={t} dark={dark} gateways={gateways} setGateways={setGateways} Btn={Btn} notify={notify} logAction={logAction} isSuperAdmin={currentAdmin.role==="superadmin"}/>}
+    {pg==="analytics"&&<AnalyticsPage t={t} dark={dark} orders={MOCK_ORDERS} users={MOCK_USERS} Btn={Btn}/>}
     {pg==="maintenance"&&<MaintenancePage t={t} dark={dark} maint={maint} setMaint={setMaint} Btn={Btn} notify={notify} logAction={logAction} isSuperAdmin={currentAdmin.role==="superadmin"}/>}
     {pg==="alerts"&&<AlertsPage t={t} dark={dark} alerts={alerts} setAlerts={setAlerts} Btn={Btn} FilterBtn={FilterBtn} notify={notify} isSuperAdmin={currentAdmin.role==="superadmin"} currentAdmin={currentAdmin} logAction={logAction}/>}
-    {pg==="admins"&&<AdminRoles t={t} dark={dark} admins={adminList} setAdmins={setAdminList} Btn={Btn} FilterBtn={FilterBtn} notify={notify} isSuperAdmin={currentAdmin.role==="superadmin"} logAction={logAction}/>}
-    {pg==="site-settings"&&<SiteSettingsPage t={t} dark={dark} settings={siteSettings} setSettings={setSiteSettings} Btn={Btn} notify={notify} logAction={logAction}/>}
+    {pg==="coupons"&&<CouponsPage t={t} dark={dark} Btn={Btn} FilterBtn={FilterBtn} notify={notify} logAction={logAction}/>}
+    {pg==="notifications"&&<NotificationsPage t={t} dark={dark} Btn={Btn} notify={notify} logAction={logAction} users={MOCK_USERS}/>}
+    {pg==="team"&&<AdminRoles t={t} dark={dark} admins={adminList} setAdmins={setAdminList} Btn={Btn} FilterBtn={FilterBtn} notify={notify} isSuperAdmin={currentAdmin.role==="superadmin"} logAction={logAction}/>}
+    {pg==="settings"&&<SiteSettingsPage t={t} dark={dark} settings={siteSettings} setSettings={setSiteSettings} Btn={Btn} notify={notify} logAction={logAction}/>}
     </ErrorBoundary>
     <footer style={{borderTop:`1px solid ${t.surfaceBorder}`,marginTop:40,padding:"24px 0 16px"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
@@ -339,57 +341,212 @@ function AlertsPage({t,dark,alerts,setAlerts,Btn,FilterBtn,notify,isSuperAdmin,c
   </div>;
 }
 function SiteSettingsPage({t,dark,settings,setSettings,Btn,notify,logAction}){
+  const [tab,setTab]=useState("general");
   const [form,setForm]=useState({...settings});
   const upd=(k,v)=>setForm(p=>({...p,[k]:v}));
   const save=()=>{setSettings({...form});notify("Settings saved!");logAction("Updated site settings","settings");};
   const Field=({label,field,placeholder,type="text"})=><div style={{marginBottom:16}}>
     <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>{label}</label>
-    <input type={type} value={form[field]} onChange={e=>upd(field,e.target.value)} placeholder={placeholder} style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
+    <input type={type} value={form[field]||""} onChange={e=>upd(field,e.target.value)} placeholder={placeholder} style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
   </div>;
+  const Tab=({id,label})=><button onClick={()=>setTab(id)} style={{padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:tab===id?t.accentLight:"transparent",color:tab===id?t.accent:t.textSoft,border:"1px solid transparent",boxShadow:tab===id?t.accentShadow:"none"}}>{label}</button>;
   return <div>
-    <Hdr title="Site Settings" sub="Manage global platform settings — superadmin only" t={t} action={<Btn primary onClick={save}>💾 Save All</Btn>}/>
+    <Hdr title="Settings" sub="Manage global platform settings — superadmin only" t={t} action={<Btn primary onClick={save}>💾 Save All</Btn>}/>
+    <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}><Tab id="general" label="General"/><Tab id="socials" label="Socials & Contact"/><Tab id="promo" label="Promo Banner"/></div>
+    {tab==="general"&&<div className="g2"><Card dark={dark}>
+      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>General</h3>
+      <Field label="Site Name" field="siteName" placeholder="BoostPanel"/>
+      <Field label="Support Email" field="supportEmail" placeholder="support@boostpanel.ng"/>
+      <Field label="Minimum Deposit (₦)" field="minDeposit" placeholder="500" type="number"/>
+      <Field label="Default Markup (%)" field="defaultMarkup" placeholder="54" type="number"/>
+      <Field label="Referral Bonus (₦)" field="referralBonus" placeholder="500" type="number"/>
+    </Card><Card dark={dark}>
+      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:12}}>Notes</h3>
+      <div style={{fontSize:13,color:t.textSoft,lineHeight:1.7}}>
+        <p style={{marginBottom:8}}>Changes here affect the entire platform immediately.</p>
+        <p style={{marginBottom:8}}><strong style={{color:t.text}}>Minimum Deposit</strong> is the lowest amount users can add to their wallet.</p>
+        <p style={{marginBottom:8}}><strong style={{color:t.text}}>Default Markup</strong> is applied to new services synced from the API.</p>
+        <p><strong style={{color:t.text}}>Referral Bonus</strong> is credited to both referrer and new user on email verification.</p>
+      </div>
+    </Card></div>}
+    {tab==="socials"&&<div className="g2"><Card dark={dark}>
+      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>Social & Contact</h3>
+      <Field label="WhatsApp Number" field="whatsapp" placeholder="2348012345678"/>
+      <div style={{fontSize:11,color:t.textMuted,marginTop:-10,marginBottom:16}}>Full number with country code, no + or spaces. Powers the floating chat icon.</div>
+      <Field label="Twitter / X Handle" field="twitter" placeholder="boostpanel"/>
+      <Field label="Instagram Handle" field="instagram" placeholder="boostpanel.ng"/>
+    </Card><Card dark={dark}>
+      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Preview</h3>
+      <div style={{padding:16,borderRadius:12,background:dark?"#0d1020":"#faf8f5",border:`1px solid ${t.surfaceBorder}`}}>
+        <div style={{fontSize:12,color:t.textMuted,marginBottom:8,fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>WhatsApp</div>
+        <a href={`https://wa.me/${form.whatsapp}`} target="_blank" rel="noopener" style={{fontSize:13,color:t.accent,wordBreak:"break-all"}}>wa.me/{form.whatsapp}</a>
+        <div style={{fontSize:12,color:t.textMuted,marginTop:14,marginBottom:8,fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>Socials</div>
+        <div style={{display:"flex",flexDirection:"column",gap:4}}>
+          <a href={`https://twitter.com/${form.twitter}`} target="_blank" rel="noopener" style={{fontSize:13,color:t.accent}}>twitter.com/{form.twitter}</a>
+          <a href={`https://instagram.com/${form.instagram}`} target="_blank" rel="noopener" style={{fontSize:13,color:t.accent}}>instagram.com/{form.instagram}</a>
+        </div>
+      </div>
+    </Card></div>}
+    {tab==="promo"&&<div className="g2"><Card dark={dark}>
+      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>Promo Banner</h3>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+        <span style={{fontSize:13,color:t.text,fontWeight:500}}>Show banner on homepage</span>
+        <button onClick={()=>upd("promoEnabled",!form.promoEnabled)} style={{width:44,height:24,borderRadius:12,background:form.promoEnabled?t.accent:(dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)"),position:"relative",border:"none",cursor:"pointer",transition:"background 0.2s"}}><div style={{width:20,height:20,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:form.promoEnabled?22:2,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/></button>
+      </div>
+      <Field label="Banner Message" field="promoMessage" placeholder="Sign up today and get 10% bonus on your first deposit."/>
+      <div style={{marginBottom:16}}>
+        <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Banner Type</label>
+        <div style={{display:"flex",gap:8}}>{[["info","ℹ️ Info"],["warning","⚠️ Warning"]].map(([v,lb])=><button key={v} onClick={()=>upd("promoType",v)} style={{flex:1,padding:"10px 0",borderRadius:10,fontSize:13,fontWeight:500,background:(form.promoType||"info")===v?t.accentLight:t.btnSecondary,color:(form.promoType||"info")===v?t.accent:t.textSoft,border:`1px solid ${t.btnSecBorder}`}}>{lb}</button>)}</div>
+      </div>
+    </Card><Card dark={dark}>
+      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Preview</h3>
+      {form.promoEnabled!==false?<div style={{padding:"10px 16px",textAlign:"center",fontSize:13,fontWeight:500,borderRadius:10,background:(form.promoType||"info")==="warning"?(dark?"rgba(217,119,6,0.15)":"#fffbeb"):(dark?"rgba(99,102,241,0.15)":"#eef2ff"),color:(form.promoType||"info")==="warning"?(dark?"#fcd34d":"#92400e"):(dark?"#a5b4fc":"#4f46e5"),border:`1px solid ${(form.promoType||"info")==="warning"?(dark?"rgba(217,119,6,0.2)":"#fde68a"):(dark?"rgba(99,102,241,0.2)":"#c7d2fe")}`}}>{(form.promoType||"info")==="warning"?"⚠️":"✨"} {form.promoMessage||"Sign up today and get 10% bonus on your first deposit."}</div>:<div style={{padding:"20px",textAlign:"center",fontSize:13,color:t.textMuted,background:dark?"#0d1020":"#faf8f5",borderRadius:10,border:`1px solid ${t.surfaceBorder}`}}>Banner is currently hidden</div>}
+    </Card></div>}
+  </div>;
+}
+
+function PaymentsPage({t,dark,gateways,setGateways,Btn,FilterBtn,notify,logAction,isSuperAdmin}){
+  const [tab,setTab]=useState("gateways");
+  const Tab=({id,label})=><button onClick={()=>setTab(id)} style={{padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:tab===id?t.accentLight:"transparent",color:tab===id?t.accent:t.textSoft,border:"1px solid transparent",boxShadow:tab===id?t.accentShadow:"none"}}>{label}</button>;
+  const toggleGw=(id)=>{setGateways(p=>p.map(g=>g.id===id?{...g,enabled:!g.enabled}:g));logAction(`Toggled ${id} gateway`,"settings");};
+  return <div>
+    <Hdr title="Payments" sub="Payment gateways and transaction history" t={t}/>
+    <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}><Tab id="gateways" label="Gateways"/><Tab id="transactions" label="Transactions"/><Tab id="paystack" label="Paystack Config"/></div>
+    {tab==="gateways"&&<div>{gateways.map(g=><Card key={g.id} dark={dark} style={{marginBottom:10,padding:16}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}><span style={{fontSize:24}}>{g.icon}</span><div><div style={{fontSize:14,fontWeight:600,color:t.text}}>{g.name}</div><div style={{fontSize:12,color:t.textMuted,marginTop:2}}>{g.desc}</div></div></div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:12,color:t.textMuted}}>Priority: {g.priority}</span>
+          <Badge s={g.enabled?"Active":"Inactive"} dark={dark}/>
+          {isSuperAdmin&&<button onClick={()=>{toggleGw(g.id);notify(`${g.name} ${g.enabled?"disabled":"enabled"}`);}} style={{width:44,height:24,borderRadius:12,background:g.enabled?t.accent:(dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)"),position:"relative",border:"none",cursor:"pointer",transition:"background 0.2s"}}><div style={{width:20,height:20,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:g.enabled?22:2,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/></button>}
+        </div>
+      </div>
+    </Card>)}</div>}
+    {tab==="transactions"&&<Card dark={dark}>
+      <div style={{textAlign:"center",padding:"40px 0",color:t.textMuted}}>
+        <div style={{fontSize:32,marginBottom:12}}>💳</div>
+        <div style={{fontSize:14,fontWeight:500}}>Transaction history will appear here</div>
+        <div style={{fontSize:12,marginTop:4}}>Connected to Paystack webhook for real-time updates</div>
+      </div>
+    </Card>}
+    {tab==="paystack"&&<Card dark={dark}>
+      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>Paystack Configuration</h3>
+      {[["Public Key","pk_test_•••••••••••••••"],["Secret Key","sk_test_•••••••••••••••"],["Webhook URL","https://boostpanel.ng/api/webhooks/paystack"],["Callback URL","https://boostpanel.ng/api/payments/callback"]].map(([label,val],i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 0",borderBottom:i<3?`1px solid ${t.surfaceBorder}`:"none",flexWrap:"wrap",gap:8}}><span style={{fontSize:13,color:t.textSoft}}>{label}</span><span className="m" style={{fontSize:12,color:t.text}}>{val}</span></div>)}
+      <Btn primary onClick={()=>notify("Paystack config saved")} style={{marginTop:16}}>Save Config</Btn>
+    </Card>}
+  </div>;
+}
+
+function AnalyticsPage({t,dark,orders,users,Btn}){
+  const [range,setRange]=useState("7d");
+  const rev=orders.reduce((a,o)=>a+o.charge,0);const cost=orders.reduce((a,o)=>a+o.cost,0);const profit=rev-cost;
+  const RangeBtn=({id,label})=><button onClick={()=>setRange(id)} style={{padding:"8px 14px",borderRadius:8,fontSize:12,fontWeight:500,background:range===id?t.accentLight:"transparent",color:range===id?t.accent:t.textSoft,border:`1px solid ${range===id?t.accentBorder:t.btnSecBorder}`}}>{label}</button>;
+  return <div>
+    <Hdr title="Analytics" sub="Revenue, orders, and growth" t={t} action={<div style={{display:"flex",gap:6}}><RangeBtn id="24h" label="24h"/><RangeBtn id="7d" label="7 days"/><RangeBtn id="30d" label="30 days"/><RangeBtn id="90d" label="90 days"/></div>}/>
+    <div className="sg" style={{marginBottom:24}}>
+      <Stat l="Revenue" v={fN(rev)} c={t.green} ic="💰" t={t} dark={dark}/>
+      <Stat l="Profit" v={fN(profit)} sub={`${Math.round(profit/rev*100)}% margin`} c={t.accent} ic="📈" d={.05} t={t} dark={dark}/>
+      <Stat l="Orders" v={orders.length} sub={`${orders.filter(o=>o.status==="Completed").length} completed`} c="#a5b4fc" ic="📋" d={.1} t={t} dark={dark}/>
+      <Stat l="New Users" v={users.filter(u=>u.status==="Active").length} c="#6ee7b7" ic="👥" d={.15} t={t} dark={dark}/>
+    </div>
     <div className="g2">
-      <div style={{display:"flex",flexDirection:"column",gap:16}}>
-        <Card dark={dark}>
-          <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>Social & Contact</h3>
-          <Field label="WhatsApp Number" field="whatsapp" placeholder="2348012345678"/>
-          <div style={{fontSize:11,color:t.textMuted,marginTop:-10,marginBottom:16}}>Full number with country code, no + or spaces. Used for floating chat icon.</div>
-          <Field label="Twitter / X Handle" field="twitter" placeholder="boostpanel"/>
-          <Field label="Instagram Handle" field="instagram" placeholder="boostpanel.ng"/>
-          <Field label="Support Email" field="supportEmail" placeholder="support@boostpanel.ng"/>
-        </Card>
-        <Card dark={dark}>
-          <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>General</h3>
-          <Field label="Site Name" field="siteName" placeholder="BoostPanel"/>
-          <Field label="Minimum Deposit (₦)" field="minDeposit" placeholder="500" type="number"/>
-          <Field label="Default Markup (%)" field="defaultMarkup" placeholder="54" type="number"/>
-          <Field label="Referral Bonus (₦)" field="referralBonus" placeholder="500" type="number"/>
-        </Card>
-      </div>
-      <div style={{display:"flex",flexDirection:"column",gap:16}}>
-        <Card dark={dark}>
-          <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Preview</h3>
-          <div style={{padding:16,borderRadius:12,background:dark?"#0d1020":"#faf8f5",border:`1px solid ${t.surfaceBorder}`}}>
-            <div style={{fontSize:12,color:t.textMuted,marginBottom:10,fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>WhatsApp Link</div>
-            <a href={`https://wa.me/${form.whatsapp}`} target="_blank" rel="noopener" style={{fontSize:13,color:t.accent,wordBreak:"break-all"}}>wa.me/{form.whatsapp}</a>
-            <div style={{fontSize:12,color:t.textMuted,marginTop:16,marginBottom:10,fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>Social Links</div>
-            <div style={{display:"flex",flexDirection:"column",gap:6}}>
-              <a href={`https://twitter.com/${form.twitter}`} target="_blank" rel="noopener" style={{fontSize:13,color:t.accent}}>twitter.com/{form.twitter}</a>
-              <a href={`https://instagram.com/${form.instagram}`} target="_blank" rel="noopener" style={{fontSize:13,color:t.accent}}>instagram.com/{form.instagram}</a>
-            </div>
-            <div style={{fontSize:12,color:t.textMuted,marginTop:16,marginBottom:10,fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>Floating Icon Preview</div>
-            <div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:52,height:52,borderRadius:"50%",background:"#25D366",boxShadow:"0 4px 16px rgba(37,211,102,0.35)",fontSize:26}}>💬</div>
+      <Card dark={dark}>
+        <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Top Services</h3>
+        {[["IG Followers [Real]",42,"₦816,750"],["TikTok Views",38,"₦883,500"],["YT Subscribers",21,"₦260,400"],["Twitter/X Followers",18,"₦111,600"],["Spotify Plays",15,"₦418,500"]].map(([name,count,rev],i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<4?`1px solid ${t.surfaceBorder}`:"none"}}>
+          <div><div style={{fontSize:13,fontWeight:500,color:t.text}}>{name}</div><div style={{fontSize:11,color:t.textMuted,marginTop:2}}>{count} orders</div></div>
+          <span className="m" style={{fontSize:12,color:t.green,fontWeight:600}}>{rev}</span>
+        </div>)}
+      </Card>
+      <Card dark={dark}>
+        <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Revenue Breakdown</h3>
+        {[["Instagram",45,t.accent],["TikTok",25,"#a5b4fc"],["YouTube",15,"#fcd34d"],["Twitter/X",8,"#6ee7b7"],["Others",7,t.textMuted]].map(([platform,pct,color],i)=><div key={i} style={{marginBottom:12}}>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}><span style={{color:t.text}}>{platform}</span><span className="m" style={{color:t.textSoft}}>{pct}%</span></div>
+          <div style={{height:6,borderRadius:3,background:dark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.05)"}}><div style={{height:6,borderRadius:3,background:color,width:`${pct}%`,transition:"width 0.5s ease"}}/></div>
+        </div>)}
+      </Card>
+    </div>
+  </div>;
+}
+
+function CouponsPage({t,dark,Btn,FilterBtn,notify,logAction}){
+  const [coupons,setCoupons]=useState([
+    {id:1,code:"WELCOME10",type:"percent",value:10,minOrder:0,maxUses:100,used:34,active:true,expires:"2026-04-30"},
+    {id:2,code:"BOOST500",type:"flat",value:50000,minOrder:500000,maxUses:50,used:12,active:true,expires:"2026-05-15"},
+    {id:3,code:"VIP20",type:"percent",value:20,minOrder:1000000,maxUses:10,used:10,active:false,expires:"2026-03-01"},
+  ]);
+  const [f,setF]=useState("all");
+  const list=coupons.filter(c=>f==="all"||(f==="active"?c.active:!c.active));
+  const toggle=(id)=>{setCoupons(p=>p.map(c=>c.id===id?{...c,active:!c.active}:c));notify("Coupon updated");logAction("Updated coupon","settings");};
+  return <div>
+    <Hdr title="Coupons" sub="Manage promo codes and discounts" t={t} action={<Btn primary onClick={()=>notify("Create coupon modal — coming soon")}>+ Create Coupon</Btn>}/>
+    <div style={{display:"flex",gap:8,marginBottom:16}}><FilterBtn active={f==="all"} onClick={()=>setF("all")}>All ({coupons.length})</FilterBtn><FilterBtn active={f==="active"} onClick={()=>setF("active")}>Active ({coupons.filter(c=>c.active).length})</FilterBtn><FilterBtn active={f==="expired"} onClick={()=>setF("expired")}>Inactive ({coupons.filter(c=>!c.active).length})</FilterBtn></div>
+    {list.map(c=><Card key={c.id} dark={dark} style={{marginBottom:10,padding:16}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={{padding:"8px 14px",borderRadius:8,background:t.accentLight,border:`1px solid ${t.accentBorder}`}}><span className="m" style={{fontSize:14,fontWeight:700,color:t.accent}}>{c.code}</span></div>
+          <div>
+            <div style={{fontSize:13,fontWeight:500,color:t.text}}>{c.type==="percent"?`${c.value}% off`:`₦${(c.value/100).toLocaleString()} off`}</div>
+            <div style={{fontSize:11,color:t.textMuted,marginTop:2}}>Min order: {c.minOrder?fN(c.minOrder):"None"} • Used: {c.used}/{c.maxUses} • Expires: {c.expires}</div>
           </div>
-        </Card>
-        <Card dark={dark}>
-          <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:12}}>Notes</h3>
-          <div style={{fontSize:13,color:t.textSoft,lineHeight:1.7}}>
-            <p style={{marginBottom:8}}>Changes here affect the entire platform immediately.</p>
-            <p style={{marginBottom:8}}>The <strong style={{color:t.text}}>WhatsApp number</strong> powers the floating chat icon on all pages. Enter the full number with country code (e.g. 2348012345678).</p>
-            <p>Social handles are shown in the footer across all pages and on the landing page.</p>
-          </div>
-        </Card>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <Badge s={c.active?"Active":"Inactive"} dark={dark}/>
+          <button onClick={()=>toggle(c.id)} style={{width:44,height:24,borderRadius:12,background:c.active?t.accent:(dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)"),position:"relative",border:"none",cursor:"pointer",transition:"background 0.2s"}}><div style={{width:20,height:20,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:c.active?22:2,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/></button>
+          <Btn onClick={()=>notify("Edit modal — coming soon")}>Edit</Btn>
+        </div>
       </div>
+    </Card>)}
+  </div>;
+}
+
+function NotificationsPage({t,dark,Btn,notify,logAction,users}){
+  const [method,setMethod]=useState("banner");
+  const [target,setTarget]=useState("all");
+  const [msg,setMsg]=useState("");
+  const [subject,setSubject]=useState("");
+  const [history]=useState([
+    {id:1,method:"banner",target:"All users",message:"New TikTok services available!",sent:"2026-03-22T14:00:00",by:"David Ojo"},
+    {id:2,method:"email",target:"All users",message:"Scheduled maintenance tonight",sent:"2026-03-21T10:00:00",by:"Owner"},
+    {id:3,method:"banner",target:"Active users",message:"Referral bonus doubled this week!",sent:"2026-03-19T09:00:00",by:"Owner"},
+  ]);
+  const send=()=>{if(!msg){notify("Message is required",true);return;}notify("Notification sent!");logAction(`Sent ${method} notification to ${target}`,"admin");setMsg("");setSubject("");};
+  return <div>
+    <Hdr title="Notifications" sub="Send announcements to users" t={t}/>
+    <div className="g2">
+      <Card dark={dark}>
+        <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>New Notification</h3>
+        <div style={{marginBottom:16}}>
+          <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Method</label>
+          <div style={{display:"flex",gap:8}}>{[["banner","📢 Dashboard Banner"],["email","📧 Email Blast"]].map(([v,lb])=><button key={v} onClick={()=>setMethod(v)} style={{flex:1,padding:"10px 0",borderRadius:10,fontSize:13,fontWeight:500,background:method===v?t.accentLight:t.btnSecondary,color:method===v?t.accent:t.textSoft,border:`1px solid ${t.btnSecBorder}`}}>{lb}</button>)}</div>
+        </div>
+        <div style={{marginBottom:16}}>
+          <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Target</label>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{[["all","All Users"],["active","Active Only"],["new","New (30d)"]].map(([v,lb])=><button key={v} onClick={()=>setTarget(v)} style={{padding:"10px 16px",borderRadius:10,fontSize:13,fontWeight:500,background:target===v?t.accentLight:t.btnSecondary,color:target===v?t.accent:t.textSoft,border:`1px solid ${t.btnSecBorder}`}}>{lb}</button>)}</div>
+        </div>
+        {method==="email"&&<div style={{marginBottom:16}}>
+          <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Subject</label>
+          <input value={subject} onChange={e=>setSubject(e.target.value)} placeholder="Email subject line" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
+        </div>}
+        <div style={{marginBottom:16}}>
+          <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Message</label>
+          <textarea rows={4} value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Type your notification message..." style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",resize:"vertical"}}/>
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:12,color:t.textMuted}}>Sending to ~{target==="all"?users.length:target==="active"?users.filter(u=>u.status==="Active").length:Math.floor(users.length*0.3)} users</span>
+          <Btn primary onClick={send}>📣 Send Notification</Btn>
+        </div>
+      </Card>
+      <Card dark={dark}>
+        <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Recent Notifications</h3>
+        {history.map((n,i)=><div key={n.id} style={{padding:"12px 0",borderBottom:i<history.length-1?`1px solid ${t.surfaceBorder}`:"none"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4,flexWrap:"wrap",gap:6}}>
+            <span style={{fontSize:12,fontWeight:600,padding:"2px 8px",borderRadius:4,background:n.method==="email"?(dark?"rgba(99,102,241,0.1)":"#eef2ff"):(dark?"rgba(217,119,6,0.1)":"#fffbeb"),color:n.method==="email"?(dark?"#a5b4fc":"#4f46e5"):(dark?"#fcd34d":"#92400e")}}>{n.method==="email"?"📧 Email":"📢 Banner"}</span>
+            <span style={{fontSize:11,color:t.textMuted}}>{fD(n.sent)} • {n.by}</span>
+          </div>
+          <div style={{fontSize:13,color:t.text}}>{n.message}</div>
+          <div style={{fontSize:11,color:t.textMuted,marginTop:2}}>To: {n.target}</div>
+        </div>)}
+      </Card>
     </div>
   </div>;
 }
