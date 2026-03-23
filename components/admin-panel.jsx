@@ -87,8 +87,8 @@ export default function AdminPanel(){
     <ThemeToggle dark={dark} onToggle={toggleTheme} compact/>
   </div></aside>
   <main className={`mn${mini?" shifted":""}`}>
-    <div style={{position:"sticky",top:0,zIndex:40,paddingBottom:alerts.filter(a=>a.active&&!dismissedAlerts.includes(a.id)&&(a.target==="both"||a.target==="dashboard")).length?4:0}}>
-    {alerts.filter(a=>a.active&&!dismissedAlerts.includes(a.id)&&(a.target==="both"||a.target==="dashboard")).map(a=>{
+    <div style={{position:"sticky",top:0,zIndex:40,paddingBottom:alerts.filter(a=>a.active&&!dismissedAlerts.includes(a.id)&&(a.audience==="admins"||a.audience==="both")&&(a.target==="both"||a.target==="dashboard")).length?4:0}}>
+    {alerts.filter(a=>a.active&&!dismissedAlerts.includes(a.id)&&(a.audience==="admins"||a.audience==="both")&&(a.target==="both"||a.target==="dashboard")).map(a=>{
       const isAdmin=a.audience==="admins";
       const bgMap={info:dark?"rgba(99,102,241,0.1)":"#eef2ff",warning:dark?"rgba(217,119,6,0.1)":"#fffbeb",critical:dark?"rgba(220,38,38,0.1)":"#fef2f2"};
       const colorMap={info:dark?"#a5b4fc":"#4f46e5",warning:dark?"#fcd34d":"#92400e",critical:dark?"#fca5a5":"#dc2626"};
