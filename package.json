@@ -6,14 +6,33 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "postinstall": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:seed": "node --experimental-modules prisma/seed.js",
+    "db:studio": "prisma studio",
+    "db:reset": "prisma migrate reset"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^6.19.2",
+    "bcryptjs": "^3.0.3",
+    "cookie": "^1.1.1",
+    "jose": "^6.2.2",
+    "jsonwebtoken": "^9.0.3",
     "next": "^16.2.1",
+    "prisma": "^6.19.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
+  },
+  "prisma": {
+    "seed": "node --experimental-modules prisma/seed.js"
+  },
+  "type": "module",
+  "devDependencies": {
+    "dotenv": "^17.3.1"
   }
 }

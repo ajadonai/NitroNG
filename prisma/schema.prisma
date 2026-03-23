@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ──────────────────────────────────────
+// USERS
+// ──────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  name          String
+  balance       Int      @default(0)
+  referralCode  String   @unique @default(cuid())
+  referredBy    String?
+  emailVerified Boolean  @default(false)
+  verifyToken   String?
+  verifyExpires DateTime?
+  resetToken    String?
+  resetExpires  DateTime?
+  status        String   @default("Active")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  orders       Order[]
+  transactions Transaction[]
+  tickets      Ticket[]
+
+  @@map("users")
+}
+
+// ──────────────────────────────────────
+// ADMINS
+// ──────────────────────────────────────
+
+model Admin {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  password   String
+  name       String
+  role       String   @default("admin")
+  status     String   @default("Active")
+  lastActive DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("admins")
+}
+
+// ──────────────────────────────────────
+// SERVICES
+// ──────────────────────────────────────
+
+model Service {
+  id        String  @id @default(cuid())
+  apiId     Int
+  name      String
+  category  String
+  costPer1k Int
+  sellPer1k Int
+  markup    Int     @default(54)
+  min       Int     @default(100)
+  max       Int     @default(50000)
+  refill    Boolean @default(false)
+  avgTime   String  @default("0-2 hrs")
+  enabled   Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+
+  @@map("services")
+}
+
+// ──────────────────────────────────────
+// ORDERS
+// ──────────────────────────────────────
+
+model Order {
+  id         String   @id @default(cuid())
+  orderId    String   @unique
+  userId     String
+  serviceId  String
+  link       String
+  quantity   Int
+  charge     Int
+  cost       Int
+  status     String   @default("Pending")
+  apiOrderId String?
+  remains    Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id])
+  service Service @relation(fields: [serviceId], references: [id])
+
+  @@map("orders")
+}
+
+// ──────────────────────────────────────
+// TRANSACTIONS
+// ──────────────────────────────────────
+
+model Transaction {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  amount    Int
+  method    String?
+  reference String?  @unique
+  status    String   @default("Completed")
+  note      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("transactions")
+}
+
+// ──────────────────────────────────────
+// SUPPORT TICKETS
+// ──────────────────────────────────────
+
+model Ticket {
+  id        String   @id @default(cuid())
+  ticketId  String   @unique
+  userId    String
+  subject   String
+  message   String
+  orderId   String?
+  status    String   @default("Open")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User          @relation(fields: [userId], references: [id])
+  replies TicketReply[]
+
+  @@map("tickets")
+}
+
+model TicketReply {
+  id        String   @id @default(cuid())
+  ticketId  String
+  from      String
+  message   String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+
+  @@map("ticket_replies")
+}
+
+// ──────────────────────────────────────
+// ALERTS
+// ──────────────────────────────────────
+
+model Alert {
+  id        String    @id @default(cuid())
+  message   String
+  type      String    @default("info")
+  target    String    @default("both")
+  active    Boolean   @default(true)
+  createdBy String
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("alerts")
+}
+
+// ──────────────────────────────────────
+// ACTIVITY LOG
+// ──────────────────────────────────────
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  adminName String
+  action    String
+  type      String
+  createdAt DateTime @default(now())
+
+  @@map("activity_log")
+}
+
+// ──────────────────────────────────────
+// SITE SETTINGS
+// ──────────────────────────────────────
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
