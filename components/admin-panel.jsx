@@ -49,7 +49,7 @@ function ErrorBoundary({children}){return <>{children}</>;}
 function ThemeToggle({dark,onToggle,compact}){return <button onClick={onToggle} style={{display:"flex",alignItems:"center",background:dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)",borderRadius:20,padding:3,width:compact?52:64,height:compact?28:32,border:`1px solid ${dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)"}`,position:"relative",flexShrink:0,transition:"background 1.5s cubic-bezier(.4,0,.2,1),border-color 1.5s ease"}}><div style={{width:compact?22:26,height:compact?22:26,borderRadius:"50%",background:dark?"#c47d8e":"#e0a458",display:"flex",alignItems:"center",justifyContent:"center",fontSize:compact?12:14,position:"absolute",left:dark?3:(compact?27:35),transition:"left 0.4s cubic-bezier(.4,0,.2,1),background 1.5s cubic-bezier(.4,0,.2,1)",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}>{dark?"🌙":"☀️"}</div></button>;}
 
 export default function AdminPanel(){
-  const [pg,setPg]=useState("overview");const [alerts,setAlerts]=useState(MOCK_ALERTS);
+  const [pg,setPg]=useState("overview");const [alerts,setAlerts]=useState(MOCK_ALERTS);const [dismissedAlerts,setDismissedAlerts]=useState([]);
   const [maint,setMaint]=useState({enabled:false,message:"We're performing scheduled upgrades to improve your experience. Everything will be back to normal shortly.",estimatedReturn:"~30 minutes",showTwitter:true});
   const [gateways,setGateways]=useState([
     {id:"paystack",name:"Paystack",icon:"💳",desc:"Cards, Bank Transfer, USSD",enabled:true,priority:1},
@@ -84,8 +84,8 @@ export default function AdminPanel(){
     <ThemeToggle dark={dark} onToggle={toggleTheme} compact/>
   </div></aside>
   <main className={`mn${mini?" shifted":""}`}>
-    <div style={{position:"sticky",top:0,zIndex:40,paddingBottom:alerts.filter(a=>a.active&&(a.target==="both"||a.target==="dashboard")).length?4:0}}>
-    {alerts.filter(a=>a.active&&(a.target==="both"||a.target==="dashboard")).map(a=><div key={a.id} style={{padding:"12px 20px",marginBottom:12,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,fontSize:13,fontWeight:500,animation:"fu .3s ease",background:a.type==="warning"?(dark?"rgba(217,119,6,0.1)":"#fffbeb"):a.type==="critical"?(dark?"rgba(220,38,38,0.1)":"#fef2f2"):(dark?"rgba(99,102,241,0.1)":"#eef2ff"),color:a.type==="warning"?(dark?"#fcd34d":"#92400e"):a.type==="critical"?(dark?"#fca5a5":"#dc2626"):(dark?"#a5b4fc":"#4f46e5"),border:`1px solid ${a.type==="warning"?(dark?"rgba(217,119,6,0.2)":"#fde68a"):a.type==="critical"?(dark?"rgba(220,38,38,0.2)":"#fecaca"):(dark?"rgba(99,102,241,0.2)":"#c7d2fe")}`,backdropFilter:"blur(12px)"}}><span>{a.type==="warning"?"⚠️":a.type==="critical"?"🚨":"ℹ️"} {a.message}</span></div>)}
+    <div style={{position:"sticky",top:0,zIndex:40,paddingBottom:alerts.filter(a=>a.active&&!dismissedAlerts.includes(a.id)&&(a.target==="both"||a.target==="dashboard")).length?4:0}}>
+    {alerts.filter(a=>a.active&&!dismissedAlerts.includes(a.id)&&(a.target==="both"||a.target==="dashboard")).map(a=><div key={a.id} style={{padding:"12px 20px",marginBottom:12,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,fontSize:13,fontWeight:500,animation:"fu .3s ease",background:a.type==="warning"?(dark?"rgba(217,119,6,0.1)":"#fffbeb"):a.type==="critical"?(dark?"rgba(220,38,38,0.1)":"#fef2f2"):(dark?"rgba(99,102,241,0.1)":"#eef2ff"),color:a.type==="warning"?(dark?"#fcd34d":"#92400e"):a.type==="critical"?(dark?"#fca5a5":"#dc2626"):(dark?"#a5b4fc":"#4f46e5"),border:`1px solid ${a.type==="warning"?(dark?"rgba(217,119,6,0.2)":"#fde68a"):a.type==="critical"?(dark?"rgba(220,38,38,0.2)":"#fecaca"):(dark?"rgba(99,102,241,0.2)":"#c7d2fe")}`,backdropFilter:"blur(12px)"}}><span>{a.type==="warning"?"⚠️":a.type==="critical"?"🚨":"ℹ️"} {a.message}</span><button onClick={()=>setDismissedAlerts(p=>[...p,a.id])} style={{background:"none",color:"inherit",fontSize:16,padding:2,flexShrink:0,opacity:0.6}}>✕</button></div>)}
     </div>
     <ErrorBoundary t={t} key={pg}>
     {pg==="overview"&&<Overview t={t} dark={dark} orders={MOCK_ORDERS} users={MOCK_USERS} tickets={MOCK_TICKETS} activity={activityLog}/>}
@@ -288,40 +288,50 @@ function PaymentGateways({t,dark,gateways,setGateways,Btn,notify,logAction,isSup
 
 function AlertsPage({t,dark,alerts,setAlerts,Btn,FilterBtn,notify,isSuperAdmin,currentAdmin,logAction}){
   const [msg,setMsg]=useState("");const [type,setType]=useState("info");const [target,setTarget]=useState("both");const [duration,setDuration]=useState("none");const [customUnit,setCustomUnit]=useState("h");const [f,setF]=useState("active");
-  const list=alerts.filter(a=>f==="all"||( f==="active"?a.active:!a.active));
+  const [scheduleEnabled,setScheduleEnabled]=useState(false);const [scheduleDate,setScheduleDate]=useState("");const [scheduleTime,setScheduleTime]=useState("");
+  const list=alerts.filter(a=>f==="all"||(f==="active"?a.active:!a.active));
   const getExpiry=(dur)=>{if(dur==="none")return null;const ms={"1h":3600000,"6h":21600000,"24h":86400000,"3d":259200000,"7d":604800000};if(ms[dur])return new Date(Date.now()+ms[dur]).toISOString();const num=parseInt(dur);if(!num)return null;const mult=customUnit==="d"?86400000:customUnit==="m"?60000:3600000;return new Date(Date.now()+num*mult).toISOString();};
-  const createAlert=()=>{if(!msg.trim())return;const newA={id:Date.now(),message:msg,type,target,active:true,createdBy:currentAdmin.name,created:new Date().toISOString(),expiresAt:getExpiry(duration)};setAlerts(p=>[newA,...p]);setMsg("");logAction(`Published ${type} alert: "${msg.slice(0,50)}${msg.length>50?'...':''}"`,"alert");notify("Alert published!");};
-  const toggleAlert=(id)=>{const alert=alerts.find(a=>a.id===id);setAlerts(p=>p.map(a=>a.id===id?{...a,active:!a.active}:a));if(alert)logAction(`${alert.active?'Paused':'Activated'} alert: "${alert.message.slice(0,40)}..."`,"alert");};
+  const createAlert=()=>{if(!msg.trim())return;const scheduledFor=scheduleEnabled&&scheduleDate?new Date(`${scheduleDate}T${scheduleTime||"00:00"}`).toISOString():null;const newA={id:Date.now(),message:msg,type,target,active:!scheduledFor,scheduled:scheduledFor,createdBy:currentAdmin.name,created:new Date().toISOString(),expiresAt:getExpiry(duration)};setAlerts(p=>[newA,...p]);setMsg("");setScheduleEnabled(false);setScheduleDate("");setScheduleTime("");logAction(`${scheduledFor?"Scheduled":"Published"} ${type} alert: "${msg.slice(0,50)}${msg.length>50?"...":""}"`,"alert");notify(scheduledFor?"Alert scheduled!":"Alert published!");};
+  const toggleAlert=(id)=>{const alert=alerts.find(a=>a.id===id);setAlerts(p=>p.map(a=>a.id===id?{...a,active:!a.active}:a));if(alert)logAction(`${alert.active?"Paused":"Activated"} alert: "${alert.message.slice(0,40)}..."`,"alert");};
   const deleteAlert=(id)=>{const alert=alerts.find(a=>a.id===id);setAlerts(p=>p.filter(a=>a.id!==id));if(alert)logAction(`Deleted alert: "${alert.message.slice(0,40)}..."`,"alert");notify("Alert deleted");};
   const typeColors={info:{bg:dark?"rgba(99,102,241,0.1)":"#eef2ff",color:dark?"#a5b4fc":"#4f46e5",border:dark?"rgba(99,102,241,0.2)":"#c7d2fe",icon:"ℹ️"},warning:{bg:dark?"rgba(217,119,6,0.1)":"#fffbeb",color:dark?"#fcd34d":"#92400e",border:dark?"rgba(217,119,6,0.2)":"#fde68a",icon:"⚠️"},critical:{bg:dark?"rgba(220,38,38,0.1)":"#fef2f2",color:dark?"#fca5a5":"#dc2626",border:dark?"rgba(220,38,38,0.2)":"#fecaca",icon:"🚨"}};
   return <div>
     <Hdr title="Alerts" sub="Broadcast messages to users" t={t}/>
-    {/* Create new alert */}
     <Card dark={dark} style={{marginBottom:24}}>
       <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>New Alert</h3>
       <textarea value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Write your alert message..." rows={2} style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,marginBottom:14,outline:"none",resize:"vertical"}}/>
-      <div style={{display:"flex",gap:12,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+      <div style={{display:"flex",gap:12,marginBottom:14,flexWrap:"wrap",alignItems:"flex-start"}}>
         <div>
           <div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6}}>Type</div>
           <div style={{display:"flex",gap:6}}>{["info","warning","critical"].map(tp=><button key={tp} onClick={()=>setType(tp)} style={{padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:600,background:type===tp?typeColors[tp].bg:"transparent",color:type===tp?typeColors[tp].color:t.textMuted,border:`1px solid ${type===tp?typeColors[tp].border:t.btnSecBorder}`}}>{typeColors[tp].icon} {tp[0].toUpperCase()+tp.slice(1)}</button>)}</div>
         </div>
         <div>
           <div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6}}>Show On</div>
-          <div style={{display:"flex",gap:6}}>{[["both","🌐 Both"],["dashboard","📊 Dashboard"],["login","🔐 Login Page"]].map(([val,lb])=><button key={val} onClick={()=>setTarget(val)} style={{padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:500,background:target===val?t.accentLight:"transparent",color:target===val?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:target===val?t.accentShadow:"none"}}>{lb}</button>)}</div>
+          <div style={{display:"flex",gap:6}}>{[["both","🌐 Both"],["dashboard","📊 Dashboard"],["login","🔐 Login"]].map(([val,lb])=><button key={val} onClick={()=>setTarget(val)} style={{padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:500,background:target===val?t.accentLight:"transparent",color:target===val?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:target===val?t.accentShadow:"none"}}>{lb}</button>)}</div>
         </div>
+      </div>
+      <div style={{display:"flex",gap:12,marginBottom:14,flexWrap:"wrap",alignItems:"flex-start"}}>
         <div>
           <div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6}}>Duration</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>{[["none","♾️ Indefinite"],["1h","1 Hour"],["6h","6 Hours"],["24h","24 Hours"],["3d","3 Days"],["7d","7 Days"]].map(([val,lb])=><button key={val} onClick={()=>setDuration(val)} style={{padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:500,background:duration===val?t.accentLight:"transparent",color:duration===val?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:duration===val?t.accentShadow:"none"}}>{lb}</button>)}
-            <div style={{display:"flex",alignItems:"center",gap:4}}><input type="number" placeholder="Custom" value={duration.match(/^\d+$/)?duration:""} onChange={e=>{if(e.target.value)setDuration(e.target.value);else setDuration("none");}} min="1" style={{padding:"6px 10px",borderRadius:8,fontSize:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,outline:"none",width:70,textAlign:"center"}}/><select value={customUnit} onChange={e=>setCustomUnit(e.target.value)} style={{padding:"6px 8px",borderRadius:8,fontSize:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,outline:"none"}}><option value="h">Hours</option><option value="d">Days</option><option value="m">Minutes</option></select></div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>{[["none","♾️ Indefinite"],["1h","1h"],["6h","6h"],["24h","24h"],["3d","3d"],["7d","7d"]].map(([val,lb])=><button key={val} onClick={()=>setDuration(val)} style={{padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:500,background:duration===val?t.accentLight:"transparent",color:duration===val?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:duration===val?t.accentShadow:"none"}}>{lb}</button>)}
+            <div style={{display:"flex",alignItems:"center",gap:4}}><input type="number" placeholder="#" value={duration.match(/^\d+$/)?duration:""} onChange={e=>{if(e.target.value)setDuration(e.target.value);else setDuration("none");}} min="1" style={{padding:"6px 10px",borderRadius:8,fontSize:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,outline:"none",width:55,textAlign:"center"}}/><select value={customUnit} onChange={e=>setCustomUnit(e.target.value)} style={{padding:"6px 8px",borderRadius:8,fontSize:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,outline:"none"}}><option value="m">Min</option><option value="h">Hrs</option><option value="d">Days</option></select></div>
+          </div>
+        </div>
+        <div>
+          <div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6}}>Schedule</div>
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <button onClick={()=>setScheduleEnabled(!scheduleEnabled)} style={{padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:500,background:scheduleEnabled?t.accentLight:"transparent",color:scheduleEnabled?t.accent:t.textMuted,border:`1px solid ${scheduleEnabled?t.accentBorder:t.btnSecBorder}`}}>{scheduleEnabled?"🕐 Scheduled":"📌 Publish Now"}</button>
+            {scheduleEnabled&&<><input type="date" value={scheduleDate} onChange={e=>setScheduleDate(e.target.value)} style={{padding:"6px 10px",borderRadius:8,fontSize:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,outline:"none"}}/><input type="time" value={scheduleTime} onChange={e=>setScheduleTime(e.target.value)} style={{padding:"6px 10px",borderRadius:8,fontSize:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,outline:"none"}}/></>}
           </div>
         </div>
       </div>
-      {/* Preview */}
       {msg&&<div style={{padding:"12px 16px",borderRadius:10,background:typeColors[type].bg,border:`1px solid ${typeColors[type].border}`,color:typeColors[type].color,fontSize:13,fontWeight:500,marginBottom:14}}>{typeColors[type].icon} {msg}</div>}
-      <Btn primary onClick={createAlert}>📢 Publish Alert</Btn>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        <Btn primary onClick={createAlert}>{scheduleEnabled&&scheduleDate?"🕐 Schedule Alert":"📢 Publish Alert"}</Btn>
+        {scheduleEnabled&&scheduleDate&&<span style={{fontSize:12,color:t.textMuted}}>Will go live on {scheduleDate} at {scheduleTime||"00:00"}</span>}
+      </div>
     </Card>
-    {/* Active alerts list */}
-    <div style={{display:"flex",gap:8,marginBottom:16}}><FilterBtn active={f==="active"} onClick={()=>{setF("active");setUPage(1);}}>Active ({alerts.filter(a=>a.active).length})</FilterBtn><FilterBtn active={f==="all"} onClick={()=>{setF("all");setUPage(1);}}>All ({alerts.length})</FilterBtn></div>
+    <div style={{display:"flex",gap:8,marginBottom:16}}><FilterBtn active={f==="active"} onClick={()=>setF("active")}>Active ({alerts.filter(a=>a.active).length})</FilterBtn><FilterBtn active={f==="all"} onClick={()=>setF("all")}>All ({alerts.length})</FilterBtn></div>
     {list.length===0&&<Card dark={dark}><div style={{textAlign:"center",padding:"30px 0",color:t.textMuted}}>No alerts</div></Card>}
     {list.map(a=>{const tc=typeColors[a.type]||typeColors.info;return <Card key={a.id} dark={dark} style={{marginBottom:10,padding:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap"}}>
@@ -330,9 +340,10 @@ function AlertsPage({t,dark,alerts,setAlerts,Btn,FilterBtn,notify,isSuperAdmin,c
             <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:tc.bg,color:tc.color,border:`1px solid ${tc.border}`}}>{tc.icon} {a.type[0].toUpperCase()+a.type.slice(1)}</span>
             <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:t.accentLight,color:t.accent}}>{a.target==="both"?"🌐 Both":a.target==="dashboard"?"📊 Dashboard":"🔐 Login"}</span>
             {a.active?<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:dark?"rgba(110,231,183,0.1)":"#ecfdf5",color:t.green}}>● Live</span>:<span style={{fontSize:11,color:t.textMuted}}>Inactive</span>}
+            {a.scheduled&&<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:dark?"rgba(99,102,241,0.1)":"#eef2ff",color:dark?"#a5b4fc":"#4f46e5"}}>🕐 Scheduled: {fD(a.scheduled)}</span>}
           </div>
           <div style={{fontSize:14,color:t.text,marginBottom:4}}>{a.message}</div>
-          <div style={{fontSize:11,color:t.textMuted}}>by {a.createdBy} • {fD(a.created)}{a.expiresAt?` • Expires ${fD(a.expiresAt)}`:" • ♾️ Indefinite"}</div>
+          <div style={{fontSize:11,color:t.textMuted}}>by {a.createdBy} · {fD(a.created)}{a.expiresAt?` · Expires ${fD(a.expiresAt)}`:" · ♾️ Indefinite"}</div>
         </div>
         <div style={{display:"flex",gap:6,flexShrink:0}}>
           <Btn onClick={()=>{toggleAlert(a.id);notify(a.active?"Alert deactivated":"Alert activated")}}>{a.active?"⏸ Pause":"▶ Activate"}</Btn>
