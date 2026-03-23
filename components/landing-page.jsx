@@ -113,7 +113,7 @@ export default function Landing(){
         <div>{[{message:"New! Sign up today and get 10% bonus on your first deposit.",type:"info"}].map((a,i)=><div key={i} style={{padding:"10px 16px",textAlign:"center",fontSize:13,fontWeight:500,background:a.type==="warning"?(dark?"rgba(217,119,6,0.15)":"#fffbeb"):(dark?"rgba(99,102,241,0.15)":"#eef2ff"),color:a.type==="warning"?(dark?"#fcd34d":"#92400e"):(dark?"#a5b4fc":"#4f46e5"),borderBottom:`1px solid ${a.type==="warning"?(dark?"rgba(217,119,6,0.2)":"#fde68a"):(dark?"rgba(99,102,241,0.2)":"#c7d2fe")}`}}>{a.type==="warning"?"⚠️":"✨"} {a.message}</div>)}</div>
       <nav style={{backdropFilter:"blur(20px)",background:dark?"rgba(8,11,20,0.8)":"rgba(244,241,237,0.8)",borderBottom:`1px solid ${t.surfaceBorder}`,transition:"background 1.5s ease"}}>
         <div className="sec" style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 24px"}}>
-          <button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} style={{display:"flex",alignItems:"center",gap:10,background:"none",padding:0}}>
+          <button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} style={{display:"flex",alignItems:"center",gap:10,background:"none",padding:0,border:"none",outline:"none",cursor:"pointer"}}>
             <div style={{width:34,height:34,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:"#fff"}}>B</div>
             <span className="serif" style={{fontSize:20,fontWeight:600,color:t.text,letterSpacing:"0.3px"}}>BoostPanel</span>
           </button>
@@ -438,7 +438,7 @@ export function Footer({t,dark}){
             </div>
             <div>
               <div style={{fontSize:11,fontWeight:600,color:t.textMuted,textTransform:"uppercase",letterSpacing:1.5,marginBottom:12}}>Legal</div>
-              {["Terms of Service","Privacy Policy","Refund Policy","Cookie Policy"].map(l=><a key={l} href={l==="Terms of Service"?"/terms":l==="Privacy Policy"?"/privacy":"#"} style={{display:"block",fontSize:13,color:t.textSoft,textDecoration:"none",marginBottom:8}}>{l}</a>)}
+              {[["Terms of Service","/terms"],["Privacy Policy","/privacy"],["Refund Policy","/refund"],["Cookie Policy","/cookie"]].map(([l,h])=><a key={l} href={h} style={{display:"block",fontSize:13,color:t.textSoft,textDecoration:"none",marginBottom:8}}>{l}</a>)}
             </div>
           </div>
         </div>
