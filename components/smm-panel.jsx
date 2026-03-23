@@ -87,17 +87,36 @@ function ErrorBoundary({children}){return <>{children}</>;}
 
 export default function App() {
   const [pg, setPg] = useState("dashboard");
-  const [user, setUser] = useState({ name: "User", email: "user@example.com", balance: 174375, refCode: "BOOST-7X92", refs: 4, earnings: 19375 });
-  const [orders, setOrders] = useState(ORDERS);
-  const [txs, setTxs] = useState(TXS);
+  const [user, setUser] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [txs, setTxs] = useState([]);
+  const [alerts, setAlerts] = useState(ALERTS);
   const [sb, setSb] = useState(false);
   const [mini, setMini] = useState(false);
   const [toast, setToast] = useState(null);
   const [dismissedAlerts, setDismissedAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const getAutoTheme = () => {const h=new Date().getHours(),m=new Date().getMinutes();if(h>=7&&h<18)return false;if(h>=19||h<6)return true;if(h===6)return m<30;if(h===18)return m>=30;return true;};
   const [dark, setDark] = useState(getAutoTheme);
   const [manualOverride, setManualOverride] = useState(false);
   useEffect(() => {if(manualOverride)return;const iv=setInterval(()=>setDark(getAutoTheme()),60000);return()=>clearInterval(iv);},[manualOverride]);
+
+  // Fetch real dashboard data
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch('/api/dashboard');
+        if (!res.ok) { window.location.href = '/?login=1'; return; }
+        const data = await res.json();
+        setUser(data.user);
+        setOrders(data.orders.length ? data.orders : ORDERS);
+        setTxs(data.transactions.length ? data.transactions : TXS);
+        if (data.alerts.length) setAlerts(data.alerts);
+      } catch { /* fallback to mock data */ }
+      setLoading(false);
+    }
+    load();
+  }, []);
   const toggleTheme = () => {setManualOverride(true);setDark(d=>!d);};
   const toastTimer = useRef(null);
   const notify = (m, e) => { setToast({ m, e }); if (toastTimer.current) clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 6000); };
@@ -107,6 +126,16 @@ export default function App() {
   const addFunds = (a) => {setUser(p=>({...p,balance:p.balance+a}));setTxs(p=>[{id:`T${Date.now()}`,type:"deposit",amount:a,method:"Paystack",date:new Date().toISOString()},...p]);notify(`${fN(a)} added to wallet!`);};
   const NAV = [["dashboard","🏠","Dashboard"],["new-order","🛒","New Order"],["orders","📋","Orders"],["services","📦","Services"],["funds","💳","Add Funds"],["referrals","🔗","Referrals"],["support","💬","Support"],["settings","⚙️","Settings"]];
   const t={bg:dark?"#080b14":"#f4f1ed",text:dark?"#e8e4df":"#1a1a1a",textSoft:dark?"#8a8680":"#888580",textMuted:dark?"#555250":"#b0ada8",surface:dark?"rgba(15,18,30,0.97)":"rgba(255,255,255,0.97)",surfaceBorder:dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.08)",cardBg:dark?"rgba(15,18,30,0.85)":"rgba(255,255,255,0.9)",inputBg:dark?"#0d1020":"#fff",inputBorder:dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)",accent:"#c47d8e",accentLight:dark?"rgba(196,125,142,0.12)":"rgba(196,125,142,0.08)",accentBorder:dark?"rgba(196,125,142,0.3)":"rgba(196,125,142,0.25)",accentShadow:dark?"inset 0 0 0 1px rgba(196,125,142,0.35)":"inset 0 0 0 1px rgba(196,125,142,0.3)",green:dark?"#6ee7b7":"#059669",red:dark?"#fca5a5":"#dc2626",balGrad:dark?"linear-gradient(135deg, #0d1a2e, #161028)":"linear-gradient(135deg, #f9f5f1, #f0e8e2)",balBorder:dark?"rgba(196,125,142,0.2)":"rgba(196,125,142,0.15)",btnPrimary:"linear-gradient(135deg, #c47d8e, #a3586b)",btnSecondary:dark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",btnSecBorder:dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)",gradBg:dark?"radial-gradient(ellipse at 20% 0%, rgba(196,125,142,0.06) 0%, transparent 50%), radial-gradient(ellipse at 80% 100%, rgba(100,120,180,0.04) 0%, transparent 50%)":"radial-gradient(ellipse at 20% 0%, rgba(196,125,142,0.05) 0%, transparent 50%), radial-gradient(ellipse at 80% 100%, rgba(180,160,140,0.04) 0%, transparent 50%)",logoGrad:"linear-gradient(135deg, #c47d8e, #8b5e6b)"};
+
+  if (loading || !user) return (
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:dark?"#080b14":"#f4f1ed"}}>
+      <div style={{textAlign:"center"}}>
+        <div style={{width:48,height:48,borderRadius:14,background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:700,color:"#fff",marginBottom:16,animation:"pulse 1.5s ease infinite"}}>B</div>
+        <div style={{fontSize:14,color:dark?"#8a8680":"#888580"}}>Loading your dashboard...</div>
+      </div>
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}`}</style>
+    </div>
+  );
 
   return (
     <div className="root">
