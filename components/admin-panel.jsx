@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from "react";
+import { smartTime } from "@/lib/smart-time";
 
 const ROLES = {
   superadmin: { label: "Super Admin", color: "#c47d8e", pages: ["overview","orders","users","tickets","---1","services","api","payments","---2","analytics","alerts","coupons","notifications","maintenance","activity","---3","team","settings"] },
@@ -16,9 +17,11 @@ const MOCK_ADMINS=[{id:1,name:"You (Owner)",email:"admin@boostpanel.ng",role:"su
 const MOCK_ACTIVITY=[{id:1,admin:"You (Owner)",action:"Credited N5,000 to Chidi Okafor",type:"credit",time:"2026-03-23T10:25:00"},{id:2,admin:"David Ojo",action:"Cancelled order ORD-28483",type:"cancel",time:"2026-03-23T09:10:00"},{id:3,admin:"Grace Adebayo",action:"Replied to ticket TK-399",type:"ticket",time:"2026-03-22T17:45:00"},{id:4,admin:"You (Owner)",action:"Suspended user Segun Akinola",type:"ban",time:"2026-03-22T15:30:00"},{id:5,admin:"David Ojo",action:"Synced 10 services from API",type:"sync",time:"2026-03-22T12:00:00"},{id:6,admin:"You (Owner)",action:"Updated exchange rate",type:"settings",time:"2026-03-22T10:00:00"},{id:7,admin:"Grace Adebayo",action:"Resolved ticket TK-398",type:"ticket",time:"2026-03-21T16:30:00"},{id:8,admin:"Ibrahim Musa",action:"Refilled order ORD-28475",type:"refill",time:"2026-03-21T14:00:00"},{id:9,admin:"You (Owner)",action:"Invited Ibrahim Musa as Finance admin",type:"admin",time:"2026-03-20T09:00:00"},{id:10,admin:"David Ojo",action:"Credited N20,000 to Amina Bello",type:"credit",time:"2026-03-19T11:30:00"}];
 
 const MOCK_ALERTS=[
-  {id:1,message:"Scheduled maintenance tonight 11PM - 1AM WAT. Orders may be delayed.",type:"warning",target:"both",active:true,createdBy:"You (Owner)",created:"2026-03-23T09:00:00",expiresAt:"2026-03-24T01:00:00"},
-  {id:2,message:"New! TikTok services now available with 30-day refill guarantee.",type:"info",target:"dashboard",active:true,createdBy:"David Ojo",created:"2026-03-22T14:00:00",expiresAt:null},
-  {id:3,message:"Paystack maintenance completed. All payments are back to normal.",type:"info",target:"login",active:false,createdBy:"You (Owner)",created:"2026-03-21T08:00:00",expiresAt:"2026-03-21T20:00:00"},
+  {id:1,message:"Scheduled maintenance tonight 11PM - 1AM WAT. Orders may be delayed.",type:"warning",target:"both",audience:"users",active:true,createdBy:"You (Owner)",created:"2026-03-23T09:00:00",expiresAt:"2026-03-24T01:00:00"},
+  {id:2,message:"New! TikTok services now available with 30-day refill guarantee.",type:"info",target:"dashboard",audience:"users",active:true,createdBy:"David Ojo",created:"2026-03-22T14:00:00",expiresAt:null},
+  {id:3,message:"Paystack maintenance completed. All payments are back to normal.",type:"info",target:"login",audience:"users",active:false,createdBy:"You (Owner)",created:"2026-03-21T08:00:00",expiresAt:"2026-03-21T20:00:00"},
+  {id:4,message:"API key expiring in 3 days. Renew in Settings.",type:"warning",target:"dashboard",audience:"admins",active:true,createdBy:"You (Owner)",created:"2026-03-23T08:00:00",expiresAt:"2026-03-26T08:00:00"},
+  {id:5,message:"12 pending refund tickets need review this week.",type:"info",target:"dashboard",audience:"admins",active:true,createdBy:"You (Owner)",created:"2026-03-22T09:00:00",expiresAt:null},
 ];
 
 const fN=(a)=>`₦${Math.abs(a).toLocaleString("en-NG")}`;
@@ -71,7 +74,7 @@ export default function AdminPanel(){
   const t={bg:dark?"#080b14":"#f4f1ed",text:dark?"#e8e4df":"#1a1a1a",textSoft:dark?"#8a8680":"#888580",textMuted:dark?"#555250":"#b0ada8",surface:dark?"rgba(15,18,30,0.97)":"rgba(255,255,255,0.97)",surfaceBorder:dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.08)",inputBg:dark?"#0d1020":"#fff",inputBorder:dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)",accent:"#c47d8e",accentLight:dark?"rgba(196,125,142,0.12)":"rgba(196,125,142,0.08)",accentBorder:dark?"rgba(196,125,142,0.3)":"rgba(196,125,142,0.25)",accentShadow:dark?"inset 0 0 0 1px rgba(196,125,142,0.35)":"inset 0 0 0 1px rgba(196,125,142,0.3)",green:dark?"#6ee7b7":"#059669",red:dark?"#fca5a5":"#dc2626",btnPrimary:"linear-gradient(135deg,#c47d8e,#a3586b)",btnSecondary:dark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",btnSecBorder:dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)",logoGrad:"linear-gradient(135deg,#c47d8e,#8b5e6b)",gradBg:dark?"radial-gradient(ellipse at 20% 0%,rgba(196,125,142,0.06) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(100,120,180,0.04) 0%,transparent 50%)":"radial-gradient(ellipse at 20% 0%,rgba(196,125,142,0.05) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(180,160,140,0.04) 0%,transparent 50%)"};
   const Btn=({children,primary,onClick,style:s})=><button onClick={onClick} style={{padding:"7px 14px",borderRadius:8,fontSize:12,fontWeight:600,color:primary?"#fff":t.textSoft,background:primary?t.btnPrimary:t.btnSecondary,border:`1px solid ${primary?"transparent":t.btnSecBorder}`,whiteSpace:"nowrap",...s}}>{children}</button>;
   const FilterBtn=({active,onClick,children})=><button onClick={onClick} style={{padding:"8px 14px",borderRadius:8,fontSize:13,fontWeight:500,background:active?t.accentLight:"transparent",color:active?t.accent:t.textSoft,border:`1px solid ${t.btnSecBorder}`,boxShadow:active?t.accentShadow:"none"}}>{children}</button>;
-  return(<div className="root"><style>{`*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}.root{min-height:100vh;background:${t.bg};color:${t.text};font-family:'Outfit',sans-serif;transition:background 1.5s cubic-bezier(.4,0,.2,1),color 1.2s ease}input,select,textarea{font-family:inherit}button{cursor:pointer;font-family:inherit;border:none}.m{font-family:'JetBrains Mono',monospace}.serif{font-family:'Cormorant Garamond',serif}@keyframes si{from{transform:translateX(80px);opacity:0}to{transform:translateX(0);opacity:1}}@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}@keyframes fu{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:${dark?"#2a2a2a":"#ccc"};border-radius:3px}.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}.sb{width:260px;background:${t.surface};border-right:1px solid ${t.surfaceBorder};display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;backdrop-filter:blur(20px);transition:all .3s cubic-bezier(.4,0,.2,1),background 1.5s cubic-bezier(.4,0,.2,1)}.sb.collapsed{width:68px}.sb.collapsed .sb-hide{display:none}.sb.collapsed .sb-nav-label{display:none}.mn{margin-left:260px;padding:28px 32px;min-height:100vh;position:relative;z-index:1;transition:margin-left .3s cubic-bezier(.4,0,.2,1)}.mn.shifted{margin-left:68px}.ov{display:none}.mh{display:none}.sb-close{display:none}.sb-collapse{display:flex}.dtable{display:block}.mcard{display:none}.role-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}@media(max-width:1024px){.sg{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}.mn{padding:20px}.role-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:768px){.sb{transform:translateX(-100%);width:280px}.sb.collapsed{transform:translateX(-100%);width:280px}.sb.open{transform:translateX(0)!important;width:280px!important}.ov{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90;backdrop-filter:blur(4px)}.mh{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:${t.surface};border-bottom:1px solid ${t.surfaceBorder};position:sticky;top:0;z-index:80;backdrop-filter:blur(20px)}.mn,.mn.shifted{margin-left:0;padding:14px}.sg{grid-template-columns:repeat(2,1fr);gap:10px}.sb-close{display:flex}.sb-collapse{display:none}.dtable{display:none}.mcard{display:block}.role-grid{grid-template-columns:1fr}}@media(max-width:400px){.sg{grid-template-columns:1fr}.mn{padding:10px}}`}</style>
+  return(<div className="root"><style>{`*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}.root{min-height:100vh;background:${t.bg};color:${t.text};font-family:'Outfit',sans-serif;transition:background 1.5s cubic-bezier(.4,0,.2,1),color 1.2s ease}input,select,textarea{font-family:inherit}button{cursor:pointer;font-family:inherit;border:none}.m{font-family:'JetBrains Mono',monospace}.serif{font-family:'Cormorant Garamond',serif}@keyframes si{from{transform:translateX(80px);opacity:0}to{transform:translateX(0);opacity:1}}@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}@keyframes fu{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:${dark?"#2a2a2a":"#ccc"};border-radius:3px}.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}.sb{width:260px;background:${t.surface};border-right:1px solid ${t.surfaceBorder};display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;backdrop-filter:blur(20px);transition:all .3s cubic-bezier(.4,0,.2,1),background 1.5s cubic-bezier(.4,0,.2,1)}.sb.collapsed{width:68px}.sb.collapsed .sb-hide{display:none}.sb.collapsed .sb-nav-label{display:none}.mn{margin-left:260px;padding:28px 32px;min-height:100vh;position:relative;z-index:1;transition:margin-left .3s cubic-bezier(.4,0,.2,1)}.mn.shifted{margin-left:68px}.ov{display:none}.mh{display:none}.sb-close{display:none}.sb-collapse{display:flex}.dtable{display:block}.mcard{display:none}.role-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}@media(max-width:1024px){.sg{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}.mn{padding:20px}.role-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:768px){.sb{transform:translateX(-100%);width:280px}.sb.collapsed{transform:translateX(-100%);width:280px}.sb.open{transform:translateX(0)!important;width:280px!important}.ov{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90;backdrop-filter:blur(4px)}.mh{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:${t.surface};border-bottom:1px solid ${t.surfaceBorder};position:sticky;top:0;z-index:80;backdrop-filter:blur(20px)}.mn,.mn.shifted{margin-left:0;padding:14px}.sg{grid-template-columns:repeat(2,1fr);gap:10px}.sb-close{display:flex}.sb-collapse{display:none}.dtable{display:none}.mcard{display:block}.role-grid{grid-template-columns:1fr}}@media(max-width:400px){.sg{grid-template-columns:1fr}.mn{padding:10px}}@media(max-width:768px){.alert-row{grid-template-columns:1fr!important;display:flex!important;flex-direction:column!important}}`}</style>
   <div style={{position:"fixed",inset:0,background:t.gradBg,pointerEvents:"none",zIndex:0}}/>
   {toast&&<div style={{position:"fixed",top:16,right:16,left:16,zIndex:200,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:"12px 16px 12px 20px",borderRadius:14,background:toast.e?(dark?"#3b1111":"#fef2f2"):(dark?"#0a2416":"#ecfdf5"),border:`1px solid ${toast.e?(dark?"#7f1d1d":"#fecaca"):(dark?"#166534":"#a7f3d0")}`,color:toast.e?t.red:t.green,fontSize:14,fontWeight:500,animation:"si .3s ease",maxWidth:420,marginLeft:"auto",backdropFilter:"blur(12px)"}}><span>{toast.e?"⚠️":"✓"} {toast.m}</span><button onClick={dismissToast} style={{background:"none",color:t.textMuted,fontSize:18,padding:"2px 4px",lineHeight:1,flexShrink:0}}>✕</button></div>}
   <div className="mh"><button onClick={()=>setSb(true)} style={{background:"none",color:t.text,fontSize:22,padding:4}}>☰</button><button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} style={{display:"flex",alignItems:"center",gap:8,background:"none",padding:0,border:"none",outline:"none",cursor:"pointer"}}><div style={{width:28,height:28,borderRadius:8,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"#fff",fontWeight:700}}>B</div><span className="serif" style={{fontSize:17,fontWeight:600,color:t.text}}>Admin</span></button><div style={{width:28}}></div></div>
@@ -85,7 +88,12 @@ export default function AdminPanel(){
   </div></aside>
   <main className={`mn${mini?" shifted":""}`}>
     <div style={{position:"sticky",top:0,zIndex:40,paddingBottom:alerts.filter(a=>a.active&&!dismissedAlerts.includes(a.id)&&(a.target==="both"||a.target==="dashboard")).length?4:0}}>
-    {alerts.filter(a=>a.active&&!dismissedAlerts.includes(a.id)&&(a.target==="both"||a.target==="dashboard")).map(a=><div key={a.id} style={{padding:"12px 20px",marginBottom:12,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,fontSize:13,fontWeight:500,animation:"fu .3s ease",background:a.type==="warning"?(dark?"rgba(217,119,6,0.1)":"#fffbeb"):a.type==="critical"?(dark?"rgba(220,38,38,0.1)":"#fef2f2"):(dark?"rgba(99,102,241,0.1)":"#eef2ff"),color:a.type==="warning"?(dark?"#fcd34d":"#92400e"):a.type==="critical"?(dark?"#fca5a5":"#dc2626"):(dark?"#a5b4fc":"#4f46e5"),border:`1px solid ${a.type==="warning"?(dark?"rgba(217,119,6,0.2)":"#fde68a"):a.type==="critical"?(dark?"rgba(220,38,38,0.2)":"#fecaca"):(dark?"rgba(99,102,241,0.2)":"#c7d2fe")}`,backdropFilter:"blur(12px)"}}><span>{a.type==="warning"?"⚠️":a.type==="critical"?"🚨":"ℹ️"} {a.message}</span><button onClick={()=>setDismissedAlerts(p=>[...p,a.id])} style={{background:"none",color:"inherit",fontSize:16,padding:2,flexShrink:0,opacity:0.6}}>✕</button></div>)}
+    {alerts.filter(a=>a.active&&!dismissedAlerts.includes(a.id)&&(a.target==="both"||a.target==="dashboard")).map(a=>{
+      const isAdmin=a.audience==="admins";
+      const bgMap={info:dark?"rgba(99,102,241,0.1)":"#eef2ff",warning:dark?"rgba(217,119,6,0.1)":"#fffbeb",critical:dark?"rgba(220,38,38,0.1)":"#fef2f2"};
+      const colorMap={info:dark?"#a5b4fc":"#4f46e5",warning:dark?"#fcd34d":"#92400e",critical:dark?"#fca5a5":"#dc2626"};
+      const borderMap={info:dark?"rgba(99,102,241,0.2)":"#c7d2fe",warning:dark?"rgba(217,119,6,0.2)":"#fde68a",critical:dark?"rgba(220,38,38,0.2)":"#fecaca"};
+      return <div key={a.id} style={{padding:"10px 16px",marginBottom:8,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,fontSize:13,fontWeight:500,animation:"fu .3s ease",flexWrap:"wrap",background:isAdmin?(dark?"rgba(127,119,221,0.1)":"#EEEDFE"):bgMap[a.type],color:isAdmin?(dark?"#AFA9EC":"#534AB7"):colorMap[a.type],border:`1px solid ${isAdmin?(dark?"rgba(175,169,236,0.3)":"#AFA9EC"):borderMap[a.type]}`,backdropFilter:"blur(12px)"}}><div style={{display:"flex",alignItems:"center",gap:8,flex:1,minWidth:0}}><span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:6,background:isAdmin?(dark?"rgba(127,119,221,0.15)":"#fff"):(dark?"rgba(255,255,255,0.08)":"rgba(255,255,255,0.8)"),border:`1px solid ${isAdmin?(dark?"rgba(175,169,236,0.3)":"#AFA9EC"):"transparent"}`,flexShrink:0}}>{isAdmin?"Admin":a.type==="warning"?"⚠️":a.type==="critical"?"🚨":"ℹ️"}</span><span style={{overflow:"hidden",textOverflow:"ellipsis"}}>{a.message}</span></div><button onClick={()=>setDismissedAlerts(p=>[...p,a.id])} style={{background:"none",color:"inherit",fontSize:14,padding:2,flexShrink:0,opacity:0.5,border:"none",cursor:"pointer"}}>✕</button></div>})}
     </div>
     <ErrorBoundary t={t} key={pg}>
     {pg==="overview"&&<Overview t={t} dark={dark} orders={MOCK_ORDERS} users={MOCK_USERS} tickets={MOCK_TICKETS} activity={activityLog}/>}
@@ -186,25 +194,18 @@ function AdminRoles({t,dark,admins,setAdmins,Btn,FilterBtn,notify,isSuperAdmin,l
 
 function MaintenancePage({t,dark,maint,setMaint,Btn,notify,logAction,isSuperAdmin}){
   const [msg,setMsg]=useState(maint.message);
-  const [eta,setEta]=useState(maint.estimatedReturn);const [customEtaUnit,setCustomEtaUnit]=useState("m");
-  const toggle=()=>{
-    const next=!maint.enabled;
-    setMaint(p=>({...p,enabled:next,message:msg,estimatedReturn:eta}));
-    logAction(next?"Enabled maintenance mode":"Disabled maintenance mode","settings");
-    notify(next?"🔧 Maintenance mode ON — site is now down for users":"✅ Maintenance mode OFF — site is live");
-  };
+  const [eta,setEta]=useState(maint.estimatedReturn);
+  const [customVal,setCustomVal]=useState("");const [customUnit,setCustomUnit]=useState("m");
+  const etaPresets=["~15 min","~30 min","~1 hour","~2 hours","No ETA"];
+  const toggle=()=>{const next=!maint.enabled;setMaint(p=>({...p,enabled:next,message:msg,estimatedReturn:eta}));logAction(next?"Enabled maintenance mode":"Disabled maintenance mode","settings");notify(next?"🔧 Maintenance mode ON":"✅ Maintenance mode OFF");};
   const save=()=>{setMaint(p=>({...p,message:msg,estimatedReturn:eta}));notify("Settings saved");};
+  const handleCustom=(v,u)=>{const val=Number(v);const unit=u||customUnit;if(val>0){const st=smartTime(val,unit);if(st)setEta(st);}};
   return <div>
     <Hdr title="Maintenance Mode" sub="Take the site offline for users" t={t}/>
-    {/* Status banner */}
     <div style={{padding:"16px 20px",borderRadius:14,marginBottom:24,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12,background:maint.enabled?(dark?"rgba(252,165,165,0.08)":"#fef2f2"):(dark?"rgba(110,231,183,0.08)":"#ecfdf5"),border:`1px solid ${maint.enabled?(dark?"rgba(252,165,165,0.15)":"#fecaca"):(dark?"rgba(110,231,183,0.15)":"#a7f3d0")}`}}>
-      <div>
-        <div style={{fontSize:16,fontWeight:600,color:maint.enabled?t.red:t.green}}>{maint.enabled?"🔴 Site is OFFLINE":"🟢 Site is LIVE"}</div>
-        <div style={{fontSize:13,color:t.textSoft,marginTop:2}}>{maint.enabled?"Users see the maintenance page instead of the app":"Everything is running normally"}</div>
-      </div>
+      <div><div style={{fontSize:16,fontWeight:600,color:maint.enabled?t.red:t.green}}>{maint.enabled?"🔴 Site is OFFLINE":"🟢 Site is LIVE"}</div><div style={{fontSize:13,color:t.textSoft,marginTop:2}}>{maint.enabled?"Users see the maintenance page":"Everything is running normally"}</div></div>
       <button onClick={toggle} style={{padding:"10px 24px",borderRadius:10,fontSize:14,fontWeight:600,background:maint.enabled?t.btnPrimary:(dark?"rgba(252,165,165,0.1)":"#fef2f2"),color:maint.enabled?"#fff":t.red,border:maint.enabled?"none":`1px solid ${dark?"rgba(252,165,165,0.2)":"#fecaca"}`}}>{maint.enabled?"🟢 Go Live":"🔴 Enable Maintenance"}</button>
     </div>
-    {/* Settings */}
     <Card dark={dark} style={{marginBottom:20}}>
       <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Maintenance Page Settings</h3>
       <div style={{marginBottom:16}}>
@@ -213,44 +214,35 @@ function MaintenancePage({t,dark,maint,setMaint,Btn,notify,logAction,isSuperAdmi
       </div>
       <div style={{marginBottom:16}}>
         <label style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:6}}>Estimated Return Time</label>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:6}}>
-          {["~15 min","~30 min","~1 hour"].map(v=><button key={v} onClick={()=>setEta(v)} style={{padding:"10px 0",textAlign:"center",borderRadius:8,fontSize:12,fontWeight:500,background:eta===v?t.accentLight:"transparent",color:eta===v?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:eta===v?t.accentShadow:"none"}}>{v}</button>)}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4,marginBottom:4}}>
+          {etaPresets.slice(0,3).map(v=><button key={v} onClick={()=>{setEta(v);setCustomVal("");}} style={{padding:"8px 0",textAlign:"center",borderRadius:8,fontSize:12,fontWeight:500,background:eta===v?t.accentLight:"transparent",color:eta===v?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:eta===v?t.accentShadow:"none"}}>{v}</button>)}
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:6}}>
-          {["~2 hours","No ETA"].map(v=><button key={v} onClick={()=>setEta(v)} style={{padding:"10px 0",textAlign:"center",borderRadius:8,fontSize:12,fontWeight:500,background:eta===v?t.accentLight:"transparent",color:eta===v?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:eta===v?t.accentShadow:"none"}}>{v}</button>)}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4,marginBottom:8}}>
+          {etaPresets.slice(3).map(v=><button key={v} onClick={()=>{setEta(v);setCustomVal("");}} style={{padding:"8px 0",textAlign:"center",borderRadius:8,fontSize:12,fontWeight:500,background:eta===v?t.accentLight:"transparent",color:eta===v?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:eta===v?t.accentShadow:"none"}}>{v}</button>)}
         </div>
-        <div style={{display:"flex",justifyContent:"center"}}>
-          <div style={{display:"inline-flex",alignItems:"center",borderRadius:8,border:`1px solid ${t.btnSecBorder}`,overflow:"hidden"}}>
-            <span style={{padding:"8px 10px",fontSize:11,fontWeight:600,color:t.textMuted,whiteSpace:"nowrap",background:dark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",borderRight:`1px solid ${t.btnSecBorder}`}}>Custom:</span>
-            <input type="number" placeholder="45" onChange={e=>{if(e.target.value){const u=customEtaUnit==="m"?"min":customEtaUnit==="h"?"hour":"day";setEta("~"+e.target.value+" "+u+(Number(e.target.value)>1?"s":""));}}} min="1" style={{width:60,padding:"8px 8px",border:"none",fontSize:13,background:"transparent",color:t.text,outline:"none",textAlign:"center"}}/>
-            <select value={customEtaUnit} onChange={e=>{setCustomEtaUnit(e.target.value);}} style={{padding:"8px 8px",border:"none",borderLeft:`1px solid ${t.btnSecBorder}`,fontSize:12,background:dark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",color:t.text,outline:"none",cursor:"pointer"}}><option value="m">Mins</option><option value="h">Hours</option><option value="d">Days</option></select>
-          </div>
+        <div style={{display:"inline-flex",alignItems:"center",borderRadius:8,border:`1px solid ${t.btnSecBorder}`,overflow:"hidden"}}>
+          <span style={{padding:"7px 10px",fontSize:11,fontWeight:600,color:t.textMuted,whiteSpace:"nowrap",background:dark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",borderRight:`1px solid ${t.btnSecBorder}`}}>Custom:</span>
+          <input type="number" placeholder="45" value={customVal} onChange={e=>{setCustomVal(e.target.value);handleCustom(e.target.value,customUnit);}} min="1" style={{width:55,padding:"7px 6px",border:"none",fontSize:13,background:"transparent",color:t.text,outline:"none",textAlign:"center"}}/>
+          <select value={customUnit} onChange={e=>{setCustomUnit(e.target.value);if(customVal)handleCustom(customVal,e.target.value);}} style={{padding:"7px 6px",border:"none",borderLeft:`1px solid ${t.btnSecBorder}`,fontSize:11,background:dark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",color:t.text,outline:"none",cursor:"pointer"}}><option value="m">Mins</option><option value="h">Hours</option><option value="d">Days</option></select>
         </div>
+        {customVal&&smartTime(Number(customVal),customUnit)&&<div style={{marginTop:6,fontSize:12,color:t.green,display:"inline-block",marginLeft:8}}>{smartTime(Number(customVal),customUnit)}</div>}
       </div>
       <Btn primary onClick={save}>Save Settings</Btn>
     </Card>
-    {/* Preview */}
     <Card dark={dark}>
       <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Preview</h3>
       <div style={{borderRadius:14,overflow:"hidden",border:`1px solid ${t.surfaceBorder}`}}>
         <div style={{padding:"32px 24px",background:dark?"#060912":"#f0ece6",textAlign:"center"}}>
           <div style={{width:40,height:40,borderRadius:"50%",border:`2px solid ${t.surfaceBorder}`,borderTopColor:t.accent,margin:"0 auto 16px"}}/>
-          <div style={{display:"inline-flex",alignItems:"center",gap:8,marginBottom:14}}>
-            <div style={{width:28,height:28,borderRadius:8,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#fff"}}>B</div>
-            <span className="serif" style={{fontSize:16,fontWeight:600,color:t.text}}>BoostPanel</span>
-          </div>
+          <div style={{display:"inline-flex",alignItems:"center",gap:8,marginBottom:14}}><div style={{width:28,height:28,borderRadius:8,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#fff"}}>B</div><span className="serif" style={{fontSize:16,fontWeight:600,color:t.text}}>BoostPanel</span></div>
           <h2 className="serif" style={{fontSize:22,fontWeight:600,color:t.text,marginBottom:6}}>Under Maintenance</h2>
-          <p style={{fontSize:13,color:t.textSoft,lineHeight:1.6,marginBottom:10,maxWidth:360,margin:"0 auto 10px"}}>{msg}</p>
-          <div style={{padding:10,borderRadius:8,background:dark?"#0a0d18":"#faf8f5",border:`1px solid ${t.surfaceBorder}`,display:"inline-block"}}>
-            <div style={{fontSize:9,color:t.textMuted,textTransform:"uppercase",letterSpacing:1.5,marginBottom:3}}>Estimated Return</div>
-            <div className="m" style={{fontSize:16,fontWeight:700,color:t.green}}>{eta}</div>
-          </div>
+          <p style={{fontSize:13,color:t.textSoft,lineHeight:1.6,maxWidth:360,margin:"0 auto 10px"}}>{msg}</p>
+          <div style={{padding:10,borderRadius:8,background:dark?"#0a0d18":"#faf8f5",border:`1px solid ${t.surfaceBorder}`,display:"inline-block"}}><div style={{fontSize:9,color:t.textMuted,textTransform:"uppercase",letterSpacing:1.5,marginBottom:3}}>Estimated Return</div><div className="m" style={{fontSize:16,fontWeight:700,color:t.green}}>{eta}</div></div>
         </div>
       </div>
     </Card>
   </div>;
 }
-
 function PaymentGateways({t,dark,gateways,setGateways,Btn,notify,logAction,isSuperAdmin}){
   const toggleGateway=(id)=>{
     if(!isSuperAdmin){notify("Only Super Admin can change gateways",true);return;}
@@ -305,95 +297,102 @@ function PaymentGateways({t,dark,gateways,setGateways,Btn,notify,logAction,isSup
   </div>;
 }
 
+
 function AlertsPage({t,dark,alerts,setAlerts,Btn,FilterBtn,notify,isSuperAdmin,currentAdmin,logAction}){
-  const [msg,setMsg]=useState("");const [type,setType]=useState("info");const [target,setTarget]=useState("both");const [duration,setDuration]=useState("none");const [customUnit,setCustomUnit]=useState("h");const [f,setF]=useState("active");
+  const [msg,setMsg]=useState("");const [type,setType]=useState("info");const [target,setTarget]=useState("both");const [audience,setAudience]=useState("users");
+  const [duration,setDuration]=useState("none");const [customDur,setCustomDur]=useState("");const [customDurUnit,setCustomDurUnit]=useState("h");
   const [scheduleEnabled,setScheduleEnabled]=useState(false);const [scheduleDate,setScheduleDate]=useState("");const [scheduleTime,setScheduleTime]=useState("");
+  const [f,setF]=useState("active");
   const list=alerts.filter(a=>f==="all"||(f==="active"?a.active:!a.active));
-  const getExpiry=(dur)=>{if(dur==="none")return null;const ms={"1h":3600000,"6h":21600000,"24h":86400000,"3d":259200000,"7d":604800000};if(ms[dur])return new Date(Date.now()+ms[dur]).toISOString();const num=parseInt(dur);if(!num)return null;const mult=customUnit==="d"?86400000:customUnit==="m"?60000:3600000;return new Date(Date.now()+num*mult).toISOString();};
-  const createAlert=()=>{if(!msg.trim())return;const scheduledFor=scheduleEnabled&&scheduleDate?new Date(`${scheduleDate}T${scheduleTime||"00:00"}`).toISOString():null;const newA={id:Date.now(),message:msg,type,target,active:!scheduledFor,scheduled:scheduledFor,createdBy:currentAdmin.name,created:new Date().toISOString(),expiresAt:getExpiry(duration)};setAlerts(p=>[newA,...p]);setMsg("");setScheduleEnabled(false);setScheduleDate("");setScheduleTime("");logAction(`${scheduledFor?"Scheduled":"Published"} ${type} alert: "${msg.slice(0,50)}${msg.length>50?"...":""}"`,"alert");notify(scheduledFor?"Alert scheduled!":"Alert published!");};
-  const toggleAlert=(id)=>{const alert=alerts.find(a=>a.id===id);setAlerts(p=>p.map(a=>a.id===id?{...a,active:!a.active}:a));if(alert)logAction(`${alert.active?"Paused":"Activated"} alert: "${alert.message.slice(0,40)}..."`,"alert");};
-  const deleteAlert=(id)=>{const alert=alerts.find(a=>a.id===id);setAlerts(p=>p.filter(a=>a.id!==id));if(alert)logAction(`Deleted alert: "${alert.message.slice(0,40)}..."`,"alert");notify("Alert deleted");};
-  const typeColors={info:{bg:dark?"rgba(99,102,241,0.1)":"#eef2ff",color:dark?"#a5b4fc":"#4f46e5",border:dark?"rgba(99,102,241,0.2)":"#c7d2fe",icon:"ℹ️"},warning:{bg:dark?"rgba(217,119,6,0.1)":"#fffbeb",color:dark?"#fcd34d":"#92400e",border:dark?"rgba(217,119,6,0.2)":"#fde68a",icon:"⚠️"},critical:{bg:dark?"rgba(220,38,38,0.1)":"#fef2f2",color:dark?"#fca5a5":"#dc2626",border:dark?"rgba(220,38,38,0.2)":"#fecaca",icon:"🚨"}};
+  const getExpiry=(dur)=>{if(dur==="none")return null;const ms={"1h":3600000,"6h":21600000,"24h":86400000,"3d":259200000,"7d":604800000};if(ms[dur])return new Date(Date.now()+ms[dur]).toISOString();const num=parseInt(dur);if(!num)return null;const mult=customDurUnit==="d"?86400000:customDurUnit==="m"?60000:3600000;return new Date(Date.now()+num*mult).toISOString();};
+  const handleCustomDur=(v,u)=>{const val=Number(v);const unit=u||customDurUnit;if(val>0)setDuration(String(val));};
+  const createAlert=()=>{if(!msg.trim())return;const scheduledFor=scheduleEnabled&&scheduleDate?new Date(`${scheduleDate}T${scheduleTime||"00:00"}`).toISOString():null;const newA={id:Date.now(),message:msg,type,target,audience,active:!scheduledFor,scheduled:scheduledFor,createdBy:currentAdmin.name,created:new Date().toISOString(),expiresAt:getExpiry(duration)};setAlerts(p=>[newA,...p]);setMsg("");setScheduleEnabled(false);setScheduleDate("");setScheduleTime("");setCustomDur("");logAction(`${scheduledFor?"Scheduled":"Published"} ${type} ${audience} alert`,"alert");notify(scheduledFor?"Alert scheduled!":"Alert published!");};
+  const toggleAlert=(id)=>{const a=alerts.find(x=>x.id===id);setAlerts(p=>p.map(x=>x.id===id?{...x,active:!x.active}:x));if(a)logAction(`${a.active?"Paused":"Activated"} alert`,"alert");};
+  const deleteAlert=(id)=>{setAlerts(p=>p.filter(x=>x.id!==id));logAction("Deleted alert","alert");notify("Alert deleted");};
+  const tc={info:{bg:dark?"rgba(99,102,241,0.1)":"#eef2ff",c:dark?"#a5b4fc":"#4f46e5",bd:dark?"rgba(99,102,241,0.2)":"#c7d2fe"},warning:{bg:dark?"rgba(217,119,6,0.1)":"#fffbeb",c:dark?"#fcd34d":"#92400e",bd:dark?"rgba(217,119,6,0.2)":"#fde68a"},critical:{bg:dark?"rgba(220,38,38,0.1)":"#fef2f2",c:dark?"#fca5a5":"#dc2626",bd:dark?"rgba(220,38,38,0.2)":"#fecaca"}};
+  const Pill=({active,onClick,children,style:s})=><button onClick={onClick} style={{padding:"7px 12px",textAlign:"center",borderRadius:8,fontSize:12,fontWeight:active?600:400,background:active?t.accentLight:"transparent",color:active?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:active?t.accentShadow:"none",...s}}>{children}</button>;
+  const durSmart=customDur&&smartTime(Number(customDur),customDurUnit);
   return <div>
-    <Hdr title="Alerts" sub="Broadcast messages to users" t={t}/>
+    <Hdr title="Alerts" sub="Broadcast messages to users and admins" t={t}/>
     <Card dark={dark} style={{marginBottom:24}}>
-      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>New Alert</h3>
-      <textarea value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Write your alert message..." rows={2} style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,marginBottom:14,outline:"none",resize:"vertical"}}/>
-      <div style={{display:"flex",gap:12,marginBottom:14,flexWrap:"wrap",alignItems:"flex-start"}}>
-        <div>
-          <div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6}}>Type</div>
-          <div style={{display:"flex",gap:6}}>{["info","warning","critical"].map(tp=><button key={tp} onClick={()=>setType(tp)} style={{padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:600,background:type===tp?typeColors[tp].bg:"transparent",color:type===tp?typeColors[tp].color:t.textMuted,border:`1px solid ${type===tp?typeColors[tp].border:t.btnSecBorder}`}}>{typeColors[tp].icon} {tp[0].toUpperCase()+tp.slice(1)}</button>)}</div>
-        </div>
-        <div>
-          <div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6}}>Show On</div>
-          <div style={{display:"flex",gap:6}}>{[["both","🌐 Both"],["dashboard","📊 Dashboard"],["login","🔐 Login"]].map(([val,lb])=><button key={val} onClick={()=>setTarget(val)} style={{padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:500,background:target===val?t.accentLight:"transparent",color:target===val?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:target===val?t.accentShadow:"none"}}>{lb}</button>)}</div>
-        </div>
+      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:14}}>New Alert</h3>
+      {/* Audience toggle */}
+      <div style={{display:"inline-flex",padding:3,borderRadius:10,background:dark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",marginBottom:12,gap:2}}>
+        {[["users","Users"],["admins","Admins"],["both","Both"]].map(([v,lb])=><button key={v} onClick={()=>setAudience(v)} style={{padding:"6px 16px",borderRadius:8,fontSize:12,fontWeight:audience===v?600:400,background:audience===v?(dark?"rgba(255,255,255,0.08)":"#fff"):"transparent",color:audience===v?t.text:t.textMuted,border:audience===v?`1px solid ${t.surfaceBorder}`:"1px solid transparent",cursor:"pointer"}}>{lb}</button>)}
       </div>
-      <div style={{display:"flex",gap:12,marginBottom:14,flexWrap:"wrap",alignItems:"flex-start"}}>
+      {/* Message */}
+      <textarea value={msg} onChange={e=>setMsg(e.target.value)} placeholder={audience==="admins"?"Write an internal admin message...":"Write your alert message..."} rows={2} style={{width:"100%",padding:"10px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,marginBottom:12,outline:"none",resize:"vertical"}}/>
+      {/* Type + Show On row */}
+      <div className="alert-row" style={{display:"flex",gap:16,marginBottom:12,flexWrap:"wrap"}}>
+        <div><div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:5}}>Type</div>
+          <div style={{display:"flex",gap:4}}>{["info","warning","critical"].map(tp=><button key={tp} onClick={()=>setType(tp)} style={{padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:type===tp?600:400,background:type===tp?tc[tp].bg:"transparent",color:type===tp?tc[tp].c:t.textMuted,border:`1px solid ${type===tp?tc[tp].bd:t.btnSecBorder}`}}>{tp==="info"?"ℹ️":tp==="warning"?"⚠️":"🚨"} {tp[0].toUpperCase()+tp.slice(1)}</button>)}</div>
+        </div>
+        {audience!=="admins"&&<div><div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:5}}>Show on</div>
+          <div style={{display:"flex",gap:4}}>{[["both","Both"],["dashboard","Dashboard"],["login","Login"]].map(([v,lb])=><Pill key={v} active={target===v} onClick={()=>setTarget(v)}>{lb}</Pill>)}</div>
+        </div>}
+      </div>
+      {/* Duration + Schedule row */}
+      <div className="alert-row" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:14,alignItems:"start"}}>
         <div>
-          <div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6}}>Duration</div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:6}}>
-            {[["none","\u267e\ufe0f Indefinite"],["1h","1 hour"],["6h","6 hours"]].map(([val,lb])=><button key={val} onClick={()=>setDuration(val)} style={{padding:"10px 0",textAlign:"center",borderRadius:8,fontSize:12,fontWeight:500,background:duration===val?t.accentLight:"transparent",color:duration===val?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:duration===val?t.accentShadow:"none"}}>{lb}</button>)}
+          <div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:5}}>Duration</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4,marginBottom:4}}>
+            {[["none","Indefinite"],["1h","1 hour"],["6h","6 hours"]].map(([v,lb])=><Pill key={v} active={duration===v} onClick={()=>{setDuration(v);setCustomDur("");}} style={{padding:"7px 0",textAlign:"center"}}>{lb}</Pill>)}
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:6}}>
-            {[["24h","24 hours"],["3d","3 days"],["7d","7 days"]].map(([val,lb])=><button key={val} onClick={()=>setDuration(val)} style={{padding:"10px 0",textAlign:"center",borderRadius:8,fontSize:12,fontWeight:500,background:duration===val?t.accentLight:"transparent",color:duration===val?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:duration===val?t.accentShadow:"none"}}>{lb}</button>)}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4,marginBottom:6}}>
+            {[["24h","24 hours"],["3d","3 days"],["7d","7 days"]].map(([v,lb])=><Pill key={v} active={duration===v} onClick={()=>{setDuration(v);setCustomDur("");}} style={{padding:"7px 0",textAlign:"center"}}>{lb}</Pill>)}
           </div>
-          <div style={{display:"flex",justifyContent:"center"}}>
-            <div style={{display:"inline-flex",alignItems:"center",borderRadius:8,border:`1px solid ${t.btnSecBorder}`,overflow:"hidden"}}>
-              <span style={{padding:"8px 10px",fontSize:11,fontWeight:600,color:t.textMuted,whiteSpace:"nowrap",background:dark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",borderRight:`1px solid ${t.btnSecBorder}`}}>Custom:</span>
-              <input type="number" placeholder="30" value={duration.match(/^\d+$/)?duration:""} onChange={e=>{if(e.target.value)setDuration(e.target.value);else setDuration("none");}} min="1" style={{width:60,padding:"8px 8px",border:"none",fontSize:13,background:"transparent",color:t.text,outline:"none",textAlign:"center"}}/>
-              <select value={customUnit} onChange={e=>setCustomUnit(e.target.value)} style={{padding:"8px 8px",border:"none",borderLeft:`1px solid ${t.btnSecBorder}`,fontSize:12,background:dark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",color:t.text,outline:"none",cursor:"pointer"}}><option value="m">Mins</option><option value="h">Hours</option><option value="d">Days</option></select>
-            </div>
+          <div style={{display:"inline-flex",alignItems:"center",borderRadius:8,border:`1px solid ${t.btnSecBorder}`,overflow:"hidden"}}>
+            <span style={{padding:"7px 10px",fontSize:11,fontWeight:600,color:t.textMuted,background:dark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",borderRight:`1px solid ${t.btnSecBorder}`}}>Custom:</span>
+            <input type="number" placeholder="90" value={customDur} onChange={e=>{setCustomDur(e.target.value);handleCustomDur(e.target.value,customDurUnit);}} min="1" style={{width:50,padding:"7px 4px",border:"none",fontSize:12,background:"transparent",color:t.text,outline:"none",textAlign:"center"}}/>
+            <select value={customDurUnit} onChange={e=>{setCustomDurUnit(e.target.value);if(customDur)handleCustomDur(customDur,e.target.value);}} style={{padding:"7px 4px",border:"none",borderLeft:`1px solid ${t.btnSecBorder}`,fontSize:11,background:dark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",color:t.text,outline:"none",cursor:"pointer"}}><option value="m">Mins</option><option value="h">Hours</option><option value="d">Days</option></select>
           </div>
+          {durSmart&&<div style={{marginTop:5,fontSize:11,color:t.green}}>{durSmart}</div>}
         </div>
         <div>
-          <div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6}}>Schedule</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            <button onClick={()=>setScheduleEnabled(false)} style={{padding:"12px 16px",borderRadius:10,border:!scheduleEnabled?"2px solid "+t.accent:`1px solid ${t.btnSecBorder}`,background:!scheduleEnabled?t.accentLight:"transparent",textAlign:"left"}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-                <div style={{width:14,height:14,borderRadius:"50%",border:`2px solid ${!scheduleEnabled?t.accent:t.textMuted}`,display:"flex",alignItems:"center",justifyContent:"center"}}>{!scheduleEnabled&&<div style={{width:7,height:7,borderRadius:"50%",background:t.accent}}/>}</div>
-                <span style={{fontSize:12,fontWeight:600,color:!scheduleEnabled?t.accent:t.textSoft}}>Publish now</span>
-              </div>
-              <div style={{fontSize:11,color:t.textMuted,paddingLeft:22}}>Goes live immediately</div>
+          <div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:5}}>Schedule</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+            <button onClick={()=>setScheduleEnabled(false)} style={{padding:"10px 12px",borderRadius:8,border:!scheduleEnabled?`2px solid ${t.accent}`:`1px solid ${t.btnSecBorder}`,background:!scheduleEnabled?t.accentLight:"transparent",textAlign:"left",cursor:"pointer"}}>
+              <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:12,height:12,borderRadius:"50%",border:`2px solid ${!scheduleEnabled?t.accent:t.textMuted}`,display:"flex",alignItems:"center",justifyContent:"center"}}>{!scheduleEnabled&&<div style={{width:6,height:6,borderRadius:"50%",background:t.accent}}/>}</div><span style={{fontSize:12,fontWeight:!scheduleEnabled?600:400,color:!scheduleEnabled?t.accent:t.textSoft}}>Now</span></div>
+              <div style={{fontSize:11,color:t.textMuted,paddingLeft:18,marginTop:1}}>Goes live immediately</div>
             </button>
-            <button onClick={()=>setScheduleEnabled(true)} style={{padding:"12px 16px",borderRadius:10,border:scheduleEnabled?"2px solid "+t.accent:`1px solid ${t.btnSecBorder}`,background:scheduleEnabled?t.accentLight:"transparent",textAlign:"left"}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-                <div style={{width:14,height:14,borderRadius:"50%",border:`2px solid ${scheduleEnabled?t.accent:t.textMuted}`,display:"flex",alignItems:"center",justifyContent:"center"}}>{scheduleEnabled&&<div style={{width:7,height:7,borderRadius:"50%",background:t.accent}}/>}</div>
-                <span style={{fontSize:12,fontWeight:600,color:scheduleEnabled?t.accent:t.textSoft}}>Schedule for later</span>
-              </div>
-              <div style={{fontSize:11,color:t.textMuted,paddingLeft:22}}>Pick a date and time</div>
+            <button onClick={()=>setScheduleEnabled(true)} style={{padding:"10px 12px",borderRadius:8,border:scheduleEnabled?`2px solid ${t.accent}`:`1px solid ${t.btnSecBorder}`,background:scheduleEnabled?t.accentLight:"transparent",textAlign:"left",cursor:"pointer"}}>
+              <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:12,height:12,borderRadius:"50%",border:`2px solid ${scheduleEnabled?t.accent:t.textMuted}`,display:"flex",alignItems:"center",justifyContent:"center"}}>{scheduleEnabled&&<div style={{width:6,height:6,borderRadius:"50%",background:t.accent}}/>}</div><span style={{fontSize:12,fontWeight:scheduleEnabled?600:400,color:scheduleEnabled?t.accent:t.textSoft}}>Schedule</span></div>
+              <div style={{fontSize:11,color:t.textMuted,paddingLeft:18,marginTop:1}}>Pick date and time</div>
             </button>
           </div>
-          {scheduleEnabled&&<div style={{marginTop:10,padding:"12px 14px",borderRadius:10,background:dark?"rgba(255,255,255,0.02)":"rgba(0,0,0,0.02)",border:`1px solid ${t.btnSecBorder}`,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
-            <div style={{flex:1,minWidth:120}}><div style={{fontSize:10,color:t.textMuted,marginBottom:4,fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>Date</div><input type="date" value={scheduleDate} onChange={e=>setScheduleDate(e.target.value)} style={{width:"100%",padding:"8px 10px",borderRadius:8,fontSize:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,outline:"none"}}/></div>
-            <div style={{flex:1,minWidth:120}}><div style={{fontSize:10,color:t.textMuted,marginBottom:4,fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>Time</div><input type="time" value={scheduleTime} onChange={e=>setScheduleTime(e.target.value)} style={{width:"100%",padding:"8px 10px",borderRadius:8,fontSize:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,outline:"none"}}/></div>
-            {scheduleDate&&<div style={{fontSize:12,color:t.accent,width:"100%"}}>Will go live on {scheduleDate} at {scheduleTime||"00:00"}</div>}
+          {scheduleEnabled&&<div style={{marginTop:8,padding:"10px 12px",borderRadius:8,background:dark?"rgba(255,255,255,0.02)":"rgba(0,0,0,0.02)",border:`1px solid ${t.btnSecBorder}`,display:"flex",gap:8,flexWrap:"wrap"}}>
+            <div style={{flex:1,minWidth:100}}><div style={{fontSize:10,color:t.textMuted,fontWeight:600,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Date</div><input type="date" value={scheduleDate} onChange={e=>setScheduleDate(e.target.value)} style={{width:"100%",padding:"7px 8px",borderRadius:8,fontSize:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,outline:"none"}}/></div>
+            <div style={{flex:1,minWidth:100}}><div style={{fontSize:10,color:t.textMuted,fontWeight:600,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Time</div><input type="time" value={scheduleTime} onChange={e=>setScheduleTime(e.target.value)} style={{width:"100%",padding:"7px 8px",borderRadius:8,fontSize:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,outline:"none"}}/></div>
+            {scheduleDate&&<div style={{width:"100%",fontSize:11,color:t.accent}}>Will go live on {scheduleDate} at {scheduleTime||"00:00"}</div>}
           </div>}
         </div>
       </div>
-      {msg&&<div style={{padding:"12px 16px",borderRadius:10,background:typeColors[type].bg,border:`1px solid ${typeColors[type].border}`,color:typeColors[type].color,fontSize:13,fontWeight:500,marginBottom:14}}>{typeColors[type].icon} {msg}</div>}
-      <div style={{display:"flex",alignItems:"center",gap:12}}>
-        <Btn primary onClick={createAlert}>{scheduleEnabled&&scheduleDate?"🕐 Schedule Alert":"📢 Publish Alert"}</Btn>
-        {scheduleEnabled&&scheduleDate&&<span style={{fontSize:12,color:t.textMuted}}>Will go live on {scheduleDate} at {scheduleTime||"00:00"}</span>}
-      </div>
+      {/* Preview */}
+      {msg&&<div style={{padding:"10px 16px",borderRadius:10,marginBottom:12,background:audience==="admins"?(dark?"rgba(127,119,221,0.1)":"#EEEDFE"):tc[type].bg,border:`1px solid ${audience==="admins"?(dark?"rgba(175,169,236,0.3)":"#AFA9EC"):tc[type].bd}`,display:"flex",alignItems:"center",gap:8,fontSize:13,fontWeight:500,color:audience==="admins"?(dark?"#AFA9EC":"#534AB7"):tc[type].c}}>
+        <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:6,background:audience==="admins"?(dark?"rgba(127,119,221,0.15)":"#fff"):"rgba(255,255,255,0.5)",border:"1px solid transparent",flexShrink:0}}>{audience==="admins"?"Admin":type==="info"?"ℹ️":type==="warning"?"⚠️":"🚨"}</span>
+        <span>{msg}</span>
+      </div>}
+      <Btn primary onClick={createAlert}>{scheduleEnabled&&scheduleDate?"🕐 Schedule Alert":"📢 Publish Alert"}</Btn>
     </Card>
-    <div style={{display:"flex",gap:8,marginBottom:16}}><FilterBtn active={f==="active"} onClick={()=>setF("active")}>Active ({alerts.filter(a=>a.active).length})</FilterBtn><FilterBtn active={f==="all"} onClick={()=>setF("all")}>All ({alerts.length})</FilterBtn></div>
+    {/* Alert list */}
+    <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}><FilterBtn active={f==="active"} onClick={()=>setF("active")}>Active ({alerts.filter(a=>a.active).length})</FilterBtn><FilterBtn active={f==="all"} onClick={()=>setF("all")}>All ({alerts.length})</FilterBtn></div>
     {list.length===0&&<Card dark={dark}><div style={{textAlign:"center",padding:"30px 0",color:t.textMuted}}>No alerts</div></Card>}
-    {list.map(a=>{const tc=typeColors[a.type]||typeColors.info;return <Card key={a.id} dark={dark} style={{marginBottom:10,padding:16}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap"}}>
+    {list.map(a=>{const ac=tc[a.type]||tc.info;const isAdm=a.audience==="admins";return <Card key={a.id} dark={dark} style={{marginBottom:8,padding:"14px 16px",borderLeft:isAdm?`3px solid ${dark?"#7F77DD":"#AFA9EC"}`:"none",borderRadius:isAdm?`0 14px 14px 0`:"14px",opacity:a.active?1:0.5}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
         <div style={{flex:1,minWidth:200}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
-            <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:tc.bg,color:tc.color,border:`1px solid ${tc.border}`}}>{tc.icon} {a.type[0].toUpperCase()+a.type.slice(1)}</span>
-            <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:t.accentLight,color:t.accent}}>{a.target==="both"?"🌐 Both":a.target==="dashboard"?"📊 Dashboard":"🔐 Login"}</span>
-            {a.active?<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:dark?"rgba(110,231,183,0.1)":"#ecfdf5",color:t.green}}>● Live</span>:<span style={{fontSize:11,color:t.textMuted}}>Inactive</span>}
-            {a.scheduled&&<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:dark?"rgba(99,102,241,0.1)":"#eef2ff",color:dark?"#a5b4fc":"#4f46e5"}}>🕐 Scheduled: {fD(a.scheduled)}</span>}
+          <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:5,flexWrap:"wrap"}}>
+            <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:5,background:ac.bg,color:ac.c,border:`1px solid ${ac.bd}`}}>{a.type[0].toUpperCase()+a.type.slice(1)}</span>
+            <span style={{fontSize:11,padding:"2px 8px",borderRadius:5,background:dark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",color:t.textMuted,border:`1px solid ${t.surfaceBorder}`}}>{a.target==="both"?"Both":a.target==="dashboard"?"Dashboard":"Login"}</span>
+            <span style={{fontSize:11,padding:"2px 8px",borderRadius:5,background:isAdm?(dark?"rgba(127,119,221,0.1)":"#EEEDFE"):(dark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)"),color:isAdm?(dark?"#AFA9EC":"#534AB7"):t.textMuted,border:`1px solid ${isAdm?(dark?"rgba(175,169,236,0.2)":"#AFA9EC"):t.surfaceBorder}`}}>{isAdm?"Admins":"Users"}</span>
+            {a.active&&<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:5,background:dark?"rgba(110,231,183,0.1)":"#ecfdf5",color:t.green}}>Live</span>}
+            {a.scheduled&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:5,background:dark?"rgba(99,102,241,0.08)":"#eef2ff",color:dark?"#a5b4fc":"#4f46e5"}}>🕐 {fD(a.scheduled)}</span>}
           </div>
-          <div style={{fontSize:14,color:t.text,marginBottom:4}}>{a.message}</div>
-          <div style={{fontSize:11,color:t.textMuted}}>by {a.createdBy} · {fD(a.created)}{a.expiresAt?` · Expires ${fD(a.expiresAt)}`:" · ♾️ Indefinite"}</div>
+          <div style={{fontSize:13,color:t.text,marginBottom:3}}>{a.message}</div>
+          <div style={{fontSize:11,color:t.textMuted}}>by {a.createdBy} · {fD(a.created)}{a.expiresAt?` · Expires ${fD(a.expiresAt)}`:" · Indefinite"}</div>
         </div>
-        <div style={{display:"flex",gap:6,flexShrink:0}}>
-          <Btn onClick={()=>{toggleAlert(a.id);notify(a.active?"Alert deactivated":"Alert activated")}}>{a.active?"⏸ Pause":"▶ Activate"}</Btn>
-          <Btn onClick={()=>deleteAlert(a.id)} style={{color:t.red}}>✕ Delete</Btn>
+        <div style={{display:"flex",gap:4,flexShrink:0}}>
+          <button onClick={()=>{toggleAlert(a.id);notify(a.active?"Paused":"Activated");}} style={{padding:"5px 10px",borderRadius:6,fontSize:11,color:t.textSoft,border:`1px solid ${t.btnSecBorder}`,background:"none",cursor:"pointer"}}>{a.active?"Pause":"Activate"}</button>
+          <button onClick={()=>deleteAlert(a.id)} style={{padding:"5px 10px",borderRadius:6,fontSize:11,color:t.red,border:`1px solid ${t.btnSecBorder}`,background:"none",cursor:"pointer"}}>Delete</button>
         </div>
       </div>
     </Card>})}
@@ -706,3 +705,4 @@ function NotificationsPage({t,dark,Btn,notify,logAction,users}){
     </div>}
   </div>;
 }
+
