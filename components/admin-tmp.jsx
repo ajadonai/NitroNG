@@ -186,7 +186,9 @@ function AdminRoles({t,dark,admins,setAdmins,Btn,FilterBtn,notify,isSuperAdmin,l
 
 function MaintenancePage({t,dark,maint,setMaint,Btn,notify,logAction,isSuperAdmin}){
   const [msg,setMsg]=useState(maint.message);
-  const [eta,setEta]=useState(maint.estimatedReturn);const [customEtaUnit,setCustomEtaUnit]=useState("m");
+  const [eta,setEta]=useState(maint.estimatedReturn);
+  const [customEta,setCustomEta]=useState("");const [customEtaUnit,setCustomEtaUnit]=useState("m");
+  const etaPresets=["~15 min","~30 min","~1 hour","~2 hours","No ETA"];
   const toggle=()=>{
     const next=!maint.enabled;
     setMaint(p=>({...p,enabled:next,message:msg,estimatedReturn:eta}));
@@ -194,9 +196,9 @@ function MaintenancePage({t,dark,maint,setMaint,Btn,notify,logAction,isSuperAdmi
     notify(next?"🔧 Maintenance mode ON — site is now down for users":"✅ Maintenance mode OFF — site is live");
   };
   const save=()=>{setMaint(p=>({...p,message:msg,estimatedReturn:eta}));notify("Settings saved");};
+  const setCustom=()=>{if(customEta){const u=customEtaUnit==="m"?"min":customEtaUnit==="h"?"hour":"day";setEta(`~${customEta} ${u}${Number(customEta)>1?"s":""}`);}};
   return <div>
     <Hdr title="Maintenance Mode" sub="Take the site offline for users" t={t}/>
-    {/* Status banner */}
     <div style={{padding:"16px 20px",borderRadius:14,marginBottom:24,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12,background:maint.enabled?(dark?"rgba(252,165,165,0.08)":"#fef2f2"):(dark?"rgba(110,231,183,0.08)":"#ecfdf5"),border:`1px solid ${maint.enabled?(dark?"rgba(252,165,165,0.15)":"#fecaca"):(dark?"rgba(110,231,183,0.15)":"#a7f3d0")}`}}>
       <div>
         <div style={{fontSize:16,fontWeight:600,color:maint.enabled?t.red:t.green}}>{maint.enabled?"🔴 Site is OFFLINE":"🟢 Site is LIVE"}</div>
@@ -204,7 +206,6 @@ function MaintenancePage({t,dark,maint,setMaint,Btn,notify,logAction,isSuperAdmi
       </div>
       <button onClick={toggle} style={{padding:"10px 24px",borderRadius:10,fontSize:14,fontWeight:600,background:maint.enabled?t.btnPrimary:(dark?"rgba(252,165,165,0.1)":"#fef2f2"),color:maint.enabled?"#fff":t.red,border:maint.enabled?"none":`1px solid ${dark?"rgba(252,165,165,0.2)":"#fecaca"}`}}>{maint.enabled?"🟢 Go Live":"🔴 Enable Maintenance"}</button>
     </div>
-    {/* Settings */}
     <Card dark={dark} style={{marginBottom:20}}>
       <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Maintenance Page Settings</h3>
       <div style={{marginBottom:16}}>
@@ -214,22 +215,21 @@ function MaintenancePage({t,dark,maint,setMaint,Btn,notify,logAction,isSuperAdmi
       <div style={{marginBottom:16}}>
         <label style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:6}}>Estimated Return Time</label>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:6}}>
-          {["~15 min","~30 min","~1 hour"].map(v=><button key={v} onClick={()=>setEta(v)} style={{padding:"10px 0",textAlign:"center",borderRadius:8,fontSize:12,fontWeight:500,background:eta===v?t.accentLight:"transparent",color:eta===v?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:eta===v?t.accentShadow:"none"}}>{v}</button>)}
+          {etaPresets.slice(0,3).map(v=><button key={v} onClick={()=>setEta(v)} style={{padding:"10px 0",textAlign:"center",borderRadius:8,fontSize:12,fontWeight:500,background:eta===v?t.accentLight:"transparent",color:eta===v?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:eta===v?t.accentShadow:"none"}}>{v}</button>)}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:6}}>
-          {["~2 hours","No ETA"].map(v=><button key={v} onClick={()=>setEta(v)} style={{padding:"10px 0",textAlign:"center",borderRadius:8,fontSize:12,fontWeight:500,background:eta===v?t.accentLight:"transparent",color:eta===v?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:eta===v?t.accentShadow:"none"}}>{v}</button>)}
+          {etaPresets.slice(3).map(v=><button key={v} onClick={()=>setEta(v)} style={{padding:"10px 0",textAlign:"center",borderRadius:8,fontSize:12,fontWeight:500,background:eta===v?t.accentLight:"transparent",color:eta===v?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:eta===v?t.accentShadow:"none"}}>{v}</button>)}
         </div>
         <div style={{display:"flex",justifyContent:"center"}}>
           <div style={{display:"inline-flex",alignItems:"center",borderRadius:8,border:`1px solid ${t.btnSecBorder}`,overflow:"hidden"}}>
             <span style={{padding:"8px 10px",fontSize:11,fontWeight:600,color:t.textMuted,whiteSpace:"nowrap",background:dark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",borderRight:`1px solid ${t.btnSecBorder}`}}>Custom:</span>
-            <input type="number" placeholder="45" onChange={e=>{if(e.target.value){const u=customEtaUnit==="m"?"min":customEtaUnit==="h"?"hour":"day";setEta("~"+e.target.value+" "+u+(Number(e.target.value)>1?"s":""));}}} min="1" style={{width:60,padding:"8px 8px",border:"none",fontSize:13,background:"transparent",color:t.text,outline:"none",textAlign:"center"}}/>
-            <select value={customEtaUnit} onChange={e=>{setCustomEtaUnit(e.target.value);}} style={{padding:"8px 8px",border:"none",borderLeft:`1px solid ${t.btnSecBorder}`,fontSize:12,background:dark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",color:t.text,outline:"none",cursor:"pointer"}}><option value="m">Mins</option><option value="h">Hours</option><option value="d">Days</option></select>
+            <input type="number" placeholder="45" value={customEta} onChange={e=>{setCustomEta(e.target.value);if(e.target.value){const u=customEtaUnit==="m"?"min":customEtaUnit==="h"?"hour":"day";setEta(`~${e.target.value} ${u}${Number(e.target.value)>1?"s":""}`);}}} min="1" style={{width:60,padding:"8px 8px",border:"none",fontSize:13,background:"transparent",color:t.text,outline:"none",textAlign:"center"}}/>
+            <select value={customEtaUnit} onChange={e=>{setCustomEtaUnit(e.target.value);if(customEta){const u=e.target.value==="m"?"min":e.target.value==="h"?"hour":"day";setEta(`~${customEta} ${u}${Number(customEta)>1?"s":""}`);}}} style={{padding:"8px 8px",border:"none",borderLeft:`1px solid ${t.btnSecBorder}`,fontSize:12,background:dark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",color:t.text,outline:"none",cursor:"pointer"}}><option value="m">Mins</option><option value="h">Hours</option><option value="d">Days</option></select>
           </div>
         </div>
       </div>
       <Btn primary onClick={save}>Save Settings</Btn>
     </Card>
-    {/* Preview */}
     <Card dark={dark}>
       <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Preview</h3>
       <div style={{borderRadius:14,overflow:"hidden",border:`1px solid ${t.surfaceBorder}`}}>
@@ -248,461 +248,5 @@ function MaintenancePage({t,dark,maint,setMaint,Btn,notify,logAction,isSuperAdmi
         </div>
       </div>
     </Card>
-  </div>;
-}
-
-function PaymentGateways({t,dark,gateways,setGateways,Btn,notify,logAction,isSuperAdmin}){
-  const toggleGateway=(id)=>{
-    if(!isSuperAdmin){notify("Only Super Admin can change gateways",true);return;}
-    const gw=gateways.find(g=>g.id===id);
-    const enabled=gateways.filter(g=>g.enabled);
-    if(gw.enabled&&enabled.length<=1){notify("At least one gateway must be active",true);return;}
-    setGateways(p=>p.map(g=>g.id===id?{...g,enabled:!g.enabled}:g));
-    logAction(`${gw.enabled?"Disabled":"Enabled"} ${gw.name} payment gateway`,"settings");
-    notify(`${gw.name} ${gw.enabled?"disabled":"enabled"}`);
-  };
-  const movePriority=(id,dir)=>{
-    if(!isSuperAdmin)return;
-    const idx=gateways.findIndex(g=>g.id===id);
-    if((dir===-1&&idx===0)||(dir===1&&idx===gateways.length-1))return;
-    const next=[...gateways];
-    [next[idx],next[idx+dir]]=[next[idx+dir],next[idx]];
-    next.forEach((g,i)=>g.priority=i+1);
-    setGateways(next);
-  };
-  return <div>
-    <Hdr title="Payment Gateways" sub="Manage available payment methods" t={t}/>
-    {!isSuperAdmin&&<div style={{padding:"14px 18px",borderRadius:12,background:t.accentLight,border:`1px solid ${t.accentBorder}`,marginBottom:20,fontSize:13,color:t.accent}}>🔒 Only the Super Admin can enable/disable payment gateways.</div>}
-    <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
-      <div style={{padding:"10px 16px",borderRadius:10,background:dark?"rgba(110,231,183,0.08)":"#ecfdf5",border:`1px solid ${dark?"rgba(110,231,183,0.15)":"#a7f3d0"}`,fontSize:13,color:t.green}}>{gateways.filter(g=>g.enabled).length} active</div>
-      <div style={{padding:"10px 16px",borderRadius:10,background:t.btnSecondary,border:`1px solid ${t.btnSecBorder}`,fontSize:13,color:t.textMuted}}>{gateways.filter(g=>!g.enabled).length} disabled</div>
-    </div>
-    {gateways.map((g,i)=><Card key={g.id} dark={dark} style={{marginBottom:12,padding:18,border:g.enabled?`1px solid ${dark?"rgba(110,231,183,0.15)":"#a7f3d0"}`:undefined,opacity:g.enabled?1:0.6}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
-        <div style={{display:"flex",alignItems:"center",gap:14,flex:1,minWidth:200}}>
-          <div style={{fontSize:28}}>{g.icon}</div>
-          <div>
-            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-              <span style={{fontSize:16,fontWeight:600,color:t.text}}>{g.name}</span>
-              {g.enabled?<span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:4,background:dark?"rgba(110,231,183,0.1)":"#ecfdf5",color:t.green}}>● Active</span>:<span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:4,background:dark?"rgba(255,255,255,0.04)":"#f5f5f5",color:t.textMuted}}>Disabled</span>}
-              <span className="m" style={{fontSize:10,color:t.textMuted}}>Priority #{g.priority}</span>
-            </div>
-            <div style={{fontSize:13,color:t.textSoft,marginTop:3}}>{g.desc}</div>
-          </div>
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-          {isSuperAdmin&&<><button onClick={()=>movePriority(g.id,-1)} disabled={i===0} style={{width:30,height:30,borderRadius:6,background:t.btnSecondary,color:i===0?t.textMuted:t.textSoft,border:`1px solid ${t.btnSecBorder}`,fontSize:14,opacity:i===0?.4:1}}>↑</button>
-          <button onClick={()=>movePriority(g.id,1)} disabled={i===gateways.length-1} style={{width:30,height:30,borderRadius:6,background:t.btnSecondary,color:i===gateways.length-1?t.textMuted:t.textSoft,border:`1px solid ${t.btnSecBorder}`,fontSize:14,opacity:i===gateways.length-1?.4:1}}>↓</button></>}
-          {isSuperAdmin&&<button onClick={()=>toggleGateway(g.id)} style={{padding:"8px 18px",borderRadius:8,fontSize:12,fontWeight:600,background:g.enabled?(dark?"rgba(252,165,165,0.1)":"#fef2f2"):(dark?"rgba(110,231,183,0.1)":"#ecfdf5"),color:g.enabled?t.red:t.green,border:`1px solid ${g.enabled?(dark?"rgba(252,165,165,0.2)":"#fecaca"):(dark?"rgba(110,231,183,0.2)":"#a7f3d0")}`}}>{g.enabled?"Disable":"Enable"}</button>}
-        </div>
-      </div>
-    </Card>)}
-    <Card dark={dark} style={{marginTop:8}}>
-      <div style={{fontSize:13,color:t.textMuted,lineHeight:1.7}}>
-        <span style={{fontWeight:600,color:t.text}}>How it works:</span> Enabled gateways appear on the Add Funds page for users. Priority determines the display order — the first enabled gateway is pre-selected by default. At least one gateway must remain active at all times.
-      </div>
-    </Card>
-  </div>;
-}
-
-function AlertsPage({t,dark,alerts,setAlerts,Btn,FilterBtn,notify,isSuperAdmin,currentAdmin,logAction}){
-  const [msg,setMsg]=useState("");const [type,setType]=useState("info");const [target,setTarget]=useState("both");const [duration,setDuration]=useState("none");const [customUnit,setCustomUnit]=useState("h");const [f,setF]=useState("active");
-  const [scheduleEnabled,setScheduleEnabled]=useState(false);const [scheduleDate,setScheduleDate]=useState("");const [scheduleTime,setScheduleTime]=useState("");
-  const list=alerts.filter(a=>f==="all"||(f==="active"?a.active:!a.active));
-  const getExpiry=(dur)=>{if(dur==="none")return null;const ms={"1h":3600000,"6h":21600000,"24h":86400000,"3d":259200000,"7d":604800000};if(ms[dur])return new Date(Date.now()+ms[dur]).toISOString();const num=parseInt(dur);if(!num)return null;const mult=customUnit==="d"?86400000:customUnit==="m"?60000:3600000;return new Date(Date.now()+num*mult).toISOString();};
-  const createAlert=()=>{if(!msg.trim())return;const scheduledFor=scheduleEnabled&&scheduleDate?new Date(`${scheduleDate}T${scheduleTime||"00:00"}`).toISOString():null;const newA={id:Date.now(),message:msg,type,target,active:!scheduledFor,scheduled:scheduledFor,createdBy:currentAdmin.name,created:new Date().toISOString(),expiresAt:getExpiry(duration)};setAlerts(p=>[newA,...p]);setMsg("");setScheduleEnabled(false);setScheduleDate("");setScheduleTime("");logAction(`${scheduledFor?"Scheduled":"Published"} ${type} alert: "${msg.slice(0,50)}${msg.length>50?"...":""}"`,"alert");notify(scheduledFor?"Alert scheduled!":"Alert published!");};
-  const toggleAlert=(id)=>{const alert=alerts.find(a=>a.id===id);setAlerts(p=>p.map(a=>a.id===id?{...a,active:!a.active}:a));if(alert)logAction(`${alert.active?"Paused":"Activated"} alert: "${alert.message.slice(0,40)}..."`,"alert");};
-  const deleteAlert=(id)=>{const alert=alerts.find(a=>a.id===id);setAlerts(p=>p.filter(a=>a.id!==id));if(alert)logAction(`Deleted alert: "${alert.message.slice(0,40)}..."`,"alert");notify("Alert deleted");};
-  const typeColors={info:{bg:dark?"rgba(99,102,241,0.1)":"#eef2ff",color:dark?"#a5b4fc":"#4f46e5",border:dark?"rgba(99,102,241,0.2)":"#c7d2fe",icon:"ℹ️"},warning:{bg:dark?"rgba(217,119,6,0.1)":"#fffbeb",color:dark?"#fcd34d":"#92400e",border:dark?"rgba(217,119,6,0.2)":"#fde68a",icon:"⚠️"},critical:{bg:dark?"rgba(220,38,38,0.1)":"#fef2f2",color:dark?"#fca5a5":"#dc2626",border:dark?"rgba(220,38,38,0.2)":"#fecaca",icon:"🚨"}};
-  return <div>
-    <Hdr title="Alerts" sub="Broadcast messages to users" t={t}/>
-    <Card dark={dark} style={{marginBottom:24}}>
-      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>New Alert</h3>
-      <textarea value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Write your alert message..." rows={2} style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,marginBottom:14,outline:"none",resize:"vertical"}}/>
-      <div style={{display:"flex",gap:12,marginBottom:14,flexWrap:"wrap",alignItems:"flex-start"}}>
-        <div>
-          <div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6}}>Type</div>
-          <div style={{display:"flex",gap:6}}>{["info","warning","critical"].map(tp=><button key={tp} onClick={()=>setType(tp)} style={{padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:600,background:type===tp?typeColors[tp].bg:"transparent",color:type===tp?typeColors[tp].color:t.textMuted,border:`1px solid ${type===tp?typeColors[tp].border:t.btnSecBorder}`}}>{typeColors[tp].icon} {tp[0].toUpperCase()+tp.slice(1)}</button>)}</div>
-        </div>
-        <div>
-          <div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6}}>Show On</div>
-          <div style={{display:"flex",gap:6}}>{[["both","🌐 Both"],["dashboard","📊 Dashboard"],["login","🔐 Login"]].map(([val,lb])=><button key={val} onClick={()=>setTarget(val)} style={{padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:500,background:target===val?t.accentLight:"transparent",color:target===val?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:target===val?t.accentShadow:"none"}}>{lb}</button>)}</div>
-        </div>
-      </div>
-      <div style={{display:"flex",gap:12,marginBottom:14,flexWrap:"wrap",alignItems:"flex-start"}}>
-        <div>
-          <div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6}}>Duration</div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:6}}>
-            {[["none","\u267e\ufe0f Indefinite"],["1h","1 hour"],["6h","6 hours"]].map(([val,lb])=><button key={val} onClick={()=>setDuration(val)} style={{padding:"10px 0",textAlign:"center",borderRadius:8,fontSize:12,fontWeight:500,background:duration===val?t.accentLight:"transparent",color:duration===val?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:duration===val?t.accentShadow:"none"}}>{lb}</button>)}
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:6}}>
-            {[["24h","24 hours"],["3d","3 days"],["7d","7 days"]].map(([val,lb])=><button key={val} onClick={()=>setDuration(val)} style={{padding:"10px 0",textAlign:"center",borderRadius:8,fontSize:12,fontWeight:500,background:duration===val?t.accentLight:"transparent",color:duration===val?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:duration===val?t.accentShadow:"none"}}>{lb}</button>)}
-          </div>
-          <div style={{display:"flex",justifyContent:"center"}}>
-            <div style={{display:"inline-flex",alignItems:"center",borderRadius:8,border:`1px solid ${t.btnSecBorder}`,overflow:"hidden"}}>
-              <span style={{padding:"8px 10px",fontSize:11,fontWeight:600,color:t.textMuted,whiteSpace:"nowrap",background:dark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",borderRight:`1px solid ${t.btnSecBorder}`}}>Custom:</span>
-              <input type="number" placeholder="30" value={duration.match(/^\d+$/)?duration:""} onChange={e=>{if(e.target.value)setDuration(e.target.value);else setDuration("none");}} min="1" style={{width:60,padding:"8px 8px",border:"none",fontSize:13,background:"transparent",color:t.text,outline:"none",textAlign:"center"}}/>
-              <select value={customUnit} onChange={e=>setCustomUnit(e.target.value)} style={{padding:"8px 8px",border:"none",borderLeft:`1px solid ${t.btnSecBorder}`,fontSize:12,background:dark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)",color:t.text,outline:"none",cursor:"pointer"}}><option value="m">Mins</option><option value="h">Hours</option><option value="d">Days</option></select>
-            </div>
-          </div>
-        </div>
-        <div>
-          <div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6}}>Schedule</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            <button onClick={()=>setScheduleEnabled(false)} style={{padding:"12px 16px",borderRadius:10,border:!scheduleEnabled?"2px solid "+t.accent:`1px solid ${t.btnSecBorder}`,background:!scheduleEnabled?t.accentLight:"transparent",textAlign:"left"}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-                <div style={{width:14,height:14,borderRadius:"50%",border:`2px solid ${!scheduleEnabled?t.accent:t.textMuted}`,display:"flex",alignItems:"center",justifyContent:"center"}}>{!scheduleEnabled&&<div style={{width:7,height:7,borderRadius:"50%",background:t.accent}}/>}</div>
-                <span style={{fontSize:12,fontWeight:600,color:!scheduleEnabled?t.accent:t.textSoft}}>Publish now</span>
-              </div>
-              <div style={{fontSize:11,color:t.textMuted,paddingLeft:22}}>Goes live immediately</div>
-            </button>
-            <button onClick={()=>setScheduleEnabled(true)} style={{padding:"12px 16px",borderRadius:10,border:scheduleEnabled?"2px solid "+t.accent:`1px solid ${t.btnSecBorder}`,background:scheduleEnabled?t.accentLight:"transparent",textAlign:"left"}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-                <div style={{width:14,height:14,borderRadius:"50%",border:`2px solid ${scheduleEnabled?t.accent:t.textMuted}`,display:"flex",alignItems:"center",justifyContent:"center"}}>{scheduleEnabled&&<div style={{width:7,height:7,borderRadius:"50%",background:t.accent}}/>}</div>
-                <span style={{fontSize:12,fontWeight:600,color:scheduleEnabled?t.accent:t.textSoft}}>Schedule for later</span>
-              </div>
-              <div style={{fontSize:11,color:t.textMuted,paddingLeft:22}}>Pick a date and time</div>
-            </button>
-          </div>
-          {scheduleEnabled&&<div style={{marginTop:10,padding:"12px 14px",borderRadius:10,background:dark?"rgba(255,255,255,0.02)":"rgba(0,0,0,0.02)",border:`1px solid ${t.btnSecBorder}`,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
-            <div style={{flex:1,minWidth:120}}><div style={{fontSize:10,color:t.textMuted,marginBottom:4,fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>Date</div><input type="date" value={scheduleDate} onChange={e=>setScheduleDate(e.target.value)} style={{width:"100%",padding:"8px 10px",borderRadius:8,fontSize:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,outline:"none"}}/></div>
-            <div style={{flex:1,minWidth:120}}><div style={{fontSize:10,color:t.textMuted,marginBottom:4,fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>Time</div><input type="time" value={scheduleTime} onChange={e=>setScheduleTime(e.target.value)} style={{width:"100%",padding:"8px 10px",borderRadius:8,fontSize:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,outline:"none"}}/></div>
-            {scheduleDate&&<div style={{fontSize:12,color:t.accent,width:"100%"}}>Will go live on {scheduleDate} at {scheduleTime||"00:00"}</div>}
-          </div>}
-        </div>
-      </div>
-      {msg&&<div style={{padding:"12px 16px",borderRadius:10,background:typeColors[type].bg,border:`1px solid ${typeColors[type].border}`,color:typeColors[type].color,fontSize:13,fontWeight:500,marginBottom:14}}>{typeColors[type].icon} {msg}</div>}
-      <div style={{display:"flex",alignItems:"center",gap:12}}>
-        <Btn primary onClick={createAlert}>{scheduleEnabled&&scheduleDate?"🕐 Schedule Alert":"📢 Publish Alert"}</Btn>
-        {scheduleEnabled&&scheduleDate&&<span style={{fontSize:12,color:t.textMuted}}>Will go live on {scheduleDate} at {scheduleTime||"00:00"}</span>}
-      </div>
-    </Card>
-    <div style={{display:"flex",gap:8,marginBottom:16}}><FilterBtn active={f==="active"} onClick={()=>setF("active")}>Active ({alerts.filter(a=>a.active).length})</FilterBtn><FilterBtn active={f==="all"} onClick={()=>setF("all")}>All ({alerts.length})</FilterBtn></div>
-    {list.length===0&&<Card dark={dark}><div style={{textAlign:"center",padding:"30px 0",color:t.textMuted}}>No alerts</div></Card>}
-    {list.map(a=>{const tc=typeColors[a.type]||typeColors.info;return <Card key={a.id} dark={dark} style={{marginBottom:10,padding:16}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap"}}>
-        <div style={{flex:1,minWidth:200}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
-            <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:tc.bg,color:tc.color,border:`1px solid ${tc.border}`}}>{tc.icon} {a.type[0].toUpperCase()+a.type.slice(1)}</span>
-            <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:t.accentLight,color:t.accent}}>{a.target==="both"?"🌐 Both":a.target==="dashboard"?"📊 Dashboard":"🔐 Login"}</span>
-            {a.active?<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:dark?"rgba(110,231,183,0.1)":"#ecfdf5",color:t.green}}>● Live</span>:<span style={{fontSize:11,color:t.textMuted}}>Inactive</span>}
-            {a.scheduled&&<span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4,background:dark?"rgba(99,102,241,0.1)":"#eef2ff",color:dark?"#a5b4fc":"#4f46e5"}}>🕐 Scheduled: {fD(a.scheduled)}</span>}
-          </div>
-          <div style={{fontSize:14,color:t.text,marginBottom:4}}>{a.message}</div>
-          <div style={{fontSize:11,color:t.textMuted}}>by {a.createdBy} · {fD(a.created)}{a.expiresAt?` · Expires ${fD(a.expiresAt)}`:" · ♾️ Indefinite"}</div>
-        </div>
-        <div style={{display:"flex",gap:6,flexShrink:0}}>
-          <Btn onClick={()=>{toggleAlert(a.id);notify(a.active?"Alert deactivated":"Alert activated")}}>{a.active?"⏸ Pause":"▶ Activate"}</Btn>
-          <Btn onClick={()=>deleteAlert(a.id)} style={{color:t.red}}>✕ Delete</Btn>
-        </div>
-      </div>
-    </Card>})}
-  </div>;
-}
-function SiteSettingsPage({t,dark,settings,setSettings,Btn,notify,logAction}){
-  const [tab,setTab]=useState("general");
-  const [form,setForm]=useState({...settings});
-  const upd=(k,v)=>setForm(p=>({...p,[k]:v}));
-  const save=()=>{setSettings({...form});notify("Settings saved!");logAction("Updated site settings","settings");};
-  const Field=({label,field,placeholder,type="text"})=><div style={{marginBottom:16}}>
-    <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>{label}</label>
-    <input type={type} value={form[field]||""} onChange={e=>upd(field,e.target.value)} placeholder={placeholder} style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
-  </div>;
-  const Tab=({id,label})=><button onClick={()=>setTab(id)} style={{padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:tab===id?t.accentLight:"transparent",color:tab===id?t.accent:t.textSoft,border:"1px solid transparent",boxShadow:tab===id?t.accentShadow:"none"}}>{label}</button>;
-  return <div>
-    <Hdr title="Settings" sub="Manage global platform settings — superadmin only" t={t} action={<Btn primary onClick={save}>💾 Save All</Btn>}/>
-    <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}><Tab id="general" label="General"/><Tab id="socials" label="Socials & Contact"/><Tab id="promo" label="Promo Banner"/></div>
-    {tab==="general"&&<div className="g2"><Card dark={dark}>
-      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>General</h3>
-      <Field label="Site Name" field="siteName" placeholder="BoostPanel"/>
-      <Field label="Support Email" field="supportEmail" placeholder="support@boostpanel.ng"/>
-      <Field label="Minimum Deposit (₦)" field="minDeposit" placeholder="500" type="number"/>
-      <Field label="Default Markup (%)" field="defaultMarkup" placeholder="54" type="number"/>
-      <Field label="Referral Bonus (₦)" field="referralBonus" placeholder="500" type="number"/>
-    </Card><Card dark={dark}>
-      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:12}}>Notes</h3>
-      <div style={{fontSize:13,color:t.textSoft,lineHeight:1.7}}>
-        <p style={{marginBottom:8}}>Changes here affect the entire platform immediately.</p>
-        <p style={{marginBottom:8}}><strong style={{color:t.text}}>Minimum Deposit</strong> is the lowest amount users can add to their wallet.</p>
-        <p style={{marginBottom:8}}><strong style={{color:t.text}}>Default Markup</strong> is applied to new services synced from the API.</p>
-        <p><strong style={{color:t.text}}>Referral Bonus</strong> is credited to both referrer and new user on email verification.</p>
-      </div>
-    </Card></div>}
-    {tab==="socials"&&<div className="g2"><Card dark={dark}>
-      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>Social & Contact</h3>
-      <Field label="WhatsApp Number" field="whatsapp" placeholder="2348012345678"/>
-      <div style={{fontSize:11,color:t.textMuted,marginTop:-10,marginBottom:16}}>Full number with country code, no + or spaces. Powers the floating chat icon.</div>
-      <Field label="Twitter / X Handle" field="twitter" placeholder="boostpanel"/>
-      <Field label="Instagram Handle" field="instagram" placeholder="boostpanel.ng"/>
-    </Card><Card dark={dark}>
-      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Preview</h3>
-      <div style={{padding:16,borderRadius:12,background:dark?"#0d1020":"#faf8f5",border:`1px solid ${t.surfaceBorder}`}}>
-        <div style={{fontSize:12,color:t.textMuted,marginBottom:8,fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>WhatsApp</div>
-        <a href={`https://wa.me/${form.whatsapp}`} target="_blank" rel="noopener" style={{fontSize:13,color:t.accent,wordBreak:"break-all"}}>wa.me/{form.whatsapp}</a>
-        <div style={{fontSize:12,color:t.textMuted,marginTop:14,marginBottom:8,fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>Socials</div>
-        <div style={{display:"flex",flexDirection:"column",gap:4}}>
-          <a href={`https://twitter.com/${form.twitter}`} target="_blank" rel="noopener" style={{fontSize:13,color:t.accent}}>twitter.com/{form.twitter}</a>
-          <a href={`https://instagram.com/${form.instagram}`} target="_blank" rel="noopener" style={{fontSize:13,color:t.accent}}>instagram.com/{form.instagram}</a>
-        </div>
-      </div>
-    </Card></div>}
-    {tab==="promo"&&<div className="g2"><Card dark={dark}>
-      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>Promo Banner</h3>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-        <span style={{fontSize:13,color:t.text,fontWeight:500}}>Show banner on homepage</span>
-        <button onClick={()=>upd("promoEnabled",!form.promoEnabled)} style={{width:44,height:24,borderRadius:12,background:form.promoEnabled?t.accent:(dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)"),position:"relative",border:"none",cursor:"pointer",transition:"background 0.2s"}}><div style={{width:20,height:20,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:form.promoEnabled?22:2,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/></button>
-      </div>
-      <Field label="Banner Message" field="promoMessage" placeholder="Sign up today and get 10% bonus on your first deposit."/>
-      <div style={{marginBottom:16}}>
-        <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Banner Type</label>
-        <div style={{display:"flex",gap:8}}>{[["info","ℹ️ Info"],["warning","⚠️ Warning"]].map(([v,lb])=><button key={v} onClick={()=>upd("promoType",v)} style={{flex:1,padding:"10px 0",borderRadius:10,fontSize:13,fontWeight:500,background:(form.promoType||"info")===v?t.accentLight:t.btnSecondary,color:(form.promoType||"info")===v?t.accent:t.textSoft,border:`1px solid ${t.btnSecBorder}`}}>{lb}</button>)}</div>
-      </div>
-    </Card><Card dark={dark}>
-      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Preview</h3>
-      {form.promoEnabled!==false?<div style={{padding:"10px 16px",textAlign:"center",fontSize:13,fontWeight:500,borderRadius:10,background:(form.promoType||"info")==="warning"?(dark?"rgba(217,119,6,0.15)":"#fffbeb"):(dark?"rgba(99,102,241,0.15)":"#eef2ff"),color:(form.promoType||"info")==="warning"?(dark?"#fcd34d":"#92400e"):(dark?"#a5b4fc":"#4f46e5"),border:`1px solid ${(form.promoType||"info")==="warning"?(dark?"rgba(217,119,6,0.2)":"#fde68a"):(dark?"rgba(99,102,241,0.2)":"#c7d2fe")}`}}>{(form.promoType||"info")==="warning"?"⚠️":"✨"} {form.promoMessage||"Sign up today and get 10% bonus on your first deposit."}</div>:<div style={{padding:"20px",textAlign:"center",fontSize:13,color:t.textMuted,background:dark?"#0d1020":"#faf8f5",borderRadius:10,border:`1px solid ${t.surfaceBorder}`}}>Banner is currently hidden</div>}
-    </Card></div>}
-  </div>;
-}
-
-function PaymentsPage({t,dark,gateways,setGateways,Btn,FilterBtn,notify,logAction,isSuperAdmin}){
-  const [tab,setTab]=useState("gateways");
-  const Tab=({id,label})=><button onClick={()=>setTab(id)} style={{padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:tab===id?t.accentLight:"transparent",color:tab===id?t.accent:t.textSoft,border:"1px solid transparent",boxShadow:tab===id?t.accentShadow:"none"}}>{label}</button>;
-  const toggleGw=(id)=>{setGateways(p=>p.map(g=>g.id===id?{...g,enabled:!g.enabled}:g));logAction(`Toggled ${id} gateway`,"settings");};
-  return <div>
-    <Hdr title="Payments" sub="Payment gateways and transaction history" t={t}/>
-    <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}><Tab id="gateways" label="Gateways"/><Tab id="transactions" label="Transactions"/><Tab id="paystack" label="Paystack Config"/></div>
-    {tab==="gateways"&&<div>{gateways.map(g=><Card key={g.id} dark={dark} style={{marginBottom:10,padding:16}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
-        <div style={{display:"flex",alignItems:"center",gap:12}}><span style={{fontSize:24}}>{g.icon}</span><div><div style={{fontSize:14,fontWeight:600,color:t.text}}>{g.name}</div><div style={{fontSize:12,color:t.textMuted,marginTop:2}}>{g.desc}</div></div></div>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:12,color:t.textMuted}}>Priority: {g.priority}</span>
-          <Badge s={g.enabled?"Active":"Inactive"} dark={dark}/>
-          {isSuperAdmin&&<button onClick={()=>{toggleGw(g.id);notify(`${g.name} ${g.enabled?"disabled":"enabled"}`);}} style={{width:44,height:24,borderRadius:12,background:g.enabled?t.accent:(dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)"),position:"relative",border:"none",cursor:"pointer",transition:"background 0.2s"}}><div style={{width:20,height:20,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:g.enabled?22:2,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/></button>}
-        </div>
-      </div>
-    </Card>)}</div>}
-    {tab==="transactions"&&<Card dark={dark}>
-      <div style={{textAlign:"center",padding:"40px 0",color:t.textMuted}}>
-        <div style={{fontSize:32,marginBottom:12}}>💳</div>
-        <div style={{fontSize:14,fontWeight:500}}>Transaction history will appear here</div>
-        <div style={{fontSize:12,marginTop:4}}>Connected to Paystack webhook for real-time updates</div>
-      </div>
-    </Card>}
-    {tab==="paystack"&&<Card dark={dark}>
-      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>Paystack Configuration</h3>
-      {[["Public Key","pk_test_•••••••••••••••"],["Secret Key","sk_test_•••••••••••••••"],["Webhook URL","https://boostpanel.ng/api/webhooks/paystack"],["Callback URL","https://boostpanel.ng/api/payments/callback"]].map(([label,val],i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 0",borderBottom:i<3?`1px solid ${t.surfaceBorder}`:"none",flexWrap:"wrap",gap:8}}><span style={{fontSize:13,color:t.textSoft}}>{label}</span><span className="m" style={{fontSize:12,color:t.text}}>{val}</span></div>)}
-      <Btn primary onClick={()=>notify("Paystack config saved")} style={{marginTop:16}}>Save Config</Btn>
-    </Card>}
-  </div>;
-}
-
-function AnalyticsPage({t,dark,orders,users,Btn}){
-  const [range,setRange]=useState("7d");
-  const rev=orders.reduce((a,o)=>a+o.charge,0);const cost=orders.reduce((a,o)=>a+o.cost,0);const profit=rev-cost;
-  const RangeBtn=({id,label})=><button onClick={()=>setRange(id)} style={{padding:"8px 14px",borderRadius:8,fontSize:12,fontWeight:500,background:range===id?t.accentLight:"transparent",color:range===id?t.accent:t.textSoft,border:`1px solid ${range===id?t.accentBorder:t.btnSecBorder}`}}>{label}</button>;
-  // Mock chart data
-  const days=range==="24h"?["6AM","9AM","12PM","3PM","6PM","9PM"]:range==="7d"?["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]:range==="30d"?["Week 1","Week 2","Week 3","Week 4"]:["Jan","Feb","Mar"];
-  const revData=range==="24h"?[12,28,45,38,52,30]:range==="7d"?[65,48,72,85,55,90,78]:range==="30d"?[280,320,290,350]:[850,920,1050];
-  const ordData=range==="24h"?[3,7,12,9,14,8]:range==="7d"?[18,13,20,24,15,26,22]:range==="30d"?[78,88,82,95]:[240,260,295];
-  const maxRev=Math.max(...revData);const maxOrd=Math.max(...ordData);
-  return <div>
-    <Hdr title="Analytics" sub="Revenue, orders, and growth" t={t} action={<div style={{display:"flex",gap:6,flexWrap:"wrap"}}><RangeBtn id="24h" label="24h"/><RangeBtn id="7d" label="7 days"/><RangeBtn id="30d" label="30 days"/><RangeBtn id="90d" label="90 days"/></div>}/>
-    <div className="sg" style={{marginBottom:24}}>
-      <Stat l="Revenue" v={fN(rev)} c={t.green} ic="💰" t={t} dark={dark}/>
-      <Stat l="Profit" v={fN(profit)} sub={`${Math.round(profit/rev*100)}% margin`} c={t.accent} ic="📈" d={.05} t={t} dark={dark}/>
-      <Stat l="Orders" v={orders.length} sub={`${orders.filter(o=>o.status==="Completed").length} completed`} c="#a5b4fc" ic="📋" d={.1} t={t} dark={dark}/>
-      <Stat l="New Users" v={users.filter(u=>u.status==="Active").length} c="#6ee7b7" ic="👥" d={.15} t={t} dark={dark}/>
-    </div>
-    <div className="g2" style={{marginBottom:24}}>
-      <Card dark={dark}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><h3 style={{fontSize:15,fontWeight:600,color:t.text}}>Revenue Trend</h3><div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:8,height:8,borderRadius:"50%",background:t.accent}}/><span style={{fontSize:11,color:t.textMuted}}>Revenue</span></div></div>
-        <div style={{display:"flex",alignItems:"flex-end",gap:range==="24h"?8:6,height:160,padding:"0 4px"}}>
-          {revData.map((v,i)=><div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-            <span className="m" style={{fontSize:9,color:t.textMuted}}>{Math.round(v/maxRev*100)}%</span>
-            <div style={{width:"100%",borderRadius:4,background:`linear-gradient(180deg,${t.accent},${t.accent}88)`,height:`${(v/maxRev)*120}px`,transition:"height 0.5s ease",minHeight:4}}/>
-            <span style={{fontSize:9,color:t.textMuted}}>{days[i]}</span>
-          </div>)}
-        </div>
-      </Card>
-      <Card dark={dark}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><h3 style={{fontSize:15,fontWeight:600,color:t.text}}>Order Volume</h3><div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:8,height:8,borderRadius:"50%",background:"#a5b4fc"}}/><span style={{fontSize:11,color:t.textMuted}}>Orders</span></div></div>
-        <div style={{display:"flex",alignItems:"flex-end",gap:range==="24h"?8:6,height:160,padding:"0 4px"}}>
-          {ordData.map((v,i)=><div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-            <span className="m" style={{fontSize:9,color:t.textMuted}}>{v}</span>
-            <div style={{width:"100%",borderRadius:4,background:"linear-gradient(180deg,#a5b4fc,#a5b4fc88)",height:`${(v/maxOrd)*120}px`,transition:"height 0.5s ease",minHeight:4}}/>
-            <span style={{fontSize:9,color:t.textMuted}}>{days[i]}</span>
-          </div>)}
-        </div>
-      </Card>
-    </div>
-    <div className="g2">
-      <Card dark={dark}>
-        <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Top Services</h3>
-        {[["IG Followers [Real]",42,"₦816,750"],["TikTok Views",38,"₦883,500"],["YT Subscribers",21,"₦260,400"],["Twitter/X Followers",18,"₦111,600"],["Spotify Plays",15,"₦418,500"]].map(([name,count,rev],i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<4?`1px solid ${t.surfaceBorder}`:"none"}}>
-          <div><div style={{fontSize:13,fontWeight:500,color:t.text}}>{name}</div><div style={{fontSize:11,color:t.textMuted,marginTop:2}}>{count} orders</div></div>
-          <span className="m" style={{fontSize:12,color:t.green,fontWeight:600}}>{rev}</span>
-        </div>)}
-      </Card>
-      <Card dark={dark}>
-        <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Revenue Breakdown</h3>
-        {[["Instagram",45,t.accent],["TikTok",25,"#a5b4fc"],["YouTube",15,"#fcd34d"],["Twitter/X",8,"#6ee7b7"],["Others",7,t.textMuted]].map(([platform,pct,color],i)=><div key={i} style={{marginBottom:12}}>
-          <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}><span style={{color:t.text}}>{platform}</span><span className="m" style={{color:t.textSoft}}>{pct}%</span></div>
-          <div style={{height:6,borderRadius:3,background:dark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.05)"}}><div style={{height:6,borderRadius:3,background:color,width:`${pct}%`,transition:"width 0.5s ease"}}/></div>
-        </div>)}
-      </Card>
-    </div>
-  </div>;
-}
-
-function CouponsPage({t,dark,Btn,FilterBtn,notify,logAction}){
-  const [coupons,setCoupons]=useState([
-    {id:1,code:"WELCOME10",type:"percent",value:10,minOrder:0,maxUses:100,used:34,active:true,expires:"2026-04-30"},
-    {id:2,code:"BOOST500",type:"flat",value:50000,minOrder:500000,maxUses:50,used:12,active:true,expires:"2026-05-15"},
-    {id:3,code:"VIP20",type:"percent",value:20,minOrder:1000000,maxUses:10,used:10,active:false,expires:"2026-03-01"},
-  ]);
-  const [f,setF]=useState("all");
-  const [modal,setModal]=useState(null); // null | "create" | coupon object for edit
-  const [del,setDel]=useState(null);
-  const empty={code:"",type:"percent",value:"",minOrder:"",maxUses:"",expires:""};
-  const [form,setForm]=useState(empty);
-  const upd=(k,v)=>setForm(p=>({...p,[k]:v}));
-  const list=coupons.filter(c=>f==="all"||(f==="active"?c.active:!c.active));
-  const toggle=(id)=>{setCoupons(p=>p.map(c=>c.id===id?{...c,active:!c.active}:c));notify("Coupon updated");logAction("Updated coupon","settings");};
-  const openCreate=()=>{setForm(empty);setModal("create");};
-  const openEdit=(c)=>{setForm({code:c.code,type:c.type,value:String(c.value),minOrder:String(c.minOrder||""),maxUses:String(c.maxUses),expires:c.expires});setModal(c);};
-  const saveCoupon=()=>{
-    if(!form.code||!form.value){notify("Code and value are required",true);return;}
-    if(modal==="create"){
-      setCoupons(p=>[...p,{id:Date.now(),code:form.code.toUpperCase(),type:form.type,value:Number(form.value),minOrder:Number(form.minOrder)||0,maxUses:Number(form.maxUses)||999,used:0,active:true,expires:form.expires||"2026-12-31"}]);
-      logAction(`Created coupon ${form.code.toUpperCase()}`,"settings");notify("Coupon created!");
-    } else {
-      setCoupons(p=>p.map(c=>c.id===modal.id?{...c,code:form.code.toUpperCase(),type:form.type,value:Number(form.value),minOrder:Number(form.minOrder)||0,maxUses:Number(form.maxUses)||999,expires:form.expires||c.expires}:c));
-      logAction(`Updated coupon ${form.code.toUpperCase()}`,"settings");notify("Coupon updated!");
-    }
-    setModal(null);
-  };
-  const deleteCoupon=(id)=>{const c=coupons.find(x=>x.id===id);setCoupons(p=>p.filter(x=>x.id!==id));logAction(`Deleted coupon ${c?.code}`,"settings");notify("Coupon deleted");setDel(null);};
-  const Field=({label,children})=><div style={{marginBottom:14}}><label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>{label}</label>{children}</div>;
-  return <div>
-    <Hdr title="Coupons" sub="Manage promo codes and discounts" t={t} action={<Btn primary onClick={openCreate}>+ Create Coupon</Btn>}/>
-    <div style={{display:"flex",gap:8,marginBottom:16}}><FilterBtn active={f==="all"} onClick={()=>setF("all")}>All ({coupons.length})</FilterBtn><FilterBtn active={f==="active"} onClick={()=>setF("active")}>Active ({coupons.filter(c=>c.active).length})</FilterBtn><FilterBtn active={f==="expired"} onClick={()=>setF("expired")}>Inactive ({coupons.filter(c=>!c.active).length})</FilterBtn></div>
-    {list.map(c=><Card key={c.id} dark={dark} style={{marginBottom:10,padding:16}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <div style={{padding:"8px 14px",borderRadius:8,background:t.accentLight,border:`1px solid ${t.accentBorder}`}}><span className="m" style={{fontSize:14,fontWeight:700,color:t.accent}}>{c.code}</span></div>
-          <div>
-            <div style={{fontSize:13,fontWeight:500,color:t.text}}>{c.type==="percent"?`${c.value}% off`:`${fN(c.value)} off`}</div>
-            <div style={{fontSize:11,color:t.textMuted,marginTop:2}}>Min: {c.minOrder?fN(c.minOrder):"None"} · Used: {c.used}/{c.maxUses} · Exp: {c.expires}</div>
-          </div>
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <Badge s={c.active?"Active":"Inactive"} dark={dark}/>
-          <button onClick={()=>toggle(c.id)} style={{width:44,height:24,borderRadius:12,background:c.active?t.accent:(dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)"),position:"relative",border:"none",cursor:"pointer",transition:"background 0.2s"}}><div style={{width:20,height:20,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:c.active?22:2,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/></button>
-          <Btn onClick={()=>openEdit(c)}>Edit</Btn>
-          <Btn onClick={()=>setDel(c)} style={{color:t.red}}>Delete</Btn>
-        </div>
-      </div>
-    </Card>)}
-    {/* Create/Edit Modal */}
-    {modal&&<div onClick={()=>setModal(null)} style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.5)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-      <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:440,background:dark?"rgba(15,18,30,0.98)":"rgba(255,255,255,0.98)",border:`1px solid ${t.surfaceBorder}`,borderRadius:20,padding:28}}>
-        <h3 style={{fontSize:18,fontWeight:600,color:t.text,marginBottom:20}}>{modal==="create"?"Create Coupon":"Edit Coupon"}</h3>
-        <Field label="Coupon Code"><input value={form.code} onChange={e=>upd("code",e.target.value.toUpperCase())} placeholder="e.g. WELCOME10" className="m" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></Field>
-        <Field label="Discount Type"><div style={{display:"flex",gap:8}}>{[["percent","% Percentage"],["flat","₦ Flat Amount"]].map(([v,lb])=><button key={v} onClick={()=>upd("type",v)} style={{flex:1,padding:"10px 0",borderRadius:10,fontSize:13,fontWeight:500,background:form.type===v?t.accentLight:t.btnSecondary,color:form.type===v?t.accent:t.textSoft,border:`1px solid ${t.btnSecBorder}`}}>{lb}</button>)}</div></Field>
-        <Field label={form.type==="percent"?"Discount (%)":"Discount Amount (₦)"}><input type="number" value={form.value} onChange={e=>upd("value",e.target.value)} placeholder={form.type==="percent"?"10":"500"} style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></Field>
-        <div style={{display:"flex",gap:10}}>
-          <Field label="Min Order (₦)"><input type="number" value={form.minOrder} onChange={e=>upd("minOrder",e.target.value)} placeholder="0" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></Field>
-          <Field label="Max Uses"><input type="number" value={form.maxUses} onChange={e=>upd("maxUses",e.target.value)} placeholder="100" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></Field>
-        </div>
-        <Field label="Expiry Date"><input type="date" value={form.expires} onChange={e=>upd("expires",e.target.value)} style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></Field>
-        <div style={{display:"flex",gap:10,marginTop:6}}><Btn primary onClick={saveCoupon} style={{flex:1}}>{modal==="create"?"Create":"Save Changes"}</Btn><Btn onClick={()=>setModal(null)} style={{flex:1}}>Cancel</Btn></div>
-      </div>
-    </div>}
-    {/* Delete Confirmation */}
-    {del&&<div onClick={()=>setDel(null)} style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.5)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-      <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:380,background:dark?"rgba(15,18,30,0.98)":"rgba(255,255,255,0.98)",border:`1px solid ${t.surfaceBorder}`,borderRadius:20,padding:28,textAlign:"center"}}>
-        <div style={{fontSize:36,marginBottom:12}}>🗑️</div>
-        <h3 style={{fontSize:16,fontWeight:600,color:t.text,marginBottom:8}}>Delete coupon?</h3>
-        <p style={{fontSize:13,color:t.textSoft,marginBottom:20}}>This will permanently delete <strong className="m" style={{color:t.accent}}>{del.code}</strong>. This cannot be undone.</p>
-        <div style={{display:"flex",gap:10}}><Btn onClick={()=>deleteCoupon(del.id)} style={{flex:1,background:dark?"rgba(220,38,38,0.1)":"#fef2f2",color:t.red,border:`1px solid ${dark?"rgba(220,38,38,0.2)":"#fecaca"}`}}>Delete</Btn><Btn onClick={()=>setDel(null)} style={{flex:1}}>Cancel</Btn></div>
-      </div>
-    </div>}
-  </div>;
-}
-
-
-function NotificationsPage({t,dark,Btn,notify,logAction,users}){
-  const [method,setMethod]=useState("banner");
-  const [target,setTarget]=useState("all");
-  const [msg,setMsg]=useState("");
-  const [subject,setSubject]=useState("");
-  const [confirm,setConfirm]=useState(false);
-  const [history,setHistory]=useState([
-    {id:1,method:"banner",target:"All users",message:"New TikTok services available!",sent:"2026-03-22T14:00:00",by:"David Ojo"},
-    {id:2,method:"email",target:"All users",message:"Scheduled maintenance tonight",sent:"2026-03-21T10:00:00",by:"Owner"},
-    {id:3,method:"banner",target:"Active users",message:"Referral bonus doubled this week!",sent:"2026-03-19T09:00:00",by:"Owner"},
-  ]);
-  const targetCount=target==="all"?users.length:target==="active"?users.filter(u=>u.status==="Active").length:Math.floor(users.length*0.3);
-  const targetLabel=target==="all"?"All users":target==="active"?"Active users":"New users (30d)";
-  const send=()=>{setHistory(p=>[{id:Date.now(),method,target:targetLabel,message:msg,sent:new Date().toISOString(),by:"You (Owner)"},...p]);notify("Notification sent!");logAction(`Sent ${method} notification to ${targetLabel}`,"admin");setMsg("");setSubject("");setConfirm(false);};
-  return <div>
-    <Hdr title="Notifications" sub="Send announcements to users" t={t}/>
-    <div className="g2">
-      <Card dark={dark}>
-        <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>New Notification</h3>
-        <div style={{marginBottom:16}}>
-          <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Method</label>
-          <div style={{display:"flex",gap:8}}>{[["banner","📢 Dashboard Banner"],["email","📧 Email Blast"]].map(([v,lb])=><button key={v} onClick={()=>setMethod(v)} style={{flex:1,padding:"10px 0",borderRadius:10,fontSize:13,fontWeight:500,background:method===v?t.accentLight:t.btnSecondary,color:method===v?t.accent:t.textSoft,border:`1px solid ${t.btnSecBorder}`}}>{lb}</button>)}</div>
-        </div>
-        <div style={{marginBottom:16}}>
-          <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Target</label>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{[["all","All Users"],["active","Active Only"],["new","New (30d)"]].map(([v,lb])=><button key={v} onClick={()=>setTarget(v)} style={{padding:"10px 16px",borderRadius:10,fontSize:13,fontWeight:500,background:target===v?t.accentLight:t.btnSecondary,color:target===v?t.accent:t.textSoft,border:`1px solid ${t.btnSecBorder}`}}>{lb}</button>)}</div>
-        </div>
-        {method==="email"&&<div style={{marginBottom:16}}>
-          <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Subject</label>
-          <input value={subject} onChange={e=>setSubject(e.target.value)} placeholder="Email subject line" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
-        </div>}
-        <div style={{marginBottom:16}}>
-          <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-            <label style={{fontSize:11,color:t.textSoft,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5}}>Message</label>
-            <span style={{fontSize:11,color:msg.length>200?t.red:t.textMuted}} className="m">{msg.length}/200</span>
-          </div>
-          <textarea rows={4} value={msg} onChange={e=>e.target.value.length<=200&&setMsg(e.target.value)} placeholder="Type your notification message..." style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",resize:"vertical"}}/>
-        </div>
-        {msg&&<div style={{marginBottom:16}}>
-          <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Preview</label>
-          {method==="banner"?<div style={{padding:"12px 16px",borderRadius:10,background:dark?"rgba(99,102,241,0.1)":"#eef2ff",color:dark?"#a5b4fc":"#4f46e5",fontSize:13,fontWeight:500,border:`1px solid ${dark?"rgba(99,102,241,0.2)":"#c7d2fe"}`}}>{"ℹ️"} {msg}</div>
-          :<div style={{padding:16,borderRadius:10,background:dark?"#0d1020":"#faf8f5",border:`1px solid ${t.surfaceBorder}`}}>
-            <div style={{fontSize:11,color:t.textMuted,marginBottom:4}}>From: BoostPanel</div>
-            <div style={{fontSize:13,fontWeight:600,color:t.text,marginBottom:8}}>{subject||"(No subject)"}</div>
-            <div style={{fontSize:13,color:t.textSoft,lineHeight:1.6}}>{msg}</div>
-          </div>}
-        </div>}
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{fontSize:12,color:t.textMuted}}>Sending to ~{targetCount} users</span>
-          <Btn primary onClick={()=>{if(!msg){notify("Message is required",true);return;}setConfirm(true);}}>📣 Send</Btn>
-        </div>
-      </Card>
-      <Card dark={dark}>
-        <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Recent Notifications</h3>
-        {history.length===0?<div style={{textAlign:"center",padding:"30px 0",color:t.textMuted,fontSize:13}}>No notifications sent yet</div>:history.map((n,i)=><div key={n.id} style={{padding:"12px 0",borderBottom:i<history.length-1?`1px solid ${t.surfaceBorder}`:"none"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4,flexWrap:"wrap",gap:6}}>
-            <span style={{fontSize:12,fontWeight:600,padding:"2px 8px",borderRadius:4,background:n.method==="email"?(dark?"rgba(99,102,241,0.1)":"#eef2ff"):(dark?"rgba(217,119,6,0.1)":"#fffbeb"),color:n.method==="email"?(dark?"#a5b4fc":"#4f46e5"):(dark?"#fcd34d":"#92400e")}}>{n.method==="email"?"📧 Email":"📢 Banner"}</span>
-            <span style={{fontSize:11,color:t.textMuted}}>{fD(n.sent)} · {n.by}</span>
-          </div>
-          <div style={{fontSize:13,color:t.text}}>{n.message}</div>
-          <div style={{fontSize:11,color:t.textMuted,marginTop:2}}>To: {n.target}</div>
-        </div>)}
-      </Card>
-    </div>
-    {confirm&&<div onClick={()=>setConfirm(false)} style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.5)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-      <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:400,background:dark?"rgba(15,18,30,0.98)":"rgba(255,255,255,0.98)",border:`1px solid ${t.surfaceBorder}`,borderRadius:20,padding:28,textAlign:"center"}}>
-        <div style={{fontSize:36,marginBottom:12}}>📣</div>
-        <h3 style={{fontSize:16,fontWeight:600,color:t.text,marginBottom:8}}>Send notification?</h3>
-        <p style={{fontSize:13,color:t.textSoft,marginBottom:6}}>Sending a <strong style={{color:t.text}}>{method==="banner"?"dashboard banner":"email"}</strong> to <strong style={{color:t.text}}>~{targetCount} {targetLabel.toLowerCase()}</strong>.</p>
-        <div style={{padding:12,borderRadius:10,background:dark?"#0d1020":"#faf8f5",border:`1px solid ${t.surfaceBorder}`,margin:"14px 0",textAlign:"left",fontSize:13,color:t.text,lineHeight:1.5}}>"{msg}"</div>
-        <div style={{display:"flex",gap:10}}><Btn primary onClick={send} style={{flex:1}}>Confirm & Send</Btn><Btn onClick={()=>setConfirm(false)} style={{flex:1}}>Cancel</Btn></div>
-      </div>
-    </div>}
   </div>;
 }
