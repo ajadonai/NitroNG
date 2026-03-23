@@ -5,6 +5,7 @@ export default function NotFound(){
   const getAuto=()=>{const h=new Date().getHours();if(h>=7&&h<18)return false;return true;};
   const [dark,setDark]=useState(getAuto);
   const [mo,setMo]=useState(false);
+  const toggleTheme=()=>{setMo(true);setDark(d=>!d);};
   useEffect(()=>{if(mo)return;const iv=setInterval(()=>setDark(getAuto()),60000);return()=>clearInterval(iv);},[mo]);
 
   const t={
@@ -21,7 +22,7 @@ export default function NotFound(){
       
       <style>{`
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        .root{min-height:100vh;background:${t.bg};font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;transition:background 1.5s ease;position:relative;overflow:hidden}
+        .root{min-height:100vh;background:${t.bg};font-family:'Outfit',sans-serif;display:flex;flex-direction:column;transition:background 1.5s ease;position:relative;overflow:hidden}
         .serif{font-family:'Cormorant Garamond',serif}
         .m{font-family:'JetBrains Mono',monospace}
         button,a{cursor:pointer;font-family:inherit;border:none;text-decoration:none}
@@ -31,7 +32,16 @@ export default function NotFound(){
         .orb{position:absolute;border-radius:50%;pointer-events:none;filter:blur(80px)}
       `}</style>
 
-      {/* Background */}
+      <div style={{padding:"14px 0",borderBottom:`1px solid ${t.surfaceBorder}`,position:"sticky",top:0,zIndex:50,background:dark?"rgba(8,11,20,0.8)":"rgba(244,241,237,0.8)",backdropFilter:"blur(20px)",transition:"background 1.5s ease"}}>
+        <div style={{maxWidth:800,margin:"0 auto",padding:"0 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} style={{display:"flex",alignItems:"center",gap:10,background:"none",padding:0,border:"none",outline:"none",cursor:"pointer"}}>
+            <div style={{width:32,height:32,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:"#fff"}}>B</div>
+            <span className="serif" style={{fontSize:18,fontWeight:600,color:t.text}}>BoostPanel</span>
+          </button>
+          <button onClick={toggleTheme} style={{display:"flex",alignItems:"center",background:dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)",borderRadius:20,padding:3,width:52,height:28,border:`1px solid ${dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)"}`,position:"relative",flexShrink:0,transition:"background 1.5s cubic-bezier(.4,0,.2,1),border-color 1.5s ease"}}><div style={{width:22,height:22,borderRadius:"50%",background:dark?"#c47d8e":"#e0a458",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,position:"absolute",left:dark?3:27,transition:"left 0.4s cubic-bezier(.4,0,.2,1),background 1.5s cubic-bezier(.4,0,.2,1)",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}>{dark?"🌙":"☀️"}</div></button>
+        </div>
+      </div>
+      <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
       <div className="orb" style={{width:350,height:350,top:"-15%",left:"-10%",background:dark?"rgba(196,125,142,0.08)":"rgba(196,125,142,0.06)",animation:"float1 20s ease-in-out infinite"}}/>
       <div className="orb" style={{width:250,height:250,bottom:"-10%",right:"-8%",background:dark?"rgba(100,120,200,0.06)":"rgba(100,120,200,0.04)",animation:"float2 22s ease-in-out infinite"}}/>
       <div style={{position:"absolute",inset:0,backgroundImage:`linear-gradient(${dark?"rgba(255,255,255,0.015)":"rgba(0,0,0,0.015)"} 1px,transparent 1px),linear-gradient(90deg,${dark?"rgba(255,255,255,0.015)":"rgba(0,0,0,0.015)"} 1px,transparent 1px)`,backgroundSize:"60px 60px",pointerEvents:"none"}}/>
@@ -62,7 +72,8 @@ export default function NotFound(){
         </div>
       </div>
 
-      <footer style={{position:"absolute",bottom:0,left:0,right:0,borderTop:`1px solid ${t.surfaceBorder}`}}>
+      </div>
+      <footer style={{position:"relative",bottom:0,left:0,right:0,borderTop:`1px solid ${t.surfaceBorder}`}}>
         <div style={{maxWidth:800,margin:"0 auto",padding:"16px 24px"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
             <div style={{fontSize:12,color:t.textMuted}}>© 2026 BoostPanel. All rights reserved.</div>
