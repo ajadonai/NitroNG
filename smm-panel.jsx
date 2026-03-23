@@ -164,6 +164,7 @@ function Fnds({onAdd,bal,txs,t,dark}){
   const [payError,setPayError]=useState("");
   const [payRef,setPayRef]=useState("");
   const [payMethod,setPayMethod]=useState("card"); // card | bank
+  const [txPage,setTxPage]=useState(1);const [txPp,setTxPp]=useState(10);
 
   const startPayment=()=>{
     if(Number(a)<500)return;
@@ -301,7 +302,7 @@ function Fnds({onAdd,bal,txs,t,dark}){
       {/* Right column: transactions */}
       <Card d={.1} dark={dark}>
         <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:14}}>Transactions</h3>
-        {txs.map((tx,i)=><div key={tx.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:i<txs.length-1?`1px solid ${t.surfaceBorder}`:"none",gap:10}}>
+        {txs.slice((txPage-1)*txPp,txPage*txPp).map((tx,i)=><div key={tx.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:i<Math.min(txPp,txs.length)-1?`1px solid ${t.surfaceBorder}`:"none",gap:10}}>
           <div style={{display:"flex",alignItems:"center",gap:10,minWidth:0}}>
             <div style={{width:32,height:32,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0,background:tx.amount>0?(dark?"rgba(110,231,183,0.08)":"rgba(5,150,105,0.06)"):(dark?"rgba(252,165,165,0.08)":"rgba(220,38,38,0.06)"),border:`1px solid ${tx.amount>0?(dark?"#16653433":"#a7f3d033"):(dark?"#991b1b33":"#fecaca66")}`}}>
               {tx.type==="deposit"?"↓":tx.type==="referral"?"🔗":"↑"}
@@ -313,6 +314,7 @@ function Fnds({onAdd,bal,txs,t,dark}){
           </div>
           <div className="m" style={{fontSize:13,fontWeight:600,color:tx.amount>0?t.green:t.red,flexShrink:0}}>{tx.amount>0?"+":"-"}{fN(tx.amount)}</div>
         </div>)}
+        <Pagination total={txs.length} page={txPage} setPage={setTxPage} perPage={txPp} setPerPage={setTxPp} t={t}/>
       </Card>
     </div>
   </div>;
