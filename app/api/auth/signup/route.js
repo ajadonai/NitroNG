@@ -18,7 +18,24 @@ export async function POST(req) {
     // Check if user exists
     const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (existing) {
-      return error('An account with this email already exists');
+      // If unverified and verify code expired, delete and allow re-signup
+      if (!existing.emailVerified && existing.verifyExpires && existing.verifyExpires < new Date()) {
+        await prisma.user.delete({ where: { id: existing.id } });
+      } else if (!existing.emailVerified) {
+        // Unverified but code still valid — resend code
+        const verifyToken = generateVerifyCode();
+        const verifyExpires = new Date(Date.now() + 30 * 60 * 1000);
+        await prisma.user.update({ where: { id: existing.id }, data: { verifyToken, verifyExpires } });
+        console.log('\n' + '='.repeat(50));
+        console.log(`📧 VERIFICATION CODE for ${email} (re-signup)`);
+        console.log(`👉 CODE: ${verifyToken}`);
+        console.log('='.repeat(50) + '\n');
+        const token = signUserToken(existing);
+        await setUserCookie(token);
+        return ok({ user: { id: existing.id, name: existing.name, email: existing.email, emailVerified: false } });
+      } else {
+        return error('An account with this email already exists');
+      }
     }
 
     // Hash password

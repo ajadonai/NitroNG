@@ -16,6 +16,20 @@ async function verifyToken(token, secret) {
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
+  // ── Protect /verify — must have a user token (unverified user) ──
+  if (pathname === '/verify') {
+    const token = request.cookies.get('bp_token')?.value;
+    if (!token) {
+      return NextResponse.redirect(new URL('/?signup=1', request.url));
+    }
+    const payload = await verifyToken(token, SECRET);
+    if (!payload || payload.type !== 'user') {
+      const response = NextResponse.redirect(new URL('/?signup=1', request.url));
+      response.cookies.set('bp_token', '', { maxAge: 0, path: '/' });
+      return response;
+    }
+  }
+
   // ── Protect /dashboard ──
   if (pathname.startsWith('/dashboard')) {
     const token = request.cookies.get('bp_token')?.value;
@@ -59,5 +73,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/admin/:path*'],
+  matcher: ['/verify', '/dashboard/:path*', '/admin/:path*'],
 };
