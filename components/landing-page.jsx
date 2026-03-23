@@ -355,22 +355,11 @@ function AuthModal({dark,t,mode,setMode,onClose}){
     }catch{setError("Something went wrong. Please try again.");setAuthLoading(false);}
   };
 
-  const MethodToggle=()=>(
-    <div style={{display:"flex",gap:0,marginBottom:6,background:dark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",borderRadius:10,padding:3,border:`1px solid ${t.surfaceBorder}`}}>
-      <button onClick={()=>setMethod("email")} style={{flex:1,padding:"8px 0",borderRadius:8,fontSize:13,fontWeight:500,background:method==="email"?t.accentLight:"transparent",color:method==="email"?t.accent:t.textMuted,border:"none"}}>📧 Email</button>
-      <button onClick={()=>setMethod("phone")} style={{flex:1,padding:"8px 0",borderRadius:8,fontSize:13,fontWeight:500,background:method==="phone"?t.accentLight:"transparent",color:method==="phone"?t.accent:t.textMuted,border:"none"}}>📱 Phone</button>
-    </div>
-  );
-  const ContactInput=()=>method==="email"?<>
-    <Lbl t={t}>Email Address</Lbl>
-    <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" type="email" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/>
-  </>:<>
-    <Lbl t={t}>Phone Number</Lbl>
-    <div style={{display:"flex",gap:8,marginBottom:16}}>
-      <div style={{padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.textSoft,fontSize:14,flexShrink:0}}>🇳🇬 +234</div>
-      <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="8012345678" type="tel" style={{flex:1,padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
-    </div>
-  </>;
+  const [showPw2,setShowPw2]=useState(false);
+  const validEmail=email&&/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+  const validPhone=phone&&/^[0-9]{10,11}$/.test(phone);
+  const pwMatch=pw2.length>0&&pw===pw2;
+  const pwMismatch=pw2.length>0&&pw!==pw2;
 
   return(
     <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:100,background:t.overlay,backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16,animation:"fi 0.2s ease"}}>
@@ -383,8 +372,11 @@ function AuthModal({dark,t,mode,setMode,onClose}){
         </div>
         {error&&<div style={{padding:"10px 14px",borderRadius:10,background:dark?"rgba(220,38,38,0.1)":"#fef2f2",border:`1px solid ${dark?"rgba(220,38,38,0.2)":"#fecaca"}`,color:dark?"#fca5a5":"#dc2626",fontSize:13,marginBottom:16,animation:"fu .3s ease"}}>⚠️ {error}</div>}
         {mode==="login"&&<>
-          <MethodToggle/>
-          <ContactInput/>
+          <div style={{display:"flex",gap:0,marginBottom:6,background:dark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",borderRadius:10,padding:3,border:`1px solid ${t.surfaceBorder}`}}>
+            <button onClick={()=>setMethod("email")} style={{flex:1,padding:"8px 0",borderRadius:8,fontSize:13,fontWeight:500,background:method==="email"?t.accentLight:"transparent",color:method==="email"?t.accent:t.textMuted,border:"none",cursor:"pointer"}}>📧 Email</button>
+            <button onClick={()=>setMethod("phone")} style={{flex:1,padding:"8px 0",borderRadius:8,fontSize:13,fontWeight:500,background:method==="phone"?t.accentLight:"transparent",color:method==="phone"?t.accent:t.textMuted,border:"none",cursor:"pointer"}}>📱 Phone</button>
+          </div>
+          {method==="email"?<div key="email-login"><Lbl t={t}>Email Address</Lbl><input value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" type="email" autoComplete="email" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/></div>:<div key="phone-login"><Lbl t={t}>Phone Number</Lbl><div style={{display:"flex",gap:8,marginBottom:16}}><div style={{padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.textSoft,fontSize:14,flexShrink:0}}>🇳🇬 +234</div><input value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,"").slice(0,11))} placeholder="8012345678" type="tel" autoComplete="tel" style={{flex:1,padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></div></div>}
           <Lbl t={t}>Password</Lbl>
           <div style={{position:"relative",marginBottom:16}}>
             <input value={pw} onChange={e=>setPw(e.target.value)} placeholder="Enter password" type={showPw?"text":"password"} onKeyDown={e=>e.key==="Enter"&&handleLogin()} style={{width:"100%",padding:"12px 44px 12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
@@ -400,9 +392,12 @@ function AuthModal({dark,t,mode,setMode,onClose}){
         {mode==="signup"&&step===1&&<>
           <Lbl t={t}>Full Name</Lbl>
           <input value={name} onChange={e=>setName(e.target.value)} placeholder="Enter your full name" type="text" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/>
-          <MethodToggle/>
-          <ContactInput/>
-          <button onClick={()=>{setError("");if(!name){setError("Please enter your name");return;}if(!email&&!phone){setError("Please enter your email or phone");return;}setStep(2);}} style={{width:"100%",padding:"14px 0",borderRadius:12,background:t.btnPrimary,color:"#fff",fontSize:15,fontWeight:700,marginBottom:16,border:"none",cursor:"pointer"}}>Continue →</button>
+          <div style={{display:"flex",gap:0,marginBottom:6,background:dark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",borderRadius:10,padding:3,border:`1px solid ${t.surfaceBorder}`}}>
+            <button onClick={()=>setMethod("email")} style={{flex:1,padding:"8px 0",borderRadius:8,fontSize:13,fontWeight:500,background:method==="email"?t.accentLight:"transparent",color:method==="email"?t.accent:t.textMuted,border:"none",cursor:"pointer"}}>📧 Email</button>
+            <button onClick={()=>setMethod("phone")} style={{flex:1,padding:"8px 0",borderRadius:8,fontSize:13,fontWeight:500,background:method==="phone"?t.accentLight:"transparent",color:method==="phone"?t.accent:t.textMuted,border:"none",cursor:"pointer"}}>📱 Phone</button>
+          </div>
+          {method==="email"?<div key="email-signup"><Lbl t={t}>Email Address</Lbl><input value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" type="email" autoComplete="email" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:email&&!validEmail?4:16}}/>{email&&!validEmail&&<div style={{fontSize:11,color:dark?"#fca5a5":"#dc2626",marginBottom:12}}>Please enter a valid email address</div>}</div>:<div key="phone-signup"><Lbl t={t}>Phone Number</Lbl><div style={{display:"flex",gap:8,marginBottom:phone&&!validPhone?4:16}}><div style={{padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.textSoft,fontSize:14,flexShrink:0}}>🇳🇬 +234</div><input value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,"").slice(0,11))} placeholder="8012345678" type="tel" autoComplete="tel" style={{flex:1,padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></div>{phone&&!validPhone&&<div style={{fontSize:11,color:dark?"#fca5a5":"#dc2626",marginBottom:12}}>Enter 10-11 digits (e.g. 08012345678)</div>}</div>}
+          <button onClick={()=>{setError("");if(!name){setError("Please enter your name");return;}if(method==="email"&&!email){setError("Please enter your email");return;}if(method==="email"&&!validEmail){setError("Please enter a valid email (e.g. you@gmail.com)");return;}if(method==="phone"&&!phone){setError("Please enter your phone number");return;}if(method==="phone"&&!validPhone){setError("Please enter a valid phone number (10-11 digits)");return;}setStep(2);}} style={{width:"100%",padding:"14px 0",borderRadius:12,background:t.btnPrimary,color:"#fff",fontSize:15,fontWeight:700,marginBottom:16,border:"none",cursor:"pointer"}}>Continue →</button>
           <div style={{textAlign:"center",fontSize:13,color:t.textSoft}}>Already have an account? <button onClick={()=>setMode("login")} style={{background:"none",color:t.accent,fontWeight:600,fontSize:13,border:"none",cursor:"pointer"}}>Log In</button></div>
         </>}
         {mode==="signup"&&step===2&&<>
@@ -413,7 +408,13 @@ function AuthModal({dark,t,mode,setMode,onClose}){
           </div>
           <PwStrength pw={pw} t={t}/>
           <Lbl t={t}>Confirm Password</Lbl>
-          <input value={pw2} onChange={e=>setPw2(e.target.value)} placeholder="Re-enter password" type="password" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/>
+          <div style={{position:"relative",marginBottom:4}}>
+            <input value={pw2} onChange={e=>setPw2(e.target.value)} placeholder="Re-enter password" type={showPw2?"text":"password"} style={{width:"100%",padding:"12px 44px 12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${pwMismatch?(dark?"rgba(220,38,38,0.4)":"#fecaca"):pwMatch?(dark?"rgba(110,231,183,0.4)":"#a7f3d0"):t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
+            <button onClick={()=>setShowPw2(!showPw2)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",color:t.textMuted,fontSize:14,padding:2,border:"none",cursor:"pointer"}}>{showPw2?"🙈":"👁️"}</button>
+          </div>
+          {pwMatch&&<div style={{fontSize:11,color:dark?"#6ee7b7":"#059669",marginBottom:12}}>✓ Passwords match</div>}
+          {pwMismatch&&<div style={{fontSize:11,color:dark?"#fca5a5":"#dc2626",marginBottom:12}}>✕ Passwords don't match</div>}
+          {!pw2&&<div style={{height:12,marginBottom:12}}/>}
           <Lbl t={t}>Referral Code <span style={{color:t.textMuted,fontWeight:400}}>(optional)</span></Lbl>
           <input value={refCode} onChange={e=>setRefCode(e.target.value)} placeholder="e.g. BOOST-7X92" type="text" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/>
           <label style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:24,cursor:"pointer"}}>

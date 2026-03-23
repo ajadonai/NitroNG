@@ -58,7 +58,10 @@ export async function POST(req) {
 
     // TODO: Send verification email with verifyToken
     // For now, we'll log it (remove in production)
-    console.log(`[VERIFY] ${email}: ${verifyToken}`);
+    console.log('\n' + '='.repeat(50));
+    console.log(`📧 VERIFICATION CODE for ${email}`);
+    console.log(`👉 CODE: ${verifyToken}`);
+    console.log('='.repeat(50) + '\n');
 
     // Sign JWT and set cookie
     const token = signUserToken(user);

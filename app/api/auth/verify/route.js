@@ -83,7 +83,10 @@ export async function PUT(req) {
     });
 
     // TODO: Send email
-    console.log(`[VERIFY RESEND] ${user.email}: ${verifyToken}`);
+    console.log('\n' + '='.repeat(50));
+    console.log(`📧 NEW VERIFICATION CODE for ${user.email}`);
+    console.log(`👉 CODE: ${verifyToken}`);
+    console.log('='.repeat(50) + '\n');
 
     return ok({
       message: 'New verification code sent',
