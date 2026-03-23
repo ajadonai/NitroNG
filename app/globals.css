@@ -1,0 +1,28 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+}
+
+.serif {
+  font-family: 'Cormorant Garamond', serif;
+}
+
+.m {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+button, a {
+  cursor: pointer;
+  font-family: inherit;
+}

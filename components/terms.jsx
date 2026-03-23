@@ -1,3 +1,4 @@
+'use client';
 import { useState } from "react";
 
 export default function Terms(){
@@ -12,7 +13,7 @@ export default function Terms(){
 
   return(
     <div style={{minHeight:"100vh",background:t.bg,fontFamily:"'Outfit',sans-serif",transition:"background 1.5s ease"}}>
-      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+      
       <style>{`.serif{font-family:'Cormorant Garamond',serif}`}</style>
 
       {/* Header */}

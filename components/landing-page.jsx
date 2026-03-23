@@ -1,3 +1,4 @@
+'use client';
 import React, { useState, useEffect, useRef } from "react";
 
 function ThemeToggle({dark,onToggle,compact}){
@@ -70,7 +71,7 @@ export default function Landing(){
 
   return(
     <div className="root">
-      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+      
       <style>{`
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
         .root{min-height:100vh;background:${t.bg};color:${t.text};font-family:'Outfit',sans-serif;transition:background 1.5s cubic-bezier(.4,0,.2,1),color 1.2s ease;overflow-x:hidden;scroll-behavior:smooth;scroll-snap-type:y proximity}
@@ -367,7 +368,7 @@ function AuthModal({dark,t,mode,setMode,onClose}){
           <Inp t={t} dark={dark} ph="e.g. BOOST-7X92" type="text"/>
           <label style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:24,cursor:"pointer"}}>
             <input type="checkbox" style={{marginTop:3,accentColor:t.accent,width:16,height:16,flexShrink:0}}/>
-            <span style={{fontSize:12,color:t.textSoft,lineHeight:1.5}}>I agree to the <a href="#" style={{color:t.accent,textDecoration:"none"}}>Terms of Service</a> and <a href="#" style={{color:t.accent,textDecoration:"none"}}>Privacy Policy</a></span>
+            <span style={{fontSize:12,color:t.textSoft,lineHeight:1.5}}>I agree to the <a href="/terms" style={{color:t.accent,textDecoration:"none"}}>Terms of Service</a> and <a href="/privacy" style={{color:t.accent,textDecoration:"none"}}>Privacy Policy</a></span>
           </label>
           <button onClick={()=>setAuthLoading(true)} disabled={authLoading} style={{width:"100%",padding:"14px 0",borderRadius:12,background:authLoading?"#999":t.btnPrimary,color:"#fff",fontSize:15,fontWeight:700,marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:authLoading?.7:1}}>{authLoading&&<span style={{width:16,height:16,border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .6s linear infinite"}}/>}{authLoading?"Creating Account...":"Create Account"}</button>
           <button onClick={()=>setStep(1)} style={{width:"100%",padding:"10px 0",borderRadius:10,background:"transparent",color:t.textSoft,fontSize:13,fontWeight:500}}>← Back to Step 1</button>
@@ -423,7 +424,7 @@ export function Footer({t,dark}){
             </div>
             <div>
               <div style={{fontSize:11,fontWeight:600,color:t.textMuted,textTransform:"uppercase",letterSpacing:1.5,marginBottom:12}}>Legal</div>
-              {["Terms of Service","Privacy Policy","Refund Policy","Cookie Policy"].map(l=><a key={l} href="#" style={{display:"block",fontSize:13,color:t.textSoft,textDecoration:"none",marginBottom:8}}>{l}</a>)}
+              {["Terms of Service","Privacy Policy","Refund Policy","Cookie Policy"].map(l=><a key={l} href={l==="Terms of Service"?"/terms":l==="Privacy Policy"?"/privacy":"#"} style={{display:"block",fontSize:13,color:t.textSoft,textDecoration:"none",marginBottom:8}}>{l}</a>)}
             </div>
           </div>
         </div>

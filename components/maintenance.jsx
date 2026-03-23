@@ -1,3 +1,4 @@
+'use client';
 import { useState, useEffect } from "react";
 
 export default function Maintenance(){
@@ -15,7 +16,7 @@ export default function Maintenance(){
 
   return(
     <div className="root">
-      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+      
       <style>{`
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
         .root{min-height:100vh;background:${t.bg};font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}

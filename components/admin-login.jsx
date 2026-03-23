@@ -1,3 +1,4 @@
+'use client';
 import { useState, useEffect } from "react";
 
 function ThemeToggle({dark,onToggle}){
@@ -37,7 +38,7 @@ export default function AdminLogin(){
 
   return (
     <div className="root">
-      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+      
       <style>{`
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
         .root{min-height:100vh;background:${t.bg};font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;transition:background 1.5s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}
@@ -123,7 +124,7 @@ export default function AdminLogin(){
         </div>
 
         <div style={{textAlign:"center",marginTop:20}}>
-          <a href="#" style={{fontSize:13,color:t.textMuted,textDecoration:"none"}}>← Back to boostpanel.ng</a>
+          <a href="/" style={{fontSize:13,color:t.textMuted,textDecoration:"none"}}>← Back to boostpanel.ng</a>
         </div>
       </div>
     </div>
