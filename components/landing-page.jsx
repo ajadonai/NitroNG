@@ -90,7 +90,7 @@ export default function Landing(){
         ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:${dark?"#2a2a2a":"#ccc"};border-radius:3px}
         .sec{max-width:1100px;margin:0 auto;padding:0 24px}
         .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-        .g3p{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+        .g3p{display:grid;grid-template-columns:repeat(3,1fr);gap:36px}
         .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
         @media(max-width:900px){.g3,.g3p{grid-template-columns:1fr}.g4{grid-template-columns:repeat(2,1fr)}.hero-stats{gap:20px!important}}
         @media(max-width:500px){.g4{grid-template-columns:1fr}}@media(max-width:400px){.g3,.g3p{grid-template-columns:1fr!important}.sec{padding:0 14px}}
@@ -195,7 +195,7 @@ export default function Landing(){
       </section>
 
       <section id="pricing" className="snap-section" style={{padding:"80px 24px",position:"relative",zIndex:1}}>
-        <div className="sec" style={{maxWidth:1300}}>
+        <div className="sec" style={{maxWidth:1400}}>
           <Reveal><div style={{textAlign:"center",marginBottom:48}}>
             <h2 className="serif" style={{fontSize:"clamp(28px,4vw,42px)",fontWeight:600,color:t.text,marginBottom:12}}>Transparent Pricing</h2>
             <p style={{fontSize:15,color:t.textSoft,maxWidth:480,margin:"0 auto"}}>No subscriptions. Pay-as-you-go. All prices per 1,000 units.</p>
@@ -203,7 +203,7 @@ export default function Landing(){
           <div className="g3p">
             {[["TikTok","🎵",[["Followers","₦4,650"],["Views","₦465"],["Likes","₦2,325"],["Shares","₦1,200"]],false],["Instagram","📸",[["Followers","₦3,875"],["Likes","₦1,860"],["Reels Views","₦775"],["Story Views","₦1,240"]],true],["YouTube","▶️",[["Subscribers","₦12,400"],["Views","₦3,100"],["Watch Time","₦77,500"],["Likes","₦1,500"]],false]].map(([name,ic,prices,pop],i)=>
               <Reveal key={name} delay={i*0.1} style={{display:"flex"}}>
-                <div style={{padding:28,borderRadius:20,background:t.surface,border:`1px solid ${pop?"rgba(196,125,142,0.25)":t.surfaceBorder}`,backdropFilter:"blur(12px)",boxShadow:pop?"0 0 40px rgba(196,125,142,0.1)":t.cardShadow,transition:"background 1.5s ease,transform 0.2s",position:"relative",overflow:"hidden",display:"flex",flexDirection:"column",flex:1,transform:pop?"scale(1.03)":"scale(1)"}} onMouseEnter={e=>e.currentTarget.style.transform=pop?"scale(1.05)":"scale(1.02)"} onMouseLeave={e=>e.currentTarget.style.transform=pop?"scale(1.03)":"scale(1)"}>
+                <div style={{padding:"32px 34px",borderRadius:20,background:t.surface,border:`1px solid ${pop?"rgba(196,125,142,0.25)":t.surfaceBorder}`,backdropFilter:"blur(12px)",boxShadow:pop?"0 0 40px rgba(196,125,142,0.1)":t.cardShadow,transition:"background 1.5s ease,transform 0.2s",position:"relative",overflow:"hidden",display:"flex",flexDirection:"column",flex:1,transform:pop?"scale(1.03)":"scale(1)"}} onMouseEnter={e=>e.currentTarget.style.transform=pop?"scale(1.05)":"scale(1.02)"} onMouseLeave={e=>e.currentTarget.style.transform=pop?"scale(1.03)":"scale(1)"}>
                   {pop&&<div style={{position:"absolute",top:0,left:0,right:0,height:3,background:t.btnPrimary}}/>}
                   {pop&&<div style={{position:"absolute",top:14,right:14,padding:"3px 10px",borderRadius:6,background:t.accent,color:"#fff",fontSize:10,fontWeight:700,letterSpacing:1}}>POPULAR</div>}
                   <div style={{fontSize:36,marginBottom:8}}>{ic}</div>
@@ -219,7 +219,15 @@ export default function Landing(){
               </Reveal>
             )}
           </div>
-          <Reveal delay={0.3}><p style={{textAlign:"center",fontSize:13,color:t.textMuted,marginTop:24}}>All prices in ₦ per 1,000 units. More platforms available after signup.</p></Reveal>
+          <Reveal delay={0.3}><div style={{marginTop:40,textAlign:"center"}}>
+            <p style={{fontSize:13,color:t.textMuted,marginBottom:16,textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>All platforms we support</p>
+            <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:10}}>
+              {[["📸","Instagram"],["🎵","TikTok"],["▶️","YouTube"],["𝕏","Twitter/X"],["📘","Facebook"],["✈️","Telegram"],["🎵","Spotify"],["👻","Snapchat"],["🔗","LinkedIn"],["📌","Pinterest"],["🎮","Twitch"],["💬","Discord"]].map(([ic,name])=>
+                <span key={name} style={{display:"inline-flex",alignItems:"center",gap:6,padding:"8px 16px",borderRadius:10,background:t.surface,border:`1px solid ${t.surfaceBorder}`,fontSize:13,color:t.textSoft,fontWeight:500,backdropFilter:"blur(8px)",transition:"background 1.5s ease"}}>{ic} {name}</span>
+              )}
+            </div>
+            <p style={{fontSize:12,color:t.textMuted,marginTop:14}}>All prices in ₦ per 1,000 units. More services available after signup.</p>
+          </div></Reveal>
         </div>
       </section>
 
