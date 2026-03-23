@@ -185,8 +185,9 @@ function MaintenancePage({t,dark,maint,setMaint,Btn,notify,logAction,isSuperAdmi
       </div>
       <div style={{marginBottom:16}}>
         <label style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:6}}>Estimated Return Time</label>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
           {["~15 minutes","~30 minutes","~1 hour","~2 hours","No ETA"].map(v=><button key={v} onClick={()=>setEta(v)} style={{padding:"8px 14px",borderRadius:8,fontSize:12,fontWeight:500,background:eta===v?t.accentLight:"transparent",color:eta===v?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:eta===v?t.accentShadow:"none"}}>{v}</button>)}
+          <input placeholder="Custom time..." value={["~15 minutes","~30 minutes","~1 hour","~2 hours","No ETA"].includes(eta)?"":eta} onChange={e=>setEta(e.target.value)} style={{padding:"8px 14px",borderRadius:8,fontSize:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,outline:"none",width:140}}/>
         </div>
       </div>
       <Btn primary onClick={save}>Save Settings</Btn>
@@ -268,9 +269,9 @@ function PaymentGateways({t,dark,gateways,setGateways,Btn,notify,logAction,isSup
 }
 
 function AlertsPage({t,dark,alerts,setAlerts,Btn,FilterBtn,notify,isSuperAdmin,currentAdmin,logAction}){
-  const [msg,setMsg]=useState("");const [type,setType]=useState("info");const [target,setTarget]=useState("both");const [duration,setDuration]=useState("none");const [f,setF]=useState("active");
+  const [msg,setMsg]=useState("");const [type,setType]=useState("info");const [target,setTarget]=useState("both");const [duration,setDuration]=useState("none");const [customUnit,setCustomUnit]=useState("h");const [f,setF]=useState("active");
   const list=alerts.filter(a=>f==="all"||( f==="active"?a.active:!a.active));
-  const getExpiry=(dur)=>{if(dur==="none")return null;const ms={"1h":3600000,"6h":21600000,"24h":86400000,"3d":259200000,"7d":604800000};return new Date(Date.now()+(ms[dur]||0)).toISOString();};
+  const getExpiry=(dur)=>{if(dur==="none")return null;const ms={"1h":3600000,"6h":21600000,"24h":86400000,"3d":259200000,"7d":604800000};if(ms[dur])return new Date(Date.now()+ms[dur]).toISOString();const num=parseInt(dur);if(!num)return null;const mult=customUnit==="d"?86400000:customUnit==="m"?60000:3600000;return new Date(Date.now()+num*mult).toISOString();};
   const createAlert=()=>{if(!msg.trim())return;const newA={id:Date.now(),message:msg,type,target,active:true,createdBy:currentAdmin.name,created:new Date().toISOString(),expiresAt:getExpiry(duration)};setAlerts(p=>[newA,...p]);setMsg("");logAction(`Published ${type} alert: "${msg.slice(0,50)}${msg.length>50?'...':''}"`,"alert");notify("Alert published!");};
   const toggleAlert=(id)=>{const alert=alerts.find(a=>a.id===id);setAlerts(p=>p.map(a=>a.id===id?{...a,active:!a.active}:a));if(alert)logAction(`${alert.active?'Paused':'Activated'} alert: "${alert.message.slice(0,40)}..."`,"alert");};
   const deleteAlert=(id)=>{const alert=alerts.find(a=>a.id===id);setAlerts(p=>p.filter(a=>a.id!==id));if(alert)logAction(`Deleted alert: "${alert.message.slice(0,40)}..."`,"alert");notify("Alert deleted");};
@@ -292,7 +293,9 @@ function AlertsPage({t,dark,alerts,setAlerts,Btn,FilterBtn,notify,isSuperAdmin,c
         </div>
         <div>
           <div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6}}>Duration</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{[["none","♾️ Indefinite"],["1h","1 Hour"],["6h","6 Hours"],["24h","24 Hours"],["3d","3 Days"],["7d","7 Days"]].map(([val,lb])=><button key={val} onClick={()=>setDuration(val)} style={{padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:500,background:duration===val?t.accentLight:"transparent",color:duration===val?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:duration===val?t.accentShadow:"none"}}>{lb}</button>)}</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>{[["none","♾️ Indefinite"],["1h","1 Hour"],["6h","6 Hours"],["24h","24 Hours"],["3d","3 Days"],["7d","7 Days"]].map(([val,lb])=><button key={val} onClick={()=>setDuration(val)} style={{padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:500,background:duration===val?t.accentLight:"transparent",color:duration===val?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:duration===val?t.accentShadow:"none"}}>{lb}</button>)}
+            <div style={{display:"flex",alignItems:"center",gap:4}}><input type="number" placeholder="Custom" value={duration.match(/^\d+$/)?duration:""} onChange={e=>{if(e.target.value)setDuration(e.target.value);else setDuration("none");}} min="1" style={{padding:"6px 10px",borderRadius:8,fontSize:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,outline:"none",width:70,textAlign:"center"}}/><select value={customUnit} onChange={e=>setCustomUnit(e.target.value)} style={{padding:"6px 8px",borderRadius:8,fontSize:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,outline:"none"}}><option value="h">Hours</option><option value="d">Days</option><option value="m">Minutes</option></select></div>
+          </div>
         </div>
       </div>
       {/* Preview */}
