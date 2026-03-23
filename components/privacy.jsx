@@ -16,7 +16,7 @@ export default function Privacy(){
       
       <style>{`.serif{font-family:'Cormorant Garamond',serif}`}</style>
 
-      <div style={{padding:"24px 0",borderBottom:`1px solid ${t.surfaceBorder}`}}>
+      <div style={{padding:"24px 0",borderBottom:`1px solid ${t.surfaceBorder}`,position:"sticky",top:0,zIndex:50,background:t.bg,backdropFilter:"blur(20px)",transition:"background 1.5s ease"}}>
         <div style={{maxWidth:800,margin:"0 auto",padding:"0 24px",display:"flex",alignItems:"center",gap:10}}>
           <a href="/" style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none"}}>
             <div style={{width:32,height:32,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:"#fff"}}>B</div>
