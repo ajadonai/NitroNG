@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 
 const ROLES = {
-  superadmin: { label: "Super Admin", color: "#c47d8e", pages: ["overview","orders","users","services","api","paystack","tickets","admins","activity","alerts"] },
+  superadmin: { label: "Super Admin", color: "#c47d8e", pages: ["overview","orders","users","services","api","paystack","payments","tickets","admins","activity","alerts"] },
   admin: { label: "Admin", color: "#a5b4fc", pages: ["overview","orders","users","services","tickets","activity","alerts"] },
   support: { label: "Support", color: "#6ee7b7", pages: ["overview","tickets","orders","activity"] },
-  finance: { label: "Finance", color: "#fcd34d", pages: ["overview","orders","paystack","activity"] },
+  finance: { label: "Finance", color: "#fcd34d", pages: ["overview","orders","paystack","payments","activity"] },
 };
 
 const MOCK_ORDERS=[{id:"ORD-28491",user:"Chidi Okafor",email:"chidi@gmail.com",service:"Instagram Followers [Real]",link:"instagram.com/coolbrand",quantity:5000,charge:19375,cost:12594,status:"Completed",created:"2026-03-22T14:30:00",apiOrderId:"MTP-991204"},{id:"ORD-28490",user:"Amina Bello",email:"amina@yahoo.com",service:"TikTok Views [Instant]",link:"tiktok.com/@user/video/123",quantity:50000,charge:23250,cost:15113,status:"Processing",created:"2026-03-22T12:15:00",apiOrderId:"MTP-991203"},{id:"ORD-28489",user:"Tunde Adeyemi",email:"tunde@outlook.com",service:"YouTube Subscribers [Lifetime]",link:"youtube.com/@mychannel",quantity:1000,charge:12400,cost:8060,status:"Pending",created:"2026-03-21T22:00:00",apiOrderId:"MTP-991202"},{id:"ORD-28488",user:"Ngozi Eze",email:"ngozi@gmail.com",service:"Twitter/X Followers",link:"x.com/mybrand",quantity:2000,charge:12400,cost:8060,status:"Completed",created:"2026-03-21T10:45:00",apiOrderId:"MTP-991201"},{id:"ORD-28487",user:"Segun Akinola",email:"segun@mail.com",service:"Instagram Likes [Instant]",link:"instagram.com/p/ABC123",quantity:10000,charge:18600,cost:12090,status:"Partial",created:"2026-03-20T18:00:00",apiOrderId:"MTP-991200"},{id:"ORD-28486",user:"Fatima Yusuf",email:"fatima@gmail.com",service:"Spotify Plays [Premium]",link:"open.spotify.com/track/xyz",quantity:100000,charge:279000,cost:181350,status:"Completed",created:"2026-03-19T09:00:00",apiOrderId:"MTP-991199"},{id:"ORD-28485",user:"Emeka Nwankwo",email:"emeka@live.com",service:"Facebook Page Likes",link:"facebook.com/mybiz",quantity:3000,charge:23250,cost:15113,status:"Completed",created:"2026-03-18T16:20:00",apiOrderId:"MTP-991198"},{id:"ORD-28484",user:"Blessing Okoro",email:"blessing@gmail.com",service:"Telegram Members",link:"t.me/mychannel",quantity:5000,charge:27125,cost:17631,status:"Processing",created:"2026-03-18T11:00:00",apiOrderId:"MTP-991197"}];
@@ -48,7 +48,13 @@ function ErrorBoundary({children}){return <>{children}</>;}
 function ThemeToggle({dark,onToggle,compact}){return <button onClick={onToggle} style={{display:"flex",alignItems:"center",background:dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)",borderRadius:20,padding:3,width:compact?52:64,height:compact?28:32,border:`1px solid ${dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)"}`,position:"relative",flexShrink:0,transition:"background 1.5s cubic-bezier(.4,0,.2,1),border-color 1.5s ease"}}><div style={{width:compact?22:26,height:compact?22:26,borderRadius:"50%",background:dark?"#c47d8e":"#e0a458",display:"flex",alignItems:"center",justifyContent:"center",fontSize:compact?12:14,position:"absolute",left:dark?3:(compact?27:35),transition:"left 0.4s cubic-bezier(.4,0,.2,1),background 1.5s cubic-bezier(.4,0,.2,1)",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}>{dark?"🌙":"☀️"}</div></button>;}
 
 export default function AdminPanel(){
-  const [pg,setPg]=useState("overview");const [alerts,setAlerts]=useState(MOCK_ALERTS);const [activityLog,setActivityLog]=useState(MOCK_ACTIVITY);const [adminList,setAdminList]=useState(MOCK_ADMINS.map(a=>({...a,customPages:null})));const [sb,setSb]=useState(false);const [mini,setMini]=useState(false);const [toast,setToast]=useState(null);const [currentAdmin]=useState(MOCK_ADMINS[0]);const role=ROLES[currentAdmin.role];
+  const [pg,setPg]=useState("overview");const [alerts,setAlerts]=useState(MOCK_ALERTS);
+  const [gateways,setGateways]=useState([
+    {id:"paystack",name:"Paystack",icon:"💳",desc:"Cards, Bank Transfer, USSD",enabled:true,priority:1},
+    {id:"flutterwave",name:"Flutterwave",icon:"🦋",desc:"Cards, Bank Transfer, Mobile Money",enabled:true,priority:2},
+    {id:"monnify",name:"Monnify",icon:"🏦",desc:"Bank Transfer, USSD",enabled:true,priority:3},
+    {id:"korapay",name:"Korapay",icon:"💠",desc:"Cards, Bank Transfer",enabled:false,priority:4},
+  ]);const [activityLog,setActivityLog]=useState(MOCK_ACTIVITY);const [adminList,setAdminList]=useState(MOCK_ADMINS.map(a=>({...a,customPages:null})));const [sb,setSb]=useState(false);const [mini,setMini]=useState(false);const [toast,setToast]=useState(null);const [currentAdmin]=useState(MOCK_ADMINS[0]);const role=ROLES[currentAdmin.role];
   const getAutoTheme=()=>{const h=new Date().getHours(),m=new Date().getMinutes();if(h>=7&&h<18)return false;if(h>=19||h<6)return true;if(h===6)return m<30;if(h===18)return m>=30;return true;};
   const [dark,setDark]=useState(getAutoTheme);const [manualOverride,setManualOverride]=useState(false);
   useEffect(()=>{if(manualOverride)return;const iv=setInterval(()=>setDark(getAutoTheme()),60000);return()=>clearInterval(iv);},[manualOverride]);
@@ -57,7 +63,7 @@ export default function AdminPanel(){
   const logAction=(action,type)=>{setActivityLog(p=>[{id:Date.now(),admin:currentAdmin.name,action,type,time:new Date().toISOString()},...p]);};
   const dismissToast=()=>{setToast(null);if(toastTimer.current)clearTimeout(toastTimer.current);};
   const go=(p)=>{if(role.pages.includes(p)){setPg(p);setSb(false);}};
-  const ALL_NAV=[["overview","📊","Overview"],["orders","📋","Orders"],["users","👥","Users"],["tickets","💬","Tickets"],["services","📦","Services"],["api","🔌","API"],["paystack","💳","Paystack"],["alerts","📢","Alerts"],["activity","📝","Activity"],["admins","🛡️","Admins"]];
+  const ALL_NAV=[["overview","📊","Overview"],["orders","📋","Orders"],["users","👥","Users"],["tickets","💬","Tickets"],["services","📦","Services"],["api","🔌","API"],["paystack","💳","Paystack"],["payments","💰","Gateways"],["alerts","📢","Alerts"],["activity","📝","Activity"],["admins","🛡️","Admins"]];
   const NAV=ALL_NAV.filter(([id])=>role.pages.includes(id));
   const t={bg:dark?"#080b14":"#f4f1ed",text:dark?"#e8e4df":"#1a1a1a",textSoft:dark?"#8a8680":"#888580",textMuted:dark?"#555250":"#b0ada8",surface:dark?"rgba(15,18,30,0.97)":"rgba(255,255,255,0.97)",surfaceBorder:dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.08)",inputBg:dark?"#0d1020":"#fff",inputBorder:dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)",accent:"#c47d8e",accentLight:dark?"rgba(196,125,142,0.12)":"rgba(196,125,142,0.08)",accentBorder:dark?"rgba(196,125,142,0.3)":"rgba(196,125,142,0.25)",accentShadow:dark?"inset 0 0 0 1px rgba(196,125,142,0.35)":"inset 0 0 0 1px rgba(196,125,142,0.3)",green:dark?"#6ee7b7":"#059669",red:dark?"#fca5a5":"#dc2626",btnPrimary:"linear-gradient(135deg,#c47d8e,#a3586b)",btnSecondary:dark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",btnSecBorder:dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)",logoGrad:"linear-gradient(135deg,#c47d8e,#8b5e6b)",gradBg:dark?"radial-gradient(ellipse at 20% 0%,rgba(196,125,142,0.06) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(100,120,180,0.04) 0%,transparent 50%)":"radial-gradient(ellipse at 20% 0%,rgba(196,125,142,0.05) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(180,160,140,0.04) 0%,transparent 50%)"};
   const Btn=({children,primary,onClick,style:s})=><button onClick={onClick} style={{padding:"7px 14px",borderRadius:8,fontSize:12,fontWeight:600,color:primary?"#fff":t.textSoft,background:primary?t.btnPrimary:t.btnSecondary,border:`1px solid ${primary?"transparent":t.btnSecBorder}`,whiteSpace:"nowrap",...s}}>{children}</button>;
@@ -83,6 +89,7 @@ export default function AdminPanel(){
     {pg==="paystack"&&<PaystackSettings t={t} dark={dark} Btn={Btn} notify={notify}/>}
     {pg==="tickets"&&<TicketsPage t={t} dark={dark} tickets={MOCK_TICKETS} Btn={Btn} FilterBtn={FilterBtn} notify={notify}/>}
     {pg==="activity"&&<ActivityLog t={t} dark={dark} activity={activityLog}/>}
+    {pg==="payments"&&<PaymentGateways t={t} dark={dark} gateways={gateways} setGateways={setGateways} Btn={Btn} notify={notify} logAction={logAction} isSuperAdmin={currentAdmin.role==="superadmin"}/>}
     {pg==="alerts"&&<AlertsPage t={t} dark={dark} alerts={alerts} setAlerts={setAlerts} Btn={Btn} FilterBtn={FilterBtn} notify={notify} isSuperAdmin={currentAdmin.role==="superadmin"} currentAdmin={currentAdmin} logAction={logAction}/>}
     {pg==="admins"&&<AdminRoles t={t} dark={dark} admins={adminList} setAdmins={setAdminList} Btn={Btn} FilterBtn={FilterBtn} notify={notify} isSuperAdmin={currentAdmin.role==="superadmin"} logAction={logAction}/>}
     </ErrorBoundary>
@@ -146,6 +153,60 @@ function AdminRoles({t,dark,admins,setAdmins,Btn,FilterBtn,notify,isSuperAdmin,l
       </div>}
     </Card>)}</div>;}
 
+
+function PaymentGateways({t,dark,gateways,setGateways,Btn,notify,logAction,isSuperAdmin}){
+  const toggleGateway=(id)=>{
+    if(!isSuperAdmin){notify("Only Super Admin can change gateways",true);return;}
+    const gw=gateways.find(g=>g.id===id);
+    const enabled=gateways.filter(g=>g.enabled);
+    if(gw.enabled&&enabled.length<=1){notify("At least one gateway must be active",true);return;}
+    setGateways(p=>p.map(g=>g.id===id?{...g,enabled:!g.enabled}:g));
+    logAction(`${gw.enabled?"Disabled":"Enabled"} ${gw.name} payment gateway`,"settings");
+    notify(`${gw.name} ${gw.enabled?"disabled":"enabled"}`);
+  };
+  const movePriority=(id,dir)=>{
+    if(!isSuperAdmin)return;
+    const idx=gateways.findIndex(g=>g.id===id);
+    if((dir===-1&&idx===0)||(dir===1&&idx===gateways.length-1))return;
+    const next=[...gateways];
+    [next[idx],next[idx+dir]]=[next[idx+dir],next[idx]];
+    next.forEach((g,i)=>g.priority=i+1);
+    setGateways(next);
+  };
+  return <div>
+    <Hdr title="Payment Gateways" sub="Manage available payment methods" t={t}/>
+    {!isSuperAdmin&&<div style={{padding:"14px 18px",borderRadius:12,background:t.accentLight,border:`1px solid ${t.accentBorder}`,marginBottom:20,fontSize:13,color:t.accent}}>🔒 Only the Super Admin can enable/disable payment gateways.</div>}
+    <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
+      <div style={{padding:"10px 16px",borderRadius:10,background:dark?"rgba(110,231,183,0.08)":"#ecfdf5",border:`1px solid ${dark?"rgba(110,231,183,0.15)":"#a7f3d0"}`,fontSize:13,color:t.green}}>{gateways.filter(g=>g.enabled).length} active</div>
+      <div style={{padding:"10px 16px",borderRadius:10,background:t.btnSecondary,border:`1px solid ${t.btnSecBorder}`,fontSize:13,color:t.textMuted}}>{gateways.filter(g=>!g.enabled).length} disabled</div>
+    </div>
+    {gateways.map((g,i)=><Card key={g.id} dark={dark} style={{marginBottom:12,padding:18,border:g.enabled?`1px solid ${dark?"rgba(110,231,183,0.15)":"#a7f3d0"}`:undefined,opacity:g.enabled?1:0.6}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:14,flex:1,minWidth:200}}>
+          <div style={{fontSize:28}}>{g.icon}</div>
+          <div>
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <span style={{fontSize:16,fontWeight:600,color:t.text}}>{g.name}</span>
+              {g.enabled?<span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:4,background:dark?"rgba(110,231,183,0.1)":"#ecfdf5",color:t.green}}>● Active</span>:<span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:4,background:dark?"rgba(255,255,255,0.04)":"#f5f5f5",color:t.textMuted}}>Disabled</span>}
+              <span className="m" style={{fontSize:10,color:t.textMuted}}>Priority #{g.priority}</span>
+            </div>
+            <div style={{fontSize:13,color:t.textSoft,marginTop:3}}>{g.desc}</div>
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+          {isSuperAdmin&&<><button onClick={()=>movePriority(g.id,-1)} disabled={i===0} style={{width:30,height:30,borderRadius:6,background:t.btnSecondary,color:i===0?t.textMuted:t.textSoft,border:`1px solid ${t.btnSecBorder}`,fontSize:14,opacity:i===0?.4:1}}>↑</button>
+          <button onClick={()=>movePriority(g.id,1)} disabled={i===gateways.length-1} style={{width:30,height:30,borderRadius:6,background:t.btnSecondary,color:i===gateways.length-1?t.textMuted:t.textSoft,border:`1px solid ${t.btnSecBorder}`,fontSize:14,opacity:i===gateways.length-1?.4:1}}>↓</button></>}
+          {isSuperAdmin&&<button onClick={()=>toggleGateway(g.id)} style={{padding:"8px 18px",borderRadius:8,fontSize:12,fontWeight:600,background:g.enabled?(dark?"rgba(252,165,165,0.1)":"#fef2f2"):(dark?"rgba(110,231,183,0.1)":"#ecfdf5"),color:g.enabled?t.red:t.green,border:`1px solid ${g.enabled?(dark?"rgba(252,165,165,0.2)":"#fecaca"):(dark?"rgba(110,231,183,0.2)":"#a7f3d0")}`}}>{g.enabled?"Disable":"Enable"}</button>}
+        </div>
+      </div>
+    </Card>)}
+    <Card dark={dark} style={{marginTop:8}}>
+      <div style={{fontSize:13,color:t.textMuted,lineHeight:1.7}}>
+        <span style={{fontWeight:600,color:t.text}}>How it works:</span> Enabled gateways appear on the Add Funds page for users. Priority determines the display order — the first enabled gateway is pre-selected by default. At least one gateway must remain active at all times.
+      </div>
+    </Card>
+  </div>;
+}
 
 function AlertsPage({t,dark,alerts,setAlerts,Btn,FilterBtn,notify,isSuperAdmin,currentAdmin,logAction}){
   const [msg,setMsg]=useState("");const [type,setType]=useState("info");const [target,setTarget]=useState("both");const [duration,setDuration]=useState("none");const [f,setF]=useState("active");

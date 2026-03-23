@@ -37,6 +37,12 @@ const ALERTS = [
   {id:1,message:"Scheduled maintenance tonight 11PM - 1AM WAT. Orders may be delayed.",type:"warning"},
   {id:2,message:"New! TikTok services now available with 30-day refill guarantee.",type:"info"},
 ];
+const GATEWAYS = [
+  {id:"paystack",name:"Paystack",icon:"💳",desc:"Cards, Bank Transfer, USSD",enabled:true},
+  {id:"flutterwave",name:"Flutterwave",icon:"🦋",desc:"Cards, Bank Transfer, Mobile Money",enabled:true},
+  {id:"monnify",name:"Monnify",icon:"🏦",desc:"Bank Transfer, USSD",enabled:true},
+  {id:"korapay",name:"Korapay",icon:"💠",desc:"Cards, Bank Transfer",enabled:false},
+];
 const IC = { instagram: "📸", tiktok: "🎵", youtube: "▶️", twitter: "𝕏", facebook: "👤", telegram: "✈️", spotify: "🎧" };
 const fN = (a) => `₦${Math.abs(a).toLocaleString("en-NG")}`;
 const fD = (d) => new Date(d).toLocaleDateString("en-NG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -159,18 +165,20 @@ function Ords({orders,t,dark}){const [f,setF]=useState("all");const [pg2,setPg2]
 
 function Fnds({onAdd,bal,txs,t,dark}){
   const [a,setA]=useState("");
-  // Payment states: idle | popup | verifying | success | failed | cancelled
   const [payState,setPayState]=useState("idle");
   const [payError,setPayError]=useState("");
   const [payRef,setPayRef]=useState("");
-  const [payMethod,setPayMethod]=useState("card"); // card | bank
+  const [payMethod,setPayMethod]=useState("card");
+  const [gateway,setGateway]=useState(GATEWAYS.find(g=>g.enabled)?.id||"paystack");
   const [txPage,setTxPage]=useState(1);const [txPp,setTxPp]=useState(10);
+  const activeGateways=GATEWAYS.filter(g=>g.enabled);
+  const currentGw=GATEWAYS.find(g=>g.id===gateway)||GATEWAYS[0];
 
   const startPayment=()=>{
     if(Number(a)<500)return;
     setPayState("popup");
     setPayError("");
-    setPayRef("PAY-"+Date.now().toString(36).toUpperCase());
+    setPayRef((gateway==="flutterwave"?"FLW-":gateway==="monnify"?"MNF-":gateway==="korapay"?"KRP-":"PAY-")+Date.now().toString(36).toUpperCase());
   };
 
   // Simulate Paystack popup outcomes
@@ -182,7 +190,7 @@ function Fnds({onAdd,bal,txs,t,dark}){
   const amt=Number(a)||0;
 
   return <div>
-    <Hdr title="Add Funds" sub="Top up your wallet via Paystack" t={t}/>
+    <Hdr title="Add Funds" sub="Top up your wallet" t={t}/>
     <div className="fg">
       <div>
         {/* ── IDLE STATE: amount selection ── */}
@@ -196,19 +204,24 @@ function Fnds({onAdd,bal,txs,t,dark}){
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:20}}>
             {[2000,5000,10000,20000,50000,100000].map(p=><button key={p} onClick={()=>setA(String(p))} className="m" style={{padding:"10px 0",borderRadius:10,fontSize:12,fontWeight:600,background:Number(a)===p?t.accentLight:t.btnSecondary,color:Number(a)===p?t.accent:t.textSoft,border:`1px solid ${t.btnSecBorder}`,boxShadow:Number(a)===p?t.accentShadow:"none"}}>₦{p.toLocaleString()}</button>)}
           </div>
+          {/* Payment gateway */}
+          <div style={{marginBottom:16}}>
+            <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:1.5}}>Payment Gateway</label>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{activeGateways.map(g=><button key={g.id} onClick={()=>setGateway(g.id)} style={{flex:1,minWidth:100,padding:"10px 8px",borderRadius:10,fontSize:12,fontWeight:500,background:gateway===g.id?t.accentLight:t.btnSecondary,color:gateway===g.id?t.accent:t.textSoft,border:`1px solid ${t.btnSecBorder}`,boxShadow:gateway===g.id?t.accentShadow:"none",textAlign:"center"}}><div>{g.icon} {g.name}</div><div style={{fontSize:10,color:t.textMuted,marginTop:2}}>{g.desc}</div></button>)}</div>
+          </div>
           {/* Payment method */}
           <div style={{marginBottom:16}}>
-            <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:1.5}}>Payment Method</label>
+            <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:1.5}}>Pay With</label>
             <div style={{display:"flex",gap:8}}>{[["card","💳 Card"],["bank","🏦 Bank Transfer"]].map(([v,lb])=><button key={v} onClick={()=>setPayMethod(v)} style={{flex:1,padding:"12px 0",borderRadius:10,fontSize:13,fontWeight:500,background:payMethod===v?t.accentLight:t.btnSecondary,color:payMethod===v?t.accent:t.textSoft,border:`1px solid ${t.btnSecBorder}`,boxShadow:payMethod===v?t.accentShadow:"none"}}>{lb}</button>)}</div>
           </div>
-          <button onClick={startPayment} disabled={amt<500} style={{width:"100%",padding:"15px 0",borderRadius:14,fontSize:15,fontWeight:700,color:"#fff",background:amt>=500?t.btnPrimary:(dark?"#222":"#ccc"),opacity:amt>=500?1:.5}}>{"💳 Pay "+fN(amt)+" with Paystack"}</button>
-          <div style={{marginTop:14,display:"flex",justifyContent:"center",gap:8,fontSize:11,color:t.textMuted,flexWrap:"wrap",textAlign:"center"}}><span>🔒 Secured by Paystack</span><span>•</span><span>Instant for cards</span><span>•</span><span>Min ₦500</span></div>
+          <button onClick={startPayment} disabled={amt<500} style={{width:"100%",padding:"15px 0",borderRadius:14,fontSize:15,fontWeight:700,color:"#fff",background:amt>=500?t.btnPrimary:(dark?"#222":"#ccc"),opacity:amt>=500?1:.5}}>{currentGw.icon+" Pay "+fN(amt)+" with "+currentGw.name}</button>
+          <div style={{marginTop:14,display:"flex",justifyContent:"center",gap:8,fontSize:11,color:t.textMuted,flexWrap:"wrap",textAlign:"center"}}><span>🔒 Secured by {currentGw.name}</span><span>•</span><span>Instant for cards</span><span>•</span><span>Min ₦500</span></div>
         </Card>}
 
         {/* ── POPUP STATE: simulated Paystack overlay ── */}
         {payState==="popup"&&<Card dark={dark} style={{border:`1px solid ${t.accentBorder}`}}>
           <div style={{textAlign:"center",marginBottom:20}}>
-            <div style={{fontSize:11,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:2}}>Paystack Checkout</div>
+            <div style={{fontSize:11,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:2}}>{currentGw.icon} {currentGw.name} Checkout</div>
             <div className="m" style={{fontSize:32,fontWeight:700,color:t.text,marginTop:8}}>{fN(amt)}</div>
             <div style={{fontSize:12,color:t.textMuted,marginTop:4}}>Ref: <span className="m">{payRef}</span></div>
           </div>
@@ -249,7 +262,7 @@ function Fnds({onAdd,bal,txs,t,dark}){
           <div style={{textAlign:"center",padding:"30px 0"}}>
             <div style={{width:56,height:56,borderRadius:"50%",border:`3px solid ${t.surfaceBorder}`,borderTopColor:t.accent,animation:"spin 1s linear infinite",margin:"0 auto 20px"}}/>
             <h3 style={{fontSize:18,fontWeight:600,color:t.text,marginBottom:6}}>Verifying Payment</h3>
-            <p style={{fontSize:14,color:t.textSoft,marginBottom:4}}>Confirming your {payMethod==="card"?"card payment":"bank transfer"} with Paystack...</p>
+            <p style={{fontSize:14,color:t.textSoft,marginBottom:4}}>Confirming your {payMethod==="card"?"card payment":"bank transfer"} with {currentGw.name}...</p>
             <p className="m" style={{fontSize:12,color:t.textMuted}}>Ref: {payRef}</p>
             <div style={{marginTop:16,padding:"10px 16px",borderRadius:8,background:dark?"rgba(99,102,241,0.08)":"#eef2ff",display:"inline-block"}}>
               <span style={{fontSize:12,color:dark?"#a5b4fc":"#4f46e5"}}>⏳ This usually takes a few seconds</span>
@@ -267,6 +280,7 @@ function Fnds({onAdd,bal,txs,t,dark}){
             <p className="m" style={{fontSize:12,color:t.textMuted,marginBottom:20}}>Ref: {payRef}</p>
             <div style={{padding:14,borderRadius:12,background:dark?"#0a0d18":"#faf8f5",border:`1px solid ${t.surfaceBorder}`,marginBottom:20,maxWidth:280,margin:"0 auto 20px"}}>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:13,color:t.textSoft}}>Amount</span><span className="m" style={{fontSize:13,color:t.green}}>{fN(amt)}</span></div>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:13,color:t.textSoft}}>Gateway</span><span style={{fontSize:13,color:t.text}}>{currentGw.name}</span></div>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:13,color:t.textSoft}}>Method</span><span style={{fontSize:13,color:t.text}}>{payMethod==="card"?"Card":"Bank Transfer"}</span></div>
               <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:13,color:t.textSoft}}>New Balance</span><span className="m" style={{fontSize:13,color:t.green,fontWeight:700}}>{fN(bal)}</span></div>
             </div>
