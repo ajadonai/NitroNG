@@ -161,7 +161,77 @@ function NewOrd({services,onPlace,bal,t,dark}){
   <div style={{animation:"fu .5s ease .1s both"}}><Card style={{position:"sticky",top:20}} dark={dark}><h3 style={{fontSize:17,fontWeight:700,color:t.text,marginBottom:18}}>Order Details</h3>{sel?<><div style={{padding:"12px 14px",borderRadius:12,background:t.accentLight,border:`1px solid ${t.accentBorder}`,marginBottom:16}}><div style={{fontSize:12,color:t.accent,fontWeight:600}}>{sel.category}</div><div style={{fontSize:13,color:t.text,fontWeight:500,marginTop:3}}>{sel.name}</div><div style={{fontSize:12,color:t.textMuted,marginTop:3}}>₦{sel.rate.toLocaleString()} per 1,000 • {sel.avg_time}</div></div><label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Link</label><input placeholder="https://instagram.com/username" value={lnk} onChange={e=>setLnk(e.target.value)} style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,marginBottom:14,outline:"none"}}/><label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Quantity</label><input type="number" value={qty} onChange={e=>setQty(e.target.value)} min={sel.min} max={sel.max} style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,marginBottom:4,outline:"none"}}/><div style={{fontSize:11,color:t.textMuted,marginBottom:14}}>Min: {sel.min.toLocaleString()} — Max: {sel.max.toLocaleString()}</div><div style={{padding:14,borderRadius:12,background:dark?"#080b14":"#faf8f5",border:`1px solid ${t.surfaceBorder}`,marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:13,color:t.textSoft}}>Rate</span><span className="m" style={{fontSize:13,color:t.text}}>₦{sel.rate.toLocaleString()} / 1K</span></div><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:13,color:t.textSoft}}>Quantity</span><span className="m" style={{fontSize:13,color:t.text}}>{Number(qty||0).toLocaleString()}</span></div><div style={{height:1,background:t.surfaceBorder,margin:"6px 0"}}/><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:14,color:t.text,fontWeight:600}}>Total</span><span className="m" style={{fontSize:20,color:t.green,fontWeight:700}}>{fN(ch)}</span></div></div>{ch>bal&&<div style={{padding:"10px 12px",borderRadius:10,background:dark?"rgba(127,29,29,0.2)":"#fef2f2",border:`1px solid ${dark?"#7f1d1d":"#fecaca"}`,marginBottom:14,fontSize:12,color:t.red}}>⚠️ Need {fN(ch-bal)} more.</div>}<button onClick={()=>{if(lnk&&Number(qty)>=sel.min&&ch<=bal&&!placing){setPlacing(true);setTimeout(()=>{onPlace(sel,lnk,Number(qty));setPlacing(false);},800)}}} disabled={!lnk||ch>bal||placing} style={{width:"100%",padding:"14px 0",borderRadius:12,fontSize:15,fontWeight:700,color:"#fff",background:(!lnk||ch>bal||placing)?(dark?"#222":"#ccc"):t.btnPrimary,opacity:(!lnk||ch>bal||placing)?.5:1,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{placing&&<span style={{width:16,height:16,border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .6s linear infinite"}}/>}{placing?"Placing Order...":"Place Order — "+fN(ch)}</button></>:<div style={{textAlign:"center",padding:"40px 0",color:t.textMuted}}><div className="serif" style={{fontSize:40,marginBottom:10}}>☝️</div><div style={{fontSize:14}}>Select a service to begin</div></div>}</Card></div></div></div>;
 }
 
-function Ords({orders,t,dark}){const [f,setF]=useState("all");const [pg2,setPg2]=useState(1);const [pp,setPp]=useState(10);const list=f==="all"?orders:orders.filter(o=>o.status===f);return <div><Hdr title="Orders" sub={`${orders.length} total orders`} t={t}/><div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap",animation:"fu .3s ease"}}>{["all","Completed","Processing","Pending","Partial"].map(x=><button key={x} onClick={()=>{setF(x);setPg2(1);}} style={{padding:"8px 14px",borderRadius:8,fontSize:13,fontWeight:500,background:f===x?t.accentLight:"transparent",color:f===x?t.accent:t.textSoft,border:`1px solid ${t.btnSecBorder}`,boxShadow:f===x?t.accentShadow:"none"}}>{x==="all"?"All":x} {x!=="all"&&`(${orders.filter(o=>o.status===x).length})`}</button>)}</div><Card style={{padding:0,overflow:"hidden"}} dark={dark}><div className="oth" style={{borderBottom:`1px solid ${t.surfaceBorder}`,fontSize:11,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1}}><div>Order ID</div><div>Service</div><div>Link</div><div>Qty</div><div>Charge</div><div>Status</div><div>Date</div></div>{list.slice((pg2-1)*pp,pg2*pp).map(o=><div key={o.id} className="otr" style={{borderBottom:`1px solid ${dark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.04)"}`,fontSize:13}}><div className="m" style={{color:t.accent,fontSize:12}}>{o.id}</div><div style={{color:t.text,fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.service.split("[")[0].trim()}</div><div style={{color:t.textMuted,fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.link}</div><div className="m" style={{color:t.textSoft,fontSize:12}}>{o.quantity.toLocaleString()}</div><div className="m" style={{color:t.text,fontSize:12}}>{fN(o.charge)}</div><div><Badge s={o.status} dark={dark}/></div><div style={{color:t.textMuted,fontSize:11}}>{fD(o.created)}</div></div>)}<div className="ocm" style={{padding:12}}>{list.slice((pg2-1)*pp,pg2*pp).map(o=><div key={o.id} style={{padding:14,borderRadius:14,background:dark?"#0d1020":"#fff",border:`1px solid ${t.surfaceBorder}`,marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><span className="m" style={{fontSize:12,color:t.accent}}>{o.id}</span><Badge s={o.status} dark={dark}/></div><div style={{fontSize:13,fontWeight:500,color:t.text,marginBottom:3}}>{o.service.split("[")[0].trim()}</div><div style={{fontSize:11,color:t.textMuted,marginBottom:8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.link}</div><div style={{display:"flex",justifyContent:"space-between",fontSize:12}}><span style={{color:t.textSoft}}>Qty: <span className="m" style={{color:t.text}}>{o.quantity.toLocaleString()}</span></span><span className="m" style={{color:t.green,fontWeight:600}}>{fN(o.charge)}</span></div><div style={{fontSize:11,color:t.textMuted,marginTop:6}}>{fD(o.created)}</div></div>)}</div></Card></div>;}
+function Ords({orders,t,dark}){
+  const [f,setF]=useState("all");const [pg2,setPg2]=useState(1);const [pp,setPp]=useState(10);const [selOrder,setSelOrder]=useState(null);
+  const list=f==="all"?orders:orders.filter(o=>o.status===f);
+
+  // Generate mock timeline for an order
+  const getTimeline=(o)=>{
+    const tl=[{status:"Placed",desc:"Order submitted and payment confirmed",time:o.created,icon:"📝"}];
+    const d=new Date(o.created);
+    if(o.status!=="Pending"){tl.push({status:"Processing",desc:"Sent to provider API for delivery",time:new Date(d.getTime()+120000).toISOString(),icon:"⚡"});}
+    if(o.status==="Completed"){tl.push({status:"In Progress",desc:`Delivering ${o.quantity.toLocaleString()} to target`,time:new Date(d.getTime()+300000).toISOString(),icon:"🚀"});tl.push({status:"Completed",desc:"Order fully delivered",time:new Date(d.getTime()+3600000).toISOString(),icon:"✅"});}
+    if(o.status==="Partial"){tl.push({status:"In Progress",desc:`Delivering ${o.quantity.toLocaleString()} to target`,time:new Date(d.getTime()+300000).toISOString(),icon:"🚀"});tl.push({status:"Partial",desc:`Delivered ${Math.floor(o.quantity*0.7).toLocaleString()} of ${o.quantity.toLocaleString()} — refill eligible`,time:new Date(d.getTime()+7200000).toISOString(),icon:"⚠️"});}
+    return tl;
+  };
+
+  if(selOrder){
+    const o=selOrder;const tl=getTimeline(o);
+    return <div>
+      <button onClick={()=>setSelOrder(null)} style={{background:"none",color:t.accent,fontSize:13,fontWeight:500,marginBottom:16,display:"flex",alignItems:"center",gap:6}}>← Back to Orders</button>
+      <div className="g2">
+        <Card dark={dark}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+            <span className="m" style={{fontSize:18,fontWeight:700,color:t.accent}}>{o.id}</span>
+            <Badge s={o.status} dark={dark}/>
+          </div>
+          <div style={{fontSize:16,fontWeight:600,color:t.text,marginBottom:4}}>{o.service}</div>
+          <div style={{fontSize:13,color:t.textMuted,marginBottom:16,wordBreak:"break-all"}}>{o.link}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+            {[["Quantity",o.quantity.toLocaleString()],["Charge",fN(o.charge)],["Placed",fD(o.created)],["Status",o.status]].map(([l,v],i)=><div key={i} style={{padding:12,borderRadius:10,background:dark?"#0a0d18":"#faf8f5",border:`1px solid ${t.surfaceBorder}`}}><div style={{fontSize:10,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1.5,marginBottom:3}}>{l}</div><div className="m" style={{fontSize:14,fontWeight:600,color:i===1?t.green:t.text}}>{v}</div></div>)}
+          </div>
+          {/* Timeline */}
+          <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Order Timeline</h3>
+          <div style={{position:"relative",paddingLeft:28}}>
+            <div style={{position:"absolute",left:11,top:4,bottom:4,width:2,background:t.surfaceBorder}}/>
+            {tl.map((step,i)=><div key={i} style={{position:"relative",marginBottom:i<tl.length-1?20:0}}>
+              <div style={{position:"absolute",left:-28,top:0,width:24,height:24,borderRadius:"50%",background:i===tl.length-1?t.accentLight:(dark?"#0d1020":"#faf8f5"),border:`2px solid ${i===tl.length-1?t.accent:t.surfaceBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,zIndex:1}}>{step.icon}</div>
+              <div style={{paddingTop:1}}>
+                <div style={{fontSize:13,fontWeight:600,color:i===tl.length-1?t.accent:t.text}}>{step.status}</div>
+                <div style={{fontSize:12,color:t.textSoft,marginTop:2}}>{step.desc}</div>
+                <div style={{fontSize:11,color:t.textMuted,marginTop:2}}>{fD(step.time)}</div>
+              </div>
+            </div>)}
+          </div>
+        </Card>
+        <div>
+          <Card dark={dark} style={{marginBottom:12}}>
+            <h3 style={{fontSize:14,fontWeight:600,color:t.text,marginBottom:12}}>Actions</h3>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {o.status==="Partial"&&<button style={{width:"100%",padding:"10px 0",borderRadius:10,background:dark?"rgba(110,231,183,0.08)":"#ecfdf5",color:t.green,fontSize:13,fontWeight:600,border:`1px solid ${dark?"rgba(110,231,183,0.15)":"#a7f3d0"}`}}>🔁 Request Refill</button>}
+              {(o.status==="Processing"||o.status==="Pending")&&<button style={{width:"100%",padding:"10px 0",borderRadius:10,background:dark?"rgba(252,165,165,0.08)":"#fef2f2",color:t.red,fontSize:13,fontWeight:600,border:`1px solid ${dark?"rgba(252,165,165,0.15)":"#fecaca"}`}}>✕ Cancel Order</button>}
+              <button style={{width:"100%",padding:"10px 0",borderRadius:10,background:t.btnSecondary,color:t.textSoft,fontSize:13,fontWeight:500,border:`1px solid ${t.btnSecBorder}`}}>🔄 Check Status</button>
+              <button style={{width:"100%",padding:"10px 0",borderRadius:10,background:t.btnSecondary,color:t.textSoft,fontSize:13,fontWeight:500,border:`1px solid ${t.btnSecBorder}`}}>💬 Open Ticket</button>
+            </div>
+          </Card>
+          <Card dark={dark}>
+            <h3 style={{fontSize:14,fontWeight:600,color:t.text,marginBottom:8}}>Need Help?</h3>
+            <p style={{fontSize:12,color:t.textMuted,lineHeight:1.6}}>If this order is stuck or not delivering as expected, open a support ticket and include the order ID. We'll check with the provider.</p>
+          </Card>
+        </div>
+      </div>
+    </div>;
+  }
+
+  return <div><Hdr title="Orders" sub={`${orders.length} total orders`} t={t}/><div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap",animation:"fu .3s ease"}}>{["all","Completed","Processing","Pending","Partial"].map(x=><button key={x} onClick={()=>{setF(x);setPg2(1);}} style={{padding:"8px 14px",borderRadius:8,fontSize:13,fontWeight:500,background:f===x?t.accentLight:"transparent",color:f===x?t.accent:t.textSoft,border:`1px solid ${t.btnSecBorder}`,boxShadow:f===x?t.accentShadow:"none"}}>{x==="all"?"All":x} {x!=="all"&&`(${orders.filter(o=>o.status===x).length})`}</button>)}</div>
+  <Card style={{padding:0,overflow:"hidden"}} dark={dark}>
+    <div className="oth" style={{borderBottom:`1px solid ${t.surfaceBorder}`,fontSize:11,color:t.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:1}}><div>Order ID</div><div>Service</div><div>Link</div><div>Qty</div><div>Charge</div><div>Status</div><div>Date</div></div>
+    {list.slice((pg2-1)*pp,pg2*pp).map(o=><div key={o.id} onClick={()=>setSelOrder(o)} className="otr" style={{borderBottom:`1px solid ${dark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.04)"}`,fontSize:13,cursor:"pointer"}}><div className="m" style={{color:t.accent,fontSize:12}}>{o.id}</div><div style={{color:t.text,fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.service.split("[")[0].trim()}</div><div style={{color:t.textMuted,fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.link}</div><div className="m" style={{color:t.textSoft,fontSize:12}}>{o.quantity.toLocaleString()}</div><div className="m" style={{color:t.text,fontSize:12}}>{fN(o.charge)}</div><div><Badge s={o.status} dark={dark}/></div><div style={{color:t.textMuted,fontSize:11}}>{fD(o.created)}</div></div>)}
+    <div className="ocm" style={{padding:12}}>{list.slice((pg2-1)*pp,pg2*pp).map(o=><div key={o.id} onClick={()=>setSelOrder(o)} style={{padding:14,borderRadius:14,background:dark?"#0d1020":"#fff",border:`1px solid ${t.surfaceBorder}`,marginBottom:10,cursor:"pointer"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><span className="m" style={{fontSize:12,color:t.accent}}>{o.id}</span><Badge s={o.status} dark={dark}/></div><div style={{fontSize:13,fontWeight:500,color:t.text,marginBottom:3}}>{o.service.split("[")[0].trim()}</div><div style={{fontSize:11,color:t.textMuted,marginBottom:8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.link}</div><div style={{display:"flex",justifyContent:"space-between",fontSize:12}}><span style={{color:t.textSoft}}>Qty: <span className="m" style={{color:t.text}}>{o.quantity.toLocaleString()}</span></span><span className="m" style={{color:t.green,fontWeight:600}}>{fN(o.charge)}</span></div><div style={{fontSize:11,color:t.textMuted,marginTop:6}}>{fD(o.created)}</div></div>)}</div>
+  </Card>
+  <Pagination total={list.length} page={pg2} setPage={setPg2} perPage={pp} setPerPage={setPp} t={t}/>
+  </div>;
+}
 
 function Fnds({onAdd,bal,txs,t,dark}){
   const [a,setA]=useState("");
