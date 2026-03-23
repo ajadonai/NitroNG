@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 function ThemeToggle({dark,onToggle,compact}){
   return <button onClick={onToggle} style={{display:"flex",alignItems:"center",background:dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)",borderRadius:20,padding:3,width:compact?52:64,height:compact?28:32,border:`1px solid ${dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)"}`,position:"relative",flexShrink:0,transition:"background 1.5s cubic-bezier(.4,0,.2,1),border-color 1.5s ease"}}><div style={{width:compact?22:26,height:compact?22:26,borderRadius:"50%",background:dark?"#c47d8e":"#e0a458",display:"flex",alignItems:"center",justifyContent:"center",fontSize:compact?12:14,position:"absolute",left:dark?3:(compact?27:35),transition:"left 0.4s cubic-bezier(.4,0,.2,1),background 1.5s cubic-bezier(.4,0,.2,1)",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}>{dark?"🌙":"☀️"}</div></button>;
@@ -77,7 +77,7 @@ export default function Landing(){
         .snap-section{min-height:100vh;display:flex;flex-direction:column;justify-content:center;scroll-snap-align:start}
         .m{font-family:'JetBrains Mono',monospace}.serif{font-family:'Cormorant Garamond',serif}
         button{cursor:pointer;font-family:inherit;border:none}input,textarea{font-family:inherit}
-        @keyframes fi{from{opacity:0}to{opacity:1}}
+        @keyframes fi{from{opacity:0}to{opacity:1}}@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
         @keyframes float1{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(30px,-20px) scale(1.05)}50%{transform:translate(-10px,15px) scale(0.95)}75%{transform:translate(20px,10px) scale(1.02)}}
         @keyframes float2{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-25px,15px) scale(1.03)}66%{transform:translate(15px,-25px) scale(0.97)}}
         @keyframes float3{0%,100%{transform:translate(0,0)}50%{transform:translate(-15px,-20px)}}
@@ -295,7 +295,8 @@ function AuthModal({dark,t,mode,setMode,onClose}){
   const [showPw,setShowPw]=useState(false);
   const [step,setStep]=useState(1);
   const [remember,setRemember]=useState(false);
-  useEffect(()=>{setStep(1);},[mode]);
+  const [authLoading,setAuthLoading]=useState(false);
+  useEffect(()=>{setStep(1);setAuthLoading(false);},[mode]);
 
   const MethodToggle=()=>(
     <div style={{display:"flex",gap:0,marginBottom:6,background:dark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",borderRadius:10,padding:3,border:`1px solid ${t.surfaceBorder}`}}>
@@ -340,7 +341,7 @@ function AuthModal({dark,t,mode,setMode,onClose}){
             <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}><input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)} style={{accentColor:t.accent,width:15,height:15}}/><span style={{fontSize:12,color:t.textSoft}}>Remember me</span></label>
             <button style={{background:"none",color:t.accent,fontSize:12,fontWeight:500}}>Forgot password?</button>
           </div>
-          <button style={{width:"100%",padding:"14px 0",borderRadius:12,background:t.btnPrimary,color:"#fff",fontSize:15,fontWeight:700,marginBottom:16}}>Log In</button>
+          <button onClick={()=>setAuthLoading(true)} disabled={authLoading} style={{width:"100%",padding:"14px 0",borderRadius:12,background:authLoading?"#999":t.btnPrimary,color:"#fff",fontSize:15,fontWeight:700,marginBottom:16,display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:authLoading?.7:1}}>{authLoading&&<span style={{width:16,height:16,border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .6s linear infinite"}}/>}{authLoading?"Logging in...":"Log In"}</button>
           <div style={{textAlign:"center",fontSize:13,color:t.textSoft}}>Don't have an account? <button onClick={()=>setMode("signup")} style={{background:"none",color:t.accent,fontWeight:600,fontSize:13}}>Sign Up Free</button></div>
         </>}
         {mode==="signup"&&step===1&&<>
@@ -362,7 +363,7 @@ function AuthModal({dark,t,mode,setMode,onClose}){
             <input type="checkbox" style={{marginTop:3,accentColor:t.accent,width:16,height:16,flexShrink:0}}/>
             <span style={{fontSize:12,color:t.textSoft,lineHeight:1.5}}>I agree to the <a href="#" style={{color:t.accent,textDecoration:"none"}}>Terms of Service</a> and <a href="#" style={{color:t.accent,textDecoration:"none"}}>Privacy Policy</a></span>
           </label>
-          <button style={{width:"100%",padding:"14px 0",borderRadius:12,background:t.btnPrimary,color:"#fff",fontSize:15,fontWeight:700,marginBottom:12}}>Create Account</button>
+          <button onClick={()=>setAuthLoading(true)} disabled={authLoading} style={{width:"100%",padding:"14px 0",borderRadius:12,background:authLoading?"#999":t.btnPrimary,color:"#fff",fontSize:15,fontWeight:700,marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:authLoading?.7:1}}>{authLoading&&<span style={{width:16,height:16,border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .6s linear infinite"}}/>}{authLoading?"Creating Account...":"Create Account"}</button>
           <button onClick={()=>setStep(1)} style={{width:"100%",padding:"10px 0",borderRadius:10,background:"transparent",color:t.textSoft,fontSize:13,fontWeight:500}}>← Back to Step 1</button>
         </>}
         {mode==="signup"&&<div style={{display:"flex",justifyContent:"center",gap:6,marginTop:16}}>
