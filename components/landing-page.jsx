@@ -26,7 +26,9 @@ export default function Landing(){
   const [mo,setMo]=useState(false);
   const [modal,setModal]=useState(null);
   const [faqOpen,setFaqOpen]=useState(null);
+  const [scrolled,setScrolled]=useState(false);
   useEffect(()=>{if(mo)return;const iv=setInterval(()=>setDark(getAuto()),60000);return()=>clearInterval(iv);},[mo]);
+  useEffect(()=>{const onScroll=()=>setScrolled(window.scrollY>20);window.addEventListener("scroll",onScroll);return()=>window.removeEventListener("scroll",onScroll);},[]);
   const toggleTheme=()=>{setMo(true);setDark(d=>!d);};
 
   const t={
@@ -111,7 +113,7 @@ export default function Landing(){
 
       <div style={{position:"sticky",top:0,zIndex:50}}>
         <div>{[{message:"New! Sign up today and get 10% bonus on your first deposit.",type:"info"}].map((a,i)=><div key={i} style={{padding:"10px 16px",textAlign:"center",fontSize:13,fontWeight:500,background:a.type==="warning"?(dark?"rgba(217,119,6,0.15)":"#fffbeb"):(dark?"rgba(99,102,241,0.15)":"#eef2ff"),color:a.type==="warning"?(dark?"#fcd34d":"#92400e"):(dark?"#a5b4fc":"#4f46e5"),borderBottom:`1px solid ${a.type==="warning"?(dark?"rgba(217,119,6,0.2)":"#fde68a"):(dark?"rgba(99,102,241,0.2)":"#c7d2fe")}`}}>{a.type==="warning"?"⚠️":"✨"} {a.message}</div>)}</div>
-      <nav style={{backdropFilter:"blur(20px)",background:dark?"rgba(8,11,20,0.8)":"rgba(244,241,237,0.8)",borderBottom:`1px solid ${t.surfaceBorder}`,transition:"background 1.5s ease"}}>
+      <nav style={{backdropFilter:"blur(20px)",background:scrolled?(dark?"rgba(8,11,20,0.98)":"rgba(244,241,237,0.98)"):(dark?"rgba(8,11,20,0.4)":"rgba(244,241,237,0.4)"),borderBottom:`1px solid ${scrolled?t.surfaceBorder:"transparent"}`,transition:"background 0.3s ease, border-color 0.3s ease",boxShadow:scrolled?(dark?"0 1px 12px rgba(0,0,0,0.3)":"0 1px 12px rgba(0,0,0,0.06)"):"none"}}>
         <div className="sec" style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 24px"}}>
           <button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} style={{display:"flex",alignItems:"center",gap:10,background:"none",padding:0,border:"none",outline:"none",cursor:"pointer"}}>
             <div style={{width:34,height:34,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:"#fff"}}>B</div>
