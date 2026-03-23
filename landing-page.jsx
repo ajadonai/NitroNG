@@ -92,7 +92,7 @@ export default function Landing(){
         .g3p{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
         .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
         @media(max-width:900px){.g3,.g3p{grid-template-columns:1fr}.g4{grid-template-columns:repeat(2,1fr)}.hero-stats{gap:20px!important}}
-        @media(max-width:500px){.g4{grid-template-columns:1fr}}
+        @media(max-width:500px){.g4{grid-template-columns:1fr}}@media(max-width:400px){.g3,.g3p{grid-template-columns:1fr!important}.sec{padding:0 14px}}
         .orb{position:absolute;border-radius:50%;pointer-events:none;filter:blur(80px)}
         details summary::-webkit-details-marker{display:none}
         details summary::marker{display:none}
@@ -115,8 +115,8 @@ export default function Landing(){
           </div>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
             <ThemeToggle dark={dark} onToggle={toggleTheme} compact/>
-            <button onClick={()=>setModal("login")} style={{padding:"9px 20px",borderRadius:10,background:"transparent",border:`1px solid ${t.surfaceBorder}`,color:t.text,fontSize:13,fontWeight:600,transition:"background 1.5s ease"}}>Log In</button>
-            <button onClick={()=>setModal("signup")} style={{padding:"9px 20px",borderRadius:10,background:t.btnPrimary,color:"#fff",fontSize:13,fontWeight:600}}>Sign Up Free</button>
+            <button onClick={()=>setModal("login")} className="nav-login" style={{padding:"9px 20px",borderRadius:10,background:"transparent",border:`1px solid ${t.surfaceBorder}`,color:t.text,fontSize:13,fontWeight:600,transition:"background 1.5s ease"}}>Log In</button>
+            <button onClick={()=>setModal("signup")} style={{padding:"9px 16px",borderRadius:10,background:t.btnPrimary,color:"#fff",fontSize:13,fontWeight:600}}>Sign Up</button>
           </div>
         </div>
       </nav>
@@ -296,7 +296,8 @@ function AuthModal({dark,t,mode,setMode,onClose}){
   const [step,setStep]=useState(1);
   const [remember,setRemember]=useState(false);
   const [authLoading,setAuthLoading]=useState(false);
-  useEffect(()=>{setStep(1);setAuthLoading(false);},[mode]);
+  const [signupPw,setSignupPw]=useState("");
+  useEffect(()=>{setStep(1);setAuthLoading(false);setSignupPw("");},[mode]);
 
   const MethodToggle=()=>(
     <div style={{display:"flex",gap:0,marginBottom:6,background:dark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",borderRadius:10,padding:3,border:`1px solid ${t.surfaceBorder}`}}>
@@ -325,7 +326,7 @@ function AuthModal({dark,t,mode,setMode,onClose}){
 
   return(
     <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:100,background:t.overlay,backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16,animation:"fi 0.2s ease"}}>
-      <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:420,background:dark?"rgba(15,18,30,0.98)":"rgba(255,255,255,0.98)",border:`1px solid ${t.surfaceBorder}`,borderRadius:24,padding:"32px 28px",boxShadow:dark?"0 20px 60px rgba(0,0,0,0.5)":"0 20px 60px rgba(0,0,0,0.1)",backdropFilter:"blur(20px)",position:"relative"}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:420,maxHeight:'90vh',overflowY:'auto',background:dark?"rgba(15,18,30,0.98)":"rgba(255,255,255,0.98)",border:`1px solid ${t.surfaceBorder}`,borderRadius:24,padding:"32px 28px",boxShadow:dark?"0 20px 60px rgba(0,0,0,0.5)":"0 20px 60px rgba(0,0,0,0.1)",backdropFilter:"blur(20px)",position:"relative"}}>
         <button onClick={onClose} style={{position:"absolute",top:14,right:14,background:"none",color:t.textMuted,fontSize:20,padding:4,lineHeight:1}}>✕</button>
         <div style={{textAlign:"center",marginBottom:24}}>
           <div style={{width:42,height:42,borderRadius:12,background:t.logoGrad,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:"#fff",marginBottom:10}}>B</div>
@@ -354,7 +355,11 @@ function AuthModal({dark,t,mode,setMode,onClose}){
         </>}
         {mode==="signup"&&step===2&&<>
           <Lbl t={t}>Password</Lbl>
-          <PwInput ph="Min. 8 characters"/>
+          <div style={{position:"relative",marginBottom:4}}>
+            <input placeholder="Min. 8 characters" value={signupPw} onChange={e=>setSignupPw(e.target.value)} type={showPw?"text":"password"} style={{width:"100%",padding:"12px 44px 12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
+            <button onClick={()=>setShowPw(!showPw)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",color:t.textMuted,fontSize:14,padding:2}}>{showPw?"🙈":"👁️"}</button>
+          </div>
+          <PwStrength pw={signupPw} t={t}/>
           <Lbl t={t}>Confirm Password</Lbl>
           <Inp t={t} dark={dark} ph="Re-enter password" type="password"/>
           <Lbl t={t}>Referral Code <span style={{color:t.textMuted,fontWeight:400}}>(optional)</span></Lbl>
@@ -373,6 +378,22 @@ function AuthModal({dark,t,mode,setMode,onClose}){
       </div>
     </div>
   );
+}
+
+// Password strength meter
+function PwStrength({pw,t}){
+  const checks=[pw.length>=8,/[A-Z]/.test(pw),/[0-9]/.test(pw),/[^A-Za-z0-9]/.test(pw)];
+  const score=checks.filter(Boolean).length;
+  const labels=["","Weak","Fair","Good","Strong"];
+  const colors=["","#dc2626","#d97706","#2563eb","#059669"];
+  if(!pw)return null;
+  return <div style={{marginBottom:14}}>
+    <div style={{display:"flex",gap:4,marginBottom:4}}>{[1,2,3,4].map(i=><div key={i} style={{flex:1,height:3,borderRadius:2,background:i<=score?colors[score]:(t.inputBorder||"#ddd"),transition:"background 0.3s"}}/>)}</div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <span style={{fontSize:11,color:colors[score],fontWeight:500}}>{labels[score]}</span>
+      <span style={{fontSize:10,color:t.textMuted}}>{checks[0]?"✓":"✗"} 8+ chars {checks[1]?"✓":"✗"} uppercase {checks[2]?"✓":"✗"} number {checks[3]?"✓":"✗"} symbol</span>
+    </div>
+  </div>;
 }
 
 const Lbl=({t,children})=><label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>{children}</label>;

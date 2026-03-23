@@ -87,7 +87,7 @@ export default function AdminLogin(){
       <div style={{position:"absolute",top:20,right:20,zIndex:10}}><ThemeToggle dark={dark} onToggle={toggleTheme}/></div>
 
       {/* ── LOGIN CARD ── */}
-      <div style={{width:"100%",maxWidth:400,padding:20,position:"relative",zIndex:1,animation:"fu .5s ease"}}>
+      <div style={{width:"100%",maxWidth:400,padding:16,position:"relative",zIndex:1,animation:"fu .5s ease"}}>
         <div style={{background:t.surface,border:`1px solid ${t.surfaceBorder}`,borderRadius:24,padding:"40px 32px",backdropFilter:"blur(20px)",boxShadow:dark?"0 20px 60px rgba(0,0,0,.4)":"0 20px 60px rgba(0,0,0,.08)",transition:"background 1.5s ease,border-color 1.5s ease"}}>
           
           <div style={{textAlign:"center",marginBottom:32}}>
