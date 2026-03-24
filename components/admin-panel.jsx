@@ -410,9 +410,9 @@ function SiteSettingsPage({t,dark,settings,setSettings,Btn,notify,logAction}){
   const [form,setForm]=useState({...settings});
   const upd=(k,v)=>setForm(p=>({...p,[k]:v}));
   const save=()=>{setSettings({...form});notify("Settings saved!");logAction("Updated site settings","settings");};
-  const Field=({label,field,placeholder,type="text"})=><div style={{marginBottom:16}}>
+  const field=(label,fld,placeholder,type="text")=><div key={fld} style={{marginBottom:16}}>
     <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>{label}</label>
-    <input type={type} value={form[field]||""} onChange={e=>upd(field,e.target.value)} placeholder={placeholder} style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
+    <input type={type} value={form[fld]||""} onChange={e=>upd(fld,e.target.value)} placeholder={placeholder} style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
   </div>;
   const Tab=({id,label})=><button onClick={()=>setTab(id)} style={{padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:tab===id?t.accentLight:"transparent",color:tab===id?t.accent:t.textSoft,border:"1px solid transparent",boxShadow:tab===id?t.accentShadow:"none"}}>{label}</button>;
   return <div>
@@ -420,10 +420,10 @@ function SiteSettingsPage({t,dark,settings,setSettings,Btn,notify,logAction}){
     <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}><Tab id="general" label="General"/><Tab id="socials" label="Socials & Contact"/><Tab id="promo" label="Promo Banner"/><Tab id="referrals" label="Referrals"/></div>
     {tab==="general"&&<div className="g2"><Card dark={dark}>
       <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>General</h3>
-      <Field label="Site Name" field="siteName" placeholder="BoostPanel"/>
-      <Field label="Support Email" field="supportEmail" placeholder="support@boostpanel.ng"/>
-      <Field label="Minimum Deposit (₦)" field="minDeposit" placeholder="500" type="number"/>
-      <Field label="Default Markup (%)" field="defaultMarkup" placeholder="54" type="number"/>
+      {field("Site Name","siteName","BoostPanel")}
+      {field("Support Email","supportEmail","support@boostpanel.ng")}
+      {field("Minimum Deposit (₦)","minDeposit","500","number")}
+      {field("Default Markup (%)","defaultMarkup","54","number")}
     </Card><Card dark={dark}>
       <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:12}}>Notes</h3>
       <div style={{fontSize:13,color:t.textSoft,lineHeight:1.7}}>
@@ -434,10 +434,10 @@ function SiteSettingsPage({t,dark,settings,setSettings,Btn,notify,logAction}){
     </Card></div>}
     {tab==="socials"&&<div className="g2"><Card dark={dark}>
       <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>Social & Contact</h3>
-      <Field label="WhatsApp Number" field="whatsapp" placeholder="2348012345678"/>
+      {field("WhatsApp Number","whatsapp","2348012345678")}
       <div style={{fontSize:11,color:t.textMuted,marginTop:-10,marginBottom:16}}>Full number with country code, no + or spaces. Powers the floating chat icon.</div>
-      <Field label="Twitter / X Handle" field="twitter" placeholder="boostpanel"/>
-      <Field label="Instagram Handle" field="instagram" placeholder="boostpanel.ng"/>
+      {field("Twitter / X Handle","twitter","boostpanel")}
+      {field("Instagram Handle","instagram","boostpanel.ng")}
     </Card><Card dark={dark}>
       <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Preview</h3>
       <div style={{padding:16,borderRadius:12,background:dark?"#0d1020":"#faf8f5",border:`1px solid ${t.surfaceBorder}`}}>
@@ -456,7 +456,7 @@ function SiteSettingsPage({t,dark,settings,setSettings,Btn,notify,logAction}){
         <span style={{fontSize:13,color:t.text,fontWeight:500}}>Show banner on homepage</span>
         <button onClick={()=>upd("promoEnabled",!form.promoEnabled)} style={{width:44,height:24,borderRadius:12,background:form.promoEnabled?t.accent:(dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)"),position:"relative",border:"none",cursor:"pointer",transition:"background 0.2s"}}><div style={{width:20,height:20,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:form.promoEnabled?22:2,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/></button>
       </div>
-      <Field label="Banner Message" field="promoMessage" placeholder="Sign up today and get 10% bonus on your first deposit."/>
+      {field("Banner Message","promoMessage","Sign up today and get 10% bonus on your first deposit.")}
       <div style={{marginBottom:16}}>
         <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Banner Type</label>
         <div style={{display:"flex",gap:8}}>{[["info","ℹ️ Info"],["warning","⚠️ Warning"]].map(([v,lb])=><button key={v} onClick={()=>upd("promoType",v)} style={{flex:1,padding:"10px 0",borderRadius:10,fontSize:13,fontWeight:500,background:(form.promoType||"info")===v?t.accentLight:t.btnSecondary,color:(form.promoType||"info")===v?t.accent:t.textSoft,border:`1px solid ${t.btnSecBorder}`}}>{lb}</button>)}</div>
@@ -471,21 +471,21 @@ function SiteSettingsPage({t,dark,settings,setSettings,Btn,notify,logAction}){
         <div><div style={{fontSize:14,fontWeight:600,color:form.refEnabled?t.green:t.textMuted}}>{form.refEnabled?"Programme Active":"Programme Disabled"}</div><div style={{fontSize:12,color:t.textSoft,marginTop:2}}>{form.refEnabled?"Users can share referral links":"Referral links will not work"}</div></div>
         <button onClick={()=>upd("refEnabled",!form.refEnabled)} style={{width:44,height:24,borderRadius:12,background:form.refEnabled?t.accent:(dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)"),position:"relative",border:"none",cursor:"pointer",transition:"background 0.2s"}}><div style={{width:20,height:20,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:form.refEnabled?22:2,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/></button>
       </div>
-      <Field label="Referrer Bonus (₦)" field="refReferrerBonus" placeholder="500" type="number"/>
+      {field("Referrer Bonus (₦)","refReferrerBonus","500","number")}
       <div style={{fontSize:11,color:t.textMuted,marginTop:-12,marginBottom:16}}>Amount credited to the person who shared the link. Set 0 to disable.</div>
-      <Field label="Invitee Bonus (₦)" field="refInviteeBonus" placeholder="500" type="number"/>
+      {field("Invitee Bonus (₦)","refInviteeBonus","500","number")}
       <div style={{fontSize:11,color:t.textMuted,marginTop:-12,marginBottom:16}}>Amount credited to the new user who signed up. Set 0 to disable.</div>
       <div style={{marginBottom:16}}>
         <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Credit trigger</label>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>{[["verify","On Verification"],["deposit","On First Deposit"],["order","On First Order"]].map(([v,lb])=><button key={v} onClick={()=>upd("refTrigger",v)} style={{padding:"10px 0",textAlign:"center",borderRadius:8,fontSize:12,fontWeight:500,background:(form.refTrigger||"verify")===v?t.accentLight:"transparent",color:(form.refTrigger||"verify")===v?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:(form.refTrigger||"verify")===v?t.accentShadow:"none"}}>{lb}</button>)}</div>
       </div>
-      <Field label="Ongoing Commission (%)" field="refCommission" placeholder="5" type="number"/>
+      {field("Ongoing Commission (%)","refCommission","5","number")}
       <div style={{fontSize:11,color:t.textMuted,marginTop:-12,marginBottom:16}}>Referrer earns this % on every order the referred user makes. Set 0 to disable.</div>
     </Card><Card dark={dark}>
       <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>Guardrails</h3>
-      <Field label="Max Referrals Per User" field="refMaxPerUser" placeholder="0" type="number"/>
+      {field("Max Referrals Per User","refMaxPerUser","0","number")}
       <div style={{fontSize:11,color:t.textMuted,marginTop:-12,marginBottom:16}}>Maximum number of people one user can refer. 0 = unlimited.</div>
-      <Field label="Referral Link Expiry (days)" field="refLinkExpiry" placeholder="0" type="number"/>
+      {field("Referral Link Expiry (days)","refLinkExpiry","0","number")}
       <div style={{fontSize:11,color:t.textMuted,marginTop:-12,marginBottom:16}}>How many days a referral link stays valid. 0 = never expires.</div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,padding:"12px 14px",borderRadius:10,background:dark?"rgba(255,255,255,0.02)":"rgba(0,0,0,0.02)",border:`1px solid ${t.surfaceBorder}`}}>
         <div><div style={{fontSize:13,fontWeight:500,color:t.text}}>Self-referral prevention</div><div style={{fontSize:11,color:t.textMuted,marginTop:2}}>Block same email or IP from referring themselves</div></div>
@@ -625,7 +625,7 @@ function CouponsPage({t,dark,Btn,FilterBtn,notify,logAction}){
     setModal(null);
   };
   const deleteCoupon=(id)=>{const c=coupons.find(x=>x.id===id);setCoupons(p=>p.filter(x=>x.id!==id));logAction(`Deleted coupon ${c?.code}`,"settings");notify("Coupon deleted");setDel(null);};
-  const Field=({label,children})=><div style={{marginBottom:14}}><label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>{label}</label>{children}</div>;
+  const fld=(label,children)=><div style={{marginBottom:14}}><label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>{label}</label>{children}</div>;
   return <div>
     <Hdr title="Coupons" sub="Manage promo codes and discounts" t={t} action={<Btn primary onClick={openCreate}>+ Create Coupon</Btn>}/>
     <div style={{display:"flex",gap:8,marginBottom:16}}><FilterBtn active={f==="all"} onClick={()=>setF("all")}>All ({coupons.length})</FilterBtn><FilterBtn active={f==="active"} onClick={()=>setF("active")}>Active ({coupons.filter(c=>c.active).length})</FilterBtn><FilterBtn active={f==="expired"} onClick={()=>setF("expired")}>Inactive ({coupons.filter(c=>!c.active).length})</FilterBtn></div>
@@ -650,14 +650,14 @@ function CouponsPage({t,dark,Btn,FilterBtn,notify,logAction}){
     {modal&&<div onClick={()=>setModal(null)} style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.5)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
       <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:440,background:dark?"rgba(15,18,30,0.98)":"rgba(255,255,255,0.98)",border:`1px solid ${t.surfaceBorder}`,borderRadius:20,padding:28}}>
         <h3 style={{fontSize:18,fontWeight:600,color:t.text,marginBottom:20}}>{modal==="create"?"Create Coupon":"Edit Coupon"}</h3>
-        <Field label="Coupon Code"><input value={form.code} onChange={e=>upd("code",e.target.value.toUpperCase())} placeholder="e.g. WELCOME10" className="m" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></Field>
-        <Field label="Discount Type"><div style={{display:"flex",gap:8}}>{[["percent","% Percentage"],["flat","₦ Flat Amount"]].map(([v,lb])=><button key={v} onClick={()=>upd("type",v)} style={{flex:1,padding:"10px 0",borderRadius:10,fontSize:13,fontWeight:500,background:form.type===v?t.accentLight:t.btnSecondary,color:form.type===v?t.accent:t.textSoft,border:`1px solid ${t.btnSecBorder}`}}>{lb}</button>)}</div></Field>
-        <Field label={form.type==="percent"?"Discount (%)":"Discount Amount (₦)"}><input type="number" value={form.value} onChange={e=>upd("value",e.target.value)} placeholder={form.type==="percent"?"10":"500"} style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></Field>
+        {fld("Coupon Code",<input value={form.code} onChange={e=>upd("code",e.target.value.toUpperCase())} placeholder="e.g. WELCOME10" className="m" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>)}
+        {fld("Discount Type",<div style={{display:"flex",gap:8}}>{[["percent","% Percentage"],["flat","₦ Flat Amount"]].map(([v,lb])=><button key={v} onClick={()=>upd("type",v)} style={{flex:1,padding:"10px 0",borderRadius:10,fontSize:13,fontWeight:500,background:form.type===v?t.accentLight:t.btnSecondary,color:form.type===v?t.accent:t.textSoft,border:`1px solid ${t.btnSecBorder}`}}>{lb}</button>)}</div>)}
+        {fld(form.type==="percent"?"Discount (%)":"Discount Amount (₦)",<input type="number" value={form.value} onChange={e=>upd("value",e.target.value)} placeholder={form.type==="percent"?"10":"500"} style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>)}
         <div style={{display:"flex",gap:10}}>
-          <Field label="Min Order (₦)"><input type="number" value={form.minOrder} onChange={e=>upd("minOrder",e.target.value)} placeholder="0" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></Field>
-          <Field label="Max Uses"><input type="number" value={form.maxUses} onChange={e=>upd("maxUses",e.target.value)} placeholder="100" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></Field>
+          {fld("Min Order (₦)",<input type="number" value={form.minOrder} onChange={e=>upd("minOrder",e.target.value)} placeholder="0" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>)}
+          {fld("Max Uses",<input type="number" value={form.maxUses} onChange={e=>upd("maxUses",e.target.value)} placeholder="100" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>)}
         </div>
-        <Field label="Expiry Date"><input type="date" value={form.expires} onChange={e=>upd("expires",e.target.value)} style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></Field>
+        {fld("Expiry Date",<input type="date" value={form.expires} onChange={e=>upd("expires",e.target.value)} style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>)}
         <div style={{display:"flex",gap:10,marginTop:6}}><Btn primary onClick={saveCoupon} style={{flex:1}}>{modal==="create"?"Create":"Save Changes"}</Btn><Btn onClick={()=>setModal(null)} style={{flex:1}}>Cancel</Btn></div>
       </div>
     </div>}
