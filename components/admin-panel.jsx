@@ -61,7 +61,7 @@ export default function AdminPanel(){
     {id:"monnify",name:"Monnify",icon:"🏦",desc:"Bank Transfer, USSD",enabled:true,priority:3},
     {id:"korapay",name:"Korapay",icon:"💠",desc:"Cards, Bank Transfer",enabled:false,priority:4},
   ]);const [activityLog,setActivityLog]=useState(MOCK_ACTIVITY);const [adminList,setAdminList]=useState(MOCK_ADMINS.map(a=>({...a,customPages:null})));const [sb,setSb]=useState(false);const [mini,setMini]=useState(false);const [toast,setToast]=useState(null);const [currentAdmin]=useState(MOCK_ADMINS[0]);const role=ROLES[currentAdmin.role];
-  const [siteSettings,setSiteSettings]=useState({whatsapp:"2348012345678",twitter:"boostpanel",instagram:"boostpanel.ng",siteName:"BoostPanel",supportEmail:"support@boostpanel.ng",minDeposit:"500",defaultMarkup:"54",referralBonus:"500",promoEnabled:true,promoMessage:"Sign up today and get 10% bonus on your first deposit.",promoType:"info"});
+  const [siteSettings,setSiteSettings]=useState({whatsapp:"2348012345678",twitter:"boostpanel",instagram:"boostpanel.ng",siteName:"BoostPanel",supportEmail:"support@boostpanel.ng",minDeposit:"500",defaultMarkup:"54",promoEnabled:true,promoMessage:"Sign up today and get 10% bonus on your first deposit.",promoType:"info",refEnabled:true,refReferrerBonus:"500",refInviteeBonus:"500",refTrigger:"verify",refCommission:"5",refMaxPerUser:"0",refLinkExpiry:"0",refSelfPrevention:true});
   const getAutoTheme=()=>{const h=new Date().getHours(),m=new Date().getMinutes();if(h>=7&&h<18)return false;if(h>=19||h<6)return true;if(h===6)return m<30;if(h===18)return m>=30;return true;};
   const [dark,setDark]=useState(getAutoTheme);const [manualOverride,setManualOverride]=useState(false);
   useEffect(()=>{if(manualOverride)return;const iv=setInterval(()=>setDark(getAutoTheme()),60000);return()=>clearInterval(iv);},[manualOverride]);
@@ -417,21 +417,19 @@ function SiteSettingsPage({t,dark,settings,setSettings,Btn,notify,logAction}){
   const Tab=({id,label})=><button onClick={()=>setTab(id)} style={{padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:tab===id?t.accentLight:"transparent",color:tab===id?t.accent:t.textSoft,border:"1px solid transparent",boxShadow:tab===id?t.accentShadow:"none"}}>{label}</button>;
   return <div>
     <Hdr title="Settings" sub="Manage global platform settings — superadmin only" t={t} action={<Btn primary onClick={save}>💾 Save All</Btn>}/>
-    <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}><Tab id="general" label="General"/><Tab id="socials" label="Socials & Contact"/><Tab id="promo" label="Promo Banner"/></div>
+    <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}><Tab id="general" label="General"/><Tab id="socials" label="Socials & Contact"/><Tab id="promo" label="Promo Banner"/><Tab id="referrals" label="Referrals"/></div>
     {tab==="general"&&<div className="g2"><Card dark={dark}>
       <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>General</h3>
       <Field label="Site Name" field="siteName" placeholder="BoostPanel"/>
       <Field label="Support Email" field="supportEmail" placeholder="support@boostpanel.ng"/>
       <Field label="Minimum Deposit (₦)" field="minDeposit" placeholder="500" type="number"/>
       <Field label="Default Markup (%)" field="defaultMarkup" placeholder="54" type="number"/>
-      <Field label="Referral Bonus (₦)" field="referralBonus" placeholder="500" type="number"/>
     </Card><Card dark={dark}>
       <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:12}}>Notes</h3>
       <div style={{fontSize:13,color:t.textSoft,lineHeight:1.7}}>
         <p style={{marginBottom:8}}>Changes here affect the entire platform immediately.</p>
         <p style={{marginBottom:8}}><strong style={{color:t.text}}>Minimum Deposit</strong> is the lowest amount users can add to their wallet.</p>
-        <p style={{marginBottom:8}}><strong style={{color:t.text}}>Default Markup</strong> is applied to new services synced from the API.</p>
-        <p><strong style={{color:t.text}}>Referral Bonus</strong> is credited to both referrer and new user on email verification.</p>
+        <p><strong style={{color:t.text}}>Default Markup</strong> is applied to new services synced from the API.</p>
       </div>
     </Card></div>}
     {tab==="socials"&&<div className="g2"><Card dark={dark}>
@@ -466,6 +464,44 @@ function SiteSettingsPage({t,dark,settings,setSettings,Btn,notify,logAction}){
     </Card><Card dark={dark}>
       <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:16}}>Preview</h3>
       {form.promoEnabled!==false?<div style={{padding:"10px 16px",textAlign:"center",fontSize:13,fontWeight:500,borderRadius:10,background:(form.promoType||"info")==="warning"?(dark?"rgba(217,119,6,0.15)":"#fffbeb"):(dark?"rgba(99,102,241,0.15)":"#eef2ff"),color:(form.promoType||"info")==="warning"?(dark?"#fcd34d":"#92400e"):(dark?"#a5b4fc":"#4f46e5"),border:`1px solid ${(form.promoType||"info")==="warning"?(dark?"rgba(217,119,6,0.2)":"#fde68a"):(dark?"rgba(99,102,241,0.2)":"#c7d2fe")}`}}>{(form.promoType||"info")==="warning"?"⚠️":"✨"} {form.promoMessage||"Sign up today and get 10% bonus on your first deposit."}</div>:<div style={{padding:"20px",textAlign:"center",fontSize:13,color:t.textMuted,background:dark?"#0d1020":"#faf8f5",borderRadius:10,border:`1px solid ${t.surfaceBorder}`}}>Banner is currently hidden</div>}
+    </Card></div>}
+    {tab==="referrals"&&<div className="g2"><Card dark={dark}>
+      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>Referral Programme</h3>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,padding:"14px 16px",borderRadius:12,background:form.refEnabled?(dark?"rgba(110,231,183,0.05)":"#ecfdf5"):(dark?"rgba(255,255,255,0.02)":"#fafafa"),border:`1px solid ${form.refEnabled?(dark?"rgba(110,231,183,0.15)":"#a7f3d0"):t.surfaceBorder}`}}>
+        <div><div style={{fontSize:14,fontWeight:600,color:form.refEnabled?t.green:t.textMuted}}>{form.refEnabled?"Programme Active":"Programme Disabled"}</div><div style={{fontSize:12,color:t.textSoft,marginTop:2}}>{form.refEnabled?"Users can share referral links":"Referral links will not work"}</div></div>
+        <button onClick={()=>upd("refEnabled",!form.refEnabled)} style={{width:44,height:24,borderRadius:12,background:form.refEnabled?t.accent:(dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)"),position:"relative",border:"none",cursor:"pointer",transition:"background 0.2s"}}><div style={{width:20,height:20,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:form.refEnabled?22:2,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/></button>
+      </div>
+      <Field label="Referrer Bonus (₦)" field="refReferrerBonus" placeholder="500" type="number"/>
+      <div style={{fontSize:11,color:t.textMuted,marginTop:-12,marginBottom:16}}>Amount credited to the person who shared the link. Set 0 to disable.</div>
+      <Field label="Invitee Bonus (₦)" field="refInviteeBonus" placeholder="500" type="number"/>
+      <div style={{fontSize:11,color:t.textMuted,marginTop:-12,marginBottom:16}}>Amount credited to the new user who signed up. Set 0 to disable.</div>
+      <div style={{marginBottom:16}}>
+        <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Credit trigger</label>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>{[["verify","On Verification"],["deposit","On First Deposit"],["order","On First Order"]].map(([v,lb])=><button key={v} onClick={()=>upd("refTrigger",v)} style={{padding:"10px 0",textAlign:"center",borderRadius:8,fontSize:12,fontWeight:500,background:(form.refTrigger||"verify")===v?t.accentLight:"transparent",color:(form.refTrigger||"verify")===v?t.accent:t.textMuted,border:`1px solid ${t.btnSecBorder}`,boxShadow:(form.refTrigger||"verify")===v?t.accentShadow:"none"}}>{lb}</button>)}</div>
+      </div>
+      <Field label="Ongoing Commission (%)" field="refCommission" placeholder="5" type="number"/>
+      <div style={{fontSize:11,color:t.textMuted,marginTop:-12,marginBottom:16}}>Referrer earns this % on every order the referred user makes. Set 0 to disable.</div>
+    </Card><Card dark={dark}>
+      <h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:20}}>Guardrails</h3>
+      <Field label="Max Referrals Per User" field="refMaxPerUser" placeholder="0" type="number"/>
+      <div style={{fontSize:11,color:t.textMuted,marginTop:-12,marginBottom:16}}>Maximum number of people one user can refer. 0 = unlimited.</div>
+      <Field label="Referral Link Expiry (days)" field="refLinkExpiry" placeholder="0" type="number"/>
+      <div style={{fontSize:11,color:t.textMuted,marginTop:-12,marginBottom:16}}>How many days a referral link stays valid. 0 = never expires.</div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,padding:"12px 14px",borderRadius:10,background:dark?"rgba(255,255,255,0.02)":"rgba(0,0,0,0.02)",border:`1px solid ${t.surfaceBorder}`}}>
+        <div><div style={{fontSize:13,fontWeight:500,color:t.text}}>Self-referral prevention</div><div style={{fontSize:11,color:t.textMuted,marginTop:2}}>Block same email or IP from referring themselves</div></div>
+        <button onClick={()=>upd("refSelfPrevention",!form.refSelfPrevention)} style={{width:44,height:24,borderRadius:12,background:form.refSelfPrevention?t.accent:(dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)"),position:"relative",border:"none",cursor:"pointer",transition:"background 0.2s"}}><div style={{width:20,height:20,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:form.refSelfPrevention?22:2,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/></button>
+      </div>
+      <div style={{padding:16,borderRadius:12,background:dark?"#0d1020":"#faf8f5",border:`1px solid ${t.surfaceBorder}`}}>
+        <div style={{fontSize:13,fontWeight:600,color:t.text,marginBottom:8}}>Current Configuration</div>
+        <div style={{fontSize:12,color:t.textSoft,lineHeight:1.8}}>
+          {form.refEnabled?<>Programme is <strong style={{color:t.green}}>active</strong></>:<>Programme is <strong style={{color:t.red}}>disabled</strong></>}<br/>
+          Referrer gets <strong style={{color:t.text}}>₦{Number(form.refReferrerBonus||0).toLocaleString()}</strong> · Invitee gets <strong style={{color:t.text}}>₦{Number(form.refInviteeBonus||0).toLocaleString()}</strong><br/>
+          Credited on <strong style={{color:t.text}}>{form.refTrigger==="deposit"?"first deposit":form.refTrigger==="order"?"first order":"email verification"}</strong><br/>
+          {Number(form.refCommission)>0&&<>Ongoing <strong style={{color:t.text}}>{form.refCommission}%</strong> commission on orders<br/></>}
+          {Number(form.refMaxPerUser)>0?<>Max <strong style={{color:t.text}}>{form.refMaxPerUser}</strong> referrals per user<br/></>:<>Unlimited referrals<br/></>}
+          {Number(form.refLinkExpiry)>0?<>Links expire after <strong style={{color:t.text}}>{form.refLinkExpiry}</strong> days</>:<>Links never expire</>}
+        </div>
+      </div>
     </Card></div>}
   </div>;
 }
