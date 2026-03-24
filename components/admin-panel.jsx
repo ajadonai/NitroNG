@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from "react";
 import { smartTime } from "@/lib/smart-time";
+import { ErrorBoundary } from './error-boundary';
 
 const ROLES = {
   superadmin: { label: "Super Admin", color: "#c47d8e", pages: ["overview","orders","users","tickets","---1","services","api","payments","---2","analytics","alerts","coupons","notifications","maintenance","activity","---3","team","settings"] },
@@ -47,7 +48,7 @@ function Pagination({total,page,setPage,perPage,setPerPage,t}){
 }
 
 const ATYPE={"credit":"💰","alert":"📢","cancel":"✕","ticket":"💬","ban":"🚫","sync":"🔄","settings":"⚙️","refill":"🔁","admin":"🛡️"};
-function ErrorBoundary({children}){return <>{children}</>;}
+
 
 function ThemeToggle({dark,onToggle,compact}){return <button onClick={onToggle} style={{display:"flex",alignItems:"center",background:dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)",borderRadius:20,padding:3,width:compact?52:64,height:compact?28:32,border:`1px solid ${dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)"}`,position:"relative",flexShrink:0,transition:"background 1.5s cubic-bezier(.4,0,.2,1),border-color 1.5s ease"}}><div style={{width:compact?22:26,height:compact?22:26,borderRadius:"50%",background:dark?"#c47d8e":"#e0a458",display:"flex",alignItems:"center",justifyContent:"center",fontSize:compact?12:14,position:"absolute",left:dark?3:(compact?27:35),transition:"left 0.4s cubic-bezier(.4,0,.2,1),background 1.5s cubic-bezier(.4,0,.2,1)",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}>{dark?"🌙":"☀️"}</div></button>;}
 

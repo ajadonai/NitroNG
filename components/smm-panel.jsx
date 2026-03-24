@@ -82,8 +82,8 @@ function LoadBtn({children,onClick,primary,disabled,style:s,t}){
 }
 
 // Error boundary wrapper — renders children safely
-// In production Next.js, replace with a proper class-based ErrorBoundary
-function ErrorBoundary({children}){return <>{children}</>;}
+import { ErrorBoundary } from './error-boundary';
+// In production Next.js, this catches render crashes gracefully
 
 export default function App() {
   const [pg, setPg] = useState("dashboard");
