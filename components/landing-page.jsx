@@ -20,20 +20,21 @@ function Reveal({children,delay=0,style={}}){
 
 export default function Landing(){
   const getAuto=()=>{const h=new Date().getHours(),m=new Date().getMinutes();if(h>=7&&h<18)return false;if(h>=19||h<6)return true;if(h===6)return m<30;if(h===18)return m>=30;return true;};
-  const [dark,setDark]=useState(getAuto);
-  const [mo,setMo]=useState(false);
+  const [dark,setDark]=useState(false);
+  const [themeMode,setThemeMode]=useState("auto");
   const [modal,setModal]=useState(null);
   const [faqOpen,setFaqOpen]=useState(null);
   const [scrolled,setScrolled]=useState(false);
   const [siteStats,setSiteStats]=useState({users:"12K+",orders:"2M+"});
   const [promoBanner,setPromoBanner]=useState({message:"New! Sign up today and get 10% bonus on your first deposit.",type:"info"});
   const [siteAlerts,setSiteAlerts]=useState([]);
-  useEffect(()=>{if(mo)return;const iv=setInterval(()=>setDark(getAuto()),60000);return()=>clearInterval(iv);},[mo]);
+  useEffect(()=>{const saved=localStorage.getItem("nitro-theme")||"auto";setThemeMode(saved);if(saved==="day")setDark(false);else if(saved==="night")setDark(true);else setDark(getAuto());},[]);
+  useEffect(()=>{if(themeMode!=="auto")return;const iv=setInterval(()=>setDark(getAuto()),60000);return()=>clearInterval(iv);},[themeMode]);
   useEffect(()=>{const onScroll=()=>setScrolled(window.scrollY>20);window.addEventListener("scroll",onScroll);return()=>window.removeEventListener("scroll",onScroll);},[]);
   useEffect(()=>{const p=new URLSearchParams(window.location.search);if(p.get("login"))setModal("login");if(p.get("signup"))setModal("signup");if(p.get("ref")){setModal("signup");}},[]);
   useEffect(()=>{(async()=>{try{const res=await fetch("/api/site-info");if(res.ok){const d=await res.json();if(d.stats)setSiteStats(d.stats);if(d.promo)setPromoBanner(d.promo);else setPromoBanner(null);if(d.alerts?.length)setSiteAlerts(d.alerts);}}catch{}})();},[]);
   const closeModal=useCallback(()=>setModal(null),[]);
-  const toggleTheme=()=>{setMo(true);setDark(d=>!d);};
+  const toggleTheme=()=>{const next=!dark;setDark(next);const mode=next?"night":"day";setThemeMode(mode);localStorage.setItem("nitro-theme",mode);};
 
   const t=useMemo(()=>({
     bg:dark?"#080b14":"#f4f1ed",text:dark?"#e8e4df":"#1a1a1a",textSoft:dark?"#8a8680":"#888580",textMuted:dark?"#555250":"#b0ada8",
@@ -135,14 +136,7 @@ export default function Landing(){
           </div>
         </section>
 
-        {/* ── PLATFORM CAROUSEL ── */}
-        <div style={{padding:"20px 0 50px",overflow:"hidden"}}>
-          <div style={{display:"flex",animation:"scroll 30s linear infinite",width:"fit-content"}}>
-            {[0,1].map(rep=><div key={rep} style={{display:"flex",gap:12,paddingRight:12}}>
-              {[["📸","Instagram"],["🎵","TikTok"],["▶️","YouTube"],["𝕏","Twitter/X"],["📘","Facebook"],["✈️","Telegram"],["🎵","Spotify"],["👻","Snapchat"],["🔗","LinkedIn"],["📌","Pinterest"],["🎮","Twitch"],["💬","Discord"]].map(([ic,name])=><span key={rep+name} style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 20px",borderRadius:12,background:t.surface,border:`1px solid ${t.surfaceBorder}`,fontSize:14,color:t.textSoft,fontWeight:450,backdropFilter:"blur(8px)",whiteSpace:"nowrap",flexShrink:0}}>{ic} {name}</span>)}
-            </div>)}
-          </div>
-        </div>
+
 
         {/* ── FEATURES ── */}
         <section id="services" style={{padding:"80px 40px",maxWidth:1100,margin:"0 auto"}}>
@@ -193,10 +187,10 @@ export default function Landing(){
         </section>
 
         {/* ── FOOTER CAROUSEL ── */}
-        <div style={{borderTop:`1px solid ${t.surfaceBorder}`,padding:"16px 0",overflow:"hidden"}}>
-          <div style={{display:"flex",animation:"scroll 25s linear infinite",width:"fit-content"}}>
-            {[0,1,2].map(rep=><div key={rep} style={{display:"flex",gap:32,paddingRight:32,alignItems:"center"}}>
-              {["Instagram","TikTok","YouTube","Twitter/X","Facebook","Telegram","Spotify","Snapchat","LinkedIn","Pinterest","Twitch","Discord"].map(name=><span key={rep+name} style={{fontSize:13,color:t.textMuted,fontWeight:450,whiteSpace:"nowrap",letterSpacing:.5}}>{name}</span>)}
+        <div style={{borderTop:`1px solid ${t.surfaceBorder}`,padding:"20px 0",overflow:"hidden"}}>
+          <div style={{display:"flex",animation:"scroll 30s linear infinite",width:"fit-content"}}>
+            {[0,1].map(rep=><div key={rep} style={{display:"flex",gap:12,paddingRight:12}}>
+              {[["📸","Instagram"],["🎵","TikTok"],["▶️","YouTube"],["𝕏","Twitter/X"],["📘","Facebook"],["✈️","Telegram"],["🎵","Spotify"],["👻","Snapchat"],["🔗","LinkedIn"],["📌","Pinterest"],["🎮","Twitch"],["💬","Discord"]].map(([ic,name])=><span key={rep+name} style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 20px",borderRadius:12,background:t.surface,border:`1px solid ${t.surfaceBorder}`,fontSize:14,color:t.textSoft,fontWeight:450,backdropFilter:"blur(8px)",whiteSpace:"nowrap",flexShrink:0}}>{ic} {name}</span>)}
             </div>)}
           </div>
         </div>
