@@ -1,5 +1,4 @@
 'use client';
-import NitroLogo from "./nitro-logo";
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 
 function ThemeToggle({dark,onToggle,compact}){
@@ -84,9 +83,9 @@ export default function Landing(){
       
       <style>{`
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        .root{min-height:100vh;background:${t.bg};color:${t.text};font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:background 1.5s cubic-bezier(.4,0,.2,1),color 1.2s ease;overflow-x:clip;scroll-behavior:smooth}
+        .root{min-height:100vh;background:${t.bg};color:${t.text};font-family:'Outfit','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:background 1.5s cubic-bezier(.4,0,.2,1),color 1.2s ease;overflow-x:clip;scroll-behavior:smooth}
         .snap-section{min-height:100vh;display:flex;flex-direction:column;justify-content:center;scroll-snap-align:start}
-        .m{font-family:'JetBrains Mono',monospace}.serif{font-family:'Plus Jakarta Sans',-apple-system,sans-serif}
+        .m{font-family:'JetBrains Mono',monospace}.serif{font-family:'Cormorant Garamond','Plus Jakarta Sans',serif}
         button{cursor:pointer;font-family:inherit;border:none}input,textarea{font-family:inherit}
         @keyframes fi{from{opacity:0}to{opacity:1}}@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
         @keyframes float1{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(30px,-20px) scale(1.05)}50%{transform:translate(-10px,15px) scale(0.95)}75%{transform:translate(20px,10px) scale(1.02)}}
@@ -123,12 +122,13 @@ export default function Landing(){
       <nav style={{backdropFilter:"blur(20px)",background:scrolled?(dark?"rgba(8,11,20,0.98)":"rgba(244,241,237,0.98)"):(dark?"rgba(8,11,20,0.4)":"rgba(244,241,237,0.4)"),borderBottom:`1px solid ${scrolled?t.surfaceBorder:"transparent"}`,transition:"background 0.3s ease, border-color 0.3s ease",boxShadow:scrolled?(dark?"0 1px 12px rgba(0,0,0,0.3)":"0 1px 12px rgba(0,0,0,0.06)"):"none"}}>
         <div className="sec" style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 24px"}}>
           <button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} style={{display:"flex",alignItems:"center",gap:10,background:"none",padding:0,border:"none",outline:"none",cursor:"pointer"}}>
-            <NitroLogo size={34} variant="mark"/>
+            <div style={{width:32,height:32,borderRadius:9,background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
             <span className="serif" style={{fontSize:20,fontWeight:600,color:t.text,letterSpacing:"0.3px"}}>Nitro</span>
           </button>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
             <ThemeToggle dark={dark} onToggle={toggleTheme} compact/>
-            <button onClick={()=>setModal("login")} className="nav-login" style={{padding:"9px 20px",borderRadius:10,background:"transparent",border:`1px solid ${t.surfaceBorder}`,color:t.text,fontSize:13,fontWeight:600,transition:"background 1.5s ease"}}>Log In</button>
+            <button onClick={toggleTheme} style={{width:44,height:24,borderRadius:12,background:dark?"#c47d8e":"rgba(0,0,0,0.08)",position:"relative",transition:"all .3s",border:"none",cursor:"pointer",flexShrink:0}}><div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:dark?23:3,transition:"left .3s cubic-bezier(.2,.8,.2,1)",boxShadow:"0 1px 4px rgba(0,0,0,.2)"}}/></button>
+              <button onClick={()=>setModal("login")} className="nav-login" style={{padding:"9px 20px",borderRadius:10,background:"transparent",border:`1px solid ${t.surfaceBorder}`,color:t.text,fontSize:13,fontWeight:600,transition:"background 1.5s ease"}}>Log In</button>
             <button onClick={()=>setModal("signup")} style={{padding:"9px 16px",borderRadius:10,background:t.btnPrimary,color:"#fff",fontSize:13,fontWeight:600}}>Sign Up</button>
           </div>
         </div>
@@ -185,6 +185,15 @@ export default function Landing(){
           </div>
         </div>
       </section>
+
+      {/* Platform Carousel */}
+      <div style={{padding:"30px 0 50px",overflow:"hidden"}}>
+        <div style={{display:"flex",animation:"scroll 30s linear infinite",width:"fit-content"}}>
+          {[0,1].map(rep=><div key={rep} style={{display:"flex",gap:12,paddingRight:12}}>
+            {[["📸","Instagram"],["🎵","TikTok"],["▶️","YouTube"],["𝕏","Twitter/X"],["📘","Facebook"],["✈️","Telegram"],["🎵","Spotify"],["👻","Snapchat"],["🔗","LinkedIn"],["📌","Pinterest"],["🎮","Twitch"],["💬","Discord"]].map(([ic,name])=><span key={rep+name} style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 20px",borderRadius:12,background:t.surface,border:`1px solid ${t.surfaceBorder}`,fontSize:14,color:t.textSoft,fontWeight:450,backdropFilter:"blur(8px)",whiteSpace:"nowrap",flexShrink:0,transition:"background 1.5s ease"}}>{ic} {name}</span>)}
+          </div>)}
+        </div>
+      </div>
 
       <section id="features" className="snap-section" style={{padding:"80px 24px",position:"relative",zIndex:1}}>
         <div className="sec">
@@ -307,6 +316,7 @@ export default function Landing(){
             </div>
           </Reveal>
         </div>
+        <div style={{borderTop:`1px solid ${t.surfaceBorder}`,padding:"16px 0",overflow:"hidden"}}><div style={{display:"flex",animation:"scroll 25s linear infinite",width:"fit-content"}}>{[0,1,2].map(rep=><div key={rep} style={{display:"flex",gap:32,paddingRight:32,alignItems:"center"}}>{["Instagram","TikTok","YouTube","Twitter/X","Facebook","Telegram","Spotify","Snapchat","LinkedIn","Pinterest","Twitch","Discord"].map(name=><span key={rep+name} style={{fontSize:13,color:t.textMuted,fontWeight:450,whiteSpace:"nowrap",letterSpacing:.5}}>{name}</span>)}</div>)}</div></div>
         <Footer t={t} dark={dark}/>
       </section>
 
@@ -418,7 +428,7 @@ function AuthModal({dark,t,mode,setMode,onClose}){
         <button onClick={onClose} style={{position:"absolute",top:16,right:16,background:"none",color:t.textMuted,fontSize:20,padding:4,lineHeight:1,border:"none",cursor:"pointer"}}>✕</button>
         
         {/* Logo */}
-        <div style={{display:"flex",justifyContent:"center",marginBottom:24}}><NitroLogo size={38} variant="mark"/></div>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:24}}><div style={{width:38,height:38,borderRadius:10,background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div></div>
 
         {/* Title */}
         <h2 style={{fontSize:24,fontWeight:700,color:t.text,textAlign:"center",marginBottom:4}}>{mode==="login"?"Welcome back":mode==="forgot"?"Forgot password?":step===1?"Create Account":"Secure Your Account"}</h2>
@@ -511,7 +521,7 @@ export function Footer({t,dark}){
         <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:40,marginBottom:40}}>
           <div style={{maxWidth:280}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-              <NitroLogo size={32} variant="mark"/>
+              <div style={{width:32,height:32,borderRadius:9,background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
               <span className="serif" style={{fontSize:18,fontWeight:600,color:t.text}}>Nitro</span>
             </div>
             <p style={{fontSize:13,color:t.textSoft,lineHeight:1.7}}>Nigeria's premium SMM platform. Grow your social media with real followers, likes, and views.</p>
