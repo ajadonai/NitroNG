@@ -61,7 +61,7 @@ export default function AdminPanel(){
     {id:"monnify",name:"Monnify",icon:"🏦",desc:"Bank Transfer, USSD",enabled:true,priority:3},
     {id:"korapay",name:"Korapay",icon:"💠",desc:"Cards, Bank Transfer",enabled:false,priority:4},
   ]);const [activityLog,setActivityLog]=useState([]);const [adminList,setAdminList]=useState([]);const [sb,setSb]=useState(false);const [mini,setMini]=useState(false);const [toast,setToast]=useState(null);const [currentAdmin,setCurrentAdmin]=useState({name:"Admin",role:"superadmin",email:"admin@boostpanel.ng",id:"temp"});const [loading,setLoading]=useState(true);
-  const [orders,setOrders]=useState([]);const [users,setUsers]=useState([]);const [services,setServices]=useState(MOCK_SERVICES);const [tickets,setTickets]=useState([]);
+  const [orders,setOrders]=useState([]);const [users,setUsers]=useState([]);const [services,setServices]=useState([]);const [tickets,setTickets]=useState([]);
   const [overview,setOverview]=useState({users:0,orders:0,openTickets:0,revenue:0,cost:0,profit:0,deposits:0,today:{orders:0,revenue:0,users:0}});
   const [siteSettings,setSiteSettings]=useState({whatsapp:"2348012345678",twitter:"boostpanel",instagram:"boostpanel.ng",siteName:"BoostPanel",supportEmail:"support@boostpanel.ng",minDeposit:"500",defaultMarkup:"54",promoEnabled:true,promoMessage:"Sign up today and get 10% bonus on your first deposit.",promoType:"info",refEnabled:true,refReferrerBonus:"500",refInviteeBonus:"500",refTrigger:"verify",refCommission:"5",refMaxPerUser:"0",refLinkExpiry:"0",refSelfPrevention:true});
   const role=ROLES[currentAdmin.role]||ROLES.admin;
@@ -82,11 +82,19 @@ export default function AdminPanel(){
         fetch("/api/admin/orders").then(r=>r.ok?r.json():null).catch(()=>null),
         fetch("/api/admin/users").then(r=>r.ok?r.json():null).catch(()=>null),
         fetch("/api/admin/settings").then(r=>r.ok?r.json():null).catch(()=>null),
+        fetch("/api/admin/tickets").then(r=>r.ok?r.json():null).catch(()=>null),
+        fetch("/api/admin/alerts").then(r=>r.ok?r.json():null).catch(()=>null),
+        fetch("/api/admin/services").then(r=>r.ok?r.json():null).catch(()=>null),
+        fetch("/api/admin/maintenance").then(r=>r.ok?r.json():null).catch(()=>null),
       ];
-      const [ov,ord,usr,st]=await Promise.all(fetches);
+      const [ov,ord,usr,st,tk,al,sv,mt]=await Promise.all(fetches);
       if(ov)setOverview(ov);
       if(ord?.orders)setOrders(ord.orders);
       if(usr?.users)setUsers(usr.users);
+      if(tk?.tickets)setTickets(tk.tickets);
+      if(al?.alerts)setAlerts(al.alerts);
+      if(sv?.services)setServices(sv.services);
+      if(mt)setMaint(mt);
       if(st?.settings){
         const s=st.settings;
         setSiteSettings(prev=>({...prev,...Object.fromEntries(
@@ -155,7 +163,7 @@ export default function AdminPanel(){
     {pg==="payments"&&<PaymentsPage t={t} dark={dark} gateways={gateways} setGateways={setGateways} Btn={Btn} FilterBtn={FilterBtn} notify={notify} logAction={logAction} isSuperAdmin={currentAdmin.role==="superadmin"}/>}
     {pg==="tickets"&&<TicketsPage t={t} dark={dark} tickets={tickets} Btn={Btn} FilterBtn={FilterBtn} notify={notify}/>}
     {pg==="activity"&&<ActivityLog t={t} dark={dark} activity={activityLog} role={currentAdmin.role} adminName={currentAdmin.name}/>}
-    {pg==="analytics"&&<AnalyticsPage t={t} dark={dark} orders={MOCK_ORDERS} users={users} Btn={Btn} role={currentAdmin.role}/>}
+    {pg==="analytics"&&<AnalyticsPage t={t} dark={dark} orders={orders} users={users} Btn={Btn} role={currentAdmin.role}/>}
     {pg==="maintenance"&&<MaintenancePage t={t} dark={dark} maint={maint} setMaint={setMaint} Btn={Btn} notify={notify} logAction={logAction} isSuperAdmin={currentAdmin.role==="superadmin"}/>}
     {pg==="alerts"&&<AlertsPage t={t} dark={dark} alerts={alerts} setAlerts={setAlerts} Btn={Btn} FilterBtn={FilterBtn} notify={notify} isSuperAdmin={currentAdmin.role==="superadmin"} currentAdmin={currentAdmin} logAction={logAction}/>}
     {pg==="coupons"&&<CouponsPage t={t} dark={dark} Btn={Btn} FilterBtn={FilterBtn} notify={notify} logAction={logAction}/>}
