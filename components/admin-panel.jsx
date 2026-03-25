@@ -95,6 +95,14 @@ export default function AdminPanel(){
       if(al?.alerts)setAlerts(al.alerts);
       if(sv?.services)setServices(sv.services);
       if(mt)setMaint(mt);
+      // Phase 3 — non-blocking secondary fetches
+      Promise.all([
+        fetch("/api/admin/activity").then(r=>r.ok?r.json():null).catch(()=>null),
+        fetch("/api/admin/team").then(r=>r.ok?r.json():null).catch(()=>null),
+      ]).then(([act,tm])=>{
+        if(act?.activity)setActivityLog(act.activity);
+        if(tm?.admins)setAdminList(tm.admins.map(a=>({...a,customPages:null})));
+      });
       if(st?.settings){
         const s=st.settings;
         setSiteSettings(prev=>({...prev,...Object.fromEntries(
