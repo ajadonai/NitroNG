@@ -27,6 +27,8 @@ export default function Landing(){
   const [activeStep,setActiveStep]=useState(0);
   const [scrolled,setScrolled]=useState(false);
   const scrollRef=useRef(null);
+  const [isMobile,setIsMobile]=useState(false);
+  useEffect(()=>{const check=()=>setIsMobile(window.innerWidth<=768);check();window.addEventListener("resize",check);return()=>window.removeEventListener("resize",check);},[]);
   const [siteStats,setSiteStats]=useState({users:"12K+",orders:"2M+"});
   const [promoBanner,setPromoBanner]=useState({message:"New! Sign up today and get 10% bonus on your first deposit.",type:"info"});
   const [siteAlerts,setSiteAlerts]=useState([]);
@@ -189,7 +191,7 @@ export default function Landing(){
         </section>
 
         {/* ━━━ SCREEN 3: PRICING — the spotlight ━━━ */}
-        <section id="pricing" style={{minHeight:"calc(100vh - 100px)",display:"flex",flexDirection:"column",position:"relative",background:dark?"#060810":"#1a1520",overflow:"hidden"}}>
+        <section id="pricing" style={{minHeight:isMobile?"auto":"calc(100vh - 100px)",display:"flex",flexDirection:"column",position:"relative",background:dark?"#060810":"#1a1520",overflow:"hidden"}}>
           {/* Background drama */}
           <div style={{position:"absolute",inset:0,pointerEvents:"none"}}>
             <div style={{position:"absolute",top:"15%",left:"50%",transform:"translateX(-50%)",width:600,height:600,borderRadius:"50%",background:"radial-gradient(circle, rgba(196,125,142,.12) 0%, transparent 70%)",animation:"glow-pulse 4s ease-in-out infinite"}}/>
@@ -197,27 +199,27 @@ export default function Landing(){
             <div style={{position:"absolute",top:"20%",right:"10%",width:250,height:250,borderRadius:"50%",background:"rgba(255,0,0,.03)",filter:"blur(60px)"}}/>
           </div>
 
-          <div className="price-inner" style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"40px",position:"relative",zIndex:1}}>
+          <div className="price-inner" style={{flex:1,display:"flex",flexDirection:"column",alignItems:isMobile?"stretch":"center",justifyContent:"center",padding:isMobile?"20px 16px":"40px",position:"relative",zIndex:1}}>
             {/* Header */}
             <div style={{textAlign:"center",marginBottom:40}}>
               <div style={{display:"inline-flex",alignItems:"center",gap:8,padding:"6px 18px",borderRadius:24,background:"rgba(196,125,142,.1)",border:"1px solid rgba(196,125,142,.15)",fontSize:13,fontWeight:550,color:"#c47d8e",marginBottom:20}}>💰 Pay-as-you-go • No subscriptions</div>
-              <h2 style={{fontSize:48,fontWeight:900,color:"#f5f2ed",letterSpacing:-1,lineHeight:1.05,marginBottom:12}}>Transparent <span className="serif" style={{fontWeight:300,fontStyle:"italic",color:"#c47d8e",fontSize:54}}>Pricing</span></h2>
+              <h2 style={{fontSize:isMobile?28:48,fontWeight:900,color:"#f5f2ed",letterSpacing:-1,lineHeight:1.05,marginBottom:12}}>Transparent <span className="serif" style={{fontWeight:300,fontStyle:"italic",color:"#c47d8e",fontSize:isMobile?32:54}}>Pricing</span></h2>
               <p style={{fontSize:17,color:"#b0aaa4",fontWeight:430,maxWidth:440,margin:"0 auto"}}>All prices per 1,000 units. No hidden fees.</p>
             </div>
 
             {/* Cards */}
-            <div className="price-grid" style={{display:"flex",gap:20,alignItems:"center",maxWidth:1000,width:"100%"}}>
+            <div className="price-grid" style={{display:"flex",flexDirection:isMobile?"column":"row",gap:isMobile?12:20,alignItems:isMobile?"stretch":"center",maxWidth:isMobile?"100%":1000,width:"100%"}}>
               {[
                 ["TikTok",0,[["Followers","₦4,650"],["Views","₦465"],["Likes","₦2,325"],["Shares","₦1,200"]],false,"linear-gradient(135deg,#25F4EE,#FE2C55)","rgba(254,44,85,.15)"],
                 ["Instagram",1,[["Followers","₦3,875"],["Likes","₦1,860"],["Reels Views","₦775"],["Story Views","₦1,240"]],true,"linear-gradient(135deg,#F58529,#DD2A7B,#8134AF)","rgba(196,125,142,.2)"],
                 ["YouTube",2,[["Subscribers","₦12,400"],["Views","₦3,100"],["Watch Time","₦77,500"],["Likes","₦1,500"]],false,"linear-gradient(135deg,#FF0000,#CC0000)","rgba(255,0,0,.12)"]
               ].map(([name,idx,prices,pop,gradient,glow])=><div key={name} className="price-card" style={{
-                flex:1,padding:pop?"32px 26px":"28px 24px",borderRadius:22,position:"relative",overflow:"hidden",
+                flex:isMobile?"none":1,width:isMobile?"100%":"auto",padding:isMobile?(pop?"20px 18px":"18px 16px"):(pop?"32px 26px":"28px 24px"),borderRadius:22,position:"relative",overflow:"hidden",
                 background:pop?"rgba(196,125,142,.08)":"rgba(255,255,255,.05)",
                 border:`1.5px solid ${pop?"rgba(196,125,142,.35)":"rgba(255,255,255,.08)"}`,
                 backdropFilter:"blur(20px)",
-                transform:pop?"scale(1.04)":"none",
-                boxShadow:pop?"0 20px 60px rgba(196,125,142,.15)":"none",
+                transform:isMobile?"none":(pop?"scale(1.04)":"none"),
+                boxShadow:isMobile?"none":(pop?"0 20px 60px rgba(196,125,142,.15)":"none"),
                 transition:"all .4s cubic-bezier(.16,1,.3,1)",zIndex:pop?2:1
               }}>
                 {pop&&<><div style={{position:"absolute",top:0,left:0,right:0,height:3,background:gradient}}/><div className="pop-badge" style={{position:"absolute",top:14,right:14,padding:"4px 12px",borderRadius:8,background:t.btnPrimary,color:"#fff",fontSize:10,fontWeight:700,letterSpacing:1.5}}>POPULAR</div></>}
