@@ -97,12 +97,12 @@ export default function Landing(){
         .fu{animation:fu .5s cubic-bezier(.2,.8,.2,1) both}
         .fd1{animation-delay:.06s}.fd2{animation-delay:.12s}.fd3{animation-delay:.18s}.fd4{animation-delay:.24s}.fd5{animation-delay:.3s}
         .lift{transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s ease,border-color .3s ease}
-        .feat{transition:all .35s cubic-bezier(.16,1,.3,1)}
+        .pop-badge{animation:pulse-ring 2.5s ease-in-out infinite}.price-card{transition:all .4s cubic-bezier(.16,1,.3,1)}.price-card:hover{transform:translateY(-6px) scale(1.02)!important;box-shadow:0 20px 50px rgba(0,0,0,.3)!important;border-color:rgba(255,255,255,.15)!important}.feat{transition:all .35s cubic-bezier(.16,1,.3,1)}
         .feat:hover{transform:translateY(-3px);box-shadow:${dark?"0 14px 36px rgba(0,0,0,.25)":"0 14px 36px rgba(0,0,0,.06)"}}
         .lift:hover{transform:translateY(-4px);box-shadow:${dark?"0 12px 32px rgba(0,0,0,.3)":"0 12px 32px rgba(0,0,0,.07)"};border-color:${dark?"rgba(255,255,255,.12)":"rgba(0,0,0,.10)"}!important}
         .sec{min-height:calc(100vh - 100px);display:flex;flex-direction:column;justify-content:center;position:relative}
         @media(max-width:1024px){.sec{min-height:calc(100vh - 100px)}.hero-stats{gap:32px!important}}
-        @media(max-width:768px){.sec{min-height:calc(100vh - 96px)}.nav-links{display:none!important}.nav-login{display:none!important}.test-grid{grid-template-columns:1fr!important}.test-hide{display:none!important}.price-grid{grid-template-columns:1fr!important}.hero-stats{gap:24px!important}.hero-content{padding:16px 24px 12px!important}.hero-badge{font-size:12px!important;margin-bottom:20px!important}.hero-h1{font-size:36px!important}.hero-refined{font-size:40px!important}.hero-sub{font-size:15px!important;margin-bottom:28px!important}.hero-btns{gap:10px!important}.hero-btn{padding:13px 28px!important;font-size:14px!important;border-radius:12px!important}.hero-stat-val{font-size:18px!important}.hero-carousel-item{padding:7px 14px!important;font-size:12px!important;border-radius:10px!important;gap:6px!important}.s2-features{grid-template-columns:1fr 1fr!important}.s2-features{gap:8px!important}.s2-features .feat{padding:14px!important;border-radius:14px!important}.feat-desc{display:none!important}.feat-row{gap:10px!important;margin-bottom:0!important}.feat-ic{width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;border-radius:9px!important;font-size:15px!important}.s2-features .feat h3{font-size:13px!important}.s2-label{display:none!important}.s2-wrap{padding:16px 20px 10px!important}.s2-steps-wrap{padding:10px 20px 20px!important}.s2-wrap h2{font-size:22px!important}.s2-wrap h2 .serif{font-size:25px!important}.s2-steps-wrap h2{font-size:18px!important}.s2-steps{display:flex!important;flex-direction:row!important;gap:8px!important;grid-template-columns:none!important}.s2-step{flex:1!important;padding:16px 8px!important;text-align:center!important;flex-direction:column!important}.s2-step-icon{width:auto!important;height:auto!important;border-radius:0!important;margin-bottom:6px!important;background:none!important;border:none!important;box-shadow:none!important;transform:none!important;font-size:18px!important}.s2-step-emoji{display:none!important}.s2-step-num{display:inline!important}.s2-step-text{display:none!important}.s2-connector{display:none!important}}
+        @media(max-width:768px){.sec{min-height:calc(100vh - 96px)}.nav-links{display:none!important}.nav-login{display:none!important}.test-grid{grid-template-columns:1fr!important}.test-hide{display:none!important}.price-grid{flex-direction:column!important;gap:14px!important;padding:0!important}.price-card{transform:none!important;padding:20px 18px!important}.hero-stats{gap:24px!important}.hero-content{padding:16px 24px 12px!important}.hero-badge{font-size:12px!important;margin-bottom:20px!important}.hero-h1{font-size:36px!important}.hero-refined{font-size:40px!important}.hero-sub{font-size:15px!important;margin-bottom:28px!important}.hero-btns{gap:10px!important}.hero-btn{padding:13px 28px!important;font-size:14px!important;border-radius:12px!important}.hero-stat-val{font-size:18px!important}.hero-carousel-item{padding:7px 14px!important;font-size:12px!important;border-radius:10px!important;gap:6px!important}.s2-features{grid-template-columns:1fr 1fr!important}.s2-features{gap:8px!important}.s2-features .feat{padding:14px!important;border-radius:14px!important}.feat-desc{display:none!important}.feat-row{gap:10px!important;margin-bottom:0!important}.feat-ic{width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;border-radius:9px!important;font-size:15px!important}.s2-features .feat h3{font-size:13px!important}.s2-label{display:none!important}.s2-wrap{padding:16px 20px 10px!important}.s2-steps-wrap{padding:10px 20px 20px!important}.s2-wrap h2{font-size:22px!important}.s2-wrap h2 .serif{font-size:25px!important}.s2-steps-wrap h2{font-size:18px!important}.s2-steps{display:flex!important;flex-direction:row!important;gap:8px!important;grid-template-columns:none!important}.s2-step{flex:1!important;padding:16px 8px!important;text-align:center!important;flex-direction:column!important}.s2-step-icon{width:auto!important;height:auto!important;border-radius:0!important;margin-bottom:6px!important;background:none!important;border:none!important;box-shadow:none!important;transform:none!important;font-size:18px!important}.s2-step-emoji{display:none!important}.s2-step-num{display:inline!important}.s2-step-text{display:none!important}.s2-connector{display:none!important}}
         @media(max-width:480px){.sec{min-height:calc(100vh - 92px)}}
       `}</style>
 
@@ -188,17 +188,52 @@ export default function Landing(){
           </div>
         </section>
 
-        {/* ━━━ SCREEN 3: PRICING ━━━ */}
-        <section id="pricing" className="sec" style={{padding:"60px 40px"}}>
-          <div style={{maxWidth:1100,margin:"0 auto",width:"100%"}}>
-            <div style={{textAlign:"center",marginBottom:48}}>
-              <h2 style={{fontSize:"clamp(28px,4vw,40px)",fontWeight:700,color:t.text,marginBottom:10}}>Transparent Pricing</h2>
-              <p style={{fontSize:16,color:t.textSoft,fontWeight:430}}>No subscriptions. Pay-as-you-go. All prices per 1,000 units.</p>
+        {/* ━━━ SCREEN 3: PRICING — the spotlight ━━━ */}
+        <section id="pricing" style={{minHeight:"calc(100vh - 100px)",display:"flex",flexDirection:"column",position:"relative",background:dark?"#060810":"#1a1520",overflow:"hidden"}}>
+          {/* Background drama */}
+          <div style={{position:"absolute",inset:0,pointerEvents:"none"}}>
+            <div style={{position:"absolute",top:"15%",left:"50%",transform:"translateX(-50%)",width:600,height:600,borderRadius:"50%",background:"radial-gradient(circle, rgba(196,125,142,.12) 0%, transparent 70%)",animation:"glow-pulse 4s ease-in-out infinite"}}/>
+            <div style={{position:"absolute",bottom:"10%",left:"10%",width:300,height:300,borderRadius:"50%",background:"rgba(254,44,85,.04)",filter:"blur(80px)"}}/>
+            <div style={{position:"absolute",top:"20%",right:"10%",width:250,height:250,borderRadius:"50%",background:"rgba(255,0,0,.03)",filter:"blur(60px)"}}/>
+          </div>
+
+          <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"40px",position:"relative",zIndex:1}}>
+            {/* Header */}
+            <div style={{textAlign:"center",marginBottom:40}}>
+              <div style={{display:"inline-flex",alignItems:"center",gap:8,padding:"6px 18px",borderRadius:24,background:"rgba(196,125,142,.1)",border:"1px solid rgba(196,125,142,.15)",fontSize:13,fontWeight:550,color:"#c47d8e",marginBottom:20}}>💰 Pay-as-you-go • No subscriptions</div>
+              <h2 style={{fontSize:48,fontWeight:900,color:"#f5f2ed",letterSpacing:-1,lineHeight:1.05,marginBottom:12}}>Transparent <span className="serif" style={{fontWeight:300,fontStyle:"italic",color:"#c47d8e",fontSize:54}}>Pricing</span></h2>
+              <p style={{fontSize:17,color:"#b0aaa4",fontWeight:430,maxWidth:440,margin:"0 auto"}}>All prices per 1,000 units. No hidden fees.</p>
             </div>
-            <div className="price-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:20,maxWidth:960,margin:"0 auto"}}>
-              {[["TikTok","🎵",[["Followers","₦4,650"],["Views","₦465"],["Likes","₦2,325"],["Shares","₦1,200"]],false],["Instagram","📸",[["Followers","₦3,875"],["Likes","₦1,860"],["Reels Views","₦775"],["Story Views","₦1,240"]],true],["YouTube","▶️",[["Subscribers","₦12,400"],["Views","₦3,100"],["Watch Time","₦77,500"],["Likes","₦1,500"]],false]].map(([name,ic,prices,pop])=><div key={name} className="lift" style={{padding:"32px 28px",borderRadius:20,background:t.surface,border:`1px solid ${pop?"rgba(196,125,142,.3)":t.surfaceBorder}`,backdropFilter:"blur(8px)",position:"relative",overflow:"hidden",transform:pop?"scale(1.03)":"none"}}>{pop&&<div style={{position:"absolute",top:0,left:0,right:0,height:3,background:t.btnPrimary}}/>}{pop&&<div style={{position:"absolute",top:14,right:14,padding:"4px 12px",borderRadius:8,background:t.accent,color:"#fff",fontSize:10,fontWeight:700,letterSpacing:1}}>POPULAR</div>}<div style={{fontSize:40,marginBottom:10}}>{ic}</div><h3 style={{fontSize:22,fontWeight:700,color:t.text,marginBottom:20}}>{name}</h3>{prices.map(([svc,price])=><div key={svc} style={{display:"flex",justifyContent:"space-between",padding:"12px 0",borderBottom:`1px solid ${t.surfaceBorder}`}}><span style={{fontSize:14,color:t.textSoft,fontWeight:430}}>{svc}</span><span className="m" style={{fontSize:14,fontWeight:600,color:t.green}}>{price}</span></div>)}<button onClick={()=>setModal("signup")} style={{marginTop:24,width:"100%",padding:"14px 0",borderRadius:12,background:pop?t.btnPrimary:"transparent",color:pop?"#fff":t.text,fontSize:14,fontWeight:600,border:pop?"none":`1px solid ${t.surfaceBorder}`}}>Get Started</button></div>)}
+
+            {/* Cards */}
+            <div className="price-grid" style={{display:"flex",gap:20,alignItems:"center",maxWidth:1000,width:"100%"}}>
+              {[
+                ["TikTok",0,[["Followers","₦4,650"],["Views","₦465"],["Likes","₦2,325"],["Shares","₦1,200"]],false,"linear-gradient(135deg,#25F4EE,#FE2C55)","rgba(254,44,85,.15)"],
+                ["Instagram",1,[["Followers","₦3,875"],["Likes","₦1,860"],["Reels Views","₦775"],["Story Views","₦1,240"]],true,"linear-gradient(135deg,#F58529,#DD2A7B,#8134AF)","rgba(196,125,142,.2)"],
+                ["YouTube",2,[["Subscribers","₦12,400"],["Views","₦3,100"],["Watch Time","₦77,500"],["Likes","₦1,500"]],false,"linear-gradient(135deg,#FF0000,#CC0000)","rgba(255,0,0,.12)"]
+              ].map(([name,idx,prices,pop,gradient,glow])=><div key={name} className="price-card" style={{
+                flex:1,padding:pop?"32px 26px":"28px 24px",borderRadius:22,position:"relative",overflow:"hidden",
+                background:pop?"rgba(196,125,142,.08)":"rgba(255,255,255,.05)",
+                border:`1.5px solid ${pop?"rgba(196,125,142,.35)":"rgba(255,255,255,.08)"}`,
+                backdropFilter:"blur(20px)",
+                transform:pop?"scale(1.04)":"none",
+                boxShadow:pop?"0 20px 60px rgba(196,125,142,.15)":"none",
+                transition:"all .4s cubic-bezier(.16,1,.3,1)",zIndex:pop?2:1
+              }}>
+                {pop&&<><div style={{position:"absolute",top:0,left:0,right:0,height:3,background:gradient}}/><div className="pop-badge" style={{position:"absolute",top:14,right:14,padding:"4px 12px",borderRadius:8,background:t.btnPrimary,color:"#fff",fontSize:10,fontWeight:700,letterSpacing:1.5}}>POPULAR</div></>}
+                <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+                  <div style={{width:46,height:46,borderRadius:14,background:gradient,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 16px ${glow}`}}>
+                    {idx===0&&<svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.88-2.89 2.89 2.89 0 012.88-2.89c.28 0 .54.04.79.1V9.01a6.37 6.37 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V8.75a8.27 8.27 0 004.85 1.56V6.86a4.84 4.84 0 01-1.09-.17z"/></svg>}
+                    {idx===1&&<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="#fff" stroke="none"/></svg>}
+                    {idx===2&&<svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M10 15l5.19-3L10 9v6m11.56-7.83c.13.47.22 1.1.28 1.9.07.8.1 1.49.1 2.09L22 12c0 2.19-.16 3.8-.44 4.83-.25.9-.83 1.48-1.73 1.73-.47.13-1.33.22-2.65.28-1.3.07-2.49.1-3.59.1L12 19c-4.19 0-6.8-.16-7.83-.44-.9-.25-1.48-.83-1.73-1.73-.13-.47-.22-1.1-.28-1.9-.07-.8-.1-1.49-.1-2.09L2 12c0-2.19.16-3.8.44-4.83.25-.9.83-1.48 1.73-1.73.47-.13 1.33-.22 2.65-.28 1.3-.07 2.49-.1 3.59-.1L12 5c4.19 0 6.8.16 7.83.44.9.25 1.48.83 1.73 1.73z"/></svg>}
+                  </div>
+                  <div><h3 style={{fontSize:20,fontWeight:800,color:"#f5f2ed",letterSpacing:-.3}}>{name}</h3><div style={{fontSize:11,color:"#7a7470",fontWeight:430,marginTop:1}}>per 1,000</div></div>
+                </div>
+                {prices.map(([svc,price],j)=><div key={svc} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 0",borderBottom:j<prices.length-1?"1px solid rgba(255,255,255,.05)":"none"}}><span style={{fontSize:14,color:"#b0aaa4",fontWeight:430}}>{svc}</span><span className="m" style={{fontSize:14,fontWeight:700,color:"#6ee7b7"}}>{price}</span></div>)}
+                <button onClick={()=>setModal("signup")} style={{marginTop:20,width:"100%",padding:"13px 0",borderRadius:12,background:pop?t.btnPrimary:"transparent",color:pop?"#fff":"#f5f2ed",fontSize:14,fontWeight:650,border:pop?"none":"1px solid rgba(255,255,255,.08)"}}>Get Started</button>
+              </div>)}
             </div>
-            <div style={{marginTop:32,textAlign:"center"}}><p style={{fontSize:13,color:t.textMuted,fontWeight:430}}>All prices in ₦ per 1,000 units. More services available after signup.</p></div>
+            <div style={{marginTop:28,textAlign:"center"}}><p style={{fontSize:13,color:"#7a7470",fontWeight:430}}>All prices in ₦. More platforms available after signup.</p></div>
           </div>
         </section>
 
