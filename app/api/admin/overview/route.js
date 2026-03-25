@@ -8,7 +8,7 @@ export async function GET() {
   try {
     // Total counts
     const [userCount, orderCount, ticketOpenCount] = await Promise.all([
-      prisma.user.count({ where: { deletedAt: null } }),
+      prisma.user.count(),
       prisma.order.count({ where: { deletedAt: null } }),
       prisma.ticket.count({ where: { status: 'Open' } }),
     ]);
@@ -26,12 +26,12 @@ export async function GET() {
     todayStart.setHours(0, 0, 0, 0);
 
     const [todayOrders, todayRevenue, todayUsers] = await Promise.all([
-      prisma.order.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
+      prisma.order.count({ where: { createdAt: { gte: todayStart } } }),
       prisma.order.aggregate({
-        where: { createdAt: { gte: todayStart }, deletedAt: null },
+        where: { createdAt: { gte: todayStart } },
         _sum: { charge: true },
       }),
-      prisma.user.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
+      prisma.user.count({ where: { createdAt: { gte: todayStart } } }),
     ]);
 
     // Deposits total

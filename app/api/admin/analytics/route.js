@@ -22,7 +22,7 @@ export async function GET(req) {
         _sum: { charge: true, cost: true },
         _count: true,
       }),
-      prisma.user.count({ where: { createdAt: { gte: since }, deletedAt: null } }),
+      prisma.user.count({ where: { createdAt: { gte: since } } }),
       prisma.order.groupBy({
         by: ['status'],
         where: { createdAt: { gte: since }, deletedAt: null },
