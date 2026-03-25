@@ -1,4 +1,5 @@
 'use client';
+import NitroLogo from "./nitro-logo";
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 
 function ThemeToggle({dark,onToggle,compact}){
@@ -122,7 +123,7 @@ export default function Landing(){
       <nav style={{backdropFilter:"blur(20px)",background:scrolled?(dark?"rgba(8,11,20,0.98)":"rgba(244,241,237,0.98)"):(dark?"rgba(8,11,20,0.4)":"rgba(244,241,237,0.4)"),borderBottom:`1px solid ${scrolled?t.surfaceBorder:"transparent"}`,transition:"background 0.3s ease, border-color 0.3s ease",boxShadow:scrolled?(dark?"0 1px 12px rgba(0,0,0,0.3)":"0 1px 12px rgba(0,0,0,0.06)"):"none"}}>
         <div className="sec" style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 24px"}}>
           <button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} style={{display:"flex",alignItems:"center",gap:10,background:"none",padding:0,border:"none",outline:"none",cursor:"pointer"}}>
-            <div style={{width:34,height:34,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:"#fff"}}>N</div>
+            <NitroLogo size={34} variant="icon"/>
             <span className="serif" style={{fontSize:20,fontWeight:600,color:t.text,letterSpacing:"0.3px"}}>Nitro</span>
           </button>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -387,7 +388,7 @@ function AuthModal({dark,t,mode,setMode,onClose}){
       <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:420,maxHeight:'90vh',overflowY:'auto',background:dark?"rgba(15,18,30,0.98)":"rgba(255,255,255,0.98)",border:`1px solid ${t.surfaceBorder}`,borderRadius:24,padding:"32px 28px",boxShadow:dark?"0 20px 60px rgba(0,0,0,0.5)":"0 20px 60px rgba(0,0,0,0.1)",backdropFilter:"blur(20px)",position:"relative"}}>
         <button onClick={onClose} style={{position:"absolute",top:14,right:14,background:"none",color:t.textMuted,fontSize:20,padding:4,lineHeight:1,border:"none",cursor:"pointer"}}>✕</button>
         <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{width:42,height:42,borderRadius:12,background:t.logoGrad,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:"#fff",marginBottom:10}}>B</div>
+          <NitroLogo size={42} variant="icon" style={{marginBottom:10}}/>
           <h2 className="serif" style={{fontSize:24,fontWeight:600,color:t.text}}>{mode==="login"?"Welcome Back":step===1?"Create Account":"Almost Done"}</h2>
           <p style={{fontSize:13,color:t.textSoft,marginTop:4}}>{mode==="login"?"Log in to your account":step===1?"Step 1 of 2 — Your details":"Step 2 of 2 — Secure your account"}</p>
         </div>
@@ -480,7 +481,7 @@ export function Footer({t,dark}){
         <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:40,marginBottom:40}}>
           <div style={{maxWidth:280}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-              <div style={{width:32,height:32,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:"#fff"}}>N</div>
+              <NitroLogo size={32} variant="icon"/>
               <span className="serif" style={{fontSize:18,fontWeight:600,color:t.text}}>Nitro</span>
             </div>
             <p style={{fontSize:13,color:t.textSoft,lineHeight:1.7}}>Nigeria's premium SMM platform. Grow your social media with real followers, likes, and views.</p>
