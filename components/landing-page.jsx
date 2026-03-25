@@ -177,6 +177,47 @@ export default function Landing(){
           .tc{padding:20px 18px!important;border-radius:18px!important}
         }
 
+
+        .faq-sec{overflow:hidden}
+        .faq-content{max-width:760px;margin:0 auto;width:100%;padding:0 48px}
+        .faq-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:40px}
+        .faq-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:${t.accent};margin-bottom:8px}
+        .faq-title{font-size:40px;font-weight:800;color:${t.text};letter-spacing:-.5px;line-height:1.1}
+        .faq-title-accent{font-weight:400;font-style:italic;color:${t.accent};font-size:46px}
+        .faq-aside{font-size:14px;color:${t.textMuted};font-weight:430;max-width:220px;text-align:right;line-height:1.5}
+        .faq-list{display:flex;flex-direction:column;gap:10px}
+        .faq-item{border-radius:18px;background:${dark?"rgba(15,19,35,.55)":"rgba(255,255,255,.5)"};border:1px solid ${dark?"rgba(255,255,255,.07)":"rgba(0,0,0,.05)"};backdrop-filter:blur(16px);transition:all .3s ease;overflow:hidden}
+        .faq-item-open{background:${dark?"rgba(15,19,35,.75)":"rgba(255,255,255,.7)"};border-color:${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"}}
+        .faq-q{width:100%;padding:22px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;text-align:left;background:none;color:${t.text};cursor:pointer;font-family:inherit}
+        .faq-q-left{display:flex;align-items:center;gap:16px;flex:1}
+        .faq-num{font-size:12px;font-weight:600;transition:color .3s;flex-shrink:0;width:24px}
+        .faq-q-text{font-size:17px;transition:all .3s}
+        .faq-toggle{width:32px;height:32px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .35s cubic-bezier(.16,1,.3,1)}
+        .faq-a{overflow:hidden;transition:max-height .4s cubic-bezier(.16,1,.3,1)}
+        .faq-a-inner{padding:0 24px 22px 64px;font-size:15px;color:${t.textSoft};line-height:1.75;font-weight:430;border-top:1px solid ${dark?"rgba(255,255,255,.07)":"rgba(0,0,0,.05)"};padding-top:18px}
+        @media(max-width:1024px){
+          .faq-content{padding:0 40px}
+          .faq-title{font-size:34px}
+          .faq-title-accent{font-size:38px}
+        }
+        @media(max-width:768px){
+          .faq-content{padding:0 16px}
+          .faq-header{flex-direction:column;align-items:flex-start;margin-bottom:24px}
+          .faq-aside{display:none}
+          .faq-label{font-size:9px}
+          .faq-title{font-size:26px}
+          .faq-title br{display:none}
+          .faq-title-accent{font-size:30px}
+          .faq-list{gap:8px}
+          .faq-item{border-radius:16px}
+          .faq-q{padding:18px 18px}
+          .faq-q-left{gap:12px}
+          .faq-num{font-size:11px}
+          .faq-q-text{font-size:15px}
+          .faq-toggle{width:28px;height:28px;border-radius:8px}
+          .faq-a-inner{padding:0 18px 18px 54px;font-size:14px;padding-top:14px}
+        }
+
         .feat{transition:all .35s cubic-bezier(.16,1,.3,1)}
         .feat:hover{transform:translateY(-3px);box-shadow:${dark?"0 14px 36px rgba(0,0,0,.25)":"0 14px 36px rgba(0,0,0,.06)"}}
         .lift:hover{transform:translateY(-4px);box-shadow:${dark?"0 12px 32px rgba(0,0,0,.3)":"0 12px 32px rgba(0,0,0,.07)"};border-color:${dark?"rgba(255,255,255,.12)":"rgba(0,0,0,.10)"}!important}
@@ -339,13 +380,26 @@ export default function Landing(){
         </section>
 
         {/* ━━━ SCREEN 5: FAQ ━━━ */}
-        <section id="faq" className="sec" style={{padding:"60px 40px"}}>
-          <div style={{maxWidth:760,margin:"0 auto",width:"100%"}}>
-            <div style={{textAlign:"center",marginBottom:48}}>
-              <h2 style={{fontSize:"clamp(28px,4vw,40px)",fontWeight:700,color:t.text,marginBottom:10}}>Frequently Asked Questions</h2>
-              <p style={{fontSize:16,color:t.textSoft,fontWeight:430}}>Everything you need to know about Nitro</p>
+        <section id="faq" className="sec faq-sec">
+          <div className="faq-content">
+            <div className="faq-header">
+              <div>
+                <div className="faq-label">Support</div>
+                <h2 className="faq-title">Frequently Asked<br/> <span className="serif faq-title-accent">Questions</span></h2>
+              </div>
+              <p className="faq-aside">Can't find what you're looking for? Reach out to our support team.</p>
             </div>
-            {[["How does Nitro work?","Sign up free, add funds via Paystack, choose a service, paste your link, and order. Delivery starts within minutes and you can track progress in real-time from your dashboard."],["Is it safe to use?","Absolutely. We never ask for your passwords or login credentials. All services are delivered using your public profile URL only. Your accounts remain completely secure."],["How do I pay?","We accept Nigerian Naira payments via Paystack — debit cards, bank transfer, and USSD. Minimum deposit is ₦500 and funds are added to your wallet instantly."],["Will my followers drop?","Some natural fluctuation may occur. Services marked with refill guarantee will automatically replenish any drops within the guarantee period at no extra cost."],["Can I earn money with Nitro?","Yes! Every account gets a unique referral link. Share it and earn 5% commission on every order your referrals make — credited to your wallet automatically, forever."],["How fast is delivery?","Most services start delivering within minutes of placing your order. Typical completion time is 0-24 hours depending on the service type and quantity ordered."]].map(([q,a],i)=>{const isOpen=faqOpen===i;return <div key={i} style={{marginBottom:10,borderRadius:16,background:t.surface,border:`1px solid ${isOpen?"rgba(196,125,142,.25)":t.surfaceBorder}`,backdropFilter:"blur(8px)",transition:"border-color .3s ease",overflow:"hidden"}}><button onClick={()=>setFaqOpen(isOpen?null:i)} style={{width:"100%",padding:"20px 24px",fontSize:16,fontWeight:500,color:t.text,background:"none",display:"flex",justifyContent:"space-between",alignItems:"center",textAlign:"left",gap:16}}><span>{q}</span><span style={{fontSize:20,color:isOpen?t.accent:t.textMuted,transition:"transform .3s cubic-bezier(.2,.8,.2,1)",transform:isOpen?"rotate(45deg)":"none",flexShrink:0,lineHeight:1}}>+</span></button><div style={{maxHeight:isOpen?300:0,overflow:"hidden",transition:"max-height .4s cubic-bezier(.4,0,.2,1)"}}><div style={{padding:"0 24px 20px",fontSize:15,color:t.textSoft,lineHeight:1.75,fontWeight:430,borderTop:`1px solid ${t.surfaceBorder}`}}><div style={{paddingTop:16}}>{a}</div></div></div></div>})}
+            <div className="faq-list">
+              {[["How does Nitro work?","Sign up free, add funds via Paystack, choose a service, paste your link, and order. Delivery starts within minutes and you can track progress in real-time from your dashboard."],["Is it safe to use?","Absolutely. We never ask for your passwords or login credentials. All services are delivered using your public profile URL only. Your accounts remain completely secure."],["How do I pay?","We accept Nigerian Naira payments via Paystack — debit cards, bank transfer, and USSD. Minimum deposit is ₦500 and funds are added to your wallet instantly."],["Will my followers drop?","Some natural fluctuation may occur. Services marked with refill guarantee will automatically replenish any drops within the guarantee period at no extra cost."],["Can I earn money with Nitro?","Yes! Every account gets a unique referral link. Share it and earn 5% commission on every order your referrals make — credited to your wallet automatically, forever."],["How fast is delivery?","Most services start delivering within minutes of placing your order. Typical completion time is 0-24 hours depending on the service type and quantity ordered."]].map(([q,a],i)=>{const isOpen=faqOpen===i;return <div key={i} className={`faq-item ${isOpen?"faq-item-open":""}`}>
+                <button onClick={()=>setFaqOpen(isOpen?null:i)} className="faq-q">
+                  <div className="faq-q-left"><span className="m faq-num" style={{color:isOpen?t.accent:t.textMuted}}>0{i+1}</span><span className="faq-q-text" style={{fontWeight:isOpen?650:500,color:isOpen?t.text:t.textSoft}}>{q}</span></div>
+                  <div className="faq-toggle" style={{background:isOpen?t.accent:(dark?"rgba(255,255,255,.04)":"rgba(0,0,0,.03)"),transform:isOpen?"rotate(45deg)":"none"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isOpen?"#fff":t.textMuted} strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+                </button>
+                <div className="faq-a" style={{maxHeight:isOpen?300:0}}>
+                  <div className="faq-a-inner">{a}</div>
+                </div>
+              </div>})}
+            </div>
           </div>
         </section>
 
