@@ -40,8 +40,11 @@ export async function POST(req) {
         const apiId = Number(svc.service);
         if (!apiId) { skipped++; continue; }
 
-        const costPer1k = Math.round(parseFloat(svc.rate) * 100);
-        const sellPer1k = Math.round(costPer1k * (1 + defaultMarkup / 100));
+        const rawCost = Math.round(parseFloat(svc.rate) * 100);
+        // Skip services with absurd costs (overflow INT4 limit of ~2.1 billion)
+        if (rawCost > 2000000000 || rawCost < 0 || isNaN(rawCost)) { skipped++; continue; }
+        const costPer1k = rawCost;
+        const sellPer1k = Math.min(Math.round(costPer1k * (1 + defaultMarkup / 100)), 2000000000);
         const category = categorize(svc.category);
         const data = {
           name: svc.name,
