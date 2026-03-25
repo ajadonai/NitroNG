@@ -67,7 +67,7 @@ function ActivityPanel({t,dark,txs,orders,user,go}){
   return <>
     <div style={{padding:"16px",borderBottom:`1px solid ${t.border}`,flexShrink:0}}>
       <div style={{padding:"18px 16px",borderRadius:14,background:dark?"linear-gradient(135deg,#0d1a2e,#161028)":"linear-gradient(135deg,#f9f5f1,#f0e8e2)",border:`1px solid ${dark?"rgba(196,125,142,.12)":"rgba(196,125,142,.08)"}`}}>
-        <div style={{fontSize:10,fontWeight:650,textTransform:"uppercase",letterSpacing:2.5.5,color:t.textMuted,marginBottom:6}}>Wallet balance</div>
+        <div style={{fontSize:10,fontWeight:650,textTransform:"uppercase",letterSpacing:2.5,color:t.textMuted,marginBottom:6}}>Wallet balance</div>
         <div className="m" style={{fontSize:22,fontWeight:700,color:t.green}}>{fN(user?.balance||0)}</div>
         <button onClick={()=>go("funds")} style={{marginTop:10,width:"100%",padding:"10px 0",borderRadius:10,background:"linear-gradient(135deg,#c47d8e,#a3586b)",color:"#fff",fontSize:13,fontWeight:600,border:"none",cursor:"pointer"}}>+ Add Funds</button>
       </div>
