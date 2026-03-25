@@ -390,6 +390,47 @@ export default function Landing(){
                   <div><h3 className="pc-name">{name}</h3><div className="pc-unit">per 1,000</div></div>
                 </div>
                 {prices.map(([svc,price],j)=><div key={svc} className="pc-row" style={{borderBottom:j<prices.length-1?"1px solid rgba(255,255,255,.05)":"none"}}><span className="pc-svc">{svc}</span><span className="m pc-price">{price}</span></div>)}
+                <button onClick={()=>setModal("signup")} className={`pc-btn ${pop?"pc-btn-pop":""}`}>Get Started</button>
+              </div>)}
+            </div>
+            <p className="pricing-note">All prices in ₦. More platforms available after signup.</p>
+          </div>
+        </section>
+
+        {/* ━━━ SCREEN 4: TESTIMONIALS ━━━ */}
+        <section id="testimonials" className="sec test-sec" style={{background:dark?"rgba(255,255,255,.015)":"rgba(0,0,0,.012)"}}>
+          <div className="test-content">
+            <div className="test-header">
+              <h2 className="test-title">Trusted by <span className="serif test-title-accent">Creators</span></h2>
+              <p className="test-sub">Real people. Real results. Real growth.</p>
+            </div>
+            <div className="test-grid">
+              {[
+                ["Chioma A.","Instagram Influencer","Nitro helped me hit 50K followers. The delivery is incredibly fast and the followers actually stay. Best panel in Nigeria by far.","C","linear-gradient(135deg,#F58529,#DD2A7B)"],
+                ["Tunde O.","Music Artist","I use Nitro for Spotify and YouTube promotion. Instant delivery, Naira payments, zero stress. My streams tripled in two months.","T","linear-gradient(135deg,#1DB954,#148a3c)"],
+                ["Blessing E.","Business Owner","My boutique's Instagram went from 2K to 25K. Real engagement that converts to sales. I recommend Nitro to every business owner.","B","linear-gradient(135deg,#6366f1,#4f46e5)"],
+                ["David K.","Content Creator","I was skeptical at first but the results speak. My TikTok blew up after using Nitro's views service. 100K views overnight.","D","linear-gradient(135deg,#FE2C55,#25F4EE)","test-hide-mobile"],
+                ["Amara N.","Brand Manager","Managing social growth for multiple brands is easy with Nitro. Clean dashboard, fast delivery, and the refill guarantee is clutch.","A","linear-gradient(135deg,#c47d8e,#a3586b)","test-hide-mobile"],
+                ["Emeka C.","Student Entrepreneur","Started a social media agency using Nitro as my backend. Prices are competitive and I earn 5% on every referral. Game changer.","E","linear-gradient(135deg,#e0a458,#d4943e)","test-hide-mobile"],
+                ["Fatima B.","Fashion Blogger","The quality of followers on Instagram is what sold me. Not bots — real accounts that actually engage with my content. Worth every Naira.","F","linear-gradient(135deg,#DD2A7B,#8134AF)","test-hide-tablet"],
+                ["Uche M.","Podcast Host","YouTube subscribers and watch time from Nitro helped me hit monetization. Support team is responsive and the platform just works.","U","linear-gradient(135deg,#FF0000,#CC0000)","test-hide-tablet"],
+                ["Grace O.","Fitness Coach","I have tried every SMM panel in Nigeria. Nitro is the only one with consistent delivery, actual refills, and a dashboard that works.","G","linear-gradient(135deg,#059669,#34d399)","test-hide-tablet"]
+              ].map(([name,role,text,avatar,gradient,hideClass],i)=><div key={i} className={`tc fu fd${i+1} ${hideClass||""}`} style={{padding:"24px 22px",borderRadius:20,background:dark?"rgba(15,19,35,.55)":"rgba(255,255,255,.5)",border:`1px solid ${dark?"rgba(255,255,255,.07)":"rgba(0,0,0,.05)"}`,backdropFilter:"blur(16px)",display:"flex",flexDirection:"column",position:"relative",overflow:"hidden"}}>
+                <div style={{position:"absolute",top:-30,right:-30,width:80,height:80,borderRadius:"50%",background:gradient,opacity:.04,filter:"blur(20px)",pointerEvents:"none"}}/>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                  <div style={{display:"flex",gap:2}}>{[0,1,2,3,4].map(j=><svg key={j} width="14" height="14" viewBox="0 0 24 24" fill="#e0a458"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>)}</div>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1" opacity=".25"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21zm12 0c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21z"/></svg>
+                </div>
+                <p style={{fontSize:14,color:t.textSoft,lineHeight:1.7,fontWeight:430,flex:1,marginBottom:18}}>"{text}"</p>
+                <div style={{display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{width:38,height:38,borderRadius:12,background:gradient,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:"#fff",flexShrink:0,boxShadow:"0 3px 10px rgba(0,0,0,.15)"}}>{avatar}</div>
+                  <div><div style={{fontSize:14,fontWeight:650,color:t.text}}>{name}</div><div style={{fontSize:12,color:t.textMuted,fontWeight:430,marginTop:1}}>{role}</div></div>
+                </div>
+              </div>)}
+            </div>
+          </div>
+        </section>
+
         {/* ━━━ SCREEN 5: FAQ ━━━ */}
         <section id="faq" className="faq-sec sec">
           <div className="faq-content">
@@ -423,8 +464,6 @@ export default function Landing(){
       {modal&&<AuthModal dark={dark} t={t} mode={modal} setMode={setModal} onClose={closeModal}/>}
     </div>
   );
-}
-
 }
 
 const Lbl=({t,children})=><label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>{children}</label>;
