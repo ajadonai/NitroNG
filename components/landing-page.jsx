@@ -1,9 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 
-function ThemeToggle({dark,onToggle,compact}){
-  return <button onClick={onToggle} style={{display:"flex",alignItems:"center",background:dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)",borderRadius:20,padding:3,width:compact?52:64,height:compact?28:32,border:`1px solid ${dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)"}`,position:"relative",flexShrink:0,transition:"background 1.5s cubic-bezier(.4,0,.2,1),border-color 1.5s ease"}}><div style={{width:compact?22:26,height:compact?22:26,borderRadius:"50%",background:dark?"#c47d8e":"#e0a458",display:"flex",alignItems:"center",justifyContent:"center",fontSize:compact?12:14,position:"absolute",left:dark?3:(compact?27:35),transition:"left 0.4s cubic-bezier(.4,0,.2,1),background 1.5s cubic-bezier(.4,0,.2,1)",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}>{dark?"🌙":"☀️"}</div></button>;
-}
+
 
 function useReveal(){
   const ref=useRef(null);
@@ -84,7 +82,7 @@ export default function Landing(){
       <style>{`
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
         .root{min-height:100vh;background:${t.bg};color:${t.text};font-family:'Outfit','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:background 1.5s cubic-bezier(.4,0,.2,1),color 1.2s ease;overflow-x:clip;scroll-behavior:smooth}
-        .snap-section{min-height:100vh;display:flex;flex-direction:column;justify-content:center;scroll-snap-align:start}
+        @media(max-width:768px){.nav-links{display:none!important}.nav-login{display:none!important}}.snap-section{min-height:100vh;display:flex;flex-direction:column;justify-content:center;scroll-snap-align:start}
         .m{font-family:'JetBrains Mono',monospace}.serif{font-family:'Cormorant Garamond','Plus Jakarta Sans',serif}
         button{cursor:pointer;font-family:inherit;border:none}input,textarea{font-family:inherit}
         @keyframes fi{from{opacity:0}to{opacity:1}}@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
@@ -123,13 +121,15 @@ export default function Landing(){
         <div className="sec" style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 24px"}}>
           <button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} style={{display:"flex",alignItems:"center",gap:10,background:"none",padding:0,border:"none",outline:"none",cursor:"pointer"}}>
             <div style={{width:32,height:32,borderRadius:9,background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
-            <span className="serif" style={{fontSize:20,fontWeight:600,color:t.text,letterSpacing:"0.3px"}}>Nitro</span>
+            <span style={{fontSize:17,fontWeight:700,color:t.text,letterSpacing:1.5}}>NITRO</span>
           </button>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <ThemeToggle dark={dark} onToggle={toggleTheme} compact/>
+          <div style={{display:"flex",alignItems:"center",gap:16}}>
+            <div className="nav-links" style={{display:"flex",gap:24,alignItems:"center"}}>
+              {["Services","Pricing","FAQ"].map(l=><button key={l} onClick={()=>document.getElementById(l==="Services"?"pricing":l==="Pricing"?"pricing":"faq")?.scrollIntoView({behavior:"smooth"})} style={{background:"none",fontSize:14,color:t.textSoft,fontWeight:450,border:"none",cursor:"pointer"}}>{l}</button>)}
+            </div>
             <button onClick={toggleTheme} style={{width:44,height:24,borderRadius:12,background:dark?"#c47d8e":"rgba(0,0,0,0.08)",position:"relative",transition:"all .3s",border:"none",cursor:"pointer",flexShrink:0}}><div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:dark?23:3,transition:"left .3s cubic-bezier(.2,.8,.2,1)",boxShadow:"0 1px 4px rgba(0,0,0,.2)"}}/></button>
-              <button onClick={()=>setModal("login")} className="nav-login" style={{padding:"9px 20px",borderRadius:10,background:"transparent",border:`1px solid ${t.surfaceBorder}`,color:t.text,fontSize:13,fontWeight:600,transition:"background 1.5s ease"}}>Log In</button>
-            <button onClick={()=>setModal("signup")} style={{padding:"9px 16px",borderRadius:10,background:t.btnPrimary,color:"#fff",fontSize:13,fontWeight:600}}>Sign Up</button>
+            <button onClick={()=>setModal("login")} className="nav-login" style={{padding:"9px 20px",borderRadius:10,background:"transparent",border:`1px solid ${t.surfaceBorder}`,color:t.text,fontSize:13,fontWeight:600,transition:"background 1.5s ease"}}>Log In</button>
+            <button onClick={()=>setModal("signup")} style={{padding:"9px 20px",borderRadius:10,background:t.btnPrimary,color:"#fff",fontSize:13,fontWeight:600}}>Get Started</button>
           </div>
         </div>
       </nav>
