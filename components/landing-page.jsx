@@ -97,7 +97,7 @@ export default function Landing(){
       `}</style>
 
       {/* ── NAVBAR ── */}
-      <nav style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 36px",height:60,background:${dark?""rgba(9,12,21,.95)"":""rgba(255,255,255,.95)""},backdropFilter:"blur(16px)",borderBottom:`1px solid ${t.surfaceBorder}`,flexShrink:0,zIndex:100}}>
+            <nav style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 36px",height:60,background:dark?"rgba(9,12,21,.95)":"rgba(255,255,255,.95)",backdropFilter:"blur(16px)",borderBottom:`1px solid ${t.surfaceBorder}`,flexShrink:0,zIndex:100}}>
         <button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} style={{display:"flex",alignItems:"center",gap:10,background:"none",padding:0}}>
           <div style={{width:30,height:30,borderRadius:8,background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
           <span style={{fontSize:17,fontWeight:700,color:t.text,letterSpacing:1.5}}>NITRO</span>
