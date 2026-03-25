@@ -22,8 +22,8 @@ export default function Privacy(){
       <div style={{padding:"24px 0",borderBottom:`1px solid ${t.surfaceBorder}`,position:"sticky",top:0,zIndex:50,background:t.bg,backdropFilter:"blur(20px)",transition:"background 1.5s ease"}}>
         <div style={{maxWidth:800,margin:"0 auto",padding:"0 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <button onClick={()=>window.location.href="/"} style={{display:"flex",alignItems:"center",gap:10,background:"none",padding:0,border:"none",outline:"none",cursor:"pointer"}}>
-            <div style={{width:32,height:32,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:"#fff"}}>B</div>
-            <span className="serif" style={{fontSize:18,fontWeight:600,color:t.text}}>BoostPanel</span>
+            <div style={{width:32,height:32,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:"#fff"}}>N</div>
+            <span className="serif" style={{fontSize:18,fontWeight:600,color:t.text}}>Nitro</span>
           </button>
           <button onClick={toggleTheme} style={{display:"flex",alignItems:"center",background:dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)",borderRadius:20,padding:3,width:52,height:28,border:`1px solid ${dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)"}`,position:"relative",flexShrink:0,transition:"background 1.5s cubic-bezier(.4,0,.2,1),border-color 1.5s ease"}}><div style={{width:22,height:22,borderRadius:"50%",background:dark?"#c47d8e":"#e0a458",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,position:"absolute",left:dark?3:27,transition:"left 0.4s cubic-bezier(.4,0,.2,1),background 1.5s cubic-bezier(.4,0,.2,1)",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}>{dark?"🌙":"☀️"}</div></button>
         </div>
@@ -34,11 +34,11 @@ export default function Privacy(){
         <p style={{fontSize:13,color:t.textMuted,marginBottom:40}}>Last updated: March 23, 2026</p>
 
         <S title="1. Information We Collect">
-          When you use BoostPanel, we collect information you provide directly, such as your name, email address, phone number, and payment details during registration and transactions. We also automatically collect technical data including your IP address, browser type, device information, operating system, referring URLs, pages viewed, time spent on pages, click patterns, and interaction data. Additionally, we collect transaction data including order history, wallet activity, payment records, and service usage metrics.
+          When you use Nitro, we collect information you provide directly, such as your name, email address, phone number, and payment details during registration and transactions. We also automatically collect technical data including your IP address, browser type, device information, operating system, referring URLs, pages viewed, time spent on pages, click patterns, and interaction data. Additionally, we collect transaction data including order history, wallet activity, payment records, and service usage metrics.
         </S>
 
         <S title="2. How We Use Your Information">
-          We use the information we collect to provide, operate, and maintain our services, process your transactions and deliver ordered services, communicate with you about your account, orders, and support requests, improve and personalize your experience on the Platform, conduct research, analytics, and data analysis to enhance our services and develop new features, generate aggregated and anonymized insights for business intelligence, marketing analysis, and strategic planning, detect, prevent, and address fraud, abuse, and security issues, comply with legal obligations and enforce our terms, and send you updates, promotional materials, and relevant communications about our services. By using the Platform, you acknowledge that data generated through your use of our services may be utilized by BoostPanel for internal and commercial purposes, including service optimization, product development, market research, and business analytics.
+          We use the information we collect to provide, operate, and maintain our services, process your transactions and deliver ordered services, communicate with you about your account, orders, and support requests, improve and personalize your experience on the Platform, conduct research, analytics, and data analysis to enhance our services and develop new features, generate aggregated and anonymized insights for business intelligence, marketing analysis, and strategic planning, detect, prevent, and address fraud, abuse, and security issues, comply with legal obligations and enforce our terms, and send you updates, promotional materials, and relevant communications about our services. By using the Platform, you acknowledge that data generated through your use of our services may be utilized by Nitro for internal and commercial purposes, including service optimization, product development, market research, and business analytics.
         </S>
 
         <S title="3. Data Sharing & Disclosure">
@@ -58,11 +58,11 @@ export default function Privacy(){
         </S>
 
         <S title="7. Your Rights">
-          Depending on your location and applicable law, you may have the right to access the personal data we hold about you, request correction of inaccurate data, request deletion of your account and associated data (subject to our retention requirements), object to certain processing of your data, and request a copy of your data in a portable format. To exercise these rights, contact us at <a href="mailto:privacy@boostpanel.ng" style={{color:t.accent}}>privacy@boostpanel.ng</a>. We will respond within 30 days.
+          Depending on your location and applicable law, you may have the right to access the personal data we hold about you, request correction of inaccurate data, request deletion of your account and associated data (subject to our retention requirements), object to certain processing of your data, and request a copy of your data in a portable format. To exercise these rights, contact us at <a href="mailto:privacy@thenitro.ng" style={{color:t.accent}}>privacy@thenitro.ng</a>. We will respond within 30 days.
         </S>
 
         <S title="8. Children's Privacy">
-          BoostPanel is not intended for users under 18 years of age. We do not knowingly collect personal information from minors. If we learn that we have collected data from a user under 18, we will delete that information promptly.
+          Nitro is not intended for users under 18 years of age. We do not knowingly collect personal information from minors. If we learn that we have collected data from a user under 18, we will delete that information promptly.
         </S>
 
         <S title="9. International Data">
@@ -78,7 +78,7 @@ export default function Privacy(){
         </S>
 
         <S title="12. Contact Us">
-          For privacy-related questions or requests, contact us at <a href="mailto:privacy@boostpanel.ng" style={{color:t.accent}}>privacy@boostpanel.ng</a>
+          For privacy-related questions or requests, contact us at <a href="mailto:privacy@thenitro.ng" style={{color:t.accent}}>privacy@thenitro.ng</a>
         </S>
 
         <div style={{marginTop:40,paddingTop:24,borderTop:`1px solid ${t.surfaceBorder}`,display:"flex",gap:20,fontSize:13,color:t.textMuted}}>
@@ -90,7 +90,7 @@ export default function Privacy(){
       <footer style={{borderTop:`1px solid ${t.surfaceBorder}`,marginTop:40}}>
         <div style={{maxWidth:800,margin:"0 auto",padding:"24px 24px"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
-            <div style={{fontSize:12,color:t.textMuted}}>© 2026 BoostPanel. All rights reserved.</div>
+            <div style={{fontSize:12,color:t.textMuted}}>© 2026 Nitro. All rights reserved.</div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
               <div style={{display:"flex",gap:16}}>{["Twitter","Instagram"].map(s=><a key={s} href="#" style={{fontSize:12,color:t.textSoft,textDecoration:"none"}}>{s}</a>)}</div>
               <div style={{display:"flex",gap:16}}>{[["Terms","/terms"],["Privacy","/privacy"],["Refund","/refund"],["Cookie","/cookie"]].map(([l,h])=><a key={l} href={h} style={{fontSize:11,color:t.textMuted,textDecoration:"none"}}>{l}</a>)}</div>

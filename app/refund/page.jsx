@@ -1,7 +1,7 @@
 import Refund from '@/components/refund';
 
 export const metadata = {
-  title: 'Refund Policy — BoostPanel',
+  title: 'Refund Policy — Nitro',
 };
 
 export default function RefundPage() {

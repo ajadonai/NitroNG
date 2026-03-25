@@ -105,7 +105,7 @@ export default function AdminLogin(){
           {error&&<div style={{padding:"10px 14px",borderRadius:10,background:dark?"rgba(220,38,38,.1)":"#fef2f2",border:`1px solid ${dark?"rgba(220,38,38,.2)":"#fecaca"}`,color:t.red,fontSize:13,marginBottom:16,animation:"fu .3s ease"}}>⚠️ {error}</div>}
 
           <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Email Address</label>
-          <input value={email} onChange={e=>{setEmail(e.target.value);setError("");}} placeholder="admin@boostpanel.ng" type="email" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/>
+          <input value={email} onChange={e=>{setEmail(e.target.value);setError("");}} placeholder="admin@thenitro.ng" type="email" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/>
 
           <label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Password</label>
           <div style={{position:"relative",marginBottom:10}}>
@@ -129,14 +129,14 @@ export default function AdminLogin(){
         </div>
 
         <div style={{textAlign:"center",marginTop:20}}>
-          <a href="/" style={{fontSize:13,color:t.textMuted,textDecoration:"none"}}>← Back to boostpanel.ng</a>
+          <a href="/" style={{fontSize:13,color:t.textMuted,textDecoration:"none"}}>← Back to thenitro.ng</a>
         </div>
       </div>
 
       <footer style={{position:"absolute",bottom:0,left:0,right:0,borderTop:`1px solid ${t.surfaceBorder}`}}>
         <div style={{maxWidth:800,margin:"0 auto",padding:"16px 24px"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
-            <div style={{fontSize:12,color:t.textMuted}}>© 2026 BoostPanel. All rights reserved.</div>
+            <div style={{fontSize:12,color:t.textMuted}}>© 2026 Nitro. All rights reserved.</div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
               <div style={{display:"flex",gap:16}}>{["Twitter","Instagram"].map(s=><a key={s} href="#" style={{fontSize:12,color:t.textSoft,textDecoration:"none"}}>{s}</a>)}</div>
               <div style={{display:"flex",gap:16}}>{[["Terms","/terms"],["Privacy","/privacy"],["Refund","/refund"],["Cookie","/cookie"]].map(([l,h])=><a key={l} href={h} style={{fontSize:11,color:t.textMuted,textDecoration:"none"}}>{l}</a>)}</div>

@@ -26,7 +26,7 @@ export async function POST(req) {
     }
 
     const amountKobo = Math.round(amountNum * 100);
-    const reference = `BP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    const reference = `NTR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
     // Create pending transaction in DB

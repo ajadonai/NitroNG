@@ -2,7 +2,7 @@ import './globals.css';
 import WhatsAppFloat from '@/components/whatsapp-float';
 
 export const metadata = {
-  title: 'BoostPanel — #1 SMM Panel in Nigeria',
+  title: 'Nitro — #1 SMM Panel in Nigeria',
   description: 'Buy Instagram followers, TikTok views, YouTube subscribers and more. Instant delivery, real engagement, cheapest rates in Nigeria.',
   icons: {
     icon: '/favicon.ico',

@@ -23,26 +23,26 @@ async function main() {
 
   // ── Admins ──
   const superadmin = await prisma.admin.create({
-    data: { name: 'Owner', email: 'admin@boostpanel.ng', password: adminPw, role: 'superadmin' },
+    data: { name: 'Owner', email: 'admin@thenitro.ng', password: adminPw, role: 'superadmin' },
   });
   await prisma.admin.createMany({
     data: [
-      { name: 'David Ojo', email: 'david@boostpanel.ng', password: adminPw, role: 'admin' },
-      { name: 'Grace Adebayo', email: 'grace@boostpanel.ng', password: adminPw, role: 'support' },
-      { name: 'Ibrahim Musa', email: 'ibrahim@boostpanel.ng', password: adminPw, role: 'finance', status: 'Inactive' },
+      { name: 'David Ojo', email: 'david@thenitro.ng', password: adminPw, role: 'admin' },
+      { name: 'Grace Adebayo', email: 'grace@thenitro.ng', password: adminPw, role: 'support' },
+      { name: 'Ibrahim Musa', email: 'ibrahim@thenitro.ng', password: adminPw, role: 'finance', status: 'Inactive' },
     ],
   });
 
   // ── Users ──
   const users = await Promise.all([
-    prisma.user.create({ data: { name: 'Chidi Okafor', email: 'chidi@gmail.com', password: pw, balance: 4500000, referralCode: 'BOOST-C4K1', emailVerified: true } }),
-    prisma.user.create({ data: { name: 'Amina Bello', email: 'amina@yahoo.com', password: pw, balance: 12050000, referralCode: 'BOOST-A8B2', emailVerified: true } }),
-    prisma.user.create({ data: { name: 'Tunde Adeyemi', email: 'tunde@outlook.com', password: pw, balance: 825000, referralCode: 'BOOST-T3A9', emailVerified: true } }),
-    prisma.user.create({ data: { name: 'Ngozi Eze', email: 'ngozi@gmail.com', password: pw, balance: 31000000, referralCode: 'BOOST-N7E5', emailVerified: true } }),
-    prisma.user.create({ data: { name: 'Segun Akinola', email: 'segun@mail.com', password: pw, balance: 0, referralCode: 'BOOST-S2A0', emailVerified: true, status: 'Suspended' } }),
-    prisma.user.create({ data: { name: 'Fatima Yusuf', email: 'fatima@gmail.com', password: pw, balance: 5400000, referralCode: 'BOOST-F1Y6', emailVerified: true } }),
-    prisma.user.create({ data: { name: 'Emeka Nwankwo', email: 'emeka@live.com', password: pw, balance: 2200000, referralCode: 'BOOST-E9N3', emailVerified: true } }),
-    prisma.user.create({ data: { name: 'Blessing Okoro', email: 'blessing@gmail.com', password: pw, balance: 8700000, referralCode: 'BOOST-B4O8', emailVerified: true } }),
+    prisma.user.create({ data: { name: 'Chidi Okafor', email: 'chidi@gmail.com', password: pw, balance: 4500000, referralCode: 'NTR-C4K1', emailVerified: true } }),
+    prisma.user.create({ data: { name: 'Amina Bello', email: 'amina@yahoo.com', password: pw, balance: 12050000, referralCode: 'NTR-A8B2', emailVerified: true } }),
+    prisma.user.create({ data: { name: 'Tunde Adeyemi', email: 'tunde@outlook.com', password: pw, balance: 825000, referralCode: 'NTR-T3A9', emailVerified: true } }),
+    prisma.user.create({ data: { name: 'Ngozi Eze', email: 'ngozi@gmail.com', password: pw, balance: 31000000, referralCode: 'NTR-N7E5', emailVerified: true } }),
+    prisma.user.create({ data: { name: 'Segun Akinola', email: 'segun@mail.com', password: pw, balance: 0, referralCode: 'NTR-S2A0', emailVerified: true, status: 'Suspended' } }),
+    prisma.user.create({ data: { name: 'Fatima Yusuf', email: 'fatima@gmail.com', password: pw, balance: 5400000, referralCode: 'NTR-F1Y6', emailVerified: true } }),
+    prisma.user.create({ data: { name: 'Emeka Nwankwo', email: 'emeka@live.com', password: pw, balance: 2200000, referralCode: 'NTR-E9N3', emailVerified: true } }),
+    prisma.user.create({ data: { name: 'Blessing Okoro', email: 'blessing@gmail.com', password: pw, balance: 8700000, referralCode: 'NTR-B4O8', emailVerified: true } }),
   ]);
 
   // ── Services ──
@@ -125,7 +125,7 @@ async function main() {
   // ── Settings ──
   await prisma.setting.createMany({
     data: [
-      { key: 'site_name', value: 'BoostPanel' },
+      { key: 'site_name', value: 'Nitro' },
       { key: 'currency', value: 'NGN' },
       { key: 'default_markup', value: '54' },
       { key: 'referral_bonus', value: '50000' },
@@ -140,7 +140,7 @@ async function main() {
   console.log('');
   console.log('Test accounts:');
   console.log('  User:  chidi@gmail.com / password123');
-  console.log('  Admin: admin@boostpanel.ng / admin123');
+  console.log('  Admin: admin@thenitro.ng / admin123');
 }
 
 main()

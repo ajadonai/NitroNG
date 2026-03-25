@@ -21,8 +21,8 @@ export default function CookiePolicy(){
       <div style={{padding:"24px 0",borderBottom:`1px solid ${t.surfaceBorder}`,position:"sticky",top:0,zIndex:50,background:t.bg,backdropFilter:"blur(20px)",transition:"background 1.5s ease"}}>
         <div style={{maxWidth:800,margin:"0 auto",padding:"0 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <button onClick={()=>window.location.href="/"} style={{display:"flex",alignItems:"center",gap:10,background:"none",padding:0,border:"none",outline:"none",cursor:"pointer"}}>
-            <div style={{width:32,height:32,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:"#fff"}}>B</div>
-            <span className="serif" style={{fontSize:18,fontWeight:600,color:t.text}}>BoostPanel</span>
+            <div style={{width:32,height:32,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:"#fff"}}>N</div>
+            <span className="serif" style={{fontSize:18,fontWeight:600,color:t.text}}>Nitro</span>
           </button>
           <button onClick={toggleTheme} style={{display:"flex",alignItems:"center",background:dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)",borderRadius:20,padding:3,width:52,height:28,border:`1px solid ${dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)"}`,position:"relative",flexShrink:0,transition:"background 1.5s cubic-bezier(.4,0,.2,1),border-color 1.5s ease"}}><div style={{width:22,height:22,borderRadius:"50%",background:dark?"#c47d8e":"#e0a458",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,position:"absolute",left:dark?3:27,transition:"left 0.4s cubic-bezier(.4,0,.2,1),background 1.5s cubic-bezier(.4,0,.2,1)",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}>{dark?"🌙":"☀️"}</div></button>
         </div>
@@ -33,15 +33,15 @@ export default function CookiePolicy(){
         <p style={{fontSize:13,color:t.textMuted,marginBottom:40}}>Last updated: March 23, 2026</p>
 
         <S title="1. What Are Cookies">
-          Cookies are small text files that are stored on your device when you visit a website. They help us recognize your browser, remember your preferences, and improve your experience on BoostPanel. Cookies do not contain personal information like passwords or payment details.
+          Cookies are small text files that are stored on your device when you visit a website. They help us recognize your browser, remember your preferences, and improve your experience on Nitro. Cookies do not contain personal information like passwords or payment details.
         </S>
 
         <S title="2. How We Use Cookies">
-          BoostPanel uses cookies for the following purposes: authentication (keeping you logged in across pages and sessions), preferences (remembering your theme choice, language, and display settings), security (protecting against cross-site request forgery and unauthorized access), and analytics (understanding how users interact with our platform to improve our services).
+          Nitro uses cookies for the following purposes: authentication (keeping you logged in across pages and sessions), preferences (remembering your theme choice, language, and display settings), security (protecting against cross-site request forgery and unauthorized access), and analytics (understanding how users interact with our platform to improve our services).
         </S>
 
         <S title="3. Types of Cookies We Use">
-          <p style={{marginBottom:12}}><strong style={{color:t.text}}>Essential cookies</strong> are required for the platform to function. These include authentication tokens and session identifiers. Without these, you cannot use BoostPanel.</p>
+          <p style={{marginBottom:12}}><strong style={{color:t.text}}>Essential cookies</strong> are required for the platform to function. These include authentication tokens and session identifiers. Without these, you cannot use Nitro.</p>
           <p style={{marginBottom:12}}><strong style={{color:t.text}}>Functional cookies</strong> remember your preferences such as dark/light mode, collapsed sidebar state, and display settings. These improve your experience but are not strictly necessary.</p>
           <p><strong style={{color:t.text}}>Analytics cookies</strong> help us understand usage patterns, popular services, and platform performance. This data is aggregated and anonymized.</p>
         </S>
@@ -55,15 +55,15 @@ export default function CookiePolicy(){
         </S>
 
         <S title="6. Managing Cookies">
-          You can manage or delete cookies through your browser settings. Most browsers allow you to block or delete cookies, view which cookies are stored, and set preferences for specific websites. Note that blocking essential cookies will prevent you from using BoostPanel.
+          You can manage or delete cookies through your browser settings. Most browsers allow you to block or delete cookies, view which cookies are stored, and set preferences for specific websites. Note that blocking essential cookies will prevent you from using Nitro.
         </S>
 
         <S title="7. Changes to This Policy">
-          We may update this Cookie Policy from time to time. Changes will be posted on this page with an updated revision date. Continued use of BoostPanel after changes constitutes acceptance.
+          We may update this Cookie Policy from time to time. Changes will be posted on this page with an updated revision date. Continued use of Nitro after changes constitutes acceptance.
         </S>
 
         <S title="8. Contact">
-          For questions about our use of cookies, contact us at <a href="mailto:privacy@boostpanel.ng" style={{color:t.accent}}>privacy@boostpanel.ng</a>
+          For questions about our use of cookies, contact us at <a href="mailto:privacy@thenitro.ng" style={{color:t.accent}}>privacy@thenitro.ng</a>
         </S>
 
         <div style={{marginTop:40,paddingTop:24,borderTop:`1px solid ${t.surfaceBorder}`,display:"flex",gap:20,fontSize:13,color:t.textMuted}}>
@@ -76,7 +76,7 @@ export default function CookiePolicy(){
       <footer style={{borderTop:`1px solid ${t.surfaceBorder}`,marginTop:40}}>
         <div style={{maxWidth:800,margin:"0 auto",padding:"24px 24px"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
-            <div style={{fontSize:12,color:t.textMuted}}>© 2026 BoostPanel. All rights reserved.</div>
+            <div style={{fontSize:12,color:t.textMuted}}>© 2026 Nitro. All rights reserved.</div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
               <div style={{display:"flex",gap:16}}>{["Twitter","Instagram"].map(s=><a key={s} href="#" style={{fontSize:12,color:t.textSoft,textDecoration:"none"}}>{s}</a>)}</div>
               <div style={{display:"flex",gap:16}}>{[["Terms","/terms"],["Privacy","/privacy"],["Refund","/refund"],["Cookie","/cookie"]].map(([l,h])=><a key={l} href={h} style={{fontSize:11,color:t.textMuted,textDecoration:"none"}}>{l}</a>)}</div>

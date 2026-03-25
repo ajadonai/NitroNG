@@ -122,8 +122,8 @@ export default function Landing(){
       <nav style={{backdropFilter:"blur(20px)",background:scrolled?(dark?"rgba(8,11,20,0.98)":"rgba(244,241,237,0.98)"):(dark?"rgba(8,11,20,0.4)":"rgba(244,241,237,0.4)"),borderBottom:`1px solid ${scrolled?t.surfaceBorder:"transparent"}`,transition:"background 0.3s ease, border-color 0.3s ease",boxShadow:scrolled?(dark?"0 1px 12px rgba(0,0,0,0.3)":"0 1px 12px rgba(0,0,0,0.06)"):"none"}}>
         <div className="sec" style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 24px"}}>
           <button onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} style={{display:"flex",alignItems:"center",gap:10,background:"none",padding:0,border:"none",outline:"none",cursor:"pointer"}}>
-            <div style={{width:34,height:34,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:"#fff"}}>B</div>
-            <span className="serif" style={{fontSize:20,fontWeight:600,color:t.text,letterSpacing:"0.3px"}}>BoostPanel</span>
+            <div style={{width:34,height:34,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:"#fff"}}>N</div>
+            <span className="serif" style={{fontSize:20,fontWeight:600,color:t.text,letterSpacing:"0.3px"}}>Nitro</span>
           </button>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
             <ThemeToggle dark={dark} onToggle={toggleTheme} compact/>
@@ -188,7 +188,7 @@ export default function Landing(){
       <section id="features" className="snap-section" style={{padding:"80px 24px",position:"relative",zIndex:1}}>
         <div className="sec">
           <Reveal><div style={{textAlign:"center",marginBottom:48}}>
-            <h2 className="serif" style={{fontSize:"clamp(28px,4vw,42px)",fontWeight:600,color:t.text,marginBottom:12}}>Why BoostPanel?</h2>
+            <h2 className="serif" style={{fontSize:"clamp(28px,4vw,42px)",fontWeight:600,color:t.text,marginBottom:12}}>Why Nitro?</h2>
             <p style={{fontSize:15,color:t.textSoft,maxWidth:480,margin:"0 auto"}}>Everything you need to grow, in one place.</p>
           </div></Reveal>
           <div className="g3">
@@ -260,7 +260,7 @@ export default function Landing(){
           </div>
           <Reveal><h2 className="serif" style={{fontSize:"clamp(26px,4vw,38px)",fontWeight:600,color:t.text,marginBottom:32,textAlign:"center"}}>Trusted by Creators</h2></Reveal>
           <div className="g3">
-            {[["Chioma A.","Instagram Influencer","BoostPanel helped me hit 50K followers. Delivery is fast and followers stay. Best panel in Nigeria.","⭐⭐⭐⭐⭐"],["Tunde O.","Music Artist","I use it for Spotify and YouTube. Instant delivery, Naira payments, no stress. Streams tripled.","⭐⭐⭐⭐⭐"],["Blessing E.","Business Owner","My boutique's IG went from 2K to 25K. Real engagement. I recommend to every business owner.","⭐⭐⭐⭐⭐"]].map(([name,role,text,stars],i)=>
+            {[["Chioma A.","Instagram Influencer","Nitro helped me hit 50K followers. Delivery is fast and followers stay. Best panel in Nigeria.","⭐⭐⭐⭐⭐"],["Tunde O.","Music Artist","I use it for Spotify and YouTube. Instant delivery, Naira payments, no stress. Streams tripled.","⭐⭐⭐⭐⭐"],["Blessing E.","Business Owner","My boutique's IG went from 2K to 25K. Real engagement. I recommend to every business owner.","⭐⭐⭐⭐⭐"]].map(([name,role,text,stars],i)=>
               <Reveal key={i} delay={i*0.1} style={{display:"flex"}}>
                 <div style={{padding:24,borderRadius:18,background:t.surface,border:`1px solid ${t.surfaceBorder}`,backdropFilter:"blur(12px)",boxShadow:t.cardShadow,transition:"background 1.5s ease",flex:1,display:"flex",flexDirection:"column"}}>
                   <div style={{fontSize:13,marginBottom:8}}>{stars}</div>
@@ -279,7 +279,7 @@ export default function Landing(){
       <section id="faq" className="snap-section" style={{padding:"60px 24px",position:"relative",zIndex:1}}>
         <div className="sec" style={{maxWidth:800}}>
           <Reveal><h2 className="serif" style={{fontSize:"clamp(28px,4vw,42px)",fontWeight:600,color:t.text,marginBottom:32,textAlign:"center"}}>Frequently Asked Questions</h2></Reveal>
-          {[["How does BoostPanel work?","Sign up for free, add funds to your wallet via Paystack (cards, bank transfer, or USSD), choose a service from our catalog, paste your social media link, and place your order. Delivery starts within minutes and you can track progress in real-time."],["Is it safe to use?","Absolutely. We never ask for your passwords or login credentials. All services are delivered using your public profile URL only. Your accounts remain completely secure."],["How do I pay?","We accept Nigerian Naira payments via Paystack — debit cards, bank transfer, and USSD. Minimum deposit is ₦500 and you can top up any amount to your wallet."],["Will my followers drop?","Some natural fluctuation may occur. Services marked with refill guarantee will automatically replenish any drops within the guarantee period at no extra cost."],["Can I earn money with BoostPanel?","Yes! Every account gets a referral link. Share it and earn 5% commission on every order your referrals make — credited to your wallet automatically, forever."],["How fast is delivery?","Most services start delivering within minutes of placing your order. Typical completion time is 0-24 hours depending on the service type and quantity ordered."]].map(([q,a],i)=>{
+          {[["How does Nitro work?","Sign up for free, add funds to your wallet via Paystack (cards, bank transfer, or USSD), choose a service from our catalog, paste your social media link, and place your order. Delivery starts within minutes and you can track progress in real-time."],["Is it safe to use?","Absolutely. We never ask for your passwords or login credentials. All services are delivered using your public profile URL only. Your accounts remain completely secure."],["How do I pay?","We accept Nigerian Naira payments via Paystack — debit cards, bank transfer, and USSD. Minimum deposit is ₦500 and you can top up any amount to your wallet."],["Will my followers drop?","Some natural fluctuation may occur. Services marked with refill guarantee will automatically replenish any drops within the guarantee period at no extra cost."],["Can I earn money with Nitro?","Yes! Every account gets a referral link. Share it and earn 5% commission on every order your referrals make — credited to your wallet automatically, forever."],["How fast is delivery?","Most services start delivering within minutes of placing your order. Typical completion time is 0-24 hours depending on the service type and quantity ordered."]].map(([q,a],i)=>{
             const isOpen=faqOpen===i;
             return <Reveal key={i} delay={i*0.05}>
               <div style={{marginBottom:10,borderRadius:14,background:t.surface,border:`1px solid ${isOpen?"rgba(196,125,142,0.2)":t.surfaceBorder}`,transition:"background 1.5s ease, border-color 0.3s ease"}}>
@@ -301,7 +301,7 @@ export default function Landing(){
           <Reveal>
             <div style={{textAlign:"center",maxWidth:600,margin:"0 auto",padding:"56px 32px",borderRadius:24,background:t.surface,border:`1px solid ${t.surfaceBorder}`,backdropFilter:"blur(12px)"}}>
               <h2 className="serif" style={{fontSize:"clamp(30px,5vw,48px)",fontWeight:700,color:t.text,marginBottom:16}}>Ready to <span style={{color:t.accent}}>Grow</span>?</h2>
-              <p style={{fontSize:16,color:t.textSoft,marginBottom:32}}>Join thousands of Nigerian creators already using BoostPanel.</p>
+              <p style={{fontSize:16,color:t.textSoft,marginBottom:32}}>Join thousands of Nigerian creators already using Nitro.</p>
               <button onClick={()=>setModal("signup")} style={{padding:"16px 52px",borderRadius:14,background:t.btnPrimary,color:"#fff",fontSize:17,fontWeight:700,boxShadow:"0 4px 28px rgba(196,125,142,0.3)"}}>Create Free Account</button>
             </div>
           </Reveal>
@@ -422,7 +422,7 @@ function AuthModal({dark,t,mode,setMode,onClose}){
           {pwMismatch&&<div style={{fontSize:11,color:dark?"#fca5a5":"#dc2626",marginBottom:12}}>✕ Passwords don't match</div>}
           {!pw2&&<div style={{height:12,marginBottom:12}}/>}
           <Lbl t={t}>Referral Code <span style={{color:t.textMuted,fontWeight:400}}>(optional)</span></Lbl>
-          <input value={refCode} onChange={e=>setRefCode(e.target.value.replace(/[^a-zA-Z0-9\-]/g,"").toUpperCase().slice(0,20))} placeholder="e.g. BOOST-7X92" maxLength={20} type="text" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/>
+          <input value={refCode} onChange={e=>setRefCode(e.target.value.replace(/[^a-zA-Z0-9\-]/g,"").toUpperCase().slice(0,20))} placeholder="e.g. NTR-7X92" maxLength={20} type="text" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/>
           <label style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:24,cursor:"pointer"}}>
             <input type="checkbox" checked={agree} onChange={e=>setAgree(e.target.checked)} style={{marginTop:3,accentColor:t.accent,width:16,height:16,flexShrink:0}}/>
             <span style={{fontSize:12,color:t.textSoft,lineHeight:1.5}}>I agree to the <a href="/terms" style={{color:t.accent,textDecoration:"none"}}>Terms of Service</a> and <a href="/privacy" style={{color:t.accent,textDecoration:"none"}}>Privacy Policy</a></span>
@@ -465,8 +465,8 @@ export function Footer({t,dark}){
         <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:40,marginBottom:40}}>
           <div style={{maxWidth:280}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-              <div style={{width:32,height:32,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:"#fff"}}>B</div>
-              <span className="serif" style={{fontSize:18,fontWeight:600,color:t.text}}>BoostPanel</span>
+              <div style={{width:32,height:32,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:"#fff"}}>N</div>
+              <span className="serif" style={{fontSize:18,fontWeight:600,color:t.text}}>Nitro</span>
             </div>
             <p style={{fontSize:13,color:t.textSoft,lineHeight:1.7}}>Nigeria's premium SMM platform. Grow your social media with real followers, likes, and views.</p>
           </div>
@@ -487,7 +487,7 @@ export function Footer({t,dark}){
         </div>
         <div style={{height:1,background:t.surfaceBorder,marginBottom:20,transition:"background 1.5s ease"}}/>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
-          <div style={{fontSize:12,color:t.textMuted}}>© 2026 BoostPanel. All rights reserved.</div>
+          <div style={{fontSize:12,color:t.textMuted}}>© 2026 Nitro. All rights reserved.</div>
           <div style={{display:"flex",gap:16}}>{["Twitter","Instagram"].map(s=><a key={s} href="#" style={{fontSize:12,color:t.textSoft,textDecoration:"none"}}>{s}</a>)}</div>
         </div>
       </div>

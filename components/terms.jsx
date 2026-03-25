@@ -23,8 +23,8 @@ export default function Terms(){
       <div style={{padding:"24px 0",borderBottom:`1px solid ${t.surfaceBorder}`,position:"sticky",top:0,zIndex:50,background:t.bg,backdropFilter:"blur(20px)",transition:"background 1.5s ease"}}>
         <div style={{maxWidth:800,margin:"0 auto",padding:"0 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <button onClick={()=>window.location.href="/"} style={{display:"flex",alignItems:"center",gap:10,background:"none",padding:0,border:"none",outline:"none",cursor:"pointer"}}>
-            <div style={{width:32,height:32,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:"#fff"}}>B</div>
-            <span className="serif" style={{fontSize:18,fontWeight:600,color:t.text}}>BoostPanel</span>
+            <div style={{width:32,height:32,borderRadius:10,background:t.logoGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:"#fff"}}>N</div>
+            <span className="serif" style={{fontSize:18,fontWeight:600,color:t.text}}>Nitro</span>
           </button>
           <button onClick={toggleTheme} style={{display:"flex",alignItems:"center",background:dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)",borderRadius:20,padding:3,width:52,height:28,border:`1px solid ${dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)"}`,position:"relative",flexShrink:0,transition:"background 1.5s cubic-bezier(.4,0,.2,1),border-color 1.5s ease"}}><div style={{width:22,height:22,borderRadius:"50%",background:dark?"#c47d8e":"#e0a458",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,position:"absolute",left:dark?3:27,transition:"left 0.4s cubic-bezier(.4,0,.2,1),background 1.5s cubic-bezier(.4,0,.2,1)",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}>{dark?"🌙":"☀️"}</div></button>
         </div>
@@ -36,11 +36,11 @@ export default function Terms(){
         <p style={{fontSize:13,color:t.textMuted,marginBottom:40}}>Last updated: March 23, 2026</p>
 
         <S title="1. Acceptance of Terms">
-          By creating an account on BoostPanel ("the Platform"), you agree to be bound by these Terms of Service. If you do not agree to these terms, you may not use our services. We reserve the right to update these terms at any time, and continued use of the Platform constitutes acceptance of any modifications.
+          By creating an account on Nitro ("the Platform"), you agree to be bound by these Terms of Service. If you do not agree to these terms, you may not use our services. We reserve the right to update these terms at any time, and continued use of the Platform constitutes acceptance of any modifications.
         </S>
 
         <S title="2. Description of Services">
-          BoostPanel is a social media marketing (SMM) platform that provides digital marketing services including but not limited to social media engagement, followers, views, likes, and related promotional services across various platforms. We act as an intermediary between you and third-party service providers. We do not guarantee specific outcomes, and delivery times are estimates only.
+          Nitro is a social media marketing (SMM) platform that provides digital marketing services including but not limited to social media engagement, followers, views, likes, and related promotional services across various platforms. We act as an intermediary between you and third-party service providers. We do not guarantee specific outcomes, and delivery times are estimates only.
         </S>
 
         <S title="3. Account Registration">
@@ -48,7 +48,7 @@ export default function Terms(){
         </S>
 
         <S title="4. Payments, Wallet & Refunds">
-          All payments are processed in Nigerian Naira (₦) through our supported payment gateways. Funds added to your wallet are non-refundable except in cases where services cannot be delivered. Refunds for undelivered or cancelled orders are credited to your BoostPanel wallet, not to your original payment method, unless otherwise required by law. We reserve the right to modify service pricing at any time without prior notice. Minimum deposit amounts and payment gateway availability may vary.
+          All payments are processed in Nigerian Naira (₦) through our supported payment gateways. Funds added to your wallet are non-refundable except in cases where services cannot be delivered. Refunds for undelivered or cancelled orders are credited to your Nitro wallet, not to your original payment method, unless otherwise required by law. We reserve the right to modify service pricing at any time without prior notice. Minimum deposit amounts and payment gateway availability may vary.
         </S>
 
         <S title="5. Service Delivery & Guarantees">
@@ -56,7 +56,7 @@ export default function Terms(){
         </S>
 
         <S title="6. Data Collection & Usage">
-          By using BoostPanel, you acknowledge and consent to our collection and use of data generated through your interaction with the Platform. This includes account information, transaction history, order data, usage patterns, device information, IP addresses, and communication records. We use this data to operate and improve our services, personalize your experience, process transactions, provide customer support, conduct analytics, develop new features, ensure platform security, and for internal business purposes including but not limited to research, analytics, marketing insights, and service optimization. We may aggregate and anonymize data for statistical analysis, reporting, and business intelligence purposes. By using the Platform, you grant BoostPanel a non-exclusive, royalty-free license to use, process, and analyze data generated through your use of our services for any lawful business purpose.
+          By using Nitro, you acknowledge and consent to our collection and use of data generated through your interaction with the Platform. This includes account information, transaction history, order data, usage patterns, device information, IP addresses, and communication records. We use this data to operate and improve our services, personalize your experience, process transactions, provide customer support, conduct analytics, develop new features, ensure platform security, and for internal business purposes including but not limited to research, analytics, marketing insights, and service optimization. We may aggregate and anonymize data for statistical analysis, reporting, and business intelligence purposes. By using the Platform, you grant Nitro a non-exclusive, royalty-free license to use, process, and analyze data generated through your use of our services for any lawful business purpose.
         </S>
 
         <S title="7. Prohibited Uses">
@@ -64,11 +64,11 @@ export default function Terms(){
         </S>
 
         <S title="8. Intellectual Property">
-          All content, branding, design, and technology on BoostPanel is the property of BoostPanel and is protected by applicable intellectual property laws. You may not copy, reproduce, or distribute any part of the Platform without our express written consent.
+          All content, branding, design, and technology on Nitro is the property of Nitro and is protected by applicable intellectual property laws. You may not copy, reproduce, or distribute any part of the Platform without our express written consent.
         </S>
 
         <S title="9. Limitation of Liability">
-          BoostPanel is provided "as is" without warranties of any kind. We shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the Platform. Our total liability for any claim shall not exceed the amount you paid to us in the 30 days preceding the claim. We are not responsible for any losses resulting from third-party platform changes, API provider failures, or circumstances beyond our reasonable control.
+          Nitro is provided "as is" without warranties of any kind. We shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the Platform. Our total liability for any claim shall not exceed the amount you paid to us in the 30 days preceding the claim. We are not responsible for any losses resulting from third-party platform changes, API provider failures, or circumstances beyond our reasonable control.
         </S>
 
         <S title="10. Termination">
@@ -80,7 +80,7 @@ export default function Terms(){
         </S>
 
         <S title="12. Contact">
-          For questions about these Terms, contact us at <a href="mailto:legal@boostpanel.ng" style={{color:t.accent}}>legal@boostpanel.ng</a>
+          For questions about these Terms, contact us at <a href="mailto:legal@thenitro.ng" style={{color:t.accent}}>legal@thenitro.ng</a>
         </S>
 
         <div style={{marginTop:40,paddingTop:24,borderTop:`1px solid ${t.surfaceBorder}`,display:"flex",gap:20,fontSize:13,color:t.textMuted}}>
@@ -92,7 +92,7 @@ export default function Terms(){
       <footer style={{borderTop:`1px solid ${t.surfaceBorder}`,marginTop:40}}>
         <div style={{maxWidth:800,margin:"0 auto",padding:"24px 24px"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
-            <div style={{fontSize:12,color:t.textMuted}}>© 2026 BoostPanel. All rights reserved.</div>
+            <div style={{fontSize:12,color:t.textMuted}}>© 2026 Nitro. All rights reserved.</div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
               <div style={{display:"flex",gap:16}}>{["Twitter","Instagram"].map(s=><a key={s} href="#" style={{fontSize:12,color:t.textSoft,textDecoration:"none"}}>{s}</a>)}</div>
               <div style={{display:"flex",gap:16}}>{[["Terms","/terms"],["Privacy","/privacy"],["Refund","/refund"],["Cookie","/cookie"]].map(([l,h])=><a key={l} href={h} style={{fontSize:11,color:t.textMuted,textDecoration:"none"}}>{l}</a>)}</div>

@@ -1,7 +1,7 @@
 import AdminLogin from '@/components/admin-login';
 
 export const metadata = {
-  title: 'Admin Login — BoostPanel',
+  title: 'Admin Login — Nitro',
 };
 
 export default function AdminLoginPage() {

@@ -1,7 +1,7 @@
 import AdminPanel from '@/components/admin-panel';
 
 export const metadata = {
-  title: 'Admin — BoostPanel',
+  title: 'Admin — Nitro',
 };
 
 export default function AdminPage() {

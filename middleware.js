@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'boostpanel-dev-secret-change-me');
-const ADMIN_SECRET = new TextEncoder().encode(process.env.JWT_ADMIN_SECRET || 'boostpanel-admin-secret-change-me');
+const SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'nitro-dev-secret-change-me');
+const ADMIN_SECRET = new TextEncoder().encode(process.env.JWT_ADMIN_SECRET || 'nitro-admin-secret-change-me');
 
 async function verifyToken(token, secret) {
   try {
