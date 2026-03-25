@@ -24,6 +24,7 @@ export default function Landing(){
   const [themeMode,setThemeMode]=useState("auto");
   const [modal,setModal]=useState(null);
   const [faqOpen,setFaqOpen]=useState(null);
+  const [activeStep,setActiveStep]=useState(0);
   const [scrolled,setScrolled]=useState(false);
   const scrollRef=useRef(null);
   const [siteStats,setSiteStats]=useState({users:"12K+",orders:"2M+"});
@@ -31,6 +32,7 @@ export default function Landing(){
   const [siteAlerts,setSiteAlerts]=useState([]);
   useEffect(()=>{const saved=localStorage.getItem("nitro-theme")||"auto";setThemeMode(saved);if(saved==="day")setDark(false);else if(saved==="night")setDark(true);else setDark(getAuto());},[]);
   useEffect(()=>{if(themeMode!=="auto")return;const iv=setInterval(()=>setDark(getAuto()),60000);return()=>clearInterval(iv);},[themeMode]);
+  useEffect(()=>{const iv=setInterval(()=>setActiveStep(s=>(s+1)%4),3500);return()=>clearInterval(iv);},[]);
   useEffect(()=>{const el=scrollRef.current;if(!el)return;const onScroll=()=>setScrolled(el.scrollTop>20);el.addEventListener("scroll",onScroll);return()=>el.removeEventListener("scroll",onScroll);},[]);
   useEffect(()=>{const p=new URLSearchParams(window.location.search);if(p.get("login"))setModal("login");if(p.get("signup"))setModal("signup");if(p.get("ref")){setModal("signup");}},[]);
   useEffect(()=>{(async()=>{try{const res=await fetch("/api/site-info");if(res.ok){const d=await res.json();if(d.stats)setSiteStats(d.stats);if(d.promo)setPromoBanner(d.promo);else setPromoBanner(null);if(d.alerts?.length)setSiteAlerts(d.alerts);}}catch{}})();},[]);
@@ -48,6 +50,7 @@ export default function Landing(){
     logoGrad:"linear-gradient(135deg,#c47d8e,#8b5e6b)",
     overlay:dark?"rgba(0,0,0,0.7)":"rgba(0,0,0,0.4)",
     cardShadow:dark?"0 2px 20px rgba(0,0,0,0.4)":"0 2px 20px rgba(0,0,0,0.06)",
+    heroBg:dark?"#060810":"#c49a93",heroText:dark?"#eae7e2":"#1c1b19",heroSoft:dark?"#b0aca8":"#4a4542",heroMuted:dark?"#7d7974":"#887f78",heroGlass:dark?"rgba(15,19,35,.5)":"rgba(255,255,255,.35)",heroGlassBrd:dark?"rgba(255,255,255,.08)":"rgba(255,255,255,.25)",heroAccentBadge:dark?"rgba(196,125,142,.15)":"rgba(255,255,255,.25)",
   }),[dark]);
 
   const SECTIONS=["hero","features","pricing","social-proof","faq","cta-footer"];
@@ -93,9 +96,11 @@ export default function Landing(){
         .fu{animation:fu .5s cubic-bezier(.2,.8,.2,1) both}
         .fd1{animation-delay:.06s}.fd2{animation-delay:.12s}.fd3{animation-delay:.18s}.fd4{animation-delay:.24s}.fd5{animation-delay:.3s}
         .lift{transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s ease,border-color .3s ease}
+        .feat{transition:all .35s cubic-bezier(.16,1,.3,1)}
+        .feat:hover{transform:translateY(-3px);box-shadow:${dark?"0 14px 36px rgba(0,0,0,.25)":"0 14px 36px rgba(0,0,0,.06)"}}
         .lift:hover{transform:translateY(-4px);box-shadow:${dark?"0 12px 32px rgba(0,0,0,.3)":"0 12px 32px rgba(0,0,0,.07)"};border-color:${dark?"rgba(255,255,255,.12)":"rgba(0,0,0,.10)"}!important}
         .sec{min-height:calc(100vh - 60px);display:flex;flex-direction:column;justify-content:center;position:relative}
-        @media(max-width:768px){.nav-links{display:none!important}.nav-login{display:none!important}.split{flex-direction:column!important}.split-l,.split-r{width:100%!important}.test-grid{grid-template-columns:1fr!important}.test-hide{display:none!important}.price-grid{grid-template-columns:1fr!important}.feat-grid{grid-template-columns:1fr 1fr!important}}
+        @media(max-width:768px){.nav-links{display:none!important}.nav-login{display:none!important}.test-grid{grid-template-columns:1fr!important}.test-hide{display:none!important}.price-grid{grid-template-columns:1fr!important}.hero-stats{gap:24px!important}.hero-content{padding:16px 24px 12px!important}.hero-badge{font-size:12px!important;margin-bottom:20px!important}.hero-h1{font-size:36px!important}.hero-refined{font-size:40px!important}.hero-sub{font-size:15px!important;margin-bottom:28px!important}.hero-btns{gap:10px!important}.hero-btn{padding:13px 28px!important;font-size:14px!important;border-radius:12px!important}.hero-stat-val{font-size:18px!important}.hero-carousel-item{padding:7px 14px!important;font-size:12px!important;border-radius:10px!important;gap:6px!important}.s2-features{grid-template-columns:1fr 1fr!important}.s2-wrap{padding:28px 20px 20px!important}.s2-steps-wrap{padding:20px 20px 28px!important}.s2-steps{flex-direction:column!important;gap:12px!important}.s2-step{flex-direction:row!important;text-align:left!important;padding:0!important}.s2-step-icon{width:40px!important;height:40px!important;border-radius:12px!important;margin-bottom:0!important;font-size:18px!important}.s2-step-text{max-height:none!important;opacity:1!important}.s2-connector{display:none!important}}
         @media(max-width:480px){.feat-grid{grid-template-columns:1fr!important}}
       `}</style>
 
@@ -122,58 +127,59 @@ export default function Landing(){
       <div ref={scrollRef} style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",scrollBehavior:"smooth"}}>
 
         {/* ━━━ SCREEN 1: HERO ━━━ */}
-        <section className="sec" style={{textAlign:"center",overflow:"hidden"}}>
-          <div style={{position:"absolute",top:"-20%",left:"50%",transform:"translateX(-50%)",width:800,height:500,borderRadius:"50%",background:dark?"rgba(196,125,142,.06)":"rgba(196,125,142,.04)",filter:"blur(100px)",pointerEvents:"none"}}/>
-          <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"40px 40px 20px",position:"relative",zIndex:1}}>
+        <section className="sec" style={{textAlign:"center",overflow:"hidden",background:t.heroBg}}>
+          <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}><div style={{position:"absolute",top:"-15%",left:"50%",transform:"translateX(-50%)",width:700,height:450,borderRadius:"50%",background:dark?"rgba(196,125,142,.06)":"rgba(255,255,255,.12)",filter:"blur(100px)"}}/><div style={{position:"absolute",bottom:"10%",right:"-10%",width:250,height:250,borderRadius:"50%",background:dark?"rgba(110,231,183,.03)":"rgba(255,255,255,.06)",filter:"blur(80px)"}}/></div>
+          <div className="hero-content" style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px 40px",position:"relative",zIndex:1}}>
             <div style={{maxWidth:720}}>
-              <div className="fu" style={{display:"inline-flex",alignItems:"center",gap:8,padding:"6px 18px",borderRadius:24,background:t.accentLight,border:`1px solid ${dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.10)"}`,fontSize:13,fontWeight:550,color:t.accent,marginBottom:32}}>🚀 Trusted by {siteStats.users} creators across Nigeria</div>
-              <h1 className="fu fd1" style={{fontSize:"clamp(40px,5.5vw,64px)",fontWeight:800,lineHeight:1.08,letterSpacing:-1,marginBottom:24,color:t.text}}>Social Growth,<br/><span className="serif" style={{fontStyle:"italic",fontWeight:400,color:t.accent,fontSize:"clamp(44px,6vw,72px)"}}>Refined.</span></h1>
-              <p className="fu fd2" style={{fontSize:18,color:t.textSoft,fontWeight:430,maxWidth:480,margin:"0 auto 40px",lineHeight:1.65}}>Real followers. Real engagement. Instant delivery. Nigeria's most trusted SMM platform.</p>
-              <div className="fu fd3" style={{display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap"}}>
-                <button onClick={()=>setModal("signup")} style={{padding:"15px 36px",borderRadius:14,background:t.btnPrimary,color:"#fff",fontSize:16,fontWeight:700,boxShadow:"0 8px 28px rgba(196,125,142,.25)"}}>Get Started Free →</button>
-                <button onClick={()=>document.getElementById("pricing")?.scrollIntoView({behavior:"smooth"})} style={{padding:"15px 36px",borderRadius:14,background:dark?"rgba(255,255,255,.05)":"rgba(255,255,255,.8)",color:t.text,fontSize:16,fontWeight:500,border:`1px solid ${t.surfaceBorder}`,backdropFilter:"blur(8px)"}}>View Pricing</button>
+              <div className="fu hero-badge" style={{display:"inline-flex",alignItems:"center",gap:8,padding:"6px 18px",borderRadius:24,background:t.heroAccentBadge,border:`1px solid ${dark?"rgba(196,125,142,.15)":"rgba(255,255,255,.3)"}`,fontSize:13,fontWeight:550,color:dark?t.accent:"#fff",marginBottom:28,backdropFilter:"blur(8px)"}}>🚀 Trusted by {siteStats.users} creators across Nigeria</div>
+              <h1 className="fu fd1 hero-h1" style={{fontSize:"clamp(42px,5.5vw,64px)",fontWeight:800,lineHeight:1.08,letterSpacing:-1,marginBottom:22,color:t.heroText}}>Social Growth,<br/><span className="serif hero-refined" style={{fontStyle:"italic",fontWeight:400,color:dark?t.accent:"#fff",fontSize:"clamp(46px,6vw,72px)",textShadow:dark?"none":"0 2px 20px rgba(196,125,142,.15)"}}>Refined.</span></h1>
+              <p className="fu fd2 hero-sub" style={{fontSize:18,color:t.heroSoft,fontWeight:430,maxWidth:480,margin:"0 auto 36px",lineHeight:1.65}}>Real followers. Real engagement. Instant delivery. Nigeria's most trusted SMM platform.</p>
+              <div className="fu fd3 hero-btns" style={{display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap"}}>
+                <button onClick={()=>setModal("signup")} className="hero-btn" style={{padding:"15px 36px",borderRadius:14,background:t.btnPrimary,color:"#fff",fontSize:16,fontWeight:700,boxShadow:"0 8px 28px rgba(196,125,142,.3)"}}>Get Started Free →</button>
+                <button onClick={()=>document.getElementById("pricing")?.scrollIntoView({behavior:"smooth"})} className="hero-btn" style={{padding:"15px 36px",borderRadius:14,background:t.heroGlass,color:t.heroText,fontSize:16,fontWeight:500,border:`1px solid ${t.heroGlassBrd}`,backdropFilter:"blur(12px)"}}>View Pricing</button>
               </div>
-              <div className="fu fd4" style={{display:"flex",justifyContent:"center",gap:48,marginTop:56,flexWrap:"wrap"}}>
-                {[[siteStats.users,"Active Users","👥"],[siteStats.orders,"Orders Delivered","📦"],["₦500","Min Deposit","💳"],["24/7","Support","💬"]].map(([v,l,ic])=><div key={l}><div style={{fontSize:16,marginBottom:4}}>{ic}</div><div className="m" style={{fontSize:22,fontWeight:700,color:t.text}}>{v}</div><div style={{fontSize:12,color:t.textMuted,marginTop:2,fontWeight:450}}>{l}</div></div>)}
+              <div className="fu fd4 hero-stats" style={{display:"flex",justifyContent:"center",gap:48,marginTop:48,flexWrap:"wrap"}}>
+                {[[siteStats.users,"Active Users","👥"],[siteStats.orders,"Orders","📦"],["₦500","Min Deposit","💳"],["24/7","Support","💬"]].map(([v,l,ic])=><div key={l}><div style={{fontSize:16,marginBottom:4}}>{ic}</div><div className="m hero-stat-val" style={{fontSize:22,fontWeight:700,color:t.heroText}}>{v}</div><div style={{fontSize:12,color:t.heroMuted,marginTop:2,fontWeight:450}}>{l}</div></div>)}
               </div>
             </div>
           </div>
-          {/* Carousel pinned to bottom */}
-          <div className="fu fd5" style={{flexShrink:0,padding:"16px 0",overflow:"hidden"}}>
+          <div className="fu fd5" style={{flexShrink:0,padding:"14px 0",overflow:"hidden",borderTop:`1px solid ${dark?t.surfaceBorder:"rgba(255,255,255,.15)"}`}}>
             <div style={{display:"flex",animation:"scroll 30s linear infinite",width:"fit-content"}}>
               {[0,1].map(rep=><div key={rep} style={{display:"flex",gap:12,paddingRight:12}}>
-                {[["📸","Instagram"],["🎵","TikTok"],["▶️","YouTube"],["𝕏","Twitter/X"],["📘","Facebook"],["✈️","Telegram"],["🎵","Spotify"],["👻","Snapchat"],["🔗","LinkedIn"],["📌","Pinterest"],["🎮","Twitch"],["💬","Discord"]].map(([ic,name])=><span key={rep+name} style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 20px",borderRadius:12,background:t.surface,border:`1px solid ${t.surfaceBorder}`,fontSize:14,color:t.textSoft,fontWeight:450,backdropFilter:"blur(8px)",whiteSpace:"nowrap",flexShrink:0}}>{ic} {name}</span>)}
+                {[["📸","Instagram"],["🎵","TikTok"],["▶️","YouTube"],["𝕏","Twitter/X"],["📘","Facebook"],["✈️","Telegram"],["🎵","Spotify"],["👻","Snapchat"],["🔗","LinkedIn"],["📌","Pinterest"],["🎮","Twitch"],["💬","Discord"]].map(([ic,name])=><span key={rep+name} className="hero-carousel-item" style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 20px",borderRadius:12,background:t.heroGlass,border:`1px solid ${t.heroGlassBrd}`,fontSize:14,color:t.heroSoft,fontWeight:450,backdropFilter:"blur(8px)",whiteSpace:"nowrap",flexShrink:0}}>{ic} {name}</span>)}
               </div>)}
             </div>
           </div>
         </section>
 
-        {/* ━━━ SCREEN 2: WHY NITRO + HOW IT WORKS (split) ━━━ */}
-        <section id="services" className="sec" style={{background:dark?"rgba(255,255,255,.015)":"rgba(0,0,0,.012)",padding:"60px 40px"}}>
-          <div style={{maxWidth:1200,margin:"0 auto",width:"100%"}}>
-            <div style={{textAlign:"center",marginBottom:48}}>
-              <h2 style={{fontSize:"clamp(28px,4vw,40px)",fontWeight:700,color:t.text,marginBottom:10}}>Why <span style={{color:t.accent}}>Nitro</span>?</h2>
-              <p style={{fontSize:16,color:t.textSoft,fontWeight:430}}>Everything you need to grow your social presence</p>
-            </div>
-            <div className="split" style={{display:"flex",gap:40,alignItems:"flex-start"}}>
-              {/* Left: Features */}
-              <div className="split-l" style={{flex:1.2}}>
-                <div className="feat-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-                  {[["⚡","Instant Delivery","Orders start within minutes with real-time tracking."],["🛡️","Safe & Secure","No passwords needed. Public URLs only. Always."],["💳","Naira Payments","Cards, bank transfer, USSD via Paystack. From ₦500."],["🔄","Refill Guarantee","Auto-replenish any drops at zero extra cost."],["📊","Live Dashboard","Track orders, wallet, and growth in real-time."],["🤝","Earn 5% Forever","Refer friends, earn commission on every order."]].map(([ic,title,desc],i)=><div key={i} className="lift" style={{padding:"22px 20px",borderRadius:16,background:t.surface,border:`1px solid ${t.surfaceBorder}`,backdropFilter:"blur(8px)"}}><div style={{fontSize:24,marginBottom:10}}>{ic}</div><h3 style={{fontSize:15,fontWeight:600,color:t.text,marginBottom:6}}>{title}</h3><p style={{fontSize:13,color:t.textSoft,lineHeight:1.6,fontWeight:430}}>{desc}</p></div>)}
+        {/* ━━━ SCREEN 2: WHY NITRO + HOW IT WORKS ━━━ */}
+        <section id="services" className="sec" style={{background:dark?"rgba(255,255,255,.015)":"rgba(0,0,0,.012)",overflow:"hidden"}}>
+          <div style={{flex:1,display:"flex",flexDirection:"column",position:"relative",zIndex:1,overflow:"hidden",padding:"0 48px"}}>
+            <div style={{maxWidth:1140,margin:"0 auto",width:"100%",flex:1,display:"flex",flexDirection:"column"}}>
+
+              {/* WHY NITRO block */}
+              <div className="s2-wrap" style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"20px 0 16px"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:20}}>
+                  <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:3,color:t.accent}}>Features</div>
+                  <h2 style={{fontSize:32,fontWeight:800,color:t.text,letterSpacing:-.5,lineHeight:1}}>Why <span className="serif" style={{fontWeight:400,fontStyle:"italic",color:t.accent,fontSize:36}}>Nitro</span>?</h2>
+                </div>
+                <div className="s2-features" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
+                  {[["⚡","Instant Delivery","Orders start within minutes. Real-time tracking from your dashboard.","#c47d8e"],["🛡️","Safe & Secure","No passwords ever. All services via public URL only.",dark?"#a5b4fc":"#6366f1"],["💳","Naira Payments","Cards, bank transfer, USSD. Minimum ₦500 deposit.",t.green],["🔄","Auto Refill","Follower drops replenished automatically. Zero extra cost.","#e0a458"],["📊","Live Dashboard","Modern app-like panel to manage orders and track growth.","#c47d8e"],["🤝","5% Referrals","Earn commission on every order your referrals make. Forever.",t.green]].map(([ic,title,desc,color],i)=><div key={i} className="feat" style={{padding:"22px 20px",borderRadius:18,position:"relative",overflow:"hidden",background:t.surface,border:`1px solid ${t.surfaceBorder}`,backdropFilter:"blur(16px)"}}><div style={{position:"absolute",top:0,left:0,width:"30%",height:2,background:color,opacity:.3,borderRadius:"18px 18px 0 0"}}/><div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}><div style={{width:42,height:42,borderRadius:12,background:`${color}${dark?"14":"0a"}`,border:`1px solid ${color}${dark?"18":"0e"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{ic}</div><h3 style={{fontSize:16,fontWeight:650,color:t.text,letterSpacing:-.2}}>{title}</h3></div><p style={{fontSize:13,color:t.textSoft,lineHeight:1.55,fontWeight:430}}>{desc}</p></div>)}
                 </div>
               </div>
-              {/* Right: How It Works */}
-              <div className="split-r" style={{flex:0.8,padding:"20px 0"}}>
-                <h3 style={{fontSize:20,fontWeight:700,color:t.text,marginBottom:28}}>How It Works</h3>
-                <div style={{position:"relative",paddingLeft:36}}>
-                  <div style={{position:"absolute",left:15,top:8,bottom:8,width:2,background:dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.12)",borderRadius:1}}/>
-                  {[["Sign Up","Create a free account in 30 seconds. No credit card needed."],["Add Funds","Top up your wallet from ₦500 via Paystack — cards, bank, USSD."],["Place Order","Browse services, pick what you need, paste your link, and order."],["Watch Growth","Delivery starts within minutes. Track everything in your dashboard."]].map(([title,desc],i)=><div key={i} style={{position:"relative",marginBottom:i<3?32:0}}>
-                    <div style={{position:"absolute",left:-36,top:0,width:32,height:32,borderRadius:"50%",background:t.btnPrimary,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#fff",boxShadow:"0 4px 12px rgba(196,125,142,.25)",zIndex:1}}>{i+1}</div>
-                    <div style={{paddingTop:2}}>
-                      <div style={{fontSize:16,fontWeight:600,color:t.text,marginBottom:4}}>{title}</div>
-                      <div style={{fontSize:14,color:t.textSoft,lineHeight:1.6,fontWeight:430}}>{desc}</div>
-                    </div>
-                  </div>)}
+
+              {/* Divider */}
+              <div style={{height:1,background:t.surfaceBorder,margin:"8px 0"}}/>
+
+              {/* HOW IT WORKS block */}
+              <div className="s2-steps-wrap" style={{flexShrink:0,paddingBottom:32,paddingTop:16}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:24}}>
+                  <h2 style={{fontSize:28,fontWeight:800,color:t.text,letterSpacing:-.3}}>How It Works</h2>
+                  <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:3,color:t.green}}>4 Simple Steps</div>
+                </div>
+                <div className="s2-steps" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:0,position:"relative"}}>
+                  <div className="s2-connector" style={{position:"absolute",top:28,left:"12%",right:"12%",height:2,background:dark?"rgba(255,255,255,.04)":"rgba(0,0,0,.035)",zIndex:0}}><div style={{height:"100%",width:`${(activeStep/3)*100}%`,background:t.btnPrimary,borderRadius:1,transition:"width .6s cubic-bezier(.16,1,.3,1)"}}/></div>
+                  {[["Sign Up","Free account in 30 seconds.","👤"],["Fund Wallet","From ₦500 via Paystack.","💰"],["Place Order","Pick service, paste link.","🚀"],["Watch Growth","Delivery starts instantly.","📈"]].map(([title,desc,icon],i)=>{const isActive=activeStep===i;const isPast=i<activeStep;return <div key={i} className="s2-step" onMouseEnter={()=>setActiveStep(i)} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"0 12px",position:"relative",zIndex:1,cursor:"pointer"}}><div className="s2-step-icon" style={{width:56,height:56,borderRadius:16,marginBottom:14,background:isActive?t.btnPrimary:t.surface,border:`1.5px solid ${isActive?"transparent":(isPast?t.accent+"30":t.surfaceBorder)}`,backdropFilter:"blur(12px)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:isActive?24:20,boxShadow:isActive?"0 8px 24px rgba(196,125,142,.25)":"none",transition:"all .4s cubic-bezier(.16,1,.3,1)",transform:isActive?"scale(1.08)":"none"}}>{isActive?<span>{icon}</span>:<span className="m" style={{fontSize:16,fontWeight:700,color:isPast?t.accent:t.textMuted,transition:"color .3s"}}>0{i+1}</span>}</div><div style={{textAlign:"center"}}><div style={{fontSize:14,fontWeight:isActive?650:500,color:isActive?t.text:(isPast?t.text:t.textSoft),transition:"all .3s",marginBottom:3}}>{title}</div><div className="s2-step-text" style={{fontSize:12,color:t.textMuted,fontWeight:430,lineHeight:1.4,maxHeight:isActive?40:0,overflow:"hidden",opacity:isActive?1:0,transition:"all .4s cubic-bezier(.16,1,.3,1)"}}>{desc}</div></div></div>})}
                 </div>
               </div>
             </div>
