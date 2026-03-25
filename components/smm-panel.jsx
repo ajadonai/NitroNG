@@ -186,6 +186,7 @@ export default function App() {
         {ALERTS.filter(a=>!dismissedAlerts.includes(a.id)).map(a=><div key={a.id} style={{padding:"12px 16px",marginBottom:10,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,fontSize:13,fontWeight:500,animation:"fu .3s ease",background:a.type==="warning"?(dark?"rgba(217,119,6,0.1)":"#fffbeb"):a.type==="critical"?(dark?"rgba(220,38,38,0.1)":"#fef2f2"):(dark?"rgba(99,102,241,0.1)":"#eef2ff"),color:a.type==="warning"?(dark?"#fcd34d":"#92400e"):a.type==="critical"?(dark?"#fca5a5":"#dc2626"):(dark?"#a5b4fc":"#4f46e5"),border:`1px solid ${a.type==="warning"?(dark?"rgba(217,119,6,0.2)":"#fde68a"):a.type==="critical"?(dark?"rgba(220,38,38,0.2)":"#fecaca"):(dark?"rgba(99,102,241,0.2)":"#c7d2fe")}`,backdropFilter:"blur(12px)"}}><span>{a.type==="warning"?"⚠️":a.type==="critical"?"🚨":"ℹ️"} {a.message}</span><button onClick={()=>setDismissedAlerts(p=>[...p,a.id])} style={{background:"none",color:"inherit",fontSize:16,padding:2,flexShrink:0,opacity:0.6}}>✕</button></div>)}
         </div>
         <ErrorBoundary t={t} key={pg}>
+        <div style={{maxWidth:720}}>
         {pg==="dashboard"&&<Dash user={user} orders={orders} txs={txs} go={go} t={t} dark={dark}/>}
         {pg==="new-order"&&<NewOrd services={SERVICES} onPlace={placeOrder} bal={user.balance} t={t} dark={dark}/>}
         {pg==="orders"&&<Ords orders={orders} t={t} dark={dark}/>}
@@ -194,6 +195,7 @@ export default function App() {
         {pg==="services"&&<Svcs services={SERVICES} go={go} t={t} dark={dark}/>}
         {pg==="support"&&<Sup t={t} dark={dark}/>}
         {pg==="settings"&&<Settings user={user} t={t} dark={dark} toggleTheme={toggleTheme} manualOverride={manualOverride}/>}
+        </div>
         </ErrorBoundary>
         <footer style={{borderTop:`1px solid ${t.surfaceBorder}`,marginTop:40,padding:"24px 0 16px"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>

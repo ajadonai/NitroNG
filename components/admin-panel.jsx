@@ -162,6 +162,7 @@ export default function AdminPanel(){
       return <div key={a.id} style={{padding:"10px 16px",marginBottom:8,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,fontSize:13,fontWeight:500,animation:"fu .3s ease",flexWrap:"wrap",background:isAdmin?(dark?"rgba(127,119,221,0.1)":"#EEEDFE"):bgMap[a.type],color:isAdmin?(dark?"#AFA9EC":"#534AB7"):colorMap[a.type],border:`1px solid ${isAdmin?(dark?"rgba(175,169,236,0.3)":"#AFA9EC"):borderMap[a.type]}`,backdropFilter:"blur(12px)"}}><div style={{display:"flex",alignItems:"center",gap:8,flex:1,minWidth:0}}><span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:6,background:isAdmin?(dark?"rgba(127,119,221,0.15)":"#fff"):(dark?"rgba(255,255,255,0.08)":"rgba(255,255,255,0.8)"),border:`1px solid ${isAdmin?(dark?"rgba(175,169,236,0.3)":"#AFA9EC"):"transparent"}`,flexShrink:0}}>{isAdmin?"Admin":a.type==="warning"?"⚠️":a.type==="critical"?"🚨":"ℹ️"}</span><span style={{overflow:"hidden",textOverflow:"ellipsis"}}>{a.message}</span></div><button onClick={()=>setDismissedAlerts(p=>[...p,a.id])} style={{background:"none",color:"inherit",fontSize:14,padding:2,flexShrink:0,opacity:0.5,border:"none",cursor:"pointer"}}>✕</button></div>})}
     </div>
     <ErrorBoundary t={t} key={pg}>
+    <div style={{maxWidth:780}}>
     {pg==="overview"&&<Overview t={t} dark={dark} orders={orders} users={users} tickets={tickets} activity={activityLog} overview={overview}/>}
     {pg==="orders"&&<AllOrders t={t} dark={dark} orders={orders} Btn={Btn} FilterBtn={FilterBtn} notify={notify} role={currentAdmin.role}/>}
     {pg==="users"&&<UsersPage t={t} dark={dark} users={users} Btn={Btn} FilterBtn={FilterBtn} notify={notify} role={currentAdmin.role}/>}
@@ -177,6 +178,7 @@ export default function AdminPanel(){
     {pg==="notifications"&&<NotificationsPage t={t} dark={dark} Btn={Btn} notify={notify} logAction={logAction} users={users}/>}
     {pg==="team"&&<AdminRoles t={t} dark={dark} admins={adminList} setAdmins={setAdminList} Btn={Btn} FilterBtn={FilterBtn} notify={notify} isSuperAdmin={currentAdmin.role==="superadmin"} logAction={logAction}/>}
     {pg==="settings"&&<SiteSettingsPage t={t} dark={dark} settings={siteSettings} setSettings={setSiteSettings} Btn={Btn} notify={notify} logAction={logAction}/>}
+    </div>
     </ErrorBoundary>
     <footer style={{borderTop:`1px solid ${t.surfaceBorder}`,marginTop:40,padding:"24px 0 16px"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
