@@ -318,11 +318,11 @@ export default function Landing(){
 function AuthModal({dark,t,mode,setMode,onClose}){
   const [method,setMethod]=useState("email");
   const [showPw,setShowPw]=useState(false);
+  const [showPw2,setShowPw2]=useState(false);
   const [step,setStep]=useState(1);
   const [remember,setRemember]=useState(false);
   const [authLoading,setAuthLoading]=useState(false);
   const [error,setError]=useState("");
-  // Form fields
   const [name,setName]=useState("");
   const [email,setEmail]=useState("");
   const [emailTaken,setEmailTaken]=useState(false);
@@ -333,8 +333,8 @@ function AuthModal({dark,t,mode,setMode,onClose}){
   const [pw2,setPw2]=useState("");
   const [refCode,setRefCode]=useState("");
   const [agree,setAgree]=useState(false);
-  useEffect(()=>{setStep(1);setAuthLoading(false);setError("");setPw("");setPw2("");setName("");setEmail("");setPhone("");setEmailTaken(false);},[mode]);
-  // Debounced email availability check
+  const [forgotSent,setForgotSent]=useState(false);
+  useEffect(()=>{setStep(1);setAuthLoading(false);setError("");setPw("");setPw2("");setName("");setEmail("");setPhone("");setEmailTaken(false);setForgotSent(false);},[mode]);
   useEffect(()=>{
     if(mode!=="signup"||!email||!validEmail){setEmailTaken(false);return;}
     setEmailChecking(true);
@@ -377,102 +377,117 @@ function AuthModal({dark,t,mode,setMode,onClose}){
     }catch{setError("Something went wrong. Please try again.");setAuthLoading(false);}
   };
 
-  const [showPw2,setShowPw2]=useState(false);
+  const handleForgot=async()=>{
+    setError("");
+    if(!email){setError("Please enter your email");return;}
+    setAuthLoading(true);
+    try{
+      const res=await fetch("/api/auth/forgot-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
+      const data=await res.json();
+      if(!res.ok){setError(data.error||"Failed to send reset link");setAuthLoading(false);return;}
+      setForgotSent(true);setAuthLoading(false);
+    }catch{setError("Something went wrong.");setAuthLoading(false);}
+  };
+
   const validEmail=email&&/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
   const validPhone=phone&&/^[0-9]{10,11}$/.test(phone);
   const pwMatch=pw2.length>0&&pw===pw2;
   const pwMismatch=pw2.length>0&&pw!==pw2;
 
+  const EyeBtn=({show,toggle})=><button onClick={toggle} type="button" style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",color:t.textMuted,padding:2,border:"none",cursor:"pointer"}}>{show?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button>;
+  const MethodToggle=()=><div style={{display:"flex",gap:0,marginBottom:20,background:dark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",borderRadius:10,padding:3,border:`1px solid ${t.surfaceBorder}`}}><button onClick={()=>setMethod("email")} style={{flex:1,padding:"9px 0",borderRadius:8,fontSize:13,fontWeight:550,background:method==="email"?t.accentLight:"transparent",color:method==="email"?t.accent:t.textMuted,border:"none",cursor:"pointer"}}>Email</button><button onClick={()=>setMethod("phone")} style={{flex:1,padding:"9px 0",borderRadius:8,fontSize:13,fontWeight:550,background:method==="phone"?t.accentLight:"transparent",color:method==="phone"?t.accent:t.textMuted,border:"none",cursor:"pointer"}}>Phone</button></div>;
+
   return(
     <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:100,background:t.overlay,backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16,animation:"fi 0.2s ease"}}>
-      <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:420,maxHeight:'90vh',overflowY:'auto',background:dark?"rgba(15,18,30,0.98)":"rgba(255,255,255,0.98)",border:`1px solid ${t.surfaceBorder}`,borderRadius:24,padding:"32px 28px",boxShadow:dark?"0 20px 60px rgba(0,0,0,0.5)":"0 20px 60px rgba(0,0,0,0.1)",backdropFilter:"blur(20px)",position:"relative"}}>
-        <button onClick={onClose} style={{position:"absolute",top:14,right:14,background:"none",color:t.textMuted,fontSize:20,padding:4,lineHeight:1,border:"none",cursor:"pointer"}}>✕</button>
-        <div style={{textAlign:"center",marginBottom:24}}>
-          <NitroLogo size={42} variant="mark" style={{marginBottom:10}}/>
-          <h2 className="serif" style={{fontSize:24,fontWeight:600,color:t.text}}>{mode==="login"?"Welcome Back":step===1?"Create Account":"Almost Done"}</h2>
-          <p style={{fontSize:13,color:t.textSoft,marginTop:4}}>{mode==="login"?"Log in to your account":step===1?"Step 1 of 2 — Your details":"Step 2 of 2 — Secure your account"}</p>
-        </div>
+      <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:440,maxHeight:"90vh",overflowY:"auto",background:dark?"rgba(17,22,40,0.98)":"rgba(255,255,255,0.98)",border:`1px solid ${t.surfaceBorder}`,borderRadius:20,padding:"36px 32px",boxShadow:dark?"0 20px 60px rgba(0,0,0,0.5)":"0 20px 60px rgba(0,0,0,0.1)",backdropFilter:"blur(20px)",position:"relative"}}>
+        <button onClick={onClose} style={{position:"absolute",top:16,right:16,background:"none",color:t.textMuted,fontSize:20,padding:4,lineHeight:1,border:"none",cursor:"pointer"}}>✕</button>
+        
+        {/* Logo */}
+        <div style={{display:"flex",justifyContent:"center",marginBottom:24}}><NitroLogo size={38} variant="mark"/></div>
+
+        {/* Title */}
+        <h2 style={{fontSize:24,fontWeight:700,color:t.text,textAlign:"center",marginBottom:4}}>{mode==="login"?"Welcome back":mode==="forgot"?"Forgot password?":step===1?"Create Account":"Secure Your Account"}</h2>
+        <p style={{fontSize:14,color:t.textSoft,textAlign:"center",marginBottom:28,fontWeight:430}}>{mode==="login"?"Log in to your Nitro account":mode==="forgot"?(forgotSent?"Check your email for the reset link":"Enter your email and we'll send a reset link"):step===1?"Step 1 of 2 — Your details":"Step 2 of 2 — Set your password"}</p>
+
+        {/* Error */}
         {error&&<div style={{padding:"10px 14px",borderRadius:10,background:dark?"rgba(220,38,38,0.1)":"#fef2f2",border:`1px solid ${dark?"rgba(220,38,38,0.2)":"#fecaca"}`,color:dark?"#fca5a5":"#dc2626",fontSize:13,marginBottom:16,animation:"fu .3s ease"}}>⚠️ {error}</div>}
+
+        {/* ── LOGIN ── */}
         {mode==="login"&&<>
-          <div style={{display:"flex",gap:0,marginBottom:6,background:dark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",borderRadius:10,padding:3,border:`1px solid ${t.surfaceBorder}`}}>
-            <button onClick={()=>setMethod("email")} style={{flex:1,padding:"8px 0",borderRadius:8,fontSize:13,fontWeight:500,background:method==="email"?t.accentLight:"transparent",color:method==="email"?t.accent:t.textMuted,border:"none",cursor:"pointer"}}>📧 Email</button>
-            <button onClick={()=>setMethod("phone")} style={{flex:1,padding:"8px 0",borderRadius:8,fontSize:13,fontWeight:500,background:method==="phone"?t.accentLight:"transparent",color:method==="phone"?t.accent:t.textMuted,border:"none",cursor:"pointer"}}>📱 Phone</button>
-          </div>
-          {method==="email"?<div key="email-login"><Lbl t={t}>Email Address</Lbl><input value={email} onChange={e=>setEmail(e.target.value.trim().toLowerCase().slice(0,254))} placeholder="you@example.com" type="email" autoComplete="email" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/></div>:<div key="phone-login"><Lbl t={t}>Phone Number</Lbl><div style={{display:"flex",gap:8,marginBottom:16}}><div style={{padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.textSoft,fontSize:14,flexShrink:0}}>🇳🇬 +234</div><input value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,"").slice(0,11))} placeholder="8012345678" type="tel" autoComplete="tel" style={{flex:1,padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></div></div>}
+          <MethodToggle/>
+          <Lbl t={t}>{method==="email"?"Email Address":"Phone Number"}</Lbl>
+          {method==="email"?<input value={email} onChange={e=>setEmail(e.target.value.trim().toLowerCase().slice(0,254))} placeholder="you@example.com" type="email" autoComplete="email" style={{width:"100%",padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/>:<div style={{display:"flex",gap:8,marginBottom:16}}><div style={{padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.textSoft,fontSize:14,flexShrink:0}}>+234</div><input value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,"").slice(0,11))} placeholder="8012345678" type="tel" autoComplete="tel" style={{flex:1,padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></div>}
           <Lbl t={t}>Password</Lbl>
           <div style={{position:"relative",marginBottom:16}}>
-            <input value={pw} onChange={e=>setPw(e.target.value.slice(0,128))} placeholder="Enter password" maxLength={128} type={showPw?"text":"password"} onKeyDown={e=>e.key==="Enter"&&handleLogin()} style={{width:"100%",padding:"12px 44px 12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
-            <button onClick={()=>setShowPw(!showPw)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",color:t.textMuted,fontSize:14,padding:2,border:"none",cursor:"pointer"}}>{showPw?<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button>
+            <input value={pw} onChange={e=>setPw(e.target.value.slice(0,128))} placeholder="Enter password" maxLength={128} type={showPw?"text":"password"} onKeyDown={e=>e.key==="Enter"&&handleLogin()} style={{width:"100%",padding:"12px 44px 12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
+            <EyeBtn show={showPw} toggle={()=>setShowPw(!showPw)}/>
           </div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
             <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}><input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)} style={{accentColor:t.accent,width:15,height:15}}/><span style={{fontSize:12,color:t.textSoft}}>Remember me</span></label>
-            <button style={{background:"none",color:t.accent,fontSize:12,fontWeight:500,border:"none",cursor:"pointer"}}>Forgot password?</button>
+            <button onClick={()=>setMode("forgot")} style={{background:"none",color:t.accent,fontSize:12,fontWeight:500,border:"none",cursor:"pointer"}}>Forgot password?</button>
           </div>
-          <button onClick={handleLogin} disabled={authLoading} style={{width:"100%",padding:"14px 0",borderRadius:12,background:authLoading?"#999":t.btnPrimary,color:"#fff",fontSize:15,fontWeight:700,marginBottom:16,display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:authLoading?.7:1,border:"none",cursor:"pointer"}}>{authLoading&&<span style={{width:16,height:16,border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .6s linear infinite"}}/>}{authLoading?"Logging in...":"Log In"}</button>
+          <button onClick={handleLogin} disabled={authLoading} style={{width:"100%",padding:"14px 0",borderRadius:12,background:authLoading?"#999":t.btnPrimary,color:"#fff",fontSize:15,fontWeight:700,marginBottom:20,display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:authLoading?.7:1,border:"none",cursor:"pointer"}}>{authLoading&&<span style={{width:16,height:16,border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .6s linear infinite"}}/>}{authLoading?"Logging in...":"Log In"}</button>
           <div style={{textAlign:"center",fontSize:13,color:t.textSoft}}>Don't have an account? <button onClick={()=>setMode("signup")} style={{background:"none",color:t.accent,fontWeight:600,fontSize:13,border:"none",cursor:"pointer"}}>Sign Up Free</button></div>
         </>}
+
+        {/* ── SIGNUP STEP 1 ── */}
         {mode==="signup"&&step===1&&<>
           <Lbl t={t}>Full Name</Lbl>
-          <input value={name} onChange={e=>setName(e.target.value.replace(/[^a-zA-ZÀ-ÿ\s'\-\.]/g,"").slice(0,100))} placeholder="Enter your full name" maxLength={100} type="text" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/>
-          <div style={{display:"flex",gap:0,marginBottom:6,background:dark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",borderRadius:10,padding:3,border:`1px solid ${t.surfaceBorder}`}}>
-            <button onClick={()=>setMethod("email")} style={{flex:1,padding:"8px 0",borderRadius:8,fontSize:13,fontWeight:500,background:method==="email"?t.accentLight:"transparent",color:method==="email"?t.accent:t.textMuted,border:"none",cursor:"pointer"}}>📧 Email</button>
-            <button onClick={()=>setMethod("phone")} style={{flex:1,padding:"8px 0",borderRadius:8,fontSize:13,fontWeight:500,background:method==="phone"?t.accentLight:"transparent",color:method==="phone"?t.accent:t.textMuted,border:"none",cursor:"pointer"}}>📱 Phone</button>
-          </div>
-          {method==="email"?<div key="email-signup"><Lbl t={t}>Email Address</Lbl><input value={email} onChange={e=>setEmail(e.target.value.trim().toLowerCase().slice(0,254))} placeholder="you@example.com" type="email" autoComplete="email" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:email&&!validEmail?4:16}}/>{email&&!validEmail&&<div style={{fontSize:11,color:dark?"#fca5a5":"#dc2626",marginBottom:12}}>Please enter a valid email address</div>}{email&&validEmail&&emailTaken&&<div style={{fontSize:11,color:dark?"#fca5a5":"#dc2626",marginBottom:12}}>This email is already registered. Try logging in instead.</div>}{email&&validEmail&&emailChecking&&<div style={{fontSize:11,color:t.textMuted,marginBottom:12}}>Checking...</div>}</div>:<div key="phone-signup"><Lbl t={t}>Phone Number</Lbl><div style={{display:"flex",gap:8,marginBottom:phone&&!validPhone?4:16}}><div style={{padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.textSoft,fontSize:14,flexShrink:0}}>🇳🇬 +234</div><input value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,"").slice(0,11))} placeholder="8012345678" type="tel" autoComplete="tel" style={{flex:1,padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></div>{phone&&!validPhone&&<div style={{fontSize:11,color:dark?"#fca5a5":"#dc2626",marginBottom:12}}>Enter 10-11 digits (e.g. 08012345678)</div>}</div>}
-          <button onClick={()=>{setError("");if(!name){setError("Please enter your name");return;}if(method==="email"&&!email){setError("Please enter your email");return;}if(method==="email"&&!validEmail){setError("Please enter a valid email (e.g. you@gmail.com)");return;}if(method==="phone"&&!phone){setError("Please enter your phone number");return;}if(method==="phone"&&!validPhone){setError("Please enter a valid phone number (10-11 digits)");return;}setStep(2);}} style={{width:"100%",padding:"14px 0",borderRadius:12,background:t.btnPrimary,color:"#fff",fontSize:15,fontWeight:700,marginBottom:16,border:"none",cursor:"pointer"}}>Continue →</button>
+          <input value={name} onChange={e=>setName(e.target.value.replace(/[^a-zA-Z\u00C0-\u017F\s'\-\.]/g,"").slice(0,100))} placeholder="Enter your full name" maxLength={100} type="text" style={{width:"100%",padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/>
+          <MethodToggle/>
+          <Lbl t={t}>{method==="email"?"Email Address":"Phone Number"}</Lbl>
+          {method==="email"?<><input value={email} onChange={e=>setEmail(e.target.value.trim().toLowerCase().slice(0,254))} placeholder="you@example.com" type="email" autoComplete="email" style={{width:"100%",padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:email&&!validEmail?4:16}}/>{email&&!validEmail&&<div style={{fontSize:11,color:dark?"#fca5a5":"#dc2626",marginBottom:12}}>Please enter a valid email</div>}{email&&validEmail&&emailTaken&&<div style={{fontSize:11,color:dark?"#fca5a5":"#dc2626",marginBottom:12}}>This email is already registered</div>}{email&&validEmail&&emailChecking&&<div style={{fontSize:11,color:t.textMuted,marginBottom:12}}>Checking...</div>}</>:<div style={{display:"flex",gap:8,marginBottom:phone&&!validPhone?4:16}}><div style={{padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.textSoft,fontSize:14,flexShrink:0}}>+234</div><input value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,"").slice(0,11))} placeholder="8012345678" type="tel" autoComplete="tel" style={{flex:1,padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></div>}
+          {phone&&!validPhone&&method==="phone"&&<div style={{fontSize:11,color:dark?"#fca5a5":"#dc2626",marginBottom:12}}>Enter 10-11 digits</div>}
+          <button onClick={()=>{setError("");if(!name){setError("Please enter your name");return;}if(method==="email"&&(!email||!validEmail)){setError("Please enter a valid email");return;}if(method==="phone"&&(!phone||!validPhone)){setError("Please enter a valid phone number");return;}setStep(2);}} style={{width:"100%",padding:"14px 0",borderRadius:12,background:t.btnPrimary,color:"#fff",fontSize:15,fontWeight:700,marginBottom:20,border:"none",cursor:"pointer"}}>Continue →</button>
           <div style={{textAlign:"center",fontSize:13,color:t.textSoft}}>Already have an account? <button onClick={()=>setMode("login")} style={{background:"none",color:t.accent,fontWeight:600,fontSize:13,border:"none",cursor:"pointer"}}>Log In</button></div>
+          <div style={{display:"flex",justifyContent:"center",gap:6,marginTop:20}}><div style={{width:8,height:8,borderRadius:"50%",background:t.accent}}/><div style={{width:8,height:8,borderRadius:"50%",background:t.textMuted}}/></div>
         </>}
+
+        {/* ── SIGNUP STEP 2 ── */}
         {mode==="signup"&&step===2&&<>
           <Lbl t={t}>Password</Lbl>
           <div style={{position:"relative",marginBottom:4}}>
-            <input placeholder="Min. 6 characters" value={pw} onChange={e=>setPw(e.target.value.slice(0,128))} type={showPw?"text":"password"} maxLength={128} style={{width:"100%",padding:"12px 44px 12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
-            <button onClick={()=>setShowPw(!showPw)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",color:t.textMuted,fontSize:14,padding:2,border:"none",cursor:"pointer"}}>{showPw?<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button>
+            <input placeholder="Min. 6 characters" value={pw} onChange={e=>setPw(e.target.value.slice(0,128))} type={showPw?"text":"password"} maxLength={128} style={{width:"100%",padding:"12px 44px 12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
+            <EyeBtn show={showPw} toggle={()=>setShowPw(!showPw)}/>
           </div>
           <PwStrength pw={pw} t={t}/>
           <Lbl t={t}>Confirm Password</Lbl>
           <div style={{position:"relative",marginBottom:4}}>
-            <input value={pw2} onChange={e=>setPw2(e.target.value.slice(0,128))} placeholder="Re-enter password" maxLength={128} type={showPw2?"text":"password"} style={{width:"100%",padding:"12px 44px 12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${pwMismatch?(dark?"rgba(220,38,38,0.4)":"#fecaca"):pwMatch?(dark?"rgba(110,231,183,0.4)":"#a7f3d0"):t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
-            <button onClick={()=>setShowPw2(!showPw2)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",color:t.textMuted,fontSize:14,padding:2,border:"none",cursor:"pointer"}}>{showPw2?<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button>
+            <input value={pw2} onChange={e=>setPw2(e.target.value.slice(0,128))} placeholder="Re-enter password" maxLength={128} type={showPw2?"text":"password"} style={{width:"100%",padding:"12px 44px 12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${pwMismatch?(dark?"rgba(220,38,38,0.4)":"#fecaca"):pwMatch?(dark?"rgba(110,231,183,0.4)":"#a7f3d0"):t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
+            <EyeBtn show={showPw2} toggle={()=>setShowPw2(!showPw2)}/>
           </div>
           {pwMatch&&<div style={{fontSize:11,color:dark?"#6ee7b7":"#059669",marginBottom:12}}>✓ Passwords match</div>}
           {pwMismatch&&<div style={{fontSize:11,color:dark?"#fca5a5":"#dc2626",marginBottom:12}}>✕ Passwords don't match</div>}
           {!pw2&&<div style={{height:12,marginBottom:12}}/>}
           <Lbl t={t}>Referral Code <span style={{color:t.textMuted,fontWeight:400}}>(optional)</span></Lbl>
-          <input value={refCode} onChange={e=>setRefCode(e.target.value.replace(/[^a-zA-Z0-9\-]/g,"").toUpperCase().slice(0,20))} placeholder="e.g. NTR-7X92" maxLength={20} type="text" style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/>
+          <input value={refCode} onChange={e=>setRefCode(e.target.value.replace(/[^a-zA-Z0-9\-]/g,"").toUpperCase().slice(0,20))} placeholder="e.g. NTR-7X92" maxLength={20} type="text" style={{width:"100%",padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/>
           <label style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:24,cursor:"pointer"}}>
             <input type="checkbox" checked={agree} onChange={e=>setAgree(e.target.checked)} style={{marginTop:3,accentColor:t.accent,width:16,height:16,flexShrink:0}}/>
             <span style={{fontSize:12,color:t.textSoft,lineHeight:1.5}}>I agree to the <a href="/terms" style={{color:t.accent,textDecoration:"none"}}>Terms of Service</a> and <a href="/privacy" style={{color:t.accent,textDecoration:"none"}}>Privacy Policy</a></span>
           </label>
           <button onClick={handleSignup} disabled={authLoading} style={{width:"100%",padding:"14px 0",borderRadius:12,background:authLoading?"#999":t.btnPrimary,color:"#fff",fontSize:15,fontWeight:700,marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:authLoading?.7:1,border:"none",cursor:"pointer"}}>{authLoading&&<span style={{width:16,height:16,border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .6s linear infinite"}}/>}{authLoading?"Creating Account...":"Create Account"}</button>
           <button onClick={()=>setStep(1)} style={{width:"100%",padding:"10px 0",borderRadius:10,background:"transparent",color:t.textSoft,fontSize:13,fontWeight:500,border:"none",cursor:"pointer"}}>← Back to Step 1</button>
+          <div style={{display:"flex",justifyContent:"center",gap:6,marginTop:16}}><div style={{width:8,height:8,borderRadius:"50%",background:t.textMuted}}/><div style={{width:8,height:8,borderRadius:"50%",background:t.accent}}/></div>
         </>}
-        {mode==="signup"&&<div style={{display:"flex",justifyContent:"center",gap:6,marginTop:16}}>
-          <div style={{width:8,height:8,borderRadius:"50%",background:step===1?t.accent:t.textMuted,transition:"background 0.3s ease"}}/>
-          <div style={{width:8,height:8,borderRadius:"50%",background:step===2?t.accent:t.textMuted,transition:"background 0.3s ease"}}/>
-        </div>}
+
+        {/* ── FORGOT PASSWORD ── */}
+        {mode==="forgot"&&!forgotSent&&<>
+          <Lbl t={t}>Email Address</Lbl>
+          <input value={email} onChange={e=>setEmail(e.target.value.trim().toLowerCase().slice(0,254))} placeholder="you@example.com" type="email" style={{width:"100%",padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:20}}/>
+          <button onClick={handleForgot} disabled={authLoading} style={{width:"100%",padding:"14px 0",borderRadius:12,background:authLoading?"#999":t.btnPrimary,color:"#fff",fontSize:15,fontWeight:700,marginBottom:20,display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:authLoading?.7:1,border:"none",cursor:"pointer"}}>{authLoading&&<span style={{width:16,height:16,border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .6s linear infinite"}}/>}{authLoading?"Sending...":"Send Reset Link"}</button>
+          <div style={{textAlign:"center",fontSize:13,color:t.textSoft}}>Remember your password? <button onClick={()=>setMode("login")} style={{background:"none",color:t.accent,fontWeight:600,fontSize:13,border:"none",cursor:"pointer"}}>Log In</button></div>
+        </>}
+        {mode==="forgot"&&forgotSent&&<>
+          <div style={{width:64,height:64,borderRadius:"50%",background:dark?"rgba(110,231,183,0.1)":"rgba(5,150,105,0.06)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",border:`2px solid ${t.green}`}}><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg></div>
+          <p style={{fontSize:14,color:t.textSoft,textAlign:"center",marginBottom:4}}>Reset link sent to</p>
+          <p className="m" style={{fontSize:14,fontWeight:600,color:t.text,textAlign:"center",marginBottom:24}}>{email}</p>
+          <p style={{fontSize:13,color:t.textMuted,textAlign:"center",marginBottom:24}}>Check your inbox and spam folder. The link expires in 15 minutes.</p>
+          <button onClick={()=>setMode("login")} style={{width:"100%",padding:"14px 0",borderRadius:12,background:t.btnPrimary,color:"#fff",fontSize:15,fontWeight:700,border:"none",cursor:"pointer"}}>Back to Login</button>
+        </>}
       </div>
     </div>
   );
 }
-
-// Password strength meter
-function PwStrength({pw,t}){
-  const checks=[pw.length>=8,/[A-Z]/.test(pw),/[0-9]/.test(pw),/[^A-Za-z0-9]/.test(pw)];
-  const score=checks.filter(Boolean).length;
-  const labels=["","Weak","Fair","Good","Strong"];
-  const colors=["","#dc2626","#d97706","#2563eb","#059669"];
-  if(!pw)return null;
-  return <div style={{marginBottom:14}}>
-    <div style={{display:"flex",gap:4,marginBottom:4}}>{[1,2,3,4].map(i=><div key={i} style={{flex:1,height:3,borderRadius:2,background:i<=score?colors[score]:(t.inputBorder||"#ddd"),transition:"background 0.3s"}}/>)}</div>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-      <span style={{fontSize:11,color:colors[score],fontWeight:500}}>{labels[score]}</span>
-      <span style={{fontSize:10,color:t.textMuted}}>{checks[0]?"✓":"✗"} 8+ chars {checks[1]?"✓":"✗"} uppercase {checks[2]?"✓":"✗"} number {checks[3]?"✓":"✗"} symbol</span>
-    </div>
-  </div>;
-}
-
-const Lbl=({t,children})=><label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>{children}</label>;
-const Inp=({t,dark,ph,type})=><input placeholder={ph} type={type} style={{width:"100%",padding:"12px 14px",borderRadius:10,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/>;
 
 export function Footer({t,dark}){
   return(
