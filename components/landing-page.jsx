@@ -119,19 +119,29 @@ export default function Landing(){
       {/* ── SCROLLABLE CONTENT ── */}
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch"}}>
 
-        {/* ── HERO ── */}
-        <section style={{padding:"80px 40px 60px",textAlign:"center",position:"relative",overflow:"hidden"}}>
+        {/* ── HERO — full viewport height ── */}
+        <section style={{minHeight:"calc(100vh - 60px)",display:"flex",flexDirection:"column",textAlign:"center",position:"relative",overflow:"hidden"}}>
           <div style={{position:"absolute",top:"-20%",left:"50%",transform:"translateX(-50%)",width:800,height:500,borderRadius:"50%",background:dark?"rgba(196,125,142,.06)":"rgba(196,125,142,.04)",filter:"blur(100px)",pointerEvents:"none"}}/>
-          <div style={{position:"relative",zIndex:1,maxWidth:720,margin:"0 auto"}}>
-            <div className="fu" style={{display:"inline-flex",alignItems:"center",gap:8,padding:"6px 18px",borderRadius:24,background:t.accentLight,border:`1px solid ${dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.10)"}`,fontSize:13,fontWeight:550,color:t.accent,marginBottom:32}}>🚀 Trusted by {siteStats.users} creators across Nigeria</div>
-            <h1 className="fu fd1" style={{fontSize:"clamp(40px, 5.5vw, 60px)",fontWeight:800,lineHeight:1.08,letterSpacing:-1,marginBottom:24,color:t.text}}>Social Growth,<br/><span className="serif" style={{fontStyle:"italic",fontWeight:400,color:t.accent}}>Refined.</span></h1>
-            <p className="fu fd2" style={{fontSize:18,color:t.textSoft,fontWeight:430,maxWidth:480,margin:"0 auto 40px",lineHeight:1.65}}>Real followers. Real engagement. Instant delivery. Nigeria's most trusted SMM platform.</p>
-            <div className="fu fd3" style={{display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap"}}>
-              <button onClick={()=>setModal("signup")} style={{padding:"15px 36px",borderRadius:14,background:t.btnPrimary,color:"#fff",fontSize:16,fontWeight:700,boxShadow:"0 8px 28px rgba(196,125,142,.25)"}}>Get Started Free →</button>
-              <button onClick={()=>document.getElementById("pricing")?.scrollIntoView({behavior:"smooth"})} style={{padding:"15px 36px",borderRadius:14,background:dark?"rgba(255,255,255,.05)":"rgba(255,255,255,.8)",color:t.text,fontSize:16,fontWeight:500,border:`1px solid ${t.surfaceBorder}`,backdropFilter:"blur(8px)"}}>View Pricing</button>
+          <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"40px 40px 20px",position:"relative",zIndex:1}}>
+            <div style={{maxWidth:720}}>
+              <div className="fu" style={{display:"inline-flex",alignItems:"center",gap:8,padding:"6px 18px",borderRadius:24,background:t.accentLight,border:`1px solid ${dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.10)"}`,fontSize:13,fontWeight:550,color:t.accent,marginBottom:32}}>🚀 Trusted by {siteStats.users} creators across Nigeria</div>
+              <h1 className="fu fd1" style={{fontSize:"clamp(40px, 5.5vw, 60px)",fontWeight:800,lineHeight:1.08,letterSpacing:-1,marginBottom:24,color:t.text}}>Social Growth,<br/><span className="serif" style={{fontStyle:"italic",fontWeight:400,color:t.accent}}>Refined.</span></h1>
+              <p className="fu fd2" style={{fontSize:18,color:t.textSoft,fontWeight:430,maxWidth:480,margin:"0 auto 40px",lineHeight:1.65}}>Real followers. Real engagement. Instant delivery. Nigeria's most trusted SMM platform.</p>
+              <div className="fu fd3" style={{display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap"}}>
+                <button onClick={()=>setModal("signup")} style={{padding:"15px 36px",borderRadius:14,background:t.btnPrimary,color:"#fff",fontSize:16,fontWeight:700,boxShadow:"0 8px 28px rgba(196,125,142,.25)"}}>Get Started Free →</button>
+                <button onClick={()=>document.getElementById("pricing")?.scrollIntoView({behavior:"smooth"})} style={{padding:"15px 36px",borderRadius:14,background:dark?"rgba(255,255,255,.05)":"rgba(255,255,255,.8)",color:t.text,fontSize:16,fontWeight:500,border:`1px solid ${t.surfaceBorder}`,backdropFilter:"blur(8px)"}}>View Pricing</button>
+              </div>
+              <div className="fu fd4 stats-row" style={{display:"flex",justifyContent:"center",gap:48,marginTop:56}}>
+                {[[siteStats.users,"Active Users","👥"],[siteStats.orders,"Orders Delivered","📦"],["₦500","Min Deposit","💳"],["24/7","Support","💬"]].map(([v,l,ic])=><div key={l}><div style={{fontSize:16,marginBottom:4}}>{ic}</div><div className="m" style={{fontSize:22,fontWeight:700,color:t.text}}>{v}</div><div style={{fontSize:12,color:t.textMuted,marginTop:2,fontWeight:450}}>{l}</div></div>)}
+              </div>
             </div>
-            <div className="fu fd4 stats-row" style={{display:"flex",justifyContent:"center",gap:48,marginTop:56}}>
-              {[[siteStats.users,"Active Users","👥"],[siteStats.orders,"Orders Delivered","📦"],["₦500","Min Deposit","💳"],["24/7","Support","💬"]].map(([v,l,ic])=><div key={l}><div style={{fontSize:16,marginBottom:4}}>{ic}</div><div className="m" style={{fontSize:22,fontWeight:700,color:t.text}}>{v}</div><div style={{fontSize:12,color:t.textMuted,marginTop:2,fontWeight:450}}>{l}</div></div>)}
+          </div>
+          {/* Carousel — pinned to bottom of hero */}
+          <div className="fu fd5" style={{flexShrink:0,padding:"16px 0",overflow:"hidden"}}>
+            <div style={{display:"flex",animation:"scroll 30s linear infinite",width:"fit-content"}}>
+              {[0,1].map(rep=><div key={rep} style={{display:"flex",gap:12,paddingRight:12}}>
+                {[["📸","Instagram"],["🎵","TikTok"],["▶️","YouTube"],["𝕏","Twitter/X"],["📘","Facebook"],["✈️","Telegram"],["🎵","Spotify"],["👻","Snapchat"],["🔗","LinkedIn"],["📌","Pinterest"],["🎮","Twitch"],["💬","Discord"]].map(([ic,name])=><span key={rep+name} style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 20px",borderRadius:12,background:t.surface,border:`1px solid ${t.surfaceBorder}`,fontSize:14,color:t.textSoft,fontWeight:450,backdropFilter:"blur(8px)",whiteSpace:"nowrap",flexShrink:0}}>{ic} {name}</span>)}
+              </div>)}
             </div>
           </div>
         </section>
@@ -185,15 +195,6 @@ export default function Landing(){
             <button onClick={()=>setModal("signup")} style={{padding:"16px 52px",borderRadius:14,background:t.btnPrimary,color:"#fff",fontSize:17,fontWeight:700,boxShadow:"0 8px 28px rgba(196,125,142,.25)"}}>Create Free Account</button>
           </div>
         </section>
-
-        {/* ── FOOTER CAROUSEL ── */}
-        <div style={{borderTop:`1px solid ${t.surfaceBorder}`,padding:"20px 0",overflow:"hidden"}}>
-          <div style={{display:"flex",animation:"scroll 30s linear infinite",width:"fit-content"}}>
-            {[0,1].map(rep=><div key={rep} style={{display:"flex",gap:12,paddingRight:12}}>
-              {[["📸","Instagram"],["🎵","TikTok"],["▶️","YouTube"],["𝕏","Twitter/X"],["📘","Facebook"],["✈️","Telegram"],["🎵","Spotify"],["👻","Snapchat"],["🔗","LinkedIn"],["📌","Pinterest"],["🎮","Twitch"],["💬","Discord"]].map(([ic,name])=><span key={rep+name} style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 20px",borderRadius:12,background:t.surface,border:`1px solid ${t.surfaceBorder}`,fontSize:14,color:t.textSoft,fontWeight:450,backdropFilter:"blur(8px)",whiteSpace:"nowrap",flexShrink:0}}>{ic} {name}</span>)}
-            </div>)}
-          </div>
-        </div>
 
         {/* ── FOOTER ── */}
         <Footer t={t} dark={dark}/>
