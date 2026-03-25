@@ -129,7 +129,7 @@ export default function App() {
   const toastTimer = useRef(null);
   const notify = (m, e) => { setToast({ m, e }); if (toastTimer.current) clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 6000); };
   const dismissToast = () => { setToast(null); if (toastTimer.current) clearTimeout(toastTimer.current); };
-  const go = (p) => { setPg(p); setSb(false); };
+  const go = (p) => { setPg(p); };
   const placeOrder = (svc, link, qty) => {const ch=(svc.rate/1000)*qty;if(ch>user.balance)return notify("Insufficient balance. Add funds first.",true);const id=`ORD-${Math.floor(10000+Math.random()*90000)}`;setOrders(p=>[{id,service:svc.name,link,quantity:qty,charge:ch,status:"Pending",created:new Date().toISOString()},...p]);setUser(p=>({...p,balance:p.balance-ch}));setTxs(p=>[{id:`T${Date.now()}`,type:"order",amount:-ch,method:"Wallet",date:new Date().toISOString()},...p]);notify(`Order ${id} placed!`);go("orders");};
   const addFunds = (a) => {setUser(p=>({...p,balance:p.balance+a}));setTxs(p=>[{id:`T${Date.now()}`,type:"deposit",amount:a,method:"Paystack",date:new Date().toISOString()},...p]);notify(`${fN(a)} added to wallet!`);};
 
