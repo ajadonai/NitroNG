@@ -218,6 +218,58 @@ export default function Landing(){
           .faq-a-inner{padding:0 18px 18px 54px;font-size:14px;padding-top:14px}
         }
 
+        .faq-sec{overflow:hidden}
+        .faq-content{max-width:760px;margin:0 auto;width:100%;padding:0 48px}
+        .faq-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:40px}
+        .faq-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:${t.accent};margin-bottom:8px}
+        .faq-title{font-size:40px;font-weight:800;color:${t.text};letter-spacing:-.5px;line-height:1.1}
+        .faq-title-accent{font-weight:400;font-style:italic;color:${t.accent};font-size:46px}
+        .faq-aside{font-size:14px;color:${t.textMuted};font-weight:430;max-width:220px;text-align:right;line-height:1.5}
+        .faq-list{display:flex;flex-direction:column;gap:10px}
+        .faq-item{border-radius:18px;background:${dark?"rgba(15,19,35,.55)":"rgba(255,255,255,.5)"};border:1px solid ${dark?"rgba(255,255,255,.07)":"rgba(0,0,0,.05)"};backdrop-filter:blur(16px);transition:all .3s ease;overflow:hidden}
+        .faq-open{background:${dark?"rgba(15,19,35,.75)":"rgba(255,255,255,.7)"};border-color:${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"}}
+        .faq-q{width:100%;padding:22px 24px;display:flex;justify-content:space-between;align-items:center;gap:16;text-align:left;background:none;color:${t.text};font-family:inherit;cursor:pointer}
+        .faq-q-inner{display:flex;align-items:center;gap:16;flex:1}
+        .faq-num{font-size:12px;font-weight:600;color:${t.textMuted};flex-shrink:0;width:24px;transition:color .3s}
+        .faq-open .faq-num{color:${t.accent}}
+        .faq-q-text{font-size:17px;font-weight:500;color:${t.textSoft};transition:all .3s}
+        .faq-open .faq-q-text{font-weight:650;color:${t.text}}
+        .faq-toggle{width:32px;height:32px;border-radius:10px;flex-shrink:0;background:${dark?"rgba(255,255,255,.04)":"rgba(0,0,0,.03)"};display:flex;align-items:center;justify-content:center;transition:all .35s cubic-bezier(.16,1,.3,1)}
+        .faq-toggle-open{background:${t.accent};transform:rotate(45deg)}
+        .faq-a-wrap{overflow:hidden;transition:max-height .4s cubic-bezier(.16,1,.3,1)}
+        .faq-a{padding:0 24px 22px 64px;font-size:15px;color:${t.textSoft};line-height:1.75;font-weight:430;border-top:1px solid ${dark?"rgba(255,255,255,.07)":"rgba(0,0,0,.05)"}}
+        .cta-sec{display:flex;flex-direction:column}
+        .cta-inner{flex:1;display:flex;align-items:center;justify-content:center;padding:40px}
+        .cta-card{text-align:center;max-width:600px;margin:0 auto;padding:60px 40px;border-radius:24px;backdrop-filter:blur(12px)}
+        .cta-title{font-size:clamp(30px,4.5vw,48px);font-weight:800;color:${t.text};margin-bottom:16px}
+        .cta-sub{font-size:16px;margin-bottom:36px;font-weight:430}
+        .cta-btn{padding:16px 52px;border-radius:14px;color:#fff;font-size:17px;font-weight:700;box-shadow:0 8px 28px rgba(196,125,142,.25);border:none;cursor:pointer;font-family:inherit}
+        @media(max-width:1024px){
+          .faq-content{padding:0 40px}
+          .faq-title{font-size:34px}
+          .faq-title-accent{font-size:38px}
+        }
+        @media(max-width:768px){
+          .faq-content{padding:0 16px}
+          .faq-header{flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:24px}
+          .faq-aside{display:none}
+          .faq-label{font-size:9px;letter-spacing:2.5px}
+          .faq-title{font-size:26px}
+          .faq-title-accent{font-size:30px}
+          .faq-list{gap:8px}
+          .faq-q{padding:18px 18px}
+          .faq-q-inner{gap:12px}
+          .faq-num{font-size:11px}
+          .faq-q-text{font-size:15px}
+          .faq-toggle{width:28px;height:28px;border-radius:8px}
+          .faq-a{padding:0 18px 18px 54px;font-size:14px}
+          .cta-inner{padding:24px 16px}
+          .cta-card{padding:40px 24px;border-radius:20px}
+          .cta-title{font-size:28px}
+          .cta-sub{font-size:14px;margin-bottom:28px}
+          .cta-btn{padding:14px 40px;font-size:15px;border-radius:12px}
+        }
+
         .feat{transition:all .35s cubic-bezier(.16,1,.3,1)}
         .feat:hover{transform:translateY(-3px);box-shadow:${dark?"0 14px 36px rgba(0,0,0,.25)":"0 14px 36px rgba(0,0,0,.06)"}}
         .lift:hover{transform:translateY(-4px);box-shadow:${dark?"0 12px 32px rgba(0,0,0,.3)":"0 12px 32px rgba(0,0,0,.07)"};border-color:${dark?"rgba(255,255,255,.12)":"rgba(0,0,0,.10)"}!important}
@@ -338,78 +390,29 @@ export default function Landing(){
                   <div><h3 className="pc-name">{name}</h3><div className="pc-unit">per 1,000</div></div>
                 </div>
                 {prices.map(([svc,price],j)=><div key={svc} className="pc-row" style={{borderBottom:j<prices.length-1?"1px solid rgba(255,255,255,.05)":"none"}}><span className="pc-svc">{svc}</span><span className="m pc-price">{price}</span></div>)}
-                <button onClick={()=>setModal("signup")} className={`pc-btn ${pop?"pc-btn-pop":""}`}>Get Started</button>
-              </div>)}
-            </div>
-            <p className="pricing-note">All prices in ₦. More platforms available after signup.</p>
-          </div>
-        </section>
-
-        {/* ━━━ SCREEN 4: TESTIMONIALS ━━━ */}
-        <section id="testimonials" className="sec test-sec" style={{background:dark?"rgba(255,255,255,.015)":"rgba(0,0,0,.012)"}}>
-          <div className="test-content">
-            <div className="test-header">
-              <h2 className="test-title">Trusted by <span className="serif test-title-accent">Creators</span></h2>
-              <p className="test-sub">Real people. Real results. Real growth.</p>
-            </div>
-            <div className="test-grid">
-              {[
-                ["Chioma A.","Instagram Influencer","Nitro helped me hit 50K followers. The delivery is incredibly fast and the followers actually stay. Best panel in Nigeria by far.","C","linear-gradient(135deg,#F58529,#DD2A7B)"],
-                ["Tunde O.","Music Artist","I use Nitro for Spotify and YouTube promotion. Instant delivery, Naira payments, zero stress. My streams tripled in two months.","T","linear-gradient(135deg,#1DB954,#148a3c)"],
-                ["Blessing E.","Business Owner","My boutique's Instagram went from 2K to 25K. Real engagement that converts to sales. I recommend Nitro to every business owner.","B","linear-gradient(135deg,#6366f1,#4f46e5)"],
-                ["David K.","Content Creator","I was skeptical at first but the results speak. My TikTok blew up after using Nitro's views service. 100K views overnight.","D","linear-gradient(135deg,#FE2C55,#25F4EE)","test-hide-mobile"],
-                ["Amara N.","Brand Manager","Managing social growth for multiple brands is easy with Nitro. Clean dashboard, fast delivery, and the refill guarantee is clutch.","A","linear-gradient(135deg,#c47d8e,#a3586b)","test-hide-mobile"],
-                ["Emeka C.","Student Entrepreneur","Started a social media agency using Nitro as my backend. Prices are competitive and I earn 5% on every referral. Game changer.","E","linear-gradient(135deg,#e0a458,#d4943e)","test-hide-mobile"],
-                ["Fatima B.","Fashion Blogger","The quality of followers on Instagram is what sold me. Not bots — real accounts that actually engage with my content. Worth every Naira.","F","linear-gradient(135deg,#DD2A7B,#8134AF)","test-hide-tablet"],
-                ["Uche M.","Podcast Host","YouTube subscribers and watch time from Nitro helped me hit monetization. Support team is responsive and the platform just works.","U","linear-gradient(135deg,#FF0000,#CC0000)","test-hide-tablet"],
-                ["Grace O.","Fitness Coach","I have tried every SMM panel in Nigeria. Nitro is the only one with consistent delivery, actual refills, and a dashboard that works.","G","linear-gradient(135deg,#059669,#34d399)","test-hide-tablet"]
-              ].map(([name,role,text,avatar,gradient,hideClass],i)=><div key={i} className={`tc fu fd${i+1} ${hideClass||""}`} style={{padding:"24px 22px",borderRadius:20,background:dark?"rgba(15,19,35,.55)":"rgba(255,255,255,.5)",border:`1px solid ${dark?"rgba(255,255,255,.07)":"rgba(0,0,0,.05)"}`,backdropFilter:"blur(16px)",display:"flex",flexDirection:"column",position:"relative",overflow:"hidden"}}>
-                <div style={{position:"absolute",top:-30,right:-30,width:80,height:80,borderRadius:"50%",background:gradient,opacity:.04,filter:"blur(20px)",pointerEvents:"none"}}/>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-                  <div style={{display:"flex",gap:2}}>{[0,1,2,3,4].map(j=><svg key={j} width="14" height="14" viewBox="0 0 24 24" fill="#e0a458"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>)}</div>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1" opacity=".25"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21zm12 0c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21z"/></svg>
-                </div>
-                <p style={{fontSize:14,color:t.textSoft,lineHeight:1.7,fontWeight:430,flex:1,marginBottom:18}}>"{text}"</p>
-                <div style={{display:"flex",alignItems:"center",gap:12}}>
-                  <div style={{width:38,height:38,borderRadius:12,background:gradient,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,color:"#fff",flexShrink:0,boxShadow:"0 3px 10px rgba(0,0,0,.15)"}}>{avatar}</div>
-                  <div><div style={{fontSize:14,fontWeight:650,color:t.text}}>{name}</div><div style={{fontSize:12,color:t.textMuted,fontWeight:430,marginTop:1}}>{role}</div></div>
-                </div>
-              </div>)}
-            </div>
-          </div>
-        </section>
-
         {/* ━━━ SCREEN 5: FAQ ━━━ */}
-        <section id="faq" className="sec faq-sec">
+        <section id="faq" className="faq-sec sec">
           <div className="faq-content">
             <div className="faq-header">
               <div>
                 <div className="faq-label">Support</div>
-                <h2 className="faq-title">Frequently Asked<br/> <span className="serif faq-title-accent">Questions</span></h2>
+                <h2 className="faq-title">Frequently Asked<br/><span className="serif faq-title-accent">Questions</span></h2>
               </div>
               <p className="faq-aside">Can't find what you're looking for? Reach out to our support team.</p>
             </div>
             <div className="faq-list">
-              {[["How does Nitro work?","Sign up free, add funds via Paystack, choose a service, paste your link, and order. Delivery starts within minutes and you can track progress in real-time from your dashboard."],["Is it safe to use?","Absolutely. We never ask for your passwords or login credentials. All services are delivered using your public profile URL only. Your accounts remain completely secure."],["How do I pay?","We accept Nigerian Naira payments via Paystack — debit cards, bank transfer, and USSD. Minimum deposit is ₦500 and funds are added to your wallet instantly."],["Will my followers drop?","Some natural fluctuation may occur. Services marked with refill guarantee will automatically replenish any drops within the guarantee period at no extra cost."],["Can I earn money with Nitro?","Yes! Every account gets a unique referral link. Share it and earn 5% commission on every order your referrals make — credited to your wallet automatically, forever."],["How fast is delivery?","Most services start delivering within minutes of placing your order. Typical completion time is 0-24 hours depending on the service type and quantity ordered."]].map(([q,a],i)=>{const isOpen=faqOpen===i;return <div key={i} className={`faq-item ${isOpen?"faq-item-open":""}`}>
-                <button onClick={()=>setFaqOpen(isOpen?null:i)} className="faq-q">
-                  <div className="faq-q-left"><span className="m faq-num" style={{color:isOpen?t.accent:t.textMuted}}>0{i+1}</span><span className="faq-q-text" style={{fontWeight:isOpen?650:500,color:isOpen?t.text:t.textSoft}}>{q}</span></div>
-                  <div className="faq-toggle" style={{background:isOpen?t.accent:(dark?"rgba(255,255,255,.04)":"rgba(0,0,0,.03)"),transform:isOpen?"rotate(45deg)":"none"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isOpen?"#fff":t.textMuted} strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
-                </button>
-                <div className="faq-a" style={{maxHeight:isOpen?300:0}}>
-                  <div className="faq-a-inner">{a}</div>
-                </div>
-              </div>})}
+              {[["How does Nitro work?","Sign up free, add funds via Paystack, choose a service, paste your link, and order. Delivery starts within minutes and you can track progress in real-time from your dashboard."],["Is it safe to use?","Absolutely. We never ask for your passwords or login credentials. All services are delivered using your public profile URL only. Your accounts remain completely secure."],["How do I pay?","We accept Nigerian Naira payments via Paystack — debit cards, bank transfer, and USSD. Minimum deposit is ₦500 and funds are added to your wallet instantly."],["Will my followers drop?","Some natural fluctuation may occur. Services marked with refill guarantee will automatically replenish any drops within the guarantee period at no extra cost."],["Can I earn money with Nitro?","Yes! Every account gets a unique referral link. Share it and earn 5% commission on every order your referrals make — credited to your wallet automatically, forever."],["How fast is delivery?","Most services start delivering within minutes of placing your order. Typical completion time is 0-24 hours depending on the service type and quantity ordered."]].map(([q,a],i)=>{const isOpen=faqOpen===i;return <div key={i} className={`faq-item ${isOpen?"faq-open":""}`}><button onClick={()=>setFaqOpen(isOpen?null:i)} className="faq-q"><div className="faq-q-inner"><span className="m faq-num">{"0"+(i+1)}</span><span className="faq-q-text">{q}</span></div><div className={`faq-toggle ${isOpen?"faq-toggle-open":""}`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isOpen?"#fff":t.textMuted} strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div></button><div className="faq-a-wrap" style={{maxHeight:isOpen?300:0}}><div className="faq-a"><div style={{paddingTop:16}}>{a}</div></div></div></div>})}
             </div>
           </div>
         </section>
 
         {/* ━━━ SCREEN 6: CTA + FOOTER ━━━ */}
-        <section id="cta" className="sec" style={{background:dark?"rgba(255,255,255,.015)":"rgba(0,0,0,.012)"}}>
-          <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"40px"}}>
-            <div style={{textAlign:"center",maxWidth:600,margin:"0 auto",padding:"60px 40px",borderRadius:24,background:t.surface,border:`1px solid ${t.surfaceBorder}`,backdropFilter:"blur(12px)",boxShadow:dark?"0 8px 32px rgba(0,0,0,.2)":"0 8px 32px rgba(0,0,0,.04)"}}>
-              <h2 style={{fontSize:"clamp(30px,4.5vw,48px)",fontWeight:800,color:t.text,marginBottom:16}}>Ready to <span className="serif" style={{fontStyle:"italic",fontWeight:400,color:t.accent}}>Grow</span>?</h2>
-              <p style={{fontSize:16,color:t.textSoft,marginBottom:36,fontWeight:430}}>Join {siteStats.users} Nigerian creators already using Nitro.</p>
-              <button onClick={()=>setModal("signup")} style={{padding:"16px 52px",borderRadius:14,background:t.btnPrimary,color:"#fff",fontSize:17,fontWeight:700,boxShadow:"0 8px 28px rgba(196,125,142,.25)"}}>Create Free Account</button>
+        <section id="cta" className="cta-sec sec" style={{background:dark?"rgba(255,255,255,.015)":"rgba(0,0,0,.012)"}}>
+          <div className="cta-inner">
+            <div className="cta-card" style={{background:t.surface,border:`1px solid ${t.surfaceBorder}`,boxShadow:dark?"0 8px 32px rgba(0,0,0,.2)":"0 8px 32px rgba(0,0,0,.04)"}}>
+              <h2 className="cta-title">Ready to <span className="serif" style={{fontStyle:"italic",fontWeight:400,color:t.accent}}>Grow</span>?</h2>
+              <p className="cta-sub" style={{color:t.textSoft}}>Join {siteStats.users} Nigerian creators already using Nitro.</p>
+              <button onClick={()=>setModal("signup")} className="cta-btn" style={{background:t.btnPrimary}}>Create Free Account</button>
             </div>
           </div>
           <Footer t={t} dark={dark}/>
@@ -420,6 +423,8 @@ export default function Landing(){
       {modal&&<AuthModal dark={dark} t={t} mode={modal} setMode={setModal} onClose={closeModal}/>}
     </div>
   );
+}
+
 }
 
 const Lbl=({t,children})=><label style={{fontSize:11,color:t.textSoft,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>{children}</label>;
