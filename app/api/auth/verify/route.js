@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { generateVerifyCode, ok, error } from '@/lib/utils';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { sendVerificationEmail } from '@/lib/email';
 
 export async function POST(req) {
   try {
@@ -85,11 +86,12 @@ export async function PUT(req) {
       data: { verifyToken, verifyExpires },
     });
 
-    // TODO: Send email
-    console.log('\n' + '='.repeat(50));
-    console.log(`📧 NEW VERIFICATION CODE for ${user.email}`);
-    console.log(`👉 CODE: ${verifyToken}`);
-    console.log('='.repeat(50) + '\n');
+    sendVerificationEmail(user.email, user.name, verifyToken).catch(err =>
+      console.error('[Verify Resend] Email failed:', err)
+    );
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`\n${'='.repeat(50)}\n📧 CODE for ${user.email} (resend): ${verifyToken}\n${'='.repeat(50)}\n`);
+    }
 
     return ok({
       message: 'New verification code sent',

@@ -5,6 +5,8 @@ import { generateReferralCode, generateVerifyCode, ok, error } from '@/lib/utils
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { validateEmail, validatePassword, validateName, sanitizeEmail, sanitizeString } from '@/lib/validate';
 
+import { sendVerificationEmail } from '@/lib/email';
+
 export async function POST(req) {
   try {
     const { limited } = rateLimit(req, { maxAttempts: 5, windowMs: 60 * 1000 });
@@ -31,10 +33,12 @@ export async function POST(req) {
         const verifyToken = generateVerifyCode();
         const verifyExpires = new Date(Date.now() + 30 * 60 * 1000);
         await prisma.user.update({ where: { id: existing.id }, data: { verifyToken, verifyExpires } });
-        console.log('\n' + '='.repeat(50));
-        console.log(`📧 VERIFICATION CODE for ${email} (re-signup)`);
-        console.log(`👉 CODE: ${verifyToken}`);
-        console.log('='.repeat(50) + '\n');
+        sendVerificationEmail(email, existing.name, verifyToken).catch(err => 
+          console.error('[Signup] Resend email failed:', err)
+        );
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`\n${'='.repeat(50)}\n📧 CODE for ${email} (re-signup): ${verifyToken}\n${'='.repeat(50)}\n`);
+        }
         const token = signUserToken(existing);
         await setUserCookie(token);
         return ok({ user: { id: existing.id, name: existing.name, email: existing.email, emailVerified: false } });
@@ -78,12 +82,17 @@ export async function POST(req) {
       },
     });
 
-    // TODO: Send verification email with verifyToken
-    // For now, we'll log it (remove in production)
-    console.log('\n' + '='.repeat(50));
-    console.log(`📧 VERIFICATION CODE for ${email}`);
-    console.log(`👉 CODE: ${verifyToken}`);
-    console.log('='.repeat(50) + '\n');
+    // Send verification email
+    sendVerificationEmail(email, name, verifyToken).catch(err => 
+      console.error('[Signup] Email send failed:', err)
+    );
+    // Also log to terminal in dev
+    if (process.env.NODE_ENV === 'development') {
+      console.log('\n' + '='.repeat(50));
+      console.log(`📧 VERIFICATION CODE for ${email}`);
+      console.log(`👉 CODE: ${verifyToken}`);
+      console.log('='.repeat(50) + '\n');
+    }
 
     // Sign JWT and set cookie
     const token = signUserToken(user);

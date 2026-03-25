@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import crypto from 'crypto';
 import { ok, error } from '@/lib/utils';
+import { sendPasswordResetEmail } from '@/lib/email';
 
 export async function POST(req) {
   try {
@@ -17,19 +18,25 @@ export async function POST(req) {
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const resetExpires = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
 
     await prisma.user.update({
       where: { id: user.id },
       data: { resetToken, resetExpires },
     });
 
-    // TODO: Send reset email with link containing resetToken
-    console.log(`[RESET] ${email}: ${resetToken}`);
+    const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const resetUrl = `${origin}/?reset=${resetToken}`;
+
+    sendPasswordResetEmail(user.email, user.name, resetUrl).catch(err =>
+      console.error('[Forgot] Email failed:', err)
+    );
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[RESET] ${email}: ${resetUrl}`);
+    }
 
     return ok({
       message: 'If an account exists, a reset link has been sent.',
-      resetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined,
     });
 
   } catch (err) {
