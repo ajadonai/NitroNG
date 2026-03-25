@@ -98,7 +98,7 @@ export default function AdminLogin(){
         <div style={{background:t.surface,border:`1px solid ${t.surfaceBorder}`,borderRadius:24,padding:"40px 32px",backdropFilter:"blur(20px)",boxShadow:dark?"0 20px 60px rgba(0,0,0,.4)":"0 20px 60px rgba(0,0,0,.08)",transition:"background 1.5s ease,border-color 1.5s ease"}}>
           
           <div style={{textAlign:"center",marginBottom:32}}>
-            <div style={{marginBottom:14}}><NitroLogo size={52} variant="icon"/></div>
+            <div style={{marginBottom:14}}><NitroLogo size={52} variant="mark"/></div>
             <h1 className="serif" style={{fontSize:28,fontWeight:600,color:t.text}}>Admin Access</h1>
             <p style={{fontSize:13,color:t.textMuted,marginTop:6}}>Authorized personnel only</p>
           </div>

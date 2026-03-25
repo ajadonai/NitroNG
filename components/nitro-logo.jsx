@@ -31,22 +31,23 @@ export default function NitroLogo({ size = 32, variant = "mark", color, style = 
   }
 
   // Mark variant: double-ring N (the primary brand mark)
+  const gid = `nmg-${s}-${Math.random().toString(36).slice(2,6)}`;
   const cx = s / 2, cy = s / 2;
   const outerR = s * 0.44;
   const innerR = s * 0.34;
   const nH = s * 0.30;
   const nW = s * 0.18;
-  const sw = Math.max(2, s * 0.035);
-  const ringSw = Math.max(1.5, s * 0.025);
-  const innerSw = Math.max(0.5, s * 0.01);
-  const strokeColor = color || "url(#nmg)";
+  const sw = Math.max(3, s * 0.09);
+  const ringSw = Math.max(1.5, s * 0.035);
+  const innerSw = Math.max(0.8, s * 0.015);
+  const strokeColor = color || `url(#${gid})`;
   const ringOpacity = color ? 0.4 : 1;
   const innerRingOpacity = color ? 0.15 : 0.35;
 
   return (
-    <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} style={style}>
+    <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} style={{display:"inline-block",verticalAlign:"middle",...style}}>
       <defs>
-        <linearGradient id="nmg" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#c47d8e"/>
           <stop offset="100%" stopColor="#8b5e6b"/>
         </linearGradient>

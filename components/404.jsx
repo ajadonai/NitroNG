@@ -36,7 +36,7 @@ export default function NotFound(){
       <div style={{padding:"14px 0",borderBottom:`1px solid ${t.surfaceBorder}`,position:"sticky",top:0,zIndex:50,background:dark?"rgba(8,11,20,0.8)":"rgba(244,241,237,0.8)",backdropFilter:"blur(20px)",transition:"background 1.5s ease"}}>
         <div style={{maxWidth:800,margin:"0 auto",padding:"0 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <button onClick={()=>window.location.href="/"} style={{display:"flex",alignItems:"center",gap:10,background:"none",padding:0,border:"none",outline:"none",cursor:"pointer"}}>
-            <NitroLogo size={32} variant="icon"/>
+            <NitroLogo size={32} variant="mark"/>
             <span className="serif" style={{fontSize:18,fontWeight:600,color:t.text}}>Nitro</span>
           </button>
           <button onClick={toggleTheme} style={{display:"flex",alignItems:"center",background:dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)",borderRadius:20,padding:3,width:52,height:28,border:`1px solid ${dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)"}`,position:"relative",flexShrink:0,transition:"background 1.5s cubic-bezier(.4,0,.2,1),border-color 1.5s ease"}}><div style={{width:22,height:22,borderRadius:"50%",background:dark?"#c47d8e":"#e0a458",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,position:"absolute",left:dark?3:27,transition:"left 0.4s cubic-bezier(.4,0,.2,1),background 1.5s cubic-bezier(.4,0,.2,1)",boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}>{dark?"🌙":"☀️"}</div></button>
@@ -54,7 +54,7 @@ export default function NotFound(){
         
         {/* Logo */}
         <div style={{display:"inline-flex",alignItems:"center",gap:10,marginBottom:24}}>
-          <NitroLogo size={36} variant="icon"/>
+          <NitroLogo size={36} variant="mark"/>
           <span className="serif" style={{fontSize:20,fontWeight:600,color:t.text}}>Nitro</span>
         </div>
 
