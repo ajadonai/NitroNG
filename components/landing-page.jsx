@@ -53,19 +53,34 @@ export default function Landing(){
     heroBg:dark?"#060810":"#c49a93",heroText:dark?"#eae7e2":"#1c1b19",heroSoft:dark?"#b0aca8":"#4a4542",heroMuted:dark?"#7d7974":"#887f78",heroGlass:dark?"rgba(15,19,35,.5)":"rgba(255,255,255,.35)",heroGlassBrd:dark?"rgba(255,255,255,.08)":"rgba(255,255,255,.25)",heroAccentBadge:dark?"rgba(196,125,142,.15)":"rgba(255,255,255,.25)",
   }),[dark]);
 
+  const sectionIds=["hero","services","pricing","testimonials","faq","cta"];
+  const currentSec=useRef(0);
   useEffect(()=>{
     const handleKey=(e)=>{
       if(modal) return;
       if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA") return;
       if(e.code==="Space"){
         e.preventDefault();
-        const dir=e.shiftKey?-1:1;
-        scrollRef.current?.scrollBy({top:dir*window.innerHeight*0.85,behavior:"smooth"});
+        const next=e.shiftKey?Math.max(0,currentSec.current-1):Math.min(sectionIds.length-1,currentSec.current+1);
+        currentSec.current=next;
+        document.getElementById(sectionIds[next])?.scrollIntoView({behavior:"smooth"});
       }
     };
     window.addEventListener("keydown",handleKey);
     return()=>window.removeEventListener("keydown",handleKey);
   },[modal]);
+  useEffect(()=>{
+    const el=scrollRef.current;if(!el)return;
+    const onScroll=()=>{
+      const sections=sectionIds.map(id=>document.getElementById(id)).filter(Boolean);
+      const scrollTop=el.scrollTop;
+      let closest=0;let minDist=Infinity;
+      sections.forEach((sec,i)=>{const dist=Math.abs(sec.offsetTop-scrollTop);if(dist<minDist){minDist=dist;closest=i;}});
+      currentSec.current=closest;
+    };
+    el.addEventListener("scroll",onScroll,{passive:true});
+    return()=>el.removeEventListener("scroll",onScroll);
+  },[]);
 
   return(
     <div className="root" style={{height:"100vh",overflow:"hidden",display:"flex",flexDirection:"column"}}>
@@ -114,7 +129,7 @@ export default function Landing(){
       <div ref={scrollRef} style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",scrollBehavior:"smooth"}}>
 
         {/* ━━━ SCREEN 1: HERO ━━━ */}
-        <section className="sec" style={{textAlign:"center",overflow:"hidden",background:t.heroBg}}>
+        <section id="hero" className="sec" style={{textAlign:"center",overflow:"hidden",background:t.heroBg}}>
           <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}><div style={{position:"absolute",top:"-15%",left:"50%",transform:"translateX(-50%)",width:700,height:450,borderRadius:"50%",background:dark?"rgba(196,125,142,.06)":"rgba(255,255,255,.12)",filter:"blur(100px)"}}/><div style={{position:"absolute",bottom:"10%",right:"-10%",width:250,height:250,borderRadius:"50%",background:dark?"rgba(110,231,183,.03)":"rgba(255,255,255,.06)",filter:"blur(80px)"}}/></div>
           <div className="hero-content" style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px 40px",position:"relative",zIndex:1}}>
             <div style={{maxWidth:720}}>
@@ -188,7 +203,7 @@ export default function Landing(){
         </section>
 
         {/* ━━━ SCREEN 4: TESTIMONIALS (9 on web, 3 on mobile) ━━━ */}
-        <section className="sec" style={{background:dark?"rgba(255,255,255,.015)":"rgba(0,0,0,.012)",padding:"60px 40px"}}>
+        <section id="testimonials" className="sec" style={{background:dark?"rgba(255,255,255,.015)":"rgba(0,0,0,.012)",padding:"60px 40px"}}>
           <div style={{maxWidth:1100,margin:"0 auto",width:"100%"}}>
             <div style={{textAlign:"center",marginBottom:48}}>
               <h2 style={{fontSize:"clamp(28px,4vw,40px)",fontWeight:700,color:t.text,marginBottom:10}}>Trusted by <span style={{color:t.accent}}>Creators</span></h2>
@@ -212,7 +227,7 @@ export default function Landing(){
         </section>
 
         {/* ━━━ SCREEN 6: CTA + FOOTER ━━━ */}
-        <section className="sec" style={{background:dark?"rgba(255,255,255,.015)":"rgba(0,0,0,.012)"}}>
+        <section id="cta" className="sec" style={{background:dark?"rgba(255,255,255,.015)":"rgba(0,0,0,.012)"}}>
           <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"40px"}}>
             <div style={{textAlign:"center",maxWidth:600,margin:"0 auto",padding:"60px 40px",borderRadius:24,background:t.surface,border:`1px solid ${t.surfaceBorder}`,backdropFilter:"blur(12px)",boxShadow:dark?"0 8px 32px rgba(0,0,0,.2)":"0 8px 32px rgba(0,0,0,.04)"}}>
               <h2 style={{fontSize:"clamp(30px,4.5vw,48px)",fontWeight:800,color:t.text,marginBottom:16}}>Ready to <span className="serif" style={{fontStyle:"italic",fontWeight:400,color:t.accent}}>Grow</span>?</h2>
