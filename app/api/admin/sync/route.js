@@ -27,57 +27,57 @@ export async function POST(req) {
       const markupSetting = await prisma.setting.findUnique({ where: { key: 'defaultMarkup' } });
       const defaultMarkup = Number(markupSetting?.value) || 54;
 
+      // Get all existing services in one query
+      const existing = await prisma.service.findMany({ select: { id: true, apiId: true, markup: true } });
+      const existingMap = {};
+      existing.forEach(s => { existingMap[s.apiId] = s; });
+
       let created = 0, updated = 0, skipped = 0;
+      const toCreate = [];
+      const toUpdate = [];
 
       for (const svc of mtpServices) {
         const apiId = Number(svc.service);
-        const costPer1k = Math.round(parseFloat(svc.rate) * 100); // Convert to kobo
+        if (!apiId) { skipped++; continue; }
+
+        const costPer1k = Math.round(parseFloat(svc.rate) * 100);
         const sellPer1k = Math.round(costPer1k * (1 + defaultMarkup / 100));
-
-        // Determine category from MTP category string
         const category = categorize(svc.category);
+        const data = {
+          name: svc.name,
+          category,
+          costPer1k,
+          min: Number(svc.min) || 10,
+          max: Number(svc.max) || 100000,
+          refill: svc.refill === true || svc.refill === 'true',
+          avgTime: svc.average_time || null,
+        };
 
-        try {
-          const existing = await prisma.service.findFirst({ where: { apiId } });
+        const ex = existingMap[apiId];
+        if (ex) {
+          toUpdate.push(prisma.service.update({
+            where: { id: ex.id },
+            data: { ...data, ...(ex.markup === defaultMarkup ? { sellPer1k } : {}) },
+          }));
+          updated++;
+        } else {
+          toCreate.push({
+            apiId, ...data, sellPer1k, markup: defaultMarkup, enabled: false,
+          });
+          created++;
+        }
+      }
 
-          if (existing) {
-            // Update cost, keep existing markup/sell price if admin customized
-            await prisma.service.update({
-              where: { id: existing.id },
-              data: {
-                name: svc.name,
-                category: category,
-                costPer1k,
-                min: Number(svc.min) || 10,
-                max: Number(svc.max) || 100000,
-                refill: svc.refill === true || svc.refill === 'true',
-                avgTime: svc.average_time || null,
-                // Only update sell price if admin hasn't customized markup
-                ...(existing.markup === defaultMarkup ? { sellPer1k } : {}),
-              },
-            });
-            updated++;
-          } else {
-            // Create new service
-            await prisma.service.create({
-              data: {
-                apiId,
-                name: svc.name,
-                category,
-                costPer1k,
-                sellPer1k,
-                markup: defaultMarkup,
-                min: Number(svc.min) || 10,
-                max: Number(svc.max) || 100000,
-                refill: svc.refill === true || svc.refill === 'true',
-                avgTime: svc.average_time || null,
-                enabled: false, // New services disabled by default — admin enables manually
-              },
-            });
-            created++;
-          }
-        } catch (e) {
-          skipped++;
+      // Batch create + update
+      const ops = [...toUpdate];
+      if (toCreate.length > 0) {
+        ops.push(prisma.service.createMany({ data: toCreate, skipDuplicates: true }));
+      }
+
+      if (ops.length > 0) {
+        // Process in chunks of 50 to avoid transaction limits
+        for (let i = 0; i < ops.length; i += 50) {
+          await prisma.$transaction(ops.slice(i, i + 50));
         }
       }
 
