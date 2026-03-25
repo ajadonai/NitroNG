@@ -1,3 +1,4 @@
+import { fetchWithRetry } from '@/lib/fetch';
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 
@@ -43,7 +44,7 @@ export async function POST(req) {
     });
 
     // Initialize Paystack transaction
-    const res = await fetch('https://api.paystack.co/transaction/initialize', {
+    const res = await fetchWithRetry('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${PAYSTACK_SECRET}`,
