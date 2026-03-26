@@ -64,7 +64,8 @@ export default function SMMPanel(){
   const firstName=user?user.name.split(" ")[0]:"";
   const balance=user?fN(user.balance):"₦0";
 
-  if(!user)return <div style={{height:"100dvh",display:"flex",alignItems:"center",justifyContent:"center",background:t.bg}}><div style={{width:24,height:24,borderWidth:2,borderStyle:"solid",borderColor:dark?"rgba(196,125,142,.3)":"rgba(196,125,142,.2)",borderTopColor:t.accent,borderRadius:"50%",animation:"spin .6s linear infinite"}}/></div>;
+  const spinBorder=dark?"rgba(196,125,142,.3)":"rgba(196,125,142,.2)";
+  if(!user)return <div style={{height:"100dvh",display:"flex",alignItems:"center",justifyContent:"center",background:t.bg}}><div style={{width:24,height:24,borderWidth:2,borderStyle:"solid",borderTopColor:t.accent,borderRightColor:spinBorder,borderBottomColor:spinBorder,borderLeftColor:spinBorder,borderRadius:"50%",animation:"spin .6s linear infinite"}}/></div>;
 
   return (
     <div className="dash-root" style={{height:"100dvh",display:"flex",flexDirection:"column",background:t.bg}}>
