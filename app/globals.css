@@ -98,7 +98,18 @@ input { font-family: inherit; }
 
 .hero-right { width: 400px; flex-shrink: 0; }
 .hero-stats { grid-template-columns: repeat(3, 1fr); }
-.stat-card { min-width: 80px; }
+.stat-card { min-width: 80px; display: flex; flex-direction: column; align-items: center; padding: 14px 18px; border-radius: 16px; }
+.stat-icon { margin-bottom: 6px; opacity: 0.85; }
+.stat-value { font-size: 20px; font-weight: 700; line-height: 1.2; }
+.stat-label { font-size: 11px; margin-top: 3px; font-weight: 450; }
+.hero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 18px; border-radius: 24px; font-size: 13px; font-weight: 550; margin-bottom: 28px; }
+.hero-h1 { font-size: 56px; font-weight: 800; line-height: 1.06; letter-spacing: -1.5px; margin-bottom: 20px; }
+.hero-refined { font-style: italic; font-weight: 400; font-size: 64px; }
+.hero-sub { font-size: 17px; font-weight: 430; max-width: 440px; margin-bottom: 32px; line-height: 1.65; }
+.hero-view-pricing { margin-top: 28px; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; cursor: pointer; }
+.hero-cta-btn { padding: 16px 48px; border-radius: 16px; background: #fff; color: #1c1b19; font-size: 16px; font-weight: 700; box-shadow: 0 8px 32px rgba(0,0,0,.12); border: none; }
+.carousel-wrapper { flex-shrink: 0; padding: 14px 0; overflow: hidden; }
+.carousel-item { display: inline-flex; align-items: center; gap: 9px; padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 450; white-space: nowrap; flex-shrink: 0; }
 .hero-mobile-cta { display: none; }
 .hero-view-pricing { display: inline-flex; }
 
@@ -190,6 +201,9 @@ input { font-family: inherit; }
   .stat-card { padding: 10px 6px; border-radius: 12px; min-width: 0; width: 100%; }
   .stat-card .m { font-size: 16px; }
   .stat-card svg { width: 16px; height: 16px; }
+  .stat-label { font-size: 10px; }
+  .carousel-wrapper { padding: 10px 0; }
+  .carousel-item { gap: 7px; padding: 8px 14px; font-size: 12px; }
   .main-nav { padding: 0 20px; height: 52px; }
   .auth-card { max-width: 100%; height: 520px; padding: 20px 18px; border-radius: 16px; }
   .auth-card h2 { font-size: 19px; }
