@@ -288,7 +288,7 @@ input { font-family: inherit; }
 /* Footer */
 .s6-footer { padding: 44px 60px 28px; }
 .s6-footer-section { }
-.s6-footer-divider { height: 1px; }
+.s6-footer-divider { height: 1px; display: none; }
 .s6-footer-brand { max-width: 240px; }
 .s6-footer-logo { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .s6-footer-brand-name { font-size: 13px; font-weight: 800; letter-spacing: 1.5px; }
@@ -599,6 +599,7 @@ input { font-family: inherit; }
   .s6-footer-links { gap: 0; text-align: left; display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
   .s6-footer-bottom { flex-direction: row; justify-content: space-between; padding-top: 14px; align-items: center; }
   .s6-email-text { display: none; }
+  .s6-footer-divider { display: block; }
   .section-divider { padding: 0 20px; gap: 10px; }
   .section-divider-dot { width: 5px; height: 5px; }
 }
