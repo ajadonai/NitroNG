@@ -130,12 +130,13 @@ export default function Landing(){
           </div>
         </nav>
 
+        {/* Alert banner — outside hero so it doesn't affect hero scroll */}
+        {siteAlerts.length>0&&<div style={{flexShrink:0,background:t.heroBg}}>
+          {siteAlerts.map((a,i)=><div key={i} style={{padding:"10px 24px",textAlign:"center",fontSize:13,fontWeight:500,background:a.type==="warning"?(dark?"rgba(217,119,6,.08)":"rgba(255,255,255,.12)"):(dark?"rgba(196,125,142,.06)":"rgba(255,255,255,.1)"),color:a.type==="warning"?(dark?"#fbbf24":"rgba(255,255,255,.95)"):(dark?"#c47d8e":"rgba(255,255,255,.9)"),borderBottom:`1px solid ${dark?"rgba(255,255,255,.04)":"rgba(255,255,255,.1)"}`,borderLeft:`3px solid ${a.type==="warning"?(dark?"rgba(251,191,36,.3)":"rgba(255,255,255,.35)"):(dark?"rgba(196,125,142,.25)":"rgba(255,255,255,.3)")}`,letterSpacing:.2}}>{a.type==="warning"?"⚠️ ":"🎉 "}{a.message}</div>)}
+        </div>}
+
         {/* ━━━ HERO ━━━ */}
         <section id="hero" className="snap-section" style={{overflow:"hidden",background:t.heroBg,position:"relative",display:"flex",flexDirection:"column"}}>
-          {/* Alert banner area */}
-          <div style={{flexShrink:0}}>
-            {siteAlerts.length>0&&siteAlerts.map((a,i)=><div key={i} style={{padding:"10px 24px",textAlign:"center",fontSize:13,fontWeight:500,background:a.type==="warning"?(dark?"rgba(217,119,6,.08)":"rgba(255,255,255,.12)"):(dark?"rgba(196,125,142,.06)":"rgba(255,255,255,.1)"),color:a.type==="warning"?(dark?"#fbbf24":"rgba(255,255,255,.95)"):(dark?"#c47d8e":"rgba(255,255,255,.9)"),borderBottom:`1px solid ${dark?"rgba(255,255,255,.04)":"rgba(255,255,255,.1)"}`,borderLeft:`3px solid ${a.type==="warning"?(dark?"rgba(251,191,36,.3)":"rgba(255,255,255,.35)"):(dark?"rgba(196,125,142,.25)":"rgba(255,255,255,.3)")}`,letterSpacing:.2}}>{a.type==="warning"?"⚠️ ":"🎉 "}{a.message}</div>)}
-          </div>
 
           {/* Ambient orbs + particles */}
           <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
