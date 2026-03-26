@@ -23,6 +23,7 @@ export default function Landing(){
   const [dark,setDark]=useState(false);
   const [themeMode,setThemeMode]=useState("auto");
   const [modal,setModal]=useState(null);
+  const [heroAuth,setHeroAuth]=useState("login");
   const [faqOpen,setFaqOpen]=useState(null);
   const [activeStep,setActiveStep]=useState(0);
   const [scrolled,setScrolled]=useState(false);
@@ -94,6 +95,17 @@ export default function Landing(){
         @keyframes fi{from{opacity:0}to{opacity:1}}
         @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
         @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+        @keyframes shimmer{0%{left:-100%}100%{left:200%}}
+        .shimmer-btn{position:relative;overflow:hidden;transition:all .3s ease}
+        .shimmer-btn::after{content:'';position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);animation:shimmer 3s ease-in-out infinite}
+        .shimmer-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(196,125,142,.2);border-color:rgba(196,125,142,.3)!important}
+        .hero-split{display:flex;flex-direction:row;align-items:center;gap:60px;padding:40px 60px}
+        .hero-left{flex:1;text-align:left}
+        .hero-right{width:400px;flex-shrink:0}
+        .hero-inline-card{background:${dark?"rgba(17,22,40,0.98)":"rgba(255,255,255,0.98)"};border:1px solid ${t.surfaceBorder};border-radius:20px;padding:32px 28px;backdrop-filter:blur(20px);box-shadow:${dark?"0 20px 60px rgba(0,0,0,0.4)":"0 20px 60px rgba(0,0,0,0.08)"};position:relative}
+        .hero-mobile-cta{display:none}
+        @media(max-width:1024px){.hero-split{flex-direction:column;gap:32px;padding:36px 36px 28px;text-align:center}.hero-left{text-align:center}.hero-right{display:none}.hero-mobile-cta{display:flex;justify-content:center;margin-top:24px}.hero-left .fd4:not(.hero-mobile-cta){display:none!important}.hero-stats{justify-content:center!important}}
+        @media(max-width:768px){.hero-split{padding:28px 24px 20px;gap:24px}.hero-mobile-cta button{padding:14px 36px!important;font-size:15px!important}}
         .fu{animation:fu .5s cubic-bezier(.2,.8,.2,1) both}
         .fd1{animation-delay:.06s}.fd2{animation-delay:.12s}.fd3{animation-delay:.18s}.fd4{animation-delay:.24s}.fd5{animation-delay:.3s}
         .lift{transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s ease,border-color .3s ease}
@@ -298,19 +310,38 @@ export default function Landing(){
       <div ref={scrollRef} style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",scrollBehavior:"smooth"}}>
 
         {/* ━━━ SCREEN 1: HERO ━━━ */}
-        <section id="hero" className="sec" style={{textAlign:"center",overflow:"hidden",background:t.heroBg}}>
-          <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}><div style={{position:"absolute",top:"-15%",left:"50%",transform:"translateX(-50%)",width:700,height:450,borderRadius:"50%",background:dark?"rgba(196,125,142,.06)":"rgba(255,255,255,.12)",filter:"blur(100px)"}}/><div style={{position:"absolute",bottom:"10%",right:"-10%",width:250,height:250,borderRadius:"50%",background:dark?"rgba(110,231,183,.03)":"rgba(255,255,255,.06)",filter:"blur(80px)"}}/></div>
-          <div className="hero-content" style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px 40px",position:"relative",zIndex:1}}>
-            <div style={{maxWidth:720}}>
-              <div className="fu hero-badge" style={{display:"inline-flex",alignItems:"center",gap:8,padding:"6px 18px",borderRadius:24,background:t.heroAccentBadge,border:`1px solid ${dark?"rgba(196,125,142,.15)":"rgba(255,255,255,.3)"}`,fontSize:13,fontWeight:550,color:dark?t.accent:"#fff",marginBottom:28,backdropFilter:"blur(8px)"}}>🚀 Trusted by {siteStats.users} creators across Nigeria</div>
-              <h1 className="fu fd1 hero-h1" style={{fontSize:"clamp(42px,5.5vw,64px)",fontWeight:800,lineHeight:1.08,letterSpacing:-1,marginBottom:22,color:t.heroText}}>Social Growth,<br/><span className="serif hero-refined" style={{fontStyle:"italic",fontWeight:400,color:dark?t.accent:"#fff",fontSize:"clamp(46px,6vw,72px)",textShadow:dark?"none":"0 2px 20px rgba(196,125,142,.15)"}}>Refined.</span></h1>
-              <p className="fu fd2 hero-sub" style={{fontSize:18,color:t.heroSoft,fontWeight:430,maxWidth:480,margin:"0 auto 36px",lineHeight:1.65}}>Real followers. Real engagement. Instant delivery. Nigeria's most trusted SMM platform.</p>
-              <div className="fu fd3 hero-btns" style={{display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap"}}>
-                <button onClick={()=>setModal("signup")} className="hero-btn" style={{padding:"15px 36px",borderRadius:14,background:t.btnPrimary,color:"#fff",fontSize:16,fontWeight:700,boxShadow:"0 8px 28px rgba(196,125,142,.3)"}}>Get Started Free →</button>
-                <button onClick={()=>document.getElementById("pricing")?.scrollIntoView({behavior:"smooth"})} className="hero-btn" style={{padding:"15px 36px",borderRadius:14,background:t.heroGlass,color:t.heroText,fontSize:16,fontWeight:500,border:`1px solid ${t.heroGlassBrd}`,backdropFilter:"blur(12px)"}}>View Pricing</button>
+        <section id="hero" className="sec" style={{overflow:"hidden",background:t.heroBg}}>
+          <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}><div style={{position:"absolute",top:"-10%",left:"30%",width:500,height:400,borderRadius:"50%",background:dark?"rgba(196,125,142,.06)":"rgba(255,255,255,.1)",filter:"blur(100px)"}}/><div style={{position:"absolute",bottom:"5%",right:"10%",width:200,height:200,borderRadius:"50%",background:dark?"rgba(110,231,183,.03)":"rgba(255,255,255,.06)",filter:"blur(80px)"}}/></div>
+          <div className="hero-split" style={{flex:1,position:"relative",zIndex:1}}>
+            {/* LEFT — Hero content */}
+            <div className="hero-left">
+              <div className="fu hero-badge" style={{display:"inline-flex",alignItems:"center",gap:8,padding:"6px 18px",borderRadius:24,background:t.heroAccentBadge,border:`1px solid ${dark?"rgba(196,125,142,.15)":"rgba(255,255,255,.3)"}`,fontSize:13,fontWeight:550,color:dark?t.accent:"#fff",marginBottom:24,backdropFilter:"blur(8px)"}}>🚀 Trusted by {siteStats.users} creators across Nigeria</div>
+              <h1 className="fu fd1 hero-h1" style={{fontSize:"clamp(42px,5vw,60px)",fontWeight:800,lineHeight:1.08,letterSpacing:-1,marginBottom:20,color:t.heroText}}>Social Growth,<br/><span className="serif hero-refined" style={{fontStyle:"italic",fontWeight:400,color:dark?t.accent:"#fff",fontSize:"clamp(46px,5.5vw,68px)",textShadow:dark?"none":"0 2px 20px rgba(196,125,142,.15)"}}>Refined.</span></h1>
+              <p className="fu fd2 hero-sub" style={{fontSize:17,color:t.heroSoft,fontWeight:430,maxWidth:440,marginBottom:28,lineHeight:1.65}}>Real followers. Real engagement. Instant delivery. Nigeria's most trusted SMM platform.</p>
+              <div className="fu fd3 hero-stats" style={{display:"flex",gap:40,flexWrap:"wrap"}}>
+                {[[siteStats.users,"Active Users","👥"],[siteStats.orders,"Orders","📦"],["₦500","Min Deposit","💳"],["24/7","Support","💬"]].map(([v,l,ic])=><div key={l}><div style={{fontSize:15,marginBottom:3}}>{ic}</div><div className="m hero-stat-val" style={{fontSize:20,fontWeight:700,color:t.heroText}}>{v}</div><div style={{fontSize:11,color:t.heroMuted,marginTop:1,fontWeight:450}}>{l}</div></div>)}
               </div>
-              <div className="fu fd4 hero-stats" style={{display:"flex",justifyContent:"center",gap:48,marginTop:48,flexWrap:"wrap"}}>
-                {[[siteStats.users,"Active Users","👥"],[siteStats.orders,"Orders","📦"],["₦500","Min Deposit","💳"],["24/7","Support","💬"]].map(([v,l,ic])=><div key={l}><div style={{fontSize:16,marginBottom:4}}>{ic}</div><div className="m hero-stat-val" style={{fontSize:22,fontWeight:700,color:t.heroText}}>{v}</div><div style={{fontSize:12,color:t.heroMuted,marginTop:2,fontWeight:450}}>{l}</div></div>)}
+              {/* Desktop: View Pricing shimmer */}
+              <div className="fu fd4" style={{marginTop:32}}><button onClick={()=>document.getElementById("pricing")?.scrollIntoView({behavior:"smooth"})} className="shimmer-btn hero-btn" style={{padding:"14px 36px",borderRadius:14,background:t.heroGlass,color:t.heroText,fontSize:15,fontWeight:600,border:`1px solid ${t.heroGlassBrd}`,backdropFilter:"blur(12px)",cursor:"pointer"}}>View Pricing ↓</button></div>
+              {/* Mobile/tablet: single CTA */}
+              <div className="hero-mobile-cta fu fd4"><button onClick={()=>setModal("signup")} style={{padding:"15px 40px",borderRadius:14,background:dark?t.btnPrimary:"#fff",color:dark?"#fff":"#1c1b19",fontSize:16,fontWeight:700,boxShadow:dark?"0 8px 28px rgba(196,125,142,.3)":"0 8px 28px rgba(0,0,0,.15)",border:"none"}}>Get Started Free →</button></div>
+            </div>
+            {/* RIGHT — Inline auth card (desktop only) */}
+            <div className="hero-right">
+              <div className="hero-inline-card">
+                <div style={{position:"absolute",top:12,right:12,width:28,height:28,borderRadius:8,background:dark?"rgba(255,255,255,.06)":"rgba(0,0,0,.04)",display:"flex",alignItems:"center",justifyContent:"center",color:dark?"#c47d8e":"#1c1b19",fontSize:14,fontWeight:700,cursor:"pointer"}}/>
+                <div style={{display:"flex",justifyContent:"center",marginBottom:16}}><div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="15" height="15" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div></div>
+                <h2 style={{fontSize:22,fontWeight:700,color:t.text,textAlign:"center",marginBottom:3}}>{heroAuth==="login"?"Welcome back":"Create Account"}</h2>
+                <p style={{fontSize:13,color:t.textSoft,textAlign:"center",marginBottom:20,fontWeight:430}}>{heroAuth==="login"?"Log in to your Nitro account":"Join 2,400+ Nigerian creators"}</p>
+                <div style={{height:36,marginBottom:2,display:"flex",alignItems:"center"}}/>
+                {/* Method toggle */}
+                <div style={{display:"flex",marginBottom:16,background:dark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",borderRadius:10,padding:3,border:`1px solid ${t.surfaceBorder}`}}><button onClick={()=>{}} style={{flex:1,padding:"8px 0",borderRadius:8,fontSize:13,fontWeight:550,background:t.accentLight,color:t.accent}}>Email</button><button onClick={()=>{}} style={{flex:1,padding:"8px 0",borderRadius:8,fontSize:13,fontWeight:550,background:"transparent",color:t.textMuted}}>Phone</button></div>
+                {heroAuth==="signup"&&<><label style={{fontSize:10,fontWeight:600,color:t.textSoft,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Full Name</label><input placeholder="Your name" style={{width:"100%",padding:"11px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:12}}/></>}
+                <label style={{fontSize:10,fontWeight:600,color:t.textSoft,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Email Address</label>
+                <input placeholder="you@example.com" style={{width:"100%",padding:"11px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:12}}/>
+                {heroAuth==="login"&&<><label style={{fontSize:10,fontWeight:600,color:t.textSoft,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Password</label><input placeholder="Enter password" type="password" style={{width:"100%",padding:"11px 44px 11px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:14}}/><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}><label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}><input type="checkbox" style={{accentColor:t.accent,width:14,height:14}}/><span style={{fontSize:12,color:t.textSoft}}>Remember me</span></label><button onClick={()=>{setHeroAuth("login");setModal("forgot")}} style={{background:"none",color:t.accent,fontSize:12,fontWeight:500}}>Forgot password?</button></div></>}
+                <button onClick={()=>setModal(heroAuth)} style={{width:"100%",padding:"13px 0",borderRadius:12,background:t.btnPrimary,color:"#fff",fontSize:15,fontWeight:700,marginBottom:14}}>{heroAuth==="login"?"Log In":"Continue →"}</button>
+                <div style={{textAlign:"center",fontSize:13,color:t.textSoft}}>{heroAuth==="login"?"Don't have an account? ":"Already have an account? "}<button onClick={()=>setHeroAuth(heroAuth==="login"?"signup":"login")} style={{background:"none",color:t.accent,fontWeight:600,fontSize:13}}>{heroAuth==="login"?"Sign Up Free":"Log In"}</button></div>
               </div>
             </div>
           </div>
