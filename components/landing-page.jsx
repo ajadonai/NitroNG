@@ -400,7 +400,8 @@ export default function Landing(){
         </div>
 
         <footer className="s6-footer" style={{background:dark?"#050710":"#e6e2dc"}}>
-          <div className="s6-footer-top" style={{borderBottom:`1px solid ${dark?"rgba(255,255,255,.06)":"rgba(0,0,0,.06)"}`}}>
+          {/* Brand */}
+          <div className="s6-footer-section" style={{paddingBottom:20}}>
             <div className="s6-footer-brand">
               <div className="s6-footer-logo">
                 <div style={{width:24,height:24,borderRadius:6,background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="10" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
@@ -408,6 +409,10 @@ export default function Landing(){
               </div>
               <p className="s6-footer-tagline" style={{color:dark?"#8a8680":"#777"}}>Nigeria's fastest SMM panel. Real growth, instant delivery.</p>
             </div>
+          </div>
+          <div className="s6-footer-divider" style={{background:dark?"rgba(255,255,255,.08)":"rgba(0,0,0,.08)"}}/>
+          {/* Links */}
+          <div className="s6-footer-section" style={{padding:"20px 0"}}>
             <div className="s6-footer-links">
               <div>
                 <div className="s6-footer-col-title" style={{color:dark?"#8a8680":"#777"}}>Product</div>
@@ -419,7 +424,9 @@ export default function Landing(){
               </div>
             </div>
           </div>
-          <div className="s6-footer-bottom">
+          <div className="s6-footer-divider" style={{background:dark?"rgba(255,255,255,.08)":"rgba(0,0,0,.08)"}}/>
+          {/* Bottom */}
+          <div className="s6-footer-bottom" style={{paddingTop:18}}>
             <span className="s6-copyright" style={{color:dark?"#8a8680":"#777"}}>© 2025 Nitro. All rights reserved.</span>
             <div className="s6-footer-social">
               <div className="s6-social-icons">
