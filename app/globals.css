@@ -304,6 +304,37 @@ input { font-family: inherit; }
 .s6-sico:hover { color: #c47d8e !important; transform: scale(1.15); }
 
 /* ══════════════════════════════════════ */
+/* ══ USER DASHBOARD ══ */
+/* ══════════════════════════════════════ */
+.dash-nav { height: 56px; padding: 0 24px; }
+.dash-nav-name { }
+.dash-hamburger { display: none !important; }
+.dash-left { width: 220px; }
+.dash-right { width: 240px; display: flex; flex-direction: column; }
+.dash-main { padding: 28px; }
+.dash-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.dash-overlay { display: none; }
+
+@media (max-width: 1199px) {
+  .dash-nav { height: 52px; padding: 0 20px; }
+  .dash-hamburger { display: flex !important; }
+  .dash-right { display: none !important; }
+  .dash-left {
+    width: 240px; position: absolute; top: 0; bottom: 0; z-index: 15;
+    transition: left .3s ease;
+  }
+  .dash-main { padding: 24px; }
+  .dash-stats { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 767px) {
+  .dash-nav { height: 52px; padding: 0 16px; }
+  .dash-nav-name { display: none; }
+  .dash-main { padding: 16px; }
+  .dash-stats { grid-template-columns: 1fr; }
+}
+
+/* ══════════════════════════════════════ */
 /* ══ ADMIN LOGIN ══ */
 /* ══════════════════════════════════════ */
 .admin-root { transition: background 1.2s ease, color 1.2s ease; }
