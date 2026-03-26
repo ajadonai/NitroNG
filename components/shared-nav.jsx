@@ -9,8 +9,8 @@ export function useTheme() {
 }
 
 export function ThemeProvider({ children }) {
-  const getAuto = () => { const h = new Date().getHours(); return h >= 7 && h < 18 ? false : true; };
-  const [dark, setDark] = useState(getAuto);
+  const getAuto = () => { const h = new Date().getHours(), m = new Date().getMinutes(); if (h >= 19 || h < 6) return true; if (h === 6 && m < 30) return true; if (h === 18 && m >= 30) return true; return false; };
+  const [dark, setDark] = useState(false);
   const [manual, setManual] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -18,9 +18,10 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     try {
       const saved = localStorage.getItem("nitro-theme");
-      if (saved === "night" || saved === "dark") { setDark(true); setManual(true); }
-      else if (saved === "day" || saved === "light") { setDark(false); setManual(true); }
-    } catch {}
+      if (saved === "night") { setDark(true); setManual(true); }
+      else if (saved === "day") { setDark(false); setManual(true); }
+      else { setDark(getAuto()); }
+    } catch { setDark(getAuto()); }
     setLoaded(true);
   }, []);
 
