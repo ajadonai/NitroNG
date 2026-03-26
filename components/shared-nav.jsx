@@ -73,9 +73,14 @@ export function ThemeProvider({ children }) {
 }
 
 // ── Shared Nav ──
-// action prop: "back" | "login" | null
+// action prop: "back" | "login" | "logout" | null
 export default function SharedNav({ action = "back" }) {
   const { dark, toggleTheme, t } = useTheme();
+
+  const handleLogout = async () => {
+    try { await fetch("/api/auth/logout", { method: "POST" }); } catch {}
+    window.location.href = "/";
+  };
 
   return (
     <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", height: 56, background: dark ? "rgba(9,12,21,.9)" : "rgba(240,237,232,.9)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${t.surfaceBrd}`, flexShrink: 0, position: "sticky", top: 0, zIndex: 50 }}>
@@ -100,6 +105,12 @@ export default function SharedNav({ action = "back" }) {
             Log In
           </a>
         )}
+        {action === "logout" && (
+          <button onClick={handleLogout} style={{ fontSize: 13, fontWeight: 550, color: t.soft, display: "flex", alignItems: "center", gap: 4, background: "none", cursor: "pointer" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Log Out
+          </button>
+        )}
       </div>
     </nav>
   );
@@ -109,7 +120,7 @@ export default function SharedNav({ action = "back" }) {
 export function SharedFooter() {
   const { t } = useTheme();
   return (
-    <footer style={{ borderTop: `1px solid ${t.surfaceBrd}`, padding: "20px 24px" }}>
+    <footer style={{ borderTop: `1px solid ${t.surfaceBrd}`, padding: "20px 24px 80px" }}>
       <div style={{ maxWidth: 780, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <span style={{ fontSize: 12, color: t.muted }}>© 2026 Nitro. All rights reserved.</span>
         <div style={{ display: "flex", gap: 16 }}>

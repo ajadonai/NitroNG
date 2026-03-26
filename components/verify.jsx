@@ -59,7 +59,7 @@ function VerifyInner(){
         @media(max-width:1024px){.auth-card{max-width:420px!important;height:540px!important;padding:32px 28px!important}}
         @media(max-width:768px){.code-input{width:42px;height:48px;font-size:20px;border-radius:10px}.auth-card{max-width:100%!important;height:520px!important;max-height:none!important;padding:24px 20px!important;border-radius:16px!important}}
       `}</style>
-      <SharedNav action={null}/>
+      <SharedNav action="logout"/>
 
       <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
         <div className="auth-card" style={{width:"100%",maxWidth:440,height:580,maxHeight:"90dvh",overflow:"hidden",background:dark?"rgba(17,22,40,0.98)":"rgba(255,255,255,0.98)",border:`1px solid ${t.surfaceBrd}`,borderRadius:20,padding:"36px 32px",boxShadow:dark?"0 20px 60px rgba(0,0,0,0.5)":"0 20px 60px rgba(0,0,0,0.1)",backdropFilter:"blur(20px)",textAlign:"center",display:"flex",flexDirection:"column",justifyContent:"center"}}>
