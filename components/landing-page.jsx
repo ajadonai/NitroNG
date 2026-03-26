@@ -26,7 +26,6 @@ export default function Landing(){
 
   const [modal,setModal]=useState(null);
   const [heroAuth,setHeroAuth]=useState("login");
-  const [activeStep,setActiveStep]=useState(0);
   const [heroMethod,setHeroMethod]=useState("email");
   const [heroName,setHeroName]=useState("");
   const [heroEmail,setHeroEmail]=useState("");
