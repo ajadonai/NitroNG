@@ -505,11 +505,10 @@ function PwStrength({pw,t}){
   const score=checks.filter(Boolean).length;
   const labels=["","Weak","Fair","Good","Strong"];
   const colors=["","#dc2626","#d97706","#2563eb","#059669"];
-  if(!pw)return null;
-  return <div style={{marginBottom:14}}>
+  return <div style={{minHeight:28,marginBottom:4,visibility:pw?"visible":"hidden"}}>
     <div style={{display:"flex",gap:4,marginBottom:4}}>{[1,2,3,4].map(i=><div key={i} style={{flex:1,height:3,borderRadius:2,background:i<=score?colors[score]:(t.inputBorder||"#ddd"),transition:"background 0.3s"}}/>)}</div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-      <span style={{fontSize:11,color:colors[score],fontWeight:500}}>{labels[score]}</span>
+      <span style={{fontSize:11,color:colors[score]||"transparent",fontWeight:500}}>{labels[score]||"\u00A0"}</span>
       <span style={{fontSize:10,color:t.textMuted}}>{checks[0]?"✓":"✗"} 8+ chars {checks[1]?"✓":"✗"} uppercase {checks[2]?"✓":"✗"} number {checks[3]?"✓":"✗"} symbol</span>
     </div>
   </div>;
@@ -608,8 +607,8 @@ function AuthModal({dark,t,mode,setMode,onClose}){
         <h2 style={{fontSize:24,fontWeight:700,color:t.text,textAlign:"center",marginBottom:4}}>{mode==="login"?"Welcome back":mode==="forgot"?"Forgot password?":step===1?"Create Account":"Secure Your Account"}</h2>
         <p style={{fontSize:14,color:t.textSoft,textAlign:"center",marginBottom:28,fontWeight:430}}>{mode==="login"?"Log in to your Nitro account":mode==="forgot"?(forgotSent?"Check your email for the reset link":"Enter your email and we'll send a reset link"):step===1?"Step 1 of 2 — Your details":"Step 2 of 2 — Set your password"}</p>
 
-        {/* Error */}
-        {error&&<div style={{padding:"10px 14px",borderRadius:10,background:dark?"rgba(220,38,38,0.1)":"#fef2f2",border:`1px solid ${dark?"rgba(220,38,38,0.2)":"#fecaca"}`,color:dark?"#fca5a5":"#dc2626",fontSize:13,marginBottom:16,animation:"fu .3s ease"}}>⚠️ {error}</div>}
+        {/* Error — space always reserved */}
+        <div style={{minHeight:42,marginBottom:4}}>{error?<div style={{padding:"10px 14px",borderRadius:10,background:dark?"rgba(220,38,38,0.1)":"#fef2f2",border:`1px solid ${dark?"rgba(220,38,38,0.2)":"#fecaca"}`,color:dark?"#fca5a5":"#dc2626",fontSize:13}}>⚠️ {error}</div>:null}</div>
 
         {/* ── LOGIN ── */}
         {mode==="login"&&<>
@@ -635,8 +634,7 @@ function AuthModal({dark,t,mode,setMode,onClose}){
           <input value={name} onChange={e=>setName(e.target.value.replace(/[^a-zA-Z\u00C0-\u017F\s'\-\.]/g,"").slice(0,100))} placeholder="Enter your full name" maxLength={100} type="text" style={{width:"100%",padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/>
           <MethodToggle/>
           <Lbl t={t}>{method==="email"?"Email Address":"Phone Number"}</Lbl>
-          {method==="email"?<><input value={email} onChange={e=>setEmail(e.target.value.trim().toLowerCase().slice(0,254))} placeholder="you@example.com" type="email" autoComplete="email" style={{width:"100%",padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:email&&!validEmail?4:16}}/>{email&&!validEmail&&<div style={{fontSize:11,color:dark?"#fca5a5":"#dc2626",marginBottom:12}}>Please enter a valid email</div>}{email&&validEmail&&emailTaken&&<div style={{fontSize:11,color:dark?"#fca5a5":"#dc2626",marginBottom:12}}>This email is already registered</div>}{email&&validEmail&&emailChecking&&<div style={{fontSize:11,color:t.textMuted,marginBottom:12}}>Checking...</div>}</>:<div style={{display:"flex",gap:8,marginBottom:phone&&!validPhone?4:16}}><div style={{padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.textSoft,fontSize:14,flexShrink:0}}>+234</div><input value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,"").slice(0,11))} placeholder="8012345678" type="tel" autoComplete="tel" style={{flex:1,padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></div>}
-          {phone&&!validPhone&&method==="phone"&&<div style={{fontSize:11,color:dark?"#fca5a5":"#dc2626",marginBottom:12}}>Enter 10-11 digits</div>}
+          {method==="email"?<><input value={email} onChange={e=>setEmail(e.target.value.trim().toLowerCase().slice(0,254))} placeholder="you@example.com" type="email" autoComplete="email" style={{width:"100%",padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:4}}/><div style={{minHeight:16,marginBottom:4}}>{email&&!validEmail?<span style={{fontSize:11,color:dark?"#fca5a5":"#dc2626"}}>Please enter a valid email</span>:email&&validEmail&&emailTaken?<span style={{fontSize:11,color:dark?"#fca5a5":"#dc2626"}}>This email is already registered</span>:email&&validEmail&&emailChecking?<span style={{fontSize:11,color:t.textMuted}}>Checking...</span>:null}</div></>:<><div style={{display:"flex",gap:8,marginBottom:4}}><div style={{padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.textSoft,fontSize:14,flexShrink:0}}>+234</div><input value={phone} onChange={e=>setPhone(e.target.value.replace(/\D/g,"").slice(0,11))} placeholder="8012345678" type="tel" autoComplete="tel" style={{flex:1,padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/></div><div style={{minHeight:16,marginBottom:4}}>{phone&&!validPhone?<span style={{fontSize:11,color:dark?"#fca5a5":"#dc2626"}}>Enter 10-11 digits</span>:null}</div></>}
           <button onClick={()=>{setError("");if(!name){setError("Please enter your name");return;}if(method==="email"&&(!email||!validEmail)){setError("Please enter a valid email");return;}if(method==="phone"&&(!phone||!validPhone)){setError("Please enter a valid phone number");return;}setStep(2);}} style={{width:"100%",padding:"14px 0",borderRadius:12,background:t.btnPrimary,color:"#fff",fontSize:15,fontWeight:700,marginBottom:20,border:"none",cursor:"pointer"}}>Continue →</button>
           <div style={{textAlign:"center",fontSize:13,color:t.textSoft}}>Already have an account? <button onClick={()=>setMode("login")} style={{background:"none",color:t.accent,fontWeight:600,fontSize:13,border:"none",cursor:"pointer"}}>Log In</button></div>
           <div style={{display:"flex",justifyContent:"center",gap:6,marginTop:20}}><div style={{width:8,height:8,borderRadius:"50%",background:t.accent}}/><div style={{width:8,height:8,borderRadius:"50%",background:t.textMuted}}/></div>
@@ -655,9 +653,7 @@ function AuthModal({dark,t,mode,setMode,onClose}){
             <input value={pw2} onChange={e=>setPw2(e.target.value.slice(0,128))} placeholder="Re-enter password" maxLength={128} type={showPw2?"text":"password"} style={{width:"100%",padding:"12px 44px 12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${pwMismatch?(dark?"rgba(220,38,38,0.4)":"#fecaca"):pwMatch?(dark?"rgba(110,231,183,0.4)":"#a7f3d0"):t.inputBorder}`,color:t.text,fontSize:14,outline:"none"}}/>
             <EyeBtn show={showPw2} toggle={()=>setShowPw2(!showPw2)}/>
           </div>
-          {pwMatch&&<div style={{fontSize:11,color:dark?"#6ee7b7":"#059669",marginBottom:12}}>✓ Passwords match</div>}
-          {pwMismatch&&<div style={{fontSize:11,color:dark?"#fca5a5":"#dc2626",marginBottom:12}}>✕ Passwords don't match</div>}
-          {!pw2&&<div style={{height:12,marginBottom:12}}/>}
+          <div style={{minHeight:18,marginBottom:4}}>{pwMatch?<div style={{fontSize:11,color:dark?"#6ee7b7":"#059669"}}>✓ Passwords match</div>:pwMismatch?<div style={{fontSize:11,color:dark?"#fca5a5":"#dc2626"}}>✕ Passwords don't match</div>:null}</div>
           <Lbl t={t}>Referral Code <span style={{color:t.textMuted,fontWeight:400}}>(optional)</span></Lbl>
           <input value={refCode} onChange={e=>setRefCode(e.target.value.replace(/[^a-zA-Z0-9\-]/g,"").toUpperCase().slice(0,20))} placeholder="e.g. NTR-7X92" maxLength={20} type="text" style={{width:"100%",padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16}}/>
           <label style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:24,cursor:"pointer"}}>

@@ -69,7 +69,7 @@ function VerifyInner(){
             <h2 style={{fontSize:24,fontWeight:700,color:t.text,marginBottom:4}}>Verify Your Account</h2>
             <p style={{fontSize:14,color:t.soft,marginBottom:4,fontWeight:430}}>We sent a 6-digit code to</p>
             <p className="m" style={{fontSize:13,color:t.accent,fontWeight:600,marginBottom:28}}>{userEmail||"your email"}</p>
-            {error&&<div style={{padding:"10px 14px",borderRadius:10,background:dark?"rgba(220,38,38,0.1)":"#fef2f2",border:`1px solid ${dark?"rgba(220,38,38,0.2)":"#fecaca"}`,color:t.red,fontSize:13,marginBottom:16}}>⚠️ {error}</div>}
+            <div style={{minHeight:42,marginBottom:4}}>{error?<div style={{padding:"10px 14px",borderRadius:10,background:dark?"rgba(220,38,38,0.1)":"#fef2f2",border:`1px solid ${dark?"rgba(220,38,38,0.2)":"#fecaca"}`,color:t.red,fontSize:13}}>⚠️ {error}</div>:null}</div>
             <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:28}}>
               {code.map((digit,i)=>(
                 <input key={i} ref={el=>inputs.current[i]=el} className="code-input m" type="text" inputMode="numeric" maxLength={1} value={digit}
