@@ -26,6 +26,7 @@ export default function Landing(){
 
   const [modal,setModal]=useState(null);
   const [heroAuth,setHeroAuth]=useState("login");
+  const [activeStep,setActiveStep]=useState(0);
   const [heroMethod,setHeroMethod]=useState("email");
   const [heroName,setHeroName]=useState("");
   const [heroEmail,setHeroEmail]=useState("");
@@ -192,9 +193,65 @@ export default function Landing(){
           </div>
         </section>
 
-        {/* ━━━ SERVICES ━━━ */}
-        <section id="services" style={{minHeight:"100dvh",display:"flex",alignItems:"center",justifyContent:"center",background:t.bg}}>
-          <div style={{textAlign:"center",color:t.textMuted,fontSize:16,fontWeight:450}}>Services — awaiting mockup</div>
+        {/* ━━━ SECTION 2: WHY NITRO + HOW IT WORKS ━━━ */}
+        <section id="services" className="s2" style={{background:t.bg}}>
+          {/* WHY NITRO */}
+          <div className="s2-block">
+            <div className="s2-label"><span className="m s2-label-text" style={{color:t.accent}}>Features</span></div>
+            <div className="s2-content">
+              <h2 className="s2-heading" style={{color:t.text}}>Why <span className="serif s2-heading-accent" style={{color:t.accent}}>Nitro</span>?</h2>
+              <p className="s2-desc" style={{color:t.textSoft}}>Everything you need to grow your social presence, in one place.</p>
+              <div className="s2-features-grid">
+                {[[<svg key="f1" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c47d8e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,"Instant Delivery","Orders start processing within seconds of payment.","#c47d8e"],[<svg key="f2" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e0a458" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/><path d="M7 15h4"/></svg>,"Cheapest Rates","Wholesale pricing direct from providers. No middleman.","#e0a458"],[<svg key="f3" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,"Real Engagement","Genuine accounts. No bots, no drops. Quality that sticks.","#6ee7b7"],[<svg key="f4" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>,"24/7 Support","Live chat and WhatsApp support around the clock.","#a5b4fc"],[<svg key="f5" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f472b6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,"All Platforms","Instagram, TikTok, YouTube, X, Facebook & more.","#f472b6"],[<svg key="f6" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1v4M12 19v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M1 12h4M19 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>,"Auto-Refill","Dropped followers? We refill automatically at no cost.","#fbbf24"]].map(([icon,title,desc,color],i)=>(
+                  <div key={title} className="s2-feature-card" style={{background:t.cardBg,border:`1px solid ${t.surfaceBorder}`}}>
+                    <div className="s2-accent-line" style={{background:color}}/>
+                    <div className="s2-feature-header">{icon}<span className="s2-feature-title" style={{color:t.text}}>{title}</span></div>
+                    <p className="s2-feature-desc" style={{color:t.textSoft}}>{desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="s2-divider" style={{background:t.surfaceBorder}}/>
+
+          {/* HOW IT WORKS */}
+          <div className="s2-block">
+            <div className="s2-label"><span className="m s2-label-text" style={{color:t.accent}}>How It Works</span></div>
+            <div className="s2-content">
+              <h2 className="s2-heading" style={{color:t.text}}>4 Simple <span className="serif s2-heading-accent" style={{color:t.accent}}>Steps</span></h2>
+              <p className="s2-desc s2-desc-steps" style={{color:t.textSoft}}>From sign-up to growth in under a minute.</p>
+
+              {/* Desktop: progress bar + active card */}
+              <div className="s2-steps-progress">
+                {[["01","📝","Create Account"],["02","💰","Add Funds"],["03","🛒","Place Order"],["04","🚀","Watch It Grow"]].map(([num,emoji,title],i)=>(
+                  <div key={i} className="s2-step-node" style={{flex:i<3?1:"none",display:"flex",alignItems:"center"}}>
+                    <button onClick={()=>setActiveStep(i)} onMouseEnter={()=>setActiveStep(i)} className="s2-step-btn" style={{background:activeStep===i?t.accent:(t.cardBg),border:`1px solid ${activeStep===i?t.accent:t.surfaceBorder}`}}>
+                      {activeStep===i?<span className="s2-step-emoji">{emoji}</span>:<span className="m s2-step-num" style={{color:t.textMuted}}>{num}</span>}
+                    </button>
+                    {i<3&&<div className="s2-step-line" style={{background:t.surfaceBorder}}><div className="s2-step-fill" style={{width:activeStep>i?"100%":"0%",background:t.accent}}/></div>}
+                  </div>
+                ))}
+              </div>
+              <div className="s2-step-detail" style={{background:t.cardBg,border:`1px solid ${t.surfaceBorder}`}}>
+                <div className="s2-step-detail-header">
+                  <span className="s2-step-detail-emoji">{["📝","💰","🛒","🚀"][activeStep]}</span>
+                  <span className="s2-step-detail-title" style={{color:t.text}}>{["Create Account","Add Funds","Place Order","Watch It Grow"][activeStep]}</span>
+                </div>
+                <p className="s2-step-detail-desc" style={{color:t.textSoft}}>{["Sign up free in 30 seconds. No credit card required.","Pay via card, bank transfer, or crypto. Funds arrive instantly.","Pick a service, enter your link, and confirm. That's it.","Delivery starts within seconds. Track progress in real time."][activeStep]}</p>
+              </div>
+
+              {/* Mobile/Tablet: static cards */}
+              <div className="s2-steps-grid">
+                {[["01","Create Account"],["02","Add Funds"],["03","Place Order"],["04","Watch It Grow"]].map(([num,title],i)=>(
+                  <div key={i} className="s2-step-card" style={{background:t.cardBg,border:`1px solid ${t.surfaceBorder}`}}>
+                    <div className="m s2-step-card-num" style={{color:t.accent}}>{num}</div>
+                    <div className="s2-step-card-title" style={{color:t.text}}>{title}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* ━━━ PRICING ━━━ */}

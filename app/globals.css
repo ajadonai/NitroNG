@@ -122,6 +122,39 @@ input { font-family: inherit; }
 .nav-links { display: flex; }
 
 /* ══════════════════════════════════════ */
+/* ══ SECTION 2: WHY NITRO + HOW IT WORKS ══ */
+/* ══════════════════════════════════════ */
+.s2 { padding: 80px 60px; }
+.s2-block { display: flex; gap: 60px; }
+.s2-label { width: 160px; flex-shrink: 0; padding-top: 4px; }
+.s2-label-text { font-size: 10px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; }
+.s2-content { flex: 1; }
+.s2-heading { font-size: 36px; font-weight: 700; margin-bottom: 8px; }
+.s2-heading-accent { font-style: italic; font-weight: 400; font-size: 40px; }
+.s2-desc { font-size: 15px; margin-bottom: 36px; max-width: 480px; line-height: 1.6; }
+.s2-desc-steps { margin-bottom: 40px; }
+.s2-divider { height: 1px; margin: 80px 0; }
+.s2-features-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.s2-feature-card { padding: 20px 18px; border-radius: 16px; position: relative; overflow: hidden; backdrop-filter: blur(12px); }
+.s2-accent-line { position: absolute; top: 0; left: 0; width: 30%; height: 2px; border-radius: 0 0 2px 0; }
+.s2-feature-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.s2-feature-title { font-size: 14px; font-weight: 600; }
+.s2-feature-desc { font-size: 13px; line-height: 1.5; }
+.s2-steps-progress { display: flex; align-items: center; margin-bottom: 32px; }
+.s2-step-node { display: flex; align-items: center; }
+.s2-step-btn { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all .4s ease; }
+.s2-step-emoji { font-size: 18px; }
+.s2-step-num { font-size: 13px; font-weight: 700; }
+.s2-step-line { flex: 1; height: 2px; position: relative; }
+.s2-step-fill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 1px; transition: width .5s ease; }
+.s2-step-detail { padding: 24px 28px; border-radius: 16px; backdrop-filter: blur(12px); min-height: 90px; }
+.s2-step-detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.s2-step-detail-emoji { font-size: 24px; }
+.s2-step-detail-title { font-size: 18px; font-weight: 700; }
+.s2-step-detail-desc { font-size: 14px; line-height: 1.6; padding-left: 36px; }
+.s2-steps-grid { display: none; }
+
+/* ══════════════════════════════════════ */
 /* ══ TABLET (max-width: 1199px) ══ */
 /* ══════════════════════════════════════ */
 @media (max-width: 1199px) {
@@ -167,6 +200,24 @@ input { font-family: inherit; }
   .auth-card label { font-size: 10px; margin-bottom: 3px; }
   .auth-card .auth-logo { margin-bottom: 14px; }
   .auth-card .auth-close { width: 28px; height: 28px; font-size: 14px; }
+  /* Section 2 tablet */
+  .s2 { padding: 56px 40px; }
+  .s2-block { flex-direction: column; gap: 0; text-align: center; }
+  .s2-label { width: auto; padding-top: 0; margin-bottom: 12px; }
+  .s2-desc { margin-left: auto; margin-right: auto; }
+  .s2-features-grid { grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .s2-feature-card { padding: 16px 14px; border-radius: 14px; }
+  .s2-feature-title { font-size: 13px; }
+  .s2-feature-desc { font-size: 12px; }
+  .s2-divider { margin: 56px 0; }
+  .s2-heading { font-size: 32px; }
+  .s2-heading-accent { font-size: 36px; }
+  .s2-steps-progress { display: none; }
+  .s2-step-detail { display: none; }
+  .s2-steps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .s2-step-card { padding: 18px 14px; border-radius: 14px; text-align: center; }
+  .s2-step-card-num { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .s2-step-card-title { font-size: 13px; font-weight: 600; }
 }
 
 /* ══════════════════════════════════════ */
@@ -215,4 +266,26 @@ input { font-family: inherit; }
   .auth-card .auth-logo { margin-bottom: 10px; }
   .auth-card .auth-logo > div { width: 32px; height: 32px; }
   .auth-card .auth-close { width: 26px; height: 26px; font-size: 13px; }
+  /* Section 2 mobile */
+  .s2 { padding: 40px 20px; }
+  .s2-block { flex-direction: column; gap: 0; text-align: center; }
+  .s2-label { width: auto; padding-top: 0; margin-bottom: 10px; }
+  .s2-label-text { font-size: 9px; }
+  .s2-heading { font-size: 26px; margin-bottom: 4px; }
+  .s2-heading-accent { font-size: 30px; }
+  .s2-desc { font-size: 13px; margin-bottom: 24px; margin-left: auto; margin-right: auto; max-width: 320px; }
+  .s2-divider { margin: 32px 0; }
+  .s2-features-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .s2-feature-card { padding: 14px; border-radius: 12px; text-align: center; }
+  .s2-accent-line { left: 37.5%; width: 25%; }
+  .s2-feature-header { flex-direction: column; gap: 6px; margin-bottom: 0; }
+  .s2-feature-title { font-size: 12px; }
+  .s2-feature-desc { display: none; }
+  .s2-steps-progress { display: none; }
+  .s2-step-detail { display: none; }
+  .s2-steps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .s2-step-card { padding: 14px 6px; border-radius: 12px; text-align: center; }
+  .s2-step-card-num { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .s2-step-card-title { font-size: 10px; font-weight: 600; line-height: 1.3; }
+  .s2-desc-steps { margin-bottom: 20px; }
 }
