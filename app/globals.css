@@ -97,6 +97,8 @@ input { font-family: inherit; }
 }
 
 .hero-right { width: 400px; flex-shrink: 0; }
+.hero-stats { grid-template-columns: repeat(3, 1fr); }
+.stat-card { min-width: 80px; }
 .hero-mobile-cta { display: none; }
 .hero-view-pricing { display: inline-flex; }
 
