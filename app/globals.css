@@ -595,7 +595,7 @@ input { font-family: inherit; }
   .s6-footer-top { flex-direction: column; align-items: flex-start; gap: 24px; padding-bottom: 20px; }
   .s6-footer-brand { text-align: left; }
   .s6-footer-logo { justify-content: flex-start; }
-  .s6-footer-links { gap: 32px; text-align: left; }
+  .s6-footer-links { gap: 0; text-align: left; display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
   .s6-footer-bottom { flex-direction: row; justify-content: space-between; padding-top: 14px; align-items: center; }
   .s6-email-text { display: none; }
   .section-divider { padding: 0 20px; gap: 10px; }

@@ -82,7 +82,7 @@ export default function Landing(){
   },[]);
 
   const t=useMemo(()=>({
-    bg:dark?"#080b14":"#f4f1ed",bgAlt:dark?"#0c1019":"#eceae5",text:dark?"#e8e4df":"#1a1a1a",textSoft:dark?"#8a8680":"#888580",textMuted:dark?"#555250":"#b0ada8",
+    bg:dark?"#080b14":"#f4f1ed",bgAlt:dark?"#0f1322":"#e6e3dc",text:dark?"#e8e4df":"#1a1a1a",textSoft:dark?"#8a8680":"#888580",textMuted:dark?"#555250":"#b0ada8",
     surface:dark?"rgba(15,18,30,0.85)":"rgba(255,255,255,0.9)",surfaceBorder:dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.08)",
     inputBg:dark?"#0d1020":"#fff",inputBorder:dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)",
     accent:"#c47d8e",accentLight:dark?"rgba(196,125,142,0.12)":"rgba(196,125,142,0.08)",
