@@ -134,8 +134,8 @@ export default function Landing(){
           .pricing-title-accent{font-size:32px}
           .pricing-sub{font-size:13px}
           .pricing-badge{font-size:11px;padding:5px 14px}
-          .pricing-cards{flex-direction:column;gap:12px}
-          .pc{padding:20px 18px;border-radius:18px}
+          .pricing-cards{flex-direction:column;gap:12px;align-items:center}
+          .pc{padding:20px 18px;border-radius:18px;width:100%;max-width:400px;flex:none}
           .pc-pop{padding:22px 20px;transform:none;box-shadow:none}
           .pc-pop:hover{transform:none}
           .pc:hover{transform:none;box-shadow:none}
