@@ -208,7 +208,7 @@ export default function Landing(){
 
       </div>
 
-      {modal&&<AuthModal dark={dark} t={t} mode={modal} setMode={setModal} onClose={closeModal}/>}
+      {modal&&<AuthModal key="auth-modal" dark={dark} t={t} mode={modal} setMode={setModal} onClose={closeModal}/>}
     </div>
   );
 }
