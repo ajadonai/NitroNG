@@ -221,6 +221,51 @@ export default function Landing(){
           .faq-a{padding:0 18px 18px 54px;font-size:14px}
         }
 
+        .cta-sec{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:80px 48px 70px;background:${dark?"rgba(255,255,255,.015)":"rgba(0,0,0,.012)"};position:relative;overflow:hidden;min-height:auto}
+        .cta-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:500px;height:500px;border-radius:50%;background:${t.grad};opacity:.04;filter:blur(80px);pointer-events:none}
+        .cta-card{text-align:center;max-width:580px;position:relative;z-index:1;padding:56px 48px;border-radius:24px;background:${t.surface};border:1px solid ${t.surfaceBorder};backdrop-filter:blur(16px);box-shadow:${dark?"0 8px 32px rgba(0,0,0,.2)":"0 8px 32px rgba(0,0,0,.04)"}}
+        .cta-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:${t.accent};margin-bottom:18px}
+        .cta-title{font-size:44px;font-weight:800;color:${t.text};margin-bottom:16px;letter-spacing:-.5px;line-height:1.1}
+        .cta-title-accent{font-weight:400;font-style:italic;color:${t.accent};font-size:50px}
+        .cta-sub{font-size:16px;color:${t.textSoft};margin-bottom:36px;font-weight:430;line-height:1.6;max-width:400px;margin-left:auto;margin-right:auto}
+        .cta-btn{padding:16px 52px;border-radius:14px;background:${t.btnPrimary};color:#fff;font-size:17px;font-weight:700;border:none;cursor:pointer;font-family:inherit;box-shadow:0 8px 28px rgba(196,125,142,.25);transition:all .3s ease}
+        .cta-note{margin-top:18px;font-size:12px;color:${t.textMuted};font-weight:430}
+        .footer-wrap{border-top:1px solid ${t.surfaceBorder};background:${dark?"rgba(9,12,21,.6)":"rgba(0,0,0,.02)"};transition:all .5s}
+        .footer-inner{max-width:1100px;margin:0 auto;padding:48px 24px 20px}
+        .footer-top{display:flex;justify-content:space-between;flex-wrap:wrap;gap:40;margin-bottom:40}
+        .footer-brand{max-width:280px}
+        .footer-brand-desc{font-size:13px;color:${t.textSoft};line-height:1.7;font-weight:430}
+        .footer-links{display:flex;gap:48;flex-wrap:wrap}
+        .footer-col-title{font-size:11px;font-weight:600;color:${t.textMuted};text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px}
+        .footer-link{display:block;font-size:13px;color:${t.textSoft};text-decoration:none;margin-bottom:8px;transition:color .2s}
+        .footer-divider{height:1px;background:${t.surfaceBorder};margin-bottom:20px;transition:background .5s}
+        .footer-bottom{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12}
+        .footer-copy{font-size:12px;color:${t.textMuted}}
+        .footer-social{display:flex;gap:16}
+        .footer-social a{color:${t.textSoft};display:flex;align-items:center;gap:6;font-size:12px;text-decoration:none;transition:color .2s}
+        @media(max-width:1024px){
+          .cta-sec{padding:70px 40px 60px}
+          .cta-title{font-size:38px}
+          .cta-title-accent{font-size:42px}
+        }
+        @media(max-width:768px){
+          .cta-sec{padding:60px 20px 50px}
+          .cta-glow{width:300px;height:300px}
+          .cta-card{padding:40px 24px;border-radius:20px}
+          .cta-label{font-size:9px;margin-bottom:14px}
+          .cta-title{font-size:30px}
+          .cta-title-accent{font-size:34px}
+          .cta-sub{font-size:14px;margin-bottom:28px}
+          .cta-btn{padding:14px 40px;font-size:15px;border-radius:12px}
+          .cta-note{margin-top:14px}
+          .footer-inner{padding:36px 20px 16px}
+          .footer-top{gap:32;margin-bottom:32;flex-direction:column}
+          .footer-brand{max-width:100%}
+          .footer-links{gap:32}
+          .footer-bottom{flex-direction:column}
+          .footer-social-label{display:none}
+        }
+
         .feat{transition:all .35s cubic-bezier(.16,1,.3,1)}
         .feat:hover{transform:translateY(-3px);box-shadow:${dark?"0 14px 36px rgba(0,0,0,.25)":"0 14px 36px rgba(0,0,0,.06)"}}
         .lift:hover{transform:translateY(-4px);box-shadow:${dark?"0 12px 32px rgba(0,0,0,.3)":"0 12px 32px rgba(0,0,0,.07)"};border-color:${dark?"rgba(255,255,255,.12)":"rgba(0,0,0,.10)"}!important}
@@ -398,16 +443,54 @@ export default function Landing(){
             <p className="faq-mobile-note">Need more help? Contact our support team.</p>
           </div>
         </section>
-        <section id="cta" className="sec" style={{background:dark?"rgba(255,255,255,.015)":"rgba(0,0,0,.012)"}}>
-          <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"40px"}}>
-            <div style={{textAlign:"center",maxWidth:600,margin:"0 auto",padding:"60px 40px",borderRadius:24,background:t.surface,border:`1px solid ${t.surfaceBorder}`,backdropFilter:"blur(12px)",boxShadow:dark?"0 8px 32px rgba(0,0,0,.2)":"0 8px 32px rgba(0,0,0,.04)"}}>
-              <h2 style={{fontSize:"clamp(30px,4.5vw,48px)",fontWeight:800,color:t.text,marginBottom:16}}>Ready to <span className="serif" style={{fontStyle:"italic",fontWeight:400,color:t.accent}}>Grow</span>?</h2>
-              <p style={{fontSize:16,color:t.textSoft,marginBottom:36,fontWeight:430}}>Join {siteStats.users} Nigerian creators already using Nitro.</p>
-              <button onClick={()=>setModal("signup")} style={{padding:"16px 52px",borderRadius:14,background:t.btnPrimary,color:"#fff",fontSize:17,fontWeight:700,boxShadow:"0 8px 28px rgba(196,125,142,.25)"}}>Create Free Account</button>
+        {/* ━━━ SCREEN 6: CTA ━━━ */}
+        <section id="cta" className="cta-sec">
+          <div className="cta-glow"/>
+          <div className="cta-card">
+            <div className="cta-label">Get Started</div>
+            <h2 className="cta-title">Ready to <span className="serif cta-title-accent">Grow</span>?</h2>
+            <p className="cta-sub">Join {siteStats.users} Nigerian creators already using Nitro to grow their social presence.</p>
+            <button onClick={()=>setModal("signup")} className="cta-btn">Create Free Account</button>
+            <p className="cta-note">No credit card required. Free forever.</p>
+          </div>
+        </section>
+
+        {/* ━━━ FOOTER ━━━ */}
+        <footer className="footer-wrap">
+          <div className="footer-inner">
+            <div className="footer-top">
+              <div className="footer-brand">
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                  <div style={{width:32,height:32,borderRadius:9,background:"linear-gradient(135deg,#c47d8e,#a3586b)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
+                  <span className="serif" style={{fontSize:18,fontWeight:600,color:t.text}}>Nitro</span>
+                </div>
+                <p className="footer-brand-desc">Nigeria's premium SMM platform. Grow your social media with real followers, likes, and views.</p>
+              </div>
+              <div className="footer-links">
+                <div>
+                  <div className="footer-col-title">Platform</div>
+                  {["Services","Pricing","API Docs","Status"].map(l=><a key={l} href="#" className="footer-link">{l}</a>)}
+                </div>
+                <div>
+                  <div className="footer-col-title">Company</div>
+                  {["About","Blog","Contact","Careers"].map(l=><a key={l} href="#" className="footer-link">{l}</a>)}
+                </div>
+                <div>
+                  <div className="footer-col-title">Legal</div>
+                  {[["Terms of Service","/terms"],["Privacy Policy","/privacy"],["Refund Policy","/refund"],["Cookie Policy","/cookie"]].map(([l,h])=><a key={l} href={h} className="footer-link">{l}</a>)}
+                </div>
+              </div>
+            </div>
+            <div className="footer-divider"/>
+            <div className="footer-bottom">
+              <div className="footer-copy">© 2026 Nitro. All rights reserved.</div>
+              <div className="footer-social">
+                <a href="#"><svg width="14" height="14" viewBox="0 0 24 24" fill={t.textMuted}><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span className="footer-social-label">Twitter</span></a>
+                <a href="#"><svg width="14" height="14" viewBox="0 0 24 24" fill={t.textMuted}><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"/></svg><span className="footer-social-label">Instagram</span></a>
+              </div>
             </div>
           </div>
-          <Footer t={t} dark={dark}/>
-        </section>
+        </footer>
 
       </div>
 
@@ -605,40 +688,5 @@ function AuthModal({dark,t,mode,setMode,onClose}){
   );
 }
 
-export function Footer({t,dark}){
-  return(
-    <footer style={{position:"relative",zIndex:1,borderTop:`1px solid ${t.surfaceBorder}`,transition:"border-color 1.5s ease,background 1.5s ease"}}>
-      <div style={{maxWidth:1100,margin:"0 auto",padding:"48px 24px 20px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:40,marginBottom:40}}>
-          <div style={{maxWidth:280}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-              <div style={{width:32,height:32,borderRadius:9,background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
-              <span className="serif" style={{fontSize:18,fontWeight:600,color:t.text}}>Nitro</span>
-            </div>
-            <p style={{fontSize:13,color:t.textSoft,lineHeight:1.7}}>Nigeria's premium SMM platform. Grow your social media with real followers, likes, and views.</p>
-          </div>
-          <div style={{display:"flex",gap:48,flexWrap:"wrap"}}>
-            <div>
-              <div style={{fontSize:11,fontWeight:600,color:t.textMuted,textTransform:"uppercase",letterSpacing:1.5,marginBottom:12}}>Platform</div>
-              {["Services","Pricing","API Docs","Status"].map(l=><a key={l} href="#" style={{display:"block",fontSize:13,color:t.textSoft,textDecoration:"none",marginBottom:8}}>{l}</a>)}
-            </div>
-            <div>
-              <div style={{fontSize:11,fontWeight:600,color:t.textMuted,textTransform:"uppercase",letterSpacing:1.5,marginBottom:12}}>Company</div>
-              {["About","Blog","Contact","Careers"].map(l=><a key={l} href="#" style={{display:"block",fontSize:13,color:t.textSoft,textDecoration:"none",marginBottom:8}}>{l}</a>)}
-            </div>
-            <div>
-              <div style={{fontSize:11,fontWeight:600,color:t.textMuted,textTransform:"uppercase",letterSpacing:1.5,marginBottom:12}}>Legal</div>
-              {[["Terms of Service","/terms"],["Privacy Policy","/privacy"],["Refund Policy","/refund"],["Cookie Policy","/cookie"]].map(([l,h])=><a key={l} href={h} style={{display:"block",fontSize:13,color:t.textSoft,textDecoration:"none",marginBottom:8}}>{l}</a>)}
-            </div>
-          </div>
-        </div>
-        <div style={{height:1,background:t.surfaceBorder,marginBottom:20,transition:"background 1.5s ease"}}/>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
-          <div style={{fontSize:12,color:t.textMuted}}>© 2026 Nitro. All rights reserved.</div>
-          <div style={{display:"flex",gap:16}}>{["Twitter","Instagram"].map(s=><a key={s} href="#" style={{fontSize:12,color:t.textSoft,textDecoration:"none"}}>{s}</a>)}</div>
-        </div>
-      </div>
-    </footer>
-  );
-}
+
 
