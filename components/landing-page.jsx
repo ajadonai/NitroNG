@@ -598,7 +598,7 @@ function AuthModal({dark,t,mode,setMode,onClose}){
 
   return(
     <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:100,background:t.overlay,backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16,animation:"fi 0.2s ease"}}>
-      <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:440,height:580,maxHeight:"90vh",overflow:"hidden",background:dark?"rgba(17,22,40,0.98)":"rgba(255,255,255,0.98)",border:`1px solid ${t.surfaceBorder}`,borderRadius:20,padding:"36px 32px",boxShadow:dark?"0 20px 60px rgba(0,0,0,0.5)":"0 20px 60px rgba(0,0,0,0.1)",backdropFilter:"blur(20px)",position:"relative"}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:440,maxHeight:"90dvh",overflowY:"auto",WebkitOverflowScrolling:"touch",background:dark?"rgba(17,22,40,0.98)":"rgba(255,255,255,0.98)",border:`1px solid ${t.surfaceBorder}`,borderRadius:20,padding:"36px 32px",boxShadow:dark?"0 20px 60px rgba(0,0,0,0.5)":"0 20px 60px rgba(0,0,0,0.1)",backdropFilter:"blur(20px)",position:"relative"}}>
         <button onClick={onClose} style={{position:"absolute",top:16,right:16,background:"none",color:t.textMuted,fontSize:20,padding:4,lineHeight:1,border:"none",cursor:"pointer"}}>✕</button>
         
         {/* Logo */}
