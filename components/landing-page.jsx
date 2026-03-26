@@ -79,7 +79,7 @@ export default function Landing(){
   },[]);
 
   const t=useMemo(()=>({
-    bg:dark?"#080b14":"#f4f1ed",text:dark?"#e8e4df":"#1a1a1a",textSoft:dark?"#8a8680":"#888580",textMuted:dark?"#555250":"#b0ada8",
+    bg:dark?"#080b14":"#f4f1ed",bgAlt:dark?"#0c1019":"#eceae5",text:dark?"#e8e4df":"#1a1a1a",textSoft:dark?"#8a8680":"#888580",textMuted:dark?"#555250":"#b0ada8",
     surface:dark?"rgba(15,18,30,0.85)":"rgba(255,255,255,0.9)",surfaceBorder:dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.08)",
     inputBg:dark?"#0d1020":"#fff",inputBorder:dark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.1)",
     accent:"#c47d8e",accentLight:dark?"rgba(196,125,142,0.12)":"rgba(196,125,142,0.08)",
@@ -99,7 +99,7 @@ export default function Landing(){
         .root{background:${t.bg};color:${t.text};transition:background 1.2s ease,color 1.2s ease}
       `}</style>
 
-      <div ref={scrollRef} style={{flex:1,overflowY:"auto",overflowX:"hidden",position:"relative"}}>
+      <div ref={scrollRef} className="snap-container" style={{flex:1,overflowY:"auto",overflowX:"hidden",position:"relative"}}>
 
         {/* ═══ NAVBAR ═══ */}
         <nav className="main-nav" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 36px",height:60,background:dark?"#060810":scrolled?"rgba(139,74,94,.98)":"rgba(163,88,107,.95)",borderBottom:`1px solid ${dark?"rgba(255,255,255,.06)":"rgba(255,255,255,.12)"}`,flexShrink:0,zIndex:100,position:"sticky",top:0,transition:"background 1.2s ease"}}>
@@ -194,8 +194,11 @@ export default function Landing(){
           </div>
         </section>
 
+        {/* Section divider */}
+        <div className="section-divider" style={{background:t.bg}}><div className="section-divider-line" style={{background:`linear-gradient(90deg,transparent,${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"},transparent)`}}/><div className="section-divider-dot" style={{background:t.accent}}/><div className="section-divider-line" style={{background:`linear-gradient(90deg,transparent,${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"},transparent)`}}/></div>
+
         {/* ━━━ SECTION 2: WHY NITRO + HOW IT WORKS ━━━ */}
-        <section id="services" className="s2" style={{background:t.bg}}>
+        <section id="services" className="s2 snap-section" style={{background:t.bgAlt}}>
           {/* WHY NITRO */}
           <div className="s2-block">
             <div className="s2-label"><span className="m s2-label-text" style={{color:t.accent}}>Features</span></div>
@@ -255,8 +258,10 @@ export default function Landing(){
           </div>
         </section>
 
+        <div className="section-divider" style={{background:t.bgAlt}}><div className="section-divider-line" style={{background:`linear-gradient(90deg,transparent,${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"},transparent)`}}/><div className="section-divider-dot" style={{background:t.accent}}/><div className="section-divider-line" style={{background:`linear-gradient(90deg,transparent,${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"},transparent)`}}/></div>
+
         {/* ━━━ SECTION 3: PRICING ━━━ */}
-        <section id="pricing" className="s3" style={{background:t.bg}}>
+        <section id="pricing" className="s3 snap-section" style={{background:t.bg}}>
           <div className="s3-block">
             <div className="s3-label"><span className="m s3-label-text" style={{color:t.accent}}>Pricing</span></div>
             <div className="s3-content">
@@ -290,8 +295,10 @@ export default function Landing(){
           </div>
         </section>
 
+        <div className="section-divider" style={{background:t.bg}}><div className="section-divider-line" style={{background:`linear-gradient(90deg,transparent,${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"},transparent)`}}/><div className="section-divider-dot" style={{background:t.accent}}/><div className="section-divider-line" style={{background:`linear-gradient(90deg,transparent,${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"},transparent)`}}/></div>
+
         {/* ━━━ SECTION 4: TESTIMONIALS ━━━ */}
-        <section id="testimonials" className="s4" style={{background:t.bg}}>
+        <section id="testimonials" className="s4 snap-section" style={{background:t.bgAlt}}>
           <div className="s4-header">
             <div className="m s4-label" style={{color:t.accent}}>Testimonials</div>
             <h2 className="s4-heading" style={{color:t.text}}>What Our <span className="serif s4-heading-accent" style={{color:t.accent}}>Users</span> Say</h2>
@@ -330,8 +337,10 @@ export default function Landing(){
           </div>
         </section>
 
+        <div className="section-divider" style={{background:t.bgAlt}}><div className="section-divider-line" style={{background:`linear-gradient(90deg,transparent,${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"},transparent)`}}/><div className="section-divider-dot" style={{background:t.accent}}/><div className="section-divider-line" style={{background:`linear-gradient(90deg,transparent,${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"},transparent)`}}/></div>
+
         {/* ━━━ SECTION 5: FAQ ━━━ */}
-        <section id="faq" className="s5" style={{background:t.bg}}>
+        <section id="faq" className="s5 snap-section" style={{background:t.bg}}>
           <div className="s5-header">
             <div className="m s5-label" style={{color:t.accent}}>FAQ</div>
             <h2 className="s5-heading" style={{color:t.text}}>Got <span className="serif s5-heading-accent" style={{color:t.accent}}>Questions</span>?</h2>
@@ -355,8 +364,10 @@ export default function Landing(){
           </div>
         </section>
 
+        <div className="section-divider" style={{background:t.bg}}><div className="section-divider-line" style={{background:`linear-gradient(90deg,transparent,${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"},transparent)`}}/><div className="section-divider-dot" style={{background:t.accent}}/><div className="section-divider-line" style={{background:`linear-gradient(90deg,transparent,${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"},transparent)`}}/></div>
+
         {/* ━━━ SECTION 6: CTA + FOOTER ━━━ */}
-        <div className="s6-cta-wrapper" style={{background:t.bg}}>
+        <div className="s6-cta-wrapper snap-section" style={{background:t.bgAlt}}>
           <div className="s6-cta" style={{background:dark?"linear-gradient(145deg,#1a0e14 0%,#2d1520 30%,#1e0f18 60%,#0f0a12 100%)":"linear-gradient(145deg,#c47d8e 0%,#a3586b 35%,#8b4a5e 65%,#6b3a4a 100%)",border:dark?"1px solid rgba(196,125,142,.12)":"none"}}>
             {/* Spinning ring */}
             <div className="s6-ring" style={{border:`1px solid ${dark?"rgba(196,125,142,.1)":"rgba(255,255,255,.12)"}`}}><div className="s6-ring-inner" style={{border:`1px solid ${dark?"rgba(196,125,142,.06)":"rgba(255,255,255,.08)"}`}}/></div>
