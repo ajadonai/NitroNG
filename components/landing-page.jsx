@@ -107,7 +107,7 @@ export default function Landing(){
         .fu{animation:fu .6s cubic-bezier(.16,1,.3,1) both}
         .fd1{animation-delay:.08s}.fd2{animation-delay:.16s}.fd3{animation-delay:.24s}.fd4{animation-delay:.32s}.fd5{animation-delay:.4s}
         .stat-card{transition:transform .2s ease}.stat-card:hover{transform:translateY(-2px)}
-        .hero-split{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:48px;padding:56px 60px 40px;max-width:1200px;margin:0 auto;width:100%;position:relative;z-index:1}
+        .hero-split{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:48px;padding:56px 60px 40px;max-width:1200px;margin:0 auto;width:100%;position:relative;z-index:1;flex:1}
         .hero-left{flex:1;max-width:540;text-align:left;position:relative;z-index:1}
         .hero-right{width:400px;flex-shrink:0}
         .hero-mobile-cta{display:none}
@@ -153,7 +153,7 @@ export default function Landing(){
             <div style={{position:"absolute",bottom:"5%",right:"10%",width:250,height:250,borderRadius:"50%",background:dark?"rgba(110,160,230,.04)":"rgba(255,255,255,.06)",filter:"blur(80px)",animation:"float2 25s ease-in-out infinite"}}/>
           </div>
 
-          <div className="hero-split" style={{flex:1,minHeight:"calc(100dvh - 60px)"}}>
+          <div className="hero-split" style={{flex:1}}>
             {/* LEFT */}
             <div className="hero-left">
               <div className="fu hero-badge" style={{display:"inline-flex",alignItems:"center",gap:8,padding:"6px 18px",borderRadius:24,background:t.heroAccentBadge,border:`1px solid ${dark?"rgba(196,125,142,.15)":"rgba(255,255,255,.3)"}`,fontSize:13,fontWeight:550,color:dark?t.accent:"#fff",marginBottom:28,backdropFilter:"blur(8px)"}}>🚀 Trusted by {siteStats.users} creators across Nigeria</div>
