@@ -112,7 +112,7 @@ input { font-family: inherit; }
 .stat-card:hover { transform: translateY(-2px); }
 
 /* ── Hero ── */
-#hero { min-height: calc(100dvh - 60px); }
+#hero { height: calc(100dvh - 60px); }
 
 .hero-split {
   display: flex;
@@ -496,7 +496,7 @@ input { font-family: inherit; }
 /* ══ MOBILE (max-width: 767px) ══ */
 /* ══════════════════════════════════════ */
 @media (max-width: 767px) {
-  #hero { min-height: calc(100dvh - 52px); }
+  #hero { height: calc(100dvh - 52px); }
   .hero-split {
     padding: 0 20px;
     gap: 0;
