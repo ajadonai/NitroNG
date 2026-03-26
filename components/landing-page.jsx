@@ -128,10 +128,11 @@ export default function Landing(){
             {siteAlerts.length>0&&siteAlerts.map((a,i)=><div key={i} style={{padding:"10px 24px",textAlign:"center",fontSize:13,fontWeight:500,background:a.type==="warning"?(dark?"rgba(217,119,6,.08)":"rgba(255,255,255,.12)"):(dark?"rgba(196,125,142,.06)":"rgba(255,255,255,.1)"),color:a.type==="warning"?(dark?"#fbbf24":"rgba(255,255,255,.95)"):(dark?"#c47d8e":"rgba(255,255,255,.9)"),borderBottom:`1px solid ${dark?"rgba(255,255,255,.04)":"rgba(255,255,255,.1)"}`,borderLeft:`3px solid ${a.type==="warning"?(dark?"rgba(251,191,36,.3)":"rgba(255,255,255,.35)"):(dark?"rgba(196,125,142,.25)":"rgba(255,255,255,.3)")}`,letterSpacing:.2}}>{a.type==="warning"?"⚠️ ":"🎉 "}{a.message}</div>)}
           </div>
 
-          {/* Ambient orbs */}
+          {/* Ambient orbs + particles */}
           <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
             <div style={{position:"absolute",top:"-8%",left:"25%",width:500,height:400,borderRadius:"50%",background:dark?"rgba(196,125,142,.06)":"rgba(255,255,255,.08)",filter:"blur(100px)",animation:"float1 20s ease-in-out infinite"}}/>
             <div style={{position:"absolute",bottom:"5%",right:"10%",width:250,height:250,borderRadius:"50%",background:dark?"rgba(110,160,230,.04)":"rgba(255,255,255,.06)",filter:"blur(80px)",animation:"float2 25s ease-in-out infinite"}}/>
+            {[["12%","20%",4,0],["22%","70%",3,1.2],["55%","12%",3,.6],["45%","85%",5,1.8],["75%","30%",3,2.4],["65%","65%",4,.9],["30%","45%",3,1.5],["85%","55%",4,2]].map(([top,left,s,d],i)=><div key={i} className="hero-particle" style={{position:"absolute",top,left,width:s,height:s,borderRadius:"50%",background:dark?"rgba(196,125,142,.2)":"rgba(255,255,255,.2)",animation:`float3 ${3.5+i*.5}s ease-in-out infinite ${d}s`}}/>)}
           </div>
 
           <div className="hero-split">

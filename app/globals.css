@@ -53,6 +53,7 @@ input { font-family: inherit; }
 @keyframes shimmer { 0% { left: -100%; } 100% { left: 200%; } }
 @keyframes float1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(12px, -8px) scale(1.02); } }
 @keyframes float2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-10px, 12px) scale(1.03); } }
+@keyframes float3 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(8px, 12px); } }
 
 /* Animations */
 .fu { animation: fu 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
@@ -108,7 +109,9 @@ input { font-family: inherit; }
 .hero-refined { font-style: italic; font-weight: 400; font-size: 64px; }
 .hero-sub { font-size: 17px; font-weight: 430; max-width: 440px; margin-bottom: 32px; line-height: 1.65; }
 .hero-view-pricing { margin-top: 28px; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; cursor: pointer; }
-.hero-cta-btn { padding: 16px 48px; border-radius: 16px; background: #fff; color: #1c1b19; font-size: 16px; font-weight: 700; box-shadow: 0 8px 32px rgba(0,0,0,.12); border: none; }
+.hero-cta-btn { padding: 16px 48px; border-radius: 16px; background: #fff; color: #1c1b19; font-size: 16px; font-weight: 700; box-shadow: 0 8px 32px rgba(0,0,0,.12); border: none; position: relative; overflow: hidden; transition: all .3s ease; }
+.hero-cta-btn::after { content: ''; position: absolute; top: 0; left: -120%; width: 60%; height: 100%; background: linear-gradient(90deg, transparent, rgba(196,125,142,.15), transparent); animation: shimmer-cta 4s ease-in-out infinite; }
+.hero-cta-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,.2); }
 .carousel-wrapper { flex-shrink: 0; padding: 14px 0; overflow: hidden; }
 .carousel-item { display: inline-flex; align-items: center; gap: 9px; padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 450; white-space: nowrap; flex-shrink: 0; }
 .hero-mobile-cta { display: none; }
