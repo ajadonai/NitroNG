@@ -6,7 +6,8 @@ export default function Maintenance(){
   const getAuto=()=>{const h=new Date().getHours();return h>=7&&h<18?false:true;};
   const [dark,setDark]=useState(getAuto);
   const [mo,setMo]=useState(false);
-  const toggleTheme=()=>{setMo(true);setDark(d=>!d);};
+  const toggleTheme=()=>{setMo(true);setDark(d=>{const next=!d;try{localStorage.setItem("nitro-theme",next?"night":"day");}catch{}return next;});};
+  useEffect(()=>{try{const s=localStorage.getItem("nitro-theme");if(s==="night"||s==="dark"){setDark(true);setMo(true);}else if(s==="day"||s==="light"){setDark(false);setMo(true);}}catch{}},[]);
   useEffect(()=>{if(mo)return;const iv=setInterval(()=>setDark(getAuto()),60000);return()=>clearInterval(iv);},[mo]);
   const [dots,setDots]=useState("");
   useEffect(()=>{const iv=setInterval(()=>setDots(d=>d.length>=3?"":d+"."),500);return()=>clearInterval(iv);},[]);

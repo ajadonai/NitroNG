@@ -102,8 +102,9 @@ export default function AdminPanel(){
   },[]);
   const getAutoTheme=()=>{const h=new Date().getHours(),m=new Date().getMinutes();if(h>=7&&h<18)return false;if(h>=19||h<6)return true;if(h===6)return m<30;if(h===18)return m>=30;return true;};
   const [dark,setDark]=useState(getAutoTheme);const [manualOverride,setManualOverride]=useState(false);
+  useEffect(()=>{try{const s=localStorage.getItem("nitro-theme");if(s==="night"||s==="dark"){setDark(true);setManualOverride(true);}else if(s==="day"||s==="light"){setDark(false);setManualOverride(true);}}catch{}},[]);
   useEffect(()=>{if(manualOverride)return;const iv=setInterval(()=>setDark(getAutoTheme()),60000);return()=>clearInterval(iv);},[manualOverride]);
-  const toggleTheme=()=>{setManualOverride(true);setDark(d=>!d);};const toastTimer=useRef(null);
+  const toggleTheme=()=>{setManualOverride(true);setDark(d=>{const next=!d;try{localStorage.setItem("nitro-theme",next?"night":"day");}catch{}return next;});};const toastTimer=useRef(null);
   const notify=(m,e)=>{setToast({m,e});if(toastTimer.current)clearTimeout(toastTimer.current);toastTimer.current=setTimeout(()=>setToast(null),6000);};
   const logAction=(action,type)=>{setActivityLog(p=>[{id:Date.now(),admin:currentAdmin.name,action,type,time:new Date().toISOString()},...p]);};
   const handleLogout=async()=>{try{await fetch("/api/auth/admin/logout",{method:"POST"});}catch{}window.location.href="/admin/login";};

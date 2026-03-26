@@ -6,7 +6,8 @@ export default function NotFound(){
   const getAuto=()=>{const h=new Date().getHours();if(h>=7&&h<18)return false;return true;};
   const [dark,setDark]=useState(getAuto);
   const [mo,setMo]=useState(false);
-  const toggleTheme=()=>{setMo(true);setDark(d=>!d);};
+  const toggleTheme=()=>{setMo(true);setDark(d=>{const next=!d;try{localStorage.setItem("nitro-theme",next?"night":"day");}catch{}return next;});};
+  useEffect(()=>{try{const s=localStorage.getItem("nitro-theme");if(s==="night"||s==="dark"){setDark(true);setMo(true);}else if(s==="day"||s==="light"){setDark(false);setMo(true);}}catch{}},[]);
   useEffect(()=>{if(mo)return;const iv=setInterval(()=>setDark(getAuto()),60000);return()=>clearInterval(iv);},[mo]);
 
   const t={

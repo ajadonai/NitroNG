@@ -17,8 +17,9 @@ export default function AdminLogin(){
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
 
+  useEffect(()=>{try{const s=localStorage.getItem("nitro-theme");if(s==="night"||s==="dark"){setDark(true);setMo(true);}else if(s==="day"||s==="light"){setDark(false);setMo(true);}}catch{}},[]);
   useEffect(()=>{if(mo)return;const iv=setInterval(()=>setDark(getAuto()),60000);return()=>clearInterval(iv);},[mo]);
-  const toggleTheme=()=>{setMo(true);setDark(d=>!d);};
+  const toggleTheme=()=>{setMo(true);setDark(d=>{const next=!d;try{localStorage.setItem("nitro-theme",next?"night":"day");}catch{}return next;});};
 
   const handleLogin=async(e)=>{
     e.preventDefault();

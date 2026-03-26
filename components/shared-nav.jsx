@@ -18,8 +18,8 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     try {
       const saved = localStorage.getItem("nitro-theme");
-      if (saved === "dark") { setDark(true); setManual(true); }
-      else if (saved === "light") { setDark(false); setManual(true); }
+      if (saved === "night" || saved === "dark") { setDark(true); setManual(true); }
+      else if (saved === "day" || saved === "light") { setDark(false); setManual(true); }
     } catch {}
     setLoaded(true);
   }, []);
@@ -35,7 +35,7 @@ export function ThemeProvider({ children }) {
     setManual(true);
     setDark(d => {
       const next = !d;
-      try { localStorage.setItem("nitro-theme", next ? "dark" : "light"); } catch {}
+      try { localStorage.setItem("nitro-theme", next ? "night" : "day"); } catch {}
       return next;
     });
   }, []);
