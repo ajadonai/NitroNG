@@ -321,8 +321,10 @@ input { font-family: inherit; }
   .dash-right { display: none !important; }
   .dash-left {
     width: 240px; position: absolute; top: 0; bottom: 0; z-index: 15;
+    left: -240px;
     transition: left .3s ease;
   }
+  .dash-overlay { display: block; }
   .dash-main { padding: 24px; }
   .dash-stats { grid-template-columns: 1fr 1fr; }
 }

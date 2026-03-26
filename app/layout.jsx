@@ -1,5 +1,4 @@
 import './globals.css';
-import WhatsAppFloat from '@/components/whatsapp-float';
 
 export const metadata = {
   title: 'Nitro — #1 SMM Panel in Nigeria',
@@ -30,7 +29,6 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         {children}
-        <WhatsAppFloat />
       </body>
     </html>
   );

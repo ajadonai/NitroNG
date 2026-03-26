@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { id: "settings", label: "Settings", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg> },
 ];
 
-const fN=(a)=>`₦${Math.abs(a/100).toLocaleString("en-NG")}`;
+const fN=(a)=>`₦${Math.abs(a).toLocaleString("en-NG")}`;
 const fD=(d)=>new Date(d).toLocaleDateString("en-NG",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
 
 export default function SMMPanel(){
@@ -100,7 +100,7 @@ export default function SMMPanel(){
       <div style={{display:"flex",flex:1,position:"relative",overflow:"hidden"}}>
 
         {/* ── LEFT SIDEBAR ── */}
-        <aside className="dash-left" style={{background:t.sidebarBg,borderRight:`1px solid ${t.sidebarBorder}`,display:"flex",flexDirection:"column",padding:"16px 12px",flexShrink:0,overflow:"auto"}}>
+        <aside className="dash-left" style={{background:t.sidebarBg,borderRight:`1px solid ${t.sidebarBorder}`,display:"flex",flexDirection:"column",padding:"16px 12px",flexShrink:0,overflow:"auto",left:leftOpen?0:undefined}}>
           {NAV_ITEMS.map(item=>(
             <button key={item.id} onClick={()=>{setActive(item.id);setLeftOpen(false);}} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:12,background:active===item.id?t.navActive:"transparent",color:active===item.id?t.accent:t.textSoft,fontSize:13,fontWeight:active===item.id?600:450,marginBottom:2,textAlign:"left",width:"100%"}}>
               <span style={{opacity:active===item.id?1:.6,flexShrink:0}}>{item.icon}</span>
@@ -152,10 +152,10 @@ export default function SMMPanel(){
           <div style={{fontSize:10,fontWeight:650,color:t.textMuted,textTransform:"uppercase",letterSpacing:1.5,marginBottom:12,paddingLeft:4}}>Recent Activity</div>
           {orders.length>0?orders.slice(0,8).map((o,i)=>(
             <div key={i} style={{padding:"10px 12px",borderRadius:10,background:t.cardBg,marginBottom:6}}>
-              <div style={{fontSize:12,fontWeight:500,color:t.text,marginBottom:2}}>{o.serviceName||"Order #"+o.id}</div>
+              <div style={{fontSize:12,fontWeight:500,color:t.text,marginBottom:2}}>{o.service||"Order #"+o.id}</div>
               <div style={{display:"flex",justifyContent:"space-between"}}>
                 <span style={{fontSize:11,fontWeight:600,color:o.status==="Completed"?t.green:o.status==="Pending"?"#e0a458":"#a5b4fc"}}>{o.status}</span>
-                <span style={{fontSize:10,color:t.textMuted}}>{o.createdAt?fD(o.createdAt):""}</span>
+                <span style={{fontSize:10,color:t.textMuted}}>{o.created?fD(o.created):""}</span>
               </div>
             </div>
           )):(
