@@ -72,6 +72,8 @@ input { font-family: inherit; }
 
 /* ── Hero ── */
 #hero { height: calc(100dvh - 60px); }
+.hero-alert-zone { height: 80px; flex-shrink: 0; }
+.hero-content-zone { flex: 1; display: flex; flex-direction: column; }
 
 .hero-split {
   display: flex;
