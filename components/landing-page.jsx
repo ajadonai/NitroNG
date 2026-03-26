@@ -111,7 +111,7 @@ export default function Landing(){
         </nav>
 
         {/* ━━━ HERO ━━━ */}
-        <section id="hero" style={{overflow:"hidden",background:t.heroBg,position:"relative",display:"flex",flexDirection:"column"}}>
+        <section id="hero" style={{background:t.heroBg,position:"relative",display:"flex",flexDirection:"column"}}>
           {/* Alert zone — fixed reserved space for up to 2 alerts */}
           <div className="hero-alert-zone" style={{height:80,flexShrink:0,display:"flex",flexDirection:"column",justifyContent:"center"}}>
             {siteAlerts.length>0&&siteAlerts.map((a,i)=><div key={i} style={{padding:"10px 24px",textAlign:"center",fontSize:13,fontWeight:500,background:a.type==="warning"?(dark?"rgba(217,119,6,.15)":"rgba(255,255,255,.15)"):(dark?"rgba(196,125,142,.1)":"rgba(255,255,255,.1)"),color:a.type==="warning"?(dark?"#fbbf24":"#fff"):(dark?t.accent:"rgba(255,255,255,.9)"),borderBottom:`1px solid ${dark?"rgba(255,255,255,.06)":"rgba(255,255,255,.12)"}`,backdropFilter:"blur(8px)"}}>{a.type==="warning"?"⚠️ ":"🎉 "}{a.message}</div>)}
