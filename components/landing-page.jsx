@@ -95,13 +95,13 @@ export default function Landing(){
   return(
     <div className="root" suppressHydrationWarning style={{height:"100dvh",overflow:"hidden",display:"flex",flexDirection:"column"}}>
       <style suppressHydrationWarning>{`
-        .root{background:${t.bg};color:${t.text};transition:background .5s ease,color .5s ease}
+        .root{background:${t.bg};color:${t.text};transition:background 1.2s ease,color 1.2s ease}
       `}</style>
 
       <div ref={scrollRef} style={{flex:1,overflowY:"auto",overflowX:"hidden",position:"relative"}}>
 
         {/* ═══ NAVBAR ═══ */}
-        <nav className="main-nav" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 36px",height:60,background:dark?"#060810":scrolled?"rgba(139,74,94,.98)":"rgba(163,88,107,.95)",borderBottom:`1px solid ${dark?"rgba(255,255,255,.06)":"rgba(255,255,255,.12)"}`,flexShrink:0,zIndex:100,position:"sticky",top:0,transition:"background .3s"}}>
+        <nav className="main-nav" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 36px",height:60,background:dark?"#060810":scrolled?"rgba(139,74,94,.98)":"rgba(163,88,107,.95)",borderBottom:`1px solid ${dark?"rgba(255,255,255,.06)":"rgba(255,255,255,.12)"}`,flexShrink:0,zIndex:100,position:"sticky",top:0,transition:"background 1.2s ease"}}>
           <button onClick={()=>scrollRef.current?.scrollTo({top:0,behavior:"smooth"})} style={{display:"flex",alignItems:"center",gap:10,background:"none",padding:0}}>
             <div style={{width:30,height:30,borderRadius:8,background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
             <span style={{fontSize:17,fontWeight:700,color:"#fff",letterSpacing:1.5}}>NITRO</span>
@@ -110,10 +110,10 @@ export default function Landing(){
             <div className="nav-links" style={{gap:24,alignItems:"center",marginRight:8}}>
               {["Services","Pricing","FAQ"].map(l=><button key={l} onClick={()=>document.getElementById(l.toLowerCase())?.scrollIntoView({behavior:"smooth"})} style={{background:"none",fontSize:14,color:dark?"rgba(255,255,255,.6)":"rgba(255,255,255,.7)",fontWeight:450}}>{l}</button>)}
             </div>
-            <button onClick={toggleTheme} aria-label={dark?"Switch to light":"Switch to dark"} className="theme-toggle" style={{width:52,height:28,borderRadius:14,background:dark?"rgba(99,102,241,.25)":"rgba(255,255,255,.2)",position:"relative",transition:"background .4s ease",flexShrink:0,border:`1px solid ${dark?"rgba(99,102,241,.2)":"rgba(255,255,255,.25)"}`}}>
-              <div style={{width:22,height:22,borderRadius:"50%",background:dark?"#1e1b4b":"#fff",position:"absolute",top:2,left:dark?27:3,transition:"left .4s cubic-bezier(.34,1.56,.64,1), background .4s ease",boxShadow:dark?"0 0 8px rgba(99,102,241,.3)":"0 1px 6px rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                {dark?<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-                :<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>}
+            <button onClick={toggleTheme} aria-label={dark?"Switch to light":"Switch to dark"} className="theme-toggle" style={{width:52,height:28,borderRadius:14,background:dark?"rgba(99,102,241,.25)":"rgba(255,255,255,.2)",position:"relative",transition:"background .8s ease",flexShrink:0,border:`1px solid ${dark?"rgba(99,102,241,.2)":"rgba(255,255,255,.25)"}`}}>
+              <div style={{width:22,height:22,borderRadius:"50%",background:dark?"#1e1b4b":"#fff",position:"absolute",top:2,left:dark?27:3,transition:"left .8s cubic-bezier(.4,0,.2,1), background .8s ease, box-shadow .8s ease",boxShadow:dark?"0 0 8px rgba(99,102,241,.3)":"0 1px 6px rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                {dark?<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{transition:"opacity .6s ease .2s"}}><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                :<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{transition:"opacity .6s ease .2s"}}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>}
               </div>
             </button>
             <button onClick={()=>setModal("login")} style={{padding:"8px 20px",borderRadius:10,background:"transparent",border:`1px solid ${dark?"rgba(255,255,255,.15)":"rgba(255,255,255,.3)"}`,color:"#fff",fontSize:13,fontWeight:600}}>Log In</button>
