@@ -35,6 +35,9 @@ export default function Landing(){
   const [faqOpen,setFaqOpen]=useState(null);
   const [activeStep,setActiveStep]=useState(0);
   const [scrolled,setScrolled]=useState(false);
+  const [activeSection,setActiveSection]=useState(0);
+  const [activeTestimonial,setActiveTestimonial]=useState(0);
+  const testimonialScrollRef=useRef(null);
   const scrollRef=useRef(null);
   const [siteStats,setSiteStats]=useState({users:"12K+",orders:"2M+"});
   const [promoBanner,setPromoBanner]=useState(null);
@@ -74,7 +77,7 @@ export default function Landing(){
   },[modal]);
   useEffect(()=>{
     const el=scrollRef.current;if(!el)return;
-    const onScroll=()=>{const sections=sectionIds.map(id=>document.getElementById(id)).filter(Boolean);const st=el.scrollTop;let c=0,min=Infinity;sections.forEach((s,i)=>{const d=Math.abs(s.offsetTop-st);if(d<min){min=d;c=i;}});currentSec.current=c;};
+    const onScroll=()=>{const sections=sectionIds.map(id=>document.getElementById(id)).filter(Boolean);const st=el.scrollTop;let c=0,min=Infinity;sections.forEach((s,i)=>{const d=Math.abs(s.offsetTop-st);if(d<min){min=d;c=i;}});currentSec.current=c;setActiveSection(c);};
     el.addEventListener("scroll",onScroll,{passive:true});return()=>el.removeEventListener("scroll",onScroll);
   },[]);
 
@@ -122,7 +125,7 @@ export default function Landing(){
         </nav>
 
         {/* ━━━ HERO ━━━ */}
-        <section id="hero" style={{overflow:"hidden",background:t.heroBg,position:"relative",display:"flex",flexDirection:"column"}}>
+        <section id="hero" className="snap-section" style={{overflow:"hidden",background:t.heroBg,position:"relative",display:"flex",flexDirection:"column"}}>
           {/* Alert banner area */}
           <div style={{flexShrink:0}}>
             {siteAlerts.length>0&&siteAlerts.map((a,i)=><div key={i} style={{padding:"10px 24px",textAlign:"center",fontSize:13,fontWeight:500,background:a.type==="warning"?(dark?"rgba(217,119,6,.08)":"rgba(255,255,255,.12)"):(dark?"rgba(196,125,142,.06)":"rgba(255,255,255,.1)"),color:a.type==="warning"?(dark?"#fbbf24":"rgba(255,255,255,.95)"):(dark?"#c47d8e":"rgba(255,255,255,.9)"),borderBottom:`1px solid ${dark?"rgba(255,255,255,.04)":"rgba(255,255,255,.1)"}`,borderLeft:`3px solid ${a.type==="warning"?(dark?"rgba(251,191,36,.3)":"rgba(255,255,255,.35)"):(dark?"rgba(196,125,142,.25)":"rgba(255,255,255,.3)")}`,letterSpacing:.2}}>{a.type==="warning"?"⚠️ ":"🎉 "}{a.message}</div>)}
@@ -320,7 +323,7 @@ export default function Landing(){
           </div>
 
           {/* Mobile horizontal scroll */}
-          <div className="s4-scroll">
+          <div className="s4-scroll" ref={testimonialScrollRef} onScroll={()=>{const el=testimonialScrollRef.current;if(!el)return;const idx=Math.round(el.scrollLeft/272);setActiveTestimonial(Math.min(idx,5));}}>
             {[["Chioma A.","Fashion Brand Owner","Nitro delivered 5K followers in under 2 hours. My engagement actually went up.",5,"CA","#c47d8e"],["Tunde M.","Music Producer","3 months boosting YouTube views. Pricing is unbeatable, delivery always instant.",5,"TM","#e0a458"],["Amara O.","Content Creator","24/7 support — had an issue at 2AM, someone responded within minutes.",5,"AO","#6ee7b7"],["Emeka N.","Digital Marketer","Managing 12 clients. Nitro saves me ₦50K monthly with bulk pricing.",4,"EN","#a5b4fc"],["Blessing I.","Beauty Influencer","Started with ₦500. TikTok grew from 2K to 45K in 4 months.",5,"BI","#f472b6"],["Kola D.","E-commerce Seller","Fastest Nigerian SMM panel. Instagram likes in literally seconds.",5,"KD","#fbbf24"]].map(([name,role,text,rating,avatar,color],i)=>(
               <div key={i} className="s4-scroll-card" style={{background:dark?"rgba(255,255,255,.05)":"rgba(255,255,255,.85)",border:`1px solid ${dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.1)"}`}}>
                 <div className="s4-stars">{Array(5).fill(0).map((_,j)=><svg key={j} width="12" height="12" viewBox="0 0 24 24" fill={j<rating?"#fbbf24":"none"} stroke="#fbbf24" strokeWidth="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>)}</div>
@@ -333,7 +336,7 @@ export default function Landing(){
             ))}
           </div>
           <div className="s4-dots">
-            {Array(6).fill(0).map((_,i)=><div key={i} className="s4-dot" style={{background:i===0?t.accent:t.textMuted}}/>)}
+            {Array(6).fill(0).map((_,i)=><button key={i} className="s4-dot" style={{background:activeTestimonial===i?t.accent:t.textMuted,opacity:activeTestimonial===i?1:.4}} onClick={()=>{testimonialScrollRef.current?.scrollTo({left:i*272,behavior:"smooth"})}}/>)}
           </div>
         </section>
 
@@ -366,7 +369,7 @@ export default function Landing(){
 
         <div className="section-divider" style={{background:t.bg}}><div className="section-divider-line" style={{background:`linear-gradient(90deg,transparent,${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"},transparent)`}}/><div className="section-divider-dot" style={{background:t.accent}}/><div className="section-divider-line" style={{background:`linear-gradient(90deg,transparent,${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"},transparent)`}}/></div>
 
-        <div className="s6-wrapper snap-section" style={{background:t.bgAlt}}>
+        <div id="cta" className="s6-wrapper snap-section" style={{background:t.bgAlt}}>
         {/* ━━━ SECTION 6: CTA + FOOTER ━━━ */}
         <div className="s6-cta-wrapper">
           <div className="s6-cta" style={{background:dark?"linear-gradient(145deg,#1a0e14 0%,#2d1520 30%,#1e0f18 60%,#0f0a12 100%)":"linear-gradient(145deg,#c47d8e 0%,#a3586b 35%,#8b4a5e 65%,#6b3a4a 100%)",border:dark?"1px solid rgba(196,125,142,.12)":"none"}}>
@@ -431,6 +434,13 @@ export default function Landing(){
         </footer>
         </div>{/* end s6-wrapper */}
 
+      </div>
+
+      {/* Side navigation indicator — desktop only */}
+      <div className="side-nav">
+        {sectionIds.map((id,i)=>(
+          <button key={id} className={`side-nav-dot${activeSection===i?" side-nav-active":""}`} style={{background:activeSection===i?t.accent:t.textMuted}} onClick={()=>document.getElementById(id)?.scrollIntoView({behavior:"smooth"})} title={id}/>
+        ))}
       </div>
 
       {modal&&<AuthModal key="auth-modal" dark={dark} t={t} mode={modal} setMode={setModal} onClose={closeModal}/>}
