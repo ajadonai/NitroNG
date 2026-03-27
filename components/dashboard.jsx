@@ -55,9 +55,11 @@ function OverviewPage({ user, orders, alerts, dark, t }) {
       {alerts.length > 0 && alerts.map((a, i) => (
         <div key={a.id || i} className="dash-alert" style={{
           background: a.type === "warning" ? (dark ? "rgba(217,119,6,.08)" : "rgba(217,119,6,.04)") : (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)"),
-          borderWidth: 1, borderStyle: "solid",
-          borderColor: a.type === "warning" ? (dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.12)") : (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)"),
-          borderLeftWidth: 3,
+          borderTopWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderLeftWidth: 3,
+          borderStyle: "solid",
+          borderTopColor: a.type === "warning" ? (dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.12)") : (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)"),
+          borderRightColor: a.type === "warning" ? (dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.12)") : (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)"),
+          borderBottomColor: a.type === "warning" ? (dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.12)") : (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)"),
           borderLeftColor: a.type === "warning" ? (dark ? "#fbbf24" : "#d97706") : t.accent,
           color: a.type === "warning" ? (dark ? "#fbbf24" : "#92400e") : t.text,
         }}>
@@ -352,7 +354,9 @@ export default function Dashboard() {
       {/* ═══ TOP NAV ═══ */}
       <nav className="dash-nav" style={{ background: t.sidebarBg, borderBottom: `1px solid ${t.sidebarBorder}` }}>
         <div className="dash-nav-left">
-          <button className="dash-hamburger" onClick={() => setLeftOpen(!leftOpen)} style={{ color: t.textSoft }}>{I.hamburger}</button>
+          <button className="dash-hamburger" onClick={() => setLeftOpen(!leftOpen)} style={{ color: t.textSoft }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
           <a href="/" className="dash-logo-link">
             <div className="dash-logo-box">
               <svg width="11" height="11" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
