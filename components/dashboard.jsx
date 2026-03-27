@@ -260,13 +260,9 @@ export default function Dashboard() {
   const getAuto = () => { const h = new Date().getHours(), m = new Date().getMinutes(); if (h >= 7 && h < 18) return false; if (h >= 19 || h < 6) return true; if (h === 6) return m < 30; if (h === 18) return m >= 30; return true; };
   const [dark, setDark] = useState(false);
   const [themeMode, setThemeMode] = useState("auto");
-  const [active, setActiveRaw] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("nitro-page") || "overview";
-    }
-    return "overview";
-  });
+  const [active, setActiveRaw] = useState("overview");
   const setActive = (page) => { setActiveRaw(page); try { localStorage.setItem("nitro-page", page); } catch {} };
+  useEffect(() => { try { const saved = localStorage.getItem("nitro-page"); if (saved) setActiveRaw(saved); } catch {} }, []);
   const [leftOpen, setLeftOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [user, setUser] = useState(null);
