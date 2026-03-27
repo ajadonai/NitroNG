@@ -515,7 +515,7 @@ export default function Dashboard() {
           {renderPage()}
 
           {/* Footer */}
-          <div className="dash-footer" style={{ borderTop: `1px solid ${t.sidebarBorder}` }}>
+          <div className="dash-footer" style={{ borderTopColor: t.sidebarBorder }}>
             <span style={{ color: t.textMuted }}>© 2026 Nitro</span>
             <div className="dash-footer-links">
               <a href="/terms" style={{ color: t.textMuted }}>Terms</a>
