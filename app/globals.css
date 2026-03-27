@@ -401,7 +401,7 @@ input { font-family: inherit; }
 .dash-footer-links a { text-decoration: none; display: flex; align-items: center; }
 
 /* Right sidebar */
-.dash-right { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; padding: 20px 16px; overflow: hidden; }
+.dash-right { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; padding: 20px 16px; overflow: auto; overscroll-behavior: none; }
 .dash-rs-section { overflow: auto; }
 .dash-rs-active { flex: 0 0 40%; }
 .dash-rs-promo { flex: 0 0 45%; padding-top: 8px; }
