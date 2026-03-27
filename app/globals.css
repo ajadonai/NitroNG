@@ -312,20 +312,48 @@ input { font-family: inherit; }
 .dash-body { display: flex; flex: 1; position: relative; overflow: hidden; }
 
 /* ── HOVER EFFECTS ── */
-.dash-stat-card { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease; cursor: pointer; }
-.dash-stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
-.dash-order-row { transition: background .15s ease; cursor: pointer; }
-.dash-order-row:hover { background: rgba(196,125,142,.03); }
-.dash-nav-item { transition: background .15s ease, color .15s ease; }
-.dash-nav-item:hover { background: rgba(255,255,255,.04); }
-.dash-bell { transition: background .15s ease; border-radius: 8px; }
-.dash-bell:hover { background: rgba(255,255,255,.06); }
-.dash-avatar-btn { transition: background .15s ease; border-radius: 10px; padding: 4px 8px 4px 4px; }
-.dash-avatar-btn:hover { background: rgba(255,255,255,.05); }
-.dash-notif-item { transition: background .15s ease; }
-.dash-notif-item:hover { background: rgba(196,125,142,.04) !important; }
-.dash-logout { transition: opacity .15s ease; }
+.dash-stat-card { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background-color .15s ease !important; cursor: pointer; }
+.dash-stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); border-color: rgba(196,125,142,.25) !important; }
+.dash-order-row { transition: background-color .15s ease !important; cursor: pointer; }
+.dash-order-row:hover { background: rgba(196,125,142,.04); }
+.dash-nav-item { transition: background-color .15s ease, color .15s ease !important; }
+.dash-nav-item:hover { background: rgba(196,125,142,.06); }
+.dash-bell { transition: background-color .15s ease !important; border-radius: 8px; }
+.dash-bell:hover { background: rgba(196,125,142,.08); }
+.dash-avatar-btn { transition: background-color .15s ease !important; border-radius: 10px; padding: 4px 8px 4px 4px; }
+.dash-avatar-btn:hover { background: rgba(196,125,142,.06); }
+.dash-notif-item { transition: background-color .15s ease !important; }
+.dash-notif-item:hover { background: rgba(196,125,142,.05) !important; }
+.dash-logout { transition: opacity .15s ease !important; }
 .dash-logout:hover { opacity: 1 !important; }
+.no-plat-item { transition: background-color .15s ease, color .15s ease !important; }
+.no-plat-item:hover { background: rgba(196,125,142,.06); }
+.no-svc-row { transition: background-color .15s ease !important; }
+.no-svc-row:hover { background: rgba(196,125,142,.03); }
+.no-filter-pill { transition: border-color .15s ease, background-color .15s ease, color .15s ease !important; }
+.no-filter-pill:hover { border-color: rgba(196,125,142,.4); color: #c47d8e; }
+.svc-row { transition: background-color .15s ease !important; }
+.svc-row:hover { background: rgba(196,125,142,.03); }
+.svc-order-btn { transition: background-color .15s ease, transform .15s ease !important; }
+.svc-order-btn:hover { transform: translateY(-1px); }
+.ord-row { transition: background-color .15s ease !important; }
+.ord-row:hover { background: rgba(196,125,142,.03); }
+.ref-info-row { transition: background-color .15s ease !important; }
+.ref-info-row:hover { background: rgba(196,125,142,.03); }
+.fund-preset { transition: border-color .15s ease, background-color .15s ease, color .15s ease, transform .15s ease !important; }
+.fund-preset:hover { transform: translateY(-1px); }
+.fund-method-row { transition: background-color .15s ease !important; }
+.fund-method-row:hover { background: rgba(196,125,142,.04); }
+.fund-pay-btn { transition: transform .2s ease, box-shadow .2s ease !important; }
+.fund-pay-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(196,125,142,.25); }
+.set-btn-primary { transition: transform .2s ease, box-shadow .2s ease !important; }
+.set-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(196,125,142,.25); }
+.sup-quick-btn { transition: border-color .15s ease, background-color .15s ease !important; }
+.sup-quick-btn:hover { border-color: rgba(196,125,142,.3); }
+.sup-send-btn { transition: transform .15s ease, box-shadow .15s ease !important; }
+.sup-send-btn:hover { transform: translateY(-1px); }
+.sup-tkt-row { transition: background-color .15s ease !important; }
+.sup-tkt-row:hover { background: rgba(196,125,142,.03); }
 
 /* ── SKELETON LOADING ── */
 @keyframes skeletonShimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
