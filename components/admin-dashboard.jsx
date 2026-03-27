@@ -344,7 +344,7 @@ export default function AdminDashboard() {
 
       {/* ═══ BODY ═══ */}
       <div className="dash-body">
-        <aside className="dash-left" style={{ background: t.sidebarBg, borderRight: `1px solid ${t.sidebarBorder}`, left: leftOpen ? 0 : undefined }}>
+        <aside className="dash-left admin-sidebar" style={{ background: t.sidebarBg, borderRight: `1px solid ${t.sidebarBorder}`, left: leftOpen ? 0 : undefined, overflow: "hidden" }}>
           {ADMIN_NAV.map(section => (
             <div key={section.section}>
               <div className="adm-nav-section" style={{ color: t.textMuted }}>{section.section}</div>
@@ -360,11 +360,10 @@ export default function AdminDashboard() {
 
           <div style={{ flex: 1 }} />
           <div className="dash-sidebar-divider" style={{ background: t.sidebarBorder }} />
-          <div style={{ padding: "10px 14px" }}>
-            <div style={{ fontSize: 10, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 }}>Status</div>
+          <div style={{ padding: "6px 14px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <div style={{ width: 7, height: 7, borderRadius: "50%", background: t.green }} />
-              <span style={{ fontSize: 11, color: t.green, fontWeight: 500 }}>All systems operational</span>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: t.green }} />
+              <span style={{ fontSize: 10, color: t.green, fontWeight: 500 }}>All systems operational</span>
             </div>
           </div>
           <div className="dash-sidebar-divider" style={{ background: t.sidebarBorder }} />
