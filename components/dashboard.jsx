@@ -483,34 +483,7 @@ export default function Dashboard() {
         {/* ── LEFT SIDEBAR ── */}
         <aside className="dash-left" style={{ background: t.sidebarBg, borderRight: `1px solid ${t.sidebarBorder}`, left: leftOpen ? 0 : undefined }}>
 
-          {(isNewOrder || isServices) ? (
-            /* ── Platform categories for New Order / Services ── */
-            <>
-              <button onClick={() => { setActive("overview"); setLeftOpen(false); }} className="dash-nav-item dash-back-btn" style={{ color: t.accent, fontWeight: 600, marginBottom: 8 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="15 18 9 12 15 6"/></svg>
-                Back to menu
-              </button>
-              <div style={{ fontSize: 10, fontWeight: 650, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1.5, padding: "0 14px 8px" }}>Platforms</div>
-              <div className="dash-plat-list">
-                {PLATFORM_GROUPS.map(group => (
-                  <div key={group.label}>
-                    <div style={{ fontSize: 9, fontWeight: 600, color: t.accent, textTransform: "uppercase", letterSpacing: 1, padding: "10px 14px 4px", opacity: .7 }}>{group.label}</div>
-                    {group.platforms.map(p => {
-                      const currentPlat = isNewOrder ? noPlatform : svcPlatform;
-                      const setPlat = isNewOrder ? setNoPlatform : setSvcPlatform;
-                      return (
-                        <button key={p.id} onClick={() => { setPlat(p.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: currentPlat === p.id ? t.navActive : "transparent", color: currentPlat === p.id ? t.accent : t.textSoft, fontWeight: currentPlat === p.id ? 600 : 430 }}>
-                          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 18, opacity: currentPlat === p.id ? 1 : .5, flexShrink: 0 }}>{p.icon}</span>
-                          {p.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            /* ── Regular nav items ── */
+            {/* ── Regular nav items — always shown ── */}
             <>
               {NAV_ITEMS.map(item => (
                 <button key={item.id} onClick={() => { setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: active === item.id ? t.navActive : "transparent", color: active === item.id ? t.accent : t.textSoft, fontWeight: active === item.id ? 600 : 450 }}>

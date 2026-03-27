@@ -204,26 +204,52 @@ export default function NewOrderPage({ dark, t, platform, setPlatform, selSvc, s
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {/* Platform selector — tablet/mobile only */}
-      <div className="no-plat-btn-wrap">
-        <button onClick={() => setCatModal(true)} className="no-plat-btn" style={{ borderWidth: 1, borderStyle: "solid", borderColor: t.accent, background: dark ? "#2a1a22" : "#fdf2f4", color: t.accent }}>
-          <span style={{ display: "flex", alignItems: "center" }}>{activePlat?.icon}</span>
-          {activePlat?.label}
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginLeft: "auto" }}><polyline points="6 9 12 15 18 9" /></svg>
-        </button>
-      </div>
+      {/* ═══ CONTENT WITH INLINE PLATFORM PICKER ═══ */}
+      <div className="no-content-split">
 
-      {types.length > 1 && (
-        <div className="no-filters">
-          {["all", ...types].map(ty => (
-            <button key={ty} onClick={() => setFilterType(ty)} className="no-filter-pill" style={{ borderWidth: 1, borderStyle: "solid", borderColor: filterType === ty ? t.accent : t.cardBorder, background: filterType === ty ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: filterType === ty ? t.accent : t.textMuted }}>{ty}</button>
+        {/* ── Inline platform sidebar (desktop only) ── */}
+        <div className="no-plat-sidebar" style={{ borderRight: `1px solid ${t.cardBorder}` }}>
+          {PLATFORM_GROUPS.map(group => (
+            <div key={group.label} className="no-plat-group">
+              <div className="no-plat-group-label" style={{ color: t.accent }}>{group.label}</div>
+              {group.platforms.map(p => {
+                const active = platform === p.id;
+                return (
+                  <button key={p.id} onClick={() => setPlatform(p.id)} className="no-plat-item" style={{ background: active ? t.navActive : "transparent", color: active ? t.accent : t.textSoft, fontWeight: active ? 600 : 430 }}>
+                    <span className="no-plat-item-icon" style={{ opacity: active ? 1 : .5 }}>{p.icon}</span>
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
           ))}
         </div>
-      )}
 
-      <div className="no-svc-list">
-        {filtered.map(svc => <ServiceRow key={svc.id} svc={svc} />)}
-        {filtered.length === 0 && <div className="no-empty" style={{ color: t.textMuted }}>Coming soon.</div>}
+        {/* ── Service list ── */}
+        <div className="no-svc-area">
+
+          {/* Platform selector — tablet/mobile only */}
+          <div className="no-plat-btn-wrap">
+            <button onClick={() => setCatModal(true)} className="no-plat-btn" style={{ borderWidth: 1, borderStyle: "solid", borderColor: t.accent, background: dark ? "#2a1a22" : "#fdf2f4", color: t.accent }}>
+              <span style={{ display: "flex", alignItems: "center" }}>{activePlat?.icon}</span>
+              {activePlat?.label}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginLeft: "auto" }}><polyline points="6 9 12 15 18 9" /></svg>
+            </button>
+          </div>
+
+          {types.length > 1 && (
+            <div className="no-filters">
+              {["all", ...types].map(ty => (
+                <button key={ty} onClick={() => setFilterType(ty)} className="no-filter-pill" style={{ borderWidth: 1, borderStyle: "solid", borderColor: filterType === ty ? t.accent : t.cardBorder, background: filterType === ty ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: filterType === ty ? t.accent : t.textMuted }}>{ty}</button>
+              ))}
+            </div>
+          )}
+
+          <div className="no-svc-list">
+            {filtered.map(svc => <ServiceRow key={svc.id} svc={svc} />)}
+            {filtered.length === 0 && <div className="no-empty" style={{ color: t.textMuted }}>Coming soon.</div>}
+          </div>
+        </div>
       </div>
 
       {/* Fixed bottom bar — mobile/tablet */}

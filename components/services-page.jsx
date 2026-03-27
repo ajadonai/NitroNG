@@ -82,46 +82,72 @@ export default function ServicesPage({ dark, t, svcPlatform, setSvcPlatform, onO
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {/* Platform selector — tablet/mobile: button opens grid modal */}
-      <div className="svc-plat-btn-wrap">
-        <button onClick={() => setCatModal(true)} className="no-plat-btn" style={{ borderWidth: 1, borderStyle: "solid", borderColor: t.accent, background: dark ? "#2a1a22" : "#fdf2f4", color: t.accent }}>
-          <span style={{ display: "flex", alignItems: "center" }}>{platInfo?.icon}</span>
-          {platInfo?.label}
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginLeft: "auto" }}><polyline points="6 9 12 15 18 9" /></svg>
-        </button>
-      </div>
+      {/* ═══ CONTENT WITH INLINE PLATFORM PICKER ═══ */}
+      <div className="no-content-split">
 
-      {/* Search */}
-      <input placeholder="Search services..." value={search} onChange={e => setSearch(e.target.value)} className="m svc-search" style={{ borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text }} />
-
-      {/* Platform name + count */}
-      <div className="svc-plat-name">
-        <span style={{ color: t.text }}>{platInfo?.label || svcPlatform}</span>
-        <span className="m" style={{ color: t.textMuted }}>({services.length} services)</span>
-      </div>
-
-      {/* Service list */}
-      <div className="svc-list" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
-        {services.length > 0 ? services.map((svc, i) => (
-          <div key={svc.name} className="svc-row" style={{ borderBottom: i < services.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-            <div className="svc-row-name" style={{ color: svc.ng ? (dark ? "#5dcaa5" : "#0F6E56") : t.text }}>{svc.name}</div>
-            <div className="svc-row-right">
-              {svc.tiers.map(tier => {
-                const s = TS[tier.t];
+        {/* ── Inline platform sidebar (desktop only) ── */}
+        <div className="no-plat-sidebar" style={{ borderRight: `1px solid ${t.cardBorder}` }}>
+          {PLATFORM_GROUPS.map(group => (
+            <div key={group.label} className="no-plat-group">
+              <div className="no-plat-group-label" style={{ color: t.accent }}>{group.label}</div>
+              {group.platforms.map(p => {
+                const active = svcPlatform === p.id;
                 return (
-                  <div key={tier.t} className="m svc-tier-badge" style={{ background: dark ? s.bgD : s.bg, borderWidth: 1, borderStyle: "solid", borderColor: dark ? s.borderD : s.border }}>
-                    <span style={{ color: s.text, fontWeight: 600 }}>{s.label}</span>
-                    <span className="svc-tier-price" style={{ color: s.text }}>₦{tier.p.toLocaleString()}</span>
-                    <span className="svc-tier-per" style={{ color: s.text }}>/1K</span>
-                  </div>
+                  <button key={p.id} onClick={() => setSvcPlatform(p.id)} className="no-plat-item" style={{ background: active ? t.navActive : "transparent", color: active ? t.accent : t.textSoft, fontWeight: active ? 600 : 430 }}>
+                    <span className="no-plat-item-icon" style={{ opacity: active ? 1 : .5 }}>{p.icon}</span>
+                    {p.label}
+                  </button>
                 );
               })}
-              <button onClick={() => onOrderNav(svcPlatform)} className="svc-order-btn">Order</button>
             </div>
+          ))}
+        </div>
+
+        {/* ── Service list area ── */}
+        <div className="no-svc-area">
+
+          {/* Platform selector — tablet/mobile: button opens grid modal */}
+          <div className="svc-plat-btn-wrap">
+            <button onClick={() => setCatModal(true)} className="no-plat-btn" style={{ borderWidth: 1, borderStyle: "solid", borderColor: t.accent, background: dark ? "#2a1a22" : "#fdf2f4", color: t.accent }}>
+              <span style={{ display: "flex", alignItems: "center" }}>{platInfo?.icon}</span>
+              {platInfo?.label}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginLeft: "auto" }}><polyline points="6 9 12 15 18 9" /></svg>
+            </button>
           </div>
-        )) : (
-          <div className="svc-empty" style={{ color: t.textMuted }}>No services found</div>
-        )}
+
+          {/* Search */}
+          <input placeholder="Search services..." value={search} onChange={e => setSearch(e.target.value)} className="m svc-search" style={{ borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text }} />
+
+          {/* Platform name + count */}
+          <div className="svc-plat-name">
+            <span style={{ color: t.text }}>{platInfo?.label || svcPlatform}</span>
+            <span className="m" style={{ color: t.textMuted }}>({services.length} services)</span>
+          </div>
+
+          {/* Service list */}
+          <div className="svc-list" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
+            {services.length > 0 ? services.map((svc, i) => (
+              <div key={svc.name} className="svc-row" style={{ borderBottom: i < services.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
+                <div className="svc-row-name" style={{ color: svc.ng ? (dark ? "#5dcaa5" : "#0F6E56") : t.text }}>{svc.name}</div>
+                <div className="svc-row-right">
+                  {svc.tiers.map(tier => {
+                    const s = TS[tier.t];
+                    return (
+                      <div key={tier.t} className="m svc-tier-badge" style={{ background: dark ? s.bgD : s.bg, borderWidth: 1, borderStyle: "solid", borderColor: dark ? s.borderD : s.border }}>
+                        <span style={{ color: s.text, fontWeight: 600 }}>{s.label}</span>
+                        <span className="svc-tier-price" style={{ color: s.text }}>₦{tier.p.toLocaleString()}</span>
+                        <span className="svc-tier-per" style={{ color: s.text }}>/1K</span>
+                      </div>
+                    );
+                  })}
+                  <button onClick={() => onOrderNav(svcPlatform)} className="svc-order-btn">Order</button>
+                </div>
+              </div>
+            )) : (
+              <div className="svc-empty" style={{ color: t.textMuted }}>No services found</div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Category modal — tablet/mobile */}

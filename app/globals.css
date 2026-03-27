@@ -483,6 +483,15 @@ input { font-family: inherit; }
 .no-title { font-size: 22px; font-weight: 700; margin-bottom: 2px; }
 .no-subtitle { font-size: 13px; }
 
+/* Content split — inline platform picker + service list */
+.no-content-split { display: flex; gap: 0; margin-top: 18px; flex: 1; overflow: hidden; }
+.no-plat-sidebar { width: 180px; flex-shrink: 0; overflow: auto; padding-right: 16px; margin-right: 20px; }
+.no-plat-group { margin-bottom: 14px; }
+.no-plat-group-label { font-size: 9px; font-weight: 650; text-transform: uppercase; letter-spacing: 1px; padding: 0 0 6px; opacity: .7; }
+.no-plat-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 8px; width: 100%; text-align: left; font-size: 12px; margin-bottom: 1px; cursor: pointer; }
+.no-plat-item-icon { display: flex; align-items: center; justify-content: center; width: 18px; flex-shrink: 0; }
+.no-svc-area { flex: 1; overflow: auto; display: flex; flex-direction: column; min-width: 0; }
+
 /* Platform button (tablet/mobile — hidden on desktop) */
 .no-plat-btn-wrap { display: none; margin-bottom: 10px; }
 .no-plat-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
@@ -556,6 +565,8 @@ input { font-family: inherit; }
 /* ── TABLET: 768-1199px ── */
 @media (max-width: 1199px) {
   .no-plat-btn-wrap { display: block; }
+  .no-plat-sidebar { display: none; }
+  .no-content-split { margin-top: 14px; }
   .no-title { font-size: 18px; }
   .no-subtitle { font-size: 12px; }
   .no-tier-grid { grid-template-columns: repeat(2, 1fr); }
