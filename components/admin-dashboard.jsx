@@ -344,7 +344,7 @@ export default function AdminDashboard() {
 
       {/* ═══ BODY ═══ */}
       <div className="dash-body">
-        <aside className="dash-left admin-sidebar" style={{ background: t.sidebarBg, borderRight: `1px solid ${t.sidebarBorder}`, left: leftOpen ? 0 : undefined, overflow: "hidden" }}>
+        <aside className="dash-left admin-sidebar" style={{ background: t.sidebarBg, borderRight: `1px solid ${t.sidebarBorder}`, left: leftOpen ? 0 : undefined }}>
           {ADMIN_NAV.map(section => (
             <div key={section.section}>
               <div className="adm-nav-section" style={{ color: t.textMuted }}>{section.section}</div>
