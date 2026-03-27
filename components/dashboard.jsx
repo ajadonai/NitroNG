@@ -6,6 +6,7 @@ import ReferralsPage, { ReferralsSidebar } from "./referrals-page";
 import ServicesPage, { ServicesSidebar } from "./services-page";
 import SettingsPage, { SettingsSidebar } from "./settings-page";
 import SupportPage, { SupportSidebar } from "./support-page";
+import AddFundsPage, { AddFundsSidebar } from "./addfunds-page";
 
 /* ═══════════════════════════════════════════ */
 /* ═══ SVG ICONS                          ═══ */
@@ -281,6 +282,7 @@ export default function Dashboard() {
   const isServices = active === "services";
   const isSettings = active === "settings";
   const isSupport = active === "support";
+  const isAddFunds = active === "add-funds";
   const noHasOrder = noSelSvc && noSelTier;
 
   /* Services page state */
@@ -362,6 +364,8 @@ export default function Dashboard() {
         return <SettingsPage user={user} dark={dark} t={t} themeMode={themeMode} setThemeMode={setThemeMode} setDark={setDark} />;
       case "support":
         return <SupportPage dark={dark} t={t} tickets={[]} />;
+      case "add-funds":
+        return <AddFundsPage user={user} dark={dark} t={t} />;
       default:
         return (
           <div className="dash-placeholder" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
@@ -479,7 +483,7 @@ export default function Dashboard() {
 
         {/* ── MAIN ── */}
         <main className="dash-main" style={{ background: t.bg }}>
-          {!isNewOrder && !isOrders && !isReferrals && !isServices && !isSettings && !isSupport && <>
+          {!isNewOrder && !isOrders && !isReferrals && !isServices && !isSettings && !isSupport && !isAddFunds && <>
             <div className="dash-welcome" style={{ color: t.text }}>Welcome back, {firstName.toUpperCase()}</div>
             <div className="dash-welcome-sub" style={{ color: t.textMuted }}>Here's what's happening with your account.</div>
           </>}
@@ -524,6 +528,8 @@ export default function Dashboard() {
             <SettingsSidebar user={user} dark={dark} t={t} />
           ) : isSupport ? (
             <SupportSidebar dark={dark} t={t} tickets={[]} />
+          ) : isAddFunds ? (
+            <AddFundsSidebar user={user} txs={txs} dark={dark} t={t} />
           ) : (
             <RightSidebar orders={orders} user={user} dark={dark} t={t} />
           )}
