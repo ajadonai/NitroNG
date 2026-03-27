@@ -1,0 +1,218 @@
+'use client';
+import { useState, useEffect } from "react";
+
+const fN = (a) => `₦${Math.abs(a).toLocaleString("en-NG")}`;
+const fD = (d) => new Date(d).toLocaleDateString("en-NG", { month: "short", day: "numeric", year: "numeric" });
+
+/* ═══════════════════════════════════════════ */
+/* ═══ REFERRALS PAGE                      ═══ */
+/* ═══════════════════════════════════════════ */
+export default function ReferralsPage({ user, dark, t }) {
+  const [copied, setCopied] = useState(null);
+  const [page, setPage] = useState(1);
+
+  /* Per-page from shared localStorage */
+  const [perPage, setPerPage] = useState(10);
+  useEffect(() => { try { const s = localStorage.getItem("nitro-per-page"); if (s) setPerPage(Number(s)); } catch {} }, []);
+
+  const refCode = user?.refCode || "—";
+  const refLink = `nitro.ng/?ref=${refCode}`;
+  const referrals = user?.referralList || [];
+  const totalEarnings = user?.earnings || 0;
+  const totalRefs = user?.refs || referrals.length;
+  const activeRefs = referrals.filter(r => r.status === "Active").length;
+
+  const totalPages = Math.ceil(referrals.length / perPage);
+  const paged = referrals.slice((page - 1) * perPage, page * perPage);
+
+  const copyText = (text, type) => {
+    try { navigator.clipboard?.writeText(text); } catch {}
+    setCopied(type);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  return (
+    <>
+      {/* Header */}
+      <div className="ref-header">
+        <div className="ref-title" style={{ color: t.text }}>Referrals</div>
+        <div className="ref-subtitle" style={{ color: t.textMuted }}>Earn rewards by inviting friends to Nitro</div>
+      </div>
+
+      {/* Share card */}
+      <div className="ref-share-card" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
+        <div className="ref-share-label" style={{ color: t.textMuted }}>Your Referral</div>
+        <div className="ref-share-row">
+          {/* Code */}
+          <div className="ref-share-col">
+            <div className="ref-field-label" style={{ color: t.textMuted }}>Referral Code</div>
+            <div className="ref-code-row">
+              <div className="m ref-code" style={{ color: t.accent }}>{refCode}</div>
+              <button onClick={() => copyText(refCode, "code")} className="ref-copy-btn" style={{ borderColor: t.cardBorder, color: copied === "code" ? t.green : t.textSoft }}>
+                {copied === "code" ? "Copied ✓" : "Copy"}
+              </button>
+            </div>
+          </div>
+          {/* Link */}
+          <div className="ref-share-col ref-share-col-link">
+            <div className="ref-field-label" style={{ color: t.textMuted }}>Share Link</div>
+            <div className="ref-link-row">
+              <div className="m ref-link-box" style={{ background: dark ? "#0d1020" : "#fff", borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", color: t.textSoft }}>{refLink}</div>
+              <button onClick={() => copyText(`https://${refLink}`, "link")} className="ref-copy-link-btn">
+                {copied === "link" ? "Copied ✓" : "Copy Link"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="ref-stats">
+        {[
+          ["Total Referrals", String(totalRefs), dark ? "#a5b4fc" : "#4f46e5"],
+          ["Active", String(activeRefs), t.green],
+          ["Total Earned", fN(totalEarnings), t.accent],
+          ["Available", fN(totalEarnings), t.green],
+        ].map(([label, val, color]) => (
+          <div key={label} className="ref-stat-card" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
+            <div className="ref-stat-label" style={{ color: t.textMuted }}>{label}</div>
+            <div className="m ref-stat-val" style={{ color }}>{val}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Section title */}
+      <div className="ref-section-title" style={{ color: t.textMuted }}>Your Referrals</div>
+
+      {/* Referral list */}
+      <div className="ref-list" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
+        {paged.length > 0 ? paged.map((r, i) => (
+          <div key={r.id || i} className="ref-row" style={{ borderBottom: i < paged.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
+            <div className="ref-avatar" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", color: t.accent }}>{(r.name || "?").charAt(0)}</div>
+            <div className="ref-info">
+              <div className="ref-info-top">
+                <span className="ref-info-name" style={{ color: t.text }}>{r.name || "User"}</span>
+                <span className="ref-status-badge" style={{
+                  background: r.status === "Active" ? (dark ? "#0a2416" : "#ecfdf5") : (dark ? "#1a1a1a" : "#f5f5f5"),
+                  color: r.status === "Active" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#888" : "#666"),
+                  borderColor: r.status === "Active" ? (dark ? "#166534" : "#a7f3d0") : (dark ? "#404040" : "#d4d4d4"),
+                }}>{r.status || "—"}</span>
+              </div>
+              <div className="ref-info-meta" style={{ color: t.textMuted }}>
+                <span className="m">{r.email || ""}</span>
+                <span>{r.joined ? fD(r.joined) : ""}</span>
+              </div>
+            </div>
+            <div className="m ref-bonus" style={{ color: t.green }}>+{fN(r.bonus || 0)}</div>
+          </div>
+        )) : (
+          <div className="ref-empty">
+            <div style={{ fontSize: 13, color: t.textMuted, fontWeight: 450 }}>No referrals yet</div>
+            <div style={{ fontSize: 11, color: t.textMuted, opacity: .5, marginTop: 4 }}>Share your link to start earning</div>
+          </div>
+        )}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="ref-pagination">
+          <span style={{ fontSize: 11, color: t.textMuted }}>{referrals.length} referrals</span>
+          <div className="ref-pag-btns">
+            <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} className="ref-pag-btn" style={{ borderColor: t.cardBorder, color: t.textSoft, opacity: page <= 1 ? .3 : 1 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              let p;
+              if (totalPages <= 5) p = i + 1;
+              else if (page <= 2) p = i + 1;
+              else if (page >= totalPages - 1) p = totalPages - 4 + i;
+              else p = page - 2 + i;
+              return (
+                <button key={p} onClick={() => setPage(p)} className={`m ref-pag-num`} style={{ background: page === p ? t.navActive : "transparent", color: page === p ? t.accent : t.textMuted, borderColor: page === p ? t.accent + "40" : t.cardBorder }}>{p}</button>
+              );
+            })}
+            <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages} className="ref-pag-btn" style={{ borderColor: t.cardBorder, color: t.textSoft, opacity: page >= totalPages ? .3 : 1 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile referral card (shows how-it-works on tablet/mobile since sidebar hidden) */}
+      <div className="ref-mobile-how">
+        <div className="ref-section-title" style={{ color: t.textMuted }}>How It Works</div>
+        <div className="ref-how-steps">
+          {[
+            ["1", "Share your link", "Send your referral link to friends"],
+            ["2", "They sign up", "Your friend creates a Nitro account"],
+            ["3", "You earn", "Bonus is credited to your wallet"],
+          ].map(([num, title, desc]) => (
+            <div key={num} className="ref-how-step">
+              <div className="m ref-how-num" style={{ background: t.navActive, color: t.accent }}>{num}</div>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: t.text }}>{title}</div>
+                <div style={{ fontSize: 11, color: t.textMuted }}>{desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════ */
+/* ═══ REFERRALS RIGHT SIDEBAR             ═══ */
+/* ═══════════════════════════════════════════ */
+export function ReferralsSidebar({ user, dark, t }) {
+  const referrals = user?.referralList || [];
+  const totalEarnings = user?.earnings || 0;
+  const activeRefs = referrals.filter(r => r.status === "Active").length;
+  const totalRefs = user?.refs || referrals.length;
+
+  return (
+    <>
+      {/* How it works */}
+      <div className="ref-rs-title" style={{ color: t.textMuted }}>How It Works</div>
+      {[
+        ["1", "Share your link", "Send your referral link to friends"],
+        ["2", "They sign up", "Your friend creates a Nitro account"],
+        ["3", "You earn", "Bonus is credited to your wallet"],
+      ].map(([num, title, desc]) => (
+        <div key={num} className="ref-rs-step">
+          <div className="m ref-rs-num" style={{ background: t.navActive, color: t.accent }}>{num}</div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: t.text, marginBottom: 1 }}>{title}</div>
+            <div style={{ fontSize: 11, color: t.textMuted }}>{desc}</div>
+          </div>
+        </div>
+      ))}
+
+      <div className="ref-rs-divider" style={{ background: t.sidebarBorder }} />
+
+      {/* Current reward */}
+      <div className="ref-rs-title" style={{ color: t.textMuted }}>Current Reward</div>
+      <div className="ref-rs-reward" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
+        <div className="m ref-rs-reward-val" style={{ color: t.accent }}>₦500</div>
+        <div className="ref-rs-reward-sub" style={{ color: t.textMuted }}>per successful referral</div>
+      </div>
+
+      <div className="ref-rs-divider" style={{ background: t.sidebarBorder }} />
+
+      {/* Performance */}
+      <div className="ref-rs-title" style={{ color: t.textMuted }}>Your Performance</div>
+      <div className="ref-rs-perf" style={{ background: t.cardBg }}>
+        {[
+          ["This month", `${Math.min(totalRefs, 3)} referrals`, t.green],
+          ["Total earned", fN(totalEarnings), t.accent],
+          ["Conversion rate", totalRefs > 0 ? `${Math.round(activeRefs / totalRefs * 100)}%` : "0%", dark ? "#a5b4fc" : "#4f46e5"],
+        ].map(([label, val, color], i, arr) => (
+          <div key={label} className="ref-rs-perf-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
+            <span style={{ fontSize: 11, color: t.textMuted }}>{label}</span>
+            <span className="m" style={{ fontSize: 11, fontWeight: 600, color }}>{val}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}

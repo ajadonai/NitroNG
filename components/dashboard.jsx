@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import NewOrderPage, { PLATFORMS, PLATFORM_GROUPS, OrderForm } from "./new-order";
 import OrdersPage, { OrdersSidebar } from "./orders-page";
+import ReferralsPage, { ReferralsSidebar } from "./referrals-page";
 
 /* ═══════════════════════════════════════════ */
 /* ═══ SVG ICONS                          ═══ */
@@ -273,6 +274,7 @@ export default function Dashboard() {
   const [noCatModal, setNoCatModal] = useState(false);
   const isNewOrder = active === "new-order";
   const isOrders = active === "orders";
+  const isReferrals = active === "referrals";
   const noHasOrder = noSelSvc && noSelTier;
 
   /* Theme */
@@ -342,6 +344,8 @@ export default function Dashboard() {
         return <NewOrderPage dark={dark} t={t} platform={noPlatform} setPlatform={setNoPlatform} selSvc={noSelSvc} setSelSvc={setNoSelSvc} selTier={noSelTier} setSelTier={setNoSelTier} qty={noQty} setQty={setNoQty} link={noLink} setLink={setNoLink} catModal={noCatModal} setCatModal={setNoCatModal} />;
       case "orders":
         return <OrdersPage orders={orders} txs={txs} dark={dark} t={t} />;
+      case "referrals":
+        return <ReferralsPage user={user} dark={dark} t={t} />;
       default:
         return (
           <div className="dash-placeholder" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
@@ -455,7 +459,7 @@ export default function Dashboard() {
 
         {/* ── MAIN ── */}
         <main className="dash-main" style={{ background: t.bg }}>
-          {!isNewOrder && !isOrders && <>
+          {!isNewOrder && !isOrders && !isReferrals && <>
             <div className="dash-welcome" style={{ color: t.text }}>Welcome back, {firstName.toUpperCase()}</div>
             <div className="dash-welcome-sub" style={{ color: t.textMuted }}>Here's what's happening with your account.</div>
           </>}
@@ -492,6 +496,8 @@ export default function Dashboard() {
             )
           ) : isOrders ? (
             <OrdersSidebar orders={orders} dark={dark} t={t} />
+          ) : isReferrals ? (
+            <ReferralsSidebar user={user} dark={dark} t={t} />
           ) : (
             <RightSidebar orders={orders} user={user} dark={dark} t={t} />
           )}

@@ -686,6 +686,106 @@ input { font-family: inherit; }
 }
 
 /* ══════════════════════════════════════ */
+/* ══ REFERRALS PAGE ══ */
+/* ══════════════════════════════════════ */
+.ref-header { padding: 0 0 14px; }
+.ref-title { font-size: 22px; font-weight: 700; margin-bottom: 2px; }
+.ref-subtitle { font-size: 13px; }
+
+/* Share card */
+.ref-share-card { border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+.ref-share-label { font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; }
+.ref-share-row { display: flex; gap: 12px; }
+.ref-share-col { flex: 1; }
+.ref-share-col-link { flex: 1.5; }
+.ref-field-label { font-size: 11px; margin-bottom: 4px; }
+.ref-code-row { display: flex; align-items: center; gap: 8px; }
+.ref-code { font-size: 22px; font-weight: 700; letter-spacing: 2px; }
+.ref-copy-btn { padding: 6px 12px; border-radius: 6px; border-width: 1px; border-style: solid; font-size: 10px; font-weight: 600; cursor: pointer; background: none; }
+.ref-link-row { display: flex; align-items: center; gap: 8px; }
+.ref-link-box { flex: 1; padding: 8px 12px; border-radius: 8px; border-width: 1px; border-style: solid; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ref-copy-link-btn { padding: 8px 14px; border-radius: 8px; background: linear-gradient(135deg, #c47d8e, #8b5e6b); color: #fff; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0; border: none; }
+
+/* Stats */
+.ref-stats { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.ref-stat-card { padding: 14px; border-radius: 12px; }
+.ref-stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.ref-stat-val { font-size: 18px; font-weight: 700; }
+
+/* Section title */
+.ref-section-title { font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; }
+
+/* Referral list */
+.ref-list { border-radius: 14px; overflow: hidden; }
+.ref-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; }
+.ref-avatar { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+.ref-info { flex: 1; min-width: 0; }
+.ref-info-top { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+.ref-info-name { font-size: 13px; font-weight: 500; }
+.ref-status-badge { font-size: 9px; padding: 1px 6px; border-radius: 4px; font-weight: 600; border-width: .5px; border-style: solid; }
+.ref-info-meta { display: flex; gap: 10px; font-size: 11px; }
+.ref-bonus { font-size: 14px; font-weight: 700; flex-shrink: 0; }
+.ref-empty { padding: 40px 20px; text-align: center; }
+
+/* Pagination */
+.ref-pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+.ref-pag-btns { display: flex; gap: 4px; }
+.ref-pag-btn { width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; border-width: 1px; border-style: solid; cursor: pointer; background: none; }
+.ref-pag-num { padding: 4px 10px; border-radius: 6px; font-size: 12px; border-width: 1px; border-style: solid; cursor: pointer; background: none; }
+
+/* Mobile how-it-works (hidden on desktop) */
+.ref-mobile-how { display: none; margin-top: 16px; }
+.ref-how-steps { display: flex; flex-direction: column; gap: 12px; }
+.ref-how-step { display: flex; gap: 12px; }
+.ref-how-num { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+
+/* Right sidebar */
+.ref-rs-title { font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; padding-left: 4px; }
+.ref-rs-step { display: flex; gap: 12px; margin-bottom: 12px; padding: 0 4px; }
+.ref-rs-num { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.ref-rs-divider { height: 1px; margin: 8px 0 16px; }
+.ref-rs-reward { padding: 16px; border-radius: 12px; text-align: center; margin-bottom: 16px; }
+.ref-rs-reward-val { font-size: 28px; font-weight: 700; }
+.ref-rs-reward-sub { font-size: 11px; margin-top: 4px; }
+.ref-rs-perf { padding: 14px; border-radius: 10px; }
+.ref-rs-perf-row { display: flex; justify-content: space-between; padding: 8px 0; }
+
+/* ── TABLET: 768-1199px ── */
+@media (max-width: 1199px) {
+  .ref-title { font-size: 18px; }
+  .ref-subtitle { font-size: 12px; }
+  .ref-share-card { padding: 16px; border-radius: 12px; }
+  .ref-share-row { flex-direction: column; gap: 10px; }
+  .ref-share-col-link { flex: 1; }
+  .ref-code { font-size: 18px; }
+  .ref-stats { grid-template-columns: 1fr 1fr; }
+  .ref-mobile-how { display: block; }
+}
+
+/* ── MOBILE: 0-767px ── */
+@media (max-width: 767px) {
+  .ref-header { padding: 0 0 8px; }
+  .ref-title { font-size: 18px; }
+  .ref-subtitle { font-size: 11px; }
+  .ref-share-card { padding: 14px; margin-bottom: 12px; border-radius: 12px; }
+  .ref-share-row { flex-direction: column; gap: 10px; }
+  .ref-share-col-link { flex: 1; }
+  .ref-code { font-size: 16px; }
+  .ref-copy-link-btn { padding: 8px 12px; font-size: 10px; }
+  .ref-stats { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .ref-stat-card { padding: 12px; border-radius: 10px; }
+  .ref-stat-val { font-size: 16px; }
+  .ref-stat-label { font-size: 9px; }
+  .ref-list { border-radius: 12px; }
+  .ref-row { gap: 10px; padding: 12px 13px; }
+  .ref-avatar { width: 32px; height: 32px; font-size: 12px; }
+  .ref-info-name { font-size: 12px; }
+  .ref-info-meta { gap: 6px; font-size: 10px; }
+  .ref-bonus { font-size: 13px; }
+  .ref-mobile-how { display: block; }
+}
+
+/* ══════════════════════════════════════ */
 /* ══ ADMIN LOGIN ══ */
 /* ══════════════════════════════════════ */
 .admin-root { transition: background 1.2s ease, color 1.2s ease; }
