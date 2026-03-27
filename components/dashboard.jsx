@@ -7,6 +7,7 @@ import ServicesPage, { ServicesSidebar } from "./services-page";
 import SettingsPage, { SettingsSidebar } from "./settings-page";
 import SupportPage, { SupportSidebar } from "./support-page";
 import AddFundsPage, { AddFundsSidebar } from "./addfunds-page";
+import { ToastProvider } from "./toast";
 
 /* ═══════════════════════════════════════════ */
 /* ═══ SVG ICONS                          ═══ */
@@ -82,7 +83,7 @@ function OverviewPage({ user, orders, alerts, dark, t }) {
           ["Processing", String(processing), dark ? "#e0a458" : "#d97706", "Est. 1-2 hrs"],
           ["Completed", String(completed), dark ? "#6ee7b7" : "#059669", rate + "% success"],
         ].map(([label, val, color, sub]) => (
-          <div key={label} className="dash-stat-card" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
+          <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", borderLeftWidth: 3, borderLeftColor: color, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
             <div className="dash-stat-label" style={{ color: t.textMuted }}>{label}</div>
             <div className="m dash-stat-value" style={{ color }}>{val}</div>
             <div className="dash-stat-sub" style={{ color: t.textMuted }}>{sub}</div>
@@ -92,7 +93,7 @@ function OverviewPage({ user, orders, alerts, dark, t }) {
 
       {/* Recent orders */}
       <div className="dash-section-title" style={{ color: t.textMuted }}>Recent Orders</div>
-      <div className="dash-orders-card" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
+      <div className="dash-orders-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
         {orders.length > 0 ? orders.slice(0, 5).map((o, i, arr) => (
           <div key={o.id} className="dash-order-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
             <div style={{ minWidth: 0, flex: 1 }}>
@@ -526,6 +527,7 @@ export default function Dashboard() {
   };
 
   return (
+    <ToastProvider dark={dark}>
     <div className="dash-root" style={{ background: t.bg }}>
 
       {/* ═══ TOP NAV ═══ */}
@@ -588,12 +590,16 @@ export default function Dashboard() {
 
             {/* ── Regular nav items — always shown ── */}
             <>
-              {NAV_ITEMS.map(item => (
-                <button key={item.id} onClick={() => { setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: active === item.id ? t.navActive : "transparent", color: active === item.id ? t.accent : t.textSoft, fontWeight: active === item.id ? 600 : 450 }}>
-                  <span style={{ opacity: active === item.id ? 1 : .6, flexShrink: 0 }}>{I[item.id]}</span>
-                  {item.label}
-                </button>
-              ))}
+              {NAV_ITEMS.map(item => {
+                const processingCount = item.id === "orders" ? orders.filter(o => o.status === "Processing" || o.status === "Pending").length : 0;
+                return (
+                  <button key={item.id} onClick={() => { setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: active === item.id ? t.navActive : "transparent", color: active === item.id ? t.accent : t.textSoft, fontWeight: active === item.id ? 600 : 450 }}>
+                    <span style={{ opacity: active === item.id ? 1 : .6, flexShrink: 0 }}>{I[item.id]}</span>
+                    {item.label}
+                    {processingCount > 0 && <span className="m dash-nav-badge">{processingCount > 9 ? "9+" : processingCount}</span>}
+                  </button>
+                );
+              })}
             </>
 
           <div style={{ flex: 1 }} />
@@ -669,5 +675,6 @@ export default function Dashboard() {
         </aside>
       </div>
     </div>
+    </ToastProvider>
   );
 }

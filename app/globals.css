@@ -1466,6 +1466,39 @@ input { font-family: inherit; }
 }
 
 /* ══════════════════════════════════════ */
+/* ══ NAV BADGE ══ */
+/* ══════════════════════════════════════ */
+.dash-nav-badge { margin-left: auto; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 5px; background: rgba(224,164,88,.12); color: #e0a458; animation: pulseBadge 2s ease-in-out infinite; }
+@keyframes pulseBadge { 0%,100% { opacity: 1; } 50% { opacity: .6; } }
+
+/* ══════════════════════════════════════ */
+/* ══ TOAST NOTIFICATIONS ══ */
+/* ══════════════════════════════════════ */
+.toast-container { position: fixed; top: 64px; right: 20px; width: 360px; z-index: 200; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast-item { border-radius: 12px; overflow: hidden; pointer-events: auto; backdrop-filter: blur(12px); box-shadow: 0 8px 30px rgba(0,0,0,.15); }
+.toast-enter { animation: toastSlideIn .3s ease forwards; }
+.toast-exit { animation: toastSlideOut .3s ease forwards; }
+@keyframes toastSlideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes toastSlideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+.toast-content { display: flex; gap: 10px; align-items: flex-start; padding: 14px 16px; }
+.toast-icon { flex-shrink: 0; margin-top: 1px; }
+.toast-text { flex: 1; min-width: 0; }
+.toast-title { font-size: 13px; font-weight: 600; }
+.toast-desc { font-size: 11px; margin-top: 2px; }
+.toast-close { background: none; border: none; font-size: 14px; padding: 2px; flex-shrink: 0; opacity: .6; cursor: pointer; }
+.toast-progress { height: 2px; position: relative; }
+.toast-progress-bar { height: 100%; opacity: .3; animation: toastShrink linear forwards; }
+@keyframes toastShrink { from { width: 100%; } to { width: 0%; } }
+
+@media (max-width: 767px) {
+  .toast-container { top: 56px; right: 8px; left: 8px; width: auto; }
+  .toast-enter { animation: toastDropIn .3s ease forwards; }
+  .toast-exit { animation: toastDropOut .3s ease forwards; }
+  @keyframes toastDropIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @keyframes toastDropOut { from { transform: translateY(0); opacity: .8; } to { transform: translateY(-20px); opacity: 0; } }
+}
+
+/* ══════════════════════════════════════ */
 /* ══ HOVER EFFECTS (must be last) ══ */
 /* ══════════════════════════════════════ */
 .dash-stat-card { transition: transform .2s ease, box-shadow .2s ease, border-color .15s ease, background-color .15s ease !important; cursor: pointer; }
