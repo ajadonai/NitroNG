@@ -428,18 +428,28 @@ export default function Dashboard() {
       {/* ═══ TOP NAV ═══ */}
       <nav className="dash-nav" style={{ background: t.sidebarBg, borderBottom: `1px solid ${t.sidebarBorder}` }}>
         <div className="dash-nav-left">
-          <button className="dash-hamburger" onClick={() => setLeftOpen(!leftOpen)} style={{ color: t.textSoft }}>
-            {leftOpen
-              ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            }
-          </button>
-          <button onClick={() => { setActive("overview"); setLeftOpen(false); }} className="dash-logo-link" style={{ background: "none", border: "none", cursor: "pointer" }}>
+          {/* Mobile/tablet: hamburger + logo as one button to toggle sidebar */}
+          <button className="dash-menu-btn" onClick={() => setLeftOpen(!leftOpen)}>
+            <div className="dash-hamburger-bars" style={{ opacity: leftOpen ? 0 : 1, position: leftOpen ? "absolute" : "relative" }}>
+              <div style={{ height: 2, borderRadius: 1, background: t.accent, width: 16 }} />
+              <div style={{ height: 2, borderRadius: 1, background: t.accent, width: 11 }} />
+              <div style={{ height: 2, borderRadius: 1, background: t.accent, width: 16 }} />
+            </div>
+            {leftOpen && (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            )}
             <div className="dash-logo-box">
               <svg width="11" height="11" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </div>
             <span className="dash-logo-text" style={{ color: t.text }}>NITRO</span>
           </button>
+          {/* Desktop: static logo, no click action */}
+          <div className="dash-logo-static">
+            <div className="dash-logo-box">
+              <svg width="11" height="11" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+            <span className="dash-logo-text" style={{ color: t.text }}>NITRO</span>
+          </div>
         </div>
         <div className="dash-nav-right">
           {/* Theme toggle */}
