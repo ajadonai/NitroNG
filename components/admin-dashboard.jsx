@@ -211,30 +211,37 @@ export default function AdminDashboard() {
   const toggleTheme = () => { const next = !dark; setDark(next); const mode = next ? "night" : "day"; setThemeMode(mode); localStorage.setItem("nitro-admin-theme", mode); };
 
   /* Data fetch */
+  const [redirecting, setRedirecting] = useState(false);
   useEffect(() => {
+    if (redirecting) return;
     async function load() {
       try {
         const res = await fetch("/api/admin/overview");
-        if (res.status === 401) { window.location.href = "/admin/login"; return; }
+        if (res.status === 401) {
+          setRedirecting(true);
+          window.location.replace("/admin/login");
+          return;
+        }
         if (res.ok) {
           const d = await res.json();
-          setAdmin(d.admin || { name: "Admin", role: "superadmin", email: "admin@thenitro.ng" });
+          setAdmin({ name: d.admin?.name || "Admin", role: d.admin?.role || "superadmin", email: d.admin?.email || "admin@thenitro.ng" });
           setData({
-            stats: d.stats || {},
+            stats: d || {},
             recentOrders: d.recentOrders || [],
             recentUsers: d.recentUsers || [],
             openTickets: d.openTickets || [],
             activity: d.activity || [],
           });
         } else {
-          setAdmin({ name: "Admin", role: "superadmin", email: "admin@thenitro.ng" });
+          setRedirecting(true);
+          window.location.replace("/admin/login");
         }
       } catch {
         setAdmin({ name: "Admin", role: "superadmin", email: "admin@thenitro.ng" });
       }
     }
     load();
-  }, []);
+  }, [redirecting]);
 
   const handleLogout = async () => { try { await fetch("/api/auth/admin/logout", { method: "POST" }); } catch {} window.location.replace("/admin/login?logout=1"); };
 
@@ -258,6 +265,7 @@ export default function AdminDashboard() {
   const initials = admin ? admin.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "";
 
   /* Loading skeleton */
+  if (redirecting) return null;
   if (!admin) {
     const skBone = `skel-bone ${dark ? "skel-dark" : "skel-light"}`;
     return (
