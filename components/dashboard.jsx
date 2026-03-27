@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from "react";
-import NewOrderPage, { PLATFORMS, OrderForm } from "./new-order";
+import NewOrderPage, { PLATFORMS, PLATFORM_GROUPS, OrderForm } from "./new-order";
 
 /* ═══════════════════════════════════════════ */
 /* ═══ SVG ICONS                          ═══ */
@@ -405,11 +405,16 @@ export default function Dashboard() {
               </button>
               <div style={{ fontSize: 10, fontWeight: 650, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1.5, padding: "0 14px 8px" }}>Platforms</div>
               <div className="dash-plat-list">
-                {PLATFORMS.map(p => (
-                  <button key={p.id} onClick={() => { setNoPlatform(p.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: noPlatform === p.id ? t.navActive : "transparent", color: noPlatform === p.id ? t.accent : t.textSoft, fontWeight: noPlatform === p.id ? 600 : 430 }}>
-                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 18, opacity: noPlatform === p.id ? 1 : .5, flexShrink: 0 }}>{p.icon}</span>
-                    {p.label}
-                  </button>
+                {PLATFORM_GROUPS.map(group => (
+                  <div key={group.label}>
+                    <div style={{ fontSize: 9, fontWeight: 600, color: t.accent, textTransform: "uppercase", letterSpacing: 1, padding: "10px 14px 4px", opacity: .7 }}>{group.label}</div>
+                    {group.platforms.map(p => (
+                      <button key={p.id} onClick={() => { setNoPlatform(p.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: noPlatform === p.id ? t.navActive : "transparent", color: noPlatform === p.id ? t.accent : t.textSoft, fontWeight: noPlatform === p.id ? 600 : 430 }}>
+                        <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 18, opacity: noPlatform === p.id ? 1 : .5, flexShrink: 0 }}>{p.icon}</span>
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
                 ))}
               </div>
             </>
