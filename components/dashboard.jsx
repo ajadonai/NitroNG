@@ -492,9 +492,8 @@ export default function Dashboard() {
                 </button>
               ))}
             </>
-          )}
 
-          {(!isNewOrder && !isServices) && <div style={{ flex: 1 }} />}
+          <div style={{ flex: 1 }} />
           <div className="dash-sidebar-divider" style={{ background: t.sidebarBorder }} />
           <div className="dash-sidebar-balance">
             <div className="dash-bal-label" style={{ color: t.textMuted }}>Balance</div>
