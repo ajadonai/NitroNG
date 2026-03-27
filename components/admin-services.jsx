@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import { useConfirm } from "./confirm-dialog";
 
 const fN = (a) => `₦${Math.abs(a).toLocaleString("en-NG")}`;
 
@@ -10,6 +11,7 @@ const TIER_COLORS = {
 };
 
 export default function AdminServicesPage({ dark, t }) {
+  const confirm = useConfirm();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -94,9 +96,9 @@ export default function AdminServicesPage({ dark, t }) {
                   <div><span style={{ color: t.textMuted }}>Type:</span> <span style={{ color: t.text }}>{s.type || "—"}</span></div>
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button onClick={() => toggleEnabled(s.id, s.enabled)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: s.enabled ? t.red : t.green }}>{s.enabled ? "Disable" : "Enable"}</button>
+                  <button onClick={async () => { const ok = await confirm({ title: s.enabled ? "Disable Service" : "Enable Service", message: s.enabled ? `Disable "${s.name}"? Users won't be able to order it.` : `Re-enable "${s.name}"?`, confirmLabel: s.enabled ? "Disable" : "Enable", danger: s.enabled }); if (ok) toggleEnabled(s.id, s.enabled); }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: s.enabled ? t.red : t.green }}>{s.enabled ? "Disable" : "Enable"}</button>
                   <button className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>Edit</button>
-                  <button className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: t.red }}>Delete</button>
+                  <button onClick={async () => { const ok = await confirm({ title: "Delete Service", message: `Permanently delete "${s.name}"? This cannot be undone.`, confirmLabel: "Delete", danger: true }); if (ok) {} }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: t.red }}>Delete</button>
                 </div>
               </div>
             )}

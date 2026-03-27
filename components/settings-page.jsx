@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import { useConfirm } from "./confirm-dialog";
 
 const fN = (a) => `₦${Math.abs(a).toLocaleString("en-NG")}`;
 
@@ -15,6 +16,7 @@ function Toggle({ on, onToggle, accent }) {
 /* ═══ SETTINGS PAGE                       ═══ */
 /* ═══════════════════════════════════════════ */
 export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, setDark }) {
+  const confirm = useConfirm();
   const [notifOrders, setNotifOrders] = useState(true);
   const [notifPromo, setNotifPromo] = useState(false);
   const [notifEmail, setNotifEmail] = useState(true);
@@ -181,19 +183,16 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
           <div className="set-section-title" style={{ color: t.text }}>Danger Zone</div>
           <div className="set-danger-card" style={{ background: dark ? "rgba(220,38,38,.06)" : "rgba(220,38,38,.03)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.08)" }}>
             <div className="set-danger-title" style={{ color: t.text }}>Delete Account</div>
-            <div className="set-danger-desc" style={{ color: t.textMuted }}>Permanently delete your account and all data. This cannot be undone.</div>
-            {!showDelete ? (
-              <button onClick={() => setShowDelete(true)} className="set-btn-danger" style={{ borderColor: dark ? "rgba(252,165,165,.3)" : "rgba(220,38,38,.2)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete My Account</button>
-            ) : (
-              <div className="set-danger-confirm">
-                <div style={{ fontSize: 12, color: dark ? "#fca5a5" : "#dc2626", fontWeight: 600, marginBottom: 8 }}>Type DELETE to confirm.</div>
-                <div className="set-danger-row">
-                  <input type="text" placeholder="Type DELETE" className="m set-input set-danger-input" style={{ borderColor: dark ? "rgba(252,165,165,.3)" : "rgba(220,38,38,.2)", background: dark ? "#0d1020" : "#fff", color: t.text }} />
-                  <button className="set-btn-danger-confirm">Confirm</button>
-                  <button onClick={() => setShowDelete(false)} className="set-btn-outline" style={{ borderColor: t.cardBorder, color: t.textSoft }}>Cancel</button>
-                </div>
-              </div>
-            )}
+            <div className="set-danger-desc" style={{ color: t.textMuted }}>Permanently delete your account. Your orders and transactions will be preserved but your personal data will be removed.</div>
+            <button onClick={async () => {
+              const ok = await confirm({ title: "Delete Your Account", message: "This will permanently delete your account. Your orders and transaction history will be kept for records but your personal info will be removed. This cannot be undone.", confirmLabel: "Delete My Account", danger: true, requireType: "DELETE" });
+              if (ok) {
+                try {
+                  const res = await fetch("/api/auth/delete-account", { method: "POST" });
+                  if (res.ok) { window.location.replace("/?deleted=1"); }
+                } catch {}
+              }
+            }} className="set-btn-danger" style={{ borderColor: dark ? "rgba(252,165,165,.3)" : "rgba(220,38,38,.2)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete My Account</button>
           </div>
         </div>
       </div>

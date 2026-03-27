@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from "react";
 import { ToastProvider } from "./toast";
+import { ConfirmProvider } from "./confirm-dialog";
 import AdminOrdersPage from "./admin-orders";
 import AdminUsersPage from "./admin-users";
 import AdminTicketsPage from "./admin-tickets";
@@ -317,6 +318,7 @@ export default function AdminDashboard() {
 
   return (
     <ToastProvider dark={dark}>
+    <ConfirmProvider dark={dark}>
     <div className="dash-root" style={{ background: t.bg }}>
 
       {/* ═══ TOP NAV ═══ */}
@@ -400,6 +402,7 @@ export default function AdminDashboard() {
         </div>
       </div>
     </div>
+    </ConfirmProvider>
     </ToastProvider>
   );
 }

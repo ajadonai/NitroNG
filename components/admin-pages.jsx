@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import { useConfirm } from "./confirm-dialog";
 
 const fN = (a) => `₦${Math.abs(a).toLocaleString("en-NG")}`;
 const fD = (d) => new Date(d).toLocaleDateString("en-NG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -128,6 +129,7 @@ export function AdminAnalyticsPage({ dark, t }) {
 /* ═══ ALERTS PAGE                         ═══ */
 /* ═══════════════════════════════════════════ */
 export function AdminAlertsPage({ dark, t }) {
+  const confirm = useConfirm();
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
@@ -217,7 +219,7 @@ export function AdminAlertsPage({ dark, t }) {
             </div>
             <div style={{ display: "flex", gap: 4 }}>
               <button onClick={() => toggleAlert(a.id, a.active)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: a.active ? t.amber : t.green }}>{a.active ? "Pause" : "Activate"}</button>
-              <button onClick={() => deleteAlert(a.id)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: t.red }}>Delete</button>
+              <button onClick={async () => { const ok = await confirm({ title: "Delete Alert", message: `Delete this alert? "${a.message?.slice(0, 50)}..."`, confirmLabel: "Delete", danger: true }); if (ok) deleteAlert(a.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: t.red }}>Delete</button>
             </div>
           </div>
         )) : (

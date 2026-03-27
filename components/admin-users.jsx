@@ -1,9 +1,11 @@
 'use client';
 import { useState, useEffect } from "react";
+import { useConfirm } from "./confirm-dialog";
 
 const fN = (a) => `₦${Math.abs(a).toLocaleString("en-NG")}`;
 
 export default function AdminUsersPage({ dark, t }) {
+  const confirm = useConfirm();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -36,6 +38,17 @@ export default function AdminUsersPage({ dark, t }) {
         if (action === "suspend" || action === "activate") { setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: action === "suspend" ? "Suspended" : "Active" } : u)); }
       }
     } catch {}
+  };
+
+  const handleBan = async (user) => {
+    const ok = await confirm({ title: user.status === "Active" ? "Ban User" : "Activate User", message: user.status === "Active" ? `Are you sure you want to ban ${user.name} (${user.email})? They will lose access to their account.` : `Reactivate ${user.name}'s account?`, confirmLabel: user.status === "Active" ? "Ban User" : "Activate", danger: user.status === "Active" });
+    if (ok) doAction(user.id, user.status === "Active" ? "suspend" : "activate");
+  };
+
+  const handleCredit = async (user) => {
+    if (Number(creditAmt) <= 0) return;
+    const ok = await confirm({ title: "Credit Wallet", message: `Credit ${fN(Number(creditAmt))} to ${user.name}'s wallet?`, confirmLabel: `Credit ${fN(Number(creditAmt))}` });
+    if (ok) doAction(user.id, "credit", creditAmt);
   };
 
   return (
@@ -83,7 +96,7 @@ export default function AdminUsersPage({ dark, t }) {
                 </div>
                 <div style={{ display: "flex", gap: 4 }}>
                   <button onClick={() => setCreditId(creditId === u.id ? null : u.id)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>Credit</button>
-                  <button onClick={() => doAction(u.id, u.status === "Active" ? "suspend" : "activate")} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: u.status === "Active" ? t.red : t.green }}>{u.status === "Active" ? "Ban" : "Activate"}</button>
+                  <button onClick={() => handleBan(u)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: u.status === "Active" ? t.red : t.green }}>{u.status === "Active" ? "Ban" : "Activate"}</button>
                 </div>
               </div>
             </div>
@@ -93,7 +106,7 @@ export default function AdminUsersPage({ dark, t }) {
                 {[1000, 5000, 10000, 50000].map(p => (
                   <button key={p} onClick={() => setCreditAmt(String(p))} className="m adm-btn-sm" style={{ borderColor: Number(creditAmt) === p ? t.accent : t.cardBorder, color: Number(creditAmt) === p ? t.accent : t.textMuted }}>{fN(p)}</button>
                 ))}
-                <button onClick={() => doAction(u.id, "credit", creditAmt)} className="adm-btn-primary" style={{ opacity: Number(creditAmt) > 0 ? 1 : .4 }}>Credit {creditAmt ? fN(Number(creditAmt)) : ""}</button>
+                <button onClick={() => handleCredit(u)} className="adm-btn-primary" style={{ opacity: Number(creditAmt) > 0 ? 1 : .4 }}>Credit {creditAmt ? fN(Number(creditAmt)) : ""}</button>
                 <button onClick={() => setCreditId(null)} style={{ color: t.textMuted, fontSize: 16, padding: 4, background: "none" }}>✕</button>
               </div>
             )}

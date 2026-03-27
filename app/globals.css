@@ -1563,6 +1563,23 @@ input { font-family: inherit; }
 }
 
 /* ══════════════════════════════════════ */
+/* ══ CONFIRMATION DIALOG ══ */
+/* ══════════════════════════════════════ */
+.confirm-overlay { position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; animation: confirmFadeIn .15s ease; }
+@keyframes confirmFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.confirm-dialog { width: 90%; max-width: 420px; border-radius: 16px; padding: 28px; text-align: center; animation: confirmSlideIn .2s ease; }
+@keyframes confirmSlideIn { from { transform: scale(.95) translateY(8px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+.confirm-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+.confirm-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+.confirm-message { font-size: 13px; line-height: 1.6; margin-bottom: 20px; }
+.confirm-type-section { margin-bottom: 18px; }
+.confirm-type-label { font-size: 12px; margin-bottom: 8px; }
+.confirm-type-input { width: 100%; padding: 10px 14px; border-radius: 8px; border-width: 1px; border-style: solid; font-size: 14px; text-align: center; outline: none; box-sizing: border-box; }
+.confirm-buttons { display: flex; gap: 10px; }
+.confirm-btn-cancel { flex: 1; padding: 12px 0; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; border-width: 1px; border-style: solid; }
+.confirm-btn-action { flex: 1; padding: 12px 0; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; }
+
+/* ══════════════════════════════════════ */
 /* ══ HOVER EFFECTS (must be last) ══ */
 /* ══════════════════════════════════════ */
 .dash-stat-card { transition: transform .2s ease, box-shadow .2s ease, border-color .15s ease, background-color .15s ease !important; cursor: pointer; }

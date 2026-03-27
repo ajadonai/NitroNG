@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import { useConfirm } from "./confirm-dialog";
 
 const fN = (a) => `₦${Math.abs(a).toLocaleString("en-NG")}`;
 const fD = (d) => new Date(d).toLocaleDateString("en-NG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -18,6 +19,7 @@ function Badge({ status, dark }) {
 }
 
 export default function AdminOrdersPage({ dark, t }) {
+  const confirm = useConfirm();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -108,8 +110,8 @@ export default function AdminOrdersPage({ dark, t }) {
                 {o.link && <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 10, wordBreak: "break-all" }}>Link: <span style={{ color: t.accent }}>{o.link}</span></div>}
                 <div style={{ display: "flex", gap: 6 }}>
                   <button onClick={() => doAction(o.id, "check")} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textSoft }}>Check Status</button>
-                  {o.status !== "Canceled" && o.status !== "Completed" && <button onClick={() => doAction(o.id, "cancel")} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: t.red }}>Cancel</button>}
-                  {o.status === "Completed" && <button onClick={() => doAction(o.id, "refill")} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>Refill</button>}
+                  {o.status !== "Canceled" && o.status !== "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? This may issue a refund.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: t.red }}>Cancel</button>}
+                  {o.status === "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Refill Order", message: `Request a refill for order ${o.id}?`, confirmLabel: "Refill" }); if (ok) doAction(o.id, "refill"); }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>Refill</button>}
                 </div>
               </div>
             )}

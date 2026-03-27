@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import { useConfirm } from "./confirm-dialog";
 
 const fN = (a) => `₦${Math.abs(a).toLocaleString("en-NG")}`;
 const fD = (d) => new Date(d).toLocaleDateString("en-NG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -69,6 +70,7 @@ export function AdminActivityPage({ dark, t }) {
 /* ═══ TEAM MANAGEMENT                     ═══ */
 /* ═══════════════════════════════════════════ */
 export function AdminTeamPage({ dark, t }) {
+  const confirm = useConfirm();
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -158,7 +160,7 @@ export function AdminTeamPage({ dark, t }) {
               <select value={a.role} onChange={e => changeRole(a.id, e.target.value)} style={{ padding: "3px 8px", borderRadius: 6, background: dark ? "#0d1020" : "#fff", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, color: t.text, fontSize: 11, outline: "none" }}>
                 {["superadmin", "admin", "support", "finance"].map(r => <option key={r} value={r}>{r}</option>)}
               </select>
-              <button onClick={() => toggleStatus(a.id)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: a.status === "Active" ? t.red : t.green }}>{a.status === "Active" ? "Deactivate" : "Activate"}</button>
+              <button onClick={async () => { const ok = await confirm({ title: a.status === "Active" ? "Deactivate Admin" : "Activate Admin", message: a.status === "Active" ? `Deactivate ${a.name}? They will lose admin access.` : `Reactivate ${a.name}'s admin access?`, confirmLabel: a.status === "Active" ? "Deactivate" : "Activate", danger: a.status === "Active" }); if (ok) toggleStatus(a.id); }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: a.status === "Active" ? t.red : t.green }}>{a.status === "Active" ? "Deactivate" : "Activate"}</button>
             </div>
           </div>
         ))}
@@ -171,6 +173,7 @@ export function AdminTeamPage({ dark, t }) {
 /* ═══ COUPONS                             ═══ */
 /* ═══════════════════════════════════════════ */
 export function AdminCouponsPage({ dark, t }) {
+  const confirm = useConfirm();
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -244,7 +247,7 @@ export function AdminCouponsPage({ dark, t }) {
                 Min: {c.minOrder ? fN(c.minOrder) : "None"} · Uses: {c.uses || 0}/{c.maxUses || "∞"} · {c.expires ? `Expires: ${c.expires}` : "No expiry"}
               </div>
             </div>
-            <button onClick={() => deleteCoupon(c.code)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: t.red }}>Delete</button>
+            <button onClick={async () => { const ok = await confirm({ title: "Delete Coupon", message: `Delete coupon "${c.code}"? This cannot be undone.`, confirmLabel: "Delete", danger: true }); if (ok) deleteCoupon(c.code); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: t.red }}>Delete</button>
           </div>
         )) : (
           <div className="adm-empty" style={{ color: t.textMuted }}>No coupons created yet</div>
@@ -334,6 +337,7 @@ export function AdminNotificationsPage({ dark, t }) {
 /* ═══ MAINTENANCE                         ═══ */
 /* ═══════════════════════════════════════════ */
 export function AdminMaintenancePage({ dark, t }) {
+  const confirm = useConfirm();
   const [enabled, setEnabled] = useState(false);
   const [msg, setMsg] = useState("We're performing scheduled upgrades. Everything will be back shortly.");
   const [eta, setEta] = useState("~30 minutes");
@@ -370,7 +374,7 @@ export function AdminMaintenancePage({ dark, t }) {
                 <div style={{ fontSize: 15, fontWeight: 600, color: t.text }}>Maintenance Mode</div>
                 <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>When enabled, users see a maintenance page instead of the dashboard</div>
               </div>
-              <button onClick={() => save(!enabled)} style={{ padding: "8px 20px", borderRadius: 8, fontWeight: 600, fontSize: 13, border: "none", cursor: "pointer", background: enabled ? (dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.08)") : `linear-gradient(135deg,#c47d8e,#8b5e6b)`, color: enabled ? t.red : "#fff" }}>
+              <button onClick={async () => { const ok = await confirm({ title: enabled ? "Disable Maintenance" : "Enable Maintenance Mode", message: enabled ? "Bring the platform back online for all users?" : "This will take the platform offline. All users will see a maintenance page.", confirmLabel: enabled ? "Go Online" : "Enable Maintenance", danger: !enabled }); if (ok) save(!enabled); }} style={{ padding: "8px 20px", borderRadius: 8, fontWeight: 600, fontSize: 13, border: "none", cursor: "pointer", background: enabled ? (dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.08)") : `linear-gradient(135deg,#c47d8e,#8b5e6b)`, color: enabled ? t.red : "#fff" }}>
                 {enabled ? "Disable" : "Enable"}
               </button>
             </div>

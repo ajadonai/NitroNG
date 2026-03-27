@@ -8,6 +8,7 @@ import SettingsPage, { SettingsSidebar } from "./settings-page";
 import SupportPage, { SupportSidebar } from "./support-page";
 import AddFundsPage, { AddFundsSidebar } from "./addfunds-page";
 import { ToastProvider } from "./toast";
+import { ConfirmProvider } from "./confirm-dialog";
 
 /* ═══════════════════════════════════════════ */
 /* ═══ SVG ICONS                          ═══ */
@@ -528,6 +529,7 @@ export default function Dashboard() {
 
   return (
     <ToastProvider dark={dark}>
+    <ConfirmProvider dark={dark}>
     <div className="dash-root" style={{ background: t.bg }}>
 
       {/* ═══ TOP NAV ═══ */}
@@ -675,6 +677,7 @@ export default function Dashboard() {
         </aside>
       </div>
     </div>
+    </ConfirmProvider>
     </ToastProvider>
   );
 }
