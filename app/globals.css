@@ -353,7 +353,7 @@ input { font-family: inherit; }
 .dash-left { width: 220px; display: flex; flex-direction: column; padding: 16px 12px; flex-shrink: 0; overflow: auto; }
 .dash-sidebar-close { display: none; }
 .dash-nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 12px; font-size: 13.5px; margin-bottom: 2px; text-align: left; width: 100%; background: none; }
-.dash-sidebar-divider { height: 2px; margin: 8px 0; }
+.dash-sidebar-divider { height: 2px; margin: 8px -12px; }
 .dash-sidebar-balance { padding: 10px 14px; margin-bottom: 4px; }
 .dash-bal-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
 .dash-bal-value { font-size: 18px; font-weight: 700; }
