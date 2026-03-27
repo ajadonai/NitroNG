@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback, createContext, useContext } from "react";
+import { useState, useCallback, useMemo, createContext, useContext } from "react";
 
 const ToastContext = createContext(null);
 
@@ -46,12 +46,12 @@ export function ToastProvider({ children, dark }) {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 300);
   };
 
-  const toast = useCallback({
+  const toast = useMemo(() => ({
     success: (title, desc) => addToast("success", title, desc),
     error: (title, desc) => addToast("error", title, desc),
     warning: (title, desc) => addToast("warning", title, desc),
     info: (title, desc) => addToast("info", title, desc),
-  }, [addToast]);
+  }), [addToast]);
 
   return (
     <ToastContext.Provider value={toast}>
@@ -70,7 +70,7 @@ export function ToastProvider({ children, dark }) {
                 <div className="toast-icon" style={{ color: dark ? tt.colD : tt.colL }}>{tt.icon}</div>
                 <div className="toast-text">
                   <div className="toast-title" style={{ color: dark ? "#f5f3f0" : "#1a1917" }}>{t.title}</div>
-                  {desc && <div className="toast-desc" style={{ color: dark ? "#a09b95" : "#555250" }}>{t.desc}</div>}
+                  {t.desc && <div className="toast-desc" style={{ color: dark ? "#a09b95" : "#555250" }}>{t.desc}</div>}
                 </div>
                 <button onClick={() => removeToast(t.id)} className="toast-close" style={{ color: dark ? "#706c68" : "#757170" }}>✕</button>
               </div>
