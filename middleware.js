@@ -18,49 +18,49 @@ export async function middleware(request) {
 
   // ── Protect /verify — must have a user token (unverified user) ──
   if (pathname === '/verify') {
-    const token = request.cookies.get('bp_token')?.value;
+    const token = request.cookies.get('nitro_token')?.value;
     if (!token) {
       return NextResponse.redirect(new URL('/?signup=1', request.url));
     }
     const payload = await verifyToken(token, SECRET);
     if (!payload || payload.type !== 'user') {
       const response = NextResponse.redirect(new URL('/?signup=1', request.url));
-      response.cookies.set('bp_token', '', { maxAge: 0, path: '/' });
+      response.cookies.set('nitro_token', '', { maxAge: 0, path: '/' });
       return response;
     }
   }
 
   // ── Protect /dashboard ──
   if (pathname.startsWith('/dashboard')) {
-    const token = request.cookies.get('bp_token')?.value;
+    const token = request.cookies.get('nitro_token')?.value;
     if (!token) {
       return NextResponse.redirect(new URL('/?login=1', request.url));
     }
     const payload = await verifyToken(token, SECRET);
     if (!payload || payload.type !== 'user') {
       const response = NextResponse.redirect(new URL('/?login=1', request.url));
-      response.cookies.set('bp_token', '', { maxAge: 0, path: '/' });
+      response.cookies.set('nitro_token', '', { maxAge: 0, path: '/' });
       return response;
     }
   }
 
   // ── Protect /admin (but not /admin/login) ──
   if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
-    const token = request.cookies.get('bp_admin_token')?.value;
+    const token = request.cookies.get('nitro_admin_token')?.value;
     if (!token) {
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
     const payload = await verifyToken(token, ADMIN_SECRET);
     if (!payload || payload.type !== 'admin') {
       const response = NextResponse.redirect(new URL('/admin/login', request.url));
-      response.cookies.set('bp_admin_token', '', { maxAge: 0, path: '/' });
+      response.cookies.set('nitro_admin_token', '', { maxAge: 0, path: '/' });
       return response;
     }
   }
 
   // ── Redirect logged-in users away from /admin/login ──
   if (pathname === '/admin/login') {
-    const token = request.cookies.get('bp_admin_token')?.value;
+    const token = request.cookies.get('nitro_admin_token')?.value;
     if (token) {
       const payload = await verifyToken(token, ADMIN_SECRET);
       if (payload?.type === 'admin') {
