@@ -43,7 +43,7 @@ export async function POST(req) {
 
     // Sign JWT and set cookie
     const token = signAdminToken(admin);
-    await setAdminCookie(token);
+    await setAdminCookie(token, admin.role);
 
     return ok({
       admin: {

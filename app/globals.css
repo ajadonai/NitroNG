@@ -1520,6 +1520,10 @@ input { font-family: inherit; }
 
 /* Admin sidebar — distribute items evenly across full height */
 .admin-sidebar { padding: 12px 12px; justify-content: space-between; overflow: hidden; }
+
+@media (max-width: 1199px) {
+  .admin-sidebar { overflow: auto; justify-content: flex-start; }
+}
 .admin-sidebar .dash-nav-item { padding: 8px 14px; font-size: 13px; gap: 11px; margin-bottom: 0; }
 .admin-sidebar .dash-logout { padding: 8px 14px; font-size: 12.5px; }
 .adm-rs-title { font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; padding-left: 4px; }
@@ -1533,6 +1537,7 @@ input { font-family: inherit; }
 @media (max-width: 767px) { .adm-stats { grid-template-columns: 1fr 1fr; } .adm-title { font-size: 18px; } .adm-subtitle { font-size: 11px; } .adm-quick-actions { gap: 8px; } .adm-action-btn { padding: 10px 14px; font-size: 11px; } }
 
 /* Admin shared elements */
+.adm-detail-grid { grid-template-columns: 1fr 1fr 1fr; }
 .adm-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; margin-top: 16px; }
 .adm-filter-pill { padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 550; cursor: pointer; }
 .adm-search { width: 100%; max-width: 400px; padding: 10px 14px; border-radius: 10px; border-width: 1px; border-style: solid; font-size: 13px; outline: none; margin-bottom: 16px; box-sizing: border-box; }
@@ -1545,7 +1550,17 @@ input { font-family: inherit; }
 .adm-ticket-row { cursor: pointer; transition: background-color .15s ease; }
 
 @media (max-width: 1199px) { .adm-split { grid-template-columns: 1fr; } .adm-search { max-width: 100%; } }
-@media (max-width: 767px) { .adm-filters { margin-top: 12px; } .adm-search { font-size: 12px; } }
+@media (max-width: 767px) {
+  .adm-filters { margin-top: 12px; }
+  .adm-search { font-size: 12px; }
+  .adm-user-row { flex-direction: column; align-items: stretch; gap: 10px; }
+  .adm-user-actions { justify-content: space-between; }
+  .adm-list-row { padding: 10px 12px; }
+  .adm-btn-sm { padding: 4px 10px; font-size: 10px; }
+  .adm-btn-primary { padding: 8px 18px; font-size: 12px; }
+  .adm-split { gap: 12px; }
+  .adm-detail-grid { grid-template-columns: 1fr 1fr; }
+}
 
 /* ══════════════════════════════════════ */
 /* ══ HOVER EFFECTS (must be last) ══ */

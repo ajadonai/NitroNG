@@ -47,7 +47,7 @@ export default function AdminUsersPage({ dark, t }) {
       </div>
 
       <div className="adm-filters">
-        {[["all", "All", users.length], ["active", "Active", users.filter(u => u.status === "Active").length], ["suspended", "Suspended", users.filter(u => u.status === "Suspended").length]].map(([id, label, count]) => (
+        {[["all", "All", users.length], ["active", "Active", users.filter(u => u.status === "Active").length], ["suspended", "Banned", users.filter(u => u.status === "Suspended").length]].map(([id, label, count]) => (
           <button key={id} onClick={() => { setFilter(id); setPage(1); }} className="adm-filter-pill" style={{ borderWidth: 1, borderStyle: "solid", borderColor: filter === id ? t.accent : t.cardBorder, background: filter === id ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: filter === id ? t.accent : t.textMuted }}>
             {label} <span className="m">({count})</span>
           </button>
@@ -61,16 +61,18 @@ export default function AdminUsersPage({ dark, t }) {
           <div className="adm-empty" style={{ color: t.textMuted }}>Loading users...</div>
         ) : paged.length > 0 ? paged.map((u, i) => (
           <div key={u.id}>
-            <div className="adm-list-row" style={{ borderBottom: i < paged.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-              <div className="adm-user-avatar" style={{ background: `hsl(${(u.id?.charCodeAt(0) || i) * 45}, 40%, ${dark ? 30 : 65}%)` }}>{(u.name || "U")[0]}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: t.text }}>{u.name}</span>
-                  <span className="m" style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: u.status === "Active" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)"), color: u.status === "Active" ? t.green : t.red }}>{u.status}</span>
+            <div className="adm-list-row adm-user-row" style={{ borderBottom: i < paged.length - 1 ? `1px solid ${t.cardBorder}` : "none", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 180 }}>
+                <div className="adm-user-avatar" style={{ background: `hsl(${(u.id?.charCodeAt(0) || i) * 45}, 40%, ${dark ? 30 : 65}%)` }}>{(u.name || "U")[0]}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: t.text }}>{u.name}</span>
+                    <span className="m" style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: u.status === "Active" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)"), color: u.status === "Active" ? t.green : t.red }}>{u.status}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: t.textMuted, marginTop: 1 }}>{u.email}</div>
                 </div>
-                <div style={{ fontSize: 11, color: t.textMuted, marginTop: 1 }}>{u.email}</div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div className="adm-user-actions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ textAlign: "center" }}>
                   <div className="m" style={{ fontSize: 13, fontWeight: 600, color: t.green }}>{fN(u.balance || 0)}</div>
                   <div style={{ fontSize: 9, color: t.textMuted }}>Balance</div>
@@ -81,7 +83,7 @@ export default function AdminUsersPage({ dark, t }) {
                 </div>
                 <div style={{ display: "flex", gap: 4 }}>
                   <button onClick={() => setCreditId(creditId === u.id ? null : u.id)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>Credit</button>
-                  <button onClick={() => doAction(u.id, u.status === "Active" ? "suspend" : "activate")} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: u.status === "Active" ? t.red : t.green }}>{u.status === "Active" ? "Suspend" : "Activate"}</button>
+                  <button onClick={() => doAction(u.id, u.status === "Active" ? "suspend" : "activate")} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: u.status === "Active" ? t.red : t.green }}>{u.status === "Active" ? "Ban" : "Activate"}</button>
                 </div>
               </div>
             </div>

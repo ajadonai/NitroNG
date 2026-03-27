@@ -97,7 +97,7 @@ export default function AdminOrdersPage({ dark, t }) {
             </div>
             {expanded === o.id && (
               <div style={{ padding: "12px 16px 16px", borderBottom: i < paged.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: dark ? "rgba(255,255,255,.02)" : "rgba(0,0,0,.01)" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12, fontSize: 11 }}>
+                <div className="adm-detail-grid" style={{ display: "grid", gap: 12, marginBottom: 12, fontSize: 11 }}>
                   <div><span style={{ color: t.textMuted }}>User:</span> <span style={{ color: t.text }}>{o.user}</span></div>
                   <div><span style={{ color: t.textMuted }}>Email:</span> <span style={{ color: t.text }}>{o.email}</span></div>
                   <div><span style={{ color: t.textMuted }}>Platform:</span> <span style={{ color: t.text }}>{o.category}</span></div>

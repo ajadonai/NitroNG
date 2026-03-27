@@ -428,7 +428,7 @@ export default function Landing(){
           <div className="s6-footer-divider" style={{background:dark?"rgba(255,255,255,.08)":"rgba(0,0,0,.08)"}}/>
           {/* Bottom row: [copyright] [socials] */}
           <div className="s6-footer-bottom">
-            <span className="s6-copyright" style={{color:dark?"#8a8680":"#777"}}>© 2025 Nitro. All rights reserved.</span>
+            <span className="s6-copyright" style={{color:dark?"#8a8680":"#777"}}>© 2026 Nitro. All rights reserved.</span>
             <div className="s6-social-icons">
               <a href="https://instagram.com/Nitro.ng" target="_blank" rel="noopener" className="s6-sico" style={{color:dark?"#b0aca8":"#555"}}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
               <a href="https://x.com/TheNitroNG" target="_blank" rel="noopener" className="s6-sico" style={{color:dark?"#b0aca8":"#555"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>

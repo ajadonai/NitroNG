@@ -23,23 +23,28 @@ export function AdminPaymentsPage({ dark, t }) {
   return (
     <>
       <div className="adm-header">
-        <div className="adm-title" style={{ color: t.text }}>Payments</div>
-        <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage payment gateways</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <div className="adm-title" style={{ color: t.text }}>Payments</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage payment gateways</div>
+          </div>
+          <button className="adm-btn-primary">+ Add Gateway</button>
+        </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
       <div className="adm-section-title" style={{ color: t.textMuted, marginTop: 16, marginBottom: 10 }}>Payment Gateways</div>
       <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
         {gateways.map((g, i) => (
-          <div key={g.id} className="adm-list-row" style={{ borderBottom: i < gateways.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-            <div style={{ flex: 1 }}>
+          <div key={g.id} className="adm-list-row" style={{ borderBottom: i < gateways.length - 1 ? `1px solid ${t.cardBorder}` : "none", flexWrap: "wrap", gap: 10 }}>
+            <div style={{ flex: 1, minWidth: 160 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 13, fontWeight: 500, color: t.text }}>{g.name}</span>
                 <span className="m" style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: g.enabled ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)"), color: g.enabled ? t.green : t.red }}>{g.enabled ? "Active" : "Disabled"}</span>
               </div>
               <div style={{ fontSize: 11, color: t.textMuted, marginTop: 2 }}>{g.desc}</div>
             </div>
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
               <span className="m" style={{ fontSize: 10, color: t.textMuted }}>Priority: {g.priority}</span>
               <button onClick={() => toggleGateway(g.id)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: g.enabled ? t.red : t.green }}>{g.enabled ? "Disable" : "Enable"}</button>
               <button className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>Configure</button>
