@@ -367,6 +367,14 @@ input { font-family: inherit; }
 .dash-bal-value { font-size: 18px; font-weight: 700; }
 .dash-logout { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 12px; background: none; color: #dc2626; font-size: 13px; font-weight: 450; text-align: left; width: 100%; opacity: .7; }
 
+/* Sidebar social links */
+.dash-sidebar-social { padding: 6px 14px; }
+.dash-social-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+.dash-social-btns { display: flex; gap: 6px; }
+.dash-social-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 0; border-radius: 8px; font-size: 11px; font-weight: 550; text-decoration: none; border-width: 1px; border-style: solid; }
+.dash-social-wa { background: rgba(37,211,102,.06); color: #25d366; border-color: rgba(37,211,102,.12); }
+.dash-social-tg { background: rgba(0,136,204,.06); color: #0088cc; border-color: rgba(0,136,204,.12); }
+
 /* Overlay */
 .dash-overlay { display: none; position: absolute; inset: 0; background: rgba(0,0,0,.3); z-index: 10; }
 
