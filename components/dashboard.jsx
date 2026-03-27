@@ -470,9 +470,9 @@ export default function Dashboard() {
           {(isNewOrder || isServices) ? (
             /* ── Platform categories for New Order / Services ── */
             <>
-              <button onClick={() => { setActive("overview"); setLeftOpen(false); }} className="dash-nav-item" style={{ color: t.accent, fontWeight: 550, marginBottom: 8 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="15 18 9 12 15 6"/></svg>
-                ← Back to menu
+              <button onClick={() => { setActive("overview"); setLeftOpen(false); }} className="dash-back-btn" style={{ color: t.accent }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="15 18 9 12 15 6"/></svg>
+                Back to menu
               </button>
               <div style={{ fontSize: 10, fontWeight: 650, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1.5, padding: "0 14px 8px" }}>Platforms</div>
               <div className="dash-plat-list">
