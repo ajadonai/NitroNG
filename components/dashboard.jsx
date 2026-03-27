@@ -260,7 +260,13 @@ export default function Dashboard() {
   const getAuto = () => { const h = new Date().getHours(), m = new Date().getMinutes(); if (h >= 7 && h < 18) return false; if (h >= 19 || h < 6) return true; if (h === 6) return m < 30; if (h === 18) return m >= 30; return true; };
   const [dark, setDark] = useState(false);
   const [themeMode, setThemeMode] = useState("auto");
-  const [active, setActive] = useState("overview");
+  const [active, setActiveRaw] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("nitro-page") || "overview";
+    }
+    return "overview";
+  });
+  const setActive = (page) => { setActiveRaw(page); try { localStorage.setItem("nitro-page", page); } catch {} };
   const [leftOpen, setLeftOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [user, setUser] = useState(null);
@@ -428,12 +434,12 @@ export default function Dashboard() {
               : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             }
           </button>
-          <a href="/" className="dash-logo-link">
+          <button onClick={() => { setActive("overview"); setLeftOpen(false); }} className="dash-logo-link" style={{ background: "none", border: "none", cursor: "pointer" }}>
             <div className="dash-logo-box">
               <svg width="11" height="11" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </div>
             <span className="dash-logo-text" style={{ color: t.text }}>NITRO</span>
-          </a>
+          </button>
         </div>
         <div className="dash-nav-right">
           {/* Theme toggle */}
@@ -453,8 +459,8 @@ export default function Dashboard() {
             </button>
             {notifOpen && <NotifDropdown orders={orders} txs={txs} dark={dark} t={t} onClose={() => setNotifOpen(false)} />}
           </div>
-          {/* Avatar */}
-          <button className="dash-avatar-btn">
+          {/* Avatar → Settings */}
+          <button onClick={() => { setActive("settings"); setLeftOpen(false); }} className="dash-avatar-btn">
             <div className="dash-avatar" style={{ background: t.accent }}>{initials}</div>
             <span className="dash-nav-name" style={{ color: t.text, textTransform: "uppercase" }}>{firstName}</span>
           </button>
@@ -470,9 +476,9 @@ export default function Dashboard() {
           {(isNewOrder || isServices) ? (
             /* ── Platform categories for New Order / Services ── */
             <>
-              <button onClick={() => { setActive("overview"); setLeftOpen(false); }} className="dash-nav-item" style={{ color: t.accent, fontWeight: 550, marginBottom: 8 }}>
+              <button onClick={() => { setActive("overview"); setLeftOpen(false); }} className="dash-nav-item dash-back-btn" style={{ color: t.accent, fontWeight: 600, marginBottom: 8 }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="15 18 9 12 15 6"/></svg>
-                ← Back to menu
+                Back to menu
               </button>
               <div style={{ fontSize: 10, fontWeight: 650, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1.5, padding: "0 14px 8px" }}>Platforms</div>
               <div className="dash-plat-list">
@@ -505,7 +511,7 @@ export default function Dashboard() {
             </>
           )}
 
-          <div style={{ flex: 1 }} />
+          {(!isNewOrder && !isServices) && <div style={{ flex: 1 }} />}
           <div className="dash-sidebar-divider" style={{ background: t.sidebarBorder }} />
           <div className="dash-sidebar-balance">
             <div className="dash-bal-label" style={{ color: t.textMuted }}>Balance</div>
