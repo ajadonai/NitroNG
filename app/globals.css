@@ -311,8 +311,8 @@ input { font-family: inherit; }
 .dash-root { height: 100dvh; display: flex; flex-direction: column; }
 .dash-body { display: flex; flex: 1; position: relative; overflow: hidden; }
 
-/* Page header divider — shared across all pages */
-.page-divider { height: 1px; margin-top: 12px; }
+/* Page header divider — stretches edge to edge across sidebars */
+.page-divider { height: 1px; margin-top: 12px; margin-left: -28px; margin-right: -28px; }
 
 /* Nav */
 .dash-nav { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 20; height: 56px; padding: 0 24px; }
@@ -436,6 +436,7 @@ input { font-family: inherit; }
   .dash-sidebar-close { display: flex; position: absolute; top: 12px; right: 12px; background: none; padding: 4px; z-index: 5; }
   .dash-overlay { display: block; }
   .dash-main { padding: 24px; }
+  .page-divider { margin-left: -24px; margin-right: -24px; }
   .dash-stats { grid-template-columns: 1fr 1fr; }
   .dash-mobile-ref { display: block; }
 }
@@ -446,6 +447,7 @@ input { font-family: inherit; }
   .dash-nav-name { display: none; }
   .dash-nav-right { gap: 12px; }
   .dash-main { padding: 16px; }
+  .page-divider { margin-left: -16px; margin-right: -16px; }
   .dash-stats { grid-template-columns: 1fr 1fr; gap: 8px; }
   .dash-stat-card { padding: 14px; border-radius: 12px; }
   .dash-stat-value { font-size: 20px; }
