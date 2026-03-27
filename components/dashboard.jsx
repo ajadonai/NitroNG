@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from "react";
+import NewOrderPage, { PLATFORMS, OrderForm } from "./new-order";
 
 /* ═══════════════════════════════════════════ */
 /* ═══ SVG ICONS                          ═══ */
@@ -260,6 +261,16 @@ export default function Dashboard() {
   const [alerts, setAlerts] = useState([]);
   const notifRef = useRef(null);
 
+  /* New Order state (lifted so sidebars can access) */
+  const [noPlatform, setNoPlatform] = useState("instagram");
+  const [noSelSvc, setNoSelSvc] = useState(null);
+  const [noSelTier, setNoSelTier] = useState(null);
+  const [noQty, setNoQty] = useState(1000);
+  const [noLink, setNoLink] = useState("");
+  const [noCatModal, setNoCatModal] = useState(false);
+  const isNewOrder = active === "new-order";
+  const noHasOrder = noSelSvc && noSelTier;
+
   /* Theme */
   useEffect(() => { const saved = localStorage.getItem("nitro-theme") || "auto"; setThemeMode(saved); if (saved === "day") setDark(false); else if (saved === "night") setDark(true); else setDark(getAuto()); }, []);
   useEffect(() => { if (themeMode !== "auto") return; const iv = setInterval(() => setDark(getAuto()), 60000); return () => clearInterval(iv); }, [themeMode]);
@@ -315,11 +326,16 @@ export default function Dashboard() {
   const sp = dark ? "rgba(196,125,142,.3)" : "rgba(196,125,142,.2)";
   if (!user) return <div style={{ height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: t.bg }}><div style={{ width: 24, height: 24, borderWidth: 2, borderStyle: "solid", borderTopColor: t.accent, borderRightColor: sp, borderBottomColor: sp, borderLeftColor: sp, borderRadius: "50%", animation: "spin .6s linear infinite" }} /></div>;
 
+  /* Reset new-order state when leaving */
+  useEffect(() => { if (!isNewOrder) { setNoSelSvc(null); setNoSelTier(null); setNoLink(""); setNoCatModal(false); } }, [active]);
+
   /* Render active page */
   const renderPage = () => {
     switch (active) {
       case "overview":
         return <OverviewPage user={user} orders={orders} alerts={alerts} dark={dark} t={t} />;
+      case "new-order":
+        return <NewOrderPage dark={dark} t={t} platform={noPlatform} setPlatform={setNoPlatform} selSvc={noSelSvc} setSelSvc={setNoSelSvc} selTier={noSelTier} setSelTier={setNoSelTier} qty={noQty} setQty={setNoQty} link={noLink} setLink={setNoLink} catModal={noCatModal} setCatModal={setNoCatModal} />;
       default:
         return (
           <div className="dash-placeholder" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
@@ -379,12 +395,36 @@ export default function Dashboard() {
           <button className="dash-sidebar-close" onClick={() => setLeftOpen(false)} style={{ color: t.textSoft }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
-          {NAV_ITEMS.map(item => (
-            <button key={item.id} onClick={() => { setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: active === item.id ? t.navActive : "transparent", color: active === item.id ? t.accent : t.textSoft, fontWeight: active === item.id ? 600 : 450 }}>
-              <span style={{ opacity: active === item.id ? 1 : .6, flexShrink: 0 }}>{I[item.id]}</span>
-              {item.label}
-            </button>
-          ))}
+
+          {isNewOrder ? (
+            /* ── Platform categories for New Order ── */
+            <>
+              <button onClick={() => { setActive("overview"); setLeftOpen(false); }} className="dash-nav-item" style={{ color: t.accent, fontWeight: 550, marginBottom: 8 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="15 18 9 12 15 6"/></svg>
+                Back to menu
+              </button>
+              <div style={{ fontSize: 10, fontWeight: 650, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1.5, padding: "0 14px 8px" }}>Platforms</div>
+              <div className="dash-plat-list">
+                {PLATFORMS.map(p => (
+                  <button key={p.id} onClick={() => { setNoPlatform(p.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: noPlatform === p.id ? t.navActive : "transparent", color: noPlatform === p.id ? t.accent : t.textSoft, fontWeight: noPlatform === p.id ? 600 : 430 }}>
+                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 18, opacity: noPlatform === p.id ? 1 : .5, flexShrink: 0 }}>{p.icon}</span>
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            /* ── Regular nav items ── */
+            <>
+              {NAV_ITEMS.map(item => (
+                <button key={item.id} onClick={() => { setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: active === item.id ? t.navActive : "transparent", color: active === item.id ? t.accent : t.textSoft, fontWeight: active === item.id ? 600 : 450 }}>
+                  <span style={{ opacity: active === item.id ? 1 : .6, flexShrink: 0 }}>{I[item.id]}</span>
+                  {item.label}
+                </button>
+              ))}
+            </>
+          )}
+
           <div style={{ flex: 1 }} />
           <div className="dash-sidebar-divider" style={{ background: t.sidebarBorder }} />
           <div className="dash-sidebar-balance">
@@ -403,8 +443,10 @@ export default function Dashboard() {
 
         {/* ── MAIN ── */}
         <main className="dash-main" style={{ background: t.bg }}>
-          <div className="dash-welcome" style={{ color: t.text }}>Welcome back, {firstName.toUpperCase()}</div>
-          <div className="dash-welcome-sub" style={{ color: t.textMuted }}>Here's what's happening with your account.</div>
+          {!isNewOrder && <>
+            <div className="dash-welcome" style={{ color: t.text }}>Welcome back, {firstName.toUpperCase()}</div>
+            <div className="dash-welcome-sub" style={{ color: t.textMuted }}>Here's what's happening with your account.</div>
+          </>}
 
           {renderPage()}
 
@@ -426,7 +468,20 @@ export default function Dashboard() {
 
         {/* ── RIGHT SIDEBAR ── */}
         <aside className="dash-right" style={{ background: t.sidebarBg, borderLeft: `1px solid ${t.sidebarBorder}` }}>
-          <RightSidebar orders={orders} user={user} dark={dark} t={t} />
+          {isNewOrder ? (
+            /* Order form in right sidebar */
+            noHasOrder ? (
+              <OrderForm selSvc={noSelSvc} selTier={noSelTier} platform={noPlatform} qty={noQty} setQty={setNoQty} link={noLink} setLink={setNoLink} dark={dark} t={t} compact />
+            ) : (
+              <div className="dash-rs-empty">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: .3, marginBottom: 12 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                <div style={{ fontSize: 13, color: t.textMuted, textAlign: "center", fontWeight: 450 }}>Select a service</div>
+                <div style={{ fontSize: 11, color: t.textMuted, opacity: .5, marginTop: 4, textAlign: "center" }}>Choose a platform and service to place an order</div>
+              </div>
+            )
+          ) : (
+            <RightSidebar orders={orders} user={user} dark={dark} t={t} />
+          )}
         </aside>
       </div>
     </div>
