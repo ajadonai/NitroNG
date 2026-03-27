@@ -17,7 +17,7 @@ const ACCEPTED_TYPES = ["Cards", "Bank Transfer", "USSD", "Mobile Money"];
 /* ═══════════════════════════════════════════ */
 /* ═══ ADD FUNDS PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
-export default function AddFundsPage({ user, dark, t }) {
+export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentStatus }) {
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("paystack");
   const [loading, setLoading] = useState(false);
@@ -50,6 +50,25 @@ export default function AddFundsPage({ user, dark, t }) {
 
   return (
     <>
+      {/* Payment status banner — shows after returning from gateway */}
+      {paymentStatus && (
+        <div className="fund-status-banner" style={{
+          background: paymentStatus.type === "success" ? (dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)") : (dark ? "rgba(252,165,165,.06)" : "rgba(220,38,38,.04)"),
+          borderWidth: 1, borderStyle: "solid",
+          borderColor: paymentStatus.type === "success" ? (dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.12)") : (dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.12)"),
+          color: paymentStatus.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"),
+        }}>
+          <div className="fund-status-content">
+            <span className="fund-status-icon">{paymentStatus.type === "success" ? "✓" : "✕"}</span>
+            <div>
+              <div className="fund-status-msg">{paymentStatus.message}</div>
+              {paymentStatus.amount && <div className="m fund-status-amount">{fN(paymentStatus.amount)} credited to your wallet</div>}
+            </div>
+          </div>
+          <button onClick={() => setPaymentStatus(null)} className="fund-status-close" style={{ color: "inherit" }}>✕</button>
+        </div>
+      )}
+
       <div className="fund-header">
         <div className="fund-title" style={{ color: t.text }}>Add Funds</div>
         <div className="fund-subtitle" style={{ color: t.textMuted }}>Top up your wallet to place orders</div>

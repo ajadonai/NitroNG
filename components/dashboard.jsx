@@ -267,6 +267,7 @@ export default function Dashboard() {
   const [orders, setOrders] = useState([]);
   const [txs, setTxs] = useState([]);
   const [alerts, setAlerts] = useState([]);
+  const [paymentStatus, setPaymentStatus] = useState(null); // { type: "success"|"error", message, amount }
   const notifRef = useRef(null);
 
   /* New Order state (lifted so sidebars can access) */
@@ -310,6 +311,45 @@ export default function Dashboard() {
       } catch { setUser({ name: "User", email: "", balance: 0, refCode: "—", refs: 0, earnings: 0 }); }
     }
     load();
+  }, []);
+
+  /* Verify payment return from gateway */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("verify") || params.get("reference") || params.get("trxref");
+    if (!ref) return;
+
+    /* Clean URL immediately */
+    window.history.replaceState({}, "", "/dashboard");
+    setActive("add-funds");
+
+    async function verify() {
+      try {
+        const res = await fetch("/api/payments/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reference: ref }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setPaymentStatus({ type: "success", message: "Payment successful!", amount: data.amount });
+          /* Refresh user balance */
+          try {
+            const dashRes = await fetch("/api/dashboard");
+            if (dashRes.ok) {
+              const dashData = await dashRes.json();
+              setUser(dashData.user);
+              if (dashData.transactions?.length) setTxs(dashData.transactions);
+            }
+          } catch {}
+        } else {
+          setPaymentStatus({ type: "error", message: data.error || "Payment verification failed" });
+        }
+      } catch {
+        setPaymentStatus({ type: "error", message: "Could not verify payment. Please contact support." });
+      }
+    }
+    verify();
   }, []);
 
   /* Close notif on outside click */
@@ -365,7 +405,7 @@ export default function Dashboard() {
       case "support":
         return <SupportPage dark={dark} t={t} tickets={[]} />;
       case "add-funds":
-        return <AddFundsPage user={user} dark={dark} t={t} />;
+        return <AddFundsPage user={user} dark={dark} t={t} paymentStatus={paymentStatus} setPaymentStatus={setPaymentStatus} />;
       default:
         return (
           <div className="dash-placeholder" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>

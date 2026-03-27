@@ -860,6 +860,14 @@ input { font-family: inherit; }
 .fund-title { font-size: 22px; font-weight: 700; margin-bottom: 2px; }
 .fund-subtitle { font-size: 13px; }
 
+/* Payment status banner */
+.fund-status-banner { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-radius: 12px; margin-bottom: 16px; gap: 12px; }
+.fund-status-content { display: flex; align-items: center; gap: 10px; }
+.fund-status-icon { font-size: 16px; font-weight: 700; flex-shrink: 0; }
+.fund-status-msg { font-size: 13px; font-weight: 600; }
+.fund-status-amount { font-size: 11px; margin-top: 2px; opacity: .8; }
+.fund-status-close { background: none; border: none; font-size: 14px; cursor: pointer; padding: 4px; opacity: .6; }
+
 /* Two-column split */
 .fund-split { display: flex; gap: 28px; margin-top: 24px; align-items: flex-start; }
 .fund-left { flex: 1; min-width: 0; }
