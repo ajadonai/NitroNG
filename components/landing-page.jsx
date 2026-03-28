@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import WhatsAppFloat from './whatsapp-float';
+
 
 function useReveal(){
   const ref=useRef(null);
@@ -454,7 +454,7 @@ export default function Landing(){
 
       {googleError&&<div style={{position:"fixed",top:24,left:"50%",transform:"translateX(-50%)",zIndex:9999,padding:"14px 28px",borderRadius:16,background:dark?"rgba(17,22,40,.97)":"rgba(255,255,255,.97)",border:`1px solid ${dark?"rgba(220,38,38,.2)":"rgba(220,38,38,.15)"}`,backdropFilter:"blur(16px)",boxShadow:dark?"0 12px 40px rgba(0,0,0,.5)":"0 12px 40px rgba(0,0,0,.12)",display:"flex",alignItems:"center",gap:12,animation:"fu .4s ease"}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={dark?"#fca5a5":"#dc2626"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><span style={{fontSize:14,fontWeight:550,color:t.text}}>Google sign-in failed. Please try again or use email.</span></div>}
 
-      <WhatsAppFloat />
+      
     </div>
   );
 }

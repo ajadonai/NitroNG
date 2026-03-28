@@ -1216,7 +1216,7 @@ input { font-family: inherit; }
   .hero-sub { font-size: 17px; max-width: 480px; text-align: center; margin-bottom: 28px; }
   .nav-links { display: none; }
   .main-nav { padding: 0 28px; }
-  .auth-card { max-width: 420px; height: 620px; padding: 24px 26px; border-radius: 18px; }
+  .auth-card { max-width: 420px; height: auto; padding: 24px 26px; border-radius: 18px; }
   .auth-card h2 { font-size: 20px; }
   .auth-card p { font-size: 13px; margin-bottom: 18px; }
   .auth-card input { padding: 10px 12px; font-size: 14px; border-radius: 10px; margin-bottom: 6px; }
@@ -1338,7 +1338,7 @@ input { font-family: inherit; }
   .carousel-wrapper { padding: 10px 0; }
   .carousel-item { gap: 7px; padding: 8px 14px; font-size: 13px; }
   .main-nav { padding: 0 20px; height: 52px; }
-  .auth-card { max-width: 100%; height: 600px; padding: 20px 18px; border-radius: 16px; }
+  .auth-card { max-width: 100%; height: auto; padding: 20px 18px; border-radius: 16px; }
   .auth-card h2 { font-size: 19px; }
   .auth-card p { font-size: 13px; margin-bottom: 12px; }
   .auth-card input { padding: 9px 12px; font-size: 14px; border-radius: 10px; margin-bottom: 6px; }

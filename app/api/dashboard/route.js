@@ -56,7 +56,14 @@ export async function GET() {
       alerts = await prisma.alert.findMany({
         where: {
           active: true,
-          OR: [{ target: 'both' }, { target: 'dashboard' }],
+          deletedAt: null,
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: new Date() } },
+          ],
+          AND: {
+            OR: [{ target: 'both' }, { target: 'dashboard' }],
+          },
         },
         orderBy: { createdAt: 'desc' },
       });

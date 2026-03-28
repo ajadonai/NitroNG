@@ -109,7 +109,7 @@ export function AdminAnalyticsPage({ dark, t }) {
         <div>
           <div className="adm-section-title" style={{ color: t.textMuted, marginBottom: 10 }}>Order Status Breakdown</div>
           <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
-            {[["Completed", s.completed || 0, t.green], ["Processing", s.processing || 0, t.blue], ["Pending", s.pending || 0, t.amber], ["Canceled", s.canceled || 0, t.red]].map(([label, count, color], i, arr) => (
+            {[["Completed", s.byStatus?.find(x => x.status === "Completed")?.count || 0, t.green], ["Processing", s.byStatus?.find(x => x.status === "Processing")?.count || 0, t.blue], ["Pending", s.byStatus?.find(x => x.status === "Pending")?.count || 0, t.amber], ["Canceled", s.byStatus?.find(x => x.status === "Canceled")?.count || 0, t.red]].map(([label, count, color], i, arr) => (
               <div key={label} className="adm-list-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ width: 8, height: 8, borderRadius: 4, background: color }} />

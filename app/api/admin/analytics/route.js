@@ -48,12 +48,21 @@ export async function GET(req) {
     const nameMap = {};
     serviceNames.forEach(s => { nameMap[s.id] = s; });
 
+    const totalRevenue = (ordersAgg._sum.charge || 0) / 100;
+    const totalCost = (ordersAgg._sum.cost || 0) / 100;
+    const orderCount = ordersAgg._count || 0;
+    const avgOrderValue = orderCount > 0 ? totalRevenue / orderCount : 0;
+    const completedCount = ordersByStatus.find(s => s.status === 'Completed')?._count || 0;
+    const conversionRate = orderCount > 0 ? Math.round((completedCount / orderCount) * 100) : 0;
+
     return Response.json({
       range,
-      revenue: (ordersAgg._sum.charge || 0) / 100,
-      cost: (ordersAgg._sum.cost || 0) / 100,
-      profit: ((ordersAgg._sum.charge || 0) - (ordersAgg._sum.cost || 0)) / 100,
-      orderCount: ordersAgg._count,
+      totalRevenue,
+      totalCost,
+      profit: totalRevenue - totalCost,
+      orderCount,
+      avgOrderValue: Math.round(avgOrderValue),
+      conversionRate,
       newUsers: userCount,
       byStatus: ordersByStatus.map(s => ({
         status: s.status,
