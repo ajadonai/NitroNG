@@ -152,14 +152,14 @@ export function AdminAlertsPage({ dark, t }) {
 
   const toggleAlert = async (id, active) => {
     try {
-      await fetch("/api/admin/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: active ? "deactivate" : "activate", alertId: id }) });
+      await fetch("/api/admin/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
       setAlerts(prev => prev.map(a => a.id === id ? { ...a, active: !active } : a));
     } catch {}
   };
 
   const deleteAlert = async (id) => {
     try {
-      await fetch("/api/admin/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", alertId: id }) });
+      await fetch("/api/admin/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
       setAlerts(prev => prev.filter(a => a.id !== id));
     } catch {}
   };
