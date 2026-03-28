@@ -27,6 +27,7 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
   const numAmount = Number(amount) || 0;
   const valid = numAmount >= 500;
   const activeGateways = GATEWAYS.filter(g => g.enabled);
+  const balance = user?.balance || 0;
 
   const handlePay = async () => {
     if (!valid || loading) return;
