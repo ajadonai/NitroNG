@@ -40,13 +40,13 @@ export function AdminPaymentsPage({ dark, t }) {
           <div key={g.id} className="adm-list-row" style={{ borderBottom: i < gateways.length - 1 ? `1px solid ${t.cardBorder}` : "none", flexWrap: "wrap", gap: 10 }}>
             <div style={{ flex: 1, minWidth: 160 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 13, fontWeight: 500, color: t.text }}>{g.name}</span>
-                <span className="m" style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: g.enabled ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)"), color: g.enabled ? t.green : t.red }}>{g.enabled ? "Active" : "Disabled"}</span>
+                <span style={{ fontSize: 14, fontWeight: 500, color: t.text }}>{g.name}</span>
+                <span className="m" style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: g.enabled ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)"), color: g.enabled ? t.green : t.red }}>{g.enabled ? "Active" : "Disabled"}</span>
               </div>
-              <div style={{ fontSize: 11, color: t.textMuted, marginTop: 2 }}>{g.desc}</div>
+              <div style={{ fontSize: 13, color: t.textMuted, marginTop: 2 }}>{g.desc}</div>
             </div>
             <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-              <span className="m" style={{ fontSize: 10, color: t.textMuted }}>Priority: {g.priority}</span>
+              <span className="m" style={{ fontSize: 12, color: t.textMuted }}>Priority: {g.priority}</span>
               <button onClick={() => toggleGateway(g.id)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: g.enabled ? t.red : t.green }}>{g.enabled ? "Disable" : "Enable"}</button>
               <button className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>Configure</button>
             </div>
@@ -100,8 +100,8 @@ export function AdminAnalyticsPage({ dark, t }) {
           <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
             {(s.topPlatforms || [{ name: "Instagram", orders: 0, revenue: 0 }, { name: "TikTok", orders: 0, revenue: 0 }, { name: "YouTube", orders: 0, revenue: 0 }]).map((p, i, arr) => (
               <div key={p.name} className="adm-list-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-                <div><div style={{ fontSize: 13, fontWeight: 500, color: t.text }}>{p.name}</div><div style={{ fontSize: 11, color: t.textMuted }}>{p.orders} orders</div></div>
-                <div className="m" style={{ fontSize: 13, fontWeight: 600, color: t.green }}>{fN(p.revenue || 0)}</div>
+                <div><div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>{p.name}</div><div style={{ fontSize: 13, color: t.textMuted }}>{p.orders} orders</div></div>
+                <div className="m" style={{ fontSize: 14, fontWeight: 600, color: t.green }}>{fN(p.revenue || 0)}</div>
               </div>
             ))}
           </div>
@@ -113,9 +113,9 @@ export function AdminAnalyticsPage({ dark, t }) {
               <div key={label} className="adm-list-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ width: 8, height: 8, borderRadius: 4, background: color }} />
-                  <span style={{ fontSize: 13, color: t.text }}>{label}</span>
+                  <span style={{ fontSize: 14, color: t.text }}>{label}</span>
                 </div>
-                <span className="m" style={{ fontSize: 13, fontWeight: 600, color }}>{count}</span>
+                <span className="m" style={{ fontSize: 14, fontWeight: 600, color }}>{count}</span>
               </div>
             ))}
           </div>
@@ -180,12 +180,12 @@ export function AdminAlertsPage({ dark, t }) {
       {showNew && (
         <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, marginTop: 16, marginBottom: 16, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)", borderRadius: 14 }}>
           <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 11, color: t.textMuted, display: "block", marginBottom: 4 }}>Message</label>
-            <textarea value={newMsg} onChange={e => setNewMsg(e.target.value)} placeholder="Alert message..." rows={2} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 13, outline: "none", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }} />
+            <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Message</label>
+            <textarea value={newMsg} onChange={e => setNewMsg(e.target.value)} placeholder="Alert message..." rows={2} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }} />
           </div>
           <div style={{ display: "flex", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
             <div>
-              <label style={{ fontSize: 11, color: t.textMuted, display: "block", marginBottom: 4 }}>Type</label>
+              <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Type</label>
               <div style={{ display: "flex", gap: 4 }}>
                 {["info", "warning"].map(ty => (
                   <button key={ty} onClick={() => setNewType(ty)} className="adm-filter-pill" style={{ borderWidth: 1, borderStyle: "solid", borderColor: newType === ty ? t.accent : t.cardBorder, background: newType === ty ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: newType === ty ? t.accent : t.textMuted }}>{ty}</button>
@@ -193,7 +193,7 @@ export function AdminAlertsPage({ dark, t }) {
               </div>
             </div>
             <div>
-              <label style={{ fontSize: 11, color: t.textMuted, display: "block", marginBottom: 4 }}>Show on</label>
+              <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Show on</label>
               <div style={{ display: "flex", gap: 4 }}>
                 {["both", "dashboard", "login"].map(tg => (
                   <button key={tg} onClick={() => setNewTarget(tg)} className="adm-filter-pill" style={{ borderWidth: 1, borderStyle: "solid", borderColor: newTarget === tg ? t.accent : t.cardBorder, background: newTarget === tg ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: newTarget === tg ? t.accent : t.textMuted }}>{tg}</button>
@@ -212,10 +212,10 @@ export function AdminAlertsPage({ dark, t }) {
           <div key={a.id} className="adm-list-row" style={{ borderBottom: i < alerts.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 14 }}>{a.type === "warning" ? "⚠️" : "📢"}</span>
-                <span style={{ fontSize: 13, fontWeight: 500, color: t.text, opacity: a.active ? 1 : .5 }}>{a.message}</span>
+                <span style={{ fontSize: 15 }}>{a.type === "warning" ? "⚠️" : "📢"}</span>
+                <span style={{ fontSize: 14, fontWeight: 500, color: t.text, opacity: a.active ? 1 : .5 }}>{a.message}</span>
               </div>
-              <div style={{ fontSize: 10, color: t.textMuted, marginTop: 3, paddingLeft: 26 }}>Target: {a.target} · {a.active ? "Active" : "Inactive"} · {a.created ? fD(a.created) : ""}</div>
+              <div style={{ fontSize: 12, color: t.textMuted, marginTop: 3, paddingLeft: 26 }}>Target: {a.target} · {a.active ? "Active" : "Inactive"} · {a.created ? fD(a.created) : ""}</div>
             </div>
             <div style={{ display: "flex", gap: 4 }}>
               <button onClick={() => toggleAlert(a.id, a.active)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: a.active ? t.amber : t.green }}>{a.active ? "Pause" : "Activate"}</button>
@@ -253,11 +253,11 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
       <div style={{ maxWidth: 550, marginTop: 16 }}>
         {/* Profile */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: t.text, marginBottom: 10 }}>Profile</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>Profile</div>
           <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {[["Name", admin?.name || "Admin"], ["Email", admin?.email || ""], ["Role", admin?.role || "admin"]].map(([label, val]) => (
-                <div key={label}><div style={{ fontSize: 10, color: t.textMuted, textTransform: "uppercase", letterSpacing: .8, marginBottom: 3 }}>{label}</div><div style={{ fontSize: 13, fontWeight: 500, color: t.text }}>{val}</div></div>
+                <div key={label}><div style={{ fontSize: 12, color: t.textMuted, textTransform: "uppercase", letterSpacing: .8, marginBottom: 3 }}>{label}</div><div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>{val}</div></div>
               ))}
             </div>
           </div>
@@ -265,22 +265,22 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
 
         {/* Theme */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: t.text, marginBottom: 10 }}>Theme</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>Theme</div>
           <div style={{ display: "flex", gap: 8 }}>
             {[["day", "☀ Light"], ["night", "☾ Dark"], ["auto", "◑ Auto"]].map(([id, lb]) => (
-              <button key={id} onClick={() => applyTheme(id)} style={{ flex: 1, padding: "12px 10px", borderRadius: 10, borderWidth: themeMode === id ? 2 : 1, borderStyle: "solid", borderColor: themeMode === id ? t.accent : t.cardBorder, background: themeMode === id ? (dark ? "#2a1a22" : "#fdf2f4") : (dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)"), color: themeMode === id ? t.accent : t.textSoft, fontSize: 13, fontWeight: themeMode === id ? 600 : 450, textAlign: "center" }}>{lb}</button>
+              <button key={id} onClick={() => applyTheme(id)} style={{ flex: 1, padding: "12px 10px", borderRadius: 10, borderWidth: themeMode === id ? 2 : 1, borderStyle: "solid", borderColor: themeMode === id ? t.accent : t.cardBorder, background: themeMode === id ? (dark ? "#2a1a22" : "#fdf2f4") : (dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)"), color: themeMode === id ? t.accent : t.textSoft, fontSize: 14, fontWeight: themeMode === id ? 600 : 450, textAlign: "center" }}>{lb}</button>
             ))}
           </div>
         </div>
 
         {/* Change password */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: t.text, marginBottom: 10 }}>Change Password</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>Change Password</div>
           <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
             {["Current Password", "New Password", "Confirm Password"].map(label => (
               <div key={label} style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 11, color: t.textMuted, display: "block", marginBottom: 4 }}>{label}</label>
-                <input type="password" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>{label}</label>
+                <input type="password" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
               </div>
             ))}
             <button className="adm-btn-primary">Update Password</button>

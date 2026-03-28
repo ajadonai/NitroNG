@@ -166,7 +166,7 @@ export default function SupportPage({ dark, t, tickets: ticketsProp }) {
               <div className="sup-tkt-filters">
                 {["all", "Open", "Resolved", "Closed"].map(f => (
                   <button key={f} onClick={() => setFilter(f)} className="sup-tkt-filter" style={{ borderWidth: 1, borderStyle: "solid", borderColor: filter === f ? t.accent : t.cardBorder, background: filter === f ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: filter === f ? t.accent : t.textMuted }}>
-                    {f === "all" ? "All" : f} <span className="m" style={{ fontSize: 9 }}>({counts[f] || 0})</span>
+                    {f === "all" ? "All" : f} <span className="m" style={{ fontSize: 11 }}>({counts[f] || 0})</span>
                   </button>
                 ))}
               </div>
@@ -192,7 +192,7 @@ export default function SupportPage({ dark, t, tickets: ticketsProp }) {
           {ticketView === "new" && (
             <div className="sup-new-ticket">
               <div className="sup-new-header">
-                <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>New Ticket</span>
+                <span style={{ fontSize: 15, fontWeight: 600, color: t.text }}>New Ticket</span>
                 <button onClick={() => setTicketView("list")} className="sup-back-btn" style={{ borderColor: t.cardBorder, color: t.textSoft }}>← Back</button>
               </div>
               <div className="sup-new-form" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
@@ -234,10 +234,10 @@ export default function SupportPage({ dark, t, tickets: ticketsProp }) {
                 {(activeTicket.messages || []).map((msg, i) => (
                   <div key={i} className={`sup-msg sup-msg-${msg.from === "admin" ? "bot" : "user"}`}>
                     <div className="sup-msg-bubble" style={{ background: msg.from === "user" ? (dark ? "#2a1a22" : "#fdf2f4") : t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: msg.from === "user" ? (t.accent + "30") : t.cardBorder }}>
-                      <div style={{ fontSize: 10, fontWeight: 600, color: msg.from === "user" ? t.accent : t.green, marginBottom: 4 }}>{msg.from === "user" ? "You" : "Nitro Support"}</div>
-                      <div style={{ fontSize: 13, color: t.text, lineHeight: 1.5 }}>{msg.text}</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: msg.from === "user" ? t.accent : t.green, marginBottom: 4 }}>{msg.from === "user" ? "You" : "Nitro Support"}</div>
+                      <div style={{ fontSize: 14, color: t.text, lineHeight: 1.5 }}>{msg.text}</div>
                     </div>
-                    <div style={{ fontSize: 10, color: t.textMuted, marginTop: 4, padding: "0 4px" }}>{msg.time}</div>
+                    <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4, padding: "0 4px" }}>{msg.time}</div>
                   </div>
                 ))}
               </div>
@@ -267,9 +267,9 @@ export function SupportSidebar({ dark, t, tickets }) {
       <div className="sup-rs-bot" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
         <div className="sup-rs-bot-status">
           <div className="sup-bot-dot" style={{ background: t.green }} />
-          <span style={{ fontSize: 12, fontWeight: 600, color: t.green }}>Online</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: t.green }}>Online</span>
         </div>
-        <div style={{ fontSize: 11, color: t.textMuted, lineHeight: 1.4 }}>AI assistant available 24/7 for orders, pricing, refunds, and general questions.</div>
+        <div style={{ fontSize: 13, color: t.textMuted, lineHeight: 1.4 }}>AI assistant available 24/7 for orders, pricing, refunds, and general questions.</div>
       </div>
 
       <div className="sup-rs-divider" style={{ background: t.sidebarBorder }} />

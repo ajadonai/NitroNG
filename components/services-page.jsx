@@ -199,8 +199,8 @@ export function ServicesSidebar({ dark, t, onOrderNav }) {
         const s = TS[tier];
         return (
           <div key={tier} className="svc-rs-tier-card" style={{ background: dark ? s.bgD : s.bg, borderWidth: 1, borderStyle: "solid", borderColor: dark ? s.borderD : s.border }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: s.text, marginBottom: 3 }}>{icon} {tier}</div>
-            <div style={{ fontSize: 11, color: t.textMuted, lineHeight: 1.4 }}>{desc}</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: s.text, marginBottom: 3 }}>{icon} {tier}</div>
+            <div style={{ fontSize: 13, color: t.textMuted, lineHeight: 1.4 }}>{desc}</div>
           </div>
         );
       })}
@@ -209,8 +209,8 @@ export function ServicesSidebar({ dark, t, onOrderNav }) {
 
       {/* CTA */}
       <div className="svc-rs-cta" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: t.text, marginBottom: 6 }}>Ready to order?</div>
-        <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 12 }}>Place your order in seconds.</div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: t.text, marginBottom: 6 }}>Ready to order?</div>
+        <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 12 }}>Place your order in seconds.</div>
         <button onClick={() => onOrderNav()} className="svc-rs-cta-btn">Go to New Order →</button>
       </div>
     </>

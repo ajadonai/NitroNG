@@ -79,20 +79,20 @@ export default function AdminUsersPage({ dark, t }) {
                 <div className="adm-user-avatar" style={{ background: `hsl(${(u.id?.charCodeAt(0) || i) * 45}, 40%, ${dark ? 30 : 65}%)` }}>{(u.name || "U")[0]}</div>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: t.text }}>{u.name}</span>
-                    <span className="m" style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: u.status === "Active" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)"), color: u.status === "Active" ? t.green : t.red }}>{u.status}</span>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: t.text }}>{u.name}</span>
+                    <span className="m" style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: u.status === "Active" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)"), color: u.status === "Active" ? t.green : t.red }}>{u.status}</span>
                   </div>
-                  <div style={{ fontSize: 11, color: t.textMuted, marginTop: 1 }}>{u.email}</div>
+                  <div style={{ fontSize: 13, color: t.textMuted, marginTop: 1 }}>{u.email}</div>
                 </div>
               </div>
               <div className="adm-user-actions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ textAlign: "center" }}>
-                  <div className="m" style={{ fontSize: 13, fontWeight: 600, color: t.green }}>{fN(u.balance || 0)}</div>
-                  <div style={{ fontSize: 9, color: t.textMuted }}>Balance</div>
+                  <div className="m" style={{ fontSize: 14, fontWeight: 600, color: t.green }}>{fN(u.balance || 0)}</div>
+                  <div style={{ fontSize: 11, color: t.textMuted }}>Balance</div>
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div className="m" style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{u.orders || 0}</div>
-                  <div style={{ fontSize: 9, color: t.textMuted }}>Orders</div>
+                  <div className="m" style={{ fontSize: 14, fontWeight: 600, color: t.text }}>{u.orders || 0}</div>
+                  <div style={{ fontSize: 11, color: t.textMuted }}>Orders</div>
                 </div>
                 <div style={{ display: "flex", gap: 4 }}>
                   <button onClick={() => setCreditId(creditId === u.id ? null : u.id)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>Credit</button>
@@ -102,7 +102,7 @@ export default function AdminUsersPage({ dark, t }) {
             </div>
             {creditId === u.id && (
               <div style={{ padding: "12px 16px", borderBottom: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.02)" : "rgba(0,0,0,.01)", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                <input type="number" placeholder="Amount" value={creditAmt} onChange={e => setCreditAmt(e.target.value)} className="m" style={{ flex: 1, minWidth: 100, padding: "8px 12px", borderRadius: 8, background: dark ? "#0d1020" : "#fff", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, color: t.text, fontSize: 13, outline: "none" }} />
+                <input type="number" placeholder="Amount" value={creditAmt} onChange={e => setCreditAmt(e.target.value)} className="m" style={{ flex: 1, minWidth: 100, padding: "8px 12px", borderRadius: 8, background: dark ? "#0d1020" : "#fff", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, color: t.text, fontSize: 14, outline: "none" }} />
                 {[1000, 5000, 10000, 50000].map(p => (
                   <button key={p} onClick={() => setCreditAmt(String(p))} className="m adm-btn-sm" style={{ borderColor: Number(creditAmt) === p ? t.accent : t.cardBorder, color: Number(creditAmt) === p ? t.accent : t.textMuted }}>{fN(p)}</button>
                 ))}
@@ -118,7 +118,7 @@ export default function AdminUsersPage({ dark, t }) {
 
       {totalPages > 1 && (
         <div className="adm-pagination">
-          <span style={{ fontSize: 11, color: t.textMuted }}>{filtered.length} users · Page {page} of {totalPages}</span>
+          <span style={{ fontSize: 13, color: t.textMuted }}>{filtered.length} users · Page {page} of {totalPages}</span>
           <div style={{ display: "flex", gap: 4 }}>
             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textSoft, opacity: page === 1 ? .5 : 1 }}>← Prev</button>
             <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textSoft, opacity: page >= totalPages ? .5 : 1 }}>Next →</button>

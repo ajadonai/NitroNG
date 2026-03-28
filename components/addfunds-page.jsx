@@ -148,9 +148,9 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
                   <div className="fund-radio" style={{ borderWidth: 2, borderStyle: "solid", borderColor: method === g.id && g.enabled ? t.accent : (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.15)") }}>
                     {method === g.id && g.enabled && <div className="fund-radio-dot" style={{ background: t.accent }} />}
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: method === g.id && g.enabled ? 600 : 450, color: method === g.id && g.enabled ? t.text : t.textSoft, display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 14, fontWeight: method === g.id && g.enabled ? 600 : 450, color: method === g.id && g.enabled ? t.text : t.textSoft, display: "flex", alignItems: "center", gap: 8 }}>
                     {g.label}
-                    {!g.enabled && <span className="m" style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: dark ? "#1c1608" : "#fffbeb", color: dark ? "#fcd34d" : "#d97706", fontWeight: 700 }}>SOON</span>}
+                    {!g.enabled && <span className="m" style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, background: dark ? "#1c1608" : "#fffbeb", color: dark ? "#fcd34d" : "#d97706", fontWeight: 700 }}>SOON</span>}
                   </span>
                 </div>
               ))}
@@ -197,12 +197,12 @@ export function AddFundsSidebar({ user, txs, dark, t }) {
         <div key={tx.id || i} className="fund-rs-deposit" style={{ background: t.cardBg }}>
           <div className="fund-rs-dep-row">
             <span className="m" style={{ color: t.green, fontWeight: 600 }}>+{fN(tx.amount)}</span>
-            <span style={{ color: t.textMuted, fontSize: 10 }}>{tx.date ? fD(tx.date) : ""}</span>
+            <span style={{ color: t.textMuted, fontSize: 12 }}>{tx.date ? fD(tx.date) : ""}</span>
           </div>
-          <div style={{ fontSize: 11, color: t.textMuted }}>{tx.method || "Deposit"}</div>
+          <div style={{ fontSize: 13, color: t.textMuted }}>{tx.method || "Deposit"}</div>
         </div>
       )) : (
-        <div style={{ fontSize: 11, color: t.textMuted, padding: "8px 4px" }}>No deposits yet</div>
+        <div style={{ fontSize: 13, color: t.textMuted, padding: "8px 4px" }}>No deposits yet</div>
       )}
 
       <div className="fund-rs-divider" style={{ background: t.sidebarBorder }} />

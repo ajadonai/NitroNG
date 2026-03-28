@@ -83,11 +83,11 @@ function AdminOverview({ data, dark, t }) {
             {(recentOrders || []).length > 0 ? (recentOrders || []).slice(0, 5).map((o, i, arr) => (
               <div key={o.id} className="adm-list-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: t.text }}>{o.service || o.serviceId}</div>
-                  <div style={{ fontSize: 11, color: t.textMuted, marginTop: 2 }}><span className="m">{o.id}</span> · {o.user || "user"}</div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>{o.service || o.serviceId}</div>
+                  <div style={{ fontSize: 13, color: t.textMuted, marginTop: 2 }}><span className="m">{o.id}</span> · {o.user || "user"}</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div className="m" style={{ fontSize: 12, fontWeight: 600, color: t.green }}>{fN(o.charge || 0)}</div>
+                  <div className="m" style={{ fontSize: 13, fontWeight: 600, color: t.green }}>{fN(o.charge || 0)}</div>
                   <span className="m adm-badge" style={{ background: o.status === "Completed" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : o.status === "Processing" ? (dark ? "rgba(165,180,252,.1)" : "rgba(79,70,229,.06)") : (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)"), color: o.status === "Completed" ? t.green : o.status === "Processing" ? t.blue : t.amber }}>{o.status}</span>
                 </div>
               </div>
@@ -107,12 +107,12 @@ function AdminOverview({ data, dark, t }) {
               <div key={u.id} className="adm-list-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                 <div className="adm-user-avatar" style={{ background: `hsl(${(u.id || i) * 45}, 40%, ${dark ? 30 : 65}%)` }}>{(u.name || "U")[0]}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: t.text }}>{u.name}</div>
-                  <div style={{ fontSize: 11, color: t.textMuted }}>{u.email}</div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>{u.name}</div>
+                  <div style={{ fontSize: 13, color: t.textMuted }}>{u.email}</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div className="m" style={{ fontSize: 12, fontWeight: 600, color: t.text }}>{u.orders || 0} orders</div>
-                  <div style={{ fontSize: 10, color: t.textMuted }}>{u.created ? fD(u.created) : ""}</div>
+                  <div className="m" style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{u.orders || 0} orders</div>
+                  <div style={{ fontSize: 12, color: t.textMuted }}>{u.created ? fD(u.created) : ""}</div>
                 </div>
               </div>
             )) : (
@@ -148,8 +148,8 @@ function PlaceholderPage({ title, subtitle, dark, t }) {
       </div>
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 14, fontWeight: 500, color: t.textMuted }}>Building {title}...</div>
-          <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4 }}>This page will be built next</div>
+          <div style={{ fontSize: 15, fontWeight: 500, color: t.textMuted }}>Building {title}...</div>
+          <div style={{ fontSize: 13, color: t.textMuted, marginTop: 4 }}>This page will be built next</div>
         </div>
       </div>
     </>
@@ -166,14 +166,14 @@ function AdminRightSidebar({ data, dark, t }) {
       {(data.openTickets || []).length > 0 ? (data.openTickets || []).slice(0, 4).map((tk, i) => (
         <div key={tk.id || i} className="adm-rs-ticket" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
           <div className="adm-rs-ticket-top">
-            <span className="m" style={{ fontSize: 10, color: t.accent }}>{tk.id}</span>
-            <span style={{ fontSize: 9, color: t.textMuted }}>{tk.created ? fD(tk.created) : ""}</span>
+            <span className="m" style={{ fontSize: 12, color: t.accent }}>{tk.id}</span>
+            <span style={{ fontSize: 11, color: t.textMuted }}>{tk.created ? fD(tk.created) : ""}</span>
           </div>
-          <div style={{ fontSize: 12, fontWeight: 500, color: t.text, marginTop: 3 }}>{tk.subject}</div>
-          <div style={{ fontSize: 10, color: t.textMuted, marginTop: 2 }}>{tk.user || "user"}</div>
+          <div style={{ fontSize: 13, fontWeight: 500, color: t.text, marginTop: 3 }}>{tk.subject}</div>
+          <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>{tk.user || "user"}</div>
         </div>
       )) : (
-        <div style={{ fontSize: 11, color: t.textMuted, padding: "8px 4px" }}>No open tickets</div>
+        <div style={{ fontSize: 13, color: t.textMuted, padding: "8px 4px" }}>No open tickets</div>
       )}
 
       <div className="adm-rs-divider" style={{ background: t.sidebarBorder }} />
@@ -183,12 +183,12 @@ function AdminRightSidebar({ data, dark, t }) {
         <div key={i} className="adm-rs-activity">
           <div className="adm-rs-dot" style={{ background: a.type === "order" ? t.green : a.type === "user" ? t.blue : a.type === "deposit" ? t.green : a.type === "ticket" ? t.amber : t.accent }} />
           <div>
-            <div style={{ fontSize: 12, color: t.text, fontWeight: 450 }}>{a.action}</div>
-            <div style={{ fontSize: 10, color: t.textMuted }}>{a.detail} · {a.time}</div>
+            <div style={{ fontSize: 13, color: t.text, fontWeight: 450 }}>{a.action}</div>
+            <div style={{ fontSize: 12, color: t.textMuted }}>{a.detail} · {a.time}</div>
           </div>
         </div>
       ))}
-      {(data.activity || []).length === 0 && <div style={{ fontSize: 11, color: t.textMuted, padding: "8px 4px" }}>No recent activity</div>}
+      {(data.activity || []).length === 0 && <div style={{ fontSize: 13, color: t.textMuted, padding: "8px 4px" }}>No recent activity</div>}
     </>
   );
 }
@@ -337,7 +337,7 @@ export default function AdminDashboard() {
           <div className="dash-logo-static">
             <div className="dash-logo-box"><svg width="11" height="11" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
             <span className="dash-logo-text" style={{ color: t.text }}>NITRO</span>
-            <span className="m" style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)", color: t.accent, fontWeight: 700 }}>ADMIN</span>
+            <span className="m" style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)", color: t.accent, fontWeight: 700 }}>ADMIN</span>
           </div>
         </div>
         <div className="dash-nav-right">
@@ -374,7 +374,7 @@ export default function AdminDashboard() {
           <div style={{ padding: "6px 14px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: t.green }} />
-              <span style={{ fontSize: 10, color: t.green, fontWeight: 500 }}>All systems operational</span>
+              <span style={{ fontSize: 12, color: t.green, fontWeight: 500 }}>All systems operational</span>
             </div>
           </div>
           <div className="dash-sidebar-divider" style={{ background: t.sidebarBorder }} />
@@ -393,7 +393,7 @@ export default function AdminDashboard() {
 
           <div className="dash-footer" style={{ borderTopColor: t.sidebarBorder }}>
             <span style={{ color: t.textMuted }}>© 2026 Nitro Admin</span>
-            <span className="m" style={{ fontSize: 10, color: t.textMuted }}>v1.0.0</span>
+            <span className="m" style={{ fontSize: 12, color: t.textMuted }}>v1.0.0</span>
           </div>
         </main>
 

@@ -58,11 +58,11 @@ export default function AdminTicketsPage({ dark, t }) {
             ) : filtered.length > 0 ? filtered.map((tk, i) => (
               <button key={tk.id} onClick={() => setSelected(tk)} className="adm-ticket-row" style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: selected?.id === tk.id ? (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)") : "transparent", width: "100%", textAlign: "left", display: "block", padding: "14px 16px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                  <span className="m" style={{ fontSize: 11, color: t.accent }}>{tk.id}</span>
-                  <span className="m" style={{ fontSize: 9, padding: "2px 7px", borderRadius: 4, fontWeight: 600, background: tk.status === "Open" ? (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)") : tk.status === "Resolved" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(165,180,252,.1)" : "rgba(79,70,229,.06)"), color: tk.status === "Open" ? t.amber : tk.status === "Resolved" ? t.green : t.blue }}>{tk.status}</span>
+                  <span className="m" style={{ fontSize: 13, color: t.accent }}>{tk.id}</span>
+                  <span className="m" style={{ fontSize: 11, padding: "2px 7px", borderRadius: 4, fontWeight: 600, background: tk.status === "Open" ? (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)") : tk.status === "Resolved" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(165,180,252,.1)" : "rgba(79,70,229,.06)"), color: tk.status === "Open" ? t.amber : tk.status === "Resolved" ? t.green : t.blue }}>{tk.status}</span>
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: t.text }}>{tk.subject}</div>
-                <div style={{ fontSize: 11, color: t.textMuted, marginTop: 2 }}>{tk.user} · {tk.created ? fD(tk.created) : ""}</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>{tk.subject}</div>
+                <div style={{ fontSize: 13, color: t.textMuted, marginTop: 2 }}>{tk.user} · {tk.created ? fD(tk.created) : ""}</div>
               </button>
             )) : (
               <div className="adm-empty" style={{ color: t.textMuted }}>No tickets found</div>
@@ -76,23 +76,23 @@ export default function AdminTicketsPage({ dark, t }) {
             {selected ? (
               <>
                 <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 4 }}>{selected.subject}</div>
-                <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 16 }}>From: {selected.user} ({selected.email}) · {selected.created ? fD(selected.created) : ""}</div>
+                <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 16 }}>From: {selected.user} ({selected.email}) · {selected.created ? fD(selected.created) : ""}</div>
 
                 {/* Messages */}
                 <div style={{ padding: 14, borderRadius: 10, background: dark ? "#0d1020" : "#faf8f5", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, marginBottom: 14 }}>
-                  <div style={{ fontSize: 13, color: t.text, lineHeight: 1.6 }}>{selected.message || "No message content"}</div>
+                  <div style={{ fontSize: 14, color: t.text, lineHeight: 1.6 }}>{selected.message || "No message content"}</div>
                 </div>
 
                 {(selected.replies || []).map((r, i) => (
                   <div key={i} style={{ padding: 12, borderRadius: 10, background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", marginBottom: 8 }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, color: t.accent, marginBottom: 3 }}>Admin · {r.time ? fD(r.time) : ""}</div>
-                    <div style={{ fontSize: 13, color: t.text }}>{r.msg || r.message}</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: t.accent, marginBottom: 3 }}>Admin · {r.time ? fD(r.time) : ""}</div>
+                    <div style={{ fontSize: 14, color: t.text }}>{r.msg || r.message}</div>
                   </div>
                 ))}
 
                 {selected.status !== "Resolved" && (
                   <>
-                    <textarea value={reply} onChange={e => setReply(e.target.value)} placeholder="Write a reply..." rows={3} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 13, outline: "none", resize: "vertical", marginTop: 8, marginBottom: 8, fontFamily: "inherit", lineHeight: 1.5, boxSizing: "border-box" }} />
+                    <textarea value={reply} onChange={e => setReply(e.target.value)} placeholder="Write a reply..." rows={3} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", resize: "vertical", marginTop: 8, marginBottom: 8, fontFamily: "inherit", lineHeight: 1.5, boxSizing: "border-box" }} />
                     <div style={{ display: "flex", gap: 8 }}>
                       <button onClick={doReply} className="adm-btn-primary" style={{ opacity: reply.trim() ? 1 : .4 }}>Send Reply</button>
                       <button onClick={doResolve} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.green }}>Resolve</button>
@@ -101,7 +101,7 @@ export default function AdminTicketsPage({ dark, t }) {
                 )}
               </>
             ) : (
-              <div style={{ textAlign: "center", padding: "50px 0", color: t.textMuted, fontSize: 12 }}>Select a ticket to view details</div>
+              <div style={{ textAlign: "center", padding: "50px 0", color: t.textMuted, fontSize: 13 }}>Select a ticket to view details</div>
             )}
           </div>
         </div>

@@ -44,7 +44,7 @@ function sBg(s, dk) { return s === "Completed" ? (dk ? "#0a2416" : "#ecfdf5") : 
 function sBrd(s, dk) { return s === "Completed" ? (dk ? "#166534" : "#a7f3d0") : s === "Processing" ? (dk ? "#3730a3" : "#c7d2fe") : s === "Pending" ? (dk ? "#92400e" : "#fde68a") : s === "Partial" ? (dk ? "#991b1b" : "#fecaca") : (dk ? "#404040" : "#d4d4d4"); }
 
 function Badge({ status, dark }) {
-  return <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: sBg(status, dark), color: sClr(status, dark), borderWidth: .5, borderStyle: "solid", borderColor: sBrd(status, dark), whiteSpace: "nowrap", display: "inline-block" }}>{status}</span>;
+  return <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: sBg(status, dark), color: sClr(status, dark), borderWidth: .5, borderStyle: "solid", borderColor: sBrd(status, dark), whiteSpace: "nowrap", display: "inline-block" }}>{status}</span>;
 }
 
 /* ═══════════════════════════════════════════ */
@@ -71,7 +71,7 @@ function OverviewPage({ user, orders, alerts, dark, t }) {
           borderLeftColor: a.type === "warning" ? (dark ? "#fbbf24" : "#d97706") : t.accent,
           color: a.type === "warning" ? (dark ? "#fbbf24" : "#92400e") : t.text,
         }}>
-          <span style={{ fontSize: 14, flexShrink: 0 }}>{a.type === "warning" ? "⚠️" : "📢"}</span>
+          <span style={{ fontSize: 15, flexShrink: 0 }}>{a.type === "warning" ? "⚠️" : "📢"}</span>
           <span style={{ flex: 1 }}>{a.message}</span>
         </div>
       ))}
@@ -122,8 +122,8 @@ function OverviewPage({ user, orders, alerts, dark, t }) {
               <line x1="32" y1="28" x2="32" y2="36" stroke={t.accent} strokeWidth="2" strokeLinecap="round" opacity=".4" />
             </svg>
             <div style={{ fontSize: 16, fontWeight: 600, color: t.textSoft, marginBottom: 6 }}>No orders yet</div>
-            <div style={{ color: t.textMuted, fontSize: 12, marginBottom: 16, lineHeight: 1.5 }}>Place your first order and watch your stats come alive</div>
-            <button onClick={() => {}} style={{ padding: "10px 24px", borderRadius: 8, background: `linear-gradient(135deg,${t.accent},#8b5e6b)`, color: "#fff", fontSize: 13, fontWeight: 600, border: "none" }}>Place your first order</button>
+            <div style={{ color: t.textMuted, fontSize: 13, marginBottom: 16, lineHeight: 1.5 }}>Place your first order and watch your stats come alive</div>
+            <button onClick={() => {}} style={{ padding: "10px 24px", borderRadius: 8, background: `linear-gradient(135deg,${t.accent},#8b5e6b)`, color: "#fff", fontSize: 14, fontWeight: 600, border: "none" }}>Place your first order</button>
           </div>
         )}
         {orders.length > 5 && (
@@ -164,7 +164,7 @@ function RightSidebar({ orders, user, dark, t }) {
           )}
           {pnd > 0 && <div className="dash-rs-pill" style={{ background: sBg("Pending", dark), color: sClr("Pending", dark) }}>{pnd} pending</div>}
           {prt > 0 && <div className="dash-rs-pill" style={{ background: sBg("Partial", dark), color: sClr("Partial", dark) }}>{prt} partial</div>}
-          {activeOrders.length === 0 && <div style={{ fontSize: 11, color: t.textMuted }}>No active orders</div>}
+          {activeOrders.length === 0 && <div style={{ fontSize: 13, color: t.textMuted }}>No active orders</div>}
         </div>
         <div className="dash-rs-list">
           {activeOrders.slice(0, 3).map(o => (
@@ -267,15 +267,15 @@ function NotifDropdown({ orders, txs, dark, t, onClose }) {
       {/* Header */}
       <div className="dash-notif-header">
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: t.text }}>Notifications</span>
-          {unreadCount > 0 && <span className="m" style={{ fontSize: 9, padding: "2px 6px", borderRadius: 5, background: dark ? "#1c1015" : "#fdf2f4", color: t.accent, fontWeight: 700 }}>{unreadCount}</span>}
+          <span style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Notifications</span>
+          {unreadCount > 0 && <span className="m" style={{ fontSize: 11, padding: "2px 6px", borderRadius: 5, background: dark ? "#1c1015" : "#fdf2f4", color: t.accent, fontWeight: 700 }}>{unreadCount}</span>}
         </div>
-        {unreadCount > 0 && <button onClick={markAllRead} style={{ fontSize: 11, fontWeight: 600, color: t.accent, background: "none" }}>Mark all read</button>}
+        {unreadCount > 0 && <button onClick={markAllRead} style={{ fontSize: 13, fontWeight: 600, color: t.accent, background: "none" }}>Mark all read</button>}
       </div>
       {/* Filter tabs */}
       <div style={{ display: "flex", gap: 4, padding: "0 14px 10px" }}>
         {[["all", "All"], ["order", "Orders"], ["deposit", "Deposits"]].map(([id, label]) => (
-          <button key={id} onClick={() => setFilter(id)} style={{ padding: "3px 10px", borderRadius: 7, fontSize: 10, fontWeight: 550, background: filter === id ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : "transparent", color: filter === id ? t.accent : t.textMuted }}>{label}</button>
+          <button key={id} onClick={() => setFilter(id)} style={{ padding: "3px 10px", borderRadius: 7, fontSize: 12, fontWeight: 550, background: filter === id ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : "transparent", color: filter === id ? t.accent : t.textMuted }}>{label}</button>
         ))}
       </div>
       <div style={{ height: 1, background: t.cardBorder }} />
@@ -288,16 +288,16 @@ function NotifDropdown({ orders, txs, dark, t, onClose }) {
               <div className="dash-notif-icon" style={{ background: `${n.color}15`, color: n.color }}>{n.icon}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: isRead ? 450 : 600, color: t.text }}>{n.title}</span>
+                  <span style={{ fontSize: 13, fontWeight: isRead ? 450 : 600, color: t.text }}>{n.title}</span>
                   {!isRead && <div style={{ width: 6, height: 6, borderRadius: "50%", background: t.accent, flexShrink: 0 }} />}
                 </div>
-                <div style={{ fontSize: 11, color: t.textSoft, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.desc}</div>
-                <div style={{ fontSize: 10, color: t.textMuted, marginTop: 3 }}>{n.time}</div>
+                <div style={{ fontSize: 13, color: t.textSoft, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.desc}</div>
+                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 3 }}>{n.time}</div>
               </div>
             </div>
           );
         }) : (
-          <div style={{ padding: "24px 14px", textAlign: "center", fontSize: 12, color: t.textMuted }}>No notifications</div>
+          <div style={{ padding: "24px 14px", textAlign: "center", fontSize: 13, color: t.textMuted }}>No notifications</div>
         )}
       </div>
     </div>
@@ -520,8 +520,8 @@ export default function Dashboard() {
       default:
         return (
           <div className="dash-placeholder" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
-            <div style={{ color: t.textMuted, fontSize: 14, fontWeight: 500 }}>{active.charAt(0).toUpperCase() + active.slice(1).replace("-", " ")}</div>
-            <div style={{ color: t.textMuted, fontSize: 12, opacity: .5, marginTop: 4 }}>Coming soon</div>
+            <div style={{ color: t.textMuted, fontSize: 15, fontWeight: 500 }}>{active.charAt(0).toUpperCase() + active.slice(1).replace("-", " ")}</div>
+            <div style={{ color: t.textMuted, fontSize: 13, opacity: .5, marginTop: 4 }}>Coming soon</div>
           </div>
         );
     }
@@ -669,8 +669,8 @@ export default function Dashboard() {
             ) : (
               <div className="dash-rs-empty">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: .3, marginBottom: 12 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                <div style={{ fontSize: 13, color: t.textMuted, textAlign: "center", fontWeight: 450 }}>Select a service</div>
-                <div style={{ fontSize: 11, color: t.textMuted, opacity: .5, marginTop: 4, textAlign: "center" }}>Choose a platform and service to place an order</div>
+                <div style={{ fontSize: 14, color: t.textMuted, textAlign: "center", fontWeight: 450 }}>Select a service</div>
+                <div style={{ fontSize: 13, color: t.textMuted, opacity: .5, marginTop: 4, textAlign: "center" }}>Choose a platform and service to place an order</div>
               </div>
             )
           ) : isOrders ? (

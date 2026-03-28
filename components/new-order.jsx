@@ -164,8 +164,8 @@ export default function NewOrderPage({ dark, t, platform, setPlatform, selSvc, s
         return (
           <div key={tier.tier} onClick={e => pickTier(tier, e)} className="no-tier-card" style={{ borderWidth: isSel ? 2 : 1, borderStyle: "solid", borderColor: isSel ? s.text : (dark ? s.borderD : s.border), background: isSel ? (dark ? s.bgD : s.bg) : (dark ? "#0e1120" : "#ffffff") }}>
             <div className="no-tier-header">
-              <span style={{ fontSize: 12, fontWeight: 700, color: s.text }}>{s.label} {tier.tier}</span>
-              <span className="m" style={{ fontSize: 12, fontWeight: 700, color: s.text }}>₦{tier.price.toLocaleString()}<span style={{ fontSize: 9, fontWeight: 400 }}>/{tier.per}</span></span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: s.text }}>{s.label} {tier.tier}</span>
+              <span className="m" style={{ fontSize: 13, fontWeight: 700, color: s.text }}>₦{tier.price.toLocaleString()}<span style={{ fontSize: 11, fontWeight: 400 }}>/{tier.per}</span></span>
             </div>
             <div className="no-tier-meta" style={{ color: t.textMuted }}>Refill: <strong style={{ color: t.textSoft }}>{tier.refill}</strong> · {tier.speed}</div>
           </div>

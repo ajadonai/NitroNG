@@ -71,14 +71,14 @@ export default function AdminServicesPage({ dark, t }) {
             <div className="adm-list-row" onClick={() => setExpanded(expanded === s.id ? null : s.id)} style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${t.cardBorder}` : "none", cursor: "pointer" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: t.text }}>{s.name}</span>
-                  {!s.enabled && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: t.red, fontWeight: 600 }}>Disabled</span>}
+                  <span style={{ fontSize: 14, fontWeight: 500, color: t.text }}>{s.name}</span>
+                  {!s.enabled && <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: t.red, fontWeight: 600 }}>Disabled</span>}
                 </div>
-                <div style={{ fontSize: 11, color: t.textMuted, marginTop: 2 }}>{s.category} · ID: {s.id}</div>
+                <div style={{ fontSize: 13, color: t.textMuted, marginTop: 2 }}>{s.category} · ID: {s.id}</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                 {(s.tiers || []).map(tier => (
-                  <span key={tier.name} className="m" style={{ fontSize: 9, padding: "2px 7px", borderRadius: 4, fontWeight: 600, background: TIER_COLORS[tier.name]?.bg || "rgba(128,128,128,.08)", color: TIER_COLORS[tier.name]?.color || "#888" }}>
+                  <span key={tier.name} className="m" style={{ fontSize: 11, padding: "2px 7px", borderRadius: 4, fontWeight: 600, background: TIER_COLORS[tier.name]?.bg || "rgba(128,128,128,.08)", color: TIER_COLORS[tier.name]?.color || "#888" }}>
                     {tier.name} ₦{tier.price?.toLocaleString() || 0}
                   </span>
                 ))}
@@ -87,7 +87,7 @@ export default function AdminServicesPage({ dark, t }) {
             </div>
             {expanded === s.id && (
               <div style={{ padding: "12px 16px 16px", borderBottom: i < filtered.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: dark ? "rgba(255,255,255,.02)" : "rgba(0,0,0,.01)" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12, fontSize: 11 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12, fontSize: 13 }}>
                   <div><span style={{ color: t.textMuted }}>Category:</span> <span style={{ color: t.text }}>{s.category}</span></div>
                   <div><span style={{ color: t.textMuted }}>Provider:</span> <span style={{ color: t.text }}>{s.provider || "MTP"}</span></div>
                   <div><span style={{ color: t.textMuted }}>Status:</span> <span style={{ color: s.enabled ? t.green : t.red }}>{s.enabled ? "Active" : "Disabled"}</span></div>
