@@ -78,33 +78,57 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
       </div>
 
       <div className="fund-split">
-        {/* ── LEFT: Amount input ── */}
+        {/* ── LEFT: Amount input (redesigned) ── */}
         <div className="fund-left">
-          <div className="fund-section-label" style={{ color: t.textMuted }}>Enter Amount</div>
+          {/* Amount card */}
+          <div className="fund-amount-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
+            {/* Current balance */}
+            <div className="fund-bal-row">
+              <div>
+                <div className="fund-bal-label" style={{ color: t.textMuted }}>Current Balance</div>
+                <div className="m fund-bal-value" style={{ color: t.green }}>{fN(balance)}</div>
+              </div>
+              <div className="fund-bal-icon" style={{ background: dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.04)" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              </div>
+            </div>
 
-          <div className="fund-amount-wrap">
-            <span className="fund-currency" style={{ color: t.textSoft }}>₦</span>
-            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" className="m fund-amount-input" style={{ color: t.text }} />
+            <div className="fund-card-divider" style={{ background: t.cardBorder }} />
+
+            {/* Amount label */}
+            <div className="fund-deposit-label" style={{ color: t.textMuted }}>Amount to deposit</div>
+
+            {/* Big amount input */}
+            <div className="fund-amount-wrap" style={{ background: dark ? "#0d1020" : "#fff", borderWidth: 2, borderStyle: "solid", borderColor: amount ? t.accent : t.cardBorder }}>
+              <span className="m fund-currency" style={{ color: t.textSoft }}>₦</span>
+              <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" className="m fund-amount-input" style={{ color: t.text }} />
+            </div>
+
+            {/* Preset buttons */}
+            <div className="fund-presets">
+              {PRESETS.map(p => (
+                <button key={p} onClick={() => setAmount(String(p))} className="m fund-preset" style={{ borderWidth: numAmount === p ? 2 : 1, borderStyle: "solid", borderColor: numAmount === p ? t.accent : t.cardBorder, background: numAmount === p ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : "transparent", color: numAmount === p ? t.accent : t.textSoft }}>
+                  ₦{p >= 1000 ? `${p / 1000}K` : p}
+                </button>
+              ))}
+            </div>
+
+            {/* Min warning — reserved space */}
+            <div className="fund-warn-space">
+              {numAmount > 0 && numAmount < 500 && (
+                <div className="fund-warn" style={{ color: dark ? "#fcd34d" : "#d97706" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  Minimum deposit is ₦500
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="fund-presets">
-            {PRESETS.map(p => (
-              <button key={p} onClick={() => setAmount(String(p))} className="m fund-preset" style={{ borderWidth: numAmount === p ? 2 : 1, borderStyle: "solid", borderColor: numAmount === p ? t.accent : t.cardBorder, background: numAmount === p ? (dark ? "#2a1a22" : "#fdf2f4") : t.cardBg, color: numAmount === p ? t.accent : t.textSoft }}>
-                ₦{p >= 1000 ? `${p / 1000}K` : p}
-              </button>
-            ))}
-          </div>
-
-          {/* Min warning — reserved space */}
-          <div className="fund-warn-space">
-            {numAmount > 0 && numAmount < 500 && <div className="fund-warn" style={{ color: dark ? "#fcd34d" : "#d97706" }}>Minimum deposit is ₦500</div>}
-          </div>
-
-          {/* Accepted types */}
+          {/* Accepted types — outside card */}
           <div className="fund-accepted">
             <span className="fund-accepted-label" style={{ color: t.textMuted }}>We accept:</span>
             {ACCEPTED_TYPES.map(type => (
-              <span key={type} className="fund-accepted-pill" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, color: t.textSoft }}>{type}</span>
+              <span key={type} className="fund-accepted-pill" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, color: t.textSoft }}>{type}</span>
             ))}
           </div>
         </div>
