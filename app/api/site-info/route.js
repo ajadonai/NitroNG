@@ -20,7 +20,12 @@ export async function GET() {
     let alerts = [];
     try {
       alerts = (await prisma.alert.findMany({
-        where: { active: true, OR: [{ target: 'both' }, { target: 'login' }] },
+        where: {
+          active: true,
+          deletedAt: null,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          AND: { OR: [{ target: 'both' }, { target: 'login' }] },
+        },
         orderBy: { createdAt: 'desc' },
         take: 3,
       })).map(a => ({ message: a.message, type: a.type }));
