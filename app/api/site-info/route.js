@@ -23,8 +23,8 @@ export async function GET() {
         where: {
           active: true,
           deletedAt: null,
+          target: { in: ['both', 'login'] },
           OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-          AND: { OR: [{ target: 'both' }, { target: 'login' }] },
         },
         orderBy: { createdAt: 'desc' },
         take: 3,

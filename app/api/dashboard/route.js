@@ -57,13 +57,11 @@ export async function GET() {
         where: {
           active: true,
           deletedAt: null,
+          target: { in: ['both', 'dashboard'] },
           OR: [
             { expiresAt: null },
             { expiresAt: { gt: new Date() } },
           ],
-          AND: {
-            OR: [{ target: 'both' }, { target: 'dashboard' }],
-          },
         },
         orderBy: { createdAt: 'desc' },
       });

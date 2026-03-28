@@ -49,7 +49,7 @@ export async function POST(req) {
         },
       });
       await logActivity(admin.name, `Created alert: "${message.trim().slice(0, 50)}"`, 'alert');
-      return Response.json({ success: true, alert: { id: alert.id } });
+      return Response.json({ success: true, alert: { id: alert.id, message: alert.message, type: alert.type, target: alert.target, active: alert.active, created: alert.createdAt.toISOString() } });
     }
 
     if (action === 'update') {
