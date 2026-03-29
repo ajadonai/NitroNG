@@ -16,23 +16,6 @@ async function verifyToken(token, secret) {
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
-  // Skip static assets and API routes early
-  if (pathname.startsWith('/api') || pathname.startsWith('/_next') || pathname.includes('.')) {
-    return NextResponse.next();
-  }
-
-  const hostname = request.headers.get('host') || '';
-
-  // ── blog.nitro.ng → rewrite to /blog ──
-  if (hostname.startsWith('blog.')) {
-    if (!pathname.startsWith('/blog')) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/blog';
-      return NextResponse.rewrite(url);
-    }
-    return NextResponse.next();
-  }
-
   // ── Protect /verify — must have a user token (unverified user) ──
   if (pathname === '/verify') {
     const token = request.cookies.get('nitro_token')?.value;
@@ -90,5 +73,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/verify', '/dashboard/:path*', '/admin/:path*'],
 };
