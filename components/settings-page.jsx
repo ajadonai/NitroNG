@@ -146,7 +146,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <div className="set-divider" style={{ background: t.sidebarBorder }} />
 
         {/* ── CHANGE PASSWORD ── */}
-        <div className="set-section">
+        <div id="set-change-password" className="set-section">
           <div className="set-section-title" style={{ color: t.text }}>Change Password</div>
           <div className="set-card" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
             {pwMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 13, background: pwMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: pwMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{pwMsg.type === "success" ? "✓" : "⚠️"} {pwMsg.text}</div>}
@@ -169,7 +169,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <div className="set-divider" style={{ background: t.sidebarBorder }} />
 
         {/* ── THEME ── */}
-        <div className="set-section">
+        <div id="set-theme" className="set-section">
           <div className="set-section-title" style={{ color: t.text }}>Theme</div>
           <div className="set-section-desc" style={{ color: t.textMuted }}>Choose how Nitro looks for you.</div>
           <div className="set-theme-grid">
@@ -183,7 +183,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <div className="set-divider" style={{ background: t.sidebarBorder }} />
 
         {/* ── NOTIFICATIONS ── */}
-        <div className="set-section">
+        <div id="set-notifications" className="set-section">
           <div className="set-section-title" style={{ color: t.text }}>Notifications</div>
           <div className="set-section-desc" style={{ color: t.textMuted }}>Control what alerts you receive.</div>
           <div className="set-card set-notif-card" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
@@ -206,7 +206,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <div className="set-divider" style={{ background: t.sidebarBorder }} />
 
         {/* ── ACTIVE SESSIONS ── */}
-        <div className="set-section">
+        <div id="set-active-sessions" className="set-section">
           <div className="set-section-title" style={{ color: t.text }}>Active Sessions</div>
           <div className="set-section-desc" style={{ color: t.textMuted }}>Devices currently logged into your account. Max 1 web + 1 mobile.</div>
           <div className="set-card set-notif-card" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
@@ -240,7 +240,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <div className="set-divider" style={{ background: t.sidebarBorder }} />
 
         {/* ── API KEY ── */}
-        <div className="set-section">
+        <div id="set-api-key" className="set-section">
           <div className="set-section-title" style={{ color: t.text }}>API Key</div>
           <div className="set-section-desc" style={{ color: t.textMuted }}>For advanced users and resellers. Keep this secret.</div>
           <div className="set-card" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
@@ -267,7 +267,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <div className="set-divider" style={{ background: t.sidebarBorder }} />
 
         {/* ── LOG OUT ── */}
-        <div className="set-section">
+        <div id="set-account" className="set-section">
           <div className="set-section-title" style={{ color: t.text }}>Account</div>
           <button onClick={async () => {
             const ok = await confirm({ title: "Log Out", message: "You will be logged out of this device.", confirmLabel: "Log Out" });
@@ -283,7 +283,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <div className="set-divider" style={{ background: t.sidebarBorder }} />
 
         {/* ── DANGER ZONE ── */}
-        <div className="set-section">
+        <div id="set-danger-zone" className="set-section">
           <div className="set-section-title" style={{ color: t.text }}>Danger Zone</div>
           <div className="set-danger-card" style={{ background: dark ? "rgba(220,38,38,.06)" : "rgba(220,38,38,.03)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.08)" }}>
             <div className="set-danger-title" style={{ color: t.text }}>Delete Account</div>
@@ -322,8 +322,16 @@ export function SettingsSidebar({ user, dark, t }) {
       <div className="set-rs-divider" style={{ background: t.sidebarBorder }} />
 
       <div className="set-rs-title" style={{ color: t.textMuted }}>Quick Links</div>
-      {["Change Password", "Theme", "Notifications", "Active Sessions", "API Key", "Log Out", "Danger Zone"].map(label => (
-        <div key={label} className="set-rs-link" style={{ color: label === "Danger Zone" ? (dark ? "#fca5a5" : "#dc2626") : t.textSoft }}>{label}</div>
+      {[
+        ["Change Password", "set-change-password"],
+        ["Theme", "set-theme"],
+        ["Notifications", "set-notifications"],
+        ["Active Sessions", "set-active-sessions"],
+        ["API Key", "set-api-key"],
+        ["Log Out", "set-account"],
+        ["Danger Zone", "set-danger-zone"],
+      ].map(([label, id]) => (
+        <div key={label} onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })} className="set-rs-link" style={{ color: label === "Danger Zone" ? (dark ? "#fca5a5" : "#dc2626") : t.textSoft, cursor: "pointer" }}>{label}</div>
       ))}
     </>
   );
