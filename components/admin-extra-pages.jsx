@@ -424,76 +424,143 @@ export function AdminMaintenancePage({ dark, t }) {
 /* ═══ API MANAGEMENT                      ═══ */
 /* ═══════════════════════════════════════════ */
 export function AdminAPIPage({ dark, t }) {
-  const [providers, setProviders] = useState([
-    { id: "mtp", name: "MoreThanPanel (MTP)", url: "https://morethanpanel.com/api/v2", key: process.env.NEXT_PUBLIC_MTP_KEY ? "••••••••" : "Not configured", status: "active", services: 4405 },
-    { id: "jap", name: "JustAnotherPanel (JAP)", url: "", key: "Not configured", status: "pending", services: 0 },
-    { id: "dao", name: "DaoSMM", url: "", key: "Not configured", status: "pending", services: 0 },
-  ]);
-  const [showAdd, setShowAdd] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newUrl, setNewUrl] = useState("");
-  const [newKey, setNewKey] = useState("");
+  const PROVIDERS = [
+    { id: "mtp", name: "MoreThanPanel (MTP)", url: "https://morethanpanel.com/api/v2", keyField: "mtp_api_key", urlField: "mtp_api_url" },
+    { id: "jap", name: "JustAnotherPanel (JAP)", url: "", keyField: "jap_api_key", urlField: "jap_api_url" },
+    { id: "dao", name: "DaoSMM", url: "", keyField: "dao_api_key", urlField: "dao_api_url" },
+  ];
 
-  const addProvider = () => {
-    if (!newName.trim() || !newUrl.trim()) return;
-    setProviders(prev => [...prev, { id: Date.now().toString(), name: newName, url: newUrl, key: newKey ? "••••••••" : "Not configured", status: newKey ? "active" : "pending", services: 0 }]);
-    setShowAdd(false); setNewName(""); setNewUrl(""); setNewKey("");
+  const [settings, setSettings] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(null); // provider id being edited
+  const [editKey, setEditKey] = useState("");
+  const [editUrl, setEditUrl] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(null);
+  const [syncing, setSyncing] = useState(null);
+  const [testResult, setTestResult] = useState(null);
+  const [syncResult, setSyncResult] = useState(null);
+  const [svcCount, setSvcCount] = useState(0);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [settingsRes, svcsRes] = await Promise.all([
+          fetch("/api/admin/settings"),
+          fetch("/api/admin/services"),
+        ]);
+        if (settingsRes.ok) { const d = await settingsRes.json(); setSettings(d.settings || {}); }
+        if (svcsRes.ok) { const d = await svcsRes.json(); setSvcCount(d.services?.length || 0); }
+      } catch {}
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const saveKey = async (provider) => {
+    setSaving(true);
+    try {
+      const updates = {};
+      updates[provider.keyField] = editKey;
+      if (editUrl) updates[provider.urlField] = editUrl;
+      const res = await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ settings: updates }) });
+      if (res.ok) {
+        setSettings(prev => ({ ...prev, ...updates }));
+        setEditing(null); setEditKey(""); setEditUrl("");
+      }
+    } catch {}
+    setSaving(false);
+  };
+
+  const testConnection = async (provider) => {
+    setTesting(provider.id); setTestResult(null);
+    try {
+      const res = await fetch("/api/admin/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "test" }) });
+      const data = await res.json();
+      if (res.ok) setTestResult({ id: provider.id, type: "success", message: `Connected! Balance: $${data.balance?.balance || "0"}` });
+      else setTestResult({ id: provider.id, type: "error", message: data.error || "Connection failed" });
+    } catch (e) { setTestResult({ id: provider.id, type: "error", message: e.message || "Network error" }); }
+    setTesting(null);
+  };
+
+  const syncServices = async (provider) => {
+    setSyncing(provider.id); setSyncResult(null);
+    try {
+      const res = await fetch("/api/admin/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sync" }) });
+      const data = await res.json();
+      if (res.ok) {
+        setSyncResult({ id: provider.id, type: "success", message: `Synced! ${data.created} new, ${data.updated} updated, ${data.skipped} skipped (${data.total} total)` });
+        setSvcCount(prev => prev + (data.created || 0));
+      } else setSyncResult({ id: provider.id, type: "error", message: data.error || "Sync failed" });
+    } catch (e) { setSyncResult({ id: provider.id, type: "error", message: e.message || "Network error" }); }
+    setSyncing(null);
   };
 
   const inputStyle = { width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
 
+  if (loading) return <div style={{ padding: 24, color: t.textMuted }}>Loading API settings...</div>;
+
   return (
     <>
       <div className="adm-header">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <div className="adm-title" style={{ color: t.text }}>API Management</div>
-            <div className="adm-subtitle" style={{ color: t.textMuted }}>SMM provider connections and API keys</div>
-          </div>
-          <button onClick={() => setShowAdd(!showAdd)} className="adm-btn-primary">{showAdd ? "Cancel" : "+ Add Provider"}</button>
+        <div>
+          <div className="adm-title" style={{ color: t.text }}>API Management</div>
+          <div className="adm-subtitle" style={{ color: t.textMuted }}>SMM provider connections and API keys · {svcCount.toLocaleString()} services in database</div>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {showAdd && (
-        <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, marginTop: 16, marginBottom: 16, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)", borderRadius: 14 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-            <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Provider Name</label><input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Provider name" style={inputStyle} /></div>
-            <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>API URL</label><input value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="https://provider.com/api/v2" className="m" style={inputStyle} /></div>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>API Key</label>
-            <input value={newKey} onChange={e => setNewKey(e.target.value)} placeholder="API key (optional — can add later)" className="m" type="password" style={inputStyle} />
-          </div>
-          <button onClick={addProvider} className="adm-btn-primary" style={{ opacity: newName && newUrl ? 1 : .4 }}>Add Provider</button>
-        </div>
-      )}
+      <div style={{ marginTop: 16 }}>
+        {PROVIDERS.map((p, i) => {
+          const hasKey = !!settings[p.keyField];
+          const url = settings[p.urlField] || p.url;
+          const isEditing = editing === p.id;
+          const result = testResult?.id === p.id ? testResult : syncResult?.id === p.id ? syncResult : null;
 
-      {/* Provider cards */}
-      <div style={{ marginTop: showAdd ? 0 : 16 }}>
-        {providers.map((p, i) => (
-          <div key={p.id} className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, marginBottom: 12, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)", borderRadius: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 15, fontWeight: 600, color: t.text }}>{p.name}</span>
-                  <span className="m" style={{ fontSize: 11, padding: "2px 7px", borderRadius: 4, fontWeight: 600, background: p.status === "active" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)"), color: p.status === "active" ? t.green : t.amber }}>{p.status}</span>
+          return (
+            <div key={p.id} className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, marginBottom: 12, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)", borderRadius: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: t.text }}>{p.name}</span>
+                    <span className="m" style={{ fontSize: 11, padding: "2px 7px", borderRadius: 4, fontWeight: 600, background: hasKey ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)"), color: hasKey ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fcd34d" : "#d97706") }}>{hasKey ? "configured" : "pending"}</span>
+                  </div>
+                  <div className="m" style={{ fontSize: 13, color: t.textMuted, marginTop: 4 }}>{url || "No URL configured"}</div>
                 </div>
-                <div className="m" style={{ fontSize: 13, color: t.textMuted, marginTop: 4 }}>{p.url || "No URL configured"}</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={() => { if (isEditing) { setEditing(null); } else { setEditing(p.id); setEditKey(""); setEditUrl(url || ""); } }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>{isEditing ? "Cancel" : "Configure"}</button>
+                  {hasKey && p.id === "mtp" && <button onClick={() => testConnection(p)} disabled={testing === p.id} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: dark ? "#a5b4fc" : "#4f46e5", opacity: testing === p.id ? .5 : 1 }}>{testing === p.id ? "Testing..." : "Test"}</button>}
+                  {hasKey && p.id === "mtp" && <button onClick={() => syncServices(p)} disabled={syncing === p.id} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: dark ? "#6ee7b7" : "#059669", opacity: syncing === p.id ? .5 : 1 }}>{syncing === p.id ? "Syncing..." : "Sync"}</button>}
+                </div>
               </div>
-              <div style={{ display: "flex", gap: 6 }}>
-                <button className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>Configure</button>
-                <button className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.blue }}>Test</button>
-                <button className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.green }}>Sync</button>
+
+              {/* Edit form */}
+              {isEditing && (
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${t.cardBorder}` }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                    <div><label style={{ fontSize: 12, color: t.textMuted, display: "block", marginBottom: 4 }}>API URL</label><input value={editUrl} onChange={e => setEditUrl(e.target.value)} placeholder="https://provider.com/api/v2" className="m" style={inputStyle} /></div>
+                    <div><label style={{ fontSize: 12, color: t.textMuted, display: "block", marginBottom: 4 }}>API Key</label><input value={editKey} onChange={e => setEditKey(e.target.value)} placeholder={hasKey ? "Enter new key to replace" : "Paste your API key"} className="m" type="password" style={inputStyle} /></div>
+                  </div>
+                  <button onClick={() => saveKey(p)} disabled={!editKey || saving} className="adm-btn-primary" style={{ opacity: editKey && !saving ? 1 : .4 }}>{saving ? "Saving..." : "Save API Key"}</button>
+                </div>
+              )}
+
+              {/* Result message */}
+              {result && (
+                <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, fontSize: 12, background: result.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: result.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>
+                  {result.type === "success" ? "✓" : "⚠️"} {result.message}
+                </div>
+              )}
+
+              {/* Info row */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${t.cardBorder}`, fontSize: 13 }}>
+                <div><span style={{ color: t.textMuted }}>API Key:</span> <span className="m" style={{ color: t.textSoft }}>{hasKey ? "••••••••" : "Not configured"}</span></div>
+                <div><span style={{ color: t.textMuted }}>Services:</span> <span className="m" style={{ color: t.text }}>{p.id === "mtp" ? svcCount.toLocaleString() : "0"}</span></div>
+                <div><span style={{ color: t.textMuted }}>Priority:</span> <span className="m" style={{ color: t.text }}>{i + 1}</span></div>
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${t.cardBorder}`, fontSize: 13 }}>
-              <div><span style={{ color: t.textMuted }}>API Key:</span> <span className="m" style={{ color: t.textSoft }}>{p.key}</span></div>
-              <div><span style={{ color: t.textMuted }}>Services:</span> <span className="m" style={{ color: t.text }}>{p.services.toLocaleString()}</span></div>
-              <div><span style={{ color: t.textMuted }}>Priority:</span> <span className="m" style={{ color: t.text }}>{i + 1}</span></div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </>
   );
