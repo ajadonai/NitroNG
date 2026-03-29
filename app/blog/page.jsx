@@ -47,7 +47,7 @@ export default function BlogPage() {
     catBg: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.08)",
     tbg: dark ? "#111" : "#eee",
     grd: dark ? "linear-gradient(135deg, #2a1a22, #1a1225)" : "linear-gradient(135deg, #e8d5db, #d4a8b5)",
-    tbtn: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)",
+    tbtn: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)",
   };
 
   const Hdr = () => (
@@ -57,7 +57,7 @@ export default function BlogPage() {
         <span style={{ fontSize: 16, fontWeight: 600, color: v.txt }}>Nitro <span style={{ fontWeight: 400, color: v.sft }}>Blog</span></span>
       </a>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <button onClick={toggle} style={{ width: 28, height: 28, borderRadius: 6, background: v.tbtn, border: "none", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{dark ? "\u2600" : "\u263E"}</button>
+        <button onClick={toggle} style={{ width: 32, height: 32, borderRadius: 8, background: v.tbtn, border: "1px solid " + v.bdr, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: v.mut }}>{dark ? "\u2600" : "\u263E"}</button>
         <a href="/" style={{ fontSize: 12, color: v.mut, textDecoration: "none" }}>{"\u2190 Nitro"}</a>
       </div>
     </div>
