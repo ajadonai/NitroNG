@@ -457,7 +457,7 @@ export function AdminAPIPage({ dark, t }) {
     try {
       const res = await fetch("/api/admin/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "test" }) });
       const data = await res.json();
-      if (res.ok) setResult({ id: provider.id, type: "success", message: `Connected! Balance: $${data.balance?.balance || "0"}` });
+      if (res.ok) setResult({ id: provider.id, type: "success", message: `Connected! MTP provider balance: $${data.balance?.balance || "0"} USD` });
       else setResult({ id: provider.id, type: "error", message: data.error || "Connection failed" });
     } catch (e) { setResult({ id: provider.id, type: "error", message: e.message || "Network error" }); }
     setTesting(null);
