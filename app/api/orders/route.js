@@ -7,10 +7,13 @@ export async function POST(req) {
     const session = await getCurrentUser();
     if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
 
-    const { serviceId, link, quantity } = await req.json();
+    const { tierId, serviceId, link, quantity } = await req.json();
 
-    if (!serviceId || !link || !quantity) {
-      return Response.json({ error: 'Service, link, and quantity required' }, { status: 400 });
+    if (!link || !quantity) {
+      return Response.json({ error: 'Link and quantity required' }, { status: 400 });
+    }
+    if (!tierId && !serviceId) {
+      return Response.json({ error: 'Service or tier required' }, { status: 400 });
     }
 
     // Validate link
@@ -19,20 +22,44 @@ export async function POST(req) {
       return Response.json({ error: 'Invalid link' }, { status: 400 });
     }
 
-    // Get service
-    const service = await prisma.service.findUnique({ where: { id: serviceId } });
-    if (!service || !service.enabled) {
-      return Response.json({ error: 'Service not available' }, { status: 400 });
+    let service, tier, charge, cost, tierName;
+
+    if (tierId) {
+      // New flow: resolve service from tier
+      tier = await prisma.serviceTier.findUnique({
+        where: { id: tierId },
+        include: { service: true, group: true },
+      });
+      if (!tier || !tier.enabled) {
+        return Response.json({ error: 'Service tier not available' }, { status: 400 });
+      }
+      service = tier.service;
+      if (!service || !service.enabled) {
+        return Response.json({ error: 'Backing service not available' }, { status: 400 });
+      }
+      tierName = `${tier.group.name} (${tier.tier})`;
+      const qty = Number(quantity);
+      if (qty < service.min || qty > service.max) {
+        return Response.json({ error: `Quantity must be between ${service.min.toLocaleString()} and ${service.max.toLocaleString()}` }, { status: 400 });
+      }
+      charge = Math.round((tier.sellPer1k / 1000) * qty);
+      cost = Math.round((service.costPer1k / 1000) * qty);
+    } else {
+      // Legacy flow: direct serviceId
+      service = await prisma.service.findUnique({ where: { id: serviceId } });
+      if (!service || !service.enabled) {
+        return Response.json({ error: 'Service not available' }, { status: 400 });
+      }
+      const qty = Number(quantity);
+      if (qty < service.min || qty > service.max) {
+        return Response.json({ error: `Quantity must be between ${service.min.toLocaleString()} and ${service.max.toLocaleString()}` }, { status: 400 });
+      }
+      charge = Math.round((service.sellPer1k / 1000) * qty);
+      cost = Math.round((service.costPer1k / 1000) * qty);
+      tierName = service.name;
     }
 
     const qty = Number(quantity);
-    if (qty < service.min || qty > service.max) {
-      return Response.json({ error: `Quantity must be between ${service.min} and ${service.max}` }, { status: 400 });
-    }
-
-    // Calculate charge
-    const charge = Math.round((service.sellPer1k / 1000) * qty);
-    const cost = Math.round((service.costPer1k / 1000) * qty);
 
     // Check balance
     const user = await prisma.user.findUnique({ where: { id: session.id } });
@@ -52,7 +79,6 @@ export async function POST(req) {
         apiOrderId = mtpResult.order ? String(mtpResult.order) : null;
       } catch (err) {
         console.error('[Order MTP]', err.message);
-        // Don't fail the order — mark as pending for manual processing
       }
     }
 
@@ -63,6 +89,7 @@ export async function POST(req) {
           orderId,
           userId: user.id,
           serviceId: service.id,
+          tierId: tier ? tier.id : null,
           link: trimmedLink,
           quantity: qty,
           charge,
@@ -83,7 +110,7 @@ export async function POST(req) {
           method: 'wallet',
           status: 'Completed',
           reference: orderId,
-          note: `Order ${orderId} — ${service.name} x${qty.toLocaleString()}`,
+          note: `Order ${orderId} — ${tierName} x${qty.toLocaleString()}`,
         },
       }),
     ]);
@@ -92,7 +119,7 @@ export async function POST(req) {
       success: true,
       order: {
         id: orderId,
-        service: service.name,
+        service: tierName,
         quantity: qty,
         charge: charge / 100,
         status: order.status,

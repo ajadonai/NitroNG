@@ -10,7 +10,8 @@ export async function GET() {
     const user = await prisma.user.findUnique({
       where: { id: payload.id },
       select: {
-        id: true, name: true, email: true, balance: true,
+        id: true, name: true, firstName: true, lastName: true, phone: true,
+        email: true, balance: true,
         referralCode: true, emailVerified: true, createdAt: true,
       },
     });
@@ -69,7 +70,11 @@ export async function GET() {
 
     return ok({
       user: {
-        id: user.id, name: user.name, email: user.email,
+        id: user.id, name: user.name,
+        firstName: user.firstName || user.name.split(' ')[0],
+        lastName: user.lastName || user.name.split(' ').slice(1).join(' ') || '',
+        phone: user.phone || '',
+        email: user.email,
         balance: user.balance / 100,
         emailVerified: user.emailVerified,
         refs: referralCount,
@@ -90,7 +95,7 @@ export async function GET() {
         amount: tx.amount / 100,
         method: tx.method || tx.type,
         date: tx.createdAt.toISOString(),
-        description: tx.description,
+        description: tx.note,
       })),
       alerts: alerts.map(a => ({
         id: a.id, message: a.message, type: a.type,

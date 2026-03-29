@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from "react";
+import { ThemeProvider, useTheme } from "./shared-nav";
 import NewOrderPage, { PLATFORMS, PLATFORM_GROUPS, OrderForm } from "./new-order";
 import OrdersPage, { OrdersSidebar } from "./orders-page";
 import ReferralsPage, { ReferralsSidebar } from "./referrals-page";
@@ -314,12 +315,21 @@ function NotifDropdown({ orders, txs, dark, t, onClose }) {
 /* ═══ MAIN DASHBOARD SHELL               ═══ */
 /* ═══════════════════════════════════════════ */
 export default function Dashboard() {
-  const getAuto = () => { const h = new Date().getHours(), m = new Date().getMinutes(); if (h >= 7 && h < 18) return false; if (h >= 19 || h < 6) return true; if (h === 6) return m < 30; if (h === 18) return m >= 30; return true; };
-  const [dark, setDark] = useState(false);
-  const [themeMode, setThemeMode] = useState("auto");
+  return <ThemeProvider><DashboardInner /></ThemeProvider>;
+}
+
+function DashboardInner() {
+  const { dark, setDark, toggleTheme, t: baseT, themeMode, setThemeMode } = useTheme();
   const [active, setActiveRaw] = useState("overview");
   const setActive = (page) => { setActiveRaw(page); try { localStorage.setItem("nitro-page", page); } catch {} };
-  useEffect(() => { try { const saved = localStorage.getItem("nitro-page"); if (saved) setActiveRaw(saved); } catch {} }, []);
+  useEffect(() => {
+    try {
+      const nav = performance.getEntriesByType?.("navigation")?.[0];
+      const isReload = nav?.type === "reload" || nav?.type === "back_forward";
+      if (isReload) { const saved = localStorage.getItem("nitro-page"); if (saved) setActiveRaw(saved); }
+      else { localStorage.removeItem("nitro-page"); }
+    } catch {}
+  }, []);
   const [leftOpen, setLeftOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [user, setUser] = useState(null);
@@ -349,10 +359,21 @@ export default function Dashboard() {
   const [svcPlatform, setSvcPlatform] = useState("instagram");
   const [svcCatModal, setSvcCatModal] = useState(false);
 
-  /* Theme */
-  useEffect(() => { const saved = localStorage.getItem("nitro-theme") || "auto"; setThemeMode(saved); if (saved === "day") setDark(false); else if (saved === "night") setDark(true); else setDark(getAuto()); }, []);
-  useEffect(() => { if (themeMode !== "auto") return; const iv = setInterval(() => setDark(getAuto()), 60000); return () => clearInterval(iv); }, [themeMode]);
-  const toggleTheme = () => { const next = !dark; setDark(next); const mode = next ? "night" : "day"; setThemeMode(mode); localStorage.setItem("nitro-theme", mode); };
+  /* Theme — provided by ThemeProvider */
+
+  /* Refresh dashboard data */
+  const refreshDashboard = async () => {
+    try {
+      const res = await fetch("/api/dashboard");
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+        if (data.orders?.length) setOrders(data.orders);
+        if (data.transactions?.length) setTxs(data.transactions);
+        if (data.alerts?.length) setAlerts(data.alerts);
+      }
+    } catch {}
+  };
 
   /* Data fetch */
   useEffect(() => {
@@ -429,21 +450,16 @@ export default function Dashboard() {
   useEffect(() => { if (!isNewOrder) { setNoSelSvc(null); setNoSelTier(null); setNoLink(""); setNoCatModal(false); } }, [active]);
 
   const t = useMemo(() => ({
-    bg: dark ? "#080b14" : "#f4f1ed",
+    ...baseT,
     sidebarBg: dark ? "#060810" : "#eceae5",
     sidebarBorder: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)",
     cardBg: dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)",
     cardBorder: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)",
-    text: dark ? "#f5f3f0" : "#1a1917",
-    textSoft: dark ? "#a09b95" : "#555250",
-    textMuted: dark ? "#706c68" : "#757170",
-    accent: "#c47d8e",
     navActive: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.1)",
-    green: dark ? "#6ee7b7" : "#059669",
-  }), [dark]);
+  }), [dark, baseT]);
 
-  const initials = user ? user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "";
-  const firstName = user ? user.name.split(" ")[0] : "";
+  const initials = user ? ((user.firstName?.[0] || '') + (user.lastName?.[0] || '')).toUpperCase() || user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "";
+  const firstName = user ? (user.firstName || user.name.split(" ")[0]) : "";
   const balance = user ? fN(user.balance) : "₦0";
 
   /* Loading — skeleton */
@@ -514,7 +530,7 @@ export default function Dashboard() {
       case "overview":
         return <OverviewPage user={user} orders={orders} alerts={alerts} dark={dark} t={t} setActive={setActive} />;
       case "new-order":
-        return <NewOrderPage dark={dark} t={t} platform={noPlatform} setPlatform={setNoPlatform} selSvc={noSelSvc} setSelSvc={setNoSelSvc} selTier={noSelTier} setSelTier={setNoSelTier} qty={noQty} setQty={setNoQty} link={noLink} setLink={setNoLink} catModal={noCatModal} setCatModal={setNoCatModal} />;
+        return <NewOrderPage dark={dark} t={t} user={user} onOrderSuccess={refreshDashboard} platform={noPlatform} setPlatform={setNoPlatform} selSvc={noSelSvc} setSelSvc={setNoSelSvc} selTier={noSelTier} setSelTier={setNoSelTier} qty={noQty} setQty={setNoQty} link={noLink} setLink={setNoLink} catModal={noCatModal} setCatModal={setNoCatModal} />;
       case "orders":
         return <OrdersPage orders={orders} txs={txs} dark={dark} t={t} />;
       case "referrals":

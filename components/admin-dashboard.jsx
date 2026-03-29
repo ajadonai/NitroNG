@@ -1,11 +1,13 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from "react";
+import { ThemeProvider, useTheme } from "./shared-nav";
 import { ToastProvider } from "./toast";
 import { ConfirmProvider } from "./confirm-dialog";
 import AdminOrdersPage from "./admin-orders";
 import AdminUsersPage from "./admin-users";
 import AdminTicketsPage from "./admin-tickets";
 import AdminServicesPage from "./admin-services";
+import AdminServiceGroupsPage from "./admin-service-groups";
 import { AdminPaymentsPage, AdminAnalyticsPage, AdminAlertsPage, AdminSettingsPage } from "./admin-pages";
 import { AdminActivityPage, AdminTeamPage, AdminCouponsPage, AdminNotificationsPage, AdminMaintenancePage, AdminAPIPage } from "./admin-extra-pages";
 
@@ -27,6 +29,7 @@ const ADMIN_NAV = [
   ]},
   { section: "Catalog", items: [
     { id: "services", label: "Services", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
+    { id: "menu-builder", label: "Menu Builder", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> },
     { id: "payments", label: "Payments", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },
     { id: "coupons", label: "Coupons", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg> },
     { id: "notifications", label: "Notifications", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 17H2a3 3 0 003-3V9a7 7 0 0114 0v5a3 3 0 003 3zm-8.27 4a2 2 0 01-3.46 0"/></svg> },
@@ -197,9 +200,11 @@ function AdminRightSidebar({ data, dark, t }) {
 /* ═══ MAIN ADMIN SHELL                    ═══ */
 /* ═══════════════════════════════════════════ */
 export default function AdminDashboard() {
-  const getAuto = () => { const h = new Date().getHours(); return h >= 19 || h < 7; };
-  const [dark, setDark] = useState(false);
-  const [themeMode, setThemeMode] = useState("auto");
+  return <ThemeProvider storageKey="nitro-admin-theme"><AdminDashboardInner /></ThemeProvider>;
+}
+
+function AdminDashboardInner() {
+  const { dark, setDark, toggleTheme, t: baseT, themeMode, setThemeMode } = useTheme();
   const [active, setActiveRaw] = useState("overview");
   const setActive = (page) => { setActiveRaw(page); try { localStorage.setItem("nitro-admin-page", page); } catch {} };
   useEffect(() => { try { const saved = localStorage.getItem("nitro-admin-page"); if (saved) setActiveRaw(saved); } catch {} }, []);
@@ -208,9 +213,7 @@ export default function AdminDashboard() {
   const [admin, setAdmin] = useState(null);
   const [data, setData] = useState({ stats: {}, recentOrders: [], recentUsers: [], openTickets: [], activity: [] });
 
-  /* Theme */
-  useEffect(() => { const saved = localStorage.getItem("nitro-admin-theme") || "auto"; setThemeMode(saved); if (saved === "day") setDark(false); else if (saved === "night") setDark(true); else setDark(getAuto()); }, []);
-  const toggleTheme = () => { const next = !dark; setDark(next); const mode = next ? "night" : "day"; setThemeMode(mode); localStorage.setItem("nitro-admin-theme", mode); };
+  /* Theme — provided by ThemeProvider */
 
   /* Data fetch */
   const [redirecting, setRedirecting] = useState(false);
@@ -300,6 +303,7 @@ export default function AdminDashboard() {
       case "users": return <AdminUsersPage dark={dark} t={t} />;
       case "tickets": return <AdminTicketsPage dark={dark} t={t} />;
       case "services": return <AdminServicesPage dark={dark} t={t} />;
+      case "menu-builder": return <AdminServiceGroupsPage dark={dark} t={t} />;
       case "payments": return <AdminPaymentsPage dark={dark} t={t} />;
       case "analytics": return <AdminAnalyticsPage dark={dark} t={t} />;
       case "alerts": return <AdminAlertsPage dark={dark} t={t} />;

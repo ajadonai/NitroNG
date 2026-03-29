@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, createContext, useContext } from "react";
+import { useState, useEffect, useCallback, useMemo, createContext, useContext } from "react";
 
 // ── Theme context ──
 const ThemeCtx = createContext();
@@ -8,69 +8,78 @@ export function useTheme() {
   return useContext(ThemeCtx);
 }
 
-export function ThemeProvider({ children }) {
-  const getAuto = () => { const h = new Date().getHours(), m = new Date().getMinutes(); if (h >= 19 || h < 6) return true; if (h === 6 && m < 30) return true; if (h === 18 && m >= 30) return true; return false; };
+const getAuto = () => { const h = new Date().getHours(), m = new Date().getMinutes(); if (h >= 19 || h < 6) return true; if (h === 6 && m < 30) return true; if (h === 18 && m >= 30) return true; return false; };
+
+export function ThemeProvider({ children, storageKey = "nitro-theme" }) {
   const [dark, setDark] = useState(false);
-  const [manual, setManual] = useState(false);
+  const [themeMode, setThemeMode] = useState("auto"); // "auto" | "night" | "day"
   const [loaded, setLoaded] = useState(false);
 
   // Load saved preference on mount
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("nitro-theme");
-      if (saved === "night") { setDark(true); setManual(true); }
-      else if (saved === "day") { setDark(false); setManual(true); }
-      else { setDark(getAuto()); }
+      const saved = localStorage.getItem(storageKey);
+      if (saved === "night") { setDark(true); setThemeMode("night"); }
+      else if (saved === "day") { setDark(false); setThemeMode("day"); }
+      else { setDark(getAuto()); setThemeMode("auto"); }
     } catch { setDark(getAuto()); }
     setLoaded(true);
-  }, []);
+  }, [storageKey]);
 
-  // Auto-update if not manual
+  // Auto-update if in auto mode
   useEffect(() => {
-    if (manual) return;
+    if (themeMode !== "auto") return;
     const iv = setInterval(() => setDark(getAuto()), 60000);
     return () => clearInterval(iv);
-  }, [manual]);
+  }, [themeMode]);
 
   const toggleTheme = useCallback(() => {
-    setManual(true);
     setDark(d => {
       const next = !d;
-      try { localStorage.setItem("nitro-theme", next ? "night" : "day"); } catch {}
+      const mode = next ? "night" : "day";
+      setThemeMode(mode);
+      try { localStorage.setItem(storageKey, mode); } catch {}
       return next;
     });
-  }, []);
+  }, [storageKey]);
 
-  const t = {
+  const t = useMemo(() => ({
+    // Core
     bg: dark ? "#090c15" : "#f0ede8",
-    text: dark ? "#eae7e2" : "#1c1b19",
-    soft: dark ? "#a8a4a0" : "#5c5955",
-    muted: dark ? "#6d6965" : "#a09c97",
+    text: dark ? "#f5f3f0" : "#1c1b19",
+    soft: dark ? "#a09b95" : "#555250",
+    muted: dark ? "#706c68" : "#757170",
     accent: "#c47d8e",
     grad: "linear-gradient(135deg,#c47d8e,#a3586b)",
     green: dark ? "#6ee7b7" : "#059669",
     red: dark ? "#fca5a5" : "#dc2626",
+    // Surfaces
     surface: dark ? "rgba(15,19,35,.55)" : "rgba(255,255,255,.5)",
-    surfaceBrd: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)",
+    surfaceBrd: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)",
+    surfaceBorder: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)",
+    // Sidebar
+    sidebarBg: dark ? "rgba(9,12,21,.95)" : "rgba(240,237,232,.95)",
+    // Inputs
     inputBg: dark ? "#0d1020" : "#fff",
     inputBorder: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)",
+    // Buttons
     btnPrimary: "linear-gradient(135deg,#c47d8e,#a3586b)",
     overlay: dark ? "rgba(0,0,0,.6)" : "rgba(0,0,0,.3)",
-    accentLight: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)",
     // Hero-specific
     heroBg: dark ? "#090c15" : "linear-gradient(135deg,#c47d8e 0%,#a3586b 50%,#8b4a5e 100%)",
-    heroText: dark ? "#eae7e2" : "#fff",
-    heroSoft: dark ? "#a8a4a0" : "rgba(255,255,255,.85)",
-    heroMuted: dark ? "#6d6965" : "rgba(255,255,255,.55)",
+    heroText: dark ? "#f5f3f0" : "#fff",
+    heroSoft: dark ? "#a09b95" : "rgba(255,255,255,.85)",
+    heroMuted: dark ? "#706c68" : "rgba(255,255,255,.55)",
     heroGlass: dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.12)",
     heroGlassBrd: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.2)",
     heroAccentBadge: dark ? "rgba(196,125,142,.08)" : "rgba(255,255,255,.15)",
-    textSoft: dark ? "#a8a4a0" : "#5c5955",
-    textMuted: dark ? "#6d6965" : "#a09c97",
-    surfaceBorder: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)",
-  };
+    // Aliases
+    textSoft: dark ? "#a09b95" : "#555250",
+    textMuted: dark ? "#706c68" : "#757170",
+    accentLight: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)",
+  }), [dark]);
 
-  return <ThemeCtx.Provider value={{ dark, toggleTheme, t, loaded }}>{children}</ThemeCtx.Provider>;
+  return <ThemeCtx.Provider value={{ dark, setDark, toggleTheme, t, loaded, themeMode, setThemeMode }}>{children}</ThemeCtx.Provider>;
 }
 
 // ── Shared Nav ──

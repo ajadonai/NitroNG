@@ -291,7 +291,7 @@ export function SupportSidebar({ dark, t, tickets }) {
 
       <div className="sup-rs-title" style={{ color: t.textMuted }}>Contact Us</div>
       <div className="sup-rs-contact" style={{ background: t.cardBg }}>
-        {[["Email", "TheNitroNG@gmail.com"], ["WhatsApp", "+234 xxx xxx xxxx"], ["Instagram", "@Nitro.ng"]].map(([label, val]) => (
+        {[["Email", "TheNitroNG@gmail.com"], ["WhatsApp", "Coming soon"], ["Instagram", "@Nitro.ng"]].map(([label, val]) => (
           <div key={label} className="sup-rs-contact-row">
             <span style={{ color: t.textMuted }}>{label}</span>
             <span style={{ color: t.accent, fontWeight: 500 }}>{val}</span>

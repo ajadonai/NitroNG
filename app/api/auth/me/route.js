@@ -12,6 +12,9 @@ export async function GET() {
       select: {
         id: true,
         name: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
         email: true,
         balance: true,
         referralCode: true,

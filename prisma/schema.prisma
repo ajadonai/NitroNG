@@ -16,6 +16,9 @@ model User {
   email         String   @unique
   password      String
   name          String
+  firstName     String?
+  lastName      String?
+  phone         String?
   balance       Int      @default(0)
   referralCode  String   @unique @default(cuid())
   referredBy    String?
@@ -59,7 +62,7 @@ model Admin {
 
 model Service {
   id        String  @id @default(cuid())
-  apiId     Int
+  apiId     Int     @unique
   name      String
   category  String
   costPer1k Int
@@ -74,8 +77,51 @@ model Service {
   updatedAt DateTime @updatedAt
 
   orders Order[]
+  tiers  ServiceTier[]
 
   @@map("services")
+}
+
+// ──────────────────────────────────────
+// SERVICE GROUPS (Menu Builder)
+// ──────────────────────────────────────
+
+model ServiceGroup {
+  id       String  @id @default(cuid())
+  name     String
+  platform String
+  type     String  @default("Standard")
+  nigerian Boolean @default(false)
+  enabled  Boolean @default(true)
+  sortOrder Int    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tiers ServiceTier[]
+
+  @@map("service_groups")
+}
+
+model ServiceTier {
+  id        String  @id @default(cuid())
+  groupId   String
+  serviceId String
+  tier      String  @default("Standard")
+  sellPer1k Int
+  refill    Boolean @default(false)
+  speed     String  @default("0-2 hrs")
+  enabled   Boolean @default(true)
+  sortOrder Int     @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group   ServiceGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  service Service      @relation(fields: [serviceId], references: [id])
+  orders  Order[]
+
+  @@index([groupId])
+  @@index([serviceId])
+  @@map("service_tiers")
 }
 
 // ──────────────────────────────────────
@@ -93,13 +139,15 @@ model Order {
   cost       Int
   status     String   @default("Pending")
   apiOrderId String?
+  tierId     String?
   remains    Int?
   createdAt  DateTime @default(now())
   deletedAt  DateTime?
   updatedAt  DateTime @updatedAt
 
-  user    User    @relation(fields: [userId], references: [id])
-  service Service @relation(fields: [serviceId], references: [id])
+  user    User         @relation(fields: [userId], references: [id])
+  service Service      @relation(fields: [serviceId], references: [id])
+  tier    ServiceTier? @relation(fields: [tierId], references: [id])
 
   @@index([userId])
   @@index([status])

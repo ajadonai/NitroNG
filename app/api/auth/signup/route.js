@@ -14,6 +14,9 @@ export async function POST(req) {
 
     const body = await req.json();
     const name = sanitizeString(body.name, 100);
+    const firstName = sanitizeString(body.firstName, 50);
+    const lastName = sanitizeString(body.lastName, 50);
+    const phone = sanitizeString(body.phone, 20);
     const email = sanitizeEmail(body.email);
     const password = body.password;
     const referralCode = sanitizeString(body.referralCode, 20);
@@ -33,7 +36,7 @@ export async function POST(req) {
         const verifyToken = generateVerifyCode();
         const verifyExpires = new Date(Date.now() + 30 * 60 * 1000);
         await prisma.user.update({ where: { id: existing.id }, data: { verifyToken, verifyExpires } });
-        sendVerificationEmail(email, existing.name, verifyToken).catch(err => 
+        sendVerificationEmail(email, existing.firstName || existing.name, verifyToken).catch(err => 
           console.error('[Signup] Resend email failed:', err)
         );
         if (process.env.NODE_ENV === 'development') {
@@ -70,9 +73,13 @@ export async function POST(req) {
     }
 
     // Create user
+    const derivedName = (firstName && lastName) ? `${firstName} ${lastName}` : name.trim();
     const user = await prisma.user.create({
       data: {
-        name: name.trim(),
+        name: derivedName,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        phone: phone || null,
         email: email.toLowerCase().trim(),
         password: hashed,
         referralCode: refCode,
@@ -83,7 +90,7 @@ export async function POST(req) {
     });
 
     // Send verification email
-    sendVerificationEmail(email, name, verifyToken).catch(err => 
+    sendVerificationEmail(email, firstName || name, verifyToken).catch(err => 
       console.error('[Signup] Email send failed:', err)
     );
     // Also log to terminal in dev
@@ -102,6 +109,7 @@ export async function POST(req) {
       user: {
         id: user.id,
         name: user.name,
+        firstName: user.firstName,
         email: user.email,
         emailVerified: user.emailVerified,
         referralCode: user.referralCode,

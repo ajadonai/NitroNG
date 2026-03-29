@@ -43,6 +43,7 @@ export async function POST(req) {
       user: {
         id: user.id,
         name: user.name,
+        firstName: user.firstName || user.name.split(' ')[0],
         email: user.email,
         emailVerified: user.emailVerified,
         balance: user.balance,

@@ -11,7 +11,8 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
       take: 500,
       select: {
-        id: true, name: true, email: true, balance: true,
+        id: true, name: true, firstName: true, lastName: true, phone: true,
+        email: true, balance: true, status: true,
         emailVerified: true, referralCode: true, createdAt: true,
         _count: { select: { orders: true } },
       },
@@ -21,11 +22,14 @@ export async function GET() {
       users: users.map(u => ({
         id: u.id,
         name: u.name,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        phone: u.phone,
         email: u.email,
         balance: u.balance / 100,
         verified: u.emailVerified,
         orders: u._count.orders,
-        status: 'Active', // TODO: add status field to User model
+        status: u.status,
         refCode: u.referralCode,
         joined: u.createdAt.toISOString(),
       })),
@@ -74,12 +78,13 @@ export async function POST(req) {
     }
 
     if (action === 'suspend') {
-      // TODO: add status field to User model for proper suspension
+      await prisma.user.update({ where: { id: userId }, data: { status: 'Suspended' } });
       await logActivity(admin.name, `Suspended user ${user.name}`, 'user');
       return Response.json({ success: true, message: `${user.name} suspended` });
     }
 
     if (action === 'activate') {
+      await prisma.user.update({ where: { id: userId }, data: { status: 'Active' } });
       await logActivity(admin.name, `Activated user ${user.name}`, 'user');
       return Response.json({ success: true, message: `${user.name} activated` });
     }

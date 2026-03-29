@@ -28,7 +28,7 @@ export async function POST(req) {
     const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const resetUrl = `${origin}/?reset=${resetToken}`;
 
-    sendPasswordResetEmail(user.email, user.name, resetUrl).catch(err =>
+    sendPasswordResetEmail(user.email, user.firstName || user.name, resetUrl).catch(err =>
       console.error('[Forgot] Email failed:', err)
     );
     if (process.env.NODE_ENV === 'development') {

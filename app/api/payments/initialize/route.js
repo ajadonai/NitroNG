@@ -57,8 +57,8 @@ export async function POST(req) {
         callback_url: `${origin}/dashboard?verify=${reference}`,
         customer: {
           email: user.email,
-          first_name: user.name.split(' ')[0],
-          last_name: user.name.split(' ').slice(1).join(' ') || user.name.split(' ')[0],
+          first_name: user.firstName || user.name.split(' ')[0],
+          last_name: user.lastName || user.name.split(' ').slice(1).join(' ') || user.name.split(' ')[0],
         },
         metadata: {
           userId: user.id,

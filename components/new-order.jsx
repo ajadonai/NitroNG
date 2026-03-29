@@ -67,9 +67,11 @@ const fN = (a) => `₦${Math.abs(a).toLocaleString("en-NG")}`;
 /* ═══════════════════════════════════════════ */
 /* ═══ ORDER FORM                          ═══ */
 /* ═══════════════════════════════════════════ */
-export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact }) {
+export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading }) {
   const price = selTier ? Math.round((qty / 1000) * selTier.price) : 0;
   const s = selTier ? TS[selTier.tier] : null;
+  const minQty = selTier?.min || 100;
+  const maxQty = selTier?.max || 50000;
 
   return (
     <div className="no-form-inner">
@@ -91,7 +93,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
         </div>
         <div className="no-form-field">
           <label className="no-form-label" style={{ color: t.textMuted }}>Quantity</label>
-          <input type="number" value={qty} onChange={e => setQty(Math.max(100, Number(e.target.value)))} className="m no-form-input" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text }} />
+          <input type="number" value={qty} onChange={e => setQty(Math.max(minQty, Math.min(maxQty, Number(e.target.value))))} className="m no-form-input" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text }} />
           <div className="no-form-presets">
             {[500, 1000, 2500, 5000, 10000].map(q => (
               <button key={q} onClick={() => setQty(q)} className="m no-form-preset" style={{ borderColor: qty === q ? t.accent : t.cardBorder, background: qty === q ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: qty === q ? t.accent : t.textMuted }}>{q >= 1000 ? `${q / 1000}K` : q}</button>
@@ -110,7 +112,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           <span className="m no-form-tag" style={{ borderColor: t.cardBorder, color: t.textMuted }}>refill: {selTier.refill}</span>
           <span className="m no-form-tag" style={{ borderColor: t.cardBorder, color: t.textMuted }}>speed: {selTier.speed || "Instant"}</span>
         </div>
-        <button className="no-form-submit" style={{ opacity: link ? 1 : .5 }}>Place Order</button>
+        <button onClick={onSubmit} disabled={!link || orderLoading} className="no-form-submit" style={{ opacity: link && !orderLoading ? 1 : .5 }}>{orderLoading ? "Placing..." : "Place Order"}</button>
       </>}
     </div>
   );
@@ -119,43 +121,84 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
 /* ═══════════════════════════════════════════ */
 /* ═══ NEW ORDER PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
-export default function NewOrderPage({ dark, t, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, catModal, setCatModal }) {
+export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, catModal, setCatModal }) {
   const [filterType, setFilterType] = useState("all");
   const [orderModal, setOrderModal] = useState(false);
+  const [menuData, setMenuData] = useState(null);
+  const [menuLoading, setMenuLoading] = useState(true);
+  const [menuError, setMenuError] = useState("");
+  const [orderLoading, setOrderLoading] = useState(false);
+  const [orderResult, setOrderResult] = useState(null);
 
-  /* TODO: Replace with real API */
-  const DEMO = {
-    instagram: [
-      { id: 1, name: "Followers — Worldwide", type: "followers", tiers: [{ tier: "Budget", price: 200, per: "1K", refill: "No", speed: "2-15K/day" }, { tier: "Standard", price: 650, per: "1K", refill: "30-day", speed: "1-5K/day" }, { tier: "Premium", price: 1400, per: "1K", refill: "Lifetime", speed: "500-2K/day" }] },
-      { id: 2, name: "Followers — Nigerian 🇳🇬", type: "followers", ng: true, tiers: [{ tier: "Budget", price: 450, per: "1K", refill: "No", speed: "1-3K/day" }, { tier: "Standard", price: 1100, per: "1K", refill: "30-day", speed: "500-2K/day" }, { tier: "Premium", price: 2200, per: "1K", refill: "Lifetime", speed: "200-1K/day" }] },
-      { id: 3, name: "Post Likes", type: "likes", tiers: [{ tier: "Budget", price: 80, per: "1K", refill: "No", speed: "5-20K/day" }, { tier: "Standard", price: 250, per: "1K", refill: "30-day", speed: "2-10K/day" }, { tier: "Premium", price: 600, per: "1K", refill: "Lifetime", speed: "1-5K/day" }] },
-      { id: 33, name: "Post Likes — Nigerian 🇳🇬", type: "likes", ng: true, tiers: [{ tier: "Standard", price: 400, per: "1K", refill: "30-day", speed: "1-5K/day" }] },
-      { id: 5, name: "Reel/Video Views", type: "views", tiers: [{ tier: "Budget", price: 15, per: "1K", refill: "No", speed: "50-100K/day" }, { tier: "Standard", price: 50, per: "1K", refill: "No", speed: "10-50K/day" }] },
-      { id: 6, name: "Story Views", type: "views", tiers: [{ tier: "Standard", price: 30, per: "1K", refill: "No", speed: "10K/day" }] },
-      { id: 7, name: "Comments — Custom", type: "comments", tiers: [{ tier: "Standard", price: 8000, per: "1K", refill: "No", speed: "100-500/day" }] },
-      { id: 10, name: "Saves", type: "engagement", tiers: [{ tier: "Standard", price: 120, per: "1K", refill: "No", speed: "5K/day" }] },
-      { id: 11, name: "Shares", type: "engagement", tiers: [{ tier: "Standard", price: 100, per: "1K", refill: "No", speed: "5K/day" }] },
-    ],
-    youtube: [
-      { id: 30, name: "Subscribers", type: "followers", tiers: [{ tier: "Standard", price: 1800, per: "1K", refill: "30-day", speed: "200-1K/day" }] },
-      { id: 31, name: "Views", type: "views", tiers: [{ tier: "Budget", price: 40, per: "1K", refill: "No", speed: "10-50K/day" }] },
-    ],
-  };
+  /* Fetch real services from API */
+  useEffect(() => {
+    async function loadMenu() {
+      try {
+        const res = await fetch("/api/services/menu");
+        if (!res.ok) throw new Error("Failed to load services");
+        const data = await res.json();
+        setMenuData(data);
+      } catch (e) { setMenuError(e.message); }
+      setMenuLoading(false);
+    }
+    loadMenu();
+  }, []);
 
-  const services = DEMO[platform] || [];
+  /* Map API groups to per-platform service list matching existing shape */
+  const services = (() => {
+    if (!menuData?.groups) return [];
+    return menuData.groups
+      .filter(g => g.platform.toLowerCase() === platform)
+      .map(g => ({
+        id: g.id,
+        name: g.name,
+        type: g.type?.toLowerCase() || "standard",
+        ng: g.nigerian,
+        tiers: g.tiers.map(tier => ({
+          id: tier.id,
+          tier: tier.tier,
+          price: tier.price,
+          per: "1K",
+          refill: tier.refill ? "Yes" : "No",
+          speed: tier.speed || "0-2 hrs",
+          min: tier.min,
+          max: tier.max,
+        })),
+      }));
+  })();
+
   const types = [...new Set(services.map(s => s.type))];
   const filtered = filterType === "all" ? services : services.filter(s => s.type === filterType);
   const hasOrder = selSvc && selTier;
   const price = selTier ? Math.round((qty / 1000) * selTier.price) : 0;
   const activePlat = PLATFORMS.find(p => p.id === platform);
 
-  useEffect(() => { setSelSvc(null); setSelTier(null); setFilterType("all"); setOrderModal(false); }, [platform]);
+  useEffect(() => { setSelSvc(null); setSelTier(null); setFilterType("all"); setOrderModal(false); setOrderResult(null); }, [platform]);
 
   const pickService = (svc) => {
     if (selSvc?.id === svc.id) { setSelSvc(null); setSelTier(null); }
-    else { setSelSvc(svc); setSelTier(svc.tiers.length === 1 ? svc.tiers[0] : null); }
+    else { setSelSvc(svc); setSelTier(svc.tiers.length === 1 ? svc.tiers[0] : null); if (svc.tiers.length === 1) setQty(svc.tiers[0].min || 100); }
   };
-  const pickTier = (tier, e) => { e.stopPropagation(); setSelTier(tier); };
+  const pickTier = (tier, e) => { e.stopPropagation(); setSelTier(tier); setQty(tier.min || 100); };
+
+  /* Place order */
+  const submitOrder = async () => {
+    if (!selTier?.id || !link || orderLoading) return;
+    setOrderLoading(true); setOrderResult(null);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tierId: selTier.id, link: link.trim(), quantity: qty }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setOrderResult({ type: "error", message: data.error || "Order failed" }); setOrderLoading(false); return; }
+      setOrderResult({ type: "success", message: `Order placed! ${data.order?.id || ""}`, order: data.order });
+      setLink(""); setSelSvc(null); setSelTier(null); setOrderModal(false);
+      if (onOrderSuccess) onOrderSuccess();
+    } catch { setOrderResult({ type: "error", message: "Network error" }); }
+    setOrderLoading(false);
+  };
 
   const TierCards = ({ svc }) => (
     <div className="no-tier-grid">
@@ -200,10 +243,22 @@ export default function NewOrderPage({ dark, t, platform, setPlatform, selSvc, s
     <>
       <div className="no-header">
         <div className="no-title" style={{ color: t.text }}>New Order</div>
-        <div className="no-subtitle" style={{ color: t.textMuted }}>28 social platforms + SEO & reviews</div>
+        <div className="no-subtitle" style={{ color: t.textMuted }}>{menuData ? `${menuData.platforms?.length || 0} platforms available` : "28 social platforms + SEO & reviews"}</div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
+      {/* Order result toast */}
+      {orderResult && (
+        <div style={{ padding: "10px 16px", borderRadius: 10, marginBottom: 12, background: orderResult.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), border: `1px solid ${orderResult.type === "success" ? (dark ? "rgba(110,231,183,.2)" : "#a7f3d0") : (dark ? "rgba(220,38,38,.2)" : "#fecaca")}`, color: orderResult.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), fontSize: 13, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>{orderResult.type === "success" ? "✓" : "⚠️"} {orderResult.message}</span>
+          <button onClick={() => setOrderResult(null)} style={{ background: "none", color: "inherit", fontSize: 15, border: "none", cursor: "pointer" }}>✕</button>
+        </div>
+      )}
+
+      {menuLoading && <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>Loading services...</div>}
+      {menuError && <div style={{ padding: 40, textAlign: "center", color: dark ? "#fca5a5" : "#dc2626" }}>{menuError}</div>}
+
+      {!menuLoading && !menuError && <>
       {/* ═══ CONTENT WITH INLINE PLATFORM PICKER ═══ */}
       <div className="no-content-split">
 
@@ -273,7 +328,7 @@ export default function NewOrderPage({ dark, t, platform, setPlatform, selSvc, s
       {orderModal && hasOrder && (
         <div className="no-modal-overlay" onClick={() => setOrderModal(false)}>
           <div className="no-modal" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#ffffff", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
-            <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} dark={dark} t={t} onClose={() => setOrderModal(false)} />
+            <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} dark={dark} t={t} onClose={() => setOrderModal(false)} onSubmit={submitOrder} orderLoading={orderLoading} />
           </div>
         </div>
       )}
@@ -307,6 +362,7 @@ export default function NewOrderPage({ dark, t, platform, setPlatform, selSvc, s
           </div>
         </div>
       )}
+      </>}
     </>
   );
 }

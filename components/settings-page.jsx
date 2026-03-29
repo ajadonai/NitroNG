@@ -37,7 +37,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
     setCopied(true); setTimeout(() => setCopied(false), 2000);
   };
 
-  const initials = user ? user.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "";
+  const initials = user ? ((user.firstName?.[0] || "") + (user.lastName?.[0] || "")).toUpperCase() || user.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "";
 
   return (
     <>
@@ -63,7 +63,8 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
             </div>
             <div className="set-profile-grid">
               {[
-                ["Full Name", user?.name || "—"],
+                ["First Name", user?.firstName || user?.name?.split(" ")[0] || "—"],
+                ["Last Name", user?.lastName || user?.name?.split(" ").slice(1).join(" ") || "—"],
                 ["Email", user?.email || "—"],
                 ["Phone", user?.phone || "—"],
                 ["Referral Code", user?.refCode || "—"],
@@ -204,7 +205,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
 /* ═══ SETTINGS RIGHT SIDEBAR              ═══ */
 /* ═══════════════════════════════════════════ */
 export function SettingsSidebar({ user, dark, t }) {
-  const initials = user ? user.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "";
+  const initials = user ? ((user.firstName?.[0] || "") + (user.lastName?.[0] || "")).toUpperCase() || user.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "";
   return (
     <>
       <div className="set-rs-title" style={{ color: t.textMuted }}>Account</div>
