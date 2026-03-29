@@ -27,6 +27,7 @@ model User {
   verifyExpires DateTime?
   resetToken    String?
   resetExpires  DateTime?
+  apiKey        String?   @unique
   status        String   @default("Active")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

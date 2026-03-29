@@ -21,8 +21,22 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
   const [notifPromo, setNotifPromo] = useState(false);
   const [notifEmail, setNotifEmail] = useState(true);
   const [showApi, setShowApi] = useState(false);
+  const [apiKey, setApiKey] = useState(null);
+  const [apiLoading, setApiLoading] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Change password state
+  const [curPw, setCurPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [pwMsg, setPwMsg] = useState(null);
+  const [pwLoading, setPwLoading] = useState(false);
+
+  // Fetch API key on mount
+  useEffect(() => {
+    fetch("/api/auth/api-key").then(r => r.json()).then(d => { if (d.apiKey) setApiKey(d.apiKey); }).catch(() => {});
+  }, []);
 
   const applyTheme = (mode) => {
     setThemeMode(mode);
@@ -32,8 +46,33 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
     else { const h = new Date().getHours(); setDark(h >= 19 || h < 7); }
   };
 
+  const changePassword = async () => {
+    setPwMsg(null);
+    if (!curPw || !newPw || !confirmPw) { setPwMsg({ type: "error", text: "All fields required" }); return; }
+    if (newPw !== confirmPw) { setPwMsg({ type: "error", text: "New passwords don't match" }); return; }
+    if (newPw.length < 6) { setPwMsg({ type: "error", text: "Minimum 6 characters" }); return; }
+    setPwLoading(true);
+    try {
+      const res = await fetch("/api/auth/change-password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ currentPassword: curPw, newPassword: newPw }) });
+      const data = await res.json();
+      if (!res.ok) { setPwMsg({ type: "error", text: data.error || "Failed" }); } else { setPwMsg({ type: "success", text: "Password updated" }); setCurPw(""); setNewPw(""); setConfirmPw(""); }
+    } catch { setPwMsg({ type: "error", text: "Request failed" }); }
+    setPwLoading(false);
+  };
+
+  const generateApiKey = async (action) => {
+    setApiLoading(true);
+    try {
+      const res = await fetch("/api/auth/api-key", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) });
+      const data = await res.json();
+      if (res.ok && data.apiKey) { setApiKey(data.apiKey); setShowApi(true); }
+    } catch {}
+    setApiLoading(false);
+  };
+
   const copyApi = () => {
-    try { navigator.clipboard?.writeText("ntro_sk_a8f3b2c91d4e5f6a7b8c9d0e1f2a3b4c"); } catch {}
+    if (!apiKey) return;
+    try { navigator.clipboard?.writeText(apiKey); } catch {}
     setCopied(true); setTimeout(() => setCopied(false), 2000);
   };
 
@@ -84,13 +123,20 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <div className="set-section">
           <div className="set-section-title" style={{ color: t.text }}>Change Password</div>
           <div className="set-card" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
-            {["Current Password", "New Password", "Confirm New Password"].map(label => (
-              <div key={label} className="set-input-group">
-                <label className="set-input-label" style={{ color: t.textMuted }}>{label}</label>
-                <input type="password" className="set-input" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text }} />
-              </div>
-            ))}
-            <button className="set-btn-primary">Update Password</button>
+            {pwMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 13, background: pwMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: pwMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{pwMsg.type === "success" ? "✓" : "⚠️"} {pwMsg.text}</div>}
+            <div className="set-input-group">
+              <label className="set-input-label" style={{ color: t.textMuted }}>Current Password</label>
+              <input type="password" value={curPw} onChange={e => setCurPw(e.target.value)} className="set-input" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text }} />
+            </div>
+            <div className="set-input-group">
+              <label className="set-input-label" style={{ color: t.textMuted }}>New Password</label>
+              <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} className="set-input" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text }} />
+            </div>
+            <div className="set-input-group">
+              <label className="set-input-label" style={{ color: t.textMuted }}>Confirm New Password</label>
+              <input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} className="set-input" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text }} />
+            </div>
+            <button onClick={changePassword} disabled={pwLoading} className="set-btn-primary" style={{ opacity: curPw && newPw && confirmPw && !pwLoading ? 1 : .4 }}>{pwLoading ? "Updating..." : "Update Password"}</button>
           </div>
         </div>
 
@@ -166,14 +212,23 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
           <div className="set-section-title" style={{ color: t.text }}>API Key</div>
           <div className="set-section-desc" style={{ color: t.textMuted }}>For advanced users and resellers. Keep this secret.</div>
           <div className="set-card" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
-            <div className="set-api-row">
-              <div className="m set-api-key" style={{ background: dark ? "#0d1020" : "#fff", borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", color: t.textSoft }}>
-                {showApi ? "ntro_sk_a8f3b2c91d4e5f6a7b8c9d0e1f2a3b4c" : "••••••••••••••••••••••••••••••••"}
-              </div>
-              <button onClick={() => setShowApi(!showApi)} className="set-btn-outline" style={{ borderColor: t.cardBorder, color: t.textSoft }}>{showApi ? "Hide" : "Show"}</button>
-              <button onClick={copyApi} className="set-btn-outline" style={{ borderColor: t.cardBorder, color: copied ? t.green : t.textSoft }}>{copied ? "Copied ✓" : "Copy"}</button>
-            </div>
-            <button className="m set-btn-danger-sm" style={{ borderColor: dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.1)", color: dark ? "#fca5a5" : "#dc2626", marginTop: 10 }}>Regenerate Key</button>
+            {apiKey ? (
+              <>
+                <div className="set-api-row">
+                  <div className="m set-api-key" style={{ background: dark ? "#0d1020" : "#fff", borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", color: t.textSoft }}>
+                    {showApi ? apiKey : "••••••••••••••••••••••••••••••••"}
+                  </div>
+                  <button onClick={() => setShowApi(!showApi)} className="set-btn-outline" style={{ borderColor: t.cardBorder, color: t.textSoft }}>{showApi ? "Hide" : "Show"}</button>
+                  <button onClick={copyApi} className="set-btn-outline" style={{ borderColor: t.cardBorder, color: copied ? t.green : t.textSoft }}>{copied ? "Copied ✓" : "Copy"}</button>
+                </div>
+                <button onClick={async () => { const ok = await confirm({ title: "Regenerate API Key", message: "This will invalidate your current key. Any integrations using it will stop working.", confirmLabel: "Regenerate", danger: true }); if (ok) generateApiKey("regenerate"); }} disabled={apiLoading} className="m set-btn-danger-sm" style={{ borderColor: dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.1)", color: dark ? "#fca5a5" : "#dc2626", marginTop: 10 }}>{apiLoading ? "..." : "Regenerate Key"}</button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 12 }}>No API key generated yet. Generate one to access Nitro's API.</div>
+                <button onClick={() => generateApiKey("generate")} disabled={apiLoading} className="set-btn-primary" style={{ opacity: apiLoading ? .5 : 1 }}>{apiLoading ? "Generating..." : "Generate API Key"}</button>
+              </>
+            )}
           </div>
         </div>
 
