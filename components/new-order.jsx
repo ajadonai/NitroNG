@@ -144,11 +144,17 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
     loadMenu();
   }, []);
 
+  /* Normalize platform name to sidebar ID */
+  const normPlatform = (name) => {
+    const map = { "Twitter/X": "twitter", "Apple Music": "applemusic", "SoundCloud": "soundcloud", "OnlyFans": "onlyfans", "TrustPilot": "trustpilot", "Kick": "kick" };
+    return map[name] || name.toLowerCase().replace(/[^a-z]/g, "");
+  };
+
   /* Map API groups to per-platform service list matching existing shape */
   const services = (() => {
     if (!menuData?.groups) return [];
     return menuData.groups
-      .filter(g => g.platform.toLowerCase() === platform)
+      .filter(g => normPlatform(g.platform) === platform)
       .map(g => ({
         id: g.id,
         name: g.name,

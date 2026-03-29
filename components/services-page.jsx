@@ -15,61 +15,47 @@ const TS = {
 /* ═══════════════════════════════════════════ */
 export default function ServicesPage({ dark, t, svcPlatform, setSvcPlatform, onOrderNav, catModal, setCatModal }) {
   const [search, setSearch] = useState("");
+  const [menuData, setMenuData] = useState(null);
+  const [menuLoading, setMenuLoading] = useState(true);
 
-  /* TODO: Replace with real API — fetch services for active platform */
-  const DEMO = {
-    instagram: [
-      { name: "Followers — Worldwide", tiers: [{ t: "Budget", p: 200 }, { t: "Standard", p: 650 }, { t: "Premium", p: 1400 }] },
-      { name: "Followers — Nigerian 🇳🇬", ng: true, tiers: [{ t: "Budget", p: 450 }, { t: "Standard", p: 1100 }, { t: "Premium", p: 2200 }] },
-      { name: "Post Likes", tiers: [{ t: "Budget", p: 80 }, { t: "Standard", p: 250 }, { t: "Premium", p: 600 }] },
-      { name: "Post Likes — Nigerian 🇳🇬", ng: true, tiers: [{ t: "Standard", p: 400 }] },
-      { name: "Auto Likes", tiers: [{ t: "Standard", p: 3500 }] },
-      { name: "Reel/Video Views", tiers: [{ t: "Budget", p: 15 }, { t: "Standard", p: 50 }, { t: "Premium", p: 120 }] },
-      { name: "Story Views", tiers: [{ t: "Standard", p: 30 }] },
-      { name: "Comments — Random", tiers: [{ t: "Standard", p: 5000 }] },
-      { name: "Comments — Custom", tiers: [{ t: "Standard", p: 8000 }] },
-      { name: "Comments — Nigerian 🇳🇬", ng: true, tiers: [{ t: "Standard", p: 6000 }] },
-      { name: "Comment Likes", tiers: [{ t: "Standard", p: 150 }] },
-      { name: "Saves", tiers: [{ t: "Standard", p: 120 }] },
-      { name: "Shares", tiers: [{ t: "Standard", p: 100 }] },
-      { name: "Profile Visits", tiers: [{ t: "Standard", p: 80 }] },
-      { name: "Impressions + Reach", tiers: [{ t: "Standard", p: 20 }] },
-      { name: "Reposts", tiers: [{ t: "Standard", p: 90 }] },
-    ],
-    tiktok: [
-      { name: "Followers — Worldwide", tiers: [{ t: "Budget", p: 180 }, { t: "Standard", p: 550 }, { t: "Premium", p: 1200 }] },
-      { name: "Followers — Nigerian 🇳🇬", ng: true, tiers: [{ t: "Budget", p: 400 }, { t: "Standard", p: 900 }] },
-      { name: "Likes", tiers: [{ t: "Budget", p: 50 }, { t: "Standard", p: 180 }, { t: "Premium", p: 450 }] },
-      { name: "Likes — Nigerian 🇳🇬", ng: true, tiers: [{ t: "Standard", p: 200 }] },
-      { name: "Views", tiers: [{ t: "Budget", p: 8 }, { t: "Standard", p: 25 }, { t: "Premium", p: 60 }] },
-      { name: "Shares", tiers: [{ t: "Standard", p: 80 }] },
-      { name: "Saves", tiers: [{ t: "Standard", p: 100 }] },
-      { name: "Comments — Random", tiers: [{ t: "Standard", p: 5000 }] },
-      { name: "Comments — Custom", tiers: [{ t: "Standard", p: 7500 }] },
-      { name: "Comments — Nigerian 🇳🇬", ng: true, tiers: [{ t: "Standard", p: 5500 }] },
-      { name: "Comment Likes", tiers: [{ t: "Standard", p: 120 }] },
-      { name: "Livestream Viewers", tiers: [{ t: "Standard", p: 300 }] },
-      { name: "Livestream Likes", tiers: [{ t: "Standard", p: 200 }] },
-    ],
-    youtube: [
-      { name: "Subscribers", tiers: [{ t: "Budget", p: 800 }, { t: "Standard", p: 1800 }, { t: "Premium", p: 3500 }] },
-      { name: "Subscribers — Nigerian 🇳🇬", ng: true, tiers: [{ t: "Standard", p: 2500 }] },
-      { name: "Views", tiers: [{ t: "Budget", p: 40 }, { t: "Standard", p: 100 }, { t: "Premium", p: 250 }] },
-      { name: "Shorts Views", tiers: [{ t: "Standard", p: 60 }] },
-      { name: "AdSense-Safe Views", tiers: [{ t: "Premium", p: 500 }] },
-      { name: "Likes", tiers: [{ t: "Budget", p: 60 }, { t: "Standard", p: 180 }, { t: "Premium", p: 400 }] },
-      { name: "Comments — Random", tiers: [{ t: "Standard", p: 4000 }] },
-      { name: "Comments — Custom", tiers: [{ t: "Standard", p: 7000 }] },
-      { name: "Comment Likes", tiers: [{ t: "Standard", p: 100 }] },
-      { name: "Watch Time (hours)", tiers: [{ t: "Standard", p: 3000 }] },
-      { name: "Shares", tiers: [{ t: "Standard", p: 150 }] },
-      { name: "Livestream Views", tiers: [{ t: "Standard", p: 200 }] },
-    ],
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch("/api/services/menu");
+        if (res.ok) { const data = await res.json(); setMenuData(data); }
+      } catch {}
+      setMenuLoading(false);
+    }
+    load();
+  }, []);
+
+  // Map API data to per-platform service list
+  const allGroups = menuData?.groups || [];
+
+  // Normalize platform name to sidebar ID
+  const normalizePlatform = (name) => {
+    const map = { "Twitter/X": "twitter", "Apple Music": "applemusic", "SoundCloud": "soundcloud", "OnlyFans": "onlyfans", "TrustPilot": "trustpilot", "Kick": "kick" };
+    return map[name] || name.toLowerCase().replace(/[^a-z]/g, "");
   };
 
-  const services = (DEMO[svcPlatform] || []).filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase()));
+  // Count per platform (using normalized key)
+  const platformCounts = {};
+  allGroups.forEach(g => {
+    const key = normalizePlatform(g.platform);
+    platformCounts[key] = (platformCounts[key] || 0) + 1;
+  });
+
+  const services = allGroups
+    .filter(g => normalizePlatform(g.platform) === svcPlatform)
+    .filter(g => !search || g.name.toLowerCase().includes(search.toLowerCase()))
+    .map(g => ({
+      name: g.name,
+      ng: g.nigerian,
+      tiers: g.tiers.map(tier => ({ t: tier.tier, p: tier.price })),
+    }));
+
   const platInfo = PLATFORMS.find(p => p.id === svcPlatform);
-  const totalServices = Object.values(DEMO).reduce((s, arr) => s + arr.length, 0);
+  const totalServices = allGroups.length;
 
   useEffect(() => { setSearch(""); }, [svcPlatform]);
 
@@ -78,7 +64,7 @@ export default function ServicesPage({ dark, t, svcPlatform, setSvcPlatform, onO
       {/* Header */}
       <div className="svc-header">
         <div className="svc-title" style={{ color: t.text }}>Services</div>
-        <div className="svc-subtitle" style={{ color: t.textMuted }}>28 social platforms + SEO & reviews — prices per 1,000</div>
+        <div className="svc-subtitle" style={{ color: t.textMuted }}>{menuLoading ? "Loading services..." : `${totalServices} services across ${Object.keys(platformCounts).length} platforms — prices per 1,000`}</div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
@@ -92,10 +78,12 @@ export default function ServicesPage({ dark, t, svcPlatform, setSvcPlatform, onO
               <div className="no-plat-group-label" style={{ color: t.accent }}>{group.label}</div>
               {group.platforms.map(p => {
                 const active = svcPlatform === p.id;
+                const count = platformCounts[p.id] || 0;
                 return (
                   <button key={p.id} onClick={() => setSvcPlatform(p.id)} className="no-plat-item" style={{ background: active ? t.navActive : "transparent", color: active ? t.accent : t.textSoft, fontWeight: active ? 600 : 430 }}>
                     <span className="no-plat-item-icon" style={{ opacity: active ? 1 : .5 }}>{p.icon}</span>
                     {p.label}
+                    {count > 0 && <span className="m" style={{ marginLeft: "auto", fontSize: 10, fontWeight: 600, color: active ? t.accent : t.textMuted, background: active ? (dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)") : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"), padding: "1px 6px", borderRadius: 8, minWidth: 18, textAlign: "center" }}>{count}</span>}
                   </button>
                 );
               })}
@@ -165,10 +153,12 @@ export default function ServicesPage({ dark, t, svcPlatform, setSvcPlatform, onO
                   <div className="no-cat-grid">
                     {group.platforms.map(p => {
                       const act = svcPlatform === p.id;
+                      const count = platformCounts[p.id] || 0;
                       return (
-                        <button key={p.id} onClick={() => { setSvcPlatform(p.id); setCatModal(false); }} className="no-cat-item" style={{ borderWidth: act ? 2 : 1, borderStyle: "solid", borderColor: act ? t.accent : t.cardBorder, background: act ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: act ? t.accent : t.text }}>
+                        <button key={p.id} onClick={() => { setSvcPlatform(p.id); setCatModal(false); }} className="no-cat-item" style={{ borderWidth: act ? 2 : 1, borderStyle: "solid", borderColor: act ? t.accent : t.cardBorder, background: act ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: act ? t.accent : t.text, position: "relative" }}>
                           <span className="no-cat-icon">{p.icon}</span>
                           <span className="no-cat-label">{p.label}</span>
+                          {count > 0 && <span className="m" style={{ fontSize: 9, fontWeight: 600, color: act ? t.accent : t.textMuted, position: "absolute", top: 4, right: 6 }}>{count}</span>}
                         </button>
                       );
                     })}
