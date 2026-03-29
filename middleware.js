@@ -15,6 +15,23 @@ async function verifyToken(token, secret) {
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
+  const hostname = request.headers.get('host') || '';
+
+  // ── blog.nitro.ng → rewrite to /blog ──
+  if (hostname.startsWith('blog.')) {
+    const url = request.nextUrl.clone();
+    // If path is / on blog subdomain, rewrite to /blog
+    if (pathname === '/') {
+      url.pathname = '/blog';
+      return NextResponse.rewrite(url);
+    }
+    // If path is /some-slug, rewrite to /blog?view=slug (API handles it)
+    // Let /api and /_next pass through
+    if (!pathname.startsWith('/blog') && !pathname.startsWith('/api') && !pathname.startsWith('/_next') && !pathname.startsWith('/favicon')) {
+      url.pathname = '/blog';
+      return NextResponse.rewrite(url);
+    }
+  }
 
   // ── Protect /verify — must have a user token (unverified user) ──
   if (pathname === '/verify') {
@@ -73,5 +90,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/verify', '/dashboard/:path*', '/admin/:path*'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
