@@ -310,7 +310,7 @@ function AdminDashboardInner() {
       case "coupons": return <AdminCouponsPage dark={dark} t={t} />;
       case "notifications": return <AdminNotificationsPage dark={dark} t={t} />;
       case "activity": return <AdminActivityPage dark={dark} t={t} />;
-      case "team": return <AdminTeamPage dark={dark} t={t} />;
+      case "team": return <AdminTeamPage admin={admin} dark={dark} t={t} />;
       case "maintenance": return <AdminMaintenancePage dark={dark} t={t} />;
       case "api": return <AdminAPIPage dark={dark} t={t} />;
       case "settings": return <AdminSettingsPage admin={admin} dark={dark} t={t} themeMode={themeMode} setThemeMode={setThemeMode} setDark={setDark} />;

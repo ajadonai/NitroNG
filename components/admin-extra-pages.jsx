@@ -69,11 +69,21 @@ export function AdminActivityPage({ dark, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ TEAM MANAGEMENT                     ═══ */
 /* ═══════════════════════════════════════════ */
-export function AdminTeamPage({ dark, t }) {
+const ROLE_INFO = {
+  owner:      { color: "#e0a458", desc: "Full platform access. Cannot be deactivated or demoted. Only one owner exists." },
+  superadmin: { color: "#c47d8e", desc: "Full access to all admin features. Can manage team, settings, and all operations." },
+  admin:      { color: "#a5b4fc", desc: "Can manage orders, users, services, tickets, blog, and view analytics." },
+  support:    { color: "#6ee7b7", desc: "Can view and respond to tickets, view orders and users. No access to settings or team." },
+  finance:    { color: "#fcd34d", desc: "Can view payments, analytics, and financial reports. No access to users or settings." },
+};
+const ASSIGNABLE_ROLES = ["admin", "support", "finance"];
+
+export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
   const confirm = useConfirm();
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -106,6 +116,10 @@ export function AdminTeamPage({ dark, t }) {
     } catch {}
   };
 
+  const isOwner = (a) => a.role === "owner";
+  const isProtected = (a) => a.role === "owner" || a.role === "superadmin";
+  const canManage = currentAdmin?.role === "owner" || currentAdmin?.role === "superadmin";
+
   const inputStyle = { width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
 
   return (
@@ -116,11 +130,28 @@ export function AdminTeamPage({ dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Team</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage admin accounts and roles</div>
           </div>
-          <button onClick={() => setShowAdd(!showAdd)} className="adm-btn-primary">{showAdd ? "Cancel" : "+ Add Admin"}</button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => { setShowGuide(!showGuide); if (!showGuide) setShowAdd(false); }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>{showGuide ? "Hide Guide" : "Role Guide"}</button>
+            {canManage && <button onClick={() => { setShowAdd(!showAdd); if (!showAdd) setShowGuide(false); }} className="adm-btn-primary">{showAdd ? "Cancel" : "+ Add Admin"}</button>}
+          </div>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
+      {/* Role Guide */}
+      {showGuide && (
+        <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, marginTop: 16, marginBottom: 16, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)", borderRadius: 14 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: t.text, marginBottom: 14 }}>Role Permissions</div>
+          {Object.entries(ROLE_INFO).map(([role, info], idx, arr) => (
+            <div key={role} style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: idx < arr.length - 1 ? 12 : 0, paddingBottom: idx < arr.length - 1 ? 12 : 0, borderBottom: idx < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
+              <span className="m" style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, fontWeight: 600, background: `${info.color}20`, color: info.color, textTransform: "capitalize", flexShrink: 0, marginTop: 1 }}>{role === "owner" ? "👑 owner" : role}</span>
+              <span style={{ fontSize: 13, color: t.textMuted, lineHeight: 1.5 }}>{info.desc}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add admin form */}
       {showAdd && (
         <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, marginTop: 16, marginBottom: 16, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)", borderRadius: 14 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
@@ -129,7 +160,7 @@ export function AdminTeamPage({ dark, t }) {
             <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Password</label><input value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Password" type="password" style={inputStyle} /></div>
             <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Role</label>
               <div style={{ display: "flex", gap: 4 }}>
-                {["admin", "support", "finance"].map(r => (
+                {ASSIGNABLE_ROLES.map(r => (
                   <button key={r} onClick={() => setNewRole(r)} className="adm-filter-pill" style={{ borderWidth: 1, borderStyle: "solid", borderColor: newRole === r ? t.accent : t.cardBorder, background: newRole === r ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: newRole === r ? t.accent : t.textMuted, textTransform: "capitalize" }}>{r}</button>
                 ))}
               </div>
@@ -139,31 +170,43 @@ export function AdminTeamPage({ dark, t }) {
         </div>
       )}
 
-      <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)", marginTop: showAdd ? 0 : 16 }}>
+      {/* Team list */}
+      <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)", marginTop: showAdd || showGuide ? 0 : 16 }}>
         {loading ? (
           <div className="adm-empty" style={{ color: t.textMuted }}>Loading team...</div>
-        ) : admins.map((a, i) => (
-          <div key={a.id} className="adm-list-row" style={{ borderBottom: i < admins.length - 1 ? `1px solid ${t.cardBorder}` : "none", flexWrap: "wrap", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 180 }}>
-              <div className="adm-user-avatar" style={{ background: ROLE_COLORS[a.role] || "#888" }}>{(a.name || "A")[0]}</div>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: t.text }}>{a.name}</span>
-                  <span className="m" style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: `${ROLE_COLORS[a.role] || "#888"}20`, color: ROLE_COLORS[a.role] || "#888", textTransform: "capitalize" }}>{a.role}</span>
-                  {a.status !== "Active" && <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: t.red, fontWeight: 600 }}>Inactive</span>}
+        ) : admins.map((a, i) => {
+          const owner = isOwner(a);
+          const roleInfo = ROLE_INFO[a.role] || { color: "#888" };
+          return (
+            <div key={a.id} className="adm-list-row" style={{ borderBottom: i < admins.length - 1 ? `1px solid ${t.cardBorder}` : "none", flexWrap: "wrap", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 180 }}>
+                <div className="adm-user-avatar" style={{ background: roleInfo.color }}>{(a.name || "A")[0]}</div>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: t.text }}>{a.name}</span>
+                    <span className="m" style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: `${roleInfo.color}20`, color: roleInfo.color, textTransform: "capitalize" }}>{a.role}</span>
+                    {owner && <span style={{ fontSize: 11 }}>👑</span>}
+                    {a.status !== "Active" && <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: dark ? "#fca5a5" : "#dc2626", fontWeight: 600 }}>Inactive</span>}
+                  </div>
+                  <div style={{ fontSize: 13, color: t.textMuted, marginTop: 1 }}>{a.email}</div>
                 </div>
-                <div style={{ fontSize: 13, color: t.textMuted, marginTop: 1 }}>{a.email}</div>
+              </div>
+              <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
+                <span style={{ fontSize: 12, color: t.textMuted }}>Last active: {a.lastActive ? fD(a.lastActive) : "Never"}</span>
+                {owner ? (
+                  <span style={{ fontSize: 12, color: t.textMuted, fontStyle: "italic", padding: "0 8px" }}>Protected</span>
+                ) : canManage ? (
+                  <>
+                    <select value={a.role} onChange={e => changeRole(a.id, e.target.value)} style={{ padding: "3px 8px", borderRadius: 6, background: dark ? "#0d1020" : "#fff", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, color: t.text, fontSize: 13, outline: "none" }}>
+                      {ASSIGNABLE_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                    <button onClick={async () => { const ok = await confirm({ title: a.status === "Active" ? "Deactivate Admin" : "Activate Admin", message: a.status === "Active" ? `Deactivate ${a.name}? They will lose admin access.` : `Reactivate ${a.name}'s admin access?`, confirmLabel: a.status === "Active" ? "Deactivate" : "Activate", danger: a.status === "Active" }); if (ok) toggleStatus(a.id); }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: a.status === "Active" ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{a.status === "Active" ? "Deactivate" : "Activate"}</button>
+                  </>
+                ) : null}
               </div>
             </div>
-            <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ fontSize: 12, color: t.textMuted }}>Last active: {a.lastActive ? fD(a.lastActive) : "Never"}</span>
-              <select value={a.role} onChange={e => changeRole(a.id, e.target.value)} style={{ padding: "3px 8px", borderRadius: 6, background: dark ? "#0d1020" : "#fff", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, color: t.text, fontSize: 13, outline: "none" }}>
-                {["superadmin", "admin", "support", "finance"].map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-              <button onClick={async () => { const ok = await confirm({ title: a.status === "Active" ? "Deactivate Admin" : "Activate Admin", message: a.status === "Active" ? `Deactivate ${a.name}? They will lose admin access.` : `Reactivate ${a.name}'s admin access?`, confirmLabel: a.status === "Active" ? "Deactivate" : "Activate", danger: a.status === "Active" }); if (ok) toggleStatus(a.id); }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: a.status === "Active" ? t.red : t.green }}>{a.status === "Active" ? "Deactivate" : "Activate"}</button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </>
   );

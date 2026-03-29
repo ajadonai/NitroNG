@@ -33,23 +33,27 @@ export async function POST(req) {
   const { admin, error } = await requireAdmin('team', true);
   if (error) return error;
 
-  if (admin.role !== 'superadmin') {
-    return Response.json({ error: 'Only superadmin can manage team' }, { status: 403 });
+  if (admin.role !== 'superadmin' && admin.role !== 'owner') {
+    return Response.json({ error: 'Only owner or superadmin can manage team' }, { status: 403 });
   }
 
   try {
     const { action, adminId, name, email, password, role, status } = await req.json();
 
+    // Prevent creating owner or superadmin via API
+    const ASSIGNABLE = ['admin', 'support', 'finance'];
+
     if (action === 'create') {
       if (!name || !email || !password) return Response.json({ error: 'Name, email, password required' }, { status: 400 });
+      const safeRole = ASSIGNABLE.includes(role) ? role : 'admin';
       const exists = await prisma.admin.findUnique({ where: { email: email.toLowerCase() } });
       if (exists) return Response.json({ error: 'Email already in use' }, { status: 400 });
 
       const hash = await bcrypt.hash(password, 12);
       await prisma.admin.create({
-        data: { name, email: email.toLowerCase(), password: hash, role: role || 'admin' },
+        data: { name, email: email.toLowerCase(), password: hash, role: safeRole },
       });
-      await logActivity(admin.name, `Created admin: ${name} (${role || 'admin'})`, 'admin');
+      await logActivity(admin.name, `Created admin: ${name} (${safeRole})`, 'admin');
       return Response.json({ success: true });
     }
 
@@ -57,9 +61,11 @@ export async function POST(req) {
       if (!adminId || !role) return Response.json({ error: 'Admin ID and role required' }, { status: 400 });
       const target = await prisma.admin.findUnique({ where: { id: adminId } });
       if (!target) return Response.json({ error: 'Admin not found' }, { status: 404 });
+      if (target.role === 'owner') return Response.json({ error: 'Cannot modify owner role' }, { status: 403 });
+      const safeRole = ASSIGNABLE.includes(role) ? role : target.role;
 
-      await prisma.admin.update({ where: { id: adminId }, data: { role } });
-      await logActivity(admin.name, `Changed ${target.name}'s role to ${role}`, 'admin');
+      await prisma.admin.update({ where: { id: adminId }, data: { role: safeRole } });
+      await logActivity(admin.name, `Changed ${target.name}'s role to ${safeRole}`, 'admin');
       return Response.json({ success: true });
     }
 
@@ -67,6 +73,7 @@ export async function POST(req) {
       if (!adminId) return Response.json({ error: 'Admin ID required' }, { status: 400 });
       const target = await prisma.admin.findUnique({ where: { id: adminId } });
       if (!target) return Response.json({ error: 'Admin not found' }, { status: 404 });
+      if (target.role === 'owner') return Response.json({ error: 'Cannot deactivate owner' }, { status: 403 });
       if (target.id === admin.id) return Response.json({ error: 'Cannot deactivate yourself' }, { status: 400 });
 
       const newStatus = target.status === 'Active' ? 'Inactive' : 'Active';
