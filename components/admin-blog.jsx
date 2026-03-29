@@ -122,6 +122,25 @@ export default function AdminBlogPage({ dark, t }) {
           <div style={{ marginBottom: 14 }}>
             <label style={{ fontSize: 12, color: t.textMuted, fontWeight: 600, display: "block", marginBottom: 4 }}>Content <span style={{ fontWeight: 400 }}>(supports HTML)</span></label>
             <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Write your post content here... HTML tags supported." rows={12} style={{ ...inputStyle, resize: "vertical", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, lineHeight: 1.6 }} />
+            <details style={{ marginTop: 8 }}>
+              <summary style={{ fontSize: 12, color: t.accent, cursor: "pointer", fontWeight: 500 }}>Styling guide — how to format your posts</summary>
+              <div style={{ marginTop: 8, padding: 14, borderRadius: 10, background: dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.02)", fontSize: 12, color: t.textMuted, lineHeight: 1.8, fontFamily: "'JetBrains Mono', monospace" }}>
+                <div style={{ fontFamily: "inherit", fontWeight: 600, color: t.text, marginBottom: 8, fontSize: 13 }}>Available HTML tags:</div>
+                <div><span style={{ color: t.accent }}>&lt;h2&gt;</span>Section heading<span style={{ color: t.accent }}>&lt;/h2&gt;</span> — main sections</div>
+                <div><span style={{ color: t.accent }}>&lt;h3&gt;</span>Sub-heading<span style={{ color: t.accent }}>&lt;/h3&gt;</span> — subsections</div>
+                <div><span style={{ color: t.accent }}>&lt;p&gt;</span>Paragraph text here<span style={{ color: t.accent }}>&lt;/p&gt;</span> — regular text</div>
+                <div><span style={{ color: t.accent }}>&lt;strong&gt;</span>bold text<span style={{ color: t.accent }}>&lt;/strong&gt;</span> — emphasis</div>
+                <div><span style={{ color: t.accent }}>&lt;a href="..."&gt;</span>link<span style={{ color: t.accent }}>&lt;/a&gt;</span> — clickable link</div>
+                <div><span style={{ color: t.accent }}>&lt;ul&gt;&lt;li&gt;</span>item<span style={{ color: t.accent }}>&lt;/li&gt;&lt;/ul&gt;</span> — bullet list</div>
+                <div><span style={{ color: t.accent }}>&lt;ol&gt;&lt;li&gt;</span>item<span style={{ color: t.accent }}>&lt;/li&gt;&lt;/ol&gt;</span> — numbered list</div>
+                <div><span style={{ color: t.accent }}>&lt;img src="..." /&gt;</span> — image (full width, rounded)</div>
+                <div style={{ marginTop: 10, fontFamily: "inherit", fontWeight: 600, color: t.text, fontSize: 13 }}>Pro tip callout box:</div>
+                <div style={{ whiteSpace: "pre-wrap", marginTop: 4, padding: 8, borderRadius: 6, background: dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.02)" }}>{`<div style="background:${dark ? "rgba(196,125,142,.06)" : "#fff"};border-left:3px solid #c47d8e;padding:14px 18px;border-radius:0 8px 8px 0;margin:0 0 16px">
+  <div style="font-size:13px;font-weight:500;color:#c47d8e;margin-bottom:4px">Pro tip</div>
+  <div style="font-size:13px;color:${dark ? "#999" : "#555"};line-height:1.6">Your tip text here</div>
+</div>`}</div>
+              </div>
+            </details>
           </div>
 
           {/* Toggles */}
