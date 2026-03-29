@@ -6,6 +6,7 @@ const POSTS = [
   {
     title: "How to Place Your First Order on Nitro",
     slug: "how-to-place-your-first-order",
+    thumbnail: "/blog/how-to-place-your-first-order.svg",
     excerpt: "A step-by-step guide to placing your first social media order on Nitro. From picking a platform to watching your numbers grow.",
     category: "Tutorials",
     showInHowTo: true,
@@ -43,6 +44,7 @@ const POSTS = [
   {
     title: "How to Add Funds to Your Nitro Wallet",
     slug: "how-to-add-funds",
+    thumbnail: "/blog/how-to-add-funds.svg",
     excerpt: "Fund your Nitro wallet using Paystack — cards, bank transfer, and USSD all supported. Takes less than a minute.",
     category: "Tutorials",
     showInHowTo: true,
@@ -79,6 +81,7 @@ const POSTS = [
   {
     title: "Understanding Budget, Standard & Premium Tiers",
     slug: "understanding-tiers",
+    thumbnail: "/blog/understanding-tiers.svg",
     excerpt: "Not sure which tier to pick? Here's what Budget, Standard, and Premium mean for your order quality, speed, and refill guarantee.",
     category: "Tutorials",
     showInHowTo: true,
@@ -123,6 +126,7 @@ const POSTS = [
   {
     title: "How the Nitro Referral Program Works",
     slug: "referral-program",
+    thumbnail: "/blog/referral-program.svg",
     excerpt: "Invite friends to Nitro and earn rewards. Here's how the referral system works and how to maximize your earnings.",
     category: "Guides",
     showInHowTo: true,
@@ -156,6 +160,7 @@ const POSTS = [
   {
     title: "Order Status Guide — What Each Status Means",
     slug: "order-status-guide",
+    thumbnail: "/blog/order-status-guide.svg",
     excerpt: "Your order shows Processing, Completed, or Partial? Here's what each status means and what to do.",
     category: "Tutorials",
     showInHowTo: true,
@@ -189,6 +194,7 @@ const POSTS = [
   {
     title: "5 Tips to Get the Most Out of Nitro",
     slug: "5-tips-nitro",
+    thumbnail: "/blog/5-tips-nitro.svg",
     excerpt: "Practical tips for Nigerian creators and businesses to maximize their social media growth with Nitro.",
     category: "Tips & Tricks",
     showInHowTo: true,
