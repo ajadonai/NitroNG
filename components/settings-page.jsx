@@ -266,6 +266,22 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
 
         <div className="set-divider" style={{ background: t.sidebarBorder }} />
 
+        {/* ── LOG OUT ── */}
+        <div className="set-section">
+          <div className="set-section-title" style={{ color: t.text }}>Account</div>
+          <button onClick={async () => {
+            const ok = await confirm({ title: "Log Out", message: "You will be logged out of this device.", confirmLabel: "Log Out" });
+            if (ok) {
+              try { await fetch("/api/auth/logout", { method: "POST" }); } catch {}
+              window.location.replace("/");
+            }
+          }} className="set-btn-primary" style={{ width: "100%", background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.text, border: `1px solid ${t.cardBorder}` }}>
+            Log Out
+          </button>
+        </div>
+
+        <div className="set-divider" style={{ background: t.sidebarBorder }} />
+
         {/* ── DANGER ZONE ── */}
         <div className="set-section">
           <div className="set-section-title" style={{ color: t.text }}>Danger Zone</div>
@@ -306,7 +322,7 @@ export function SettingsSidebar({ user, dark, t }) {
       <div className="set-rs-divider" style={{ background: t.sidebarBorder }} />
 
       <div className="set-rs-title" style={{ color: t.textMuted }}>Quick Links</div>
-      {["Change Password", "Theme", "Notifications", "Active Sessions", "API Key", "Danger Zone"].map(label => (
+      {["Change Password", "Theme", "Notifications", "Active Sessions", "API Key", "Log Out", "Danger Zone"].map(label => (
         <div key={label} className="set-rs-link" style={{ color: label === "Danger Zone" ? (dark ? "#fca5a5" : "#dc2626") : t.textSoft }}>{label}</div>
       ))}
     </>
