@@ -1,248 +1,248 @@
-// Seed essential How To posts — Run: node prisma/seed-blog.cjs
+// Nitro Blog Seed — Run: node prisma/seed-blog.cjs
 const { PrismaClient } = require('@prisma/client');
 const p = new PrismaClient();
 
 const POSTS = [
   {
-    title: "How to Create Your Nitro Account",
-    slug: "how-to-create-account",
+    title: "How to Place Your First Order on Nitro",
+    slug: "how-to-place-your-first-order",
+    excerpt: "A step-by-step guide to placing your first social media order on Nitro. From picking a platform to watching your numbers grow.",
     category: "Tutorials",
-    excerpt: "Get started with Nitro in under 2 minutes. Here's how to sign up, verify your email, and log in.",
+    showInHowTo: true,
     sortOrder: 1,
     content: `
-<h2>Step 1: Sign Up</h2>
-<p>Head to <strong>nitro.ng</strong> and click <strong>"Get Started"</strong> or <strong>"Sign Up"</strong>. You'll need to provide:</p>
+<h2>Getting Started</h2>
+<p>Placing an order on Nitro takes less than 60 seconds. Here's how:</p>
+
+<h3>Step 1 — Go to Services</h3>
+<p>Click <strong>Services</strong> in your dashboard sidebar. You'll see a list of platforms on the left — Instagram, TikTok, YouTube, Twitter/X, and 24 more.</p>
+
+<h3>Step 2 — Pick a Platform</h3>
+<p>Click any platform to see available services. Each platform shows a count badge so you know how many services are available before clicking.</p>
+
+<h3>Step 3 — Choose a Service</h3>
+<p>Browse the service list and click the one you want. If it has multiple tiers (Budget, Standard, Premium), you'll see tier cards expand below — click the tier you want.</p>
+
+<h3>Step 4 — Fill the Order Form</h3>
+<p>The order form appears on the right sidebar (desktop) or as a bottom sheet (mobile). Enter:</p>
 <ul>
-  <li>Your <strong>first name</strong> and <strong>last name</strong></li>
-  <li>A valid <strong>email address</strong></li>
-  <li>A <strong>password</strong> (at least 6 characters)</li>
+  <li><strong>Link</strong> — the URL of the post, profile, or video you want to boost</li>
+  <li><strong>Quantity</strong> — how many followers, likes, views, etc. you want</li>
 </ul>
 
-<h2>Step 2: Verify Your Email</h2>
-<p>After signing up, we'll send a <strong>6-digit verification code</strong> to your email. Enter the code on the verification screen to activate your account.</p>
-<p><em>Didn't get the code?</em> Check your spam folder, or click <strong>"Resend Code"</strong> to get a new one.</p>
+<h3>Step 5 — Place Order</h3>
+<p>Review the total price, then click <strong>Place Order</strong>. The amount is deducted from your wallet balance. Your order starts processing immediately.</p>
 
-<h2>Step 3: Log In</h2>
-<p>Once verified, log in with your email and password. You'll land on your <strong>dashboard</strong> where you can start placing orders right away.</p>
-
-<h2>Tips</h2>
+<h3>Tips</h3>
 <ul>
-  <li>Use a real email — you'll need it for password resets and order notifications</li>
-  <li>Your password should be unique to Nitro for security</li>
-</ul>
-`.trim(),
+  <li>Make sure your profile/post is set to <strong>public</strong> before ordering</li>
+  <li>Double-check the link — wrong links can't be refunded</li>
+  <li>Start with a smaller quantity to test, then scale up</li>
+</ul>`,
   },
   {
-    title: "How to Add Funds to Your Wallet",
+    title: "How to Add Funds to Your Nitro Wallet",
     slug: "how-to-add-funds",
+    excerpt: "Fund your Nitro wallet using Paystack — cards, bank transfer, and USSD all supported. Takes less than a minute.",
     category: "Tutorials",
-    excerpt: "Fund your Nitro wallet using Paystack — card, bank transfer, or USSD. Takes seconds.",
+    showInHowTo: true,
     sortOrder: 2,
     content: `
-<h2>Step 1: Go to Add Funds</h2>
-<p>From your dashboard, click <strong>"Add Funds"</strong> in the left sidebar.</p>
+<h2>Funding Your Wallet</h2>
+<p>You need a funded wallet to place orders. Here's how to add money:</p>
 
-<h2>Step 2: Enter Amount</h2>
-<p>Type the amount you want to add in <strong>Naira (₦)</strong>. You can use the quick buttons (₦1,000 / ₦2,000 / ₦5,000 / ₦10,000) or type a custom amount.</p>
+<h3>Step 1 — Go to Add Funds</h3>
+<p>Click <strong>Add Funds</strong> in your dashboard sidebar.</p>
 
-<h2>Step 3: Pay with Paystack</h2>
-<p>Click <strong>"Fund Wallet"</strong>. You'll be redirected to Paystack's secure payment page where you can pay via:</p>
+<h3>Step 2 — Enter Amount</h3>
+<p>Type the amount you want to add in Naira (₦). You can use the quick-select buttons (₦1,000 / ₦2,500 / ₦5,000 / ₦10,000) or enter a custom amount.</p>
+
+<h3>Step 3 — Pay with Paystack</h3>
+<p>Click <strong>Fund Wallet</strong>. You'll be redirected to Paystack's secure checkout where you can pay with:</p>
 <ul>
-  <li><strong>Card</strong> — Visa, Mastercard, Verve</li>
-  <li><strong>Bank Transfer</strong> — pay to a generated account number</li>
-  <li><strong>USSD</strong> — dial a code from your phone</li>
+  <li>Debit/Credit card (Visa, Mastercard, Verve)</li>
+  <li>Bank transfer</li>
+  <li>USSD</li>
 </ul>
 
-<h2>Step 4: Confirmation</h2>
-<p>Once payment is confirmed, your wallet balance updates <strong>instantly</strong>. You'll see the transaction in your recent activity.</p>
+<h3>Step 4 — Confirmation</h3>
+<p>Once payment is confirmed, your wallet balance updates instantly. You'll see the transaction in your <strong>Orders</strong> page under the Transactions tab.</p>
 
-<h2>Tips</h2>
+<h3>Good to Know</h3>
 <ul>
-  <li>Minimum deposit is <strong>₦500</strong></li>
-  <li>Funds are added instantly after successful payment</li>
-  <li>All payments are processed securely through Paystack</li>
-</ul>
-`.trim(),
-  },
-  {
-    title: "How to Place Your First Order",
-    slug: "how-to-place-order",
-    category: "Tutorials",
-    excerpt: "Step-by-step guide to placing your first social media order on Nitro. From selecting a platform to getting results.",
-    sortOrder: 3,
-    content: `
-<h2>Step 1: Go to Services</h2>
-<p>Click <strong>"Services"</strong> in your dashboard sidebar. You'll see all available platforms on the left.</p>
-
-<h2>Step 2: Pick a Platform</h2>
-<p>Click any platform (Instagram, TikTok, YouTube, etc.). The number badge shows how many services are available for each.</p>
-
-<h2>Step 3: Select a Service</h2>
-<p>Browse the service list and click the one you want (e.g., "Instagram Followers" or "TikTok Likes"). If the service has multiple tiers, you'll see tier cards expand — pick one.</p>
-
-<h2>Step 4: Choose a Tier</h2>
-<p>Each service comes in up to 3 quality tiers:</p>
-<ul>
-  <li><strong>💰 Budget</strong> — Cheapest option. Good for testing.</li>
-  <li><strong>⚡ Standard</strong> — Best value. Stable with refill guarantee.</li>
-  <li><strong>👑 Premium</strong> — Top quality. Non-drop with lifetime refill.</li>
-</ul>
-<p>Click a tier to select it. The order form will appear on the right sidebar (desktop) or as a bottom sheet (mobile).</p>
-
-<h2>Step 5: Enter Details</h2>
-<p>Paste your <strong>link</strong> (post URL, profile URL, etc.) and set your <strong>quantity</strong>. The total price updates automatically.</p>
-
-<h2>Step 6: Place Order</h2>
-<p>Click <strong>"Place Order"</strong>. The cost is deducted from your wallet balance and your order begins processing.</p>
-
-<h2>Tips</h2>
-<ul>
-  <li>Make sure your profile/post is <strong>public</strong> — private accounts can't receive engagement</li>
-  <li>Double-check your link before submitting</li>
-  <li>Orders typically start within minutes, some within seconds</li>
-</ul>
-`.trim(),
+  <li>Minimum deposit: ₦500</li>
+  <li>No maximum limit</li>
+  <li>Funds are added instantly after payment confirmation</li>
+  <li>All transactions are recorded in your dashboard</li>
+</ul>`,
   },
   {
     title: "Understanding Budget, Standard & Premium Tiers",
     slug: "understanding-tiers",
-    category: "Guides",
-    excerpt: "Not sure which tier to pick? Here's what each quality level means and when to use it.",
-    sortOrder: 4,
+    excerpt: "Not sure which tier to pick? Here's what Budget, Standard, and Premium mean for your order quality, speed, and refill guarantee.",
+    category: "Tutorials",
+    showInHowTo: true,
+    sortOrder: 3,
     content: `
-<h2>Three Tiers, Three Quality Levels</h2>
-<p>Every service on Nitro comes in up to 3 tiers. Here's what sets them apart:</p>
+<h2>What Are Tiers?</h2>
+<p>Most services on Nitro come in up to 3 quality tiers. Each tier offers a different balance of price, quality, and guarantee.</p>
 
-<h3>💰 Budget Tier</h3>
+<h3>💰 Budget</h3>
+<p>The cheapest option. Best for testing or when you just need numbers fast.</p>
 <ul>
-  <li><strong>Price:</strong> Cheapest available</li>
-  <li><strong>Quality:</strong> Basic accounts, may have some drop</li>
-  <li><strong>Refill:</strong> Usually none</li>
-  <li><strong>Best for:</strong> Testing a service, boosting numbers quickly, non-critical posts</li>
+  <li><strong>Price:</strong> Lowest</li>
+  <li><strong>Quality:</strong> May include some drops over time</li>
+  <li><strong>Refill:</strong> Usually no refill guarantee</li>
+  <li><strong>Speed:</strong> Often the fastest delivery</li>
+  <li><strong>Best for:</strong> Testing a service, boosting numbers quickly, non-critical accounts</li>
 </ul>
 
-<h3>⚡ Standard Tier</h3>
+<h3>⚡ Standard</h3>
+<p>The sweet spot. Good quality at a fair price with refill protection.</p>
 <ul>
   <li><strong>Price:</strong> Mid-range</li>
-  <li><strong>Quality:</strong> Better accounts, lower drop rate</li>
-  <li><strong>Refill:</strong> 30-day refill guarantee on most services</li>
-  <li><strong>Best for:</strong> Regular use, building consistent engagement, most users</li>
+  <li><strong>Quality:</strong> Stable with low drop rates</li>
+  <li><strong>Refill:</strong> 30-day refill guarantee (if any drop, we top up for free)</li>
+  <li><strong>Speed:</strong> Moderate, natural-looking delivery</li>
+  <li><strong>Best for:</strong> Most users, business accounts, consistent growth</li>
 </ul>
 
-<h3>👑 Premium Tier</h3>
+<h3>👑 Premium</h3>
+<p>Top-tier quality. Highest retention, lifetime guarantee, real-looking accounts.</p>
 <ul>
   <li><strong>Price:</strong> Highest</li>
-  <li><strong>Quality:</strong> Top-quality accounts, minimal to no drop</li>
-  <li><strong>Refill:</strong> Lifetime guarantee on most services</li>
-  <li><strong>Best for:</strong> Important posts, client work, long-term growth, brand accounts</li>
+  <li><strong>Quality:</strong> Non-drop or minimal drop, high-quality accounts</li>
+  <li><strong>Refill:</strong> Lifetime refill guarantee</li>
+  <li><strong>Speed:</strong> Natural delivery speed</li>
+  <li><strong>Best for:</strong> Brand accounts, influencers, when quality matters most</li>
 </ul>
 
-<h2>Which Should I Pick?</h2>
-<p>If you're <strong>just starting out</strong> or testing, go with Budget. For <strong>everyday use</strong>, Standard gives you the best balance of price and quality. For <strong>important content</strong> or client work, Premium is worth it.</p>
-
-<h2>What Does "Refill" Mean?</h2>
-<p>If some followers or likes drop after delivery, we automatically refill them for free within the refill period (30 days or lifetime, depending on the tier).</p>
-`.trim(),
+<h3>Which Should I Choose?</h3>
+<p>If you're new, start with <strong>Standard</strong> — it's the best value. Use Budget for testing, and Premium when you need guaranteed results on important accounts.</p>`,
   },
   {
-    title: "How to Track Your Orders",
-    slug: "how-to-track-orders",
+    title: "How the Nitro Referral Program Works",
+    slug: "referral-program",
+    excerpt: "Invite friends to Nitro and earn rewards. Here's how the referral system works and how to maximize your earnings.",
+    category: "Guides",
+    showInHowTo: true,
+    sortOrder: 4,
+    content: `
+<h2>Earn by Sharing Nitro</h2>
+<p>Every Nitro user gets a unique referral link. When someone signs up using your link and makes their first deposit, you both get rewarded.</p>
+
+<h3>How It Works</h3>
+<ol>
+  <li>Go to <strong>Referrals</strong> in your dashboard</li>
+  <li>Copy your unique referral link</li>
+  <li>Share it with friends, on social media, or in your community</li>
+  <li>When someone signs up and funds their wallet, you earn a bonus</li>
+</ol>
+
+<h3>What You Earn</h3>
+<ul>
+  <li>A percentage of your referral's first deposit is credited to your wallet</li>
+  <li>No limit on how many people you can refer</li>
+  <li>Track all your referrals and earnings in the Referrals dashboard</li>
+</ul>
+
+<h3>Tips for More Referrals</h3>
+<ul>
+  <li>Share your link in WhatsApp groups and Telegram channels</li>
+  <li>Post about Nitro on your social media with your link</li>
+  <li>Recommend Nitro to fellow content creators and marketers</li>
+</ul>`,
+  },
+  {
+    title: "Order Status Guide — What Each Status Means",
+    slug: "order-status-guide",
+    excerpt: "Your order shows Processing, Completed, or Partial? Here's what each status means and what to do.",
     category: "Tutorials",
-    excerpt: "Check order status, understand what each status means, and know when your order is complete.",
+    showInHowTo: true,
     sortOrder: 5,
     content: `
-<h2>Viewing Your Orders</h2>
-<p>Click <strong>"Orders"</strong> in your dashboard sidebar to see all your orders with their current status.</p>
+<h2>Understanding Order Statuses</h2>
+<p>After placing an order, you can track its progress in the <strong>Orders</strong> section of your dashboard.</p>
 
-<h2>Order Statuses</h2>
-<ul>
-  <li><strong>Pending</strong> — Your order has been placed and is waiting to start</li>
-  <li><strong>Processing</strong> — Delivery is in progress. You should start seeing results.</li>
-  <li><strong>Completed</strong> — Full quantity has been delivered</li>
-  <li><strong>Partial</strong> — Only part of the order could be delivered. You'll be refunded for the undelivered portion.</li>
-  <li><strong>Cancelled</strong> — The order was cancelled and your balance was refunded</li>
-</ul>
+<h3>Pending</h3>
+<p>Your order has been received and is queued for processing. This usually lasts a few seconds to a few minutes.</p>
 
-<h2>How Long Do Orders Take?</h2>
-<p>Delivery time depends on the service and tier:</p>
-<ul>
-  <li><strong>Views and impressions:</strong> Usually start within minutes</li>
-  <li><strong>Likes and saves:</strong> Typically 1-12 hours</li>
-  <li><strong>Followers:</strong> Can take 1-3 days for full delivery</li>
-</ul>
-<p>Each service listing shows an estimated speed (e.g., "5-10K/day").</p>
+<h3>Processing / In Progress</h3>
+<p>Your order is actively being fulfilled. Delivery speed depends on the service and tier you selected. Some services deliver gradually over hours or days for a natural look.</p>
 
-<h2>Tips</h2>
+<h3>Completed</h3>
+<p>Full quantity has been delivered. If you have a refill guarantee and notice drops later, contact support.</p>
+
+<h3>Partial</h3>
+<p>Only part of the quantity was delivered. The remaining undelivered portion is refunded to your wallet automatically.</p>
+
+<h3>Cancelled</h3>
+<p>The order was cancelled and your funds were returned to your wallet.</p>
+
+<h3>What If My Order Is Stuck?</h3>
 <ul>
-  <li>Don't place multiple orders for the same link and service at the same time</li>
-  <li>If an order seems stuck on "Pending" for more than 24 hours, contact support</li>
-</ul>
-`.trim(),
+  <li>Most orders complete within the estimated delivery time shown on the service</li>
+  <li>If an order has been processing for over 24 hours, check that your link is correct and your profile is public</li>
+  <li>Contact <strong>Support</strong> from your dashboard if the issue persists</li>
+</ul>`,
   },
   {
-    title: "How to Use the Referral Program",
-    slug: "referral-program",
-    category: "Guides",
-    excerpt: "Share your referral link, earn wallet credits when friends sign up and fund their accounts.",
+    title: "5 Tips to Get the Most Out of Nitro",
+    slug: "5-tips-nitro",
+    excerpt: "Practical tips for Nigerian creators and businesses to maximize their social media growth with Nitro.",
+    category: "Tips & Tricks",
+    showInHowTo: true,
     sortOrder: 6,
     content: `
-<h2>How It Works</h2>
-<p>Every Nitro user gets a unique <strong>referral link</strong>. When someone signs up using your link and makes their first deposit, you earn a <strong>wallet credit</strong>.</p>
+<h2>Maximize Your Growth</h2>
+<p>Nitro helps you boost your numbers, but combining it with good strategy gets you the best results.</p>
 
-<h2>Finding Your Referral Link</h2>
-<p>Go to <strong>"Referrals"</strong> in your dashboard sidebar. Your unique link is displayed at the top — click to copy it.</p>
+<h3>1. Start Small, Then Scale</h3>
+<p>Don't dump 50K followers on a brand-new account. Start with a smaller order, see the quality, then increase gradually. This also looks more natural to algorithms.</p>
 
-<h2>Sharing Your Link</h2>
-<p>Share your referral link anywhere:</p>
-<ul>
-  <li>WhatsApp groups and status</li>
-  <li>Twitter/X posts and DMs</li>
-  <li>Instagram bio or stories</li>
-  <li>YouTube descriptions</li>
-  <li>Telegram channels</li>
-</ul>
+<h3>2. Match Content Quality with Boosts</h3>
+<p>Boosted numbers get attention, but people stay for good content. Make sure your posts, reels, and videos are high quality before boosting engagement.</p>
 
-<h2>Earning Rewards</h2>
-<p>When your referral signs up and funds their account, you'll receive a credit automatically. The more people you refer, the more you earn.</p>
+<h3>3. Use the Right Tier for the Right Job</h3>
+<p>Testing a new platform? Use <strong>Budget</strong>. Running your main business account? Go <strong>Standard</strong> or <strong>Premium</strong>. Don't overspend on testing, don't underspend on your brand.</p>
 
-<h2>Tips</h2>
-<ul>
-  <li>Focus on people who already use SMM services — they'll convert faster</li>
-  <li>Share in communities where social media growth is discussed</li>
-  <li>Your referral stats are tracked in real-time on the Referrals page</li>
-</ul>
-`.trim(),
+<h3>4. Spread Orders Over Time</h3>
+<p>Instead of ordering 10K followers in one shot, consider splitting into 2-3 smaller orders over a few days. This creates more natural-looking growth.</p>
+
+<h3>5. Combine Services</h3>
+<p>Don't just buy followers — pair them with likes, views, and engagement on your posts. A profile with 10K followers but 5 likes per post looks suspicious. Balance your numbers.</p>`,
   },
 ];
 
 async function seed() {
-  console.log('📝 Seeding essential How To blog posts...\n');
+  console.log('📝 Seeding blog posts...\n');
+
+  const existing = await p.blogPost.count();
+  if (existing > 0) {
+    await p.blogPost.deleteMany();
+    console.log(`🗑️  Cleared ${existing} existing posts\n`);
+  }
 
   for (const post of POSTS) {
-    const existing = await p.blogPost.findUnique({ where: { slug: post.slug } });
-    if (existing) {
-      console.log(`   ⏭️  Skip: "${post.title}" (slug exists)`);
-      continue;
-    }
-
     await p.blogPost.create({
       data: {
         title: post.title,
         slug: post.slug,
         excerpt: post.excerpt,
-        content: post.content,
+        content: post.content.trim(),
         category: post.category,
         published: true,
-        showInHowTo: true,
+        showInHowTo: post.showInHowTo,
         sortOrder: post.sortOrder,
-        authorName: "Nitro Team",
+        authorName: "Nitro",
       },
     });
-    console.log(`   ✅ Created: "${post.title}"`);
+    console.log(`  ✅ ${post.title}`);
   }
 
-  const count = await p.blogPost.count();
-  console.log(`\n🎉 Done! ${count} total blog posts in database.`);
+  console.log(`\n🎉 Done! ${POSTS.length} posts created and published.`);
 }
 
-seed().catch(e => { console.error('❌', e.message); }).finally(() => p.$disconnect());
+seed()
+  .catch(e => { console.error('❌', e.message); })
+  .finally(() => p.$disconnect());
