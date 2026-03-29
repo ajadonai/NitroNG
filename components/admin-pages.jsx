@@ -304,6 +304,46 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
     else { const h = new Date().getHours(); setDark(h >= 19 || h < 7); }
   };
 
+  // Profile edit
+  const [editName, setEditName] = useState(admin?.name || "");
+  const [editEmail, setEditEmail] = useState(admin?.email || "");
+  const [profileEditing, setProfileEditing] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMsg, setProfileMsg] = useState(null);
+
+  useEffect(() => { setEditName(admin?.name || ""); setEditEmail(admin?.email || ""); }, [admin?.name, admin?.email]);
+
+  const saveProfile = async () => {
+    setProfileSaving(true); setProfileMsg(null);
+    try {
+      const res = await fetch("/api/auth/admin/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update-profile", name: editName, email: editEmail }) });
+      const data = await res.json();
+      if (res.ok) { setProfileMsg({ type: "success", text: "Profile updated" }); setProfileEditing(false); } else setProfileMsg({ type: "error", text: data.error || "Failed" });
+    } catch { setProfileMsg({ type: "error", text: "Request failed" }); }
+    setProfileSaving(false);
+  };
+
+  // Change password
+  const [admCurPw, setAdmCurPw] = useState("");
+  const [admNewPw, setAdmNewPw] = useState("");
+  const [admConfPw, setAdmConfPw] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [admPwMsg, setAdmPwMsg] = useState(null);
+
+  const changeAdmPw = async () => {
+    setAdmPwMsg(null);
+    if (!admCurPw || !admNewPw || !admConfPw) { setAdmPwMsg({ type: "error", text: "All fields required" }); return; }
+    if (admNewPw !== admConfPw) { setAdmPwMsg({ type: "error", text: "New passwords don't match" }); return; }
+    if (admNewPw.length < 6) { setAdmPwMsg({ type: "error", text: "Minimum 6 characters" }); return; }
+    setPwSaving(true);
+    try {
+      const res = await fetch("/api/auth/admin/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "change-password", currentPassword: admCurPw, newPassword: admNewPw }) });
+      const data = await res.json();
+      if (res.ok) { setAdmPwMsg({ type: "success", text: "Password updated" }); setAdmCurPw(""); setAdmNewPw(""); setAdmConfPw(""); } else setAdmPwMsg({ type: "error", text: data.error || "Failed" });
+    } catch { setAdmPwMsg({ type: "error", text: "Request failed" }); }
+    setPwSaving(false);
+  };
+
   return (
     <>
       <div className="adm-header">
@@ -315,13 +355,38 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
       <div style={{ maxWidth: 550, marginTop: 16 }}>
         {/* Profile */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>Profile</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: t.text }}>Profile</div>
+            {!profileEditing && <button onClick={() => setProfileEditing(true)} style={{ fontSize: 12, color: t.accent, background: "none", border: "none", cursor: "pointer" }}>Edit</button>}
+          </div>
           <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {[["Name", admin?.name || "Admin"], ["Email", admin?.email || ""], ["Role", admin?.role || "admin"]].map(([label, val]) => (
-                <div key={label}><div style={{ fontSize: 12, color: t.textMuted, textTransform: "uppercase", letterSpacing: .8, marginBottom: 3 }}>{label}</div><div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>{val}</div></div>
-              ))}
-            </div>
+            {profileMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 13, background: profileMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: profileMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{profileMsg.type === "success" ? "✓" : "⚠️"} {profileMsg.text}</div>}
+            {profileEditing ? (
+              <>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Name</label>
+                  <input value={editName} onChange={e => setEditName(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Email</label>
+                  <input value={editEmail} onChange={e => setEditEmail(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, color: t.textMuted, textTransform: "uppercase", letterSpacing: .8, marginBottom: 3 }}>Role</div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: t.textMuted }}>{admin?.role || "admin"} (cannot be changed)</div>
+                </div>
+                <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                  <button onClick={saveProfile} disabled={profileSaving} className="adm-btn-primary" style={{ opacity: profileSaving ? .5 : 1 }}>{profileSaving ? "Saving..." : "Save"}</button>
+                  <button onClick={() => { setProfileEditing(false); setEditName(admin?.name || ""); setEditEmail(admin?.email || ""); setProfileMsg(null); }} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: "none", color: t.textSoft, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                </div>
+              </>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                {[["Name", admin?.name || "Admin"], ["Email", admin?.email || ""], ["Role", admin?.role || "admin"]].map(([label, val]) => (
+                  <div key={label}><div style={{ fontSize: 12, color: t.textMuted, textTransform: "uppercase", letterSpacing: .8, marginBottom: 3 }}>{label}</div><div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>{val}</div></div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -339,13 +404,20 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>Change Password</div>
           <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
-            {["Current Password", "New Password", "Confirm Password"].map(label => (
-              <div key={label} style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>{label}</label>
-                <input type="password" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-              </div>
-            ))}
-            <button className="adm-btn-primary">Update Password</button>
+            {admPwMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 13, background: admPwMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: admPwMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{admPwMsg.type === "success" ? "✓" : "⚠️"} {admPwMsg.text}</div>}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Current Password</label>
+              <input type="password" value={admCurPw} onChange={e => setAdmCurPw(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>New Password</label>
+              <input type="password" value={admNewPw} onChange={e => setAdmNewPw(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Confirm Password</label>
+              <input type="password" value={admConfPw} onChange={e => setAdmConfPw(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+            </div>
+            <button onClick={changeAdmPw} disabled={pwSaving} className="adm-btn-primary" style={{ opacity: admCurPw && admNewPw && admConfPw && !pwSaving ? 1 : .4 }}>{pwSaving ? "Updating..." : "Update Password"}</button>
           </div>
         </div>
 
