@@ -189,7 +189,7 @@ function AdminRightSidebar({ data, dark, t }) {
           <div className="adm-rs-dot" style={{ background: a.type === "order" ? t.green : a.type === "user" ? t.blue : a.type === "deposit" ? t.green : a.type === "ticket" ? t.amber : t.accent }} />
           <div>
             <div style={{ fontSize: 13, color: t.text, fontWeight: 450 }}>{a.action}</div>
-            <div style={{ fontSize: 12, color: t.textMuted }}>{a.detail} · {a.time}</div>
+            <div style={{ fontSize: 12, color: t.textMuted }}>{a.detail} · {a.time ? fD(a.time) : ""}</div>
           </div>
         </div>
       ))}
