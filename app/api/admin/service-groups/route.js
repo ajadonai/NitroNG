@@ -137,8 +137,12 @@ export async function POST(req) {
       // Auto-calculate sell price from markup if not provided
       let finalSellPer1k = Number(sellPer1k);
       if (!finalSellPer1k || finalSellPer1k <= 0) {
-        const { calculateMarkup } = await import('../../../lib/markup.js');
-        finalSellPer1k = calculateMarkup(service.costPer1k);
+        const { calculateTierPrice } = await import('../../../lib/markup.js');
+        // Load markup settings from DB
+        const markupSettings = {};
+        const settings = await prisma.setting.findMany({ where: { key: { startsWith: 'markup_' } } });
+        settings.forEach(s => { markupSettings[s.key] = s.value; });
+        finalSellPer1k = calculateTierPrice(service.costPer1k, tier || 'Standard', markupSettings);
       }
 
       const maxSort = await prisma.serviceTier.aggregate({ where: { groupId }, _max: { sortOrder: true } });
