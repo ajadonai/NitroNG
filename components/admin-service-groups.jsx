@@ -1,8 +1,10 @@
 'use client';
 import { useState, useEffect, useMemo } from "react";
 import { calculateTierPrice, koboToNaira, marginPercent, getMarkupForTier, MARKUP_DEFAULTS } from "../lib/markup";
+import { useConfirm } from "./confirm-dialog";
 
 export default function AdminServiceGroupsPage({ dark, t }) {
+  const confirm = useConfirm();
   const [groups, setGroups] = useState([]);
   const [services, setServices] = useState([]);
   const [markupSettings, setMarkupSettings] = useState({});
@@ -145,14 +147,15 @@ export default function AdminServiceGroupsPage({ dark, t }) {
             <div style={{ display: "flex", gap: 6 }}>
               <button onClick={() => act({ action: "update-group", groupId: g.id, enabled: !g.enabled })} style={ghostBtn}>{g.enabled ? "Disable" : "Enable"}</button>
               <button onClick={() => setAddTierGroup(addTierGroup === g.id ? null : g.id)} style={ghostBtn}>{addTierGroup === g.id ? "Cancel" : "+ Tier"}</button>
-              <button onClick={() => { if (confirm(`Delete "${g.name}" and all its tiers?`)) act({ action: "delete-group", groupId: g.id }); }} style={{ ...ghostBtn, color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
+              <button onClick={async () => { if (await confirm({ title: "Delete Group", message: `Delete "${g.name}" and all its tiers?`, confirmLabel: "Delete", danger: true })) act({ action: "delete-group", groupId: g.id }); }} style={{ ...ghostBtn, color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
             </div>
           </div>
 
           {/* Add tier form */}
           {addTierGroup === g.id && (
             <div style={{ padding: 12, borderRadius: 8, background: dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.02)", marginBottom: 12, border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: t.text, marginBottom: 8 }}>Add Tier to {g.name}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: t.text, marginBottom: 4 }}>Add Tier to {g.name}</div>
+              <div style={{ fontSize: 10, color: t.textMuted, marginBottom: 8, fontFamily: "'JetBrains Mono',monospace" }}>Markup: {Object.keys(markupSettings).length > 0 ? `DB (${markupSettings.markup_standard || "?"}% std)` : "⚠️ defaults (no DB settings)"}</div>
               <div style={{ marginBottom: 8 }}>
                 <input placeholder="Search MTP services..." value={tierSvcSearch} onChange={e => setTierSvcSearch(e.target.value)} style={{ ...inputStyle, width: "100%", marginBottom: 6 }} />
                 {tierSvcSearch && (
@@ -219,7 +222,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                       <td style={{ padding: "8px", color: t.textSoft }}>{tier.speed}</td>
                       <td style={{ padding: "8px" }}>{tier.refill ? <span style={{ color: dark ? "#6ee7b7" : "#059669" }}>✓</span> : <span style={{ color: t.textMuted }}>—</span>}</td>
                       <td style={{ padding: "8px" }}>
-                        <button onClick={() => { if (confirm("Delete this tier?")) act({ action: "delete-tier", tierIdToDelete: tier.id }); }} style={{ background: "none", color: dark ? "#fca5a5" : "#dc2626", fontSize: 12, fontWeight: 500, cursor: "pointer", border: "none" }}>Delete</button>
+                        <button onClick={async () => { if (await confirm({ title: "Delete Tier", message: "Delete this tier?", confirmLabel: "Delete", danger: true })) act({ action: "delete-tier", tierIdToDelete: tier.id }); }} style={{ background: "none", color: dark ? "#fca5a5" : "#dc2626", fontSize: 12, fontWeight: 500, cursor: "pointer", border: "none" }}>Delete</button>
                       </td>
                     </tr>
                   ))}

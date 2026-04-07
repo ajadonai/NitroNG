@@ -1,10 +1,12 @@
 'use client';
 import { useState, useEffect } from "react";
+import { useConfirm } from "./confirm-dialog";
 
 const CATEGORIES = ["Tutorials", "Tips & Tricks", "Announcements", "Updates", "Guides"];
 const fD = (d) => new Date(d).toLocaleDateString("en-NG", { month: "short", day: "numeric", year: "numeric" });
 
 export default function AdminBlogPage({ dark, t }) {
+  const confirm = useConfirm();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null); // null = list, "new" = create, post object = edit
@@ -57,7 +59,7 @@ export default function AdminBlogPage({ dark, t }) {
   };
 
   const deletePost = async (post) => {
-    if (!confirm(`Delete "${post.title}"? This cannot be undone.`)) return;
+    if (!await confirm({ title: "Delete Post", message: `Delete "${post.title}"? This cannot be undone.`, confirmLabel: "Delete", danger: true })) return;
     const ok = await act({ action: "delete", postId: post.id });
     if (ok) setMsg({ type: "success", text: "Post deleted" });
   };
