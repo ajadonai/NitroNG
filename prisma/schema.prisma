@@ -137,7 +137,7 @@ model ServiceGroup {
 model ServiceTier {
   id        String  @id @default(cuid())
   groupId   String
-  serviceId String
+  serviceId String?
   tier      String  @default("Standard")
   sellPer1k Int
   refill    Boolean @default(false)
