@@ -3,6 +3,42 @@ import { useState, useEffect, useMemo } from "react";
 import { calculateTierPrice, koboToNaira, marginPercent, getMarkupForTier, usdCentsToKobo, MARKUP_DEFAULTS } from "../lib/markup";
 import { useConfirm } from "./confirm-dialog";
 
+function LinkServiceInline({ tierId, services, dark, t, inputStyle, markupSettings, onLink }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [linking, setLinking] = useState(false);
+  const filtered = useMemo(() => {
+    if (!search) return services.slice(0, 15);
+    return services.filter(s => s.name.toLowerCase().includes(search.toLowerCase()) || String(s.apiId).includes(search)).slice(0, 15);
+  }, [services, search]);
+
+  if (!open) {
+    return (
+      <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, background: dark ? "rgba(224,164,88,.1)" : "rgba(217,119,6,.06)", color: dark ? "#e0a458" : "#d97706", fontWeight: 600 }}>⚠️ Unlinked</span>
+        <button onClick={() => setOpen(true)} style={{ background: "none", color: "#c47d8e", fontSize: 11, fontWeight: 600, cursor: "pointer", border: "none", padding: 0 }}>Link service</button>
+      </span>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <input placeholder="Search MTP services..." value={search} onChange={e => setSearch(e.target.value)} autoFocus style={{ ...inputStyle, fontSize: 12, padding: "5px 8px", width: "100%" }} />
+      <div style={{ maxHeight: 120, overflowY: "auto", borderRadius: 6, border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, background: dark ? "#0d1020" : "#fff" }}>
+        {filtered.map(s => (
+          <div key={s.id} onClick={async () => { setLinking(true); await onLink(s.id); setLinking(false); setOpen(false); }} style={{ padding: "5px 8px", fontSize: 11, color: t.text, cursor: "pointer", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.03)"}` }}>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: t.textMuted, marginRight: 4 }}>#{s.apiId}</span>
+            {s.name?.slice(0, 50)}
+            <span style={{ color: t.textMuted, fontSize: 9, marginLeft: 4 }}>— {koboToNaira(usdCentsToKobo(s.costPer1k, Number(markupSettings.markup_usd_rate || 1600)))}/1k</span>
+          </div>
+        ))}
+        {filtered.length === 0 && <div style={{ padding: "8px", fontSize: 11, color: t.textMuted, textAlign: "center" }}>No matches</div>}
+      </div>
+      <button onClick={() => setOpen(false)} style={{ background: "none", color: t.textMuted, fontSize: 10, cursor: "pointer", border: "none", padding: 0, alignSelf: "flex-start" }}>Cancel</button>
+    </div>
+  );
+}
+
 export default function AdminServiceGroupsPage({ dark, t }) {
   const confirm = useConfirm();
   const [groups, setGroups] = useState([]);
@@ -249,9 +285,15 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                   {g.tiers.map(tier => (
                     <tr key={tier.id} style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}` }}>
                       <td style={{ padding: "8px", color: tier.tier === "Premium" ? "#a855f7" : tier.tier === "Budget" ? "#f59e0b" : "#3b82f6", fontWeight: 600 }}>{tier.tier}</td>
-                      <td style={{ padding: "8px", color: t.text }}><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: t.textMuted }}>#{tier.service?.apiId} </span>{tier.service?.name?.slice(0, 40)}</td>
+                      <td style={{ padding: "8px", color: t.text }}>
+                        {tier.serviceId ? (
+                          <><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: t.textMuted }}>#{tier.service?.apiId} </span>{tier.service?.name?.slice(0, 40)}</>
+                        ) : (
+                          <LinkServiceInline tierId={tier.id} services={services} dark={dark} t={t} inputStyle={inputStyle} markupSettings={markupSettings} onLink={(svcId) => act({ action: "update-tier", tierIdToUpdate: tier.id, serviceId: svcId })} />
+                        )}
+                      </td>
                       <td style={{ padding: "8px", color: t.text, fontFamily: "'JetBrains Mono',monospace" }}>₦{(tier.sellPer1k / 100).toFixed(2)}</td>
-                      <td style={{ padding: "8px", color: t.textSoft, fontSize: 12 }}>{tier.service?.min?.toLocaleString()}–{tier.service?.max?.toLocaleString()}</td>
+                      <td style={{ padding: "8px", color: t.textSoft, fontSize: 12 }}>{tier.service?.min?.toLocaleString() || "—"}–{tier.service?.max?.toLocaleString() || "—"}</td>
                       <td style={{ padding: "8px", color: t.textSoft }}>{tier.speed}</td>
                       <td style={{ padding: "8px" }}>{tier.refill ? <span style={{ color: dark ? "#6ee7b7" : "#059669" }}>✓</span> : <span style={{ color: t.textMuted }}>—</span>}</td>
                       <td style={{ padding: "8px" }}>

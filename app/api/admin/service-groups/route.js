@@ -172,6 +172,7 @@ export async function POST(req) {
       if (updates.speed !== undefined) data.speed = updates.speed;
       if (updates.enabled !== undefined) data.enabled = !!updates.enabled;
       if (updates.sortOrder !== undefined) data.sortOrder = Number(updates.sortOrder);
+      if (updates.serviceId !== undefined) data.serviceId = updates.serviceId || null;
 
       const updated = await prisma.serviceTier.update({ where: { id: tierIdToUpdate }, data });
       await logActivity(admin.name, `Updated tier ${updated.tier}`, 'service');
