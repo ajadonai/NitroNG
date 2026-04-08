@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo } from "react";
+import ServicesGuide from "./services-guide";
 
 const NAV_ITEMS = [
   { id: "overview", label: "Overview", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> },
@@ -140,12 +141,24 @@ export default function SMMPanel(){
             ))}
           </div>
 
+          {(active === "services" || active === "new-order") ? (
+            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+              <ServicesGuide dark={dark} t={t} collapsed={false} />
+              <div style={{padding:40,borderRadius:16,background:t.cardBg,border:`1px solid ${t.cardBorder}`,display:"flex",alignItems:"center",justifyContent:"center",minHeight:200}}>
+                <div style={{textAlign:"center"}}>
+                  <div style={{fontSize:14,color:t.textMuted,marginBottom:8}}>Full services catalogue coming soon</div>
+                  <div style={{fontSize:12,color:t.textMuted,opacity:.5}}>Browse and order services here</div>
+                </div>
+              </div>
+            </div>
+          ) : (
           <div style={{padding:40,borderRadius:16,background:t.cardBg,border:`1px solid ${t.cardBorder}`,display:"flex",alignItems:"center",justifyContent:"center",minHeight:300}}>
             <div style={{textAlign:"center"}}>
               <div style={{fontSize:14,color:t.textMuted,marginBottom:8}}>{active.charAt(0).toUpperCase()+active.slice(1).replace("-"," ")} content goes here</div>
               <div style={{fontSize:12,color:t.textMuted,opacity:.5}}>This is the main content area</div>
             </div>
           </div>
+          )}
         </main>
 
         {/* ── RIGHT SIDEBAR — Activity ── */}
