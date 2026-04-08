@@ -582,7 +582,8 @@ export function AdminAPIPage({ dark, t }) {
       const data = await res.json();
       if (res.ok) {
         const usd = parseFloat(data.balance?.balance || 0);
-        const rate = 1600; // TODO: fetch live rate
+        let rate = 1600;
+        try { const sr = await fetch("/api/admin/settings"); if (sr.ok) { const sd = await sr.json(); rate = Number(sd.settings?.markup_usd_rate) || 1600; } } catch {}
         const ngn = Math.round(usd * rate);
         setResult({ id: provider.id, type: "success", message: `Connected! Provider balance: ₦${ngn.toLocaleString()} (≈$${usd.toFixed(2)} at ₦${rate}/$)` });
       }
