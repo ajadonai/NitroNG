@@ -140,7 +140,8 @@ function LandingInner(){
                 :<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{transition:"opacity .6s ease .2s"}}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>}
               </div>
             </button>
-            <button onClick={()=>setModal("login")} style={{padding:"8px 20px",borderRadius:10,background:"transparent",border:`1px solid ${dark?"rgba(255,255,255,.15)":"rgba(255,255,255,.3)"}`,color:"#fff",fontSize:13,fontWeight:600}}>Log In</button>
+            <button onClick={()=>setModal("login")} className="nav-login-btn" style={{padding:"8px 20px",borderRadius:10,background:"transparent",border:`1px solid ${dark?"rgba(255,255,255,.15)":"rgba(255,255,255,.3)"}`,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Log In</button>
+            <button onClick={()=>setModal("signup")} className="nav-signup-btn" style={{padding:"8px 20px",borderRadius:10,background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",border:"none",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Get Started</button>
           </div>
       </nav>
 
