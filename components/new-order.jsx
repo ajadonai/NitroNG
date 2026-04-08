@@ -413,6 +413,21 @@ export function ServicesSidebar({ dark, t }) {
           </div>
         );
       })}
+
+      {/* Nigerian services callout */}
+      <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 10, background: dark ? "rgba(74,222,128,.05)" : "rgba(22,163,74,.03)", border: `1px solid ${dark ? "rgba(74,222,128,.12)" : "rgba(22,163,74,.08)"}`, marginBottom: 6 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: dark ? "#4ade80" : "#16a34a", marginBottom: 4 }}>🇳🇬 Nigerian Services</div>
+        <div style={{ fontSize: 12, color: t.textMuted, lineHeight: 1.5 }}>Look for the 🇳🇬 flag! These target Nigerian audiences — real local engagement for Naija creators and businesses.</div>
+      </div>
+
+      {/* Pro tips */}
+      <div style={{ fontSize: 11, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1, marginTop: 16, marginBottom: 8 }}>Pro Tips</div>
+      <div style={{ fontSize: 12, color: t.textMuted, lineHeight: 1.6 }}>
+        <div style={{ marginBottom: 4 }}>• <b style={{ color: t.text }}>Refill</b> = free top-up if count drops</div>
+        <div style={{ marginBottom: 4 }}>• <b style={{ color: t.text }}>Start small</b> — test a Budget tier first</div>
+        <div style={{ marginBottom: 4 }}>• <b style={{ color: t.text }}>Set profile to public</b> before ordering</div>
+        <div>• Don't order same link from multiple providers</div>
+      </div>
     </>
   );
 }
