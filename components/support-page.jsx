@@ -93,14 +93,17 @@ function SupportPageInner({ dark, t }) {
   const waitCountRef = useRef(0);
 
   const scrollToBottom = () => setTimeout(() => msgsEnd.current?.scrollIntoView({ behavior: "smooth" }), 50);
-  useEffect(scrollToBottom, [msgs, typing, selected]);
+  useEffect(scrollToBottom, [msgs, typing]);
 
   // Load + poll tickets
   const refreshTickets = () => {
     fetch("/api/tickets").then(r => r.json()).then(d => {
       if (d.tickets) {
         setTickets(d.tickets);
-        if (selected?.id) { const u = d.tickets.find(tk => tk.id === selected.id); if (u) setSelected(u); }
+        if (selected?.id && typeof selected === "object") {
+          const u = d.tickets.find(tk => tk.id === selected.id);
+          if (u && u.messages?.length !== selected.messages?.length) setSelected(u);
+        }
       }
     }).catch(() => {});
   };
