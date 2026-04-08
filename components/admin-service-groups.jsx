@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo } from "react";
-import { calculateTierPrice, koboToNaira, marginPercent, getMarkupForTier, MARKUP_DEFAULTS } from "../lib/markup";
+import { calculateTierPrice, koboToNaira, marginPercent, getMarkupForTier, usdCentsToKobo, MARKUP_DEFAULTS } from "../lib/markup";
 import { useConfirm } from "./confirm-dialog";
 
 export default function AdminServiceGroupsPage({ dark, t }) {
@@ -163,7 +163,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                     {filteredSvcs.map(s => (
                       <div key={s.id} onClick={() => { setTierSvcId(s.id); setTierSvcSearch(s.name); const suggested = calculateTierPrice(s.costPer1k, tierLevel, markupSettings); setTierPrice((suggested / 100).toFixed(2)); }} style={{ padding: "6px 10px", fontSize: 12, color: tierSvcId === s.id ? "#c47d8e" : t.text, background: tierSvcId === s.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : "transparent", cursor: "pointer" }}>
                         <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: t.textMuted, marginRight: 6 }}>#{s.apiId}</span>
-                        {s.name} <span style={{ color: t.textMuted, fontSize: 10 }}>— ₦{(s.costPer1k / 100).toFixed(2)}/1k</span>
+                        {s.name} <span style={{ color: t.textMuted, fontSize: 10 }}>— {koboToNaira(usdCentsToKobo(s.costPer1k, Number(markupSettings.markup_usd_rate || 1600)))}/1k</span>
                       </div>
                     ))}
                   </div>
@@ -182,15 +182,16 @@ export default function AdminServiceGroupsPage({ dark, t }) {
               {tierSvcId && (() => {
                 const svc = services.find(s => s.id === tierSvcId);
                 if (!svc) return null;
-                const cost = svc.costPer1k;
+                const costUsd = svc.costPer1k;
+                const { usdRate, markupPercent } = getMarkupForTier(tierLevel, markupSettings);
+                const costKobo = usdCentsToKobo(costUsd, usdRate);
                 const sell = Math.round(Number(tierPrice) * 100);
-                const suggested = calculateTierPrice(cost, tierLevel, markupSettings);
-                const { markupPercent } = getMarkupForTier(tierLevel, markupSettings);
-                const margin = sell > 0 ? marginPercent(cost, sell) : 0;
-                const isLow = sell > 0 && sell < Math.ceil(cost * 1.5);
+                const suggested = calculateTierPrice(costUsd, tierLevel, markupSettings);
+                const margin = sell > 0 ? marginPercent(costUsd, sell, usdRate) : 0;
+                const isLow = sell > 0 && sell < Math.ceil(costKobo * 1.5);
                 return (
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 10, padding: "8px 10px", borderRadius: 8, background: dark ? "rgba(255,255,255,.02)" : "rgba(0,0,0,.02)", fontSize: 11, color: t.textMuted }}>
-                    <span>Cost: <b style={{ color: t.text, fontFamily: "'JetBrains Mono',monospace" }}>{koboToNaira(cost)}</b>/1k</span>
+                    <span>Cost: <b style={{ color: t.text, fontFamily: "'JetBrains Mono',monospace" }}>{koboToNaira(costKobo)}</b>/1k</span>
                     <span>Suggested: <b style={{ color: "#c47d8e", fontFamily: "'JetBrains Mono',monospace" }}>{koboToNaira(suggested)}</b> ({markupPercent}%)</span>
                     {sell > 0 && <span>Margin: <b style={{ color: isLow ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669"), fontFamily: "'JetBrains Mono',monospace" }}>{margin}%</b>{isLow && " ⚠️ below 50%"}</span>}
                     {sell > 0 && sell !== suggested && <button onClick={() => setTierPrice((suggested / 100).toFixed(2))} style={{ background: "none", color: "#c47d8e", fontSize: 11, fontWeight: 600, cursor: "pointer", border: "none", padding: 0 }}>Use suggested</button>}

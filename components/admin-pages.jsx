@@ -300,7 +300,7 @@ function CleanupButton({ dark, t }) {
 export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, setDark }) {
   const [social, setSocial] = useState({ social_whatsapp: "", social_telegram: "", social_instagram: "", social_twitter: "", social_whatsapp_support: "" });
   const [refSettings, setRefSettings] = useState({ ref_referrer_bonus: "50000", ref_invitee_bonus: "50000" });
-  const [markup, setMarkup] = useState({ markup_budget: "150", markup_standard: "200", markup_premium: "250", markup_default: "200", markup_min_margin: "50" });
+  const [markup, setMarkup] = useState({ markup_budget: "150", markup_standard: "200", markup_premium: "250", markup_default: "200", markup_min_margin: "50", markup_usd_rate: "1600" });
   const [socialLoading, setSocialLoading] = useState(true);
   const [socialSaving, setSocialSaving] = useState(false);
   const [socialMsg, setSocialMsg] = useState(null);
@@ -536,6 +536,11 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
               <span style={{ fontSize: 13, color: t.textMuted }}>Minimum margin floor</span>
               <input value={markup.markup_min_margin || ""} onChange={e => setMarkup(p => ({ ...p, markup_min_margin: e.target.value.replace(/[^0-9]/g, "") }))} style={{ width: 60, padding: "6px 10px", borderRadius: 8, background: dark ? "#0d1020" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: t.text, fontSize: 13, textAlign: "right", fontFamily: "'JetBrains Mono',monospace" }} />
               <span style={{ fontSize: 12, color: t.textMuted }}>%</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 10, borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, marginBottom: 14 }}>
+              <span style={{ fontSize: 13, color: t.textMuted }}>USD → NGN rate</span>
+              <input value={markup.markup_usd_rate || ""} onChange={e => setMarkup(p => ({ ...p, markup_usd_rate: e.target.value.replace(/[^0-9]/g, "") }))} style={{ width: 80, padding: "6px 10px", borderRadius: 8, background: dark ? "#0d1020" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: t.text, fontSize: 13, textAlign: "right", fontFamily: "'JetBrains Mono',monospace" }} />
+              <span style={{ fontSize: 11, color: t.textSoft }}>MTP costs are in USD — this converts to ₦ before markup</span>
             </div>
             {markupMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 10, background: markupMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#f0fdf4") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: markupMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), fontSize: 12 }}>{markupMsg.text}</div>}
             <button onClick={async () => {
