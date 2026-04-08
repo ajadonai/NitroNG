@@ -70,9 +70,9 @@ export default function ReferralsPage({ user, dark, t }) {
       {/* Stats */}
       <div className="ref-stats">
         {[
-          ["Total Referrals", String(totalRefs), dark ? "#a5b4fc" : "#4f46e5"],
+          ["Friends Invited", String(totalRefs), dark ? "#a5b4fc" : "#4f46e5"],
           ["Active", String(activeRefs), t.green],
-          ["Total Earned", fN(totalEarnings), t.accent],
+          ["Total Bonus", fN(totalEarnings), t.accent],
           ["Available", fN(totalEarnings), t.green],
         ].map(([label, val, color]) => (
           <div key={label} className="ref-stat-card" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
@@ -212,7 +212,7 @@ export function ReferralsSidebar({ user, dark, t }) {
         {[
           ["This month", `${Math.min(totalRefs, 3)} referrals`, t.green],
           ["Total earned", fN(totalEarnings), t.accent],
-          ["Conversion rate", totalRefs > 0 ? `${Math.round(activeRefs / totalRefs * 100)}%` : "0%", dark ? "#a5b4fc" : "#4f46e5"],
+          ["Sign-up rate", totalRefs > 0 ? `${Math.round(activeRefs / totalRefs * 100)}%` : "0%", dark ? "#a5b4fc" : "#4f46e5"],
         ].map(([label, val, color], i, arr) => (
           <div key={label} className="ref-rs-perf-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
             <span style={{ fontSize: 13, color: t.textMuted }}>{label}</span>

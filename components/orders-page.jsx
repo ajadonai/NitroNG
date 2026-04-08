@@ -6,7 +6,7 @@ const fN = (a) => `₦${Math.abs(a).toLocaleString("en-NG")}`;
 const fD = (d) => new Date(d).toLocaleDateString("en-NG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
 /* ── Status helpers ── */
-function sClr(s, dk) { return s === "Completed" ? (dk ? "#6ee7b7" : "#059669") : s === "Processing" ? (dk ? "#a5b4fc" : "#4f46e5") : s === "Pending" ? (dk ? "#fcd34d" : "#d97706") : s === "Partial" ? (dk ? "#fca5a5" : "#dc2626") : s === "Canceled" ? (dk ? "#888" : "#666") : (dk ? "#555" : "#888"); }
+function sClr(s, dk) { return s === "Completed" ? (dk ? "#6ee7b7" : "#059669") : s === "Processing" ? (dk ? "#a5b4fc" : "#4f46e5") : s === "Pending" ? (dk ? "#fcd34d" : "#d97706") : s === "Partial" ? (dk ? "#fca5a5" : "#dc2626") : s === "Cancelled" ? (dk ? "#888" : "#666") : (dk ? "#555" : "#888"); }
 function sBg(s, dk) { return s === "Completed" ? (dk ? "#0a2416" : "#ecfdf5") : s === "Processing" ? (dk ? "#0f1629" : "#eef2ff") : s === "Pending" ? (dk ? "#1c1608" : "#fffbeb") : s === "Partial" ? (dk ? "#1f0a0a" : "#fef2f2") : (dk ? "#1a1a1a" : "#f5f5f5"); }
 function sBrd(s, dk) { return s === "Completed" ? (dk ? "#166534" : "#a7f3d0") : s === "Processing" ? (dk ? "#3730a3" : "#c7d2fe") : s === "Pending" ? (dk ? "#92400e" : "#fde68a") : s === "Partial" ? (dk ? "#991b1b" : "#fecaca") : (dk ? "#404040" : "#d4d4d4"); }
 function txClr(type, dk) { return type === "deposit" ? (dk ? "#6ee7b7" : "#059669") : type === "referral" ? "#c47d8e" : type === "refund" ? (dk ? "#fcd34d" : "#d97706") : (dk ? "#fca5a5" : "#dc2626"); }
@@ -81,7 +81,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
         if (data.status) setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, status: data.status } : o)));
         setOrderMsg(prev => ({ ...prev, [orderId]: { type: "success", text: `${data.status}${data.remains != null ? " · " + data.remains + " remaining" : ""}` } }));
       } else if (action === "cancel") {
-        setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, status: "Canceled" } : o)));
+        setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, status: "Cancelled" } : o)));
         setOrderMsg(prev => ({ ...prev, [orderId]: { type: "success", text: `Cancelled${data.refunded ? " · ₦" + data.refunded.toLocaleString() + " refunded" : ""}` } }));
       } else if (action === "reorder") {
         setOrderMsg(prev => ({ ...prev, [orderId]: { type: "success", text: `Reorder placed — ${data.order?.id || ""}` } }));
@@ -107,7 +107,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
   const pagedTxs = filteredTxs.slice((tPage - 1) * perPage, tPage * perPage);
 
   const counts = { all: orders.length };
-  ["Completed", "Processing", "Pending", "Partial", "Canceled"].forEach(s => { counts[s] = orders.filter(o => o.status === s).length; });
+  ["Completed", "Processing", "Pending", "Partial", "Cancelled"].forEach(s => { counts[s] = orders.filter(o => o.status === s).length; });
 
   return (
     <>
@@ -131,7 +131,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
       {tab === "orders" && <>
         {/* Status filters */}
         <div className="ord-filters">
-          {["all", "Completed", "Processing", "Pending", "Partial", "Canceled"].map(f => (
+          {["all", "Completed", "Processing", "Pending", "Partial", "Cancelled"].map(f => (
             <button key={f} onClick={() => { setFilter(f); setOPage(1); setExpanded(null); }} className="ord-filter-pill" style={{ borderWidth: 1, borderStyle: "solid", borderColor: filter === f ? t.accent : t.cardBorder, background: filter === f ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: filter === f ? t.accent : t.textMuted }}>
               {f === "all" ? "All" : f} <span className="m" style={{ fontSize: 11 }}>({counts[f] || 0})</span>
             </button>
@@ -269,7 +269,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
 /* ═══════════════════════════════════════════ */
 export function OrdersSidebar({ orders, dark, t }) {
   const counts = {};
-  ["Completed", "Processing", "Pending", "Partial", "Canceled"].forEach(s => { counts[s] = orders.filter(o => o.status === s).length; });
+  ["Completed", "Processing", "Pending", "Partial", "Cancelled"].forEach(s => { counts[s] = orders.filter(o => o.status === s).length; });
   const totalSpent = orders.reduce((s, o) => s + (o.charge || 0), 0);
 
   return (

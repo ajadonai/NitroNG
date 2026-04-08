@@ -28,9 +28,9 @@ const I = {
 const NAV_ITEMS = [
   { id: "overview", label: "Overview" },
   { id: "services", label: "Services" },
-  { id: "orders", label: "Orders" },
-  { id: "add-funds", label: "Add Funds" },
-  { id: "how-to", label: "How To" },
+  { id: "orders", label: "History" },
+  { id: "add-funds", label: "Wallet" },
+  { id: "how-to", label: "Guide" },
   { id: "referrals", label: "Referrals" },
   { id: "support", label: "Support" },
   { id: "settings", label: "Settings" },
@@ -100,10 +100,10 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive }) {
       {/* Stat cards */}
       <div className="dash-stats">
         {[
-          ["Wallet", balance, t.green, "+₦2,000 this week", "↑"],
+          ["Balance", balance, t.green, "+₦2,000 this week", "↑"],
           ["Orders", String(total), dark ? "#a5b4fc" : "#4f46e5", "3 this week", null],
-          ["Processing", String(processing), dark ? "#e0a458" : "#d97706", "Est. 1-2 hrs", "⏳"],
-          ["Completed", String(completed), dark ? "#6ee7b7" : "#059669", rate + "% success", "✓"],
+          ["In Progress", String(processing), dark ? "#e0a458" : "#d97706", "Est. 1-2 hrs", "⏳"],
+          ["Delivered", String(completed), dark ? "#6ee7b7" : "#059669", rate + "% success", "✓"],
         ].map(([label, val, color, sub, icon]) => (
           <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderTopWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderLeftWidth: 3, borderStyle: "solid", borderTopColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", borderRightColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", borderBottomColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", borderLeftColor: color, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)", position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", top: -20, left: -20, width: 60, height: 60, borderRadius: "50%", background: `${color}10`, filter: "blur(20px)", pointerEvents: "none" }} />
@@ -126,7 +126,7 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive }) {
           <div className="dash-qa-grid">
             {[
               ["New Order", "services", t.accent, <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>],
-              ["Add Funds", "add-funds", dark ? "#6ee7b7" : "#059669", <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>],
+              ["Top Up", "add-funds", dark ? "#6ee7b7" : "#059669", <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>],
               ["History", "orders", dark ? "#a5b4fc" : "#4f46e5", <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>],
               ["Refer", "referrals", dark ? "#e0a458" : "#d97706", <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>],
             ].map(([label, page, color, icon]) => (
@@ -140,7 +140,7 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive }) {
       </div>
 
       {/* Recent orders */}
-      <div className="dash-section-title" style={{ color: t.textMuted }}>Recent Orders</div>
+      <div className="dash-section-title" style={{ color: t.textMuted }}>Recent Activity</div>
       <div className="dash-orders-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
         {orders.length > 0 ? orders.slice(0, 5).map((o, i, arr) => (
           <div key={o.id} className="dash-order-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
@@ -277,21 +277,21 @@ function NotifDropdown({ orders, txs, dark, t, onClose, readIds, setReadIds, cle
   /* Build ALL notification items from real data */
   const allItems = [
     ...orders.filter(o => o.status === "Completed").map(o => ({
-      id: `ord-${o.id}`, type: "order", title: "Order completed",
+      id: `ord-${o.id}`, type: "order", title: "Order delivered",
       desc: `${o.id} · ${o.service || "Service"} delivered`,
       time: o.created ? fD(o.created) : "", ts: o.created ? new Date(o.created) : null,
       color: dark ? "#60a5fa" : "#2563eb",
       icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
     })),
     ...orders.filter(o => o.status === "Processing" || o.status === "Pending").map(o => ({
-      id: `proc-${o.id}`, type: "order", title: "Order processing",
+      id: `proc-${o.id}`, type: "order", title: "Order in progress",
       desc: `${o.id} · ${o.service || "Service"} started`,
       time: o.created ? fD(o.created) : "", ts: o.created ? new Date(o.created) : null,
       color: dark ? "#e0a458" : "#d97706",
       icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
     })),
     ...txs.filter(tx => tx.type === "deposit").map(tx => ({
-      id: `dep-${tx.id || tx.reference}`, type: "deposit", title: "Deposit received",
+      id: `dep-${tx.id || tx.reference}`, type: "deposit", title: "Funds added",
       desc: `${fN(tx.amount)} added via ${tx.method || "Paystack"}`,
       time: tx.date ? fD(tx.date) : "", ts: tx.date ? new Date(tx.date) : null,
       color: dark ? "#6ee7b7" : "#059669",

@@ -267,12 +267,12 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
                   <button onClick={() => setShowApi(!showApi)} className="set-btn-outline" style={{ borderColor: t.cardBorder, color: t.textSoft }}>{showApi ? "Hide" : "Show"}</button>
                   <button onClick={copyApi} className="set-btn-outline" style={{ borderColor: t.cardBorder, color: copied ? t.green : t.textSoft }}>{copied ? "Copied ✓" : "Copy"}</button>
                 </div>
-                <button onClick={async () => { const ok = await confirm({ title: "Regenerate API Key", message: "This will invalidate your current key. Any integrations using it will stop working.", confirmLabel: "Regenerate", danger: true }); if (ok) generateApiKey("regenerate"); }} disabled={apiLoading} className="m set-btn-danger-sm" style={{ borderColor: dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.1)", color: dark ? "#fca5a5" : "#dc2626", marginTop: 10 }}>{apiLoading ? "..." : "Regenerate Key"}</button>
+                <button onClick={async () => { const ok = await confirm({ title: "Reset API Key", message: "This will invalidate your current key. Any integrations using it will stop working.", confirmLabel: "Reset", danger: true }); if (ok) generateApiKey("regenerate"); }} disabled={apiLoading} className="m set-btn-danger-sm" style={{ borderColor: dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.1)", color: dark ? "#fca5a5" : "#dc2626", marginTop: 10 }}>{apiLoading ? "..." : "Reset Key"}</button>
               </>
             ) : (
               <>
                 <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 12 }}>No API key generated yet. Generate one to access Nitro's API.</div>
-                <button onClick={() => generateApiKey("generate")} disabled={apiLoading} className="set-btn-primary" style={{ opacity: apiLoading ? .5 : 1 }}>{apiLoading ? "Generating..." : "Generate API Key"}</button>
+                <button onClick={() => generateApiKey("generate")} disabled={apiLoading} className="set-btn-primary" style={{ opacity: apiLoading ? .5 : 1 }}>{apiLoading ? "Generating..." : "Create API Key"}</button>
               </>
             )}
           </div>
@@ -303,7 +303,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
             <div className="set-danger-title" style={{ color: t.text }}>Delete Account</div>
             <div className="set-danger-desc" style={{ color: t.textMuted }}>Permanently delete your account. Your orders and transactions will be preserved but your personal data will be removed.</div>
             <button onClick={async () => {
-              const ok = await confirm({ title: "Delete Your Account", message: "This will permanently delete your account. Your orders and transaction history will be kept for records but your personal info will be removed. This cannot be undone.", confirmLabel: "Delete My Account", danger: true, requireType: "DELETE" });
+              const ok = await confirm({ title: "Delete Your Account", message: "This will permanently delete your account. Your orders and transaction history will be kept for records but your personal info will be removed. This cannot be undone.", confirmLabel: "Delete Account", danger: true, requireType: "DELETE" });
               if (ok) {
                 try {
                   const res = await fetch("/api/auth/delete-account", { method: "POST" });
@@ -343,9 +343,9 @@ export function SettingsSidebar({ user, dark, t }) {
         ["Active Sessions", "set-active-sessions"],
         ["API Key", "set-api-key"],
         ["Log Out", "set-account"],
-        ["Danger Zone", "set-danger-zone"],
+        ["Account", "set-danger-zone"],
       ].map(([label, id]) => (
-        <div key={label} onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })} className="set-rs-link" style={{ color: label === "Danger Zone" ? (dark ? "#fca5a5" : "#dc2626") : t.textSoft, cursor: "pointer" }}>{label}</div>
+        <div key={label} onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })} className="set-rs-link" style={{ color: label === "Account" ? (dark ? "#fca5a5" : "#dc2626") : t.textSoft, cursor: "pointer" }}>{label}</div>
       ))}
     </>
   );

@@ -254,7 +254,7 @@ export function AdminAlertsPage({ dark, t }) {
             </div>
             <div style={{ display: "flex", gap: 4 }}>
               <button onClick={() => toggleAlert(a.id, a.active)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: a.active ? t.amber : t.green }}>{a.active ? "Pause" : "Activate"}</button>
-              <button onClick={async () => { const ok = await confirm({ title: "Delete Alert", message: `Delete this alert? "${a.message?.slice(0, 50)}..."`, confirmLabel: "Delete", danger: true }); if (ok) deleteAlert(a.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: t.red }}>Delete</button>
+              <button onClick={async () => { const ok = await confirm({ title: "Delete Announcement", message: `Delete this alert? "${a.message?.slice(0, 50)}..."`, confirmLabel: "Delete", danger: true }); if (ok) deleteAlert(a.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: t.red }}>Delete</button>
             </div>
           </div>
         )) : (

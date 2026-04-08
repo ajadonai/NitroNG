@@ -33,7 +33,7 @@ export function AdminActivityPage({ dark, t }) {
   return (
     <>
       <div className="adm-header">
-        <div className="adm-title" style={{ color: t.text }}>Activity Log</div>
+        <div className="adm-title" style={{ color: t.text }}>Admin Logs</div>
         <div className="adm-subtitle" style={{ color: t.textMuted }}>Admin audit trail — {logs.length} entries</div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>

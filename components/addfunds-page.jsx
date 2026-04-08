@@ -184,7 +184,7 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
             {/* Pay button */}
             <div className="fund-btn-wrap">
               <button onClick={handlePay} disabled={!valid || loading} className="fund-pay-btn" style={{ background: valid ? `linear-gradient(135deg,#c47d8e,#8b5e6b)` : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"), color: valid ? "#fff" : t.textMuted }}>
-                {loading ? "Processing..." : valid ? `Pay ${fN(numAmount)} Now` : "Enter amount"}
+                {loading ? "Processing..." : valid ? `Pay ${fN(numAmount)} Now` : "How much?"}
               </button>
             </div>
           </div>
@@ -233,7 +233,7 @@ export function AddFundsSidebar({ user, txs, dark, t }) {
       <div className="fund-rs-divider" style={{ background: t.sidebarBorder }} />
 
       <div className="fund-rs-title" style={{ color: t.textMuted }}>How It Works</div>
-      {[["1", "Enter amount"], ["2", "Choose payment method"], ["3", "Pay securely"], ["4", "Balance credited instantly"]].map(([num, title]) => (
+      {[["1", "How much?"], ["2", "Pay with"], ["3", "Pay securely"], ["4", "Added to your wallet instantly"]].map(([num, title]) => (
         <div key={num} className="fund-rs-step">
           <div className="m fund-rs-step-num" style={{ background: t.navActive, color: t.accent }}>{num}</div>
           <div className="fund-rs-step-text" style={{ color: t.textSoft }}>{title}</div>

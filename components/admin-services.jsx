@@ -92,7 +92,7 @@ export default function AdminServicesPage({ dark, t }) {
       <div className="adm-header">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <div className="adm-title" style={{ color: t.text }}>Services</div>
+            <div className="adm-title" style={{ color: t.text }}>Raw Services</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>{services.length} services across {categories.length} platforms</div>
           </div>
           <button className="adm-btn-primary">+ Add Service</button>
