@@ -50,7 +50,7 @@ function Bubble({ m, dark, t }) {
   const isBot = m.from === "bot";
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: isUser ? "flex-end" : "flex-start" }}>
-      <div style={{ maxWidth: "82%", padding: "10px 14px", borderRadius: 14, borderBottomRightRadius: isUser ? 4 : 14, borderBottomLeftRadius: !isUser ? 4 : 14, background: isUser ? (dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.08)") : (dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)"), border: `1px solid ${isUser ? (dark ? "rgba(196,125,142,0.1)" : "rgba(196,125,142,0.12)") : (dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)")}` }}>
+      <div style={{ maxWidth: "78%", padding: "10px 14px", borderRadius: 14, borderBottomRightRadius: isUser ? 4 : 14, borderBottomLeftRadius: !isUser ? 4 : 14, background: isUser ? (dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.08)") : (dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)"), border: `1px solid ${isUser ? (dark ? "rgba(196,125,142,0.1)" : "rgba(196,125,142,0.12)") : (dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)")}` }}>
         {!isUser && <div style={{ fontSize: 11, fontWeight: 600, color: isBot ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#60a5fa" : "#2563eb"), marginBottom: 3 }}>{m.name || (isBot ? "Nitro Bot" : "Support")}</div>}
         <div style={{ fontSize: 13, color: t.text, lineHeight: 1.6, whiteSpace: "pre-line" }}>{m.formatted ? <FormatText text={m.text} dark={dark} /> : m.text}</div>
       </div>
@@ -137,7 +137,7 @@ export default function SupportPage({ dark, t }) {
   const addMsg = (m) => setMsgs(prev => [...prev, m]);
   const botReply = (text, delay, extra = {}) => { setTyping(true); setTimeout(() => { setTyping(false); addMsg({ from: "bot", name: "Nitro Bot", text, time: "Now", formatted: true, ...extra }); }, delay + Math.random() * 300); };
   const activeCount = tickets.filter(tk => tk.status !== "Resolved").length;
-  const filtered = filter === "all" ? tickets : tickets.filter(tk => tk.status === filter);
+  const filtered = filter === "all" ? tickets : filter === "unread" ? tickets.filter(tk => { const last = tk.messages?.[tk.messages.length - 1]; return last?.from === "admin"; }) : tickets.filter(tk => tk.status === filter);
 
   const handleQuick = (id) => {
     setShowQuick(false);
@@ -193,42 +193,48 @@ export default function SupportPage({ dark, t }) {
           <div style={{ fontSize: 11, color: t.textMuted, marginTop: 2 }}>{activeCount} active</div>
         </div>
 
-        {/* Bot chat item — always first */}
-        <div onClick={() => { setSelected(null); setMobileView("chat"); }} style={{ padding: "12px 14px", borderBottom: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`, cursor: "pointer", background: !selected ? (dark ? "rgba(196,125,142,0.04)" : "rgba(196,125,142,0.02)") : "transparent", borderLeft: !selected ? `2px solid ${t.accent}` : "2px solid transparent" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-            <div style={{ width: 6, height: 6, borderRadius: 3, background: dark ? "#6ee7b7" : "#059669" }} />
-            <span style={{ fontSize: 13, fontWeight: 550, color: t.text }}>Nitro Bot</span>
-            {isLive && <span className="m" style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: dark ? "rgba(96,165,250,0.1)" : "rgba(59,130,246,0.06)", color: dark ? "#60a5fa" : "#2563eb" }}>live</span>}
-          </div>
-          <div style={{ fontSize: 11, color: t.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{msgs[msgs.length - 1]?.text?.slice(0, 50)}</div>
-        </div>
-
-        {/* Filter */}
-        {tickets.length > 0 && <div style={{ display: "flex", gap: 3, padding: "6px 10px", borderBottom: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}` }}>
-          {[["all","All"],["Open","Open"],["In Progress","Active"],["Resolved","Done"]].map(([v,l])=>
+        {/* Filters — always visible */}
+        <div style={{ display: "flex", gap: 3, padding: "6px 10px", borderBottom: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`, flexShrink: 0, flexWrap: "wrap" }}>
+          {[["all","All"],["unread","Unread"],["Open","Open"],["In Progress","Active"],["Resolved","Done"]].map(([v,l])=>
             <button key={v} onClick={()=>setFilter(v)} style={{ padding:"3px 8px",borderRadius:4,fontSize:10,fontWeight:filter===v?600:450,background:filter===v?(dark?"rgba(196,125,142,0.1)":"rgba(196,125,142,0.06)"):"transparent",color:filter===v?t.accent:t.textMuted,border:"none",cursor:"pointer" }}>{l}</button>
           )}
-        </div>}
+        </div>
 
-        {/* Ticket list */}
-        <div style={{ flex: 1, overflowY: "auto" }}>
+        {/* Scrollable list: bot chat + tickets */}
+        <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+          {/* Bot chat item */}
+          <div onClick={() => { setSelected(null); setMobileView("chat"); }} style={{ padding: "10px 14px", borderBottom: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`, cursor: "pointer", background: !selected ? (dark ? "rgba(196,125,142,0.04)" : "rgba(196,125,142,0.02)") : "transparent", borderLeft: !selected ? `2px solid ${t.accent}` : "2px solid transparent" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+              <div style={{ width: 5, height: 5, borderRadius: 3, background: dark ? "#6ee7b7" : "#059669", flexShrink: 0 }} />
+              <span style={{ fontSize: 12, fontWeight: 550, color: t.text }}>Nitro Bot</span>
+              {isLive && <span className="m" style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: dark ? "rgba(96,165,250,0.1)" : "rgba(59,130,246,0.06)", color: dark ? "#60a5fa" : "#2563eb" }}>live</span>}
+            </div>
+            <div style={{ fontSize: 11, color: t.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", paddingLeft: 11 }}>{msgs[msgs.length - 1]?.text?.slice(0, 45)}</div>
+          </div>
+
+          {/* Ticket list */}
           {filtered.map(tk => {
             const last = tk.messages?.[tk.messages.length - 1];
             const sender = last?.from === "user" ? "You" : (last?.name?.split(" - ")?.[0] || "Support");
             const isSel = selected?.id === tk.id;
+            const hasUnread = last?.from === "admin";
             return (
-              <div key={tk.id} onClick={() => selectTicket(tk)} style={{ padding: "12px 14px", borderBottom: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`, cursor: "pointer", background: isSel ? (dark ? "rgba(196,125,142,0.04)" : "rgba(196,125,142,0.02)") : "transparent", borderLeft: isSel ? `2px solid ${t.accent}` : "2px solid transparent" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
+              <div key={tk.id} onClick={() => selectTicket(tk)} style={{ padding: "10px 14px", borderBottom: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`, cursor: "pointer", background: isSel ? (dark ? "rgba(196,125,142,0.04)" : "rgba(196,125,142,0.02)") : "transparent", borderLeft: isSel ? `2px solid ${t.accent}` : "2px solid transparent" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
                   <span style={{ fontSize: 12, fontWeight: 550, color: t.text }}>{tk.subject}</span>
                   <span style={{ fontSize: 10, color: t.textMuted }}>{tk.created ? fD(tk.created) : ""}</span>
                 </div>
-                {last && <div style={{ fontSize: 11, color: t.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 4 }}>
-                  <span style={{ fontWeight: 500, color: last.from === "user" ? (dark ? "rgba(196,125,142,0.7)" : t.accent) : (dark ? "rgba(110,231,183,0.7)" : "#059669") }}>{sender}: </span>{last.text?.split("\n")[0]?.slice(0, 50)}
+                {last && <div style={{ fontSize: 11, color: t.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 3 }}>
+                  <span style={{ fontWeight: 500, color: last.from === "user" ? (dark ? "rgba(196,125,142,0.7)" : t.accent) : (dark ? "rgba(110,231,183,0.7)" : "#059669") }}>{sender}: </span>{last.text?.split("\n")[0]?.slice(0, 45)}
                 </div>}
-                <StatusPill status={tk.status} dark={dark} />
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <StatusPill status={tk.status} dark={dark} />
+                  {hasUnread && <div style={{ width: 6, height: 6, borderRadius: 3, background: t.accent, flexShrink: 0 }} />}
+                </div>
               </div>
             );
           })}
+          {filtered.length === 0 && tickets.length > 0 && <div style={{ padding: 20, textAlign: "center", color: t.textMuted, fontSize: 11 }}>No matches</div>}
         </div>
       </div>
 
