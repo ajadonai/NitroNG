@@ -389,9 +389,11 @@ function DashboardInner() {
   const [leftOpen, setLeftOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [readNotifIds, setReadNotifIds] = useState(() => {
+    if (typeof window === 'undefined') return new Set();
     try { const s = localStorage.getItem("nitro-notif-read"); return s ? new Set(JSON.parse(s)) : new Set(); } catch { return new Set(); }
   });
   const [clearedNotifIds, setClearedNotifIds] = useState(() => {
+    if (typeof window === 'undefined') return new Set();
     try { const s = localStorage.getItem("nitro-notif-cleared"); return s ? new Set(JSON.parse(s)) : new Set(); } catch { return new Set(); }
   });
   const [notifClearedAt, setNotifClearedAt] = useState(null);
