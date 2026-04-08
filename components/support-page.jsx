@@ -230,7 +230,7 @@ export default function SupportPage({ dark, t, tickets: ticketsProp }) {
                     <span className="sup-tkt-time" style={{ color: t.textMuted }}>{tk.lastReply || ""}</span>
                   </div>
                   <div className="sup-tkt-subject" style={{ color: t.text }}>{tk.subject}</div>
-                  <div className="sup-tkt-meta" style={{ color: t.textMuted }}>{tk.category} · {tk.messages?.length || 0} messages</div>
+                  <div className="sup-tkt-meta" style={{ color: t.textMuted }}>{(() => { const last = tk.messages?.[tk.messages.length - 1]; return last ? `${last.from === "user" ? "You" : "Support"}: ${last.text?.slice(0, 60)}${last.text?.length > 60 ? "…" : ""}` : tk.category; })()}</div>
                 </div>
               )) : (
                 <div className="sup-empty" style={{ color: t.textMuted }}>No tickets found</div>
@@ -287,11 +287,11 @@ export default function SupportPage({ dark, t, tickets: ticketsProp }) {
                       <div style={{ fontSize: 12, fontWeight: 600, color: msg.from === "user" ? t.accent : t.green, marginBottom: 4 }}>{msg.from === "user" ? "You" : "Nitro Support"}</div>
                       <div style={{ fontSize: 14, color: t.text, lineHeight: 1.5 }}>{msg.text}</div>
                     </div>
-                    <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4, padding: "0 4px" }}>{msg.time}</div>
+                    <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4, padding: "0 4px" }}>{msg.time ? new Date(msg.time).toLocaleDateString("en-NG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : ""}</div>
                   </div>
                 ))}
               </div>
-              {activeTicket.status === "Open" && (
+              {(activeTicket.status === "Open" || activeTicket.status === "In Progress") && (
                 <div className="sup-reply-box">
                   <textarea value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="Type your reply..." rows={3} className="sup-form-textarea" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text }} />
                   <button onClick={sendReply} disabled={!replyText || ticketLoading} className="sup-submit-btn" style={{ opacity: replyText && !ticketLoading ? 1 : .5, marginTop: 8 }}>{ticketLoading ? "Sending..." : "Send Reply"}</button>

@@ -52,7 +52,7 @@ export async function PATCH(req) {
       if (order.apiOrderId && process.env.MTP_API_KEY) {
         try {
           const status = await checkOrder(order.apiOrderId);
-          const statusMap = { 'Completed': 'Completed', 'In progress': 'Processing', 'Processing': 'Processing', 'Pending': 'Pending', 'Partial': 'Partial', 'Canceled': 'Canceled', 'Refunded': 'Canceled' };
+          const statusMap = { 'Completed': 'Completed', 'In progress': 'Processing', 'Processing': 'Processing', 'Pending': 'Pending', 'Partial': 'Partial', 'Canceled': 'Cancelled', 'Refunded': 'Cancelled' };
           const newStatus = statusMap[status.status] || order.status;
           if (newStatus !== order.status) {
             await prisma.order.update({ where: { id: order.id }, data: { status: newStatus } });
@@ -66,7 +66,7 @@ export async function PATCH(req) {
     }
 
     if (action === 'cancel') {
-      if (order.status === 'Completed' || order.status === 'Canceled' || order.status === 'Partial') {
+      if (order.status === 'Completed' || order.status === 'Cancelled' || order.status === 'Canceled' || order.status === 'Partial') {
         return Response.json({ error: `Cannot cancel ${order.status.toLowerCase()} order` }, { status: 400 });
       }
       if (order.apiOrderId && process.env.MTP_API_KEY) {
@@ -74,7 +74,7 @@ export async function PATCH(req) {
       }
       // Refund to wallet
       await prisma.$transaction([
-        prisma.order.update({ where: { id: order.id }, data: { status: 'Canceled' } }),
+        prisma.order.update({ where: { id: order.id }, data: { status: 'Cancelled' } }),
         prisma.user.update({ where: { id: session.id }, data: { balance: { increment: order.charge } } }),
         prisma.transaction.create({
           data: {
@@ -85,7 +85,7 @@ export async function PATCH(req) {
           },
         }),
       ]);
-      return Response.json({ success: true, status: 'Canceled', refunded: order.charge / 100 });
+      return Response.json({ success: true, status: 'Cancelled', refunded: order.charge / 100 });
     }
 
     if (action === 'reorder') {

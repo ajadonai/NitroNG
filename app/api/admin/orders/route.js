@@ -60,7 +60,7 @@ export async function POST(req) {
           await cancelOrder(order.apiOrderId);
         } catch (e) { console.warn('[Admin Cancel MTP]', e.message); }
       }
-      await prisma.order.update({ where: { id: order.id }, data: { status: 'Canceled' } });
+      await prisma.order.update({ where: { id: order.id }, data: { status: 'Cancelled' } });
       await logActivity(admin.name, `Cancelled order ${orderId}`, 'order');
       return Response.json({ success: true, message: 'Order cancelled' });
     }
@@ -81,7 +81,7 @@ export async function POST(req) {
         try {
           const { checkOrder } = await import('@/lib/mtp');
           const status = await checkOrder(order.apiOrderId);
-          const statusMap = { 'Completed': 'Completed', 'In progress': 'Processing', 'Processing': 'Processing', 'Pending': 'Pending', 'Partial': 'Partial', 'Canceled': 'Canceled', 'Refunded': 'Canceled' };
+          const statusMap = { 'Completed': 'Completed', 'In progress': 'Processing', 'Processing': 'Processing', 'Pending': 'Pending', 'Partial': 'Partial', 'Canceled': 'Cancelled', 'Refunded': 'Cancelled' };
           const newStatus = statusMap[status.status] || order.status;
           if (newStatus !== order.status) {
             await prisma.order.update({ where: { id: order.id }, data: { status: newStatus } });

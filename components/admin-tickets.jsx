@@ -84,9 +84,9 @@ export default function AdminTicketsPage({ dark, t }) {
                 </div>
 
                 {(selected.replies || []).map((r, i) => (
-                  <div key={i} style={{ padding: 12, borderRadius: 10, background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", marginBottom: 8 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: t.accent, marginBottom: 3 }}>Admin · {r.time ? fD(r.time) : ""}</div>
-                    <div style={{ fontSize: 14, color: t.text }}>{r.msg || r.message}</div>
+                  <div key={i} style={{ padding: 12, borderRadius: 10, background: r.from === "admin" ? (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)") : (dark ? "rgba(96,165,250,.06)" : "rgba(37,99,235,.03)"), borderWidth: 1, borderStyle: "solid", borderColor: r.from === "admin" ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : (dark ? "rgba(96,165,250,.1)" : "rgba(37,99,235,.06)"), marginBottom: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: r.from === "admin" ? t.accent : (dark ? "#60a5fa" : "#2563eb"), marginBottom: 3 }}>{r.from === "admin" ? "Admin" : selected.user || "User"} · {r.time ? fD(r.time) : ""}</div>
+                    <div style={{ fontSize: 14, color: t.text, lineHeight: 1.5 }}>{r.msg || r.message}</div>
                   </div>
                 ))}
 
