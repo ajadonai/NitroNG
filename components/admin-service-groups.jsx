@@ -12,6 +12,8 @@ export default function AdminServiceGroupsPage({ dark, t }) {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [platFilter, setPlatFilter] = useState("all");
+  const [showGuide, setShowGuide] = useState(false);
+  const [ngFilter, setNgFilter] = useState(false);
 
   // New group form
   const [showNew, setShowNew] = useState(false);
@@ -64,9 +66,10 @@ export default function AdminServiceGroupsPage({ dark, t }) {
   const filtered = useMemo(() => {
     let g = groups;
     if (platFilter !== "all") g = g.filter(gr => gr.platform === platFilter);
+    if (ngFilter) g = g.filter(gr => gr.nigerian);
     if (search) g = g.filter(gr => gr.name.toLowerCase().includes(search.toLowerCase()) || gr.platform.toLowerCase().includes(search.toLowerCase()));
     return g;
-  }, [groups, platFilter, search]);
+  }, [groups, platFilter, ngFilter, search]);
 
   const filteredSvcs = useMemo(() => {
     if (!tierSvcSearch) return services.slice(0, 20);
@@ -100,8 +103,36 @@ export default function AdminServiceGroupsPage({ dark, t }) {
           <h2 style={{ fontSize: 20, fontWeight: 700, color: t.text, margin: 0 }}>Menu Builder</h2>
           <p style={{ fontSize: 13, color: t.textMuted, marginTop: 4 }}>{groups.length} groups · {groups.reduce((a, g) => a + g.tiers.length, 0)} tiers · {services.length} MTP services available</p>
         </div>
-        <button onClick={() => setShowNew(!showNew)} style={accentBtn}>{showNew ? "Cancel" : "+ New Group"}</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setShowGuide(!showGuide)} style={ghostBtn}>{showGuide ? "Hide Guide" : "📖 Guide"}</button>
+          <button onClick={() => setShowNew(!showNew)} style={accentBtn}>{showNew ? "Cancel" : "+ New Group"}</button>
+        </div>
       </div>
+
+      {/* Guide */}
+      {showGuide && (
+        <div style={{ ...cardStyle, marginBottom: 20, fontSize: 13, lineHeight: 1.7, color: t.textMuted }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: t.text, marginBottom: 12 }}>How the Menu Builder Works</div>
+          <div style={{ marginBottom: 12 }}>
+            <b style={{ color: t.text }}>Structure:</b> The menu is organized as <b style={{ color: t.text }}>Groups</b> → <b style={{ color: t.text }}>Tiers</b>. A group is a service customers see (e.g. "Instagram Followers"). Each group has 1–3 tiers (Budget, Standard, Premium) — each tier is linked to a different MTP backend service with different quality/speed.
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <b style={{ color: t.text }}>Pricing flow:</b> MTP charges in USD → we convert at the USD→NGN rate (set in Settings) → then apply markup % per tier → that's the customer sell price. Go to <b style={{ color: t.text }}>Settings → Pricing & Markup</b> to set the rate and percentages, then hit <b style={{ color: t.text }}>Recalculate All Prices</b> to bulk-update.
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <b style={{ color: t.text }}>Tier colors:</b>{" "}
+            <span style={{ color: "#e0a458", fontWeight: 600 }}>Budget</span> (cheapest, basic quality) ·{" "}
+            <span style={{ color: "#60a5fa", fontWeight: 600 }}>Standard</span> (recommended, good balance) ·{" "}
+            <span style={{ color: "#a78bfa", fontWeight: 600 }}>Premium</span> (best quality, highest price)
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <b style={{ color: t.text }}>🇳🇬 Nigerian services:</b> Check the Nigerian flag when creating a group to mark it as Nigeria-specific. These get a green tint and flag badge on the customer-facing page. Use for services targeting Nigerian audiences (e.g. Naija Twitter followers, Boomplay streams).
+          </div>
+          <div>
+            <b style={{ color: t.text }}>Adding a tier:</b> Click "Add Tier" on any group → search for the MTP service → pick a tier level → the sell price auto-fills from your markup settings. You can override the price manually. The info row shows cost, suggested price, and margin %.
+          </div>
+        </div>
+      )}
 
       {error && <div style={{ padding: "10px 14px", borderRadius: 8, background: dark ? "rgba(220,38,38,.1)" : "#fef2f2", border: `1px solid ${dark ? "rgba(220,38,38,.2)" : "#fecaca"}`, color: dark ? "#fca5a5" : "#dc2626", fontSize: 13, marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}><span>{error}</span><button onClick={() => setError("")} style={{ background: "none", color: "inherit", fontSize: 16 }}>✕</button></div>}
 
@@ -124,24 +155,25 @@ export default function AdminServiceGroupsPage({ dark, t }) {
       )}
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
         <input placeholder="Search groups..." value={search} onChange={e => setSearch(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 160 }} />
         <select value={platFilter} onChange={e => setPlatFilter(e.target.value)} style={{ ...inputStyle, width: 140 }}>
           <option value="all">All Platforms</option>
           {platforms.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
+        <button onClick={() => setNgFilter(!ngFilter)} style={{ ...ghostBtn, background: ngFilter ? (dark ? "rgba(74,222,128,.12)" : "rgba(22,163,74,.08)") : undefined, color: ngFilter ? (dark ? "#4ade80" : "#16a34a") : (dark ? "#a09b95" : "#555250"), borderWidth: 1, borderStyle: "solid", borderColor: ngFilter ? (dark ? "rgba(74,222,128,.2)" : "rgba(22,163,74,.15)") : "transparent" }}>🇳🇬 Nigerian</button>
       </div>
 
       {/* Groups list */}
       {filtered.length === 0 && <div style={{ padding: 40, textAlign: "center", color: t.textMuted, fontSize: 14 }}>No service groups yet. Create one to get started.</div>}
 
       {filtered.map(g => (
-        <div key={g.id} style={{ ...cardStyle, opacity: g.enabled ? 1 : .5 }}>
+        <div key={g.id} style={{ ...cardStyle, opacity: g.enabled ? 1 : .5, borderLeft: g.nigerian ? `3px solid ${dark ? "#4ade80" : "#16a34a"}` : undefined }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 15, fontWeight: 600, color: t.text }}>{g.name}</span>
               <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", color: "#c47d8e", fontWeight: 500 }}>{g.platform}</span>
-              {g.nigerian && <span style={{ fontSize: 11 }}>🇳🇬</span>}
+              {g.nigerian && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, background: dark ? "rgba(74,222,128,.1)" : "rgba(22,163,74,.06)", color: dark ? "#4ade80" : "#16a34a", fontWeight: 500 }}>🇳🇬 Nigerian</span>}
               {!g.enabled && <span style={{ fontSize: 11, color: t.textMuted }}>(disabled)</span>}
             </div>
             <div style={{ display: "flex", gap: 6 }}>
