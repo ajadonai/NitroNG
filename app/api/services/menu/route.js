@@ -43,17 +43,17 @@ export async function GET(req) {
         platform: g.platform,
         type: g.type,
         nigerian: g.nigerian,
-        tiers: g.tiers.map(t => ({
+        tiers: g.tiers.filter(t => t.service || t.serviceId).map(t => ({
           id: t.id,
           tier: t.tier,
           price: t.sellPer1k / 100,
-          min: t.service.min,
-          max: t.service.max,
+          min: t.service?.min || 100,
+          max: t.service?.max || 100000,
           refill: t.refill,
           speed: t.speed,
           serviceId: t.serviceId,
         })),
-      })),
+      })).filter(g => g.tiers.length > 0),
       platforms: platforms.map(p => p.platform),
     });
   } catch (err) {
