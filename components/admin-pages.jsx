@@ -301,22 +301,17 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
   const confirm = useConfirm();
   const [social, setSocial] = useState({ social_whatsapp: "", social_telegram: "", social_instagram: "", social_twitter: "", social_whatsapp_support: "" });
   const [refSettings, setRefSettings] = useState({ ref_referrer_bonus: "50000", ref_invitee_bonus: "50000" });
-  const [markup, setMarkup] = useState({ markup_budget: "150", markup_standard: "200", markup_premium: "250", markup_default: "200", markup_min_margin: "50", markup_usd_rate: "1600" });
   const [socialLoading, setSocialLoading] = useState(true);
   const [socialSaving, setSocialSaving] = useState(false);
   const [socialMsg, setSocialMsg] = useState(null);
   const [refSaving, setRefSaving] = useState(false);
   const [refMsg, setRefMsg] = useState(null);
-  const [markupSaving, setMarkupSaving] = useState(false);
-  const [markupMsg, setMarkupMsg] = useState(null);
-  const [recalculating, setRecalculating] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/settings").then(r => r.json()).then(d => {
       if (d.settings) {
         setSocial(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("social_"))) }));
         setRefSettings(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("ref_"))) }));
-        setMarkup(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("markup_"))) }));
       }
     }).finally(() => setSocialLoading(false));
   }, []);
@@ -509,68 +504,6 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
               } catch { setRefMsg({ type: "error", text: "Request failed" }); }
               setRefSaving(false);
             }} disabled={refSaving} className="adm-btn-primary" style={{ opacity: refSaving ? .5 : 1 }}>{refSaving ? "Saving..." : "Save Referral Settings"}</button>
-          </div>
-        </div>
-
-        {/* Pricing & Markup */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>Pricing & Markup</div>
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
-            <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 14, lineHeight: 1.5 }}>Set markup percentage per tier. When you add a service, the sell price is auto-calculated: cost + markup%. Example: ₦100 cost at 200% markup = ₦300 sell price.</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
-              {[
-                ["Budget", "markup_budget", "#e0a458"],
-                ["Standard", "markup_standard", "#60a5fa"],
-                ["Premium", "markup_premium", "#a78bfa"],
-                ["No tier (default)", "markup_default", "#888"],
-              ].map(([label, key, color]) => (
-                <div key={key} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: 3, background: color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, color: t.text, width: 130 }}>{label}</span>
-                  <input value={markup[key] || ""} onChange={e => setMarkup(p => ({ ...p, [key]: e.target.value.replace(/[^0-9]/g, "") }))} style={{ width: 70, padding: "6px 10px", borderRadius: 8, background: dark ? "#0d1020" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: t.text, fontSize: 13, textAlign: "right", fontFamily: "'JetBrains Mono',monospace" }} />
-                  <span style={{ fontSize: 12, color: t.textMuted }}>%</span>
-                  <span style={{ fontSize: 11, color: t.textSoft, marginLeft: "auto" }}>₦100 → ₦{(100 * (1 + Number(markup[key] || 0) / 100)).toLocaleString("en-NG")}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 10, borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, marginBottom: 14 }}>
-              <span style={{ fontSize: 13, color: t.textMuted }}>Minimum margin floor</span>
-              <input value={markup.markup_min_margin || ""} onChange={e => setMarkup(p => ({ ...p, markup_min_margin: e.target.value.replace(/[^0-9]/g, "") }))} style={{ width: 60, padding: "6px 10px", borderRadius: 8, background: dark ? "#0d1020" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: t.text, fontSize: 13, textAlign: "right", fontFamily: "'JetBrains Mono',monospace" }} />
-              <span style={{ fontSize: 12, color: t.textMuted }}>%</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 10, borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, marginBottom: 14 }}>
-              <span style={{ fontSize: 13, color: t.textMuted }}>USD → NGN rate</span>
-              <input value={markup.markup_usd_rate || ""} onChange={e => setMarkup(p => ({ ...p, markup_usd_rate: e.target.value.replace(/[^0-9]/g, "") }))} style={{ width: 80, padding: "6px 10px", borderRadius: 8, background: dark ? "#0d1020" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: t.text, fontSize: 13, textAlign: "right", fontFamily: "'JetBrains Mono',monospace" }} />
-              <span style={{ fontSize: 11, color: t.textSoft }}>MTP costs are in USD — this converts to ₦ before markup</span>
-            </div>
-            {markupMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 10, background: markupMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#f0fdf4") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: markupMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), fontSize: 12 }}>{markupMsg.text}</div>}
-            <button onClick={async () => {
-              setMarkupSaving(true); setMarkupMsg(null);
-              try {
-                const res = await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ settings: markup }) });
-                setMarkupMsg(res.ok ? { type: "success", text: "Markup settings saved" } : { type: "error", text: "Failed to save" });
-              } catch { setMarkupMsg({ type: "error", text: "Request failed" }); }
-              setMarkupSaving(false);
-            }} disabled={markupSaving} className="adm-btn-primary" style={{ opacity: markupSaving ? .5 : 1 }}>{markupSaving ? "Saving..." : "Save Markup Settings"}</button>
-            <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
-              <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 8, lineHeight: 1.5 }}>Apply current markup to all existing service tiers. This will overwrite all sell prices based on each service's cost and tier level.</div>
-              <button onClick={async () => {
-                if (!await confirm({ title: "Recalculate All Prices", message: "This will overwrite ALL existing tier sell prices using the current markup percentages. Any custom prices you've set will be replaced. Continue?", confirmLabel: "Recalculate", danger: true })) return;
-                setRecalculating(true); setMarkupMsg(null);
-                try {
-                  // Save markup first, then recalculate
-                  await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ settings: markup }) });
-                  const res = await fetch("/api/admin/service-groups", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "recalculate-prices" }) });
-                  const data = await res.json();
-                  if (res.ok) {
-                    setMarkupMsg({ type: "success", text: `Prices recalculated: ${data.updated} updated, ${data.skipped} skipped (no cost data)` });
-                  } else {
-                    setMarkupMsg({ type: "error", text: data.error || "Failed to recalculate" });
-                  }
-                } catch { setMarkupMsg({ type: "error", text: "Request failed" }); }
-                setRecalculating(false);
-              }} disabled={recalculating} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)"}`, background: dark ? "rgba(252,165,165,.06)" : "rgba(220,38,38,.04)", color: dark ? "#fca5a5" : "#dc2626", fontSize: 12, fontWeight: 600, cursor: recalculating ? "wait" : "pointer", opacity: recalculating ? .5 : 1 }}>{recalculating ? "Recalculating..." : "Recalculate All Prices"}</button>
-            </div>
           </div>
         </div>
 
