@@ -130,7 +130,7 @@ function LandingInner(){
             <div style={{width:30,height:30,borderRadius:8,background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
             <span style={{fontSize:17,fontWeight:700,color:"#fff",letterSpacing:1.5}}>NITRO</span>
           </button>
-          <div style={{display:"flex",alignItems:"center",gap:16}}>
+          <div className="nav-right" style={{display:"flex",alignItems:"center",gap:14}}>
             <div className="nav-links" style={{gap:24,alignItems:"center",marginRight:8}}>
               {["Services","Pricing","FAQ"].map(l=><button key={l} onClick={()=>document.getElementById(l.toLowerCase())?.scrollIntoView({behavior:"smooth"})} style={{background:"none",fontSize:14,color:dark?"rgba(255,255,255,.6)":"rgba(255,255,255,.7)",fontWeight:450}}>{l}</button>)}
             </div>
@@ -443,6 +443,8 @@ function LandingInner(){
             </div>
           </div>
         </div>
+
+        <div style={{flex:1}} />
 
         <footer className="s6-footer" style={{background:dark?"#050710":"#e6e2dc"}}>
           {/* Top row: [brand] [product] [legal] */}
