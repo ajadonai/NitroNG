@@ -94,9 +94,6 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive }) {
         </div>
       ))}
 
-      {/* Mobile menu hint — only shows on first visit */}
-      <MobileMenuHint dark={dark} t={t} />
-
       {/* Stat cards */}
       <div className="dash-stats">
         {[
@@ -396,32 +393,11 @@ function DashboardInner() {
     if (typeof window === 'undefined') return new Set();
     try { const s = localStorage.getItem("nitro-notif-cleared"); return s ? new Set(JSON.parse(s)) : new Set(); } catch { return new Set(); }
   });
-  const [notifClearedAt, setNotifClearedAt] = useState(null);
+  const [notifClearedAt] = useState(null);
 
   // Persist to localStorage on change
   useEffect(() => { try { localStorage.setItem("nitro-notif-read", JSON.stringify([...readNotifIds])); } catch {} }, [readNotifIds]);
   useEffect(() => { try { localStorage.setItem("nitro-notif-cleared", JSON.stringify([...clearedNotifIds])); } catch {} }, [clearedNotifIds]);
-
-  // Sync read/cleared state FROM server when user loads
-  useEffect(() => {
-    if (!user) return;
-    try {
-      let serverRead = [];
-      try { serverRead = user.notifReadIds ? JSON.parse(user.notifReadIds) : []; } catch {}
-      if (serverRead.length > 0) setReadNotifIds(prev => new Set([...prev, ...serverRead]));
-      if (user.notifClearedAt) setNotifClearedAt(new Date(user.notifClearedAt));
-    } catch {}
-  }, [user]);
-
-  // Sync read IDs TO server (debounced)
-  const syncReadToServer = useRef(null);
-  useEffect(() => {
-    if (readNotifIds.size === 0) return;
-    clearTimeout(syncReadToServer.current);
-    syncReadToServer.current = setTimeout(() => {
-      fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ readIds: [...readNotifIds] }) }).catch(() => {});
-    }, 2000);
-  }, [readNotifIds]);
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
   const [txs, setTxs] = useState([]);
