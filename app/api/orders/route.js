@@ -80,7 +80,7 @@ export async function PATCH(req) {
           data: {
             userId: session.id, type: 'refund', amount: order.charge,
             method: 'wallet', status: 'Completed',
-            reference: order.orderId || order.id,
+            reference: `refund-${order.orderId || order.id}-${Date.now()}`,
             note: `Refund for cancelled order ${order.orderId || order.id}`,
           },
         }),
