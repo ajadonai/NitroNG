@@ -1,14 +1,19 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { fD } from "../lib/format";
+import { useConfirm } from "./confirm-dialog";
 
+function statusClr(s, dk) { return s === "Open" ? (dk ? "#fcd34d" : "#d97706") : s === "In Progress" ? (dk ? "#60a5fa" : "#2563eb") : (dk ? "#6ee7b7" : "#059669"); }
+function statusBg(s, dk) { return s === "Open" ? (dk ? "rgba(234,179,8,0.1)" : "rgba(234,179,8,0.06)") : s === "In Progress" ? (dk ? "rgba(96,165,250,0.08)" : "rgba(37,99,235,0.06)") : (dk ? "rgba(110,231,183,0.08)" : "rgba(16,185,129,0.06)"); }
 
 export default function AdminTicketsPage({ dark, t }) {
+  const confirm = useConfirm();
   const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
   const [selected, setSelected] = useState(null);
+  const [filter, setFilter] = useState("all");
   const [reply, setReply] = useState("");
+  const [loading, setLoading] = useState(true);
+  const msgsEnd = useRef(null);
 
   const refreshTickets = () => {
     fetch("/api/admin/tickets").then(r => r.json()).then(d => {
@@ -19,25 +24,24 @@ export default function AdminTicketsPage({ dark, t }) {
           if (updated) setSelected(updated);
         }
       }
-    }).catch(() => {});
+      setLoading(false);
+    }).catch(() => setLoading(false));
   };
 
-  useEffect(() => {
-    fetch("/api/admin/tickets").then(r => r.json()).then(d => { setTickets(d.tickets || []); setLoading(false); }).catch(() => setLoading(false));
-  }, []);
+  useEffect(() => { refreshTickets(); }, []);
 
-  // Poll every 10s, pause when tab hidden
+  // Poll every 10s
   useEffect(() => {
-    let interval = null;
-    const start = () => { interval = setInterval(refreshTickets, 10000); };
-    const stop = () => { clearInterval(interval); interval = null; };
-    const onVis = () => { document.hidden ? stop() : (refreshTickets(), start()); };
-    start();
+    const iv = setInterval(refreshTickets, 10000);
+    const onVis = () => { if (!document.hidden) refreshTickets(); };
     document.addEventListener("visibilitychange", onVis);
-    return () => { stop(); document.removeEventListener("visibilitychange", onVis); };
+    return () => { clearInterval(iv); document.removeEventListener("visibilitychange", onVis); };
   }, [selected?.id]);
 
-  const filtered = tickets.filter(tk => filter === "all" || tk.status === filter);
+  useEffect(() => { setTimeout(() => msgsEnd.current?.scrollIntoView({ behavior: "smooth" }), 50); }, [selected, tickets]);
+
+  const filtered = filter === "all" ? tickets : tickets.filter(tk => tk.status === filter);
+  const openCount = tickets.filter(tk => tk.status === "Open" || tk.status === "In Progress").length;
 
   const doReply = async () => {
     if (!reply.trim() || !selected) return;
@@ -49,85 +53,145 @@ export default function AdminTicketsPage({ dark, t }) {
 
   const doResolve = async () => {
     if (!selected) return;
+    const ok = await confirm({ title: "Resolve Ticket", message: `Mark ticket ${selected.id} as resolved?`, confirmLabel: "Resolve" });
+    if (!ok) return;
     try {
       await fetch("/api/admin/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "resolve", ticketId: selected.id }) });
       refreshTickets();
     } catch {}
   };
 
+  const selectTicket = (tk) => { setSelected(tk); setReply(""); };
+
+  if (loading) return <div style={{ padding: 24, color: t.textMuted }}>Loading tickets...</div>;
+
   return (
-    <>
-      <div className="adm-header">
-        <div className="adm-title" style={{ color: t.text }}>Support</div>
-        <div className="adm-subtitle" style={{ color: t.textMuted }}>{tickets.filter(tk => tk.status === "Open").length} open support tickets</div>
-        <div className="page-divider" style={{ background: t.cardBorder }} />
-      </div>
-
-      <div className="adm-filters">
-        {["all", "Open", "In Progress", "Resolved"].map(f => (
-          <button key={f} onClick={() => setFilter(f)} className="adm-filter-pill" style={{ borderWidth: 1, borderStyle: "solid", borderColor: filter === f ? t.accent : t.cardBorder, background: filter === f ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: filter === f ? t.accent : t.textMuted }}>
-            {f === "all" ? "All" : f} <span className="m">({f === "all" ? tickets.length : tickets.filter(tk => tk.status === f).length})</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="adm-split">
-        {/* Ticket list */}
-        <div className="adm-split-list">
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
-            {loading ? (
-              <div className="adm-empty" style={{ color: t.textMuted }}>Loading tickets...</div>
-            ) : filtered.length > 0 ? filtered.map((tk, i) => (
-              <button key={tk.id} onClick={() => setSelected(tk)} className="adm-ticket-row" style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: selected?.id === tk.id ? (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)") : "transparent", width: "100%", textAlign: "left", display: "block", padding: "14px 16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                  <span className="m" style={{ fontSize: 13, color: t.accent }}>{tk.id}</span>
-                  <span className="m" style={{ fontSize: 11, padding: "2px 7px", borderRadius: 4, fontWeight: 600, background: tk.status === "Open" ? (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)") : tk.status === "Resolved" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(165,180,252,.1)" : "rgba(79,70,229,.06)"), color: tk.status === "Open" ? t.amber : tk.status === "Resolved" ? t.green : t.blue }}>{tk.status}</span>
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>{tk.subject}</div>
-                <div style={{ fontSize: 13, color: t.textMuted, marginTop: 2 }}>{tk.user} · {tk.created ? fD(tk.created) : ""}</div>
-              </button>
-            )) : (
-              <div className="adm-empty" style={{ color: t.textMuted }}>No tickets found</div>
-            )}
-          </div>
+    <div style={{ display: "flex", gap: 0, height: "100%", minHeight: 500 }}>
+      {/* ═══ LEFT: TICKET LIST ═══ */}
+      <div style={{ width: 280, borderRight: `1px solid ${t.cardBorder}`, display: "flex", flexDirection: "column", flexShrink: 0 }}>
+        <div style={{ padding: "14px 16px", borderBottom: `1px solid ${t.cardBorder}` }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Support inbox</div>
+          <div style={{ fontSize: 11, color: t.textMuted, marginTop: 2 }}>{openCount} active</div>
         </div>
-
-        {/* Ticket detail */}
-        <div className="adm-split-detail">
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)", padding: 18 }}>
-            {selected ? (
-              <>
-                <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 4 }}>{selected.subject}</div>
-                <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 16 }}>From: {selected.user} ({selected.email}) · {selected.created ? fD(selected.created) : ""}</div>
-
-                {/* Messages */}
-                <div style={{ padding: 14, borderRadius: 10, background: dark ? "#0d1020" : "#faf8f5", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, marginBottom: 14 }}>
-                  <div style={{ fontSize: 14, color: t.text, lineHeight: 1.6 }}>{selected.message || "No message content"}</div>
-                </div>
-
-                {(selected.replies || []).map((r, i) => (
-                  <div key={i} style={{ padding: 12, borderRadius: 10, background: r.from === "admin" ? (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)") : (dark ? "rgba(96,165,250,.06)" : "rgba(37,99,235,.03)"), borderWidth: 1, borderStyle: "solid", borderColor: r.from === "admin" ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : (dark ? "rgba(96,165,250,.1)" : "rgba(37,99,235,.06)"), marginBottom: 8 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: r.from === "admin" ? t.accent : (dark ? "#60a5fa" : "#2563eb"), marginBottom: 3 }}>{r.from === "admin" ? "Admin" : selected.user || "User"} · {r.time ? fD(r.time) : ""}</div>
-                    <div style={{ fontSize: 14, color: t.text, lineHeight: 1.5 }}>{r.msg || r.message}</div>
+        <div style={{ display: "flex", gap: 3, padding: "8px 10px", borderBottom: `1px solid ${t.cardBorder}` }}>
+          {[["all", "All"], ["Open", "Open"], ["In Progress", "Active"], ["Resolved", "Done"]].map(([v, l]) => (
+            <button key={v} onClick={() => setFilter(v)} style={{ padding: "4px 10px", borderRadius: 5, fontSize: 10, fontWeight: filter === v ? 600 : 450, background: filter === v ? (dark ? "rgba(196,125,142,0.1)" : "rgba(196,125,142,0.06)") : "transparent", color: filter === v ? t.accent : t.textMuted, border: "none", cursor: "pointer" }}>{l}</button>
+          ))}
+        </div>
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {filtered.length === 0 && <div style={{ padding: 30, textAlign: "center", color: t.textMuted, fontSize: 12 }}>No tickets</div>}
+          {filtered.map(tk => {
+            const last = tk.replies?.[tk.replies.length - 1];
+            const lastText = last ? `${last.from === "admin" ? `${last.name || "You"}` : (tk.user?.split(" ")[0] || "User")}: ${last.msg?.slice(0, 50)}` : tk.message?.slice(0, 50);
+            const isSel = selected?.id === tk.id;
+            const hasUnread = tk.replies?.some(r => r.from === "user") && (tk.replies?.[tk.replies.length - 1]?.from === "user");
+            return (
+              <div key={tk.id} onClick={() => selectTicket(tk)} style={{ padding: "12px 14px", borderBottom: `1px solid ${t.cardBorder}`, cursor: "pointer", background: isSel ? (dark ? "rgba(196,125,142,0.04)" : "rgba(196,125,142,0.02)") : "transparent", borderLeft: isSel ? `2px solid ${t.accent}` : "2px solid transparent" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 550, color: t.text }}>{tk.user}</span>
+                    {hasUnread && <div style={{ width: 6, height: 6, borderRadius: 3, background: t.accent }} />}
                   </div>
-                ))}
-
-                {selected.status !== "Resolved" && (
-                  <>
-                    <textarea value={reply} onChange={e => setReply(e.target.value)} placeholder="Write a reply..." rows={3} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", resize: "vertical", marginTop: 8, marginBottom: 8, fontFamily: "inherit", lineHeight: 1.5, boxSizing: "border-box" }} />
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button onClick={doReply} className="adm-btn-primary" style={{ opacity: reply.trim() ? 1 : .4 }}>Send Reply</button>
-                      <button onClick={doResolve} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.green }}>Resolve</button>
-                    </div>
-                  </>
-                )}
-              </>
-            ) : (
-              <div style={{ textAlign: "center", padding: "50px 0", color: t.textMuted, fontSize: 13 }}>Select a ticket to view details</div>
-            )}
-          </div>
+                  <span style={{ fontSize: 10, color: t.textMuted }}>{tk.created ? fD(tk.created) : ""}</span>
+                </div>
+                <div style={{ fontSize: 12, color: dark ? "rgba(255,255,255,0.7)" : t.text, marginBottom: 4 }}>{tk.subject}</div>
+                <div style={{ fontSize: 11, color: t.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 5 }}>{lastText}</div>
+                <div style={{ display: "flex", gap: 5 }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: statusBg(tk.status, dark), color: statusClr(tk.status, dark) }}>{tk.status.toLowerCase()}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
-    </>
+
+      {/* ═══ CENTER: CONVERSATION ═══ */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        {selected ? <>
+          <div style={{ padding: "14px 18px", borderBottom: `1px solid ${t.cardBorder}`, flexShrink: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 550, color: t.text, display: "flex", alignItems: "center", gap: 8 }}>
+              {selected.subject}
+              <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: statusBg(selected.status, dark), color: statusClr(selected.status, dark) }}>{selected.status.toLowerCase()}</span>
+            </div>
+            <div style={{ fontSize: 11, color: t.textMuted, marginTop: 3, fontFamily: "'JetBrains Mono', monospace" }}>{selected.id} · {selected.user} · {selected.email}</div>
+          </div>
+
+          <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ flex: 1 }} />
+            {/* Original message */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+              <div style={{ maxWidth: "80%", padding: "10px 14px", borderRadius: 14, borderBottomLeftRadius: 4, background: dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)", border: `1px solid ${t.cardBorder}` }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: dark ? "#60a5fa" : "#2563eb", marginBottom: 3 }}>{selected.user}</div>
+                <div style={{ fontSize: 13, color: t.text, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{selected.message}</div>
+              </div>
+              <div style={{ fontSize: 10, color: t.textMuted, marginTop: 3, padding: "0 6px" }}>{selected.created ? fD(selected.created) : ""}</div>
+            </div>
+            {/* Replies */}
+            {(selected.replies || []).map((r, i) => (
+              <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: r.from === "admin" ? "flex-end" : "flex-start" }}>
+                <div style={{
+                  maxWidth: "80%", padding: "10px 14px", borderRadius: 14,
+                  borderBottomRightRadius: r.from === "admin" ? 4 : 14,
+                  borderBottomLeftRadius: r.from !== "admin" ? 4 : 14,
+                  background: r.from === "admin" ? (dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.06)") : (dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)"),
+                  border: r.from === "admin" ? `1px solid ${dark ? "rgba(196,125,142,0.1)" : "rgba(196,125,142,0.08)"}` : `1px solid ${t.cardBorder}`
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: r.from === "admin" ? t.accent : (dark ? "#60a5fa" : "#2563eb"), marginBottom: 3 }}>{r.from === "admin" ? `${r.name || "You"} (Admin)` : (r.name || selected.user)}</div>
+                  <div style={{ fontSize: 13, color: t.text, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{r.msg}</div>
+                </div>
+                <div style={{ fontSize: 10, color: t.textMuted, marginTop: 3, padding: "0 6px" }}>{r.time ? fD(r.time) : ""}</div>
+              </div>
+            ))}
+            <div ref={msgsEnd} />
+          </div>
+
+          {selected.status !== "Resolved" ? (
+            <div style={{ padding: "12px 16px", borderTop: `1px solid ${t.cardBorder}`, display: "flex", gap: 8, alignItems: "flex-end", flexShrink: 0 }}>
+              <textarea value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); doReply(); } }} placeholder={`Reply to ${selected.user?.split(" ")[0]}...`} rows={1} style={{ flex: 1, padding: "10px 14px", borderRadius: 12, background: dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)", border: `1px solid ${t.cardBorder}`, color: t.text, fontSize: 13, outline: "none", fontFamily: "inherit", resize: "none", lineHeight: 1.5, minHeight: 42, maxHeight: 100 }} />
+              <button onClick={doReply} style={{ padding: "9px 18px", borderRadius: 10, background: reply.trim() ? `linear-gradient(135deg,${t.accent},#a3586b)` : (dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)"), color: reply.trim() ? "#fff" : t.textMuted, fontSize: 12, fontWeight: 600, border: "none", cursor: reply.trim() ? "pointer" : "default", whiteSpace: "nowrap" }}>Send</button>
+              <button onClick={doResolve} style={{ padding: "9px 14px", borderRadius: 10, background: "none", border: `1px solid ${dark ? "rgba(110,231,183,0.15)" : "rgba(16,185,129,0.12)"}`, color: dark ? "#6ee7b7" : "#059669", fontSize: 12, fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap" }}>Resolve</button>
+            </div>
+          ) : (
+            <div style={{ padding: "14px 18px", borderTop: `1px solid ${t.cardBorder}`, textAlign: "center", fontSize: 12, color: t.textMuted, flexShrink: 0 }}>
+              Ticket resolved · <button onClick={async () => { await fetch("/api/admin/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reopen", ticketId: selected.id }) }); refreshTickets(); }} style={{ background: "none", border: "none", color: t.accent, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>Reopen</button>
+            </div>
+          )}
+        </> : (
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: t.textMuted, fontSize: 13 }}>Select a conversation</div>
+        )}
+      </div>
+
+      {/* ═══ RIGHT: CUSTOMER INFO ═══ */}
+      {selected && (
+        <div style={{ width: 220, borderLeft: `1px solid ${t.cardBorder}`, padding: "16px 14px", flexShrink: 0, overflowY: "auto" }}>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ width: 40, height: 40, borderRadius: "50%", background: dark ? "rgba(96,165,250,0.1)" : "rgba(37,99,235,0.06)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8, border: `1px solid ${dark ? "rgba(96,165,250,0.12)" : "rgba(37,99,235,0.08)"}` }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: dark ? "#60a5fa" : "#2563eb" }}>{selected.user?.split(" ").map(n => n[0]).join("") || "?"}</span>
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 550, color: t.text }}>{selected.user}</div>
+            <div style={{ fontSize: 12, color: t.textSoft, marginTop: 2 }}>{selected.email}</div>
+          </div>
+
+          <div style={{ height: 1, background: t.cardBorder, marginBottom: 14 }} />
+
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Ticket</div>
+            <div style={{ fontSize: 12, color: t.textSoft, marginBottom: 3 }}>ID: <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11 }}>{selected.id}</span></div>
+            <div style={{ fontSize: 12, color: t.textSoft, marginBottom: 3 }}>Status: <span style={{ fontWeight: 600, color: statusClr(selected.status, dark) }}>{selected.status}</span></div>
+            <div style={{ fontSize: 12, color: t.textSoft }}>Replies: {selected.replies?.length || 0}</div>
+          </div>
+
+          {selected.orderId && <>
+            <div style={{ height: 1, background: t.cardBorder, marginBottom: 14 }} />
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Related order</div>
+              <div style={{ padding: 10, borderRadius: 8, background: dark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)", border: `1px solid ${t.cardBorder}` }}>
+                <div style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: t.accent }}>{selected.orderId}</div>
+              </div>
+            </div>
+          </>}
+        </div>
+      )}
+    </div>
   );
 }

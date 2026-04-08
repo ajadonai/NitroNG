@@ -1,47 +1,107 @@
 'use client';
 import { useState, useEffect, useRef } from "react";
-import { fN } from "../lib/format";
+import { fD } from "../lib/format";
 
+const CATEGORIES = ["Order Issue", "Payment", "Refund", "Account", "Other"];
 
-function statusClr(s, dk) { return s === "Open" ? (dk ? "#fcd34d" : "#d97706") : s === "Resolved" ? (dk ? "#6ee7b7" : "#059669") : (dk ? "#888" : "#666"); }
-function statusBg(s, dk) { return s === "Open" ? (dk ? "#1c1608" : "#fffbeb") : s === "Resolved" ? (dk ? "#0a2416" : "#ecfdf5") : (dk ? "#1a1a1a" : "#f5f5f5"); }
-function statusBrd(s, dk) { return s === "Open" ? (dk ? "#92400e" : "#fde68a") : s === "Resolved" ? (dk ? "#166534" : "#a7f3d0") : (dk ? "#404040" : "#d4d4d4"); }
+const BOT_RESPONSES = {
+  check_order: { text: "To check your order status, go to **History** in your dashboard. Each order shows its current status. You can also tap **Check** on any order to refresh from the provider.", followUp: "What do the statuses mean?" },
+  refund: { text: "Nitro offers refunds for:\n\n• **Undelivered orders** — auto-refunded after 72 hours\n• **Partial delivery** — refunded for undelivered portion\n• **Wrong service** — full refund to wallet\n\nRefunds go to your Nitro wallet within 5 minutes.", followUp: null },
+  pricing: { text: "Nitro offers 3 tiers:\n\n• **Budget** — cheapest, may drop slightly\n• **Standard** — best value, stable with refill\n• **Premium** — top quality, lifetime guarantee\n\nPrices start at ₦3 per 1,000. Check the **Services** page for current rates.", followUp: null },
+  referrals: { text: "Share your referral link with friends. When they sign up and deposit, you both earn a bonus! Check the **Referrals** section in your dashboard.", followUp: null },
+  api: { text: "To use the Nitro API:\n\n1. Go to **Settings** → create your API key\n2. Your key starts with `ntro_sk_`\n3. Check the **Guide** page for full documentation", followUp: null },
+  status_explain: { text: "• **Pending** — order received, waiting to start\n• **Processing** — actively being delivered\n• **Completed** — fully delivered\n• **Partial** — only some delivered (auto-refund for rest)\n• **Cancelled** — cancelled, funds refunded to wallet", followUp: null },
+};
 
-const CATEGORIES = ["Order Issue", "Refund", "Payment", "Account", "General"];
-const BOT_QUICK = [
-  { label: "Check order status", icon: "📦" },
-  { label: "Request a refund", icon: "💰" },
-  { label: "Pricing & services", icon: "💎" },
-  { label: "How referrals work", icon: "🤝" },
-  { label: "Talk to a human", icon: "👤" },
+const QUICK_ACTIONS = [
+  { id: "check_order", label: "Check order status", icon: "📦" },
+  { id: "refund", label: "Refund policy", icon: "💰" },
+  { id: "pricing", label: "Pricing & tiers", icon: "💎" },
+  { id: "referrals", label: "How referrals work", icon: "🤝" },
+  { id: "api", label: "Using the API", icon: "⚡" },
+  { id: "human", label: "Talk to support", icon: "👤" },
 ];
 
-/* ═══════════════════════════════════════════ */
-/* ═══ SUPPORT PAGE                        ═══ */
-/* ═══════════════════════════════════════════ */
-export default function SupportPage({ dark, t, tickets: ticketsProp }) {
-  const [tab, setTab] = useState("chat");
-  const [chatMsgs, setChatMsgs] = useState([
-    { from: "bot", text: "Hi! I'm Nitro's assistant. I can help with orders, refunds, pricing, and more. What do you need?", time: "Now" },
-  ]);
-  const [chatInput, setChatInput] = useState("");
-  const [botTyping, setBotTyping] = useState(false);
-  const [escalated, setEscalated] = useState(false);
+const REASSURANCE = [
+  "Still looking for an available agent — hang tight!",
+  "Our team is handling other conversations. You're in the queue.",
+  "Thanks for your patience. An agent will be with you shortly.",
+  "Your conversation is saved — feel free to add more details while you wait.",
+  "Agents typically respond within 5 minutes. Shouldn't be long now.",
+];
 
-  const [ticketView, setTicketView] = useState("list");
+function StatusPill({ status, dark }) {
+  const c = status === "Open" ? { bg: dark ? "rgba(234,179,8,0.1)" : "rgba(234,179,8,0.08)", color: dark ? "#fcd34d" : "#d97706", border: dark ? "rgba(234,179,8,0.2)" : "rgba(234,179,8,0.15)" }
+    : status === "In Progress" ? { bg: dark ? "rgba(59,130,246,0.08)" : "rgba(59,130,246,0.06)", color: dark ? "#60a5fa" : "#2563eb", border: dark ? "rgba(59,130,246,0.12)" : "rgba(59,130,246,0.1)" }
+    : { bg: dark ? "rgba(16,185,129,0.08)" : "rgba(16,185,129,0.06)", color: dark ? "#6ee7b7" : "#059669", border: dark ? "rgba(16,185,129,0.12)" : "rgba(16,185,129,0.1)" };
+  return <span className="m" style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>{status.toLowerCase()}</span>;
+}
+
+function FormatText({ text, t }) {
+  const parts = text.split(/(\*\*[^*]+\*\*|\`[^`]+\`|\n)/g);
+  return <>{parts.map((p, i) => {
+    if (p === "\n") return <br key={i} />;
+    if (p.startsWith("**") && p.endsWith("**")) return <strong key={i} style={{ fontWeight: 600, color: t.text }}>{p.slice(2, -2)}</strong>;
+    if (p.startsWith("`") && p.endsWith("`")) return <code key={i} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, background: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)", padding: "1px 5px", borderRadius: 3 }}>{p.slice(1, -1)}</code>;
+    return <span key={i}>{p}</span>;
+  })}</>;
+}
+
+function ChatBubble({ m, dark, t }) {
+  if (m.from === "system") {
+    return (
+      <div style={{ textAlign: "center", padding: "6px 0" }}>
+        <span style={{ fontSize: 11, color: t.textMuted, background: dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)", padding: "4px 12px", borderRadius: 10 }}>{m.text}</span>
+      </div>
+    );
+  }
+  const isUser = m.from === "user";
+  const isBot = m.from === "bot";
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: isUser ? "flex-end" : "flex-start" }}>
+      <div style={{
+        maxWidth: "82%", padding: "10px 14px", borderRadius: 14,
+        borderBottomRightRadius: isUser ? 4 : 14,
+        borderBottomLeftRadius: !isUser ? 4 : 14,
+        background: isUser ? (dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.08)") : (dark ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.9)"),
+        border: isUser ? `1px solid ${dark ? "rgba(196,125,142,0.1)" : "rgba(196,125,142,0.12)"}` : `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
+      }}>
+        {!isUser && <div style={{ fontSize: 11, fontWeight: 600, color: isBot ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#60a5fa" : "#2563eb"), marginBottom: 3 }}>{m.name || (isBot ? "Nitro Bot" : "Support")}</div>}
+        <div style={{ fontSize: 13, color: t.textSoft || t.text, lineHeight: 1.6, whiteSpace: "pre-line" }}>{m.formatted ? <FormatText text={m.text} t={t} /> : m.text}</div>
+      </div>
+      {m.time && <div style={{ fontSize: 10, color: t.textMuted, marginTop: 3, padding: "0 6px" }}>{m.time.includes("T") ? fD(m.time) : m.time}</div>}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════ */
+/* ═══ SUPPORT PAGE — WhatsApp Style        ═══ */
+/* ═══════════════════════════════════════════ */
+export default function SupportPage({ dark, t }) {
+  const [screen, setScreen] = useState("chat");
+  const [tickets, setTickets] = useState([]);
   const [activeTicket, setActiveTicket] = useState(null);
   const [filter, setFilter] = useState("all");
-  const [newSubject, setNewSubject] = useState("");
-  const [newCategory, setNewCategory] = useState("Order Issue");
-  const [newMessage, setNewMessage] = useState("");
-  const [replyText, setReplyText] = useState("");
-  const [tickets, setTickets] = useState([]);
+  const [input, setInput] = useState("");
+  const [isLive, setIsLive] = useState(false);
+  const [waitingForAgent, setWaitingForAgent] = useState(false);
+  const [msgs, setMsgs] = useState([
+    { from: "bot", name: "Nitro Bot", text: "Hi! I'm Nitro's assistant. I can help with orders, refunds, pricing, and more. Tap a topic below or type your question.", time: "Now", formatted: true }
+  ]);
+  const [typing, setTyping] = useState(false);
+  const [showQuick, setShowQuick] = useState(true);
   const [ticketLoading, setTicketLoading] = useState(false);
-  const [ticketMsg, setTicketMsg] = useState(null);
 
-  const chatEndRef = useRef(null);
+  const msgsEnd = useRef(null);
+  const ticketMsgsEnd = useRef(null);
+  const waitRef = useRef(null);
+  const waitCountRef = useRef(0);
 
-  // Load tickets from API + poll every 15s
+  const scrollToBottom = () => setTimeout(() => msgsEnd.current?.scrollIntoView({ behavior: "smooth" }), 50);
+  const scrollTicketToBottom = () => setTimeout(() => ticketMsgsEnd.current?.scrollIntoView({ behavior: "smooth" }), 50);
+  useEffect(scrollToBottom, [msgs, typing]);
+  useEffect(scrollTicketToBottom, [activeTicket]);
+
   const refreshTickets = () => {
     fetch("/api/tickets").then(r => r.json()).then(d => {
       if (d.tickets) {
@@ -55,271 +115,268 @@ export default function SupportPage({ dark, t, tickets: ticketsProp }) {
   };
   useEffect(() => { refreshTickets(); }, []);
   useEffect(() => {
-    if (tab !== "tickets") return;
-    let interval = null;
-    const start = () => { interval = setInterval(refreshTickets, 15000); };
-    const stop = () => { clearInterval(interval); interval = null; };
+    let iv = null;
+    const start = () => { iv = setInterval(refreshTickets, 12000); };
+    const stop = () => { clearInterval(iv); iv = null; };
     const onVis = () => { document.hidden ? stop() : (refreshTickets(), start()); };
     start();
     document.addEventListener("visibilitychange", onVis);
     return () => { stop(); document.removeEventListener("visibilitychange", onVis); };
-  }, [tab, activeTicket?.id]);
+  }, [activeTicket?.id]);
 
-  const submitTicket = async () => {
-    if (!newSubject?.trim() || !newMessage?.trim()) return;
-    setTicketLoading(true); setTicketMsg(null);
-    try {
-      const res = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", subject: newSubject, message: newMessage, category: newCategory }) });
-      const data = await res.json();
-      if (res.ok) {
-        setTicketMsg({ type: "success", text: `Ticket ${data.ticket?.id} created` });
-        setNewSubject(""); setNewMessage(""); setNewCategory("Order Issue");
-        setTicketView("list");
-        // Refresh tickets
-        fetch("/api/tickets").then(r => r.json()).then(d => { if (d.tickets) setTickets(d.tickets); }).catch(() => {});
-      } else {
-        setTicketMsg({ type: "error", text: data.error || "Failed to create ticket" });
-      }
-    } catch { setTicketMsg({ type: "error", text: "Request failed" }); }
-    setTicketLoading(false);
-  };
+  // Reassurance messages while waiting for agent
+  useEffect(() => {
+    if (!waitingForAgent) { clearInterval(waitRef.current); waitCountRef.current = 0; return; }
+    waitRef.current = setInterval(() => {
+      if (waitCountRef.current >= REASSURANCE.length) { clearInterval(waitRef.current); return; }
+      setMsgs(prev => [...prev, { from: "bot", name: "Nitro Bot", text: REASSURANCE[waitCountRef.current], time: "Now" }]);
+      waitCountRef.current++;
+    }, 30000);
+    return () => clearInterval(waitRef.current);
+  }, [waitingForAgent]);
 
-  const sendReply = async () => {
-    if (!replyText?.trim() || !activeTicket) return;
-    setTicketLoading(true);
-    try {
-      const res = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reply", ticketId: activeTicket.id, message: replyText }) });
-      const data = await res.json();
-      if (res.ok) {
-        setReplyText("");
-        // Refresh tickets and update active ticket
-        const r = await fetch("/api/tickets");
-        if (r.ok) {
-          const d = await r.json();
-          if (d.tickets) {
-            setTickets(d.tickets);
-            const updated = d.tickets.find(tk => tk.id === activeTicket.id);
-            if (updated) setActiveTicket(updated);
+  // Poll for agent reply when waiting
+  useEffect(() => {
+    if (!waitingForAgent) return;
+    const iv = setInterval(() => {
+      fetch("/api/tickets").then(r => r.json()).then(d => {
+        if (!d.tickets) return;
+        const latest = d.tickets.find(tk => tk.status === "In Progress");
+        if (latest) {
+          const adminReply = latest.messages?.filter(m => m.from === "admin");
+          if (adminReply?.length) {
+            setWaitingForAgent(false);
+            const lastAdmin = adminReply[adminReply.length - 1];
+            const agentName = lastAdmin.name || "Support";
+            setMsgs(prev => [
+              ...prev,
+              { from: "system", text: `${agentName.replace(" - Nitro", "")} has joined the conversation` },
+              { from: "support", name: agentName.includes(" - ") ? agentName : `${agentName} - Nitro`, text: lastAdmin.text, time: lastAdmin.time || "Now" },
+            ]);
           }
         }
+        setTickets(d.tickets);
+      }).catch(() => {});
+    }, 8000);
+    return () => clearInterval(iv);
+  }, [waitingForAgent]);
+
+  const addMsg = (m) => setMsgs(prev => [...prev, m]);
+  const botReply = (text, delay = 700, extra = {}) => {
+    setTyping(true);
+    setTimeout(() => {
+      setTyping(false);
+      addMsg({ from: "bot", name: "Nitro Bot", text, time: "Now", formatted: true, ...extra });
+    }, delay + Math.random() * 300);
+  };
+
+  const activeCount = tickets.filter(tk => tk.status !== "Resolved").length;
+
+  const handleQuick = (id) => {
+    setShowQuick(false);
+    const label = QUICK_ACTIONS.find(a => a.id === id)?.label || id;
+    addMsg({ from: "user", text: label, time: "Now" });
+
+    if (id === "human") {
+      setTyping(true);
+      setTimeout(() => {
+        setTyping(false);
+        addMsg({ from: "system", text: "Connecting you with support..." });
+        setTimeout(async () => {
+          const chatContext = msgs.filter(m => m.from === "user").map(m => m.text).join(" | ");
+          const subject = chatContext.length > 5 ? chatContext.slice(0, 80) : "Support request";
+          try {
+            await fetch("/api/tickets", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "create", subject, message: chatContext || "User requested live support", category: "General" })
+            });
+            refreshTickets();
+          } catch {}
+          setIsLive(true);
+          setWaitingForAgent(true);
+          addMsg({ from: "system", text: "You're now chatting with Nitro Support. An agent will respond shortly." });
+        }, 600);
+      }, 600);
+      return;
+    }
+
+    const resp = BOT_RESPONSES[id];
+    if (!resp) return;
+    botReply(resp.text, 600, resp.followUp ? { followUp: resp.followUp } : {});
+    setTimeout(() => setShowQuick(true), 1500);
+  };
+
+  const handleFollowUp = (q) => {
+    addMsg({ from: "user", text: q, time: "Now" });
+    setShowQuick(false);
+    const resp = BOT_RESPONSES["status_explain"];
+    botReply(resp?.text || "Let me connect you with support.", 700);
+    setTimeout(() => setShowQuick(true), 1500);
+  };
+
+  const sendMsg = () => {
+    if (!input.trim()) return;
+    const txt = input.trim();
+    addMsg({ from: "user", text: txt, time: "Now" });
+    setInput("");
+
+    if (isLive) {
+      const latestTicket = tickets.find(tk => tk.status === "Open" || tk.status === "In Progress");
+      if (latestTicket) {
+        fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reply", ticketId: latestTicket.id, message: txt }) }).catch(() => {});
       }
+      return;
+    }
+
+    setShowQuick(false);
+    const lower = txt.toLowerCase();
+    if (lower.includes("order") && (lower.includes("status") || lower.includes("check"))) {
+      botReply(BOT_RESPONSES.check_order.text, 700, { followUp: BOT_RESPONSES.check_order.followUp });
+      setTimeout(() => setShowQuick(true), 1500);
+    } else if (lower.includes("refund") || lower.includes("money back")) {
+      botReply(BOT_RESPONSES.refund.text, 700);
+      setTimeout(() => setShowQuick(true), 1500);
+    } else if (lower.includes("price") || lower.includes("cost") || lower.includes("how much")) {
+      botReply(BOT_RESPONSES.pricing.text, 700);
+      setTimeout(() => setShowQuick(true), 1500);
+    } else if (lower.includes("human") || lower.includes("agent") || lower.includes("support") || lower.includes("person") || lower.includes("talk to")) {
+      handleQuick("human");
+    } else {
+      botReply("I'm not sure about that. Would you like to speak with our support team? They can see this conversation and pick up where we left off.", 800, { escalatePrompt: true });
+    }
+  };
+
+  const sendTicketReply = async () => {
+    if (!input.trim() || !activeTicket) return;
+    setTicketLoading(true);
+    try {
+      const res = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reply", ticketId: activeTicket.id, message: input.trim() }) });
+      if (res.ok) { setInput(""); refreshTickets(); }
     } catch {}
     setTicketLoading(false);
   };
 
-  const filtered = tickets.filter(tk => filter === "all" || tk.status === filter);
-  const counts = { all: tickets.length };
-  ["Open", "Resolved", "Closed"].forEach(s => { counts[s] = tickets.filter(tk => tk.status === s).length; });
-
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMsgs, botTyping]);
-
-  const sendQuick = (label) => {
-    setChatMsgs(prev => [...prev, { from: "user", text: label, time: "Now" }]);
-    if (label === "Talk to a human") {
-      setBotTyping(true);
-      setTimeout(() => {
-        setBotTyping(false);
-        setChatMsgs(prev => [...prev, { from: "bot", text: "I'll connect you with our support team. Creating a ticket now — describe your issue and we'll respond as soon as possible.", time: "Now" }]);
-        setTimeout(() => setEscalated(true), 800);
-      }, 1200);
-      return;
-    }
-    setBotTyping(true);
-    const responses = {
-      "Check order status": "Sure! What's your order ID? (e.g. ORD-48291)",
-      "Request a refund": "I can help with that. Please provide the order ID you'd like refunded and I'll check the status.",
-      "Pricing & services": "We offer services across 35 platforms starting from ₦8/1K. Our most popular:\n\n• Instagram Followers — ₦200/1K (Budget) to ₦1,400/1K (Premium)\n• TikTok Views — ₦8/1K\n• YouTube Subscribers — ₦800/1K\n\nVisit the Services page for full pricing!",
-      "How referrals work": "Share your referral link with friends. When they sign up and make their first order, you earn ₦500! Check the Referrals page for your link.",
-    };
-    setTimeout(() => {
-      setBotTyping(false);
-      setChatMsgs(prev => [...prev, { from: "bot", text: responses[label] || "I'll look into that for you.", time: "Now" }]);
-    }, 1000 + Math.random() * 800);
-  };
-
-  const sendChat = () => {
-    if (!chatInput.trim()) return;
-    const msg = chatInput.trim();
-    setChatMsgs(prev => [...prev, { from: "user", text: msg, time: "Now" }]);
-    setChatInput("");
-    setBotTyping(true);
-    setTimeout(() => {
-      setBotTyping(false);
-      const lower = msg.toLowerCase();
-      let reply = "I'll look into that for you. Could you provide more details or an order ID?";
-      if (lower.includes("ord-")) reply = "Let me check that order... It looks like it's currently processing. Estimated completion is within 2-4 hours.";
-      else if (lower.includes("refund")) reply = "I can process a refund for you. Please share the order ID and I'll check eligibility.";
-      else if (lower.includes("price") || lower.includes("cost") || lower.includes("how much")) reply = "Check our Services page for full pricing! We start from ₦8/1K for views and ₦200/1K for followers.";
-      else if (lower.includes("human") || lower.includes("agent") || lower.includes("person")) {
-        setChatMsgs(prev => [...prev, { from: "bot", text: "I'll connect you with our team right away.", time: "Now" }]);
-        setTimeout(() => setEscalated(true), 800);
-        return;
-      }
-      setChatMsgs(prev => [...prev, { from: "bot", text: reply, time: "Now" }]);
-    }, 1200 + Math.random() * 600);
-  };
+  const openTicket = (tk) => { setActiveTicket(tk); setScreen("ticket-detail"); setInput(""); };
+  const filtered = filter === "all" ? tickets : tickets.filter(tk => tk.status === filter);
 
   return (
-    <div className="sup-root">
-      {/* Header + tabs */}
-      <div className="sup-header">
-        <div className="sup-title" style={{ color: t.text }}>Support</div>
-        <div className="sup-subtitle" style={{ color: t.textMuted }}>Get instant help or create a ticket</div>
-        <div className="page-divider" style={{ background: t.cardBorder }} />
-        <div className="sup-tabs" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", borderColor: t.cardBorder }}>
-          {[["chat", "💬 Chat"], ["tickets", "🎫 Tickets"]].map(([id, lb]) => (
-            <button key={id} onClick={() => { setTab(id); if (id === "tickets") setTicketView("list"); }} className="sup-tab" style={{ background: tab === id ? t.navActive : "transparent", color: tab === id ? t.accent : t.textMuted }}>
-              {lb}
-              {id === "tickets" && counts.Open > 0 && <span className="m sup-tab-badge" style={{ background: dark ? "#1c1608" : "#fffbeb", color: dark ? "#fcd34d" : "#d97706" }}>{counts.Open}</span>}
-            </button>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+
+      {/* ═══ MAIN CHAT ═══ */}
+      {screen === "chat" && <>
+        <div style={{ padding: "0 0 10px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: t.text, display: "flex", alignItems: "center", gap: 8 }}>
+              Support
+              {isLive && <span className="m" style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: dark ? "rgba(96,165,250,0.1)" : "rgba(59,130,246,0.06)", color: dark ? "#60a5fa" : "#2563eb", border: `1px solid ${dark ? "rgba(96,165,250,0.15)" : "rgba(59,130,246,0.1)"}` }}>live</span>}
+            </div>
+            <div style={{ fontSize: 13, color: t.textMuted }}>{isLive ? (waitingForAgent ? "Waiting for an agent..." : "Connected with support") : "Ask anything or talk to support"}</div>
+          </div>
+          <button onClick={() => setScreen("tickets")} style={{ position: "relative", padding: "7px 14px", borderRadius: 8, background: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)", border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, color: t.textSoft, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>
+            My tickets
+            {activeCount > 0 && <span style={{ position: "absolute", top: -5, right: -5, width: 17, height: 17, borderRadius: 9, background: t.accent, color: "#fff", fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{activeCount}</span>}
+          </button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "12px 0", display: "flex", flexDirection: "column", gap: 6, borderTop: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`, borderBottom: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}` }}>
+          <div style={{ flex: 1 }} />
+          {msgs.map((m, i) => (
+            <div key={i}>
+              <ChatBubble m={m} dark={dark} t={t} />
+              {m.followUp && <div style={{ marginTop: 6, paddingLeft: 4 }}><button onClick={() => handleFollowUp(m.followUp)} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 11, background: dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)", border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, color: t.textSoft, cursor: "pointer", fontFamily: "inherit" }}>{m.followUp}</button></div>}
+              {m.escalatePrompt && <div style={{ display: "flex", gap: 6, marginTop: 6, paddingLeft: 4 }}>
+                <button onClick={() => handleQuick("human")} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 11, background: dark ? "rgba(196,125,142,0.08)" : "rgba(196,125,142,0.05)", border: `1px solid ${dark ? "rgba(196,125,142,0.15)" : "rgba(196,125,142,0.1)"}`, color: t.accent, cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}>Yes, connect me</button>
+                <button onClick={() => setShowQuick(true)} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 11, background: dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)", border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, color: t.textMuted, cursor: "pointer", fontFamily: "inherit" }}>Ask something else</button>
+              </div>}
+            </div>
           ))}
+          {typing && <div style={{ alignSelf: "flex-start", padding: "10px 18px", borderRadius: 14, borderBottomLeftRadius: 4, background: dark ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.9)", border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` }}><div style={{ display: "flex", gap: 4 }}>{[0,1,2].map(j=><div key={j} className="sup-typing-dot" style={{ width:6,height:6,borderRadius:3,background:t.textMuted,animationDelay:`${j*.15}s` }}/>)}</div></div>}
+          <div ref={msgsEnd} />
         </div>
-      </div>
 
-      {/* ═══ CHAT TAB ═══ */}
-      {tab === "chat" && (
-        <div className="sup-chat">
-          <div className="sup-chat-msgs">
-            {chatMsgs.map((msg, i) => (
-              <div key={i} className={`sup-msg sup-msg-${msg.from}`}>
-                <div className="sup-msg-bubble" style={{ background: msg.from === "user" ? (dark ? "#2a1a22" : "#fdf2f4") : t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: msg.from === "user" ? (t.accent + "30") : t.cardBorder }}>
-                  {msg.from === "bot" && <div className="sup-msg-bot-label" style={{ color: t.green }}>
-                    <span className="sup-bot-dot" style={{ background: t.green }} />Nitro Bot
-                  </div>}
-                  <div className="sup-msg-text" style={{ color: t.text }}>{msg.text}</div>
-                </div>
-              </div>
-            ))}
-            {botTyping && (
-              <div className="sup-msg sup-msg-bot">
-                <div className="sup-typing" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
-                  <div className="sup-typing-dot" style={{ background: t.textMuted, animationDelay: "0s" }} />
-                  <div className="sup-typing-dot" style={{ background: t.textMuted, animationDelay: ".2s" }} />
-                  <div className="sup-typing-dot" style={{ background: t.textMuted, animationDelay: ".4s" }} />
-                </div>
-              </div>
-            )}
-            {!escalated && chatMsgs.length <= 2 && !botTyping && (
-              <div className="sup-quick-actions">
-                {BOT_QUICK.map(q => (
-                  <button key={q.label} onClick={() => sendQuick(q.label)} className="sup-quick-btn" style={{ borderColor: t.cardBorder, background: t.cardBg, color: t.text }}>
-                    <span>{q.icon}</span> {q.label}
-                  </button>
-                ))}
-              </div>
-            )}
-            {escalated && (
-              <div className="sup-escalation" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)", borderColor: t.accent + "20" }}>
-                <div className="sup-esc-title" style={{ color: t.text }}>Connecting you with our team</div>
-                <div className="sup-esc-desc" style={{ color: t.textMuted }}>A ticket will be created with this conversation. We typically respond within 2 hours.</div>
-                <button onClick={() => { setTab("tickets"); setTicketView("new"); setEscalated(false); }} className="sup-esc-btn">Create Ticket →</button>
-              </div>
-            )}
-            <div ref={chatEndRef} />
+        {showQuick && !isLive && <div style={{ padding: "8px 0 4px", display: "flex", gap: 6, flexWrap: "wrap", flexShrink: 0 }}>
+          {QUICK_ACTIONS.map(a => <button key={a.id} onClick={() => handleQuick(a.id)} className="sup-quick-btn" style={{ padding: "7px 12px", borderRadius: 8, fontSize: 11, background: a.id === "human" ? (dark ? "rgba(196,125,142,0.06)" : "rgba(196,125,142,0.04)") : (dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)"), borderWidth: 1, borderStyle: "solid", borderColor: a.id === "human" ? (dark ? "rgba(196,125,142,0.15)" : "rgba(196,125,142,0.1)") : (dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"), color: a.id === "human" ? t.accent : t.textSoft, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5, fontWeight: a.id === "human" ? 550 : 400 }}><span style={{ fontSize: 13 }}>{a.icon}</span>{a.label}</button>)}
+        </div>}
+
+        <div style={{ padding: "8px 0 0", display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+          <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMsg()} placeholder={waitingForAgent ? "Add details while you wait..." : isLive ? "Message support..." : "Ask a question..."} style={{ flex: 1, padding: "10px 16px", borderRadius: 20, background: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)", border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, color: t.text, fontSize: 13, outline: "none", fontFamily: "inherit" }} />
+          <button onClick={sendMsg} style={{ width: 38, height: 38, borderRadius: "50%", background: input.trim() ? "linear-gradient(135deg,#c47d8e,#a3586b)" : (dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)"), border: "none", cursor: input.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={input.trim() ? "#fff" : t.textMuted} strokeWidth="2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </>}
+
+      {/* ═══ TICKET LIST ═══ */}
+      {screen === "tickets" && <>
+        <div style={{ padding: "0 0 10px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+          <button onClick={() => setScreen("chat")} style={{ background: "none", border: "none", color: t.textMuted, cursor: "pointer", padding: 4, display: "flex" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: t.text }}>My tickets</div>
+            <div style={{ fontSize: 12, color: t.textMuted }}>{activeCount} active</div>
           </div>
-          <div className="sup-chat-input" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
-            <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendChat()} placeholder="Type a message..." className="sup-input" style={{ borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text }} />
-            <button onClick={sendChat} className="sup-send-btn">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </div>
+        <div style={{ display: "flex", gap: 4, marginBottom: 12, flexShrink: 0 }}>
+          {[["all","All"],["Open","Open"],["In Progress","Active"],["Resolved","Resolved"]].map(([v,l])=>
+            <button key={v} onClick={()=>setFilter(v)} style={{ padding:"5px 12px",borderRadius:6,fontSize:11,fontWeight:filter===v?600:450,background:filter===v?(dark?"rgba(196,125,142,0.1)":"rgba(196,125,142,0.06)"):"transparent",color:filter===v?t.accent:t.textMuted,border:"none",cursor:"pointer" }}>{l}</button>
+          )}
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", minHeight: 0, borderRadius: 12, border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, overflow: "hidden auto" }}>
+          {filtered.length === 0 && <div style={{ padding: 40, textAlign: "center", color: t.textMuted, fontSize: 13 }}>No tickets yet</div>}
+          {filtered.map((tk,i) => {
+            const last = tk.messages?.[tk.messages.length - 1];
+            const sender = last?.from === "user" ? "You" : (last?.name?.split(" - ")?.[0] || "Support");
+            return (
+              <div key={tk.id} onClick={() => openTicket(tk)} className="sup-tkt-row" style={{ padding: "14px 16px", borderBottom: i < filtered.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}` : "none", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: "50%", background: dark ? "rgba(196,125,142,0.08)" : "rgba(196,125,142,0.05)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${dark ? "rgba(196,125,142,0.1)" : "rgba(196,125,142,0.08)"}` }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: t.accent }}>N</span>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
+                    <span style={{ fontSize: 13, fontWeight: 550, color: t.text }}>{tk.subject}</span>
+                    <span style={{ fontSize: 10, color: t.textMuted, flexShrink: 0 }}>{tk.created ? fD(tk.created) : ""}</span>
+                  </div>
+                  <div style={{ marginBottom: 4 }}><StatusPill status={tk.status} dark={dark} /></div>
+                  {last && <div style={{ fontSize: 12, color: t.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <span style={{ fontWeight: 500, color: last.from === "user" ? (dark ? "rgba(196,125,142,0.7)" : "rgba(196,125,142,0.8)") : (dark ? "rgba(110,231,183,0.7)" : "rgba(5,150,105,0.7)") }}>{sender}: </span>{last.text?.split("\n")[0]?.slice(0,60)}
+                  </div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </>}
+
+      {/* ═══ TICKET DETAIL ═══ */}
+      {screen === "ticket-detail" && activeTicket && <>
+        <div style={{ padding: "0 0 10px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+          <button onClick={() => { setScreen("tickets"); setActiveTicket(null); setInput(""); }} style={{ background: "none", border: "none", color: t.textMuted, cursor: "pointer", padding: 4, display: "flex" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: t.text, display: "flex", alignItems: "center", gap: 8 }}>{activeTicket.subject} <StatusPill status={activeTicket.status} dark={dark} /></div>
+            <div className="m" style={{ fontSize: 11, color: t.textMuted }}>{activeTicket.id}</div>
+          </div>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "8px 0", display: "flex", flexDirection: "column", gap: 6, borderTop: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`, borderBottom: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}` }}>
+          <div style={{ flex: 1 }} />
+          {(activeTicket.messages || []).map((m, i) => (
+            <ChatBubble key={i} m={{ ...m, from: m.from === "admin" ? "support" : m.from, name: m.from === "admin" ? (m.name || "Support") : m.from === "user" ? undefined : m.name }} dark={dark} t={t} />
+          ))}
+          <div ref={ticketMsgsEnd} />
+        </div>
+        {(activeTicket.status === "Open" || activeTicket.status === "In Progress") ? (
+          <div style={{ padding: "8px 0 0", display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendTicketReply()} placeholder="Type a message..." style={{ flex: 1, padding: "10px 16px", borderRadius: 20, background: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)", border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, color: t.text, fontSize: 13, outline: "none", fontFamily: "inherit" }} />
+            <button onClick={sendTicketReply} disabled={ticketLoading} style={{ width: 38, height: 38, borderRadius: "50%", background: input.trim() ? "linear-gradient(135deg,#c47d8e,#a3586b)" : (dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)"), border: "none", cursor: input.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={input.trim() ? "#fff" : t.textMuted} strokeWidth="2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             </button>
           </div>
-        </div>
-      )}
-
-      {/* ═══ TICKETS TAB ═══ */}
-      {tab === "tickets" && (
-        <div className="sup-tickets">
-          {ticketView === "list" && <>
-            <div className="sup-tkt-toolbar">
-              <div className="sup-tkt-filters">
-                {["all", "Open", "Resolved", "Closed"].map(f => (
-                  <button key={f} onClick={() => setFilter(f)} className="sup-tkt-filter" style={{ borderWidth: 1, borderStyle: "solid", borderColor: filter === f ? t.accent : t.cardBorder, background: filter === f ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: filter === f ? t.accent : t.textMuted }}>
-                    {f === "all" ? "All" : f} <span className="m" style={{ fontSize: 11 }}>({counts[f] || 0})</span>
-                  </button>
-                ))}
-              </div>
-              <button onClick={() => setTicketView("new")} className="sup-new-btn">+ New</button>
-            </div>
-            <div className="sup-tkt-list" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
-              {filtered.length > 0 ? filtered.map((tk, i) => (
-                <div key={tk.id} onClick={() => { setActiveTicket(tk); setTicketView("detail"); setReplyText(""); }} className="sup-tkt-row" style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-                  <div className="sup-tkt-top">
-                    <span className="m sup-tkt-id" style={{ color: t.accent }}>{tk.id}</span>
-                    <span className="m sup-tkt-badge" style={{ background: statusBg(tk.status, dark), color: statusClr(tk.status, dark), borderColor: statusBrd(tk.status, dark) }}>{tk.status}</span>
-                    <span className="sup-tkt-time" style={{ color: t.textMuted }}>{tk.lastReply || ""}</span>
-                  </div>
-                  <div className="sup-tkt-subject" style={{ color: t.text }}>{tk.subject}</div>
-                  <div className="sup-tkt-meta" style={{ color: t.textMuted }}>{(() => { const last = tk.messages?.[tk.messages.length - 1]; return last ? `${last.from === "user" ? "You" : "Support"}: ${last.text?.slice(0, 60)}${last.text?.length > 60 ? "…" : ""}` : tk.category; })()}</div>
-                </div>
-              )) : (
-                <div className="sup-empty" style={{ color: t.textMuted }}>No tickets found</div>
-              )}
-            </div>
-          </>}
-
-          {ticketView === "new" && (
-            <div className="sup-new-ticket">
-              <div className="sup-new-header">
-                <span style={{ fontSize: 15, fontWeight: 600, color: t.text }}>New Ticket</span>
-                <button onClick={() => setTicketView("list")} className="sup-back-btn" style={{ borderColor: t.cardBorder, color: t.textSoft }}>← Back</button>
-              </div>
-              <div className="sup-new-form" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
-                <div className="sup-form-group">
-                  <label className="sup-form-label" style={{ color: t.textMuted }}>Category</label>
-                  <div className="sup-cat-pills">
-                    {CATEGORIES.map(c => (
-                      <button key={c} onClick={() => setNewCategory(c)} className="sup-cat-pill" style={{ borderWidth: newCategory === c ? 2 : 1, borderStyle: "solid", borderColor: newCategory === c ? t.accent : t.cardBorder, background: newCategory === c ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: newCategory === c ? t.accent : t.textMuted }}>{c}</button>
-                    ))}
-                  </div>
-                </div>
-                <div className="sup-form-group">
-                  <label className="sup-form-label" style={{ color: t.textMuted }}>Subject</label>
-                  <input type="text" value={newSubject} onChange={e => setNewSubject(e.target.value)} placeholder="Brief description" className="sup-form-input" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text }} />
-                </div>
-                <div className="sup-form-group">
-                  <label className="sup-form-label" style={{ color: t.textMuted }}>Message</label>
-                  <textarea value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Describe your issue. Include order IDs if relevant." rows={4} className="sup-form-textarea" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text }} />
-                </div>
-                <button onClick={submitTicket} disabled={!newSubject || !newMessage || ticketLoading} className="sup-submit-btn" style={{ opacity: newSubject && newMessage && !ticketLoading ? 1 : .5 }}>{ticketLoading ? "Submitting..." : "Submit Ticket"}</button>
-                {ticketMsg && <div style={{ marginTop: 8, padding: "8px 12px", borderRadius: 8, fontSize: 12, background: ticketMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#f0fdf4") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: ticketMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{ticketMsg.text}</div>}
-              </div>
-            </div>
-          )}
-
-          {ticketView === "detail" && activeTicket && (
-            <div className="sup-detail">
-              <div className="sup-detail-header">
-                <div>
-                  <div className="sup-detail-top">
-                    <span className="m" style={{ color: t.accent }}>{activeTicket.id}</span>
-                    <span className="m sup-tkt-badge" style={{ background: statusBg(activeTicket.status, dark), color: statusClr(activeTicket.status, dark), borderColor: statusBrd(activeTicket.status, dark) }}>{activeTicket.status}</span>
-                  </div>
-                  <div className="sup-detail-subject" style={{ color: t.text }}>{activeTicket.subject}</div>
-                  <div className="sup-detail-meta" style={{ color: t.textMuted }}>{activeTicket.category} · Opened {activeTicket.created}</div>
-                </div>
-                <button onClick={() => { setTicketView("list"); setActiveTicket(null); }} className="sup-back-btn" style={{ borderColor: t.cardBorder, color: t.textSoft }}>← Back</button>
-              </div>
-              <div className="sup-detail-msgs">
-                {(activeTicket.messages || []).map((msg, i) => (
-                  <div key={i} className={`sup-msg sup-msg-${msg.from === "admin" ? "bot" : "user"}`}>
-                    <div className="sup-msg-bubble" style={{ background: msg.from === "user" ? (dark ? "#2a1a22" : "#fdf2f4") : t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: msg.from === "user" ? (t.accent + "30") : t.cardBorder }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: msg.from === "user" ? t.accent : t.green, marginBottom: 4 }}>{msg.from === "user" ? "You" : "Nitro Support"}</div>
-                      <div style={{ fontSize: 14, color: t.text, lineHeight: 1.5 }}>{msg.text}</div>
-                    </div>
-                    <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4, padding: "0 4px" }}>{msg.time ? new Date(msg.time).toLocaleDateString("en-NG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : ""}</div>
-                  </div>
-                ))}
-              </div>
-              {(activeTicket.status === "Open" || activeTicket.status === "In Progress") && (
-                <div className="sup-reply-box">
-                  <textarea value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="Type your reply..." rows={3} className="sup-form-textarea" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text }} />
-                  <button onClick={sendReply} disabled={!replyText || ticketLoading} className="sup-submit-btn" style={{ opacity: replyText && !ticketLoading ? 1 : .5, marginTop: 8 }}>{ticketLoading ? "Sending..." : "Send Reply"}</button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+        ) : (
+          <div style={{ padding: "12px 0 0", textAlign: "center", fontSize: 12, color: t.textMuted, flexShrink: 0 }}>This conversation has been resolved</div>
+        )}
+      </>}
     </div>
   );
 }
@@ -329,7 +386,7 @@ export default function SupportPage({ dark, t, tickets: ticketsProp }) {
 /* ═══════════════════════════════════════════ */
 export function SupportSidebar({ dark, t, tickets }) {
   const tks = tickets || [];
-  const openCount = tks.filter(tk => tk.status === "Open").length;
+  const openCount = tks.filter(tk => tk.status === "Open" || tk.status === "In Progress").length;
   return (
     <>
       <div className="sup-rs-title" style={{ color: t.textMuted }}>Nitro Bot</div>
@@ -340,32 +397,26 @@ export function SupportSidebar({ dark, t, tickets }) {
         </div>
         <div style={{ fontSize: 13, color: t.textMuted, lineHeight: 1.4 }}>AI assistant available 24/7 for orders, pricing, refunds, and general questions.</div>
       </div>
-
       <div className="sup-rs-divider" style={{ background: t.sidebarBorder }} />
-
+      <div className="sup-rs-title" style={{ color: t.textMuted }}>Quick Help</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 16 }}>
+        {[["Check order status","📦"],["Refund policy","💰"],["Pricing info","💎"],["API documentation","⚡"]].map(([label,icon])=>
+          <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, background: dark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)", fontSize: 12, color: t.textSoft }}><span>{icon}</span>{label}</div>
+        )}
+      </div>
+      <div className="sup-rs-divider" style={{ background: t.sidebarBorder }} />
       <div className="sup-rs-title" style={{ color: t.textMuted }}>Tickets</div>
       <div className="sup-rs-stats">
-        {[
-          ["Open", String(openCount), dark ? "#fcd34d" : "#d97706"],
-          ["Total", String(tks.length), dark ? "#a5b4fc" : "#4f46e5"],
-        ].map(([label, val, color]) => (
-          <div key={label} className="sup-rs-stat" style={{ background: t.cardBg }}>
-            <div className="sup-rs-stat-label" style={{ color: t.textMuted }}>{label}</div>
-            <div className="m sup-rs-stat-val" style={{ color }}>{val}</div>
-          </div>
-        ))}
+        {[["Active", String(openCount), dark ? "#60a5fa" : "#2563eb"], ["Total", String(tks.length), dark ? "#a5b4fc" : "#4f46e5"]].map(([label, val, color]) =>
+          <div key={label} className="sup-rs-stat" style={{ background: t.cardBg }}><div className="sup-rs-stat-label" style={{ color: t.textMuted }}>{label}</div><div className="m sup-rs-stat-val" style={{ color }}>{val}</div></div>
+        )}
       </div>
-
       <div className="sup-rs-divider" style={{ background: t.sidebarBorder }} />
-
       <div className="sup-rs-title" style={{ color: t.textMuted }}>Contact Us</div>
       <div className="sup-rs-contact" style={{ background: t.cardBg }}>
-        {[["Email", "TheNitroNG@gmail.com"], ["WhatsApp", "Coming soon"], ["Instagram", "@Nitro.ng"]].map(([label, val]) => (
-          <div key={label} className="sup-rs-contact-row">
-            <span style={{ color: t.textMuted }}>{label}</span>
-            <span style={{ color: t.accent, fontWeight: 500 }}>{val}</span>
-          </div>
-        ))}
+        {[["Email","TheNitroNG@gmail.com"],["Instagram","@Nitro.ng"],["Twitter/X","@TheNitroNG"]].map(([label,val])=>
+          <div key={label} className="sup-rs-contact-row"><span style={{ color: t.textMuted }}>{label}</span><span style={{ color: t.accent, fontWeight: 500 }}>{val}</span></div>
+        )}
       </div>
     </>
   );

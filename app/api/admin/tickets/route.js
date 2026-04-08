@@ -25,11 +25,11 @@ export async function GET() {
         orderId: tk.orderId || '',
         status: tk.status,
         created: tk.createdAt.toISOString(),
-        replies: tk.replies.map(r => ({
-          from: r.from,
-          msg: r.message,
-          time: r.createdAt.toISOString(),
-        })),
+        replies: tk.replies.map(r => {
+          const isAdmin = r.from.startsWith('admin');
+          const adminName = isAdmin ? (r.from.split(':')[1] || 'Admin') : null;
+          return { from: isAdmin ? 'admin' : 'user', name: isAdmin ? adminName : (tk.user?.name || 'User'), msg: r.message, time: r.createdAt.toISOString() };
+        }),
       })),
     });
   } catch (err) {
@@ -54,7 +54,7 @@ export async function POST(req) {
     if (action === 'reply') {
       if (!message?.trim()) return Response.json({ error: 'Message required' }, { status: 400 });
       await prisma.ticketReply.create({
-        data: { ticketId: ticket.id, from: 'admin', message: message.trim() },
+        data: { ticketId: ticket.id, from: `admin:${admin.name}`, message: message.trim() },
       });
       if (ticket.status === 'Open') {
         await prisma.ticket.update({ where: { id: ticket.id }, data: { status: 'In Progress' } });
@@ -67,6 +67,12 @@ export async function POST(req) {
       await prisma.ticket.update({ where: { id: ticket.id }, data: { status: 'Resolved' } });
       await logActivity(admin.name, `Resolved ticket ${ticketId}`, 'ticket');
       return Response.json({ success: true, message: 'Ticket resolved' });
+    }
+
+    if (action === 'reopen') {
+      await prisma.ticket.update({ where: { id: ticket.id }, data: { status: 'Open' } });
+      await logActivity(admin.name, `Reopened ticket ${ticketId}`, 'ticket');
+      return Response.json({ success: true, message: 'Ticket reopened' });
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });

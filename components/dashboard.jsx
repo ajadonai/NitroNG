@@ -688,7 +688,7 @@ function DashboardInner() {
       case "settings":
         return <SettingsPage user={user} dark={dark} t={t} themeMode={themeMode} setThemeMode={setThemeMode} setDark={setDark} />;
       case "support":
-        return <SupportPage dark={dark} t={t} tickets={[]} />;
+        return <SupportPage dark={dark} t={t} />;
       case "add-funds":
         return <AddFundsPage user={user} dark={dark} t={t} paymentStatus={paymentStatus} setPaymentStatus={setPaymentStatus} />;
       case "how-to":
