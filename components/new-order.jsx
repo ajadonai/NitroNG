@@ -271,6 +271,11 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
       {menuLoading && <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>Loading services...</div>}
       {menuError && <div style={{ padding: 40, textAlign: "center", color: dark ? "#fca5a5" : "#dc2626" }}>{menuError}</div>}
 
+      {/* Mobile/tablet guide — hidden on desktop where right sidebar shows it */}
+      <div className="no-mobile-guide">
+        <MobileGuide dark={dark} t={t} />
+      </div>
+
       {!menuLoading && !menuError && <>
       {/* ═══ CONTENT WITH INLINE PLATFORM PICKER ═══ */}
       <div className="no-content-split">
@@ -390,6 +395,44 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
       )}
       </>}
     </>
+  );
+}
+
+/* ═══════════════════════════════════════════ */
+/* ═══ MOBILE/TABLET GUIDE                 ═══ */
+/* ═══════════════════════════════════════════ */
+import { useState as useS } from "react";
+function MobileGuide({ dark, t }) {
+  const [open, setOpen] = useS(false);
+  const TS_MINI = { Budget: { icon: "💰", color: "#e0a458" }, Standard: { icon: "⚡", color: "#60a5fa" }, Premium: { icon: "👑", color: "#a78bfa" } };
+  return (
+    <div style={{ borderRadius: 12, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, overflow: "hidden", marginBottom: 12 }}>
+      <button onClick={() => setOpen(!open)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", background: "none", border: "none", cursor: "pointer", color: t.text }}>
+        <span style={{ fontSize: 13, fontWeight: 600 }}>📖 How Our Services Work</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      {open && (
+        <div style={{ padding: "0 14px 14px", fontSize: 12, lineHeight: 1.7, color: t.textMuted }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+            {Object.entries(TS_MINI).map(([tier, { icon, color }]) => (
+              <span key={tier} style={{ padding: "4px 10px", borderRadius: 6, background: dark ? `${color}15` : `${color}10`, color, fontSize: 12, fontWeight: 600 }}>{icon} {tier}</span>
+            ))}
+          </div>
+          <div style={{ marginBottom: 6 }}><b style={{ color: "#e0a458" }}>Budget</b> — Cheapest. Good for testing.</div>
+          <div style={{ marginBottom: 6 }}><b style={{ color: "#60a5fa" }}>Standard</b> — Best value. Refill guarantee.</div>
+          <div style={{ marginBottom: 10 }}><b style={{ color: "#a78bfa" }}>Premium</b> — Top quality. Non-drop.</div>
+          <div style={{ padding: "8px 10px", borderRadius: 8, background: dark ? "rgba(74,222,128,.05)" : "rgba(22,163,74,.03)", border: `1px solid ${dark ? "rgba(74,222,128,.1)" : "rgba(22,163,74,.06)"}`, marginBottom: 10 }}>
+            <span style={{ fontWeight: 600, color: dark ? "#4ade80" : "#16a34a" }}>🇳🇬 Nigerian Services</span>
+            <span style={{ marginLeft: 4 }}>— Look for the flag! Local engagement for Naija creators.</span>
+          </div>
+          <div style={{ fontSize: 11, color: t.textMuted }}>
+            <div style={{ marginBottom: 3 }}>• <b style={{ color: t.text }}>Refill</b> = free top-up if count drops</div>
+            <div style={{ marginBottom: 3 }}>• <b style={{ color: t.text }}>Start small</b> — test Budget first</div>
+            <div>• Set profile to <b style={{ color: t.text }}>public</b> before ordering</div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

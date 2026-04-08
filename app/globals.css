@@ -1670,3 +1670,7 @@ input { font-family: inherit; }
 
 @media (max-width: 899px) { .blog-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; padding: 0 20px 40px; } .blog-header { padding: 16px 20px; } .blog-article { padding: 30px 20px 40px; } }
 @media (max-width: 599px) { .blog-grid { grid-template-columns: 1fr; } .blog-card-thumb { height: 160px; } }
+
+/* Mobile/tablet guide — visible only when right sidebar is hidden */
+.no-mobile-guide { display: none; }
+@media (max-width: 1199px) { .no-mobile-guide { display: block; } }
