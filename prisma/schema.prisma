@@ -148,7 +148,7 @@ model ServiceTier {
   updatedAt DateTime @updatedAt
 
   group   ServiceGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  service Service      @relation(fields: [serviceId], references: [id])
+  service Service?     @relation(fields: [serviceId], references: [id])
   orders  Order[]
 
   @@index([groupId])
