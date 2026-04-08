@@ -49,6 +49,32 @@ function Badge({ status, dark }) {
 }
 
 /* ═══════════════════════════════════════════ */
+/* ═══ MOBILE MENU HINT                    ═══ */
+/* ═══════════════════════════════════════════ */
+function MobileMenuHint({ dark, t }) {
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem("nitro-menu-hint") === "1"; } catch { return false; }
+  });
+  if (dismissed) return null;
+  const dismiss = () => { setDismissed(true); try { localStorage.setItem("nitro-menu-hint", "1"); } catch {} };
+  return (
+    <div className="dash-menu-hint" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)"}`, borderRadius: 12, padding: "10px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <div style={{ height: 2, borderRadius: 1, background: t.accent, width: 14 }} />
+          <div style={{ height: 2, borderRadius: 1, background: t.accent, width: 10 }} />
+          <div style={{ height: 2, borderRadius: 1, background: t.accent, width: 14 }} />
+        </div>
+      </div>
+      <div style={{ flex: 1, fontSize: 12, color: t.textMuted, lineHeight: 1.5 }}>
+        Tap the <b style={{ color: t.text }}>menu icon</b> (top left) to access Services, Orders, Funds, Referrals and more.
+      </div>
+      <button onClick={dismiss} style={{ background: "none", border: "none", color: t.textMuted, fontSize: 16, cursor: "pointer", padding: "0 2px", flexShrink: 0 }}>✕</button>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════ */
 /* ═══ OVERVIEW PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
 function OverviewPage({ user, orders, alerts, dark, t, setActive }) {
@@ -76,6 +102,27 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive }) {
           <span style={{ flex: 1 }}>{a.message}</span>
         </div>
       ))}
+
+      {/* Mobile menu hint — only shows on first visit */}
+      <MobileMenuHint dark={dark} t={t} />
+
+      {/* Quick actions — mobile/tablet */}
+      <div className="dash-quick-actions">
+        <div className="dash-qa-title" style={{ color: t.textMuted }}>Quick Actions</div>
+        <div className="dash-qa-grid">
+          {[
+            ["New Order", "services", t.accent, <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>],
+            ["Add Funds", "add-funds", dark ? "#6ee7b7" : "#059669", <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>],
+            ["My Orders", "orders", dark ? "#a5b4fc" : "#4f46e5", <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>],
+            ["Referrals", "referrals", dark ? "#e0a458" : "#d97706", <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>],
+          ].map(([label, page, color, icon]) => (
+            <button key={page} onClick={() => setActive(page)} className="dash-qa-btn" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.9)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)" }}>
+              <div className="dash-qa-icon" style={{ color, background: `${color}12` }}>{icon}</div>
+              <span style={{ fontSize: 12, fontWeight: 600, color: t.text }}>{label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Stat cards */}
       <div className="dash-stats">
