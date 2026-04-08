@@ -26,9 +26,10 @@ export async function GET() {
         messages: [
           { from: 'user', text: tk.message, time: tk.createdAt.toISOString() },
           ...tk.replies.map(r => {
-            const isAdmin = r.from.startsWith('admin');
-            const adminName = isAdmin ? (r.from.split(':')[1] || 'Support') : null;
-            return { from: isAdmin ? 'support' : 'user', name: isAdmin ? `${adminName} - Nitro` : 'You', text: r.message, time: r.createdAt.toISOString() };
+            const fromStr = r.from || 'user';
+            const isAdmin = fromStr.startsWith('admin');
+            const adminName = isAdmin ? (fromStr.split(':')[1] || 'Support') : null;
+            return { from: isAdmin ? 'admin' : 'user', name: isAdmin ? `${adminName} - Nitro` : undefined, text: r.message, time: r.createdAt.toISOString() };
           }),
         ],
       })),
