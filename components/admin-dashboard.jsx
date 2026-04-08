@@ -259,6 +259,7 @@ function AdminDashboardInner() {
     const poll = async () => {
       try {
         const res = await fetch("/api/admin/overview");
+        if (res.status === 401) { window.location.replace("/admin/login"); return; }
         if (res.ok) {
           const d = await res.json();
           setAdmin(prev => ({ ...prev, name: d.admin?.name || prev.name, role: d.admin?.role || prev.role }));

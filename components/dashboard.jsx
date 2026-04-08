@@ -500,6 +500,7 @@ function DashboardInner() {
     const poll = async () => {
       try {
         const res = await fetch("/api/dashboard");
+        if (res.status === 401) { window.location.replace("/?login=1"); return; }
         if (res.ok) {
           const data = await res.json();
           if (data.user) setUser(data.user);
