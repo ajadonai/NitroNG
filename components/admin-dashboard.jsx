@@ -409,6 +409,10 @@ function AdminDashboardInner() {
       {/* ═══ BODY ═══ */}
       <div className="dash-body">
         <aside className="dash-left admin-sidebar" style={{ background: t.sidebarBg, borderRight: `1px solid ${t.sidebarBorder}`, left: leftOpen ? 0 : undefined }}>
+          <div style={{ padding: "10px 14px 4px", display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: t.green }} />
+            <span style={{ fontSize: 11, color: t.green, fontWeight: 500 }}>All systems operational</span>
+          </div>
           {ADMIN_NAV.map(section => (
             <div key={section.section}>
               <div className="adm-nav-section" style={{ color: t.textMuted }}>{section.section}</div>
@@ -423,13 +427,6 @@ function AdminDashboardInner() {
           ))}
 
           <div style={{ flex: 1 }} />
-          <div className="dash-sidebar-divider" style={{ background: t.sidebarBorder }} />
-          <div style={{ padding: "6px 14px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: t.green }} />
-              <span style={{ fontSize: 12, color: t.green, fontWeight: 500 }}>All systems operational</span>
-            </div>
-          </div>
           <div className="dash-sidebar-divider" style={{ background: t.sidebarBorder }} />
           <button onClick={handleLogout} className="dash-logout">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
