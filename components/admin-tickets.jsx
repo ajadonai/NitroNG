@@ -12,6 +12,7 @@ export default function AdminTicketsPage({ dark, t }) {
   const [selected, setSelected] = useState(null);
   const [filter, setFilter] = useState("all");
   const [reply, setReply] = useState("");
+  const [mobileView, setMobileView] = useState("list");
   const [loading, setLoading] = useState(true);
   const msgsEnd = useRef(null);
 
@@ -67,21 +68,21 @@ export default function AdminTicketsPage({ dark, t }) {
     } catch {}
   };
 
-  const selectTicket = (tk) => { setSelected(tk); setReply(""); };
+  const selectTicket = (tk) => { setSelected(tk); setReply(""); setMobileView("chat"); };
 
   if (loading) return <div style={{ padding: 24, color: t.textMuted }}>Loading tickets...</div>;
 
   return (
-    <div style={{ display: "flex", flex: 1, overflow: "hidden", minHeight: 0, borderRadius: 12, border: `1px solid ${t.cardBorder}` }}>
+    <div className={`sup-split ${mobileView === "chat" ? "sup-view-chat" : "sup-view-list"}`} style={{ borderRadius: 12, border: `1px solid ${t.cardBorder}` }}>
       {/* ═══ LEFT: TICKET LIST ═══ */}
-      <div style={{ width: 280, borderRight: `1px solid ${t.cardBorder}`, display: "flex", flexDirection: "column", flexShrink: 0, overflow: "hidden" }}>
+      <div className="sup-split-list" style={{ width: 280, borderRight: `1px solid ${t.cardBorder}`, flexShrink: 0, overflow: "hidden" }}>
         <div style={{ padding: "14px 16px", borderBottom: `1px solid ${t.cardBorder}` }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Support inbox</div>
           <div style={{ fontSize: 11, color: t.textMuted, marginTop: 2 }}>{openCount} active</div>
         </div>
-        <div style={{ display: "flex", gap: 3, padding: "8px 10px", borderBottom: `1px solid ${t.cardBorder}` }}>
+        <div className="sup-filter-bar" style={{ gap: 3, padding: "8px 10px", borderBottom: `1px solid ${t.cardBorder}` }}>
           {[["all", "All"], ["unread", "Unread"], ["active", "Active"], ["Resolved", "Done"], ["archived", "Archived"]].map(([v, l]) => (
-            <button key={v} onClick={() => setFilter(v)} style={{ padding: "4px 10px", borderRadius: 5, fontSize: 10, fontWeight: filter === v ? 600 : 450, background: filter === v ? (dark ? "rgba(196,125,142,0.1)" : "rgba(196,125,142,0.06)") : "transparent", color: filter === v ? t.accent : t.textMuted, border: "none", cursor: "pointer" }}>{l}</button>
+            <button key={v} onClick={() => setFilter(v)} style={{ padding: "4px 10px", borderRadius: 5, fontSize: 10, fontWeight: filter === v ? 600 : 450, background: filter === v ? (dark ? "rgba(196,125,142,0.1)" : "rgba(196,125,142,0.06)") : "transparent", color: filter === v ? t.accent : t.textMuted, border: "none", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>{l}</button>
           ))}
         </div>
         <div style={{ flex: 1, overflowY: "auto" }}>
@@ -112,14 +113,19 @@ export default function AdminTicketsPage({ dark, t }) {
       </div>
 
       {/* ═══ CENTER: CONVERSATION ═══ */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
+      <div className="sup-split-chat" style={{ minHeight: 0 }}>
         {selected ? <>
-          <div style={{ padding: "14px 18px", borderBottom: `1px solid ${t.cardBorder}`, flexShrink: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 550, color: t.text, display: "flex", alignItems: "center", gap: 8 }}>
-              {selected.subject}
-              <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: statusBg(selected.status, dark), color: statusClr(selected.status, dark) }}>{selected.status.toLowerCase()}</span>
+          <div style={{ padding: "14px 18px", borderBottom: `1px solid ${t.cardBorder}`, flexShrink: 0, display: "flex", alignItems: "center", gap: 10 }}>
+            <button className="sup-mobile-back" onClick={() => { setMobileView("list"); }} style={{ background: "none", border: "none", color: t.textMuted, cursor: "pointer", padding: 4, display: "none" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 550, color: t.text, display: "flex", alignItems: "center", gap: 8 }}>
+                {selected.subject}
+                <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: statusBg(selected.status, dark), color: statusClr(selected.status, dark) }}>{(selected.status || "").toLowerCase()}</span>
+              </div>
+              <div style={{ fontSize: 11, color: t.textMuted, marginTop: 3, fontFamily: "'JetBrains Mono', monospace" }}>{selected.id} · {selected.user} · {selected.email}</div>
             </div>
-            <div style={{ fontSize: 11, color: t.textMuted, marginTop: 3, fontFamily: "'JetBrains Mono', monospace" }}>{selected.id} · {selected.user} · {selected.email}</div>
           </div>
 
           <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -171,7 +177,7 @@ export default function AdminTicketsPage({ dark, t }) {
 
       {/* ═══ RIGHT: CUSTOMER INFO ═══ */}
       {selected && (
-        <div style={{ width: 220, borderLeft: `1px solid ${t.cardBorder}`, padding: "16px 14px", flexShrink: 0, overflowY: "auto" }}>
+        <div className="sup-info-panel" style={{ width: 220, borderLeft: `1px solid ${t.cardBorder}`, padding: "16px 14px", flexShrink: 0, overflowY: "auto" }}>
           <div style={{ marginBottom: 16 }}>
             <div style={{ width: 40, height: 40, borderRadius: "50%", background: dark ? "rgba(96,165,250,0.1)" : "rgba(37,99,235,0.06)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8, border: `1px solid ${dark ? "rgba(96,165,250,0.12)" : "rgba(37,99,235,0.08)"}` }}>
               <span style={{ fontSize: 14, fontWeight: 600, color: dark ? "#60a5fa" : "#2563eb" }}>{selected.user?.split(" ").map(n => n[0]).join("") || "?"}</span>

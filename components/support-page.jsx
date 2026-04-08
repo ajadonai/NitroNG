@@ -200,7 +200,7 @@ export default function SupportPage({ dark, t }) {
   const chatSub = isNewTicket ? "Describe your issue" : (selected && typeof selected === "object") ? selected.id : (isLive ? (waitingForAgent ? "Waiting for an agent..." : "Connected with support") : "Ask anything or talk to support");
 
   return (
-    <div className="sup-split" style={{ borderRadius: 12, border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` }}>
+    <div className={`sup-split ${mobileView === "chat" ? "sup-view-chat" : "sup-view-list"}`} style={{ borderRadius: 12, border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` }}>
 
       {/* ═══ LEFT: TICKET LIST ═══ */}
       <div className="sup-split-list" style={{ width: 280, borderRight: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, flexShrink: 0 }}>
@@ -216,9 +216,9 @@ export default function SupportPage({ dark, t }) {
         </div>
 
         {/* Filters — always visible */}
-        <div style={{ display: "flex", gap: 3, padding: "6px 10px", borderBottom: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`, flexShrink: 0, flexWrap: "wrap" }}>
+        <div className="sup-filter-bar" style={{ gap: 3, padding: "6px 10px", borderBottom: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}` }}>
           {[["all","All"],["active","Active"],["Resolved","Done"]].map(([v,l])=>
-            <button key={v} onClick={()=>setFilter(v)} style={{ padding:"3px 8px",borderRadius:4,fontSize:10,fontWeight:filter===v?600:450,background:filter===v?(dark?"rgba(196,125,142,0.1)":"rgba(196,125,142,0.06)"):"transparent",color:filter===v?t.accent:t.textMuted,border:"none",cursor:"pointer" }}>{l}</button>
+            <button key={v} onClick={()=>setFilter(v)} style={{ padding:"3px 8px",borderRadius:4,fontSize:10,fontWeight:filter===v?600:450,background:filter===v?(dark?"rgba(196,125,142,0.1)":"rgba(196,125,142,0.06)"):"transparent",color:filter===v?t.accent:t.textMuted,border:"none",cursor:"pointer",flexShrink:0,whiteSpace:"nowrap" }}>{l}</button>
           )}
         </div>
 
