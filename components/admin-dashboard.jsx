@@ -409,7 +409,6 @@ function AdminDashboardInner() {
       {/* ═══ BODY ═══ */}
       <div className="dash-body">
         <aside className="dash-left admin-sidebar" style={{ background: t.sidebarBg, borderRight: `1px solid ${t.sidebarBorder}`, left: leftOpen ? 0 : undefined }}>
-          <div className="adm-nav-scroll">
           {ADMIN_NAV.map(section => (
             <div key={section.section}>
               <div className="adm-nav-section" style={{ color: t.textMuted }}>{section.section}</div>
@@ -422,7 +421,7 @@ function AdminDashboardInner() {
               ))}
             </div>
           ))}
-          </div>
+          <div style={{ flex: 1 }} />
           <div className="dash-sidebar-divider" style={{ background: t.sidebarBorder }} />
           <div style={{ padding: "6px 14px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
