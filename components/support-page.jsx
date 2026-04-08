@@ -29,6 +29,7 @@ const REASSURANCE = [
 ];
 
 function StatusPill({ status, dark }) {
+  if (!status) return null;
   const c = status === "Open" ? { bg: dark ? "rgba(234,179,8,0.1)" : "rgba(234,179,8,0.08)", color: dark ? "#fcd34d" : "#d97706" }
     : status === "In Progress" ? { bg: dark ? "rgba(59,130,246,0.08)" : "rgba(59,130,246,0.06)", color: dark ? "#60a5fa" : "#2563eb" }
     : { bg: dark ? "rgba(16,185,129,0.08)" : "rgba(16,185,129,0.06)", color: dark ? "#6ee7b7" : "#059669" };
@@ -45,7 +46,8 @@ function FormatText({ text, dark }) {
 }
 
 function Bubble({ m, dark, t }) {
-  if (m.from === "system") return <div style={{ textAlign: "center", padding: "6px 0" }}><span style={{ fontSize: 11, color: t.textMuted, background: dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)", padding: "4px 12px", borderRadius: 10 }}>{m.text}</span></div>;
+  if (!m || !m.from) return null;
+  if (m.from === "system") return <div style={{ textAlign: "center", padding: "6px 0" }}><span style={{ fontSize: 11, color: t.textMuted, background: dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)", padding: "4px 12px", borderRadius: 10 }}>{m.text || ""}</span></div>;
   const isUser = m.from === "user";
   const isBot = m.from === "bot";
   return (
@@ -183,9 +185,12 @@ export default function SupportPage({ dark, t }) {
   const backToBot = () => { setSelected(null); setInput(""); setMobileView("chat"); };
 
   const isNewTicket = selected === "new";
-  const chatMsgs = isNewTicket ? [] : selected ? (selected.messages || []).map(m => ({ ...m, from: m.from === "admin" ? "support" : m.from, name: m.from === "admin" ? (m.name || "Support") : m.from === "user" ? undefined : m.name })) : msgs;
-  const chatTitle = isNewTicket ? "New Ticket" : selected ? selected.subject : "Support";
-  const chatSub = isNewTicket ? "Describe your issue" : selected ? selected.id : (isLive ? (waitingForAgent ? "Waiting for an agent..." : "Connected with support") : "Ask anything or talk to support");
+  let chatMsgs = msgs;
+  try {
+    chatMsgs = isNewTicket ? [] : (selected && typeof selected === "object") ? (selected.messages || []).map(m => ({ ...m, from: m.from === "admin" ? "support" : m.from, name: m.from === "admin" ? (m.name || "Support") : m.from === "user" ? undefined : m.name })) : msgs;
+  } catch { chatMsgs = msgs; }
+  const chatTitle = isNewTicket ? "New Ticket" : (selected && typeof selected === "object") ? selected.subject : "Support";
+  const chatSub = isNewTicket ? "Describe your issue" : (selected && typeof selected === "object") ? selected.id : (isLive ? (waitingForAgent ? "Waiting for an agent..." : "Connected with support") : "Ask anything or talk to support");
 
   return (
     <div className="sup-split" style={{ borderRadius: 12, border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` }}>
@@ -314,14 +319,14 @@ export default function SupportPage({ dark, t }) {
               setTicketLoading(false);
             }} disabled={!newSubject.trim() || !newMessage.trim() || ticketLoading} style={{ width: "100%", padding: "11px", borderRadius: 10, background: newSubject.trim() && newMessage.trim() ? "linear-gradient(135deg,#c47d8e,#a3586b)" : (dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)"), color: newSubject.trim() && newMessage.trim() ? "#fff" : t.textMuted, fontSize: 13, fontWeight: 600, border: "none", cursor: newSubject.trim() && newMessage.trim() ? "pointer" : "default", fontFamily: "inherit" }}>{ticketLoading ? "Creating..." : "Create Ticket"}</button>
           </div>
-        ) : (!selected || selected.status === "Open" || selected.status === "In Progress") ? (
+        ) : (!selected || (typeof selected === "object" && (selected.status === "Open" || selected.status === "In Progress"))) ? (
           <div style={{ padding: "10px 16px", borderTop: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
             <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMsg()} placeholder={selected ? "Type a message..." : (waitingForAgent ? "Add details while you wait..." : isLive ? "Message support..." : "Ask a question...")} style={{ flex: 1, padding: "10px 16px", borderRadius: 20, background: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)", border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, color: t.text, fontSize: 13, outline: "none", fontFamily: "inherit" }} />
             <button onClick={sendMsg} style={{ width: 38, height: 38, borderRadius: "50%", background: input.trim() ? "linear-gradient(135deg,#c47d8e,#a3586b)" : (dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)"), border: "none", cursor: input.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={input.trim() ? "#fff" : t.textMuted} strokeWidth="2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             </button>
           </div>
-        ) : selected?.status === "Resolved" ? (
+        ) : (typeof selected === "object" && selected?.status === "Resolved") ? (
           <div style={{ padding: "12px 18px", borderTop: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`, textAlign: "center", fontSize: 12, color: t.textMuted, flexShrink: 0 }}>This conversation has been resolved</div>
         ) : null}
       </div>
