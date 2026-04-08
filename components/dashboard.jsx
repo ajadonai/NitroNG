@@ -309,8 +309,15 @@ function NotifDropdown({ orders, txs, dark, t, onClose, readIds, setReadIds, cle
   const display = filtered.slice(0, 10);
   const hasMore = filtered.length > 10;
   const unreadCount = items.filter(n => !readIds.has(n.id)).length;
-  const markAllRead = () => setReadIds(new Set([...readIds, ...items.map(n => n.id)]));
-  const markRead = (id) => setReadIds(prev => new Set([...prev, id]));
+  const markAllRead = () => {
+    const allIds = items.map(n => n.id);
+    setReadIds(new Set([...readIds, ...allIds]));
+    fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ readIds: allIds }) }).catch(() => {});
+  };
+  const markRead = (id) => {
+    setReadIds(prev => new Set([...prev, id]));
+    fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ readIds: [id] }) }).catch(() => {});
+  };
   const clearAll = () => {
     setClearedIds(new Set([...clearedIds, ...items.map(n => n.id)]));
     fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clearAll: true }) }).catch(() => {});
@@ -396,7 +403,7 @@ function DashboardInner() {
     if (typeof window === 'undefined') return new Set();
     try { const s = localStorage.getItem("nitro-notif-cleared"); return s ? new Set(JSON.parse(s)) : new Set(); } catch { return new Set(); }
   });
-  const [notifClearedAt] = useState(null);
+  const [notifClearedAt, setNotifClearedAt] = useState(null);
 
   // Persist to localStorage on change
   useEffect(() => { try { localStorage.setItem("nitro-notif-read", JSON.stringify([...readNotifIds])); } catch {} }, [readNotifIds]);
@@ -471,6 +478,17 @@ function DashboardInner() {
         } else setUser({ name: "User", email: "", balance: 0, refCode: "—", refs: 0, earnings: 0 });
         /* Fetch social links */
         try { const sr = await fetch("/api/settings"); if (sr.ok) { const sd = await sr.json(); setSocialLinks(sd.settings || {}); } } catch {}
+        /* Load notification state from server (merges with localStorage) */
+        try {
+          const nr = await fetch("/api/auth/notifications");
+          if (nr.ok) {
+            const nd = await nr.json();
+            if (nd.notifClearedAt) setNotifClearedAt(new Date(nd.notifClearedAt));
+            if (Array.isArray(nd.notifReadIds) && nd.notifReadIds.length > 0) {
+              setReadNotifIds(prev => new Set([...prev, ...nd.notifReadIds]));
+            }
+          }
+        } catch {}
       } catch { setUser({ name: "User", email: "", balance: 0, refCode: "—", refs: 0, earnings: 0 }); }
     }
     load();
