@@ -22,6 +22,8 @@ export async function GET() {
         notifOrders: true,
         notifPromo: true,
         notifEmail: true,
+        notifClearedAt: true,
+        notifReadIds: true,
         status: true,
         createdAt: true,
       },

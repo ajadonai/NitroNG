@@ -59,15 +59,10 @@ function MobileMenuHint({ dark, t }) {
   const dismiss = () => { setDismissed(true); try { localStorage.setItem("nitro-menu-hint", "1"); } catch {} };
   return (
     <div className="dash-menu-hint" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)"}`, borderRadius: 12, padding: "10px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <div style={{ height: 2, borderRadius: 1, background: t.accent, width: 14 }} />
-          <div style={{ height: 2, borderRadius: 1, background: t.accent, width: 10 }} />
-          <div style={{ height: 2, borderRadius: 1, background: t.accent, width: 14 }} />
-        </div>
-      </div>
+      <span style={{ fontSize: 16, flexShrink: 0 }}>👋</span>
       <div style={{ flex: 1, fontSize: 12, color: t.textMuted, lineHeight: 1.5 }}>
-        Tap the <b style={{ color: t.text }}>menu icon</b> (top left) to access Services, Orders, Funds, Referrals and more.
+        <span className="dash-hint-mobile">Tap the <b style={{ color: t.text }}>menu icon</b> (top left) to access Services, Orders, Funds, and more.</span>
+        <span className="dash-hint-desktop">Use the <b style={{ color: t.text }}>sidebar</b> to navigate between Services, Orders, Add Funds, Referrals, and Settings.</span>
       </div>
       <button onClick={dismiss} style={{ background: "none", border: "none", color: t.textMuted, fontSize: 16, cursor: "pointer", padding: "0 2px", flexShrink: 0 }}>✕</button>
     </div>
@@ -130,12 +125,13 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive }) {
 
       {/* Quick actions — mobile/tablet only */}
       <div className="dash-quick-actions">
-        <div className="dash-qa-card" style={{ background: dark ? "rgba(196,125,142,.04)" : "rgba(196,125,142,.03)", border: `1px solid ${dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)"}`, borderRadius: 14, padding: "12px 10px" }}>
+        <div className="dash-qa-card" style={{ background: dark ? "rgba(196,125,142,.04)" : "rgba(196,125,142,.03)", border: `1px solid ${dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)"}`, borderRadius: 14, padding: "10px 10px 12px" }}>
+          <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, color: t.textMuted, padding: "0 4px 6px", opacity: .7 }}>Quick Actions</div>
           <div className="dash-qa-grid">
             {[
-              ["Order", "services", t.accent, <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>],
-              ["Fund", "add-funds", dark ? "#6ee7b7" : "#059669", <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>],
-              ["Orders", "orders", dark ? "#a5b4fc" : "#4f46e5", <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>],
+              ["New Order", "services", t.accent, <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>],
+              ["Add Funds", "add-funds", dark ? "#6ee7b7" : "#059669", <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>],
+              ["History", "orders", dark ? "#a5b4fc" : "#4f46e5", <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>],
               ["Refer", "referrals", dark ? "#e0a458" : "#d97706", <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>],
             ].map(([label, page, color, icon]) => (
               <button key={page} onClick={() => setActive(page)} className="dash-qa-btn" style={{ background: dark ? "rgba(255,255,255,.06)" : "#fff" }}>
@@ -279,7 +275,7 @@ function RightSidebar({ orders, user, dark, t, setActive }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ NOTIFICATION DROPDOWN              ═══ */
 /* ═══════════════════════════════════════════ */
-function NotifDropdown({ orders, txs, dark, t, onClose, readIds, setReadIds, clearedIds, setClearedIds }) {
+function NotifDropdown({ orders, txs, dark, t, onClose, readIds, setReadIds, clearedIds, setClearedIds, notifClearedAt }) {
   const [filter, setFilter] = useState("all");
 
   /* Build ALL notification items from real data */
@@ -287,35 +283,42 @@ function NotifDropdown({ orders, txs, dark, t, onClose, readIds, setReadIds, cle
     ...orders.filter(o => o.status === "Completed").map(o => ({
       id: `ord-${o.id}`, type: "order", title: "Order completed",
       desc: `${o.id} · ${o.service || "Service"} delivered`,
-      time: o.created ? fD(o.created) : "",
+      time: o.created ? fD(o.created) : "", ts: o.created ? new Date(o.created) : null,
       color: dark ? "#60a5fa" : "#2563eb",
       icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
     })),
     ...orders.filter(o => o.status === "Processing" || o.status === "Pending").map(o => ({
       id: `proc-${o.id}`, type: "order", title: "Order processing",
       desc: `${o.id} · ${o.service || "Service"} started`,
-      time: o.created ? fD(o.created) : "",
+      time: o.created ? fD(o.created) : "", ts: o.created ? new Date(o.created) : null,
       color: dark ? "#e0a458" : "#d97706",
       icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
     })),
     ...txs.filter(tx => tx.type === "deposit").map(tx => ({
       id: `dep-${tx.id || tx.reference}`, type: "deposit", title: "Deposit received",
       desc: `${fN(tx.amount)} added via ${tx.method || "Paystack"}`,
-      time: tx.date ? fD(tx.date) : "",
+      time: tx.date ? fD(tx.date) : "", ts: tx.date ? new Date(tx.date) : null,
       color: dark ? "#6ee7b7" : "#059669",
       icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>,
     })),
   ];
 
-  // Filter out cleared items
-  const items = allItems.filter(n => !clearedIds.has(n.id));
+  // Filter out cleared items (by ID or by timestamp)
+  const items = allItems.filter(n => {
+    if (clearedIds.has(n.id)) return false;
+    if (notifClearedAt && n.ts && n.ts <= notifClearedAt) return false;
+    return true;
+  });
   const filtered = filter === "all" ? items : items.filter(n => n.type === filter);
   const display = filtered.slice(0, 10);
   const hasMore = filtered.length > 10;
   const unreadCount = items.filter(n => !readIds.has(n.id)).length;
   const markAllRead = () => setReadIds(new Set([...readIds, ...items.map(n => n.id)]));
   const markRead = (id) => setReadIds(prev => new Set([...prev, id]));
-  const clearAll = () => { setClearedIds(new Set([...clearedIds, ...items.map(n => n.id)])); };
+  const clearAll = () => {
+    setClearedIds(new Set([...clearedIds, ...items.map(n => n.id)]));
+    fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clearAll: true }) }).catch(() => {});
+  };
 
   return (
     <div className="dash-notif" style={{
@@ -395,10 +398,32 @@ function DashboardInner() {
   const [clearedNotifIds, setClearedNotifIds] = useState(() => {
     try { const s = localStorage.getItem("nitro-notif-cleared"); return s ? new Set(JSON.parse(s)) : new Set(); } catch { return new Set(); }
   });
+  const [notifClearedAt, setNotifClearedAt] = useState(null);
 
   // Persist to localStorage on change
   useEffect(() => { try { localStorage.setItem("nitro-notif-read", JSON.stringify([...readNotifIds])); } catch {} }, [readNotifIds]);
   useEffect(() => { try { localStorage.setItem("nitro-notif-cleared", JSON.stringify([...clearedNotifIds])); } catch {} }, [clearedNotifIds]);
+
+  // Sync read/cleared state FROM server when user loads
+  useEffect(() => {
+    if (!user) return;
+    try {
+      let serverRead = [];
+      try { serverRead = user.notifReadIds ? JSON.parse(user.notifReadIds) : []; } catch {}
+      if (serverRead.length > 0) setReadNotifIds(prev => new Set([...prev, ...serverRead]));
+      if (user.notifClearedAt) setNotifClearedAt(new Date(user.notifClearedAt));
+    } catch {}
+  }, [user]);
+
+  // Sync read IDs TO server (debounced)
+  const syncReadToServer = useRef(null);
+  useEffect(() => {
+    if (readNotifIds.size === 0) return;
+    clearTimeout(syncReadToServer.current);
+    syncReadToServer.current = setTimeout(() => {
+      fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ readIds: [...readNotifIds] }) }).catch(() => {});
+    }, 2000);
+  }, [readNotifIds]);
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
   const [txs, setTxs] = useState([]);
@@ -410,11 +435,12 @@ function DashboardInner() {
   // Compute notification item IDs for bell badge
   const notifItemIds = useMemo(() => {
     const ids = [];
-    orders.filter(o => o.status === "Completed").forEach(o => ids.push(`ord-${o.id}`));
-    orders.filter(o => o.status === "Processing" || o.status === "Pending").forEach(o => ids.push(`proc-${o.id}`));
-    txs.filter(tx => tx.type === "deposit").forEach(tx => ids.push(`dep-${tx.id || tx.reference}`));
+    const cutoff = notifClearedAt ? new Date(notifClearedAt) : null;
+    orders.filter(o => o.status === "Completed").filter(o => !cutoff || (o.created && new Date(o.created) > cutoff)).forEach(o => ids.push(`ord-${o.id}`));
+    orders.filter(o => o.status === "Processing" || o.status === "Pending").filter(o => !cutoff || (o.created && new Date(o.created) > cutoff)).forEach(o => ids.push(`proc-${o.id}`));
+    txs.filter(tx => tx.type === "deposit").filter(tx => !cutoff || (tx.date && new Date(tx.date) > cutoff)).forEach(tx => ids.push(`dep-${tx.id || tx.reference}`));
     return ids;
-  }, [orders, txs]);
+  }, [orders, txs, notifClearedAt]);
   const bellUnread = notifItemIds.filter(id => !readNotifIds.has(id) && !clearedNotifIds.has(id)).length;
 
   /* New Order state (lifted so sidebars can access) */
@@ -676,7 +702,7 @@ function DashboardInner() {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
               {bellUnread > 0 && <div className="dash-bell-badge">{bellUnread > 10 ? "10+" : bellUnread}</div>}
             </button>
-            {notifOpen && <NotifDropdown orders={orders} txs={txs} dark={dark} t={t} onClose={() => setNotifOpen(false)} readIds={readNotifIds} setReadIds={setReadNotifIds} clearedIds={clearedNotifIds} setClearedIds={setClearedNotifIds} />}
+            {notifOpen && <NotifDropdown orders={orders} txs={txs} dark={dark} t={t} onClose={() => setNotifOpen(false)} readIds={readNotifIds} setReadIds={setReadNotifIds} clearedIds={clearedNotifIds} setClearedIds={setClearedNotifIds} notifClearedAt={notifClearedAt} />}
           </div>
           {/* Avatar → Settings */}
           <button onClick={() => { setActive("settings"); setLeftOpen(false); }} className="dash-avatar-btn">

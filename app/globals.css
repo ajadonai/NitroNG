@@ -1685,5 +1685,12 @@ input { font-family: inherit; }
 @media (max-width: 1199px) { .dash-quick-actions { display: block; } }
 
 /* Mobile menu hint */
-.dash-menu-hint { display: none; }
-@media (max-width: 1199px) { .dash-menu-hint { display: flex; } }
+.dash-menu-hint { display: flex; }
+
+/* Menu hint — desktop/mobile text swap */
+.dash-hint-desktop { display: inline; }
+.dash-hint-mobile { display: none; }
+@media (max-width: 1199px) {
+  .dash-hint-desktop { display: none; }
+  .dash-hint-mobile { display: inline; }
+}
