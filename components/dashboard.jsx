@@ -55,7 +55,7 @@ function MobileMenuHint({ dark, t }) {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
   return (
-    <div className="dash-menu-hint" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)"}`, borderRadius: 12, padding: "10px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
+    <div className="dash-menu-hint" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)"}`, borderRadius: 12, padding: "10px 14px", marginBottom: 12, alignItems: "center", gap: 10 }}>
       <span style={{ fontSize: 16, flexShrink: 0 }}>👋</span>
       <div style={{ flex: 1, fontSize: 12, color: t.textMuted, lineHeight: 1.5 }}>
         Tap the <b style={{ color: t.text }}>menu icon</b> (top left) to access Services, Orders, Funds, and more.
