@@ -462,7 +462,7 @@ export function SupportSidebar({ dark, t }) {
       <div className="sup-rs-divider" style={{ background: t.sidebarBorder }} />
       <div className="sup-rs-title" style={{ color: t.textMuted }}>Contact Us</div>
       <div className="sup-rs-contact" style={{ background: t.cardBg }}>
-        {[["Email","TheNitroNG@gmail.com"],["Instagram","@Nitro.ng"],["Twitter/X","@TheNitroNG"]].map(([label,val])=>
+        {[["Email","info@nitro.ng"],["Instagram","@Nitro.ng"],["Twitter/X","@TheNitroNG"]].map(([label,val])=>
           <div key={label} className="sup-rs-contact-row"><span style={{ color: t.textMuted }}>{label}</span><span style={{ color: t.accent, fontWeight: 500 }}>{val}</span></div>
         )}
       </div>

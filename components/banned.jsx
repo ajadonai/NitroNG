@@ -44,7 +44,7 @@ export default function BannedPage() {
           </div>
 
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <a href="mailto:TheNitroNG@gmail.com" style={{ padding: "13px 28px", borderRadius: 10, fontSize: 16, fontWeight: 600, textDecoration: "none", background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", boxShadow: "0 4px 16px rgba(196,125,142,.25)" }}>Contact Support</a>
+            <a href="mailto:info@nitro.ng" style={{ padding: "13px 28px", borderRadius: 10, fontSize: 16, fontWeight: 600, textDecoration: "none", background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", boxShadow: "0 4px 16px rgba(196,125,142,.25)" }}>Contact Support</a>
             <a href="/" style={{ padding: "13px 28px", borderRadius: 10, fontSize: 16, fontWeight: 600, textDecoration: "none", background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.tx, borderWidth: 1, borderStyle: "solid", borderColor: t.cbd }}>Go Home</a>
           </div>
         </div>

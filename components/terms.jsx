@@ -20,9 +20,9 @@ function TermsInner(){
     ["Limitation of Liability","Nitro is provided \"as is\" without warranties of any kind. We shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the Platform. Our total liability for any claim shall not exceed the amount you paid to us in the 30 days preceding the claim."],
     ["Termination","We may suspend or terminate your account at our sole discretion, with or without cause, and with or without notice. Upon termination, your right to use the Platform ceases immediately. Wallet balances on terminated accounts due to terms violations are forfeited."],
     ["Governing Law","These Terms shall be governed by and construed in accordance with the laws of the Federal Republic of Nigeria. Any disputes shall be resolved through the courts of Lagos State, Nigeria."],
-    ["Contact","For questions about these Terms, contact us at legal@thenitro.ng"],
+    ["Contact","For questions about these Terms, contact us at info@nitro.ng"],
   ];
-  return <LegalLayout label="Legal" title="Terms of" titleAccent="Service" date="March 23, 2026" sections={sections} emailField="legal@thenitro.ng" relatedLinks={[["Privacy Policy","/privacy"],["Refund Policy","/refund"],["Cookie Policy","/cookie"]]} action="back"/>;
+  return <LegalLayout label="Legal" title="Terms of" titleAccent="Service" date="March 23, 2026" sections={sections} emailField="info@nitro.ng" relatedLinks={[["Privacy Policy","/privacy"],["Refund Policy","/refund"],["Cookie Policy","/cookie"]]} action="back"/>;
 }
 
 function LegalLayout({label,title,titleAccent,date,sections,emailField,relatedLinks,action}){

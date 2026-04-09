@@ -17,9 +17,9 @@ function RefundInner(){
     ["Wallet Balance Refunds","All refunds are credited to your Nitro wallet balance. We do not process refunds directly to payment methods (cards, bank accounts). Wallet balances can be used for future orders on the platform."],
     ["Deposit Refunds","Deposits to your wallet are non-refundable once credited. If a deposit fails or is not credited to your account, please contact support with your payment reference for investigation. Failed deposits that were debited from your bank will be resolved with the payment processor."],
     ["Processing Time","Refund requests are typically reviewed within 24-48 hours. Once approved, wallet credits are applied instantly. For disputed transactions involving payment processors, resolution may take 5-10 business days."],
-    ["Contact","For refund-related questions, open a support ticket from your dashboard or contact us at support@thenitro.ng"],
+    ["Contact","For refund-related questions, open a support ticket from your dashboard or contact us at info@nitro.ng"],
   ];
-  return <LegalLayout label="Policy" title="Refund" titleAccent="Policy" date="March 23, 2026" sections={sections} emailField="support@thenitro.ng" relatedLinks={[["Terms of Service","/terms"],["Privacy Policy","/privacy"],["Cookie Policy","/cookie"]]}/>;
+  return <LegalLayout label="Policy" title="Refund" titleAccent="Policy" date="March 23, 2026" sections={sections} emailField="info@nitro.ng" relatedLinks={[["Terms of Service","/terms"],["Privacy Policy","/privacy"],["Cookie Policy","/cookie"]]}/>;
 }
 
 function LegalLayout({label,title,titleAccent,date,sections,emailField,relatedLinks}){

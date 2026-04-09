@@ -16,9 +16,9 @@ function CookieInner(){
     ["Cookie Duration","Session cookies are deleted when you close your browser. Persistent cookies remain on your device for a set period: authentication cookies last up to 7 days, preference cookies last up to 1 year, and analytics cookies last up to 90 days."],
     ["Managing Cookies","You can manage or delete cookies through your browser settings. Most browsers allow you to block or delete cookies, view which cookies are stored, and set preferences for specific websites. Note that blocking essential cookies will prevent you from using Nitro."],
     ["Changes to This Policy","We may update this Cookie Policy from time to time. Changes will be posted on this page with an updated revision date. Continued use of Nitro after changes constitutes acceptance."],
-    ["Contact","For questions about our use of cookies, contact us at privacy@thenitro.ng"],
+    ["Contact","For questions about our use of cookies, contact us at info@nitro.ng"],
   ];
-  return <LegalLayout label="Cookies" title="Cookie" titleAccent="Policy" date="March 23, 2026" sections={sections} emailField="privacy@thenitro.ng" relatedLinks={[["Terms of Service","/terms"],["Privacy Policy","/privacy"],["Refund Policy","/refund"]]}/>;
+  return <LegalLayout label="Cookies" title="Cookie" titleAccent="Policy" date="March 23, 2026" sections={sections} emailField="info@nitro.ng" relatedLinks={[["Terms of Service","/terms"],["Privacy Policy","/privacy"],["Refund Policy","/refund"]]}/>;
 }
 
 function LegalLayout({label,title,titleAccent,date,sections,emailField,relatedLinks}){
