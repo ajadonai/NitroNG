@@ -18,7 +18,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://api.paystack.co https://*.neon.tech",
+              "connect-src 'self' https://api.paystack.co https://*.neon.tech https://*.ingest.us.sentry.io https://*.ingest.sentry.io",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
