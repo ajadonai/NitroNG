@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme } from "./shared-nav";
-import '../styles/landing.css';
 
 const AuthModal = dynamic(() => import("./auth-modal"), { ssr: false });
 

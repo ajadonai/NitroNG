@@ -13,7 +13,6 @@ import { AdminPaymentsPage, AdminAnalyticsPage, AdminAlertsPage, AdminSettingsPa
 import { AdminActivityPage, AdminTeamPage, AdminCouponsPage, AdminNotificationsPage, AdminMaintenancePage, AdminAPIPage } from "./admin-extra-pages";
 import AdminBlogPage from "./admin-blog";
 import { fN, fD } from "../lib/format";
-import '../styles/admin.css';
 
 /* ═══════════════════════════════════════════ */
 /* ═══ HELPERS                             ═══ */

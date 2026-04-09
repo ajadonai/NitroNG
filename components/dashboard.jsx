@@ -6,7 +6,6 @@ import NewOrderPage, { PLATFORMS, PLATFORM_GROUPS, OrderForm, ServicesSidebar } 
 import { ToastProvider } from "./toast";
 import { ConfirmProvider } from "./confirm-dialog";
 import { fN, fD } from "../lib/format";
-import '../styles/dashboard.css';
 
 /* Dynamic imports — only load when user navigates to that page */
 const OrdersPage = dynamic(() => import("./orders-page").then(m => m.default), { ssr: false });
