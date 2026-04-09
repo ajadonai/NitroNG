@@ -28,8 +28,8 @@ export async function POST(req) {
   const { admin, error } = await requireAdmin('maintenance', true);
   if (error) return error;
 
-  if (admin.role !== 'superadmin') {
-    return Response.json({ error: 'Only superadmin can toggle maintenance' }, { status: 403 });
+  if (admin.role !== 'superadmin' && admin.role !== 'owner') {
+    return Response.json({ error: 'Only owner/superadmin can toggle maintenance' }, { status: 403 });
   }
 
   try {

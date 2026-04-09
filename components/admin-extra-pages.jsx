@@ -480,9 +480,10 @@ export function AdminMaintenancePage({ dark, t }) {
     const e = newEnabled !== undefined ? newEnabled : enabled;
     const mins = useCustom ? ((Number(customH) || 0) * 60 + (Number(customM) || 0)) : duration;
     try {
-      await fetch("/api/admin/maintenance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: e, message: msg, durationMinutes: mins, estimatedReturn: formatDuration(mins) }) });
-      if (newEnabled !== undefined) setEnabled(e);
-    } catch {}
+      const res = await fetch("/api/admin/maintenance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: e, message: msg, durationMinutes: mins, estimatedReturn: formatDuration(mins) }) });
+      if (res.ok) { if (newEnabled !== undefined) setEnabled(e); }
+      else { const d = await res.json().catch(() => ({})); alert(d.error || "Failed to save"); }
+    } catch { alert("Network error"); }
   };
 
   return (

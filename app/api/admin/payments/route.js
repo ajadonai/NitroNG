@@ -18,7 +18,8 @@ async function getGateways() {
     try { saved[s.key.replace('gateway_', '')] = JSON.parse(s.value); } catch {}
   });
 
-  return DEFAULT_GATEWAYS.map(g => ({
+  const defaultIds = DEFAULT_GATEWAYS.map(g => g.id);
+  const merged = DEFAULT_GATEWAYS.map(g => ({
     ...g,
     ...(saved[g.id] || {}),
     id: g.id,
@@ -26,6 +27,23 @@ async function getGateways() {
     desc: g.desc,
     fields: { ...g.fields, ...(saved[g.id]?.fields || {}) },
   }));
+
+  // Add custom gateways not in defaults
+  Object.entries(saved).forEach(([id, data]) => {
+    if (!defaultIds.includes(id)) {
+      merged.push({
+        id,
+        name: data.name || id,
+        desc: data.desc || '',
+        enabled: data.enabled || false,
+        priority: data.priority || 99,
+        fields: data.fields || { secretKey: '', publicKey: '' },
+      });
+    }
+  });
+
+  merged.sort((a, b) => (a.priority || 99) - (b.priority || 99));
+  return merged;
 }
 
 export async function GET() {
@@ -56,7 +74,7 @@ export async function POST(req) {
     const admin = await requireAdmin();
     if (!admin) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { action, gatewayId, enabled, priority, fields } = await req.json();
+    const { action, gatewayId, enabled, priority, fields, name, desc } = await req.json();
 
     if (!gatewayId) return Response.json({ error: 'Gateway ID required' }, { status: 400 });
 
@@ -91,6 +109,17 @@ export async function POST(req) {
         create: { key: `gateway_${gatewayId}`, value: JSON.stringify(updated) },
       });
       await logActivity(admin.name, `Configured ${gatewayId} gateway keys`, 'payment');
+      return Response.json({ success: true });
+    }
+
+    if (action === 'add') {
+      const newData = { enabled: false, priority: 99, name: name || gatewayId, desc: desc || '', fields: { secretKey: '', publicKey: '' } };
+      await prisma.setting.upsert({
+        where: { key: `gateway_${gatewayId}` },
+        update: { value: JSON.stringify({ ...current, ...newData, fields: { ...newData.fields, ...(current.fields || {}) } }) },
+        create: { key: `gateway_${gatewayId}`, value: JSON.stringify(newData) },
+      });
+      await logActivity(admin.name, `Added ${name || gatewayId} gateway`, 'payment');
       return Response.json({ success: true });
     }
 

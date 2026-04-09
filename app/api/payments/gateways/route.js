@@ -20,11 +20,11 @@ export async function GET() {
         const id = s.key.replace('gateway_', '');
         const data = JSON.parse(s.value);
         if (data.enabled) {
-          const info = GATEWAY_INFO[id] || { name: id, desc: '' };
+          const info = GATEWAY_INFO[id] || { name: data.name || id, desc: data.desc || '' };
           gateways.push({
             id,
-            name: info.name,
-            desc: info.desc,
+            name: data.name || info.name,
+            desc: data.desc || info.desc,
             priority: data.priority || 99,
           });
         }

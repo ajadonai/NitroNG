@@ -57,7 +57,7 @@ function LandingInner(){
   const [googleError,setGoogleError]=useState(false);
   const [sessionExpired,setSessionExpired]=useState(false);
   useEffect(()=>{const p=new URLSearchParams(window.location.search);if(p.get("login"))setModal("login");if(p.get("signup"))setModal("signup");if(p.get("ref"))setModal("signup");if(p.get("session_expired")){setSessionExpired(true);window.history.replaceState({},"","/");}if(p.get("logout")){setLogoutMsg(true);window.history.replaceState({},"","/");setTimeout(()=>setLogoutMsg(false),4000);}if(p.get("google_error")){setGoogleError(true);window.history.replaceState({},"","/");setTimeout(()=>setGoogleError(false),5000);setModal("login");}},[]);
-  useEffect(()=>{(async()=>{try{const [siRes,stRes]=await Promise.all([fetch("/api/site-info"),fetch("/api/settings")]);if(siRes.ok){const d=await siRes.json();if(d.stats)setSiteStats(d.stats);if(d.promo)setPromoBanner(d.promo);if(d.alerts?.length)setSiteAlerts(d.alerts);}if(stRes.ok){const d=await stRes.json();setSocialLinks(d.settings||{});}}catch{}})();},[]);
+  useEffect(()=>{(async()=>{try{const maintRes=await fetch("/api/maintenance-check");if(maintRes.ok){const m=await maintRes.json();if(m.maintenance){window.location.replace("/maintenance");return;}}const [siRes,stRes]=await Promise.all([fetch("/api/site-info"),fetch("/api/settings")]);if(siRes.ok){const d=await siRes.json();if(d.stats)setSiteStats(d.stats);if(d.promo)setPromoBanner(d.promo);if(d.alerts?.length)setSiteAlerts(d.alerts);}if(stRes.ok){const d=await stRes.json();setSocialLinks(d.settings||{});}}catch{}})();},[]);
   const closeModal=useCallback(()=>setModal(null),[]);
 
   // Scroll lock when modal is open

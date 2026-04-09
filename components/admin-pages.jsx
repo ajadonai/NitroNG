@@ -10,10 +10,12 @@ import { fN, fD } from "../lib/format";
 export function AdminPaymentsPage({ dark, t }) {
   const [gateways, setGateways] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [configuring, setConfiguring] = useState(null); // gateway object being configured
+  const [configuring, setConfiguring] = useState(null);
   const [configFields, setConfigFields] = useState({});
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [addModal, setAddModal] = useState(false);
+  const [newGw, setNewGw] = useState({ id: "", name: "", desc: "" });
 
   const refresh = () => {
     fetch("/api/admin/payments").then(r => r.json()).then(d => {
@@ -61,6 +63,7 @@ export function AdminPaymentsPage({ dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Payments</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>Configure payment gateways. Enable and add API keys to accept payments.</div>
           </div>
+          <button onClick={() => setAddModal(true)} className="adm-btn-primary" style={{ flexShrink: 0 }}>+ Add Gateway</button>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -116,6 +119,43 @@ export function AdminPaymentsPage({ dark, t }) {
             <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
               <button onClick={saveConfig} disabled={saving} style={{ flex: 1, padding: "11px 0", borderRadius: 8, background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer" }}>{saving ? "Saving..." : "Save Keys"}</button>
               <button onClick={() => setConfiguring(null)} style={{ padding: "11px 20px", borderRadius: 8, background: "none", border: `1px solid ${t.cardBorder}`, color: t.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Gateway modal */}
+      {addModal && (
+        <div onClick={() => setAddModal(false)} style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,.5)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 420, background: dark ? "#111728" : "#fff", borderRadius: 16, padding: 24, border: `1px solid ${t.cardBorder}`, boxShadow: "0 20px 60px rgba(0,0,0,.3)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: t.text }}>Add Payment Gateway</div>
+              <button onClick={() => setAddModal(false)} style={{ background: "none", border: "none", color: t.textMuted, fontSize: 18, cursor: "pointer" }}>✕</button>
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: t.textMuted, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8 }}>Gateway ID</label>
+              <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Lowercase, no spaces (e.g. "stripe", "squad")</div>
+              <input value={newGw.id} onChange={e => setNewGw(prev => ({ ...prev, id: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 30) }))} placeholder="e.g. stripe" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: t.text, fontSize: 13, outline: "none", fontFamily: "'JetBrains Mono', monospace", boxSizing: "border-box" }} />
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: t.textMuted, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8 }}>Display Name</label>
+              <input value={newGw.name} onChange={e => setNewGw(prev => ({ ...prev, name: e.target.value.slice(0, 50) }))} placeholder="e.g. Stripe" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: t.textMuted, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8 }}>Description</label>
+              <input value={newGw.desc} onChange={e => setNewGw(prev => ({ ...prev, desc: e.target.value.slice(0, 100) }))} placeholder="e.g. Cards, Apple Pay" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={async () => {
+                if (!newGw.id || !newGw.name) { setMsg({ type: "error", text: "ID and name required" }); return; }
+                if (gateways.some(g => g.id === newGw.id)) { setMsg({ type: "error", text: "Gateway ID already exists" }); return; }
+                setSaving(true);
+                const res = await fetch("/api/admin/payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", gatewayId: newGw.id, name: newGw.name, desc: newGw.desc }) });
+                if (res.ok) { setMsg({ type: "success", text: `${newGw.name} added` }); setAddModal(false); setNewGw({ id: "", name: "", desc: "" }); refresh(); }
+                else { const d = await res.json(); setMsg({ type: "error", text: d.error || "Failed" }); }
+                setSaving(false);
+              }} disabled={saving || !newGw.id || !newGw.name} style={{ flex: 1, padding: "11px 0", borderRadius: 8, background: newGw.id && newGw.name ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)"), color: newGw.id && newGw.name ? "#fff" : t.textMuted, fontSize: 13, fontWeight: 600, border: "none", cursor: newGw.id && newGw.name ? "pointer" : "default" }}>{saving ? "Adding..." : "Add Gateway"}</button>
+              <button onClick={() => setAddModal(false)} style={{ padding: "11px 20px", borderRadius: 8, background: "none", border: `1px solid ${t.cardBorder}`, color: t.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
             </div>
           </div>
         </div>
