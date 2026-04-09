@@ -164,7 +164,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
           <div className="set-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
             <div className="set-card-title" style={{ color: t.textMuted }}>Change password</div>
             <div className="set-card-divider" style={{ background: t.cardBorder }} />
-            {pwMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 13, background: pwMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: pwMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{pwMsg.text}</div>}
+            {pwMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 14, background: pwMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: pwMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{pwMsg.text}</div>}
             <div className="set-input-group">
               <label className="set-input-label" style={{ color: t.textMuted }}>Current password</label>
               <input type="password" value={curPw} onChange={e => setCurPw(e.target.value)} className="set-input" style={{ borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)", background: dark ? "rgba(255,255,255,.04)" : "#fff", color: t.text }} />
@@ -245,7 +245,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
                   <div className="set-session-device" style={{ color: t.text }}>
                     {s.deviceInfo || s.deviceType}
                     {s.current && <span className="set-session-badge" style={{ background: dark ? "rgba(110,231,183,.08)" : "#ecfdf5", color: t.green, borderColor: dark ? "rgba(110,231,183,.15)" : "#a7f3d0" }}>Current</span>}
-                    <span className="m" style={{ fontSize: 10, padding: "1px 5px", borderRadius: 4, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: t.textMuted, marginLeft: 4 }}>{s.deviceType}</span>
+                    <span className="m" style={{ fontSize: 11, padding: "1px 5px", borderRadius: 4, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: t.textMuted, marginLeft: 4 }}>{s.deviceType}</span>
                   </div>
                   <div className="set-session-meta" style={{ color: t.textMuted }}>{s.ip || "—"} · {fDSession(s.lastActive)}</div>
                 </div>
@@ -274,7 +274,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
               </>
             ) : (
               <>
-                <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 12 }}>No API key generated yet. Generate one to access Nitro's API.</div>
+                <div style={{ fontSize: 14, color: t.textMuted, marginBottom: 12 }}>No API key generated yet. Generate one to access Nitro's API.</div>
                 <button onClick={() => generateApiKey("generate")} disabled={apiLoading} className="set-btn-primary" style={{ opacity: apiLoading ? .5 : 1 }}>{apiLoading ? "Generating..." : "Create API Key"}</button>
               </>
             )}

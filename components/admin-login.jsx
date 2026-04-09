@@ -80,9 +80,9 @@ export default function AdminLogin(){
         <div style={{position:"relative",zIndex:1}}>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
             <div style={{width:28,height:28,borderRadius:7,background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
-            <span style={{fontSize:14,fontWeight:700,color:"#fff",letterSpacing:1.5}}>NITRO</span>
+            <span style={{fontSize:15,fontWeight:600,color:"#fff",letterSpacing:1.5}}>NITRO</span>
           </div>
-          <div className="m" style={{fontSize:9,fontWeight:500,color:dark?"rgba(196,125,142,.5)":"rgba(255,255,255,.4)",letterSpacing:2,textTransform:"uppercase"}}>Command Center</div>
+          <div className="m" style={{fontSize:10,fontWeight:500,color:dark?"rgba(196,125,142,.5)":"rgba(255,255,255,.4)",letterSpacing:2,textTransform:"uppercase"}}>Command Center</div>
         </div>
 
         {/* Center: Quote */}
@@ -91,7 +91,7 @@ export default function AdminLogin(){
             <div className="admin-quote-text" style={{color:"#fff"}}>"{q.text}"</div>
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <div style={{width:24,height:1,background:t.accent}}/>
-              <span style={{fontSize:13,fontWeight:500,color:dark?"rgba(196,125,142,.6)":"rgba(255,255,255,.6)"}}>{q.author}</span>
+              <span style={{fontSize:14,fontWeight:500,color:dark?"rgba(196,125,142,.6)":"rgba(255,255,255,.6)"}}>{q.author}</span>
             </div>
           </div>
         </div>
@@ -120,7 +120,7 @@ export default function AdminLogin(){
         <nav className="admin-nav-mobile" style={{display:"none",alignItems:"center",justifyContent:"space-between",height:52,flexShrink:0,zIndex:10,borderBottom:`1px solid ${dark?"rgba(255,255,255,.06)":"rgba(255,255,255,.12)"}`}}>
           <a href="/" style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none"}}>
             <div style={{width:30,height:30,borderRadius:8,background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
-            <span style={{fontSize:17,fontWeight:700,color:"#fff",letterSpacing:1.5}}>NITRO</span>
+            <span style={{fontSize:17,fontWeight:600,color:"#fff",letterSpacing:1.5}}>NITRO</span>
           </a>
           <ThemeToggleBtn/>
         </nav>
@@ -137,21 +137,21 @@ export default function AdminLogin(){
             <div style={{display:"flex",justifyContent:"center",marginBottom:20}}>
               <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"4px 14px",borderRadius:20,background:t.accentLight,border:`1px solid ${dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.1)"}`}}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                <span className="m" style={{fontSize:10,fontWeight:600,color:t.accent,letterSpacing:1}}>ADMIN</span>
+                <span className="m" style={{fontSize:11,fontWeight:600,color:t.accent,letterSpacing:1}}>ADMIN</span>
               </div>
             </div>
 
-            <h2 style={{fontSize:22,fontWeight:700,color:t.text,textAlign:"center",marginBottom:4}}>Command Center</h2>
-            <p style={{fontSize:14,color:t.textSoft,textAlign:"center",marginBottom:24,fontWeight:430}}>Authorized operators only.</p>
+            <h2 style={{fontSize:22,fontWeight:600,color:t.text,textAlign:"center",marginBottom:4}}>Command Center</h2>
+            <p style={{fontSize:15,color:t.textSoft,textAlign:"center",marginBottom:24,fontWeight:450}}>Authorized operators only.</p>
 
-            <div style={{minHeight:36,marginBottom:4,display:"flex",alignItems:"center"}}>{error?<div style={{width:"100%",padding:"8px 12px",borderRadius:8,background:dark?"rgba(220,38,38,0.1)":"#fef2f2",border:`1px solid ${dark?"rgba(220,38,38,0.2)":"#fecaca"}`,color:t.red,fontSize:12,lineHeight:1.2}}>⚠️ {error}</div>:null}</div>
+            <div style={{minHeight:36,marginBottom:4,display:"flex",alignItems:"center"}}>{error?<div style={{width:"100%",padding:"8px 12px",borderRadius:8,background:dark?"rgba(220,38,38,0.1)":"#fef2f2",border:`1px solid ${dark?"rgba(220,38,38,0.2)":"#fecaca"}`,color:t.red,fontSize:13,lineHeight:1.2}}>⚠️ {error}</div>:null}</div>
 
-            <label style={{fontSize:10,fontWeight:600,color:t.textSoft,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Email Address</label>
-            <input value={email} onChange={e=>{setEmail(e.target.value.trim().toLowerCase());setError("");}} placeholder="admin@nitro.ng" type="email" autoComplete="email" style={{width:"100%",padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",marginBottom:16,fontFamily:"inherit"}}/>
+            <label style={{fontSize:11,fontWeight:600,color:t.textSoft,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Email Address</label>
+            <input value={email} onChange={e=>{setEmail(e.target.value.trim().toLowerCase());setError("");}} placeholder="admin@nitro.ng" type="email" autoComplete="email" style={{width:"100%",padding:"12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:15,outline:"none",marginBottom:16,fontFamily:"inherit"}}/>
 
-            <label style={{fontSize:10,fontWeight:600,color:t.textSoft,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Password</label>
+            <label style={{fontSize:11,fontWeight:600,color:t.textSoft,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Password</label>
             <div style={{position:"relative",marginBottom:16}}>
-              <input value={pw} onChange={e=>{setPw(e.target.value);setError("");}} placeholder="Enter password" type={showPw?"text":"password"} onKeyDown={e=>{if(e.key==="Enter")handleLogin()}} style={{width:"100%",padding:"12px 44px 12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:14,outline:"none",fontFamily:"inherit"}}/>
+              <input value={pw} onChange={e=>{setPw(e.target.value);setError("");}} placeholder="Enter password" type={showPw?"text":"password"} onKeyDown={e=>{if(e.key==="Enter")handleLogin()}} style={{width:"100%",padding:"12px 44px 12px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text,fontSize:15,outline:"none",fontFamily:"inherit"}}/>
               <button onClick={()=>setShowPw(!showPw)} type="button" style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",color:t.textMuted,padding:2}}>
                 {showPw?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                 :<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
@@ -159,24 +159,24 @@ export default function AdminLogin(){
             </div>
 
             <div style={{display:"flex",alignItems:"center",marginBottom:24}}>
-              <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}><input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)} style={{accentColor:t.accent,width:14,height:14}}/><span style={{fontSize:12,color:t.textSoft}}>Remember me</span></label>
+              <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}><input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)} style={{accentColor:t.accent,width:14,height:14}}/><span style={{fontSize:13,color:t.textSoft}}>Remember me</span></label>
             </div>
 
-            <button onClick={handleLogin} disabled={loading} style={{width:"100%",padding:"14px 0",borderRadius:12,background:loading?"#999":t.btnPrimary,color:"#fff",fontSize:16,fontWeight:700,marginBottom:16,display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:loading?.7:1,border:"none",boxShadow:loading?"none":"0 6px 24px rgba(196,125,142,.35)",letterSpacing:.5}}>
+            <button onClick={handleLogin} disabled={loading} style={{width:"100%",padding:"14px 0",borderRadius:12,background:loading?"#999":t.btnPrimary,color:"#fff",fontSize:16,fontWeight:600,marginBottom:16,display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:loading?.7:1,border:"none",boxShadow:loading?"none":"0 6px 24px rgba(196,125,142,.35)",letterSpacing:.5}}>
               {loading&&<span style={{width:16,height:16,border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .6s linear infinite"}}/>}
               {loading?"Authenticating...":"Access Dashboard"}
             </button>
 
             <div style={{textAlign:"center",padding:"12px 0 0",borderTop:`1px solid ${t.cardBorder}`}}>
-              <p style={{fontSize:11,color:t.textMuted,marginBottom:8}}>🔒 Access attempts are logged.</p>
-              <a href="/" style={{fontSize:12,color:t.textSoft,textDecoration:"none"}}>← Back to Nitro</a>
+              <p style={{fontSize:12,color:t.textMuted,marginBottom:8}}>🔒 Access attempts are logged.</p>
+              <a href="/" style={{fontSize:13,color:t.textSoft,textDecoration:"none"}}>← Back to Nitro</a>
             </div>
           </div>
         </div>
       </div>
 
       {/* Logout toast */}
-      {logoutMsg&&<div style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",zIndex:9999,padding:"12px 24px",borderRadius:14,background:dark?"rgba(17,22,40,.95)":"rgba(255,255,255,.95)",border:`1px solid ${dark?"rgba(255,255,255,.08)":"rgba(0,0,0,.06)"}`,backdropFilter:"blur(16px)",boxShadow:dark?"0 8px 32px rgba(0,0,0,.4)":"0 8px 32px rgba(0,0,0,.1)",display:"flex",alignItems:"center",gap:10,animation:"fu .4s ease"}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span style={{fontSize:13,fontWeight:500,color:t.text}}>You've been logged out successfully</span></div>}
+      {logoutMsg&&<div style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",zIndex:9999,padding:"12px 24px",borderRadius:14,background:dark?"rgba(17,22,40,.95)":"rgba(255,255,255,.95)",border:`1px solid ${dark?"rgba(255,255,255,.08)":"rgba(0,0,0,.06)"}`,backdropFilter:"blur(16px)",boxShadow:dark?"0 8px 32px rgba(0,0,0,.4)":"0 8px 32px rgba(0,0,0,.1)",display:"flex",alignItems:"center",gap:10,animation:"fu .4s ease"}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span style={{fontSize:14,fontWeight:500,color:t.text}}>You've been logged out successfully</span></div>}
     </div>
   );
 }

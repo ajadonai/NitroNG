@@ -15,26 +15,26 @@ function LinkServiceInline({ tierId, services, dark, t, inputStyle, markupSettin
   if (!open) {
     return (
       <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, background: dark ? "rgba(224,164,88,.1)" : "rgba(217,119,6,.06)", color: dark ? "#e0a458" : "#d97706", fontWeight: 600 }}>⚠️ Unlinked</span>
-        <button onClick={() => setOpen(true)} style={{ background: "none", color: "#c47d8e", fontSize: 11, fontWeight: 600, cursor: "pointer", border: "none", padding: 0 }}>Link service</button>
+        <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, background: dark ? "rgba(224,164,88,.1)" : "rgba(217,119,6,.06)", color: dark ? "#e0a458" : "#d97706", fontWeight: 600 }}>⚠️ Unlinked</span>
+        <button onClick={() => setOpen(true)} style={{ background: "none", color: "#c47d8e", fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", padding: 0 }}>Link service</button>
       </span>
     );
   }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <input placeholder="Search MTP services..." value={search} onChange={e => setSearch(e.target.value)} autoFocus style={{ ...inputStyle, fontSize: 12, padding: "5px 8px", width: "100%" }} />
+      <input placeholder="Search MTP services..." value={search} onChange={e => setSearch(e.target.value)} autoFocus style={{ ...inputStyle, fontSize: 13, padding: "5px 8px", width: "100%" }} />
       <div style={{ maxHeight: 120, overflowY: "auto", borderRadius: 6, border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, background: dark ? "#0d1020" : "#fff" }}>
         {filtered.map(s => (
-          <div key={s.id} onClick={async () => { setLinking(true); await onLink(s.id); setLinking(false); setOpen(false); }} style={{ padding: "5px 8px", fontSize: 11, color: t.text, cursor: "pointer", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.03)"}` }}>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: t.textMuted, marginRight: 4 }}>#{s.apiId}</span>
+          <div key={s.id} onClick={async () => { setLinking(true); await onLink(s.id); setLinking(false); setOpen(false); }} style={{ padding: "5px 8px", fontSize: 12, color: t.text, cursor: "pointer", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.03)"}` }}>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: t.textMuted, marginRight: 4 }}>#{s.apiId}</span>
             {s.name?.slice(0, 50)}
-            <span style={{ color: t.textMuted, fontSize: 9, marginLeft: 4 }}>— {koboToNaira(usdCentsToKobo(s.costPer1k, Number(markupSettings.markup_usd_rate || 1600)))}/1k</span>
+            <span style={{ color: t.textMuted, fontSize: 10, marginLeft: 4 }}>— {koboToNaira(usdCentsToKobo(s.costPer1k, Number(markupSettings.markup_usd_rate || 1600)))}/1k</span>
           </div>
         ))}
-        {filtered.length === 0 && <div style={{ padding: "8px", fontSize: 11, color: t.textMuted, textAlign: "center" }}>No matches</div>}
+        {filtered.length === 0 && <div style={{ padding: "8px", fontSize: 12, color: t.textMuted, textAlign: "center" }}>No matches</div>}
       </div>
-      <button onClick={() => setOpen(false)} style={{ background: "none", color: t.textMuted, fontSize: 10, cursor: "pointer", border: "none", padding: 0, alignSelf: "flex-start" }}>Cancel</button>
+      <button onClick={() => setOpen(false)} style={{ background: "none", color: t.textMuted, fontSize: 11, cursor: "pointer", border: "none", padding: 0, alignSelf: "flex-start" }}>Cancel</button>
     </div>
   );
 }
@@ -125,8 +125,8 @@ export default function AdminServiceGroupsPage({ dark, t }) {
   };
 
   const cardStyle = { background: dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)", borderRadius: 12, padding: 16, marginBottom: 12 };
-  const inputStyle = { padding: "8px 12px", borderRadius: 8, background: dark ? "#0d1020" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: dark ? "#f5f3f0" : "#1a1917", fontSize: 13, outline: "none" };
-  const btnStyle = { padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer" };
+  const inputStyle = { padding: "8px 12px", borderRadius: 8, background: dark ? "#0d1020" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: dark ? "#f5f3f0" : "#1a1917", fontSize: 14, outline: "none" };
+  const btnStyle = { padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer" };
   const accentBtn = { ...btnStyle, background: "linear-gradient(135deg,#c47d8e,#a3586b)", color: "#fff" };
   const ghostBtn = { ...btnStyle, background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: dark ? "#a09b95" : "#555250" };
 
@@ -136,8 +136,8 @@ export default function AdminServiceGroupsPage({ dark, t }) {
     <div style={{ padding: "0 0 40px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: t.text, margin: 0 }}>Menu Builder</h2>
-          <p style={{ fontSize: 13, color: t.textMuted, marginTop: 4 }}>{groups.length} groups · {groups.reduce((a, g) => a + g.tiers.length, 0)} tiers · {services.length} MTP services available</p>
+          <h2 style={{ fontSize: 20, fontWeight: 600, color: t.text, margin: 0 }}>Menu Builder</h2>
+          <p style={{ fontSize: 14, color: t.textMuted, marginTop: 4 }}>{groups.length} groups · {groups.reduce((a, g) => a + g.tiers.length, 0)} tiers · {services.length} MTP services available</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => setShowGuide(!showGuide)} style={ghostBtn}>{showGuide ? "Hide Guide" : "📖 Guide"}</button>
@@ -147,8 +147,8 @@ export default function AdminServiceGroupsPage({ dark, t }) {
 
       {/* Guide */}
       {showGuide && (
-        <div style={{ ...cardStyle, marginBottom: 20, fontSize: 13, lineHeight: 1.7, color: t.textMuted }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: t.text, marginBottom: 12 }}>How the Menu Builder Works</div>
+        <div style={{ ...cardStyle, marginBottom: 20, fontSize: 14, lineHeight: 1.7, color: t.textMuted }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 12 }}>How the Menu Builder Works</div>
           <div style={{ marginBottom: 12 }}>
             <b style={{ color: t.text }}>Structure:</b> The menu is organized as <b style={{ color: t.text }}>Groups</b> → <b style={{ color: t.text }}>Tiers</b>. A group is a service customers see (e.g. "Instagram Followers"). Each group has 1–3 tiers (Budget, Standard, Premium) — each tier is linked to a different MTP backend service with different quality/speed.
           </div>
@@ -170,19 +170,19 @@ export default function AdminServiceGroupsPage({ dark, t }) {
         </div>
       )}
 
-      {error && <div style={{ padding: "10px 14px", borderRadius: 8, background: dark ? "rgba(220,38,38,.1)" : "#fef2f2", border: `1px solid ${dark ? "rgba(220,38,38,.2)" : "#fecaca"}`, color: dark ? "#fca5a5" : "#dc2626", fontSize: 13, marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}><span>{error}</span><button onClick={() => setError("")} style={{ background: "none", color: "inherit", fontSize: 16 }}>✕</button></div>}
+      {error && <div style={{ padding: "10px 14px", borderRadius: 8, background: dark ? "rgba(220,38,38,.1)" : "#fef2f2", border: `1px solid ${dark ? "rgba(220,38,38,.2)" : "#fecaca"}`, color: dark ? "#fca5a5" : "#dc2626", fontSize: 14, marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}><span>{error}</span><button onClick={() => setError("")} style={{ background: "none", color: "inherit", fontSize: 16 }}>✕</button></div>}
 
       {/* New group form */}
       {showNew && (
         <div style={{ ...cardStyle, marginBottom: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: t.text, marginBottom: 12 }}>Create Service Group</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 12 }}>Create Service Group</div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
             <input placeholder="Group name (e.g. Instagram Followers)" value={newName} onChange={e => setNewName(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 180 }} />
             <input placeholder="Platform (e.g. Instagram)" value={newPlatform} onChange={e => setNewPlatform(e.target.value)} style={{ ...inputStyle, width: 140 }} />
             <select value={newType} onChange={e => setNewType(e.target.value)} style={{ ...inputStyle, width: 110 }}>
               <option>Standard</option><option>Premium</option><option>Budget</option>
             </select>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: t.textSoft }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: t.textSoft }}>
               <input type="checkbox" checked={newNigerian} onChange={e => setNewNigerian(e.target.checked)} style={{ accentColor: "#c47d8e" }} /> 🇳🇬 Nigerian
             </label>
           </div>
@@ -207,10 +207,10 @@ export default function AdminServiceGroupsPage({ dark, t }) {
         <div key={g.id} style={{ ...cardStyle, opacity: g.enabled ? 1 : .5, borderLeft: g.nigerian ? `3px solid ${dark ? "#4ade80" : "#16a34a"}` : undefined }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 15, fontWeight: 600, color: t.text }}>{g.name}</span>
-              <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", color: "#c47d8e", fontWeight: 500 }}>{g.platform}</span>
-              {g.nigerian && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, background: dark ? "rgba(74,222,128,.1)" : "rgba(22,163,74,.06)", color: dark ? "#4ade80" : "#16a34a", fontWeight: 500 }}>🇳🇬 Nigerian</span>}
-              {!g.enabled && <span style={{ fontSize: 11, color: t.textMuted }}>(disabled)</span>}
+              <span style={{ fontSize: 16, fontWeight: 600, color: t.text }}>{g.name}</span>
+              <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", color: "#c47d8e", fontWeight: 500 }}>{g.platform}</span>
+              {g.nigerian && <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, background: dark ? "rgba(74,222,128,.1)" : "rgba(22,163,74,.06)", color: dark ? "#4ade80" : "#16a34a", fontWeight: 500 }}>🇳🇬 Nigerian</span>}
+              {!g.enabled && <span style={{ fontSize: 12, color: t.textMuted }}>(disabled)</span>}
             </div>
             <div style={{ display: "flex", gap: 6 }}>
               <button onClick={() => act({ action: "update-group", groupId: g.id, enabled: !g.enabled })} style={ghostBtn}>{g.enabled ? "Disable" : "Enable"}</button>
@@ -222,15 +222,15 @@ export default function AdminServiceGroupsPage({ dark, t }) {
           {/* Add tier form */}
           {addTierGroup === g.id && (
             <div style={{ padding: 12, borderRadius: 8, background: dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.02)", marginBottom: 12, border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: t.text, marginBottom: 4 }}>Add Tier to {g.name}</div>
-              <div style={{ fontSize: 10, color: t.textMuted, marginBottom: 8, fontFamily: "'JetBrains Mono',monospace" }}>Markup: {Object.keys(markupSettings).length > 0 ? `DB (${markupSettings.markup_standard || "?"}% std)` : "⚠️ defaults (no DB settings)"}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: t.text, marginBottom: 4 }}>Add Tier to {g.name}</div>
+              <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 8, fontFamily: "'JetBrains Mono',monospace" }}>Markup: {Object.keys(markupSettings).length > 0 ? `DB (${markupSettings.markup_standard || "?"}% std)` : "⚠️ defaults (no DB settings)"}</div>
               <div style={{ marginBottom: 8 }}>
                 <input placeholder="Search MTP services..." value={tierSvcSearch} onChange={e => setTierSvcSearch(e.target.value)} style={{ ...inputStyle, width: "100%", marginBottom: 6 }} />
                 {tierSvcSearch && (
                   <div style={{ maxHeight: 150, overflowY: "auto", borderRadius: 8, border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
                     {filteredSvcs.map(s => (
-                      <div key={s.id} onClick={() => { setTierSvcId(s.id); setTierSvcSearch(s.name); const suggested = calculateTierPrice(s.costPer1k, tierLevel, markupSettings); setTierPrice((suggested / 100).toFixed(2)); }} style={{ padding: "6px 10px", fontSize: 12, color: tierSvcId === s.id ? "#c47d8e" : t.text, background: tierSvcId === s.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : "transparent", cursor: "pointer" }}>
-                        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: t.textMuted, marginRight: 6 }}>#{s.apiId}</span>
+                      <div key={s.id} onClick={() => { setTierSvcId(s.id); setTierSvcSearch(s.name); const suggested = calculateTierPrice(s.costPer1k, tierLevel, markupSettings); setTierPrice((suggested / 100).toFixed(2)); }} style={{ padding: "6px 10px", fontSize: 13, color: tierSvcId === s.id ? "#c47d8e" : t.text, background: tierSvcId === s.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : "transparent", cursor: "pointer" }}>
+                        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: t.textMuted, marginRight: 6 }}>#{s.apiId}</span>
                         {s.name} <span style={{ color: t.textMuted, fontSize: 10 }}>— {koboToNaira(usdCentsToKobo(s.costPer1k, Number(markupSettings.markup_usd_rate || 1600)))}/1k</span>
                       </div>
                     ))}
@@ -243,7 +243,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                 </select>
                 <input placeholder="Sell price ₦/1k" value={tierPrice} onChange={e => setTierPrice(e.target.value.replace(/[^0-9.]/g, ""))} style={{ ...inputStyle, width: 120 }} />
                 <input placeholder="Speed" value={tierSpeed} onChange={e => setTierSpeed(e.target.value)} style={{ ...inputStyle, width: 100 }} />
-                <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: t.textSoft }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, color: t.textSoft }}>
                   <input type="checkbox" checked={tierRefill} onChange={e => setTierRefill(e.target.checked)} style={{ accentColor: "#c47d8e" }} /> Refill
                 </label>
               </div>
@@ -258,11 +258,11 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                 const margin = sell > 0 ? marginPercent(costUsd, sell, usdRate) : 0;
                 const isLow = sell > 0 && sell < Math.ceil(costKobo * 1.5);
                 return (
-                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 10, padding: "8px 10px", borderRadius: 8, background: dark ? "rgba(255,255,255,.02)" : "rgba(0,0,0,.02)", fontSize: 11, color: t.textMuted }}>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 10, padding: "8px 10px", borderRadius: 8, background: dark ? "rgba(255,255,255,.02)" : "rgba(0,0,0,.02)", fontSize: 12, color: t.textMuted }}>
                     <span>Cost: <b style={{ color: t.text, fontFamily: "'JetBrains Mono',monospace" }}>{koboToNaira(costKobo)}</b>/1k</span>
                     <span>Suggested: <b style={{ color: "#c47d8e", fontFamily: "'JetBrains Mono',monospace" }}>{koboToNaira(suggested)}</b> ({markupPercent}%)</span>
                     {sell > 0 && <span>Margin: <b style={{ color: isLow ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669"), fontFamily: "'JetBrains Mono',monospace" }}>{margin}%</b>{isLow && " ⚠️ below 50%"}</span>}
-                    {sell > 0 && sell !== suggested && <button onClick={() => setTierPrice((suggested / 100).toFixed(2))} style={{ background: "none", color: "#c47d8e", fontSize: 11, fontWeight: 600, cursor: "pointer", border: "none", padding: 0 }}>Use suggested</button>}
+                    {sell > 0 && sell !== suggested && <button onClick={() => setTierPrice((suggested / 100).toFixed(2))} style={{ background: "none", color: "#c47d8e", fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", padding: 0 }}>Use suggested</button>}
                   </div>
                 );
               })()}
@@ -277,7 +277,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
                     {["Tier", "MTP Service", "Sell ₦/1k", "Min–Max", "Speed", "Refill", ""].map(h => (
-                      <th key={h} style={{ textAlign: "left", padding: "6px 8px", fontSize: 11, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: .5 }}>{h}</th>
+                      <th key={h} style={{ textAlign: "left", padding: "6px 8px", fontSize: 12, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: .5 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -287,7 +287,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                       <td style={{ padding: "8px", color: tier.tier === "Premium" ? "#a855f7" : tier.tier === "Budget" ? "#f59e0b" : "#3b82f6", fontWeight: 600 }}>{tier.tier}</td>
                       <td style={{ padding: "8px", color: t.text }}>
                         {tier.serviceId ? (
-                          <><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: t.textMuted }}>#{tier.service?.apiId} </span>{tier.service?.name?.slice(0, 40)}</>
+                          <><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: t.textMuted }}>#{tier.service?.apiId} </span>{tier.service?.name?.slice(0, 40)}</>
                         ) : (
                           <LinkServiceInline tierId={tier.id} services={services} dark={dark} t={t} inputStyle={inputStyle} markupSettings={markupSettings} onLink={(svcId) => act({ action: "update-tier", tierIdToUpdate: tier.id, serviceId: svcId })} />
                         )}
@@ -297,7 +297,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                       <td style={{ padding: "8px", color: t.textSoft }}>{tier.speed}</td>
                       <td style={{ padding: "8px" }}>{tier.refill ? <span style={{ color: dark ? "#6ee7b7" : "#059669" }}>✓</span> : <span style={{ color: t.textMuted }}>—</span>}</td>
                       <td style={{ padding: "8px" }}>
-                        <button onClick={async () => { if (await confirm({ title: "Delete Tier", message: "Delete this tier?", confirmLabel: "Delete", danger: true })) act({ action: "delete-tier", tierIdToDelete: tier.id }); }} style={{ background: "none", color: dark ? "#fca5a5" : "#dc2626", fontSize: 12, fontWeight: 500, cursor: "pointer", border: "none" }}>Delete</button>
+                        <button onClick={async () => { if (await confirm({ title: "Delete Tier", message: "Delete this tier?", confirmLabel: "Delete", danger: true })) act({ action: "delete-tier", tierIdToDelete: tier.id }); }} style={{ background: "none", color: dark ? "#fca5a5" : "#dc2626", fontSize: 13, fontWeight: 500, cursor: "pointer", border: "none" }}>Delete</button>
                       </td>
                     </tr>
                   ))}
@@ -305,7 +305,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
               </table>
             </div>
           ) : (
-            <div style={{ padding: "12px 0", fontSize: 13, color: t.textMuted, textAlign: "center" }}>No tiers added yet</div>
+            <div style={{ padding: "12px 0", fontSize: 14, color: t.textMuted, textAlign: "center" }}>No tiers added yet</div>
           )}
         </div>
       ))}

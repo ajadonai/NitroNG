@@ -44,7 +44,7 @@ function sBg(s, dk) { return s === "Completed" ? (dk ? "#0a2416" : "#ecfdf5") : 
 function sBrd(s, dk) { return s === "Completed" ? (dk ? "#166534" : "#a7f3d0") : s === "Processing" ? (dk ? "#3730a3" : "#c7d2fe") : s === "Pending" ? (dk ? "#92400e" : "#fde68a") : s === "Partial" ? (dk ? "#991b1b" : "#fecaca") : (dk ? "#404040" : "#d4d4d4"); }
 
 function Badge({ status, dark }) {
-  return <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: sBg(status, dark), color: sClr(status, dark), borderWidth: .5, borderStyle: "solid", borderColor: sBrd(status, dark), whiteSpace: "nowrap", display: "inline-block" }}>{status}</span>;
+  return <span style={{ fontSize: 13, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: sBg(status, dark), color: sClr(status, dark), borderWidth: .5, borderStyle: "solid", borderColor: sBrd(status, dark), whiteSpace: "nowrap", display: "inline-block" }}>{status}</span>;
 }
 
 /* ═══════════════════════════════════════════ */
@@ -56,7 +56,7 @@ function MobileMenuHint({ dark, t }) {
   return (
     <div className="dash-menu-hint" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)"}`, borderRadius: 12, padding: "10px 14px", marginBottom: 12, alignItems: "center", gap: 10 }}>
       <span style={{ fontSize: 16, flexShrink: 0 }}>👋</span>
-      <div style={{ flex: 1, fontSize: 12, color: t.textMuted, lineHeight: 1.5 }}>
+      <div style={{ flex: 1, fontSize: 13, color: t.textMuted, lineHeight: 1.5 }}>
         Tap the <b style={{ color: t.text }}>menu icon</b> (top left) to access Services, Orders, Funds, and more.
       </div>
       <button onClick={() => setDismissed(true)} style={{ background: "none", border: "none", color: t.textMuted, fontSize: 16, cursor: "pointer", padding: "0 2px", flexShrink: 0 }}>✕</button>
@@ -88,7 +88,7 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive }) {
           borderLeftColor: a.type === "warning" ? (dark ? "#fbbf24" : "#d97706") : t.accent,
           color: a.type === "warning" ? (dark ? "#fbbf24" : "#92400e") : t.text,
         }}>
-          <span style={{ fontSize: 15, flexShrink: 0 }}>{a.type === "warning" ? "⚠️" : "📢"}</span>
+          <span style={{ fontSize: 16, flexShrink: 0 }}>{a.type === "warning" ? "⚠️" : "📢"}</span>
           <span style={{ flex: 1 }}>{a.message}</span>
         </div>
       ))}
@@ -116,7 +116,7 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive }) {
       {/* Quick actions — mobile/tablet only */}
       <div className="dash-quick-actions">
         <div className="dash-qa-card" style={{ background: dark ? "rgba(196,125,142,.04)" : "rgba(196,125,142,.03)", border: `1px solid ${dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)"}`, borderRadius: 14, padding: "10px 10px 12px" }}>
-          <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, color: t.textMuted, padding: "0 4px 6px", opacity: .7 }}>Quick Actions</div>
+          <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: t.textMuted, padding: "0 4px 6px", opacity: .7 }}>Quick Actions</div>
           <div className="dash-qa-grid">
             {[
               ["New Order", "services", t.accent, <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>],
@@ -126,7 +126,7 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive }) {
             ].map(([label, page, color, icon]) => (
               <button key={page} onClick={() => setActive(page)} className="dash-qa-btn" style={{ background: dark ? "rgba(255,255,255,.06)" : "#fff" }}>
                 <div className="dash-qa-icon" style={{ color, background: `${color}15` }}>{icon}</div>
-                <span style={{ fontSize: 10, fontWeight: 600, color: t.textSoft }}>{label}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: t.textSoft }}>{label}</span>
               </button>
             ))}
           </div>
@@ -166,8 +166,8 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive }) {
               <line x1="32" y1="28" x2="32" y2="36" stroke={t.accent} strokeWidth="2" strokeLinecap="round" opacity=".4" />
             </svg>
             <div style={{ fontSize: 17, fontWeight: 600, color: t.textSoft, marginBottom: 6 }}>No orders yet — let's fix that 🔥</div>
-            <div style={{ color: t.textMuted, fontSize: 14, marginBottom: 16, lineHeight: 1.5 }}>Boost your first Instagram post in under 60 seconds</div>
-            <button onClick={() => setActive("services")} style={{ padding: "12px 28px", borderRadius: 10, background: `linear-gradient(135deg,${t.accent},#8b5e6b)`, color: "#fff", fontSize: 14, fontWeight: 600, border: "none", boxShadow: "0 4px 16px rgba(196,125,142,.25)" }}>Place your first order →</button>
+            <div style={{ color: t.textMuted, fontSize: 15, marginBottom: 16, lineHeight: 1.5 }}>Boost your first Instagram post in under 60 seconds</div>
+            <button onClick={() => setActive("services")} style={{ padding: "12px 28px", borderRadius: 10, background: `linear-gradient(135deg,${t.accent},#8b5e6b)`, color: "#fff", fontSize: 15, fontWeight: 600, border: "none", boxShadow: "0 4px 16px rgba(196,125,142,.25)" }}>Place your first order →</button>
           </div>
         )}
         {orders.length > 5 && (
@@ -208,7 +208,7 @@ function RightSidebar({ orders, user, dark, t, setActive }) {
           )}
           {pnd > 0 && <div className="dash-rs-pill" style={{ background: sBg("Pending", dark), color: sClr("Pending", dark) }}>{pnd} pending</div>}
           {prt > 0 && <div className="dash-rs-pill" style={{ background: sBg("Partial", dark), color: sClr("Partial", dark) }}>{prt} partial</div>}
-          {activeOrders.length === 0 && <div style={{ fontSize: 13, color: t.textMuted }}>No active orders</div>}
+          {activeOrders.length === 0 && <div style={{ fontSize: 14, color: t.textMuted }}>No active orders</div>}
         </div>
         <div className="dash-rs-list">
           {activeOrders.slice(0, 3).map(o => (
@@ -331,18 +331,18 @@ function NotifDropdown({ orders, txs, dark, t, onClose, readIds, setReadIds, cle
       {/* Header */}
       <div className="dash-notif-header">
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Notifications</span>
-          {unreadCount > 0 && <span className="m" style={{ fontSize: 11, padding: "2px 6px", borderRadius: 5, background: dark ? "#1c1015" : "#fdf2f4", color: t.accent, fontWeight: 700 }}>{unreadCount}</span>}
+          <span style={{ fontSize: 16, fontWeight: 600, color: t.text }}>Notifications</span>
+          {unreadCount > 0 && <span className="m" style={{ fontSize: 12, padding: "2px 6px", borderRadius: 5, background: dark ? "#1c1015" : "#fdf2f4", color: t.accent, fontWeight: 600 }}>{unreadCount}</span>}
         </div>
         <div style={{ display: "flex", gap: 10 }}>
-          {unreadCount > 0 && <button onClick={markAllRead} style={{ fontSize: 12, fontWeight: 600, color: t.accent, background: "none", border: "none", cursor: "pointer" }}>Mark all read</button>}
-          {items.length > 0 && <button onClick={clearAll} style={{ fontSize: 12, fontWeight: 600, color: t.textMuted, background: "none", border: "none", cursor: "pointer" }}>Clear all</button>}
+          {unreadCount > 0 && <button onClick={markAllRead} style={{ fontSize: 13, fontWeight: 600, color: t.accent, background: "none", border: "none", cursor: "pointer" }}>Mark all read</button>}
+          {items.length > 0 && <button onClick={clearAll} style={{ fontSize: 13, fontWeight: 600, color: t.textMuted, background: "none", border: "none", cursor: "pointer" }}>Clear all</button>}
         </div>
       </div>
       {/* Filter tabs */}
       <div style={{ display: "flex", gap: 4, padding: "0 14px 10px" }}>
         {[["all", "All"], ["order", "Orders"], ["deposit", "Deposits"]].map(([id, label]) => (
-          <button key={id} onClick={() => setFilter(id)} style={{ padding: "3px 10px", borderRadius: 7, fontSize: 12, fontWeight: 550, background: filter === id ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : "transparent", color: filter === id ? t.accent : t.textMuted, border: "none", cursor: "pointer" }}>{label}</button>
+          <button key={id} onClick={() => setFilter(id)} style={{ padding: "3px 10px", borderRadius: 7, fontSize: 13, fontWeight: 500, background: filter === id ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : "transparent", color: filter === id ? t.accent : t.textMuted, border: "none", cursor: "pointer" }}>{label}</button>
         ))}
       </div>
       <div style={{ height: 1, background: t.cardBorder }} />
@@ -355,20 +355,20 @@ function NotifDropdown({ orders, txs, dark, t, onClose, readIds, setReadIds, cle
               <div className="dash-notif-icon" style={{ background: `${n.color}15`, color: n.color }}>{n.icon}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 13, fontWeight: isRead ? 450 : 600, color: t.text }}>{n.title}</span>
+                  <span style={{ fontSize: 14, fontWeight: isRead ? 450 : 600, color: t.text }}>{n.title}</span>
                   {!isRead && <div style={{ width: 6, height: 6, borderRadius: "50%", background: t.accent, flexShrink: 0 }} />}
                 </div>
-                <div style={{ fontSize: 13, color: t.textSoft, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.desc}</div>
-                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 3 }}>{n.time}</div>
+                <div style={{ fontSize: 14, color: t.textSoft, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.desc}</div>
+                <div style={{ fontSize: 13, color: t.textMuted, marginTop: 3 }}>{n.time}</div>
               </div>
             </div>
           );
         }) : (
-          <div style={{ padding: "24px 14px", textAlign: "center", fontSize: 13, color: t.textMuted }}>No notifications</div>
+          <div style={{ padding: "24px 14px", textAlign: "center", fontSize: 14, color: t.textMuted }}>No notifications</div>
         )}
       </div>
       {/* Footer */}
-      {hasMore && <div style={{ padding: "8px 14px", textAlign: "center", fontSize: 11, color: t.textMuted, borderTop: `1px solid ${t.cardBorder}` }}>Showing latest 10 of {filtered.length}</div>}
+      {hasMore && <div style={{ padding: "8px 14px", textAlign: "center", fontSize: 12, color: t.textMuted, borderTop: `1px solid ${t.cardBorder}` }}>Showing latest 10 of {filtered.length}</div>}
     </div>
   );
 }
@@ -697,8 +697,8 @@ function DashboardInner() {
       default:
         return (
           <div className="dash-placeholder" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-            <div style={{ color: t.textMuted, fontSize: 15, fontWeight: 500 }}>{active.charAt(0).toUpperCase() + active.slice(1).replace("-", " ")}</div>
-            <div style={{ color: t.textMuted, fontSize: 13, opacity: .5, marginTop: 4 }}>Coming soon</div>
+            <div style={{ color: t.textMuted, fontSize: 16, fontWeight: 500 }}>{active.charAt(0).toUpperCase() + active.slice(1).replace("-", " ")}</div>
+            <div style={{ color: t.textMuted, fontSize: 14, opacity: .5, marginTop: 4 }}>Coming soon</div>
           </div>
         );
     }
@@ -862,8 +862,8 @@ function DashboardInner() {
               <ServicesSidebar dark={dark} t={t} />
               <div className="dash-rs-empty" style={{ marginTop: 16 }}>
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: .3, marginBottom: 12 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                <div style={{ fontSize: 14, color: t.textMuted, textAlign: "center", fontWeight: 450 }}>Select a service</div>
-                <div style={{ fontSize: 13, color: t.textMuted, opacity: .5, marginTop: 4, textAlign: "center" }}>Choose a platform and service to place an order</div>
+                <div style={{ fontSize: 15, color: t.textMuted, textAlign: "center", fontWeight: 450 }}>Select a service</div>
+                <div style={{ fontSize: 14, color: t.textMuted, opacity: .5, marginTop: 4, textAlign: "center" }}>Choose a platform and service to place an order</div>
               </div>
               </>
             )

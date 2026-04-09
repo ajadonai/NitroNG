@@ -68,7 +68,7 @@ export function AdminPaymentsPage({ dark, t }) {
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {msg && <div style={{ padding: "10px 14px", borderRadius: 8, marginBottom: 12, background: msg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: msg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), fontSize: 13, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      {msg && <div style={{ padding: "10px 14px", borderRadius: 8, marginBottom: 12, background: msg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: msg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), fontSize: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>{msg.text}</span>
         <button onClick={() => setMsg(null)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", fontSize: 14 }}>✕</button>
       </div>}
@@ -79,11 +79,11 @@ export function AdminPaymentsPage({ dark, t }) {
             <div key={g.id} className="adm-list-row" style={{ borderBottom: i < gateways.length - 1 ? `1px solid ${t.cardBorder}` : "none", flexWrap: "wrap", gap: 10 }}>
               <div style={{ flex: 1, minWidth: 160 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                  <span style={{ fontSize: 14, fontWeight: 550, color: t.text }}>{g.name}</span>
-                  <span className="m" style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, fontWeight: 600, background: g.enabled ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"), color: g.enabled ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }}>{g.enabled ? "Active" : "Disabled"}</span>
-                  {g.hasKeys && <span className="m" style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, fontWeight: 600, background: dark ? "rgba(96,165,250,.08)" : "rgba(59,130,246,.06)", color: dark ? "#60a5fa" : "#2563eb" }}>Keys set</span>}
+                  <span style={{ fontSize: 15, fontWeight: 500, color: t.text }}>{g.name}</span>
+                  <span className="m" style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, fontWeight: 600, background: g.enabled ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"), color: g.enabled ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }}>{g.enabled ? "Active" : "Disabled"}</span>
+                  {g.hasKeys && <span className="m" style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, fontWeight: 600, background: dark ? "rgba(96,165,250,.08)" : "rgba(59,130,246,.06)", color: dark ? "#60a5fa" : "#2563eb" }}>Keys set</span>}
                 </div>
-                <div style={{ fontSize: 12, color: t.textMuted }}>{g.desc}</div>
+                <div style={{ fontSize: 13, color: t.textMuted }}>{g.desc}</div>
               </div>
               <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                 <button onClick={() => toggle(g.id, !g.enabled)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: g.enabled ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{g.enabled ? "Disable" : "Enable"}</button>
@@ -102,23 +102,23 @@ export function AdminPaymentsPage({ dark, t }) {
               <div style={{ fontSize: 16, fontWeight: 600, color: t.text }}>Configure {configuring.name}</div>
               <button onClick={() => setConfiguring(null)} style={{ background: "none", border: "none", color: t.textMuted, fontSize: 18, cursor: "pointer" }}>✕</button>
             </div>
-            <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 16, lineHeight: 1.5 }}>Enter your API keys. Leave blank to keep existing keys. Current keys are masked for security.</div>
+            <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 16, lineHeight: 1.5 }}>Enter your API keys. Leave blank to keep existing keys. Current keys are masked for security.</div>
             {Object.entries(configFields).map(([key]) => (
               <div key={key} style={{ marginBottom: 14 }}>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: t.textMuted, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8 }}>{FIELD_LABELS[key] || key}</label>
-                <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Current: {configuring.fields?.[key] || "Not set"}</div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: t.textMuted, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8 }}>{FIELD_LABELS[key] || key}</label>
+                <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 4 }}>Current: {configuring.fields?.[key] || "Not set"}</div>
                 <input
                   type="password"
                   value={configFields[key]}
                   onChange={e => setConfigFields(prev => ({ ...prev, [key]: e.target.value }))}
                   placeholder={`Enter new ${FIELD_LABELS[key] || key}`}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: t.text, fontSize: 13, outline: "none", fontFamily: "'JetBrains Mono', monospace", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: t.text, fontSize: 14, outline: "none", fontFamily: "'JetBrains Mono', monospace", boxSizing: "border-box" }}
                 />
               </div>
             ))}
             <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-              <button onClick={saveConfig} disabled={saving} style={{ flex: 1, padding: "11px 0", borderRadius: 8, background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer" }}>{saving ? "Saving..." : "Save Keys"}</button>
-              <button onClick={() => setConfiguring(null)} style={{ padding: "11px 20px", borderRadius: 8, background: "none", border: `1px solid ${t.cardBorder}`, color: t.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+              <button onClick={saveConfig} disabled={saving} style={{ flex: 1, padding: "11px 0", borderRadius: 8, background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer" }}>{saving ? "Saving..." : "Save Keys"}</button>
+              <button onClick={() => setConfiguring(null)} style={{ padding: "11px 20px", borderRadius: 8, background: "none", border: `1px solid ${t.cardBorder}`, color: t.textMuted, fontSize: 14, cursor: "pointer" }}>Cancel</button>
             </div>
           </div>
         </div>
@@ -133,17 +133,17 @@ export function AdminPaymentsPage({ dark, t }) {
               <button onClick={() => setAddModal(false)} style={{ background: "none", border: "none", color: t.textMuted, fontSize: 18, cursor: "pointer" }}>✕</button>
             </div>
             <div style={{ marginBottom: 14 }}>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: t.textMuted, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8 }}>Gateway ID</label>
-              <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Lowercase, no spaces (e.g. "stripe", "squad")</div>
-              <input value={newGw.id} onChange={e => setNewGw(prev => ({ ...prev, id: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 30) }))} placeholder="e.g. stripe" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: t.text, fontSize: 13, outline: "none", fontFamily: "'JetBrains Mono', monospace", boxSizing: "border-box" }} />
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: t.textMuted, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8 }}>Gateway ID</label>
+              <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 4 }}>Lowercase, no spaces (e.g. "stripe", "squad")</div>
+              <input value={newGw.id} onChange={e => setNewGw(prev => ({ ...prev, id: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 30) }))} placeholder="e.g. stripe" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: t.text, fontSize: 14, outline: "none", fontFamily: "'JetBrains Mono', monospace", boxSizing: "border-box" }} />
             </div>
             <div style={{ marginBottom: 14 }}>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: t.textMuted, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8 }}>Display Name</label>
-              <input value={newGw.name} onChange={e => setNewGw(prev => ({ ...prev, name: e.target.value.slice(0, 50) }))} placeholder="e.g. Stripe" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: t.textMuted, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8 }}>Display Name</label>
+              <input value={newGw.name} onChange={e => setNewGw(prev => ({ ...prev, name: e.target.value.slice(0, 50) }))} placeholder="e.g. Stripe" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
             </div>
             <div style={{ marginBottom: 14 }}>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: t.textMuted, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8 }}>Description</label>
-              <input value={newGw.desc} onChange={e => setNewGw(prev => ({ ...prev, desc: e.target.value.slice(0, 100) }))} placeholder="e.g. Cards, Apple Pay" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: t.textMuted, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8 }}>Description</label>
+              <input value={newGw.desc} onChange={e => setNewGw(prev => ({ ...prev, desc: e.target.value.slice(0, 100) }))} placeholder="e.g. Cards, Apple Pay" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={async () => {
@@ -154,8 +154,8 @@ export function AdminPaymentsPage({ dark, t }) {
                 if (res.ok) { setMsg({ type: "success", text: `${newGw.name} added` }); setAddModal(false); setNewGw({ id: "", name: "", desc: "" }); refresh(); }
                 else { const d = await res.json(); setMsg({ type: "error", text: d.error || "Failed" }); }
                 setSaving(false);
-              }} disabled={saving || !newGw.id || !newGw.name} style={{ flex: 1, padding: "11px 0", borderRadius: 8, background: newGw.id && newGw.name ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)"), color: newGw.id && newGw.name ? "#fff" : t.textMuted, fontSize: 13, fontWeight: 600, border: "none", cursor: newGw.id && newGw.name ? "pointer" : "default" }}>{saving ? "Adding..." : "Add Gateway"}</button>
-              <button onClick={() => setAddModal(false)} style={{ padding: "11px 20px", borderRadius: 8, background: "none", border: `1px solid ${t.cardBorder}`, color: t.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+              }} disabled={saving || !newGw.id || !newGw.name} style={{ flex: 1, padding: "11px 0", borderRadius: 8, background: newGw.id && newGw.name ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)"), color: newGw.id && newGw.name ? "#fff" : t.textMuted, fontSize: 14, fontWeight: 600, border: "none", cursor: newGw.id && newGw.name ? "pointer" : "default" }}>{saving ? "Adding..." : "Add Gateway"}</button>
+              <button onClick={() => setAddModal(false)} style={{ padding: "11px 20px", borderRadius: 8, background: "none", border: `1px solid ${t.cardBorder}`, color: t.textMuted, fontSize: 14, cursor: "pointer" }}>Cancel</button>
             </div>
           </div>
         </div>
@@ -193,7 +193,7 @@ export function AdminAnalyticsPage({ dark, t }) {
           </div>
           <div style={{ display: "flex", gap: 4 }}>
             {[["24h", "24h"], ["7d", "7 days"], ["30d", "30 days"], ["90d", "90 days"]].map(([id, lb]) => (
-              <button key={id} onClick={() => changeRange(id)} style={{ padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: range === id ? 600 : 400, background: range === id ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: range === id ? t.accent : t.textMuted, borderWidth: 1, borderStyle: "solid", borderColor: range === id ? t.accent : t.cardBorder }}>{lb}</button>
+              <button key={id} onClick={() => changeRange(id)} style={{ padding: "6px 12px", borderRadius: 6, fontSize: 13, fontWeight: range === id ? 600 : 400, background: range === id ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: range === id ? t.accent : t.textMuted, borderWidth: 1, borderStyle: "solid", borderColor: range === id ? t.accent : t.cardBorder }}>{lb}</button>
             ))}
           </div>
         </div>
@@ -226,8 +226,8 @@ export function AdminAnalyticsPage({ dark, t }) {
             <div className="adm-card-divider" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", margin: "12px 0 0" }} />
             {(s.topPlatforms || []).length > 0 ? s.topPlatforms.map((p, i, arr) => (
               <div key={p.name} className="adm-list-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-                <div><div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>{p.name}</div><div style={{ fontSize: 13, color: t.textMuted }}>{p.orders} orders</div></div>
-                <div className="m" style={{ fontSize: 14, fontWeight: 600, color: t.green }}>{fN(p.revenue || 0)}</div>
+                <div><div style={{ fontSize: 15, fontWeight: 500, color: t.text }}>{p.name}</div><div style={{ fontSize: 14, color: t.textMuted }}>{p.orders} orders</div></div>
+                <div className="m" style={{ fontSize: 15, fontWeight: 600, color: t.green }}>{fN(p.revenue || 0)}</div>
               </div>
             )) : <div className="adm-empty" style={{ color: t.textMuted }}>No platform data yet</div>}
           </div>
@@ -240,9 +240,9 @@ export function AdminAnalyticsPage({ dark, t }) {
               <div key={label} className="adm-list-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ width: 8, height: 8, borderRadius: 4, background: color }} />
-                  <span style={{ fontSize: 14, color: t.text }}>{label}</span>
+                  <span style={{ fontSize: 15, color: t.text }}>{label}</span>
                 </div>
-                <span className="m" style={{ fontSize: 14, fontWeight: 600, color }}>{count}</span>
+                <span className="m" style={{ fontSize: 15, fontWeight: 600, color }}>{count}</span>
               </div>
             ))}
           </div>
@@ -258,10 +258,10 @@ export function AdminAnalyticsPage({ dark, t }) {
             {s.topServices.map((sv, i, arr) => (
               <div key={i} className="adm-list-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sv.name}</div>
-                  <div style={{ fontSize: 12, color: t.textMuted }}>{sv.category} · {sv.orders} orders</div>
+                  <div style={{ fontSize: 15, fontWeight: 500, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sv.name}</div>
+                  <div style={{ fontSize: 13, color: t.textMuted }}>{sv.category} · {sv.orders} orders</div>
                 </div>
-                <div className="m" style={{ fontSize: 14, fontWeight: 600, color: t.green }}>{fN(sv.revenue || 0)}</div>
+                <div className="m" style={{ fontSize: 15, fontWeight: 600, color: t.green }}>{fN(sv.revenue || 0)}</div>
               </div>
             ))}
           </div>
@@ -326,12 +326,12 @@ export function AdminAlertsPage({ dark, t }) {
       {showNew && (
         <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, marginTop: 16, marginBottom: 16, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)", borderRadius: 14 }}>
           <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Message</label>
-            <textarea value={newMsg} onChange={e => setNewMsg(e.target.value)} placeholder="Alert message..." rows={2} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }} />
+            <label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 4 }}>Message</label>
+            <textarea value={newMsg} onChange={e => setNewMsg(e.target.value)} placeholder="Alert message..." rows={2} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 15, outline: "none", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }} />
           </div>
           <div style={{ display: "flex", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
             <div>
-              <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Type</label>
+              <label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 4 }}>Type</label>
               <div style={{ display: "flex", gap: 4 }}>
                 {["info", "warning"].map(ty => (
                   <button key={ty} onClick={() => setNewType(ty)} className="adm-filter-pill" style={{ borderWidth: 1, borderStyle: "solid", borderColor: newType === ty ? t.accent : t.cardBorder, background: newType === ty ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: newType === ty ? t.accent : t.textMuted }}>{ty}</button>
@@ -339,7 +339,7 @@ export function AdminAlertsPage({ dark, t }) {
               </div>
             </div>
             <div>
-              <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Show on</label>
+              <label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 4 }}>Show on</label>
               <div style={{ display: "flex", gap: 4 }}>
                 {["both", "dashboard", "login"].map(tg => (
                   <button key={tg} onClick={() => setNewTarget(tg)} className="adm-filter-pill" style={{ borderWidth: 1, borderStyle: "solid", borderColor: newTarget === tg ? t.accent : t.cardBorder, background: newTarget === tg ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: newTarget === tg ? t.accent : t.textMuted }}>{tg}</button>
@@ -359,9 +359,9 @@ export function AdminAlertsPage({ dark, t }) {
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 15 }}>{a.type === "warning" ? "⚠️" : "📢"}</span>
-                <span style={{ fontSize: 14, fontWeight: 500, color: t.text, opacity: a.active ? 1 : .5 }}>{a.message}</span>
+                <span style={{ fontSize: 15, fontWeight: 500, color: t.text, opacity: a.active ? 1 : .5 }}>{a.message}</span>
               </div>
-              <div style={{ fontSize: 12, color: t.textMuted, marginTop: 3, paddingLeft: 26 }}>Target: {a.target} · {a.active ? "Active" : "Inactive"} · {a.created ? fD(a.created) : ""}</div>
+              <div style={{ fontSize: 13, color: t.textMuted, marginTop: 3, paddingLeft: 26 }}>Target: {a.target} · {a.active ? "Active" : "Inactive"} · {a.created ? fD(a.created) : ""}</div>
             </div>
             <div style={{ display: "flex", gap: 4 }}>
               <button onClick={() => toggleAlert(a.id, a.active)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: a.active ? t.amber : t.green }}>{a.active ? "Pause" : "Activate"}</button>
@@ -401,8 +401,8 @@ function CleanupButton({ dark, t }) {
 
   return (
     <>
-      {info && <div style={{ fontSize: 13, color: t.text, marginBottom: 10 }}>{info.unverifiedTotal || 0} unverified accounts total · {info.staleCount || 0} older than 7 days</div>}
-      {result && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 10, fontSize: 13, background: result.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: result.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{result.type === "success" ? "✓" : "⚠️"} {result.text}</div>}
+      {info && <div style={{ fontSize: 14, color: t.text, marginBottom: 10 }}>{info.unverifiedTotal || 0} unverified accounts total · {info.staleCount || 0} older than 7 days</div>}
+      {result && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 10, fontSize: 14, background: result.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: result.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{result.type === "success" ? "✓" : "⚠️"} {result.text}</div>}
       <button onClick={run} disabled={cleaning} className="adm-btn-primary" style={{ opacity: cleaning ? .5 : 1 }}>{cleaning ? "Cleaning..." : "Clean Up Stale Accounts"}</button>
     </>
   );
@@ -497,34 +497,34 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         {/* Profile */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: t.text }}>Profile</div>
-            {!profileEditing && <button onClick={() => setProfileEditing(true)} style={{ fontSize: 12, color: t.accent, background: "none", border: "none", cursor: "pointer" }}>Edit</button>}
+            <div style={{ fontSize: 16, fontWeight: 600, color: t.text }}>Profile</div>
+            {!profileEditing && <button onClick={() => setProfileEditing(true)} style={{ fontSize: 13, color: t.accent, background: "none", border: "none", cursor: "pointer" }}>Edit</button>}
           </div>
           <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
-            {profileMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 13, background: profileMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: profileMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{profileMsg.type === "success" ? "✓" : "⚠️"} {profileMsg.text}</div>}
+            {profileMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 14, background: profileMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: profileMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{profileMsg.type === "success" ? "✓" : "⚠️"} {profileMsg.text}</div>}
             {profileEditing ? (
               <>
                 <div style={{ marginBottom: 12 }}>
-                  <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Name</label>
-                  <input value={editName} onChange={e => setEditName(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                  <label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 4 }}>Name</label>
+                  <input value={editName} onChange={e => setEditName(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 15, outline: "none", boxSizing: "border-box" }} />
                 </div>
                 <div style={{ marginBottom: 12 }}>
-                  <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Email</label>
-                  <input value={editEmail} onChange={e => setEditEmail(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                  <label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 4 }}>Email</label>
+                  <input value={editEmail} onChange={e => setEditEmail(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 15, outline: "none", boxSizing: "border-box" }} />
                 </div>
                 <div style={{ marginBottom: 8 }}>
-                  <div style={{ fontSize: 12, color: t.textMuted, textTransform: "uppercase", letterSpacing: .8, marginBottom: 3 }}>Role</div>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: t.textMuted }}>{admin?.role || "admin"} (cannot be changed)</div>
+                  <div style={{ fontSize: 13, color: t.textMuted, textTransform: "uppercase", letterSpacing: .8, marginBottom: 3 }}>Role</div>
+                  <div style={{ fontSize: 15, fontWeight: 500, color: t.textMuted }}>{admin?.role || "admin"} (cannot be changed)</div>
                 </div>
                 <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
                   <button onClick={saveProfile} disabled={profileSaving} className="adm-btn-primary" style={{ opacity: profileSaving ? .5 : 1 }}>{profileSaving ? "Saving..." : "Save"}</button>
-                  <button onClick={() => { setProfileEditing(false); setEditName(admin?.name || ""); setEditEmail(admin?.email || ""); setProfileMsg(null); }} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: "none", color: t.textSoft, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                  <button onClick={() => { setProfileEditing(false); setEditName(admin?.name || ""); setEditEmail(admin?.email || ""); setProfileMsg(null); }} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: "none", color: t.textSoft, fontSize: 14, cursor: "pointer" }}>Cancel</button>
                 </div>
               </>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 {[["Name", admin?.name || "Admin"], ["Email", admin?.email || ""], ["Role", admin?.role || "admin"]].map(([label, val]) => (
-                  <div key={label}><div style={{ fontSize: 12, color: t.textMuted, textTransform: "uppercase", letterSpacing: .8, marginBottom: 3 }}>{label}</div><div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>{val}</div></div>
+                  <div key={label}><div style={{ fontSize: 13, color: t.textMuted, textTransform: "uppercase", letterSpacing: .8, marginBottom: 3 }}>{label}</div><div style={{ fontSize: 15, fontWeight: 500, color: t.text }}>{val}</div></div>
                 ))}
               </div>
             )}
@@ -533,30 +533,30 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
 
         {/* Theme */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>Theme</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 10 }}>Theme</div>
           <div style={{ display: "flex", gap: 8 }}>
             {[["day", "☀ Light"], ["night", "☾ Dark"], ["auto", "◑ Auto"]].map(([id, lb]) => (
-              <button key={id} onClick={() => applyTheme(id)} style={{ flex: 1, padding: "12px 10px", borderRadius: 10, borderWidth: 1, borderStyle: "solid", borderColor: themeMode === id ? t.accent : t.cardBorder, background: themeMode === id ? (dark ? "#2a1a22" : "#fdf2f4") : (dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)"), color: themeMode === id ? t.accent : t.textSoft, fontSize: 14, fontWeight: themeMode === id ? 600 : 450, textAlign: "center" }}>{lb}</button>
+              <button key={id} onClick={() => applyTheme(id)} style={{ flex: 1, padding: "12px 10px", borderRadius: 10, borderWidth: 1, borderStyle: "solid", borderColor: themeMode === id ? t.accent : t.cardBorder, background: themeMode === id ? (dark ? "#2a1a22" : "#fdf2f4") : (dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)"), color: themeMode === id ? t.accent : t.textSoft, fontSize: 15, fontWeight: themeMode === id ? 600 : 450, textAlign: "center" }}>{lb}</button>
             ))}
           </div>
         </div>
 
         {/* Change password */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>Change Password</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 10 }}>Change Password</div>
           <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
-            {admPwMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 13, background: admPwMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: admPwMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{admPwMsg.type === "success" ? "✓" : "⚠️"} {admPwMsg.text}</div>}
+            {admPwMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 14, background: admPwMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: admPwMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{admPwMsg.type === "success" ? "✓" : "⚠️"} {admPwMsg.text}</div>}
             <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Current Password</label>
-              <input type="password" value={admCurPw} onChange={e => setAdmCurPw(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+              <label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 4 }}>Current Password</label>
+              <input type="password" value={admCurPw} onChange={e => setAdmCurPw(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 15, outline: "none", boxSizing: "border-box" }} />
             </div>
             <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>New Password</label>
-              <input type="password" value={admNewPw} onChange={e => setAdmNewPw(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+              <label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 4 }}>New Password</label>
+              <input type="password" value={admNewPw} onChange={e => setAdmNewPw(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 15, outline: "none", boxSizing: "border-box" }} />
             </div>
             <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Confirm Password</label>
-              <input type="password" value={admConfPw} onChange={e => setAdmConfPw(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+              <label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 4 }}>Confirm Password</label>
+              <input type="password" value={admConfPw} onChange={e => setAdmConfPw(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 15, outline: "none", boxSizing: "border-box" }} />
             </div>
             <button onClick={changeAdmPw} disabled={pwSaving} className="adm-btn-primary" style={{ opacity: admCurPw && admNewPw && admConfPw && !pwSaving ? 1 : .4 }}>{pwSaving ? "Updating..." : "Update Password"}</button>
           </div>
@@ -564,11 +564,11 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
 
         {/* Social Links & Community */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>Social Links & Community</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 10 }}>Social Links & Community</div>
           <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
-            <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 14, lineHeight: 1.5 }}>These links appear in the user dashboard sidebar, landing page footer, and support page. Leave blank to hide.</div>
+            <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 14, lineHeight: 1.5 }}>These links appear in the user dashboard sidebar, landing page footer, and support page. Leave blank to hide.</div>
 
-            {socialMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 13, background: socialMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: socialMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{socialMsg.type === "success" ? "✓" : "⚠️"} {socialMsg.text}</div>}
+            {socialMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 14, background: socialMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: socialMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{socialMsg.type === "success" ? "✓" : "⚠️"} {socialMsg.text}</div>}
 
             {[
               ["social_whatsapp", "WhatsApp Group Link", "https://chat.whatsapp.com/...", "Group invite link for community"],
@@ -578,9 +578,9 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
               ["social_twitter", "X / Twitter Handle", "TheNitroNG", "Without the @ symbol"],
             ].map(([key, label, placeholder, hint]) => (
               <div key={key} style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 3 }}>{label}</label>
-                <input value={social[key] || ""} onChange={e => setSocial(prev => ({ ...prev, [key]: e.target.value }))} placeholder={placeholder} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
-                <div style={{ fontSize: 11, color: t.textMuted, marginTop: 2, opacity: .7 }}>{hint}</div>
+                <label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 3 }}>{label}</label>
+                <input value={social[key] || ""} onChange={e => setSocial(prev => ({ ...prev, [key]: e.target.value }))} placeholder={placeholder} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 15, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
+                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2, opacity: .7 }}>{hint}</div>
               </div>
             ))}
 
@@ -590,20 +590,20 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
 
         {/* Referral Settings */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>Referral Program</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 10 }}>Referral Program</div>
           <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
-            <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 14, lineHeight: 1.5 }}>Bonus amounts in kobo (100 kobo = ₦1). Default ₦500 = 50000 kobo. Set to 0 to disable.</div>
+            <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 14, lineHeight: 1.5 }}>Bonus amounts in kobo (100 kobo = ₦1). Default ₦500 = 50000 kobo. Set to 0 to disable.</div>
 
-            {refMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 13, background: refMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: refMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{refMsg.type === "success" ? "✓" : "⚠️"} {refMsg.text}</div>}
+            {refMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 14, background: refMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: refMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{refMsg.type === "success" ? "✓" : "⚠️"} {refMsg.text}</div>}
 
             {[
               ["ref_referrer_bonus", "Referrer Bonus", "Amount credited to the person who shared their code"],
               ["ref_invitee_bonus", "Invitee Bonus", "Amount credited to the new user who used a referral code"],
             ].map(([key, label, hint]) => (
               <div key={key} style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 3 }}>{label} <span style={{ fontSize: 12, color: t.accent, fontWeight: 600 }}>₦{((Number(refSettings[key]) || 0) / 100).toLocaleString()}</span></label>
-                <input type="number" value={refSettings[key] || ""} onChange={e => setRefSettings(prev => ({ ...prev, [key]: e.target.value }))} placeholder="50000" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "'JetBrains Mono', monospace" }} />
-                <div style={{ fontSize: 11, color: t.textMuted, marginTop: 2, opacity: .7 }}>{hint}</div>
+                <label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 3 }}>{label} <span style={{ fontSize: 13, color: t.accent, fontWeight: 600 }}>₦{((Number(refSettings[key]) || 0) / 100).toLocaleString()}</span></label>
+                <input type="number" value={refSettings[key] || ""} onChange={e => setRefSettings(prev => ({ ...prev, [key]: e.target.value }))} placeholder="50000" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 15, outline: "none", boxSizing: "border-box", fontFamily: "'JetBrains Mono', monospace" }} />
+                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2, opacity: .7 }}>{hint}</div>
               </div>
             ))}
 
@@ -620,9 +620,9 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
 
         {/* Cleanup */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>Cleanup</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 10 }}>Cleanup</div>
           <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
-            <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 12, lineHeight: 1.5 }}>Remove unverified accounts older than 7 days that have no orders or transactions.</div>
+            <div style={{ fontSize: 14, color: t.textMuted, marginBottom: 12, lineHeight: 1.5 }}>Remove unverified accounts older than 7 days that have no orders or transactions.</div>
             <CleanupButton dark={dark} t={t} />
           </div>
         </div>

@@ -63,31 +63,31 @@ export default function AdminPricingPage({ dark, t }) {
     setRecalculating(false);
   };
 
-  const inputStyle = { width: 70, padding: "6px 10px", borderRadius: 8, background: dark ? "#0d1020" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: t.text, fontSize: 13, textAlign: "right", fontFamily: "'JetBrains Mono',monospace" };
+  const inputStyle = { width: 70, padding: "6px 10px", borderRadius: 8, background: dark ? "#0d1020" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: t.text, fontSize: 14, textAlign: "right", fontFamily: "'JetBrains Mono',monospace" };
   const cardStyle = { background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" };
 
   const TierRow = ({ label, keyName, color, state, setState }) => (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <div style={{ width: 10, height: 10, borderRadius: 3, background: color, flexShrink: 0 }} />
-      <span style={{ fontSize: 13, color: t.text, width: 130 }}>{label}</span>
+      <span style={{ fontSize: 14, color: t.text, width: 130 }}>{label}</span>
       <input value={state[keyName] || ""} onChange={e => setState(p => ({ ...p, [keyName]: e.target.value.replace(/[^0-9]/g, "") }))} style={inputStyle} />
-      <span style={{ fontSize: 12, color: t.textMuted }}>%</span>
-      <span style={{ fontSize: 11, color: t.textSoft, marginLeft: "auto" }}>₦100 → ₦{(100 * (1 + Number(state[keyName] || 0) / 100)).toLocaleString("en-NG")}</span>
+      <span style={{ fontSize: 13, color: t.textMuted }}>%</span>
+      <span style={{ fontSize: 12, color: t.textSoft, marginLeft: "auto" }}>₦100 → ₦{(100 * (1 + Number(state[keyName] || 0) / 100)).toLocaleString("en-NG")}</span>
     </div>
   );
 
   return (
     <div style={{ padding: "0 0 40px" }}>
-      <h2 style={{ fontSize: 20, fontWeight: 700, color: t.text, margin: "0 0 6px" }}>Pricing & Markup</h2>
-      <p style={{ fontSize: 13, color: t.textMuted, margin: "0 0 20px" }}>Control how sell prices are calculated from MTP costs. Prices = (USD cost × exchange rate) + markup %.</p>
+      <h2 style={{ fontSize: 20, fontWeight: 600, color: t.text, margin: "0 0 6px" }}>Pricing & Markup</h2>
+      <p style={{ fontSize: 14, color: t.textMuted, margin: "0 0 20px" }}>Control how sell prices are calculated from MTP costs. Prices = (USD cost × exchange rate) + markup %.</p>
 
       {msg && <div style={{ padding: "10px 14px", borderRadius: 8, marginBottom: 16, background: msg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#f0fdf4") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: msg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), fontSize: 12 }}>{msg.text}</div>}
 
       {/* General Markup */}
       <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>General Services</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 10 }}>General Services</div>
         <div style={cardStyle}>
-          <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 14, lineHeight: 1.5 }}>Markup for all standard (non-Nigerian) services.</div>
+          <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 14, lineHeight: 1.5 }}>Markup for all standard (non-Nigerian) services.</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <TierRow label="Budget" keyName="markup_budget" color="#e0a458" state={general} setState={setGeneral} />
             <TierRow label="Standard" keyName="markup_standard" color="#60a5fa" state={general} setState={setGeneral} />
@@ -100,11 +100,11 @@ export default function AdminPricingPage({ dark, t }) {
       {/* Nigerian Markup */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-          <span style={{ fontSize: 15, fontWeight: 600, color: t.text }}>🇳🇬 Nigerian Services</span>
-          <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, background: dark ? "rgba(74,222,128,.1)" : "rgba(22,163,74,.06)", color: dark ? "#4ade80" : "#16a34a", fontWeight: 500 }}>Premium</span>
+          <span style={{ fontSize: 16, fontWeight: 600, color: t.text }}>🇳🇬 Nigerian Services</span>
+          <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, background: dark ? "rgba(74,222,128,.1)" : "rgba(22,163,74,.06)", color: dark ? "#4ade80" : "#16a34a", fontWeight: 500 }}>Premium</span>
         </div>
         <div style={{ ...cardStyle, borderColor: dark ? "rgba(74,222,128,.12)" : "rgba(22,163,74,.1)" }}>
-          <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 14, lineHeight: 1.5 }}>Higher markup for Nigerian-targeted services. These are premium — local audience engagement is worth more.</div>
+          <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 14, lineHeight: 1.5 }}>Higher markup for Nigerian-targeted services. These are premium — local audience engagement is worth more.</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <TierRow label="Budget" keyName="markup_ng_budget" color="#e0a458" state={nigerian} setState={setNigerian} />
             <TierRow label="Standard" keyName="markup_ng_standard" color="#60a5fa" state={nigerian} setState={setNigerian} />
@@ -116,18 +116,18 @@ export default function AdminPricingPage({ dark, t }) {
 
       {/* Shared settings */}
       <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>Global Settings</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 10 }}>Global Settings</div>
         <div style={cardStyle}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 13, color: t.textMuted, width: 150 }}>Minimum margin floor</span>
+              <span style={{ fontSize: 14, color: t.textMuted, width: 150 }}>Minimum margin floor</span>
               <input value={shared.markup_min_margin || ""} onChange={e => setShared(p => ({ ...p, markup_min_margin: e.target.value.replace(/[^0-9]/g, "") }))} style={{ ...inputStyle, width: 60 }} />
-              <span style={{ fontSize: 12, color: t.textMuted }}>%</span>
+              <span style={{ fontSize: 13, color: t.textMuted }}>%</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 13, color: t.textMuted, width: 150 }}>USD → NGN rate</span>
+              <span style={{ fontSize: 14, color: t.textMuted, width: 150 }}>USD → NGN rate</span>
               <input value={shared.markup_usd_rate || ""} onChange={e => setShared(p => ({ ...p, markup_usd_rate: e.target.value.replace(/[^0-9]/g, "") }))} style={{ ...inputStyle, width: 80 }} />
-              <span style={{ fontSize: 11, color: t.textSoft }}>MTP costs are in USD</span>
+              <span style={{ fontSize: 12, color: t.textSoft }}>MTP costs are in USD</span>
             </div>
           </div>
         </div>
@@ -135,10 +135,10 @@ export default function AdminPricingPage({ dark, t }) {
 
       {/* Actions */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <button onClick={saveMarkup} disabled={saving} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#c47d8e,#a3586b)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: saving ? "wait" : "pointer", opacity: saving ? .5 : 1 }}>{saving ? "Saving..." : "Save Markup Settings"}</button>
-        <button onClick={recalculate} disabled={recalculating} style={{ padding: "10px 24px", borderRadius: 10, border: `1px solid ${dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)"}`, background: dark ? "rgba(252,165,165,.06)" : "rgba(220,38,38,.04)", color: dark ? "#fca5a5" : "#dc2626", fontSize: 13, fontWeight: 600, cursor: recalculating ? "wait" : "pointer", opacity: recalculating ? .5 : 1 }}>{recalculating ? "Recalculating..." : "Recalculate All Prices"}</button>
+        <button onClick={saveMarkup} disabled={saving} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#c47d8e,#a3586b)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: saving ? "wait" : "pointer", opacity: saving ? .5 : 1 }}>{saving ? "Saving..." : "Save Markup Settings"}</button>
+        <button onClick={recalculate} disabled={recalculating} style={{ padding: "10px 24px", borderRadius: 10, border: `1px solid ${dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)"}`, background: dark ? "rgba(252,165,165,.06)" : "rgba(220,38,38,.04)", color: dark ? "#fca5a5" : "#dc2626", fontSize: 14, fontWeight: 600, cursor: recalculating ? "wait" : "pointer", opacity: recalculating ? .5 : 1 }}>{recalculating ? "Recalculating..." : "Recalculate All Prices"}</button>
       </div>
-      <p style={{ fontSize: 11, color: t.textMuted, marginTop: 8, lineHeight: 1.5 }}>Save updates the percentages. Recalculate overwrites all existing sell prices using these percentages — any custom prices will be replaced.</p>
+      <p style={{ fontSize: 12, color: t.textMuted, marginTop: 8, lineHeight: 1.5 }}>Save updates the percentages. Recalculate overwrites all existing sell prices using these percentages — any custom prices will be replaced.</p>
     </div>
   );
 }

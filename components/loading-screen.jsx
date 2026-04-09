@@ -89,7 +89,7 @@ export default function LoadingScreen() {
         <div className="ld-logo" style={{background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 12px 40px ${glow}`,animation:"breathe 4s ease-in-out infinite",marginBottom:24}}>
           <svg className="ld-svg" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </div>
-        <span className="ld-title" style={{fontWeight:800,color:text,letterSpacing:3,marginBottom:6}}>NITRO</span>
+        <span className="ld-title" style={{fontWeight:700,color:text,letterSpacing:3,marginBottom:6}}>NITRO</span>
         <span className="ld-sub" style={{fontWeight:400,color:muted,letterSpacing:1}}>Loading your experience</span>
         <div className="ld-bar" style={{borderRadius:2,background:track,overflow:"hidden",position:"relative",marginBottom:12}}>
           <div style={{width:"90%",height:"100%",borderRadius:2,background:`linear-gradient(90deg,${accent},#a3586b)`,animation:"progressFill 1.5s ease-out forwards",boxShadow:`0 0 8px ${dark?"rgba(196,125,142,.3)":"rgba(196,125,142,.2)"}`}}/>

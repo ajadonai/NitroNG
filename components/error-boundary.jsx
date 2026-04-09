@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component {
           <div style={{ fontSize: 16, fontWeight: 600, color: 'inherit' }}>
             Something went wrong
           </div>
-          <div style={{ fontSize: 13, opacity: 0.6, maxWidth: 400 }}>
+          <div style={{ fontSize: 14, opacity: 0.6, maxWidth: 400 }}>
             This section encountered an error. Try refreshing the page.
           </div>
           <button
@@ -43,7 +43,7 @@ export class ErrorBoundary extends Component {
               borderRadius: 10,
               background: 'linear-gradient(135deg, #c47d8e, #a3586b)',
               color: '#fff',
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 600,
               border: 'none',
               cursor: 'pointer',

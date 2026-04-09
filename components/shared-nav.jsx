@@ -98,25 +98,25 @@ export default function SharedNav({ action = "back" }) {
         <div style={{ width: 28, height: 28, borderRadius: 7, background: t.grad, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </div>
-        <span style={{ fontSize: 16, fontWeight: 700, color: t.text, letterSpacing: 1.5 }}>NITRO</span>
+        <span style={{ fontSize: 16, fontWeight: 600, color: t.text, letterSpacing: 1.5 }}>NITRO</span>
       </a>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={toggleTheme} style={{ width: 44, height: 24, borderRadius: 12, background: dark ? "#c47d8e" : "rgba(0,0,0,0.08)", position: "relative", transition: "all .3s", flexShrink: 0, border: "none", cursor: "pointer" }}>
           <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: dark ? 23 : 3, transition: "left .3s cubic-bezier(.2,.8,.2,1)", boxShadow: "0 1px 4px rgba(0,0,0,.2)" }} />
         </button>
         {action === "back" && (
-          <a href="/" style={{ fontSize: 13, fontWeight: 550, color: t.soft, display: "flex", alignItems: "center", gap: 4, textDecoration: "none" }}>
+          <a href="/" style={{ fontSize: 14, fontWeight: 500, color: t.soft, display: "flex", alignItems: "center", gap: 4, textDecoration: "none" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
             Back
           </a>
         )}
         {action === "login" && (
-          <a href="/?login=1" style={{ fontSize: 13, fontWeight: 550, color: t.soft, display: "flex", alignItems: "center", gap: 4, textDecoration: "none" }}>
+          <a href="/?login=1" style={{ fontSize: 14, fontWeight: 500, color: t.soft, display: "flex", alignItems: "center", gap: 4, textDecoration: "none" }}>
             Log In
           </a>
         )}
         {action === "logout" && (
-          <button onClick={handleLogout} style={{ fontSize: 13, fontWeight: 550, color: t.soft, display: "flex", alignItems: "center", gap: 4, background: "none", cursor: "pointer" }}>
+          <button onClick={handleLogout} style={{ fontSize: 14, fontWeight: 500, color: t.soft, display: "flex", alignItems: "center", gap: 4, background: "none", cursor: "pointer" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Log Out
           </button>
@@ -132,10 +132,10 @@ export function SharedFooter() {
   return (
     <footer style={{ borderTop: `1px solid ${t.surfaceBrd}`, padding: "20px 24px 80px" }}>
       <div style={{ maxWidth: 780, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-        <span style={{ fontSize: 12, color: t.muted }}>© {new Date().getFullYear() > 2026 ? `2026–${new Date().getFullYear()}` : "2026"} Nitro. All rights reserved.</span>
+        <span style={{ fontSize: 13, color: t.muted }}>© {new Date().getFullYear() > 2026 ? `2026–${new Date().getFullYear()}` : "2026"} Nitro. All rights reserved.</span>
         <div style={{ display: "flex", gap: 16 }}>
           {[["Terms", "/terms"], ["Privacy", "/privacy"], ["Refund", "/refund"], ["Cookie", "/cookie"]].map(([l, h]) => (
-            <a key={l} href={h} style={{ fontSize: 11, color: t.muted, textDecoration: "none" }}>{l}</a>
+            <a key={l} href={h} style={{ fontSize: 12, color: t.muted, textDecoration: "none" }}>{l}</a>
           ))}
         </div>
       </div>

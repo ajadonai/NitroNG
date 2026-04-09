@@ -18,7 +18,7 @@ export default function BannedPage() {
       <nav style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "0 24px", height: 56, borderBottom: `1px solid ${t.cbd}`, background: dark ? "rgba(8,11,20,.8)" : "rgba(244,241,237,.8)", backdropFilter: "blur(20px)", position: "relative", zIndex: 10, flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 26, height: 26, borderRadius: 7, background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="11" height="11" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
-          <span style={{ fontSize: 15, fontWeight: 700, color: t.tx, letterSpacing: 1.5 }}>NITRO</span>
+          <span style={{ fontSize: 16, fontWeight: 600, color: t.tx, letterSpacing: 1.5 }}>NITRO</span>
         </div>
       </nav>
 
@@ -32,11 +32,11 @@ export default function BannedPage() {
           </svg>
 
           <h1 style={{ fontSize: "clamp(26px, 5vw, 34px)", fontWeight: 600, color: t.tx, marginBottom: 8, fontFamily: "'Cormorant Garamond',serif" }}>Account Suspended</h1>
-          <p style={{ fontSize: 15, color: t.ts, lineHeight: 1.7, maxWidth: 360, margin: "0 auto 28px" }}>Your account has been suspended for violating our Terms of Service. If you believe this is a mistake, please contact our support team.</p>
+          <p style={{ fontSize: 16, color: t.ts, lineHeight: 1.7, maxWidth: 360, margin: "0 auto 28px" }}>Your account has been suspended for violating our Terms of Service. If you believe this is a mistake, please contact our support team.</p>
 
           <div style={{ borderRadius: 14, padding: "16px 20px", textAlign: "left", marginBottom: 28, background: dark ? "rgba(252,165,165,.04)" : "rgba(220,38,38,.02)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", maxWidth: 360, margin: "0 auto 28px" }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: t.red, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>What this means</div>
-            <div style={{ fontSize: 14, color: t.ts, lineHeight: 1.7 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: t.red, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>What this means</div>
+            <div style={{ fontSize: 15, color: t.ts, lineHeight: 1.7 }}>
               • You cannot access your dashboard or place orders<br/>
               • Your wallet balance is frozen<br/>
               • Active orders will still be delivered
@@ -44,15 +44,15 @@ export default function BannedPage() {
           </div>
 
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <a href="mailto:TheNitroNG@gmail.com" style={{ padding: "13px 28px", borderRadius: 10, fontSize: 15, fontWeight: 600, textDecoration: "none", background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", boxShadow: "0 4px 16px rgba(196,125,142,.25)" }}>Contact Support</a>
-            <a href="/" style={{ padding: "13px 28px", borderRadius: 10, fontSize: 15, fontWeight: 600, textDecoration: "none", background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.tx, borderWidth: 1, borderStyle: "solid", borderColor: t.cbd }}>Go Home</a>
+            <a href="mailto:TheNitroNG@gmail.com" style={{ padding: "13px 28px", borderRadius: 10, fontSize: 16, fontWeight: 600, textDecoration: "none", background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", boxShadow: "0 4px 16px rgba(196,125,142,.25)" }}>Contact Support</a>
+            <a href="/" style={{ padding: "13px 28px", borderRadius: 10, fontSize: 16, fontWeight: 600, textDecoration: "none", background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.tx, borderWidth: 1, borderStyle: "solid", borderColor: t.cbd }}>Go Home</a>
           </div>
         </div>
       </div>
 
       <footer style={{ borderTop: `1px solid ${t.cbd}`, padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0, position: "relative", zIndex: 10 }}>
-        <span style={{ fontSize: 13, color: t.tm }}>© {new Date().getFullYear() > 2026 ? `2026–${new Date().getFullYear()}` : "2026"} Nitro</span>
-        <div style={{ display: "flex", gap: 16 }}><a href="/terms" style={{ fontSize: 13, color: t.tm, textDecoration: "none" }}>Terms</a><a href="/privacy" style={{ fontSize: 13, color: t.tm, textDecoration: "none" }}>Privacy</a></div>
+        <span style={{ fontSize: 14, color: t.tm }}>© {new Date().getFullYear() > 2026 ? `2026–${new Date().getFullYear()}` : "2026"} Nitro</span>
+        <div style={{ display: "flex", gap: 16 }}><a href="/terms" style={{ fontSize: 14, color: t.tm, textDecoration: "none" }}>Terms</a><a href="/privacy" style={{ fontSize: 14, color: t.tm, textDecoration: "none" }}>Privacy</a></div>
       </footer>
     </div>
   );

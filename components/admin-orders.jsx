@@ -14,7 +14,7 @@ const STATUS_COLORS = {
 
 function Badge({ status, dark }) {
   const s = STATUS_COLORS[status] || STATUS_COLORS.Canceled;
-  return <span className="m" style={{ fontSize: 12, padding: "2px 8px", borderRadius: 5, fontWeight: 600, background: dark ? s.bg : s.bgL, color: dark ? s.text : s.textL }}>{status}</span>;
+  return <span className="m" style={{ fontSize: 13, padding: "2px 8px", borderRadius: 5, fontWeight: 600, background: dark ? s.bg : s.bgL, color: dark ? s.text : s.textL }}>{status}</span>;
 }
 
 export default function AdminOrdersPage({ dark, t }) {
@@ -69,7 +69,7 @@ export default function AdminOrdersPage({ dark, t }) {
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {msg && <div style={{ padding: "8px 14px", borderRadius: 8, marginBottom: 12, fontSize: 13, background: msg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: msg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), display: "flex", justifyContent: "space-between", alignItems: "center" }}><span>{msg.type === "success" ? "✓" : "⚠️"} {msg.text}</span><button onClick={() => setMsg(null)} style={{ background: "none", color: "inherit", border: "none", cursor: "pointer" }}>✕</button></div>}
+      {msg && <div style={{ padding: "8px 14px", borderRadius: 8, marginBottom: 12, fontSize: 14, background: msg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: msg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), display: "flex", justifyContent: "space-between", alignItems: "center" }}><span>{msg.type === "success" ? "✓" : "⚠️"} {msg.text}</span><button onClick={() => setMsg(null)} style={{ background: "none", color: "inherit", border: "none", cursor: "pointer" }}>✕</button></div>}
 
       {/* Filters */}
       <div className="adm-filters">
@@ -91,14 +91,14 @@ export default function AdminOrdersPage({ dark, t }) {
           <div key={o.id}>
             <div className="adm-list-row" onClick={() => setExpanded(expanded === o.id ? null : o.id)} style={{ borderBottom: (i < paged.length - 1 || expanded === o.id) ? `1px solid ${t.cardBorder}` : "none", cursor: "pointer" }}>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>{o.service}</div>
-                <div style={{ fontSize: 13, color: t.textMuted, marginTop: 2 }}>
+                <div style={{ fontSize: 15, fontWeight: 500, color: t.text }}>{o.service}</div>
+                <div style={{ fontSize: 14, color: t.textMuted, marginTop: 2 }}>
                   <span className="m">{o.id}</span> · {o.user} · {o.quantity?.toLocaleString() || 0} qty
                 </div>
               </div>
               <div style={{ textAlign: "right", display: "flex", alignItems: "center", gap: 10 }}>
                 <div>
-                  <div className="m" style={{ fontSize: 13, fontWeight: 600, color: t.green }}>{fN(o.charge)}</div>
+                  <div className="m" style={{ fontSize: 14, fontWeight: 600, color: t.green }}>{fN(o.charge)}</div>
                   <Badge status={o.status} dark={dark} />
                 </div>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expanded === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
@@ -114,7 +114,7 @@ export default function AdminOrdersPage({ dark, t }) {
                   <div><span style={{ color: t.textMuted }}>Profit:</span> <span className="m" style={{ color: t.green }}>{fN((o.charge || 0) - (o.cost || 0))}</span></div>
                   <div><span style={{ color: t.textMuted }}>Date:</span> <span style={{ color: t.text }}>{o.created ? fD(o.created) : ""}</span></div>
                 </div>
-                {o.link && <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 10, wordBreak: "break-all" }}>Link: <span style={{ color: t.accent }}>{o.link}</span></div>}
+                {o.link && <div style={{ fontSize: 14, color: t.textMuted, marginBottom: 10, wordBreak: "break-all" }}>Link: <span style={{ color: t.accent }}>{o.link}</span></div>}
                 <div style={{ display: "flex", gap: 6 }}>
                   <button onClick={() => doAction(o.id, "check")} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textSoft }}>Check Status</button>
                   {o.status !== "Canceled" && o.status !== "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? This may issue a refund.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: t.red }}>Cancel</button>}
@@ -131,7 +131,7 @@ export default function AdminOrdersPage({ dark, t }) {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="adm-pagination">
-          <span style={{ fontSize: 13, color: t.textMuted }}>{filtered.length} results · Page {page} of {totalPages}</span>
+          <span style={{ fontSize: 14, color: t.textMuted }}>{filtered.length} results · Page {page} of {totalPages}</span>
           <div style={{ display: "flex", gap: 4 }}>
             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: page === 1 ? t.textMuted : t.textSoft, opacity: page === 1 ? .5 : 1 }}>← Prev</button>
             <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: page >= totalPages ? t.textMuted : t.textSoft, opacity: page >= totalPages ? .5 : 1 }}>Next →</button>

@@ -35,7 +35,7 @@ function StatusPill({ status, dark }) {
   const c = s === "Open" ? { bg: dark ? "rgba(234,179,8,0.1)" : "rgba(234,179,8,0.08)", color: dark ? "#fcd34d" : "#d97706" }
     : s === "In Progress" ? { bg: dark ? "rgba(59,130,246,0.08)" : "rgba(59,130,246,0.06)", color: dark ? "#60a5fa" : "#2563eb" }
     : { bg: dark ? "rgba(16,185,129,0.08)" : "rgba(16,185,129,0.06)", color: dark ? "#6ee7b7" : "#059669" };
-  return <span className="m" style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: c.bg, color: c.color }}>{s.toLowerCase()}</span>;
+  return <span className="m" style={{ fontSize: 11, fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: c.bg, color: c.color }}>{s.toLowerCase()}</span>;
 }
 
 function FormatText({ text, dark }) {
@@ -44,23 +44,23 @@ function FormatText({ text, dark }) {
     if (!p) return null;
     if (p === "\n") return <br key={i} />;
     if (p.startsWith("**") && p.endsWith("**")) return <strong key={i} style={{ fontWeight: 600 }}>{p.slice(2, -2)}</strong>;
-    if (p.startsWith("`") && p.endsWith("`")) return <code key={i} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, background: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)", padding: "1px 5px", borderRadius: 3 }}>{p.slice(1, -1)}</code>;
+    if (p.startsWith("`") && p.endsWith("`")) return <code key={i} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, background: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)", padding: "1px 5px", borderRadius: 3 }}>{p.slice(1, -1)}</code>;
     return <span key={i}>{p}</span>;
   })}</>;
 }
 
 function Bubble({ m, dark, t }) {
   if (!m || typeof m !== "object" || !m.from) return null;
-  if (m.from === "system") return <div style={{ textAlign: "center", padding: "6px 0" }}><span style={{ fontSize: 11, color: t.textMuted, background: dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)", padding: "4px 12px", borderRadius: 10 }}>{String(m.text || "")}</span></div>;
+  if (m.from === "system") return <div style={{ textAlign: "center", padding: "6px 0" }}><span style={{ fontSize: 12, color: t.textMuted, background: dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)", padding: "4px 12px", borderRadius: 10 }}>{String(m.text || "")}</span></div>;
   const isUser = m.from === "user";
   const isBot = m.from === "bot";
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: isUser ? "flex-end" : "flex-start" }}>
       <div style={{ maxWidth: "78%", padding: "10px 14px", borderRadius: 14, borderBottomRightRadius: isUser ? 4 : 14, borderBottomLeftRadius: !isUser ? 4 : 14, background: isUser ? (dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.08)") : (dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)"), border: `1px solid ${isUser ? (dark ? "rgba(196,125,142,0.1)" : "rgba(196,125,142,0.12)") : (dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)")}` }}>
-        {!isUser && <div style={{ fontSize: 12, fontWeight: 600, color: isBot ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#60a5fa" : "#2563eb"), marginBottom: 3 }}>{m.name || (isBot ? "Nitro Bot" : "Support")}</div>}
-        <div style={{ fontSize: 14, color: t.text, lineHeight: 1.6, whiteSpace: "pre-line" }}>{m.formatted ? <FormatText text={String(m.text || "")} dark={dark} /> : String(m.text || "")}</div>
+        {!isUser && <div style={{ fontSize: 13, fontWeight: 600, color: isBot ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#60a5fa" : "#2563eb"), marginBottom: 3 }}>{m.name || (isBot ? "Nitro Bot" : "Support")}</div>}
+        <div style={{ fontSize: 15, color: t.text, lineHeight: 1.6, whiteSpace: "pre-line" }}>{m.formatted ? <FormatText text={String(m.text || "")} dark={dark} /> : String(m.text || "")}</div>
       </div>
-      {m.time && <div style={{ fontSize: 10, color: t.textMuted, marginTop: 3, padding: "0 6px" }}>{typeof m.time === "string" && m.time.includes("T") ? fD(m.time) : String(m.time || "")}</div>}
+      {m.time && <div style={{ fontSize: 11, color: t.textMuted, marginTop: 3, padding: "0 6px" }}>{typeof m.time === "string" && m.time.includes("T") ? fD(m.time) : String(m.time || "")}</div>}
     </div>
   );
 }
@@ -314,18 +314,18 @@ export default function SupportPage({ dark, t }) {
       <div className="sup-split-list" style={{ width: 280, borderRight: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, flexShrink: 0 }}>
         <div style={{ padding: "14px 16px", borderBottom: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Conversations</div>
-            <div style={{ fontSize: 11, color: t.textMuted, marginTop: 2 }}>{activeCount} active</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: t.text }}>Conversations</div>
+            <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>{activeCount} active</div>
           </div>
           {hasOpenTicket
-            ? <span style={{ fontSize: 10, color: t.textMuted }}>Has open ticket</span>
-            : <button onClick={() => { setSelected("new"); setMobileView("chat"); }} style={{ padding: "4px 10px", borderRadius: 6, background: "linear-gradient(135deg,#c47d8e,#a3586b)", color: "#fff", fontSize: 10, fontWeight: 600, border: "none", cursor: "pointer" }}>+ New</button>
+            ? <span style={{ fontSize: 11, color: t.textMuted }}>Has open ticket</span>
+            : <button onClick={() => { setSelected("new"); setMobileView("chat"); }} style={{ padding: "4px 10px", borderRadius: 6, background: "linear-gradient(135deg,#c47d8e,#a3586b)", color: "#fff", fontSize: 11, fontWeight: 600, border: "none", cursor: "pointer" }}>+ New</button>
           }
         </div>
 
         <div className="sup-filter-bar" style={{ gap: 3, padding: "6px 10px", borderBottom: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}` }}>
           {[["all","All"],["active","Active"],["Resolved","Done"]].map(([v,l])=>
-            <button key={v} onClick={()=>setFilter(v)} style={{ padding:"3px 8px",borderRadius:4,fontSize:10,fontWeight:filter===v?600:450,background:filter===v?(dark?"rgba(196,125,142,0.1)":"rgba(196,125,142,0.06)"):"transparent",color:filter===v?t.accent:t.textMuted,border:"none",cursor:"pointer",flexShrink:0,whiteSpace:"nowrap" }}>{l}</button>
+            <button key={v} onClick={()=>setFilter(v)} style={{ padding:"3px 8px",borderRadius:4,fontSize:11,fontWeight:filter===v?600:450,background:filter===v?(dark?"rgba(196,125,142,0.1)":"rgba(196,125,142,0.06)"):"transparent",color:filter===v?t.accent:t.textMuted,border:"none",cursor:"pointer",flexShrink:0,whiteSpace:"nowrap" }}>{l}</button>
           )}
         </div>
 
@@ -334,10 +334,10 @@ export default function SupportPage({ dark, t }) {
           <div onClick={() => { setSelected(null); setMobileView("chat"); }} style={{ padding: "10px 14px", borderBottom: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`, cursor: "pointer", background: !selected ? (dark ? "rgba(196,125,142,0.04)" : "rgba(196,125,142,0.02)") : "transparent", borderLeft: !selected ? `2px solid ${t.accent}` : "2px solid transparent" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
               <div style={{ width: 5, height: 5, borderRadius: 3, background: dark ? "#6ee7b7" : "#059669", flexShrink: 0 }} />
-              <span style={{ fontSize: 12, fontWeight: 550, color: t.text }}>Nitro Bot</span>
-              {isLive && <span className="m" style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: dark ? "rgba(96,165,250,0.1)" : "rgba(59,130,246,0.06)", color: dark ? "#60a5fa" : "#2563eb" }}>live</span>}
+              <span style={{ fontSize: 13, fontWeight: 500, color: t.text }}>Nitro Bot</span>
+              {isLive && <span className="m" style={{ fontSize: 10, padding: "1px 5px", borderRadius: 3, background: dark ? "rgba(96,165,250,0.1)" : "rgba(59,130,246,0.06)", color: dark ? "#60a5fa" : "#2563eb" }}>live</span>}
             </div>
-            <div style={{ fontSize: 11, color: t.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", paddingLeft: 11 }}>{msgs[msgs.length - 1]?.text?.slice(0, 45) || ""}</div>
+            <div style={{ fontSize: 12, color: t.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", paddingLeft: 11 }}>{msgs[msgs.length - 1]?.text?.slice(0, 45) || ""}</div>
           </div>
 
           {/* Ticket list */}
@@ -348,10 +348,10 @@ export default function SupportPage({ dark, t }) {
             return (
               <div key={tk.id} onClick={() => { setSelected(tk); setInput(""); setMobileView("chat"); }} style={{ padding: "10px 14px", borderBottom: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`, cursor: "pointer", background: isSel ? (dark ? "rgba(196,125,142,0.04)" : "rgba(196,125,142,0.02)") : "transparent", borderLeft: isSel ? `2px solid ${t.accent}` : "2px solid transparent" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
-                  <span style={{ fontSize: 12, fontWeight: 550, color: t.text }}>{tk.subject || "Ticket"}</span>
-                  <span style={{ fontSize: 10, color: t.textMuted }}>{tk.created ? fD(tk.created) : ""}</span>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: t.text }}>{tk.subject || "Ticket"}</span>
+                  <span style={{ fontSize: 11, color: t.textMuted }}>{tk.created ? fD(tk.created) : ""}</span>
                 </div>
-                {last && <div style={{ fontSize: 11, color: t.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 3 }}>
+                {last && <div style={{ fontSize: 12, color: t.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 3 }}>
                   <span style={{ fontWeight: 500, color: last.from === "user" ? (dark ? "rgba(196,125,142,0.7)" : t.accent) : (dark ? "rgba(110,231,183,0.7)" : "#059669") }}>{sender}: </span>{String(last.text || "").split("\n")[0]?.slice(0, 45)}
                 </div>}
                 <StatusPill status={tk.status} dark={dark} />
@@ -370,29 +370,29 @@ export default function SupportPage({ dark, t }) {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: t.text, display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: t.text, display: "flex", alignItems: "center", gap: 8 }}>
               {chatTitle}
               {isTicket && <StatusPill status={selected.status} dark={dark} />}
-              {!selected && isLive && <span className="m" style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: dark ? "rgba(96,165,250,0.1)" : "rgba(59,130,246,0.06)", color: dark ? "#60a5fa" : "#2563eb" }}>live</span>}
+              {!selected && isLive && <span className="m" style={{ fontSize: 11, padding: "2px 7px", borderRadius: 4, background: dark ? "rgba(96,165,250,0.1)" : "rgba(59,130,246,0.06)", color: dark ? "#60a5fa" : "#2563eb" }}>live</span>}
             </div>
-            <div className="m" style={{ fontSize: 11, color: t.textMuted, marginTop: 1 }}>{chatSub}</div>
+            <div className="m" style={{ fontSize: 12, color: t.textMuted, marginTop: 1 }}>{chatSub}</div>
           </div>
-          {canReply && <button onClick={closeTicket} style={{ padding: "5px 12px", borderRadius: 6, fontSize: 11, fontWeight: 500, background: "none", border: `1px solid ${dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`, color: t.textMuted, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>Close</button>}
+          {canReply && <button onClick={closeTicket} style={{ padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, background: "none", border: `1px solid ${dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`, color: t.textMuted, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>Close</button>}
         </div>
 
         {/* Messages or New Ticket Form */}
         {isNewTicket ? (
           <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "20px 18px", display: "flex", flexDirection: "column" }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Category</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Category</label>
             <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 18 }}>
               {["Order Issue","Payment","Refund","Account","Other"].map(c =>
-                <button key={c} onClick={() => setNewCat(c)} style={{ padding: "5px 12px", borderRadius: 7, fontSize: 11, fontWeight: newCat === c ? 600 : 450, background: newCat === c ? (dark ? "rgba(196,125,142,0.1)" : "rgba(196,125,142,0.06)") : (dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)"), border: `1px solid ${newCat === c ? (dark ? "rgba(196,125,142,0.2)" : "rgba(196,125,142,0.12)") : (dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)")}`, color: newCat === c ? t.accent : t.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{c}</button>
+                <button key={c} onClick={() => setNewCat(c)} style={{ padding: "5px 12px", borderRadius: 7, fontSize: 12, fontWeight: newCat === c ? 600 : 450, background: newCat === c ? (dark ? "rgba(196,125,142,0.1)" : "rgba(196,125,142,0.06)") : (dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)"), border: `1px solid ${newCat === c ? (dark ? "rgba(196,125,142,0.2)" : "rgba(196,125,142,0.12)") : (dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)")}`, color: newCat === c ? t.accent : t.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{c}</button>
               )}
             </div>
-            <label style={{ fontSize: 11, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Subject</label>
-            <input value={newSubject} onChange={e => setNewSubject(e.target.value)} placeholder="Brief description of your issue" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)", border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, color: t.text, fontSize: 13, outline: "none", marginBottom: 16, fontFamily: "inherit", boxSizing: "border-box" }} />
-            <label style={{ fontSize: 11, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Message</label>
-            <textarea value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Describe your issue. Include order IDs if relevant." rows={5} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)", border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, color: t.text, fontSize: 13, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.5, boxSizing: "border-box" }} />
+            <label style={{ fontSize: 12, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Subject</label>
+            <input value={newSubject} onChange={e => setNewSubject(e.target.value)} placeholder="Brief description of your issue" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)", border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, color: t.text, fontSize: 14, outline: "none", marginBottom: 16, fontFamily: "inherit", boxSizing: "border-box" }} />
+            <label style={{ fontSize: 12, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Message</label>
+            <textarea value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Describe your issue. Include order IDs if relevant." rows={5} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)", border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, color: t.text, fontSize: 14, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.5, boxSizing: "border-box" }} />
           </div>
         ) : (
           <>
@@ -401,10 +401,10 @@ export default function SupportPage({ dark, t }) {
               {chatMsgs.map((m, i) => (
                 <div key={i}>
                   <Bubble m={m} dark={dark} t={t} />
-                  {m.followUp && <div style={{ marginTop: 6, paddingLeft: 4 }}><button onClick={() => handleFollowUp(m.followUp)} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 11, background: dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)", border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, color: t.textSoft || t.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{m.followUp}</button></div>}
+                  {m.followUp && <div style={{ marginTop: 6, paddingLeft: 4 }}><button onClick={() => handleFollowUp(m.followUp)} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 12, background: dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)", border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, color: t.textSoft || t.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{m.followUp}</button></div>}
                   {m.escalatePrompt && <div style={{ display: "flex", gap: 6, marginTop: 6, paddingLeft: 4 }}>
-                    <button onClick={() => handleQuick("human")} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 11, background: dark ? "rgba(196,125,142,0.08)" : "rgba(196,125,142,0.05)", border: `1px solid ${dark ? "rgba(196,125,142,0.15)" : "rgba(196,125,142,0.1)"}`, color: t.accent, cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}>Yes, connect me</button>
-                    <button onClick={() => setShowQuick(true)} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 11, background: dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)", border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, color: t.textMuted, cursor: "pointer", fontFamily: "inherit" }}>Ask something else</button>
+                    <button onClick={() => handleQuick("human")} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 12, background: dark ? "rgba(196,125,142,0.08)" : "rgba(196,125,142,0.05)", border: `1px solid ${dark ? "rgba(196,125,142,0.15)" : "rgba(196,125,142,0.1)"}`, color: t.accent, cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}>Yes, connect me</button>
+                    <button onClick={() => setShowQuick(true)} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 12, background: dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)", border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, color: t.textMuted, cursor: "pointer", fontFamily: "inherit" }}>Ask something else</button>
                   </div>}
                 </div>
               ))}
@@ -412,7 +412,7 @@ export default function SupportPage({ dark, t }) {
               <div ref={msgsEnd} />
             </div>
             {!selected && showQuick && !isLive && <div style={{ padding: "6px 16px", display: "flex", gap: 5, flexWrap: "wrap", flexShrink: 0, borderTop: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}` }}>
-              {QUICK_ACTIONS.map(a => <button key={a.id} onClick={() => handleQuick(a.id)} className="sup-quick-btn" style={{ padding: "6px 10px", borderRadius: 7, fontSize: 11, background: a.id === "human" ? (dark ? "rgba(196,125,142,0.06)" : "rgba(196,125,142,0.04)") : (dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)"), borderWidth: 1, borderStyle: "solid", borderColor: a.id === "human" ? (dark ? "rgba(196,125,142,0.15)" : "rgba(196,125,142,0.1)") : (dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"), color: a.id === "human" ? t.accent : (t.textSoft || t.textMuted), cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, fontWeight: a.id === "human" ? 550 : 400 }}><span style={{ fontSize: 12 }}>{a.icon}</span>{a.label}</button>)}
+              {QUICK_ACTIONS.map(a => <button key={a.id} onClick={() => handleQuick(a.id)} className="sup-quick-btn" style={{ padding: "6px 10px", borderRadius: 7, fontSize: 12, background: a.id === "human" ? (dark ? "rgba(196,125,142,0.06)" : "rgba(196,125,142,0.04)") : (dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)"), borderWidth: 1, borderStyle: "solid", borderColor: a.id === "human" ? (dark ? "rgba(196,125,142,0.15)" : "rgba(196,125,142,0.1)") : (dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"), color: a.id === "human" ? t.accent : (t.textSoft || t.textMuted), cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, fontWeight: a.id === "human" ? 550 : 400 }}><span style={{ fontSize: 12 }}>{a.icon}</span>{a.label}</button>)}
             </div>}
           </>
         )}
@@ -420,18 +420,18 @@ export default function SupportPage({ dark, t }) {
         {/* Input — pinned at bottom */}
         {isNewTicket ? (
           <div style={{ padding: "10px 16px", borderTop: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, flexShrink: 0 }}>
-            {ticketError && <div style={{ padding: "6px 10px", borderRadius: 6, marginBottom: 6, fontSize: 11, background: dark ? "rgba(220,38,38,.08)" : "#fef2f2", color: dark ? "#fca5a5" : "#dc2626" }}>⚠️ {ticketError}</div>}
-            <button onClick={createTicket} disabled={!newSubject.trim() || !newMessage.trim() || ticketLoading} style={{ width: "100%", padding: "11px", borderRadius: 10, background: newSubject.trim() && newMessage.trim() ? "linear-gradient(135deg,#c47d8e,#a3586b)" : (dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)"), color: newSubject.trim() && newMessage.trim() ? "#fff" : t.textMuted, fontSize: 13, fontWeight: 600, border: "none", cursor: newSubject.trim() && newMessage.trim() ? "pointer" : "default", fontFamily: "inherit" }}>{ticketLoading ? "Creating..." : "Create Ticket"}</button>
+            {ticketError && <div style={{ padding: "6px 10px", borderRadius: 6, marginBottom: 6, fontSize: 12, background: dark ? "rgba(220,38,38,.08)" : "#fef2f2", color: dark ? "#fca5a5" : "#dc2626" }}>⚠️ {ticketError}</div>}
+            <button onClick={createTicket} disabled={!newSubject.trim() || !newMessage.trim() || ticketLoading} style={{ width: "100%", padding: "11px", borderRadius: 10, background: newSubject.trim() && newMessage.trim() ? "linear-gradient(135deg,#c47d8e,#a3586b)" : (dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)"), color: newSubject.trim() && newMessage.trim() ? "#fff" : t.textMuted, fontSize: 14, fontWeight: 600, border: "none", cursor: newSubject.trim() && newMessage.trim() ? "pointer" : "default", fontFamily: "inherit" }}>{ticketLoading ? "Creating..." : "Create Ticket"}</button>
           </div>
         ) : (!selected || canReply) ? (
           <div style={{ padding: "10px 16px", borderTop: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMsg()} placeholder={isTicket ? "Type a message..." : (waitingForAgent ? "Add details while you wait..." : isLive ? "Message support..." : "Ask a question...")} style={{ flex: 1, padding: "10px 16px", borderRadius: 20, background: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)", border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, color: t.text, fontSize: 13, outline: "none", fontFamily: "inherit" }} />
+            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMsg()} placeholder={isTicket ? "Type a message..." : (waitingForAgent ? "Add details while you wait..." : isLive ? "Message support..." : "Ask a question...")} style={{ flex: 1, padding: "10px 16px", borderRadius: 20, background: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)", border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, color: t.text, fontSize: 14, outline: "none", fontFamily: "inherit" }} />
             <button onClick={sendMsg} style={{ width: 38, height: 38, borderRadius: "50%", background: input.trim() ? "linear-gradient(135deg,#c47d8e,#a3586b)" : (dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)"), border: "none", cursor: input.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={input.trim() ? "#fff" : t.textMuted} strokeWidth="2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             </button>
           </div>
         ) : isTicket ? (
-          <div style={{ padding: "12px 18px", borderTop: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`, textAlign: "center", fontSize: 12, color: t.textMuted, flexShrink: 0 }}>This conversation has been resolved</div>
+          <div style={{ padding: "12px 18px", borderTop: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`, textAlign: "center", fontSize: 13, color: t.textMuted, flexShrink: 0 }}>This conversation has been resolved</div>
         ) : null}
       </div>
     </div>
@@ -448,15 +448,15 @@ export function SupportSidebar({ dark, t }) {
       <div className="sup-rs-bot" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
         <div className="sup-rs-bot-status">
           <div className="sup-bot-dot" style={{ background: t.green }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: t.green }}>Online</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: t.green }}>Online</span>
         </div>
-        <div style={{ fontSize: 13, color: t.textMuted, lineHeight: 1.4 }}>AI assistant available 24/7 for orders, pricing, refunds, and general questions.</div>
+        <div style={{ fontSize: 14, color: t.textMuted, lineHeight: 1.4 }}>AI assistant available 24/7 for orders, pricing, refunds, and general questions.</div>
       </div>
       <div className="sup-rs-divider" style={{ background: t.sidebarBorder }} />
       <div className="sup-rs-title" style={{ color: t.textMuted }}>Quick Help</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 16 }}>
         {[["Check order status","📦"],["Refund policy","💰"],["Pricing info","💎"],["API docs","⚡"]].map(([label,icon])=>
-          <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, background: dark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)", fontSize: 12, color: t.textSoft || t.textMuted }}><span>{icon}</span>{label}</div>
+          <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, background: dark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)", fontSize: 13, color: t.textSoft || t.textMuted }}><span>{icon}</span>{label}</div>
         )}
       </div>
       <div className="sup-rs-divider" style={{ background: t.sidebarBorder }} />

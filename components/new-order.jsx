@@ -224,8 +224,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
         return (
           <div key={tier.tier} onClick={e => pickTier(tier, e)} className="no-tier-card" style={{ borderWidth: 1, borderStyle: "solid", borderColor: isSel ? s.text : (dark ? s.borderD : s.border), background: isSel ? (dark ? s.bgD : s.bg) : (dark ? "#0e1120" : "#ffffff") }}>
             <div className="no-tier-header">
-              <span style={{ fontSize: 13, fontWeight: 700, color: s.text }}>{s.label} {tier.tier}</span>
-              <span className="m" style={{ fontSize: 13, fontWeight: 700, color: s.text }}>₦{tier.price.toLocaleString()}<span style={{ fontSize: 11, fontWeight: 400 }}>/{tier.per}</span></span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: s.text }}>{s.label} {tier.tier}</span>
+              <span className="m" style={{ fontSize: 14, fontWeight: 600, color: s.text }}>₦{tier.price.toLocaleString()}<span style={{ fontSize: 12, fontWeight: 400 }}>/{tier.per}</span></span>
             </div>
             <div className="no-tier-meta" style={{ color: t.textMuted }}>Refill: <strong style={{ color: t.textSoft }}>{tier.refill}</strong> · {tier.speed}</div>
           </div>
@@ -266,9 +266,9 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
 
       {/* Order result toast */}
       {orderResult && (
-        <div style={{ padding: "10px 16px", borderRadius: 10, marginBottom: 12, background: orderResult.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), border: `1px solid ${orderResult.type === "success" ? (dark ? "rgba(110,231,183,.2)" : "#a7f3d0") : (dark ? "rgba(220,38,38,.2)" : "#fecaca")}`, color: orderResult.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), fontSize: 13, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ padding: "10px 16px", borderRadius: 10, marginBottom: 12, background: orderResult.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), border: `1px solid ${orderResult.type === "success" ? (dark ? "rgba(110,231,183,.2)" : "#a7f3d0") : (dark ? "rgba(220,38,38,.2)" : "#fecaca")}`, color: orderResult.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), fontSize: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>{orderResult.type === "success" ? "✓" : "⚠️"} {orderResult.message}</span>
-          <button onClick={() => setOrderResult(null)} style={{ background: "none", color: "inherit", fontSize: 15, border: "none", cursor: "pointer" }}>✕</button>
+          <button onClick={() => setOrderResult(null)} style={{ background: "none", color: "inherit", fontSize: 16, border: "none", cursor: "pointer" }}>✕</button>
         </div>
       )}
 
@@ -296,7 +296,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
                   <button key={p.id} onClick={() => setPlatform(p.id)} className="no-plat-item" style={{ background: active ? t.navActive : "transparent", color: active ? t.accent : t.textSoft, fontWeight: active ? 600 : 430 }}>
                     <span className="no-plat-item-icon" style={{ opacity: active ? 1 : .5 }}>{p.icon}</span>
                     {p.label}
-                    {count > 0 && <span className="m" style={{ marginLeft: "auto", fontSize: 10, fontWeight: 600, color: active ? t.accent : t.textMuted, background: active ? (dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)") : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"), padding: "1px 6px", borderRadius: 8, minWidth: 18, textAlign: "center" }}>{count}</span>}
+                    {count > 0 && <span className="m" style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: active ? t.accent : t.textMuted, background: active ? (dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)") : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"), padding: "1px 6px", borderRadius: 8, minWidth: 18, textAlign: "center" }}>{count}</span>}
                   </button>
                 );
               })}
@@ -325,12 +325,12 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
           )}
 
           {/* Search */}
-          <input placeholder="Search services..." value={search} onChange={e => setSearch(e.target.value)} className="m" style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 12, outline: "none", marginBottom: 10, fontFamily: "'JetBrains Mono', monospace" }} />
+          <input placeholder="Search services..." value={search} onChange={e => setSearch(e.target.value)} className="m" style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 13, outline: "none", marginBottom: 10, fontFamily: "'JetBrains Mono', monospace" }} />
 
           {/* Platform name + count */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <span style={{ fontSize: 15, fontWeight: 600, color: t.text }}>{activePlat?.label}</span>
-            <span className="m" style={{ fontSize: 12, color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>({filtered.length} services)</span>
+            <span style={{ fontSize: 16, fontWeight: 600, color: t.text }}>{activePlat?.label}</span>
+            <span className="m" style={{ fontSize: 13, color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>({filtered.length} services)</span>
           </div>
 
           <div className="no-svc-list">
@@ -386,7 +386,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
                         <button key={p.id} onClick={() => { setPlatform(p.id); setCatModal(false); }} className="no-cat-item" style={{ borderWidth: 1, borderStyle: "solid", borderColor: act ? t.accent : t.cardBorder, background: act ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: act ? t.accent : t.text, position: "relative" }}>
                           <span className="no-cat-icon">{p.icon}</span>
                           <span className="no-cat-label">{p.label}</span>
-                          {count > 0 && <span className="m" style={{ fontSize: 9, fontWeight: 600, color: act ? t.accent : t.textMuted, position: "absolute", top: 4, right: 6 }}>{count}</span>}
+                          {count > 0 && <span className="m" style={{ fontSize: 10, fontWeight: 600, color: act ? t.accent : t.textMuted, position: "absolute", top: 4, right: 6 }}>{count}</span>}
                         </button>
                       );
                     })}
@@ -411,14 +411,14 @@ function MobileGuide({ dark, t }) {
   return (
     <div style={{ borderRadius: 12, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, overflow: "hidden", marginBottom: 12 }}>
       <button onClick={() => setOpen(!open)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", background: "none", border: "none", cursor: "pointer", color: t.text }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>📖 How Our Services Work</span>
+        <span style={{ fontSize: 14, fontWeight: 600 }}>📖 How Our Services Work</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       {open && (
-        <div style={{ padding: "0 14px 14px", fontSize: 12, lineHeight: 1.7, color: t.textMuted }}>
+        <div style={{ padding: "0 14px 14px", fontSize: 13, lineHeight: 1.7, color: t.textMuted }}>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
             {Object.entries(TS_MINI).map(([tier, { icon, color }]) => (
-              <span key={tier} style={{ padding: "4px 10px", borderRadius: 6, background: dark ? `${color}15` : `${color}10`, color, fontSize: 12, fontWeight: 600 }}>{icon} {tier}</span>
+              <span key={tier} style={{ padding: "4px 10px", borderRadius: 6, background: dark ? `${color}15` : `${color}10`, color, fontSize: 13, fontWeight: 600 }}>{icon} {tier}</span>
             ))}
           </div>
           <div style={{ marginBottom: 6 }}><b style={{ color: "#e0a458" }}>Budget</b> — Cheapest. Good for testing.</div>
@@ -428,7 +428,7 @@ function MobileGuide({ dark, t }) {
             <span style={{ fontWeight: 600, color: dark ? "#4ade80" : "#16a34a" }}>🇳🇬 Nigerian Services</span>
             <span style={{ marginLeft: 4 }}>— Look for the flag! Local engagement for Naija creators.</span>
           </div>
-          <div style={{ fontSize: 11, color: t.textMuted }}>
+          <div style={{ fontSize: 12, color: t.textMuted }}>
             <div style={{ marginBottom: 3 }}>• <b style={{ color: t.text }}>Refill</b> = free top-up if count drops</div>
             <div style={{ marginBottom: 3 }}>• <b style={{ color: t.text }}>Start small</b> — test Budget first</div>
             <div>• Set profile to <b style={{ color: t.text }}>public</b> before ordering</div>
@@ -445,7 +445,7 @@ function MobileGuide({ dark, t }) {
 export function ServicesSidebar({ dark, t }) {
   return (
     <>
-      <div style={{ fontSize: 11, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>Pricing Guide</div>
+      <div style={{ fontSize: 12, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>Pricing Guide</div>
       {[
         ["Budget", "💰", "Cheapest. May drop. Good for testing."],
         ["Standard", "⚡", "Best value. Stable with refill guarantee."],
@@ -454,21 +454,21 @@ export function ServicesSidebar({ dark, t }) {
         const s = TS[tier];
         return (
           <div key={tier} style={{ padding: "10px 12px", borderRadius: 10, background: dark ? s.bgD : s.bg, borderWidth: 1, borderStyle: "solid", borderColor: dark ? s.borderD : s.border, marginBottom: 6 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: s.text, marginBottom: 3 }}>{icon} {tier}</div>
-            <div style={{ fontSize: 13, color: t.textMuted, lineHeight: 1.4 }}>{desc}</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: s.text, marginBottom: 3 }}>{icon} {tier}</div>
+            <div style={{ fontSize: 14, color: t.textMuted, lineHeight: 1.4 }}>{desc}</div>
           </div>
         );
       })}
 
       {/* Nigerian services callout */}
       <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 10, background: dark ? "rgba(74,222,128,.05)" : "rgba(22,163,74,.03)", border: `1px solid ${dark ? "rgba(74,222,128,.12)" : "rgba(22,163,74,.08)"}`, marginBottom: 6 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: dark ? "#4ade80" : "#16a34a", marginBottom: 4 }}>🇳🇬 Nigerian Services</div>
-        <div style={{ fontSize: 12, color: t.textMuted, lineHeight: 1.5 }}>Look for the 🇳🇬 flag! These target Nigerian audiences — real local engagement for Naija creators and businesses.</div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#4ade80" : "#16a34a", marginBottom: 4 }}>🇳🇬 Nigerian Services</div>
+        <div style={{ fontSize: 13, color: t.textMuted, lineHeight: 1.5 }}>Look for the 🇳🇬 flag! These target Nigerian audiences — real local engagement for Naija creators and businesses.</div>
       </div>
 
       {/* Pro tips */}
-      <div style={{ fontSize: 11, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1, marginTop: 16, marginBottom: 8 }}>Pro Tips</div>
-      <div style={{ fontSize: 12, color: t.textMuted, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1, marginTop: 16, marginBottom: 8 }}>Pro Tips</div>
+      <div style={{ fontSize: 13, color: t.textMuted, lineHeight: 1.6 }}>
         <div style={{ marginBottom: 4 }}>• <b style={{ color: t.text }}>Refill</b> = free top-up if count drops</div>
         <div style={{ marginBottom: 4 }}>• <b style={{ color: t.text }}>Start small</b> — test a Budget tier first</div>
         <div style={{ marginBottom: 4 }}>• <b style={{ color: t.text }}>Set profile to public</b> before ordering</div>

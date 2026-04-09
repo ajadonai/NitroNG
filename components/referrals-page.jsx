@@ -115,7 +115,7 @@ export default function ReferralsPage({ user, dark, t }) {
               <path d="M26 16l6-4 6 4" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <div style={{ fontSize: 16, fontWeight: 600, color: t.textSoft, marginBottom: 4 }}>No referrals yet — share the love 🤝</div>
-            <div style={{ fontSize: 14, color: t.textMuted, lineHeight: 1.5 }}>Invite friends, earn ₦500 each time they sign up and order</div>
+            <div style={{ fontSize: 15, color: t.textMuted, lineHeight: 1.5 }}>Invite friends, earn ₦500 each time they sign up and order</div>
           </div>
         )}
       </div>
@@ -123,7 +123,7 @@ export default function ReferralsPage({ user, dark, t }) {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="ref-pagination">
-          <span style={{ fontSize: 13, color: t.textMuted }}>{referrals.length} referrals</span>
+          <span style={{ fontSize: 14, color: t.textMuted }}>{referrals.length} referrals</span>
           <div className="ref-pag-btns">
             <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} className="ref-pag-btn" style={{ borderColor: t.cardBorder, color: t.textSoft, opacity: page <= 1 ? .3 : 1 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -157,8 +157,8 @@ export default function ReferralsPage({ user, dark, t }) {
             <div key={num} className="ref-how-step">
               <div className="m ref-how-num" style={{ background: t.navActive, color: t.accent }}>{num}</div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{title}</div>
-                <div style={{ fontSize: 13, color: t.textMuted }}>{desc}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: t.text }}>{title}</div>
+                <div style={{ fontSize: 14, color: t.textMuted }}>{desc}</div>
               </div>
             </div>
           ))}
@@ -189,8 +189,8 @@ export function ReferralsSidebar({ user, dark, t }) {
         <div key={num} className="ref-rs-step">
           <div className="m ref-rs-num" style={{ background: t.navActive, color: t.accent }}>{num}</div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: t.text, marginBottom: 1 }}>{title}</div>
-            <div style={{ fontSize: 13, color: t.textMuted }}>{desc}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: t.text, marginBottom: 1 }}>{title}</div>
+            <div style={{ fontSize: 14, color: t.textMuted }}>{desc}</div>
           </div>
         </div>
       ))}
@@ -215,8 +215,8 @@ export function ReferralsSidebar({ user, dark, t }) {
           ["Sign-up rate", totalRefs > 0 ? `${Math.round(activeRefs / totalRefs * 100)}%` : "0%", dark ? "#a5b4fc" : "#4f46e5"],
         ].map(([label, val, color], i, arr) => (
           <div key={label} className="ref-rs-perf-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-            <span style={{ fontSize: 13, color: t.textMuted }}>{label}</span>
-            <span className="m" style={{ fontSize: 13, fontWeight: 600, color }}>{val}</span>
+            <span style={{ fontSize: 14, color: t.textMuted }}>{label}</span>
+            <span className="m" style={{ fontSize: 14, fontWeight: 600, color }}>{val}</span>
           </div>
         ))}
       </div>

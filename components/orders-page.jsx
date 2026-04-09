@@ -12,7 +12,7 @@ function txClr(type, dk) { return type === "deposit" ? (dk ? "#6ee7b7" : "#05966
 function txIcon(type) { return type === "deposit" ? "↓" : type === "referral" ? "★" : type === "refund" ? "↩" : "↑"; }
 
 function Badge({ status, dark }) {
-  return <span className="m" style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: sBg(status, dark), color: sClr(status, dark), borderWidth: .5, borderStyle: "solid", borderColor: sBrd(status, dark), whiteSpace: "nowrap", display: "inline-block" }}>{status}</span>;
+  return <span className="m" style={{ fontSize: 13, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: sBg(status, dark), color: sClr(status, dark), borderWidth: .5, borderStyle: "solid", borderColor: sBrd(status, dark), whiteSpace: "nowrap", display: "inline-block" }}>{status}</span>;
 }
 
 const PER_PAGE_OPTIONS = [5, 10, 20];
@@ -121,7 +121,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
       <div className="ord-tabs" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", borderColor: t.cardBorder }}>
         {[["orders", "Orders", orders.length], ["transactions", "Transactions", txs.length]].map(([id, lb, count]) => (
           <button key={id} onClick={() => { setTab(id); setOPage(1); setTPage(1); setExpanded(null); }} className="ord-tab" style={{ background: tab === id ? t.navActive : "transparent", color: tab === id ? t.accent : t.textMuted }}>
-            {lb} <span className="m" style={{ fontSize: 12, opacity: .7 }}>({count})</span>
+            {lb} <span className="m" style={{ fontSize: 13, opacity: .7 }}>({count})</span>
           </button>
         ))}
       </div>
@@ -196,7 +196,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                     </div>
                   )}
                   {orderMsg[o.id] && (
-                    <div style={{ marginTop: 8, padding: "6px 10px", borderRadius: 6, fontSize: 12, background: orderMsg[o.id].type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: orderMsg[o.id].type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ marginTop: 8, padding: "6px 10px", borderRadius: 6, fontSize: 13, background: orderMsg[o.id].type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: orderMsg[o.id].type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span>{orderMsg[o.id].type === "success" ? "✓" : "⚠️"} {orderMsg[o.id].text}</span>
                       <button onClick={() => setOrderMsg(prev => { const n = { ...prev }; delete n[o.id]; return n; })} style={{ background: "none", color: "inherit", border: "none", cursor: "pointer", fontSize: 12 }}>✕</button>
                     </div>
@@ -214,7 +214,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                 <path d="M29 38l2 2 4-4" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity=".4" />
               </svg>
               <div style={{ fontSize: 16, fontWeight: 600, color: t.textSoft, marginBottom: 4 }}>No orders yet — let's change that 🚀</div>
-              <div style={{ fontSize: 14, color: t.textMuted }}>Your order history will show up here once you start boosting</div>
+              <div style={{ fontSize: 15, color: t.textMuted }}>Your order history will show up here once you start boosting</div>
             </div>
           )}
         </div>
@@ -253,7 +253,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                 <line x1="16" y1="24" x2="30" y2="24" stroke={t.accent} strokeWidth="1.5" opacity=".15" strokeLinecap="round" />
               </svg>
               <div style={{ fontSize: 16, fontWeight: 600, color: t.textSoft, marginBottom: 4 }}>No transactions yet 💳</div>
-              <div style={{ fontSize: 14, color: t.textMuted }}>Add funds to your wallet and start boosting</div>
+              <div style={{ fontSize: 15, color: t.textMuted }}>Add funds to your wallet and start boosting</div>
             </div>
           )}
         </div>

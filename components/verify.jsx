@@ -66,10 +66,10 @@ function VerifyInner(){
 
           {!verified?<>
             <div style={{marginBottom:20}}><div style={{width:38,height:38,borderRadius:10,background:t.grad,display:"inline-flex",alignItems:"center",justifyContent:"center"}}><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div></div>
-            <h2 style={{fontSize:24,fontWeight:700,color:t.text,marginBottom:4}}>Verify Your Account</h2>
-            <p style={{fontSize:14,color:t.soft,marginBottom:4,fontWeight:430}}>We sent a 6-digit code to</p>
-            <p className="m" style={{fontSize:13,color:t.accent,fontWeight:600,marginBottom:28}}>{userEmail||"your email"}</p>
-            <div style={{height:36,marginBottom:2,display:"flex",alignItems:"center"}}>{error?<div style={{width:"100%",padding:"8px 12px",borderRadius:8,background:dark?"rgba(220,38,38,0.1)":"#fef2f2",border:`1px solid ${dark?"rgba(220,38,38,0.2)":"#fecaca"}`,color:t.red,fontSize:12,lineHeight:1.2}}>⚠️ {error}</div>:null}</div>
+            <h2 style={{fontSize:24,fontWeight:600,color:t.text,marginBottom:4}}>Verify Your Account</h2>
+            <p style={{fontSize:15,color:t.soft,marginBottom:4,fontWeight:450}}>We sent a 6-digit code to</p>
+            <p className="m" style={{fontSize:14,color:t.accent,fontWeight:600,marginBottom:28}}>{userEmail||"your email"}</p>
+            <div style={{height:36,marginBottom:2,display:"flex",alignItems:"center"}}>{error?<div style={{width:"100%",padding:"8px 12px",borderRadius:8,background:dark?"rgba(220,38,38,0.1)":"#fef2f2",border:`1px solid ${dark?"rgba(220,38,38,0.2)":"#fecaca"}`,color:t.red,fontSize:13,lineHeight:1.2}}>⚠️ {error}</div>:null}</div>
             <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:28}}>
               {code.map((digit,i)=>(
                 <input key={i} ref={el=>inputs.current[i]=el} className="code-input m" type="text" inputMode="numeric" maxLength={1} value={digit}
@@ -79,21 +79,21 @@ function VerifyInner(){
             </div>
             {verifying&&<div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:20,color:t.accent}}>
               <span style={{width:16,height:16,border:"2px solid rgba(196,125,142,.3)",borderTopColor:t.accent,borderRadius:"50%",animation:"spin .6s linear infinite",display:"inline-block"}}/>
-              <span style={{fontSize:14,fontWeight:500}}>Verifying...</span>
+              <span style={{fontSize:15,fontWeight:500}}>Verifying...</span>
             </div>}
-            <div style={{fontSize:13,color:t.muted,marginBottom:24}}>
+            <div style={{fontSize:14,color:t.muted,marginBottom:24}}>
               {resendTimer>0?<span>Resend code in <span className="m" style={{color:t.accent,fontWeight:600}}>{resendTimer}s</span></span>
-              :<button onClick={resend} style={{background:"none",color:t.accent,fontWeight:600,fontSize:13,cursor:"pointer"}}>Resend Code</button>}
+              :<button onClick={resend} style={{background:"none",color:t.accent,fontWeight:600,fontSize:14,cursor:"pointer"}}>Resend Code</button>}
             </div>
-            <div style={{paddingTop:16,borderTop:`1px solid ${t.surfaceBrd}`,fontSize:12,color:t.muted,lineHeight:1.6}}>
+            <div style={{paddingTop:16,borderTop:`1px solid ${t.surfaceBrd}`,fontSize:13,color:t.muted,lineHeight:1.6}}>
               Check your spam folder if you don't see it.<br/>Code expires in 15 minutes.
             </div>
           </>:<>
             <div style={{animation:"pop .4s ease"}}>
               <div style={{width:64,height:64,borderRadius:"50%",background:dark?"rgba(110,231,183,.1)":"rgba(5,150,105,.08)",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:32,marginBottom:16,border:`2px solid ${t.green}`}}>✓</div>
-              <h2 style={{fontSize:24,fontWeight:700,color:t.text,marginBottom:8}}>Verified!</h2>
-              <p style={{fontSize:14,color:t.soft,marginBottom:28,fontWeight:430}}>Your account has been verified successfully. You're all set to start using Nitro.</p>
-              <a href="/dashboard" style={{display:"inline-block",padding:"14px 40px",borderRadius:12,background:t.btnPrimary,color:"#fff",fontSize:15,fontWeight:700}}>Go to Dashboard</a>
+              <h2 style={{fontSize:24,fontWeight:600,color:t.text,marginBottom:8}}>Verified!</h2>
+              <p style={{fontSize:15,color:t.soft,marginBottom:28,fontWeight:450}}>Your account has been verified successfully. You're all set to start using Nitro.</p>
+              <a href="/dashboard" style={{display:"inline-block",padding:"14px 40px",borderRadius:12,background:t.btnPrimary,color:"#fff",fontSize:16,fontWeight:600}}>Go to Dashboard</a>
             </div>
           </>}
         </div>

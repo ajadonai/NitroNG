@@ -41,7 +41,7 @@ function NotFoundInner() {
       <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", height: 52, borderBottom: `0.5px solid ${border}`, background: dark ? "rgba(8,11,20,.6)" : "rgba(244,241,237,.7)", backdropFilter: "blur(20px)", position: "relative", zIndex: 10, flexShrink: 0 }}>
         <a href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
           <div style={{ width: 24, height: 24, borderRadius: 6, background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(196,125,142,.25)" }}><svg width="10" height="10" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
-          <span style={{ fontSize: 14, fontWeight: 700, color: text, letterSpacing: 2 }}>NITRO</span>
+          <span style={{ fontSize: 15, fontWeight: 600, color: text, letterSpacing: 2 }}>NITRO</span>
         </a>
         <button onClick={toggleTheme} style={{ width: 40, height: 22, borderRadius: 11, background: dark ? "rgba(99,102,241,.2)" : "rgba(0,0,0,.06)", border: `0.5px solid ${dark ? "rgba(99,102,241,.15)" : "rgba(0,0,0,.08)"}`, position: "relative" }}>
           <div style={{ width: 16, height: 16, borderRadius: "50%", background: dark ? "#1e1b4b" : "#fff", position: "absolute", top: 2.5, left: dark ? 20.5 : 2.5, transition: "left .4s cubic-bezier(.4,0,.2,1)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: dark ? "none" : "0 1px 4px rgba(0,0,0,.15)" }}>
@@ -54,7 +54,7 @@ function NotFoundInner() {
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", zIndex: 1, padding: 20 }}>
 
         {/* Ghost 404 */}
-        <div className="m" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-58%)", fontSize: "clamp(120px, 25vw, 180px)", fontWeight: 700, color: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.08)", lineHeight: .85, letterSpacing: -6, pointerEvents: "none", userSelect: "none", fontFamily: "'JetBrains Mono',monospace" }}>404</div>
+        <div className="m" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-58%)", fontSize: "clamp(120px, 25vw, 180px)", fontWeight: 600, color: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.08)", lineHeight: .85, letterSpacing: -6, pointerEvents: "none", userSelect: "none", fontFamily: "'JetBrains Mono',monospace" }}>404</div>
 
         <div style={{ textAlign: "center", maxWidth: 480, position: "relative", zIndex: 1 }}>
 
@@ -77,17 +77,17 @@ function NotFoundInner() {
           <h1 style={{ fontSize: "clamp(28px, 6vw, 42px)", fontWeight: 300, color: text, marginBottom: 10, fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", lineHeight: 1.15 }}>Lost in the void</h1>
 
           {/* Body */}
-          <p style={{ fontSize: 14, color: soft, lineHeight: 1.7, maxWidth: 340, margin: "0 auto 28px", fontWeight: 350 }}>This page doesn't exist, or it wandered off. Let's get you somewhere useful.</p>
+          <p style={{ fontSize: 15, color: soft, lineHeight: 1.7, maxWidth: 340, margin: "0 auto 28px", fontWeight: 400 }}>This page doesn't exist, or it wandered off. Let's get you somewhere useful.</p>
 
           {/* Buttons */}
           <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 28 }}>
-            <a href="/" style={{ padding: "12px 30px", borderRadius: 10, background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none" }}>Go home</a>
-            <a href="/dashboard" style={{ padding: "12px 30px", borderRadius: 10, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: text, fontSize: 14, fontWeight: 600, textDecoration: "none", border: `0.5px solid ${border}` }}>Dashboard</a>
+            <a href="/" style={{ padding: "12px 30px", borderRadius: 10, background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", fontSize: 15, fontWeight: 600, textDecoration: "none" }}>Go home</a>
+            <a href="/dashboard" style={{ padding: "12px 30px", borderRadius: 10, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: text, fontSize: 15, fontWeight: 600, textDecoration: "none", border: `0.5px solid ${border}` }}>Dashboard</a>
           </div>
 
           {/* Socials */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16 }}>
-            <span style={{ fontSize: 11, color: muted, marginRight: 4 }}>Find us</span>
+            <span style={{ fontSize: 12, color: muted, marginRight: 4 }}>Find us</span>
             <a href="https://x.com/TheNitroNG" target="_blank" rel="noopener" style={{ width: 36, height: 36, borderRadius: 10, background: dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.03)", border: `0.5px solid ${border}`, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill={soft}><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             </a>
@@ -103,14 +103,14 @@ function NotFoundInner() {
           </div>
 
           {/* Contact support */}
-          <div style={{ fontSize: 13, color: muted }}>Think this is wrong? <a href="/dashboard" style={{ color: accent, fontWeight: 500, textDecoration: "none" }}>Contact support</a></div>
+          <div style={{ fontSize: 14, color: muted }}>Think this is wrong? <a href="/dashboard" style={{ color: accent, fontWeight: 500, textDecoration: "none" }}>Contact support</a></div>
         </div>
       </div>
 
       {/* Footer */}
       <footer style={{ borderTop: `0.5px solid ${border}`, padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0, position: "relative", zIndex: 10 }}>
-        <span style={{ fontSize: 11, color: muted }}>© {new Date().getFullYear() > 2026 ? `2026–${new Date().getFullYear()}` : "2026"} Nitro</span>
-        <div style={{ display: "flex", gap: 14 }}><a href="/terms" style={{ fontSize: 11, color: muted, textDecoration: "none" }}>Terms</a><a href="/privacy" style={{ fontSize: 11, color: muted, textDecoration: "none" }}>Privacy</a></div>
+        <span style={{ fontSize: 12, color: muted }}>© {new Date().getFullYear() > 2026 ? `2026–${new Date().getFullYear()}` : "2026"} Nitro</span>
+        <div style={{ display: "flex", gap: 14 }}><a href="/terms" style={{ fontSize: 12, color: muted, textDecoration: "none" }}>Terms</a><a href="/privacy" style={{ fontSize: 12, color: muted, textDecoration: "none" }}>Privacy</a></div>
       </footer>
     </div>
   );

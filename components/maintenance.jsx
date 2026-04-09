@@ -67,7 +67,7 @@ function MaintenanceInner() {
           <div style={{ width: 22, height: 22, borderRadius: 6, background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="9" height="9" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </div>
-          <span style={{ fontSize: 13, fontWeight: 700, color: text, letterSpacing: 2 }}>NITRO</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: text, letterSpacing: 2 }}>NITRO</span>
         </div>
       </nav>
 
@@ -96,19 +96,19 @@ function MaintenanceInner() {
           {/* Status badge */}
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 14px", borderRadius: 20, background: dark ? "rgba(224,164,88,.06)" : "rgba(224,164,88,.04)", border: `1px solid ${dark ? "rgba(224,164,88,.12)" : "rgba(224,164,88,.1)"}`, marginBottom: 16 }}>
             <div style={{ width: 6, height: 6, borderRadius: "50%", background: amber, boxShadow: `0 0 8px ${amber}` }} />
-            <span className="m" style={{ fontSize: 10, fontWeight: 600, color: amber, letterSpacing: 1.2, textTransform: "uppercase" }}>Maintenance in progress</span>
+            <span className="m" style={{ fontSize: 11, fontWeight: 600, color: amber, letterSpacing: 1.2, textTransform: "uppercase" }}>Maintenance in progress</span>
           </div>
 
           {/* Heading */}
           <h1 style={{ fontSize: "clamp(26px, 5vw, 38px)", fontWeight: 300, color: text, marginBottom: 8, fontFamily: "'Cormorant Garamond',serif", lineHeight: 1.2 }}>We'll be right back</h1>
 
           {/* Message */}
-          <p style={{ fontSize: 14, color: soft, lineHeight: 1.7, maxWidth: 380, margin: "0 auto 20px", fontWeight: 350 }}>{msg}</p>
+          <p style={{ fontSize: 15, color: soft, lineHeight: 1.7, maxWidth: 380, margin: "0 auto 20px", fontWeight: 400 }}>{msg}</p>
 
           {/* ETA chip */}
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 18px", borderRadius: 10, background: cardGlass, border: `1px solid ${border}`, marginBottom: 24 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={amber} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span className="m" style={{ fontSize: 12, fontWeight: 600, color: amber }}>Estimated: {eta}</span>
+            <span className="m" style={{ fontSize: 13, fontWeight: 600, color: amber }}>Estimated: {eta}</span>
           </div>
 
           {/* Dots */}
@@ -120,7 +120,7 @@ function MaintenanceInner() {
 
           {/* Social — icon-only buttons */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <span style={{ fontSize: 11, color: muted, marginRight: 4 }}>Stay updated</span>
+            <span style={{ fontSize: 12, color: muted, marginRight: 4 }}>Stay updated</span>
             {/* X */}
             <a href="https://x.com/TheNitroNG" target="_blank" rel="noopener" style={{ width: 36, height: 36, borderRadius: 10, background: dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.03)", border: `0.5px solid ${border}`, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill={soft}><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
@@ -143,10 +143,10 @@ function MaintenanceInner() {
 
       {/* Footer */}
       <footer style={{ borderTop: `0.5px solid ${border}`, padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0, position: "relative", zIndex: 10 }}>
-        <span style={{ fontSize: 11, color: muted }}>© 2026 Nitro</span>
+        <span style={{ fontSize: 12, color: muted }}>© 2026 Nitro</span>
         <div style={{ display: "flex", gap: 14 }}>
-          <a href="/terms" style={{ fontSize: 11, color: muted, textDecoration: "none" }}>Terms</a>
-          <a href="/privacy" style={{ fontSize: 11, color: muted, textDecoration: "none" }}>Privacy</a>
+          <a href="/terms" style={{ fontSize: 12, color: muted, textDecoration: "none" }}>Terms</a>
+          <a href="/privacy" style={{ fontSize: 12, color: muted, textDecoration: "none" }}>Privacy</a>
         </div>
       </footer>
     </div>
