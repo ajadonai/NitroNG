@@ -99,21 +99,16 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive }) {
       {/* Stat cards */}
       <div className="dash-stats">
         {[
-          ["Balance", balance, t.green, "+₦2,000 this week", "↑"],
-          ["Orders", String(total), dark ? "#a5b4fc" : "#4f46e5", "3 this week", null],
-          ["In Progress", String(processing), dark ? "#e0a458" : "#d97706", "Est. 1-2 hrs", "⏳"],
-          ["Delivered", String(completed), dark ? "#6ee7b7" : "#059669", rate + "% success", "✓"],
-        ].map(([label, val, color, sub, icon]) => (
-          <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderTopWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderLeftWidth: 3, borderStyle: "solid", borderTopColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", borderRightColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", borderBottomColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", borderLeftColor: color, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)", position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", top: -20, left: -20, width: 60, height: 60, borderRadius: "50%", background: `${color}10`, filter: "blur(20px)", pointerEvents: "none" }} />
-            <div style={{ position: "relative" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div className="dash-stat-label" style={{ color: t.textMuted }}>{label}</div>
-                {icon && <span style={{ fontSize: 13, opacity: .35 }}>{icon}</span>}
-              </div>
-              <div className="m dash-stat-value" style={{ color }}>{val}</div>
-              <div className="dash-stat-sub" style={{ color: t.textMuted }}>{sub}</div>
-            </div>
+          ["Balance", balance, t.green, "+₦2,000 this week"],
+          ["Orders", String(total), dark ? "#a5b4fc" : "#4f46e5", "3 this week"],
+          ["In Progress", String(processing), dark ? "#e0a458" : "#d97706", "Est. 1-2 hrs"],
+          ["Delivered", String(completed), dark ? "#6ee7b7" : "#059669", rate + "% success"],
+        ].map(([label, val, color, sub]) => (
+          <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
+            <div className="dash-stat-dot" style={{ background: color }} />
+            <div className="dash-stat-label" style={{ color: t.textMuted }}>{label}</div>
+            <div className="m dash-stat-value" style={{ color }}>{val}</div>
+            <div className="dash-stat-sub" style={{ color: t.textMuted }}>{sub}</div>
           </div>
         ))}
       </div>
@@ -830,7 +825,7 @@ function DashboardInner() {
         {/* ── MAIN ── */}
         <main className="dash-main" style={{ background: t.bg, ...(isSupport ? { overflow: "hidden" } : {}) }}>
           {!isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isHowTo && <>
-            <div className="dash-welcome" style={{ color: t.text }}>What's good, {firstName.toUpperCase()} 💰</div>
+            <div className="dash-welcome" style={{ color: t.text }}>What's good, {firstName}</div>
             <div className="dash-welcome-sub" style={{ color: t.textMuted }}>Here's your empire at a glance</div>
           </>}
 

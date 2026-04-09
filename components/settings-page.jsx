@@ -131,9 +131,10 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
 
         {/* ── PROFILE ── */}
         <div className="set-section">
-          <div className="set-section-title" style={{ color: t.text }}>Profile</div>
-          <div className="set-section-desc" style={{ color: t.textMuted }}>Your account information. Contact support to update.</div>
-          <div className="set-card" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
+          <div className="set-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+            <div className="set-card-title" style={{ color: t.textMuted }}>Profile</div>
+            <div className="set-card-desc" style={{ color: t.textMuted }}>Your account information. Contact support to update.</div>
+            <div className="set-card-divider" style={{ background: t.cardBorder }} />
             <div className="set-profile-header">
               <div className="set-profile-avatar" style={{ background: t.accent }}>{initials}</div>
               <div>
@@ -143,71 +144,72 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
             </div>
             <div className="set-profile-grid">
               {[
-                ["First Name", user?.firstName || user?.name?.split(" ")[0] || "—"],
-                ["Last Name", user?.lastName || user?.name?.split(" ").slice(1).join(" ") || "—"],
+                ["First name", user?.firstName || user?.name?.split(" ")[0] || "—"],
+                ["Last name", user?.lastName || user?.name?.split(" ").slice(1).join(" ") || "—"],
                 ["Email", user?.email || "—"],
                 ["Phone", user?.phone || "—"],
-                ["Referral Code", user?.refCode || "—"],
+                ["Referral code", user?.refCode || "—"],
               ].map(([label, val]) => (
                 <div key={label}>
                   <div className="set-field-label" style={{ color: t.textMuted }}>{label}</div>
-                  <div className={`set-field-val${label === "Referral Code" ? " m" : ""}`} style={{ color: t.text }}>{val}</div>
+                  <div className={`set-field-val${label === "Referral code" ? " m" : ""}`} style={{ color: t.text }}>{val}</div>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="set-divider" style={{ background: t.sidebarBorder }} />
-
         {/* ── CHANGE PASSWORD ── */}
         <div id="set-change-password" className="set-section">
-          <div className="set-section-title" style={{ color: t.text }}>Change Password</div>
-          <div className="set-card" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
-            {pwMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 13, background: pwMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: pwMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{pwMsg.type === "success" ? "✓" : "⚠️"} {pwMsg.text}</div>}
+          <div className="set-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+            <div className="set-card-title" style={{ color: t.textMuted }}>Change password</div>
+            <div className="set-card-divider" style={{ background: t.cardBorder }} />
+            {pwMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 13, background: pwMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: pwMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{pwMsg.text}</div>}
             <div className="set-input-group">
-              <label className="set-input-label" style={{ color: t.textMuted }}>Current Password</label>
-              <input type="password" value={curPw} onChange={e => setCurPw(e.target.value)} className="set-input" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text }} />
+              <label className="set-input-label" style={{ color: t.textMuted }}>Current password</label>
+              <input type="password" value={curPw} onChange={e => setCurPw(e.target.value)} className="set-input" style={{ borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)", background: dark ? "rgba(255,255,255,.04)" : "#fff", color: t.text }} />
             </div>
             <div className="set-input-group">
-              <label className="set-input-label" style={{ color: t.textMuted }}>New Password</label>
-              <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} className="set-input" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text }} />
+              <label className="set-input-label" style={{ color: t.textMuted }}>New password</label>
+              <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} className="set-input" style={{ borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)", background: dark ? "rgba(255,255,255,.04)" : "#fff", color: t.text }} />
             </div>
             <div className="set-input-group">
-              <label className="set-input-label" style={{ color: t.textMuted }}>Confirm New Password</label>
-              <input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} className="set-input" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text }} />
+              <label className="set-input-label" style={{ color: t.textMuted }}>Confirm new password</label>
+              <input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} className="set-input" style={{ borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)", background: dark ? "rgba(255,255,255,.04)" : "#fff", color: t.text }} />
             </div>
-            <button onClick={changePassword} disabled={pwLoading} className="set-btn-primary" style={{ opacity: curPw && newPw && confirmPw && !pwLoading ? 1 : .4 }}>{pwLoading ? "Updating..." : "Update Password"}</button>
+            <button onClick={changePassword} disabled={pwLoading} className="set-btn-primary" style={{ opacity: curPw && newPw && confirmPw && !pwLoading ? 1 : .4 }}>{pwLoading ? "Updating..." : "Update password"}</button>
           </div>
         </div>
-
-        <div className="set-divider" style={{ background: t.sidebarBorder }} />
 
         {/* ── THEME ── */}
         <div id="set-theme" className="set-section">
-          <div className="set-section-title" style={{ color: t.text }}>Theme</div>
-          <div className="set-section-desc" style={{ color: t.textMuted }}>Choose how Nitro looks for you.</div>
-          <div className="set-theme-grid">
-            {[["day", "☀ Light"], ["night", "☾ Dark"], ["auto", "◑ Auto"]].map(([id, lb]) => (
-              <button key={id} onClick={() => applyTheme(id)} className="set-theme-btn" style={{ borderWidth: 1, borderStyle: "solid", borderColor: themeMode === id ? t.accent : t.cardBorder, background: themeMode === id ? (dark ? "#2a1a22" : "#fdf2f4") : t.cardBg, color: themeMode === id ? t.accent : t.textSoft }}>{lb}</button>
-            ))}
+          <div className="set-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+            <div className="set-card-title" style={{ color: t.textMuted }}>Theme</div>
+            <div className="set-card-desc" style={{ color: t.textMuted }}>Choose how Nitro looks for you.</div>
+            <div className="set-card-divider" style={{ background: t.cardBorder }} />
+            <div className="set-theme-grid">
+              {[["day", "Light"], ["night", "Dark"], ["auto", "Auto"]].map(([id, lb]) => (
+                <button key={id} onClick={() => applyTheme(id)} className="set-theme-btn" style={{ border: `0.5px solid ${themeMode === id ? t.accent : t.cardBorder}`, background: themeMode === id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)") : "transparent", color: themeMode === id ? t.accent : t.textSoft }}>{lb}</button>
+              ))}
+            </div>
+            {themeMode === "auto" && <div className="set-theme-note" style={{ color: t.textMuted }}>Switches automatically — light 7am–6pm, dark otherwise.</div>}
           </div>
-          {themeMode === "auto" && <div className="set-theme-note" style={{ color: t.textMuted }}>Switches automatically — light 7am–6pm, dark otherwise.</div>}
         </div>
-
-        <div className="set-divider" style={{ background: t.sidebarBorder }} />
 
         {/* ── NOTIFICATIONS ── */}
         <div id="set-notifications" className="set-section">
-          <div className="set-section-title" style={{ color: t.text }}>Notifications</div>
-          <div className="set-section-desc" style={{ color: t.textMuted }}>Control what alerts you receive.</div>
-          <div className="set-card set-notif-card" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
+          <div className="set-card set-notif-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+            <div style={{ padding: "20px 20px 0" }}>
+              <div className="set-card-title" style={{ color: t.textMuted }}>Notifications</div>
+              <div className="set-card-desc" style={{ color: t.textMuted }}>Control what alerts you receive.</div>
+            </div>
+            <div className="set-card-divider-full" style={{ background: t.cardBorder }} />
             {[
               ["Order updates", "Get notified when orders complete or fail", notifOrders, setNotifOrders, "notifOrders"],
               ["Promotions", "Receive offers and discount alerts", notifPromo, setNotifPromo, "notifPromo"],
               ["Email notifications", "Receive notifications via email", notifEmail, setNotifEmail, "notifEmail"],
             ].map(([title, desc, on, setOn, key], i, arr) => (
-              <div key={title} className="set-notif-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
+              <div key={title} className="set-notif-row" style={{ borderBottom: i < arr.length - 1 ? `0.5px solid ${t.cardBorder}` : "none" }}>
                 <div className="set-notif-info">
                   <div className="set-notif-title" style={{ color: t.text }}>{title}</div>
                   <div className="set-notif-desc" style={{ color: t.textMuted }}>{desc}</div>
@@ -218,20 +220,21 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
           </div>
         </div>
 
-        <div className="set-divider" style={{ background: t.sidebarBorder }} />
-
         {/* ── ACTIVE SESSIONS ── */}
         <div id="set-active-sessions" className="set-section">
-          <div className="set-section-title" style={{ color: t.text }}>Active Sessions</div>
-          <div className="set-section-desc" style={{ color: t.textMuted }}>Devices currently logged into your account. Max 1 web + 1 mobile.</div>
-          <div className="set-card set-notif-card" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
+          <div className="set-card set-notif-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+            <div style={{ padding: "20px 20px 0" }}>
+              <div className="set-card-title" style={{ color: t.textMuted }}>Active sessions</div>
+              <div className="set-card-desc" style={{ color: t.textMuted }}>Devices logged into your account. Max 1 web + 1 mobile.</div>
+            </div>
+            <div className="set-card-divider-full" style={{ background: t.cardBorder }} />
             {sessionsLoading ? (
               <div style={{ padding: 16, textAlign: "center", color: t.textMuted, fontSize: 13 }}>Loading sessions...</div>
             ) : sessions.length === 0 ? (
               <div style={{ padding: 16, textAlign: "center", color: t.textMuted, fontSize: 13 }}>No active sessions</div>
             ) : sessions.map((s, i, arr) => (
-              <div key={s.id} className="set-session-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-                <div className="set-session-icon" style={{ background: s.current ? (dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.05)") : (dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.02)") }}>
+              <div key={s.id} className="set-session-row" style={{ borderBottom: i < arr.length - 1 ? `0.5px solid ${t.cardBorder}` : "none" }}>
+                <div className="set-session-icon" style={{ background: s.current ? (dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)") : (dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.02)") }}>
                   {s.deviceType === "mobile" ? (
                     <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke={s.current ? t.green : t.textMuted} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
                   ) : (
@@ -241,32 +244,31 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
                 <div style={{ flex: 1 }}>
                   <div className="set-session-device" style={{ color: t.text }}>
                     {s.deviceInfo || s.deviceType}
-                    {s.current && <span className="set-session-badge" style={{ background: dark ? "#0a2416" : "#ecfdf5", color: t.green, borderColor: dark ? "#166534" : "#a7f3d0" }}>Current</span>}
+                    {s.current && <span className="set-session-badge" style={{ background: dark ? "rgba(110,231,183,.08)" : "#ecfdf5", color: t.green, borderColor: dark ? "rgba(110,231,183,.15)" : "#a7f3d0" }}>Current</span>}
                     <span className="m" style={{ fontSize: 10, padding: "1px 5px", borderRadius: 4, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: t.textMuted, marginLeft: 4 }}>{s.deviceType}</span>
                   </div>
                   <div className="set-session-meta" style={{ color: t.textMuted }}>{s.ip || "—"} · {fDSession(s.lastActive)}</div>
                 </div>
-                {!s.current && <button onClick={() => revokeSession(s.id)} disabled={revoking === s.id} className="set-btn-danger-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: dark ? "#fca5a5" : "#dc2626" }}>{revoking === s.id ? "..." : "Revoke"}</button>}
+                {!s.current && <button onClick={() => revokeSession(s.id)} disabled={revoking === s.id} className="set-btn-danger-sm" style={{ borderColor: dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.12)", color: dark ? "#fca5a5" : "#dc2626" }}>{revoking === s.id ? "..." : "Revoke"}</button>}
               </div>
             ))}
           </div>
         </div>
 
-        <div className="set-divider" style={{ background: t.sidebarBorder }} />
-
         {/* ── API KEY ── */}
         <div id="set-api-key" className="set-section">
-          <div className="set-section-title" style={{ color: t.text }}>API Key</div>
-          <div className="set-section-desc" style={{ color: t.textMuted }}>For advanced users and resellers. Keep this secret.</div>
-          <div className="set-card" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
+          <div className="set-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+            <div className="set-card-title" style={{ color: t.textMuted }}>API key</div>
+            <div className="set-card-desc" style={{ color: t.textMuted }}>For advanced users and resellers. Keep this secret.</div>
+            <div className="set-card-divider" style={{ background: t.cardBorder }} />
             {apiKey ? (
               <>
                 <div className="set-api-row">
-                  <div className="m set-api-key" style={{ background: dark ? "#0d1020" : "#fff", borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", color: t.textSoft }}>
+                  <div className="m set-api-key" style={{ background: dark ? "rgba(255,255,255,.04)" : "#fff", borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)", color: t.textSoft }}>
                     {showApi ? apiKey : "••••••••••••••••••••••••••••••••"}
                   </div>
-                  <button onClick={() => setShowApi(!showApi)} className="set-btn-outline" style={{ borderColor: t.cardBorder, color: t.textSoft }}>{showApi ? "Hide" : "Show"}</button>
-                  <button onClick={copyApi} className="set-btn-outline" style={{ borderColor: t.cardBorder, color: copied ? t.green : t.textSoft }}>{copied ? "Copied ✓" : "Copy"}</button>
+                  <button onClick={() => setShowApi(!showApi)} className="set-btn-outline" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)", color: t.textSoft }}>{showApi ? "Hide" : "Show"}</button>
+                  <button onClick={copyApi} className="set-btn-outline" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)", color: copied ? t.green : t.textSoft }}>{copied ? "Copied ✓" : "Copy"}</button>
                 </div>
                 <button onClick={async () => { const ok = await confirm({ title: "Reset API Key", message: "This will invalidate your current key. Any integrations using it will stop working.", confirmLabel: "Reset", danger: true }); if (ok) generateApiKey("regenerate"); }} disabled={apiLoading} className="m set-btn-danger-sm" style={{ borderColor: dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.1)", color: dark ? "#fca5a5" : "#dc2626", marginTop: 10 }}>{apiLoading ? "..." : "Reset Key"}</button>
               </>
@@ -279,30 +281,24 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
           </div>
         </div>
 
-        <div className="set-divider" style={{ background: t.sidebarBorder }} />
-
         {/* ── LOG OUT ── */}
         <div id="set-account" className="set-section">
-          <div className="set-section-title" style={{ color: t.text }}>Account</div>
           <button onClick={async () => {
             const ok = await confirm({ title: "Log Out", message: "You will be logged out of this device.", confirmLabel: "Log Out" });
             if (ok) {
               try { await fetch("/api/auth/logout", { method: "POST" }); } catch {}
               window.location.replace("/");
             }
-          }} className="set-btn-primary" style={{ width: "100%", background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.text, border: `1px solid ${t.cardBorder}` }}>
-            Log Out
+          }} className="set-logout-btn" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}`, color: t.textSoft }}>
+            Log out
           </button>
         </div>
 
-        <div className="set-divider" style={{ background: t.sidebarBorder }} />
-
         {/* ── DANGER ZONE ── */}
         <div id="set-danger-zone" className="set-section">
-          <div className="set-section-title" style={{ color: t.text }}>Account</div>
-          <div className="set-danger-card" style={{ background: dark ? "rgba(220,38,38,.06)" : "rgba(220,38,38,.03)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.08)" }}>
-            <div className="set-danger-title" style={{ color: t.text }}>Delete Account</div>
-            <div className="set-danger-desc" style={{ color: t.textMuted }}>Permanently delete your account. Your orders and transactions will be preserved but your personal data will be removed.</div>
+          <div className="set-danger-card" style={{ background: dark ? "rgba(220,38,38,.04)" : "rgba(220,38,38,.02)", border: `0.5px solid ${dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.08)"}` }}>
+            <div className="set-danger-title" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Delete account</div>
+            <div className="set-danger-desc" style={{ color: t.textMuted }}>Permanently delete your account. Orders and transactions preserved, personal data removed.</div>
             <button onClick={async () => {
               const ok = await confirm({ title: "Delete Your Account", message: "This will permanently delete your account. Your orders and transaction history will be kept for records but your personal info will be removed. This cannot be undone.", confirmLabel: "Delete Account", danger: true, requireType: "DELETE" });
               if (ok) {
@@ -311,7 +307,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
                   if (res.ok) { window.location.replace("/?deleted=1"); }
                 } catch {}
               }
-            }} className="set-btn-danger" style={{ borderColor: dark ? "rgba(252,165,165,.3)" : "rgba(220,38,38,.2)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete My Account</button>
+            }} className="set-btn-danger" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.18)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete my account</button>
           </div>
         </div>
       </div>
