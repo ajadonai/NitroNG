@@ -967,6 +967,15 @@ input { font-family: inherit; }
 /* Security */
 .fund-security { display: flex; align-items: center; gap: 6px; margin-top: 10px; justify-content: center; font-size: 12px; }
 
+/* Desktop/Mobile toggle */
+.fund-desktop-only { display: flex; }
+.fund-mobile-only { display: none; }
+.fund-card-unified { border-radius: 16px; padding: 24px; }
+.fund-mob-balance { border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+.fund-mob-amount { border-radius: 12px; padding: 16px; }
+.fund-mob-summary { border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+.fund-mob-method { border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+
 /* Right sidebar */
 .fund-rs-title { font-size: 12px; font-weight: 650; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; padding-left: 4px; }
 .fund-rs-wallet { padding: 16px; border-radius: 12px; text-align: center; margin-bottom: 16px; }
@@ -1002,7 +1011,8 @@ input { font-family: inherit; }
   .fund-header { padding: 0 0 8px; }
   .fund-title { font-size: 18px; }
   .fund-subtitle { font-size: 13px; }
-  .fund-split { flex-direction: column; gap: 20px; margin-top: 16px; }
+  .fund-desktop-only { display: none !important; }
+  .fund-mobile-only { display: block !important; }
   .fund-right { width: 100%; }
   .fund-amount-input { font-size: 24px; }
   .fund-currency { font-size: 20px; }
