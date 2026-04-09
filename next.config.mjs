@@ -49,13 +49,9 @@ const nextConfig = {
 };
 
 export default withSentryConfig(nextConfig, {
-  // Sentry webpack plugin options
-  silent: true, // Don't log during build
+  silent: true,
   disableLogger: true,
-  // Only upload source maps if auth token is set
-  org: process.env.SENTRY_ORG || "",
-  project: process.env.SENTRY_PROJECT || "",
-  authToken: process.env.SENTRY_AUTH_TOKEN || "",
-  // Disable source map upload if no auth token (dev/CI)
-  ...(process.env.SENTRY_AUTH_TOKEN ? {} : { sourcemaps: { disable: true } }),
+  org: process.env.SENTRY_ORG || undefined,
+  project: process.env.SENTRY_PROJECT || undefined,
+  authToken: process.env.SENTRY_AUTH_TOKEN || undefined,
 });
