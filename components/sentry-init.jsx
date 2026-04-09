@@ -14,10 +14,16 @@ export default function SentryInit() {
     
     Sentry.init({
       dsn,
-      tracesSampleRate: 0.1,
+      tracesSampleRate: 1.0,
       debug: true,
     });
     initialized = true;
+
+    // Expose test function globally
+    window.__sentryTest = () => {
+      Sentry.captureException(new Error("Sentry test from Nitro dashboard"));
+      console.log("[Sentry] Test error sent — check Sentry Issues");
+    };
     console.log('[Sentry] Initialized successfully');
   }, []);
 
