@@ -1449,12 +1449,20 @@ input { font-family: inherit; }
 .blog-card:hover { box-shadow: 0 8px 30px rgba(0,0,0,.08) !important; transform: translateY(-2px); }
 .blog-empty { grid-column: 1 / -1; text-align: center; padding: 60px 20px; font-size: 16px; }
 .blog-article { max-width: 720px; margin: 0 auto; padding: 40px 20px 60px; }
-.blog-article-body { font-size: 16px; line-height: 1.8; }
-.blog-article-body h2 { font-size: 22px; font-weight: 600; margin: 32px 0 12px; }
-.blog-article-body h3 { font-size: 18px; font-weight: 600; margin: 24px 0 8px; }
-.blog-article-body p { margin: 0 0 16px; }
-.blog-article-body ul, .blog-article-body ol { margin: 0 0 16px; padding-left: 20px; }
-.blog-article-body li { margin-bottom: 6px; }
+.blog-article-body { font-size: 17px; line-height: 1.85; letter-spacing: 0.01em; }
+.blog-article-body h1 { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 600; margin: 40px 0 16px; line-height: 1.2; }
+.blog-article-body h2 { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; margin: 36px 0 12px; line-height: 1.25; }
+.blog-article-body h3 { font-size: 19px; font-weight: 600; margin: 28px 0 10px; line-height: 1.35; }
+.blog-article-body p { margin: 0 0 20px; }
+.blog-article-body strong { font-weight: 600; color: inherit; }
+.blog-article-body em { font-style: italic; }
+.blog-article-body a { color: #c47d8e; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(196,125,142,.3); transition: text-decoration-color .2s; }
+.blog-article-body a:hover { text-decoration-color: #c47d8e; }
+.blog-article-body ul, .blog-article-body ol { margin: 0 0 20px; padding-left: 24px; }
+.blog-article-body li { margin-bottom: 10px; line-height: 1.7; }
+.blog-article-body li::marker { color: #c47d8e; }
+.blog-article-body hr { border: none; height: 1px; background: currentColor; opacity: .1; margin: 32px 0; }
+.blog-article-body h2:first-child, .blog-article-body h3:first-child { margin-top: 0; }
 .blog-article-body a { color: #c47d8e; }
 .blog-article-body img { max-width: 100%; border-radius: 10px; margin: 16px 0; }
 .blog-article-body strong { font-weight: 600; }

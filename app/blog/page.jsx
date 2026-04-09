@@ -2,7 +2,47 @@
 import { useState, useEffect } from "react";
 
 const fD = (d) => new Date(d).toLocaleDateString("en-NG", { month: "long", day: "numeric", year: "numeric" });
-const readTime = (html) => { const w = (html || "").replace(/<[^>]*>/g, "").split(/\s+/).length; return Math.max(1, Math.round(w / 200)); };
+const readTime = (text) => { const w = (text || "").replace(/<[^>]*>/g, "").replace(/[#*_\[\]()]/g, "").split(/\s+/).length; return Math.max(1, Math.round(w / 200)); };
+
+/* Lightweight markdown → HTML */
+function md(src) {
+  if (!src) return "";
+  let html = src
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    // Headings
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    // Bold + italic
+    .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    // Links
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    // Unordered lists
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    // Ordered lists
+    .replace(/^\d+\. (.+)$/gm, '<oli>$1</oli>')
+    // Horizontal rule
+    .replace(/^---$/gm, '<hr/>')
+    // Line breaks → paragraphs
+    .replace(/\n\n+/g, '\n</p><p>\n')
+    .replace(/\n/g, '<br/>');
+  // Wrap in paragraph
+  html = '<p>' + html + '</p>';
+  // Fix list wrapping
+  html = html.replace(/(<li>.*?<\/li>)/gs, (m) => '<ul>' + m + '</ul>');
+  html = html.replace(/<\/ul><ul>/g, '');
+  html = html.replace(/(<oli>.*?<\/oli>)/gs, (m) => '<ol>' + m.replace(/<\/?oli>/g, (t) => t.replace('oli', 'li')) + '</ol>');
+  html = html.replace(/<\/ol><ol>/g, '');
+  // Clean up empty paragraphs and headings inside paragraphs
+  html = html.replace(/<p><(h[1-3])>/g, '<$1>').replace(/<\/(h[1-3])><\/p>/g, '</$1>');
+  html = html.replace(/<p><hr\/><\/p>/g, '<hr/>');
+  html = html.replace(/<p><ul>/g, '<ul>').replace(/<\/ul><\/p>/g, '</ul>');
+  html = html.replace(/<p><ol>/g, '<ol>').replace(/<\/ol><\/p>/g, '</ol>');
+  html = html.replace(/<p>\s*<\/p>/g, '');
+  return html;
+}
 
 export default function BlogPage() {
   const [posts, setPosts] = useState([]);
@@ -94,7 +134,7 @@ export default function BlogPage() {
             </div>
           </div>
           {post.thumbnail && <div style={{ height: "clamp(180px,25vw,300px)", borderRadius: 12, backgroundImage: "url(" + post.thumbnail + ")", backgroundSize: "cover", backgroundPosition: "center", backgroundColor: v.tbg, marginBottom: 32 }} />}
-          <div className="blog-article-body" style={{ color: v.body }} dangerouslySetInnerHTML={{ __html: post.content }} />
+          <div className="blog-article-body" style={{ color: v.body }} dangerouslySetInnerHTML={{ __html: md(post.content) }} />
           <div style={{ height: 1, background: v.div, margin: "32px 0" }} />
           <button onClick={() => setPost(null)} style={{ display: "inline-block", padding: "10px 20px", borderRadius: 8, border: "1px solid " + (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"), background: "none", color: dark ? "#888" : "#666", fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>{"\u2190 Back to all posts"}</button>
         </article>
