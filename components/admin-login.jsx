@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import '../styles/admin.css';
 
 const QUOTES = [
   { text: "Move fast. Break nothing. Ship everything.", author: "The Nitro Way" },

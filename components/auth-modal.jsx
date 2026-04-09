@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import '../styles/auth.css';
 
 function Lbl({t,children}){return <label style={{display:"block",fontSize:13,fontWeight:600,color:t.text,marginBottom:6}}>{children}</label>;}
 
