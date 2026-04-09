@@ -1,3 +1,4 @@
+import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { checkOrder } from '@/lib/mtp';
@@ -57,11 +58,11 @@ export async function POST(req) {
         charge: order.charge / 100,
       });
     } catch (err) {
-      console.error('[Order Check MTP]', err.message);
+      log.error('Order Check MTP', err.message);
       return Response.json({ status: order.status, message: 'Could not check status' });
     }
   } catch (err) {
-    console.error('[Orders Check]', err.message);
+    log.error('Orders Check', err.message);
     return Response.json({ error: 'Status check failed' }, { status: 500 });
   }
 }

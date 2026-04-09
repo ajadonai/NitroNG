@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
 
 export async function POST() {
@@ -35,7 +36,7 @@ export async function POST() {
       message: `Deleted ${toDelete.length} unverified accounts older than 7 days`,
     });
   } catch (err) {
-    console.error('[Cleanup]', err.message);
+    log.error('Cleanup', err.message);
     return Response.json({ error: 'Cleanup failed' }, { status: 500 });
   }
 }
@@ -58,7 +59,7 @@ export async function GET() {
 
     return Response.json({ staleCount, unverifiedTotal });
   } catch (err) {
-    console.error('[Cleanup GET]', err.message);
+    log.error('Cleanup GET', err.message);
     return Response.json({ error: 'Failed' }, { status: 500 });
   }
 }

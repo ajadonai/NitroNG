@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import bcrypt from 'bcryptjs';
 import { signUserToken, setUserCookie, detectDevice, hashToken } from '@/lib/auth';
 import { generateReferralCode, generateVerifyCode, ok, error } from '@/lib/utils';
@@ -45,7 +46,7 @@ export async function POST(req) {
         const verifyExpires = new Date(Date.now() + 30 * 60 * 1000);
         await prisma.user.update({ where: { id: existing.id }, data: { verifyToken, verifyExpires } });
         sendVerificationEmail(email, existing.firstName || existing.name, verifyToken).catch(err => 
-          console.error('[Signup] Resend email failed:', err)
+          log.error('Signup', 'Resend email failed')
         );
         if (process.env.NODE_ENV === 'development') {
           console.log(`\n${'='.repeat(50)}\n📧 CODE for ${email} (re-signup): ${verifyToken}\n${'='.repeat(50)}\n`);
@@ -106,7 +107,7 @@ export async function POST(req) {
 
     // Send verification email
     sendVerificationEmail(email, firstName || name, verifyToken).catch(err => 
-      console.error('[Signup] Email send failed:', err)
+      log.error('Signup', 'Email send failed')
     );
     // Also log to terminal in dev
     if (process.env.NODE_ENV === 'development') {
@@ -140,7 +141,7 @@ export async function POST(req) {
     }, 201);
 
   } catch (err) {
-    console.error('[SIGNUP]', err);
+    log.error('SIGNUP', err);
     return error('Something went wrong. Please try again.', 500);
   }
 }

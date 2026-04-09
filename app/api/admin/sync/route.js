@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
 import { getServices, getBalance } from '@/lib/mtp';
 
@@ -110,7 +111,7 @@ export async function POST(req) {
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
-    console.error('[Sync]', err.message);
+    log.error('Sync', err.message);
     return Response.json({ error: err.message || 'Sync failed' }, { status: 500 });
   }
 }

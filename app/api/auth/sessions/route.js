@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { getCurrentUser, hashToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
 
@@ -28,7 +29,7 @@ export async function GET() {
       })),
     });
   } catch (err) {
-    console.error('[Sessions GET]', err.message);
+    log.error('Sessions GET', err.message);
     return Response.json({ error: 'Failed to load sessions' }, { status: 500 });
   }
 }
@@ -58,7 +59,7 @@ export async function DELETE(req) {
 
     return Response.json({ success: true });
   } catch (err) {
-    console.error('[Sessions DELETE]', err.message);
+    log.error('Sessions DELETE', err.message);
     return Response.json({ error: 'Failed to revoke session' }, { status: 500 });
   }
 }

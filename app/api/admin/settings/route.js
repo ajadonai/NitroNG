@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
 
 export async function GET() {
@@ -12,7 +13,7 @@ export async function GET() {
 
     return Response.json({ settings });
   } catch (err) {
-    console.error('[Admin Settings GET]', err.message);
+    log.error('Admin Settings GET', err.message);
     return Response.json({ error: 'Failed to load settings' }, { status: 500 });
   }
 }
@@ -45,7 +46,7 @@ export async function POST(req) {
 
     return Response.json({ success: true, message: 'Settings saved' });
   } catch (err) {
-    console.error('[Admin Settings POST]', err.message);
+    log.error('Admin Settings POST', err.message);
     return Response.json({ error: 'Failed to save settings' }, { status: 500 });
   }
 }

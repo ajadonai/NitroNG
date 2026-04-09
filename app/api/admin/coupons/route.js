@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
 
 // Coupons are stored in the Setting table as JSON under key 'coupons'
@@ -27,7 +28,7 @@ export async function GET() {
     const coupons = await getCoupons();
     return Response.json({ coupons });
   } catch (err) {
-    console.error('[Admin Coupons]', err.message);
+    log.error('Admin Coupons', err.message);
     return Response.json({ error: 'Failed to load coupons' }, { status: 500 });
   }
 }
@@ -90,7 +91,7 @@ export async function POST(req) {
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
-    console.error('[Admin Coupons POST]', err.message);
+    log.error('Admin Coupons POST', err.message);
     return Response.json({ error: 'Action failed' }, { status: 500 });
   }
 }

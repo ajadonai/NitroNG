@@ -1,3 +1,4 @@
+import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 
 const PUBLIC_KEYS = [
@@ -15,7 +16,7 @@ export async function GET() {
     rows.forEach(r => { settings[r.key] = r.value; });
     return Response.json({ settings });
   } catch (err) {
-    console.error('[Settings GET]', err.message);
+    log.error('Settings GET', err.message);
     return Response.json({ settings: {} });
   }
 }

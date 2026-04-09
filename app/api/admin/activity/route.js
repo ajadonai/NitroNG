@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { requireAdmin } from '@/lib/admin';
 
 export async function GET() {
@@ -27,7 +28,7 @@ export async function GET() {
       })),
     });
   } catch (err) {
-    console.error('[Admin Activity]', err.message);
+    log.error('Admin Activity', err.message);
     return Response.json({ error: 'Failed to load activity' }, { status: 500 });
   }
 }

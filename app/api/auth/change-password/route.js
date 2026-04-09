@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 
@@ -30,7 +31,7 @@ export async function POST(req) {
 
     return Response.json({ success: true, message: 'Password updated' });
   } catch (err) {
-    console.error('[Change Password]', err.message);
+    log.error('Change Password', err.message);
     return Response.json({ error: 'Failed to change password' }, { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { placeOrder, checkOrder, cancelOrder } from '@/lib/mtp';
 
@@ -29,7 +30,7 @@ export async function GET(req) {
       })),
     });
   } catch (err) {
-    console.error('[Orders GET]', err.message);
+    log.error('Orders GET', err.message);
     return Response.json({ error: 'Failed to load orders' }, { status: 500 });
   }
 }
@@ -70,7 +71,7 @@ export async function PATCH(req) {
         return Response.json({ error: `Cannot cancel ${order.status.toLowerCase()} order` }, { status: 400 });
       }
       if (order.apiOrderId && process.env.MTP_API_KEY) {
-        try { await cancelOrder(order.apiOrderId); } catch (e) { console.warn('[User Cancel MTP]', e.message); }
+        try { await cancelOrder(order.apiOrderId); } catch (e) { log.warn('User Cancel MTP', e.message); }
       }
       // Refund to wallet
       await prisma.$transaction([
@@ -104,7 +105,7 @@ export async function PATCH(req) {
         try {
           const mtpResult = await placeOrder(order.service.apiId, order.link, order.quantity);
           apiOrderId = mtpResult.order ? String(mtpResult.order) : null;
-        } catch (err) { console.error('[Reorder MTP]', err.message); }
+        } catch (err) { log.error('Reorder MTP', err.message); }
       }
 
       const [newOrder] = await prisma.$transaction([
@@ -134,7 +135,7 @@ export async function PATCH(req) {
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
-    console.error('[Orders PATCH]', err.message);
+    log.error('Orders PATCH', err.message);
     return Response.json({ error: 'Action failed' }, { status: 500 });
   }
 }
@@ -215,7 +216,7 @@ export async function POST(req) {
         const mtpResult = await placeOrder(service.apiId, trimmedLink, qty);
         apiOrderId = mtpResult.order ? String(mtpResult.order) : null;
       } catch (err) {
-        console.error('[Order MTP]', err.message);
+        log.error('Order MTP', err.message);
       }
     }
 
@@ -263,7 +264,7 @@ export async function POST(req) {
       },
     });
   } catch (err) {
-    console.error('[Orders POST]', err.message);
+    log.error('Orders POST', err.message);
     return Response.json({ error: 'Failed to place order' }, { status: 500 });
   }
 }

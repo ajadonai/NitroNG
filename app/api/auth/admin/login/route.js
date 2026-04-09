@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import bcrypt from 'bcryptjs';
 import { signAdminToken, setAdminCookie } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
@@ -55,7 +56,7 @@ export async function POST(req) {
     });
 
   } catch (err) {
-    console.error('[ADMIN LOGIN]', err);
+    log.error('ADMIN LOGIN', err);
     return error('Something went wrong', 500);
   }
 }

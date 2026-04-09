@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
 
 export async function GET() {
@@ -18,7 +19,7 @@ export async function GET() {
       })),
     });
   } catch (err) {
-    console.error('[Admin Blog GET]', err.message);
+    log.error('Admin Blog GET', err.message);
     return Response.json({ error: 'Failed to load posts' }, { status: 500 });
   }
 }
@@ -96,7 +97,7 @@ export async function POST(req) {
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
-    console.error('[Admin Blog POST]', err.message);
+    log.error('Admin Blog POST', err.message);
     return Response.json({ error: 'Action failed' }, { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import crypto from 'crypto';
 
@@ -18,7 +19,7 @@ export async function GET() {
 
     return Response.json({ apiKey: user?.apiKey || null });
   } catch (err) {
-    console.error('[API Key GET]', err.message);
+    log.error('API Key GET', err.message);
     return Response.json({ error: 'Failed to get API key' }, { status: 500 });
   }
 }
@@ -41,7 +42,7 @@ export async function POST(req) {
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
-    console.error('[API Key POST]', err.message);
+    log.error('API Key POST', err.message);
     return Response.json({ error: 'Failed to manage API key' }, { status: 500 });
   }
 }

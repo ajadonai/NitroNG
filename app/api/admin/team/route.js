@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import bcrypt from 'bcryptjs';
 import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
 
@@ -25,7 +26,7 @@ export async function GET() {
       currentRole: admin.role,
     });
   } catch (err) {
-    console.error('[Admin Team]', err.message);
+    log.error('Admin Team', err.message);
     return Response.json({ error: 'Failed to load team' }, { status: 500 });
   }
 }
@@ -123,7 +124,7 @@ export async function POST(req) {
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
-    console.error('[Admin Team POST]', err.message);
+    log.error('Admin Team POST', err.message);
     return Response.json({ error: 'Action failed' }, { status: 500 });
   }
 }

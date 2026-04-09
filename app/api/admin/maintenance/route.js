@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
 
 export async function GET() {
@@ -19,7 +20,7 @@ export async function GET() {
       showTwitter: s.maintShowTwitter !== 'false',
     });
   } catch (err) {
-    console.error('[Admin Maintenance]', err.message);
+    log.error('Admin Maintenance', err.message);
     return Response.json({ error: 'Failed to load' }, { status: 500 });
   }
 }
@@ -47,7 +48,7 @@ export async function POST(req) {
 
     return Response.json({ success: true });
   } catch (err) {
-    console.error('[Admin Maintenance POST]', err.message);
+    log.error('Admin Maintenance POST', err.message);
     return Response.json({ error: 'Failed to save' }, { status: 500 });
   }
 }

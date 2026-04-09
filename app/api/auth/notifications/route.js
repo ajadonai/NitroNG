@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
 
@@ -27,7 +28,7 @@ export async function GET() {
       perPagePreference: user.perPagePreference || 10,
     });
   } catch (err) {
-    console.error('[Notifications GET]', err);
+    log.error('Notifications GET', err);
     return error('Failed to load preferences', 500);
   }
 }
@@ -80,7 +81,7 @@ export async function POST(req) {
 
     return ok({ message: 'Updated', ...data });
   } catch (err) {
-    console.error('[Notifications POST]', err);
+    log.error('Notifications POST', err);
     return error('Failed to update', 500);
   }
 }

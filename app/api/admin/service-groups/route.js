@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
 
 export async function GET() {
@@ -61,7 +62,7 @@ export async function GET() {
       })),
     });
   } catch (err) {
-    console.error('[Admin ServiceGroups GET]', err.message);
+    log.error('Admin ServiceGroups GET', err.message);
     return Response.json({ error: 'Failed to load service groups' }, { status: 500 });
   }
 }
@@ -245,7 +246,7 @@ export async function POST(req) {
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
-    console.error('[Admin ServiceGroups POST]', err.message);
+    log.error('Admin ServiceGroups POST', err.message);
     return Response.json({ error: 'Action failed' }, { status: 500 });
   }
 }

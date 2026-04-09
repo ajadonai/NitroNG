@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 
 const GATEWAY_INFO = {
   paystack: { name: 'Paystack', desc: 'Cards, Bank Transfer, USSD' },
@@ -35,7 +36,7 @@ export async function GET() {
 
     return Response.json({ gateways });
   } catch (err) {
-    console.error('[Gateways GET]', err.message);
+    log.error('Gateways GET', err.message);
     return Response.json({ gateways: [] });
   }
 }

@@ -1,4 +1,5 @@
 import { fetchWithRetry } from '@/lib/fetch';
+import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 
@@ -74,7 +75,7 @@ export async function POST(req) {
       });
       const data = await res.json();
       if (!data.status) {
-        console.error('[Paystack Init]', data.message);
+        log.error('Paystack Init', data.message);
         return Response.json({ error: data.message || 'Payment initialization failed' }, { status: 400 });
       }
       return Response.json({ authorization_url: data.data.authorization_url, reference: data.data.reference });
@@ -97,7 +98,7 @@ export async function POST(req) {
       });
       const data = await res.json();
       if (data.status !== 'success') {
-        console.error('[Flutterwave Init]', data.message);
+        log.error('Flutterwave Init', data.message);
         return Response.json({ error: data.message || 'Payment initialization failed' }, { status: 400 });
       }
       return Response.json({ authorization_url: data.data.link, reference });
@@ -107,7 +108,7 @@ export async function POST(req) {
     return Response.json({ error: `Gateway '${gateway}' is not yet supported for payments` }, { status: 400 });
 
   } catch (err) {
-    console.error('[Payments Initialize]', err.message);
+    log.error('Payments Initialize', err.message);
     return Response.json({ error: 'Failed to initialize payment' }, { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { requireAdmin, getAdminPages } from '@/lib/admin';
 
 export async function GET() {
@@ -116,7 +117,7 @@ export async function GET() {
       })),
     });
   } catch (err) {
-    console.error('[Admin Overview]', err.message);
+    log.error('Admin Overview', err.message);
     return Response.json({ error: 'Failed to load overview' }, { status: 500 });
   }
 }

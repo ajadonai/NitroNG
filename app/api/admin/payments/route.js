@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
 
 const DEFAULT_GATEWAYS = [
@@ -64,7 +65,7 @@ export async function GET() {
 
     return Response.json({ gateways: masked });
   } catch (err) {
-    console.error('[Admin Payments GET]', err.message);
+    log.error('Admin Payments GET', err.message);
     return Response.json({ error: 'Failed to load gateways' }, { status: 500 });
   }
 }
@@ -139,7 +140,7 @@ export async function POST(req) {
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
-    console.error('[Admin Payments POST]', err.message);
+    log.error('Admin Payments POST', err.message);
     return Response.json({ error: 'Action failed' }, { status: 500 });
   }
 }

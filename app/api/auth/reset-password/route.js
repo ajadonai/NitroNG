@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import bcrypt from 'bcryptjs';
 import { ok, error } from '@/lib/utils';
 
@@ -38,7 +39,7 @@ export async function POST(req) {
     return ok({ message: 'Password reset successfully. You can now log in.' });
 
   } catch (err) {
-    console.error('[RESET PW]', err);
+    log.error('RESET PW', err);
     return error('Something went wrong', 500);
   }
 }

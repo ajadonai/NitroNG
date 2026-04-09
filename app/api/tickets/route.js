@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 
 export async function GET() {
@@ -35,7 +36,7 @@ export async function GET() {
       })),
     });
   } catch (err) {
-    console.error('[User Tickets GET]', err.message);
+    log.error('User Tickets GET', err.message);
     return Response.json({ error: 'Failed to load tickets' }, { status: 500 });
   }
 }
@@ -110,7 +111,7 @@ export async function POST(req) {
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
-    console.error('[User Tickets POST]', err.message);
+    log.error('User Tickets POST', err.message);
     return Response.json({ error: 'Action failed' }, { status: 500 });
   }
 }

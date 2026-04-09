@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import bcrypt from 'bcryptjs';
 import { signUserToken, setUserCookie, detectDevice, hashToken } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
@@ -76,7 +77,7 @@ export async function POST(req) {
     });
 
   } catch (err) {
-    console.error('[LOGIN]', err);
+    log.error('LOGIN', err);
     return error('Something went wrong. Please try again.', 500);
   }
 }

@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
 
@@ -25,7 +26,7 @@ export async function GET() {
         take: 50,
         include: { service: { select: { name: true, category: true } } },
       });
-    } catch (e) { console.error('[Dashboard] Orders query failed:', e.message); }
+    } catch (e) { log.error('Dashboard', 'Orders query failed', { error: e.message }); }
 
     let transactions = [];
     try {
@@ -34,7 +35,7 @@ export async function GET() {
         orderBy: { createdAt: 'desc' },
         take: 50,
       });
-    } catch (e) { console.error('[Dashboard] Transactions query failed:', e.message); }
+    } catch (e) { log.error('Dashboard', 'Transactions query failed', { error: e.message }); }
 
     let referralCount = 0;
     let referralList = [];
@@ -52,7 +53,7 @@ export async function GET() {
         status: r.emailVerified ? "Active" : "Pending",
         joined: r.createdAt.toISOString(),
       }));
-    } catch (e) { console.error('[Dashboard] Referral count failed:', e.message); }
+    } catch (e) { log.error('Dashboard', 'Referral count failed', { error: e.message }); }
 
     let referralEarnings = 0;
     try {
@@ -61,7 +62,7 @@ export async function GET() {
         _sum: { amount: true },
       });
       referralEarnings = agg._sum.amount || 0;
-    } catch (e) { console.error('[Dashboard] Referral earnings failed:', e.message); }
+    } catch (e) { log.error('Dashboard', 'Referral earnings failed', { error: e.message }); }
 
     let alerts = [];
     try {
@@ -77,7 +78,7 @@ export async function GET() {
         },
         orderBy: { createdAt: 'desc' },
       });
-    } catch (e) { console.error('[Dashboard] Alerts query failed:', e.message); }
+    } catch (e) { log.error('Dashboard', 'Alerts query failed', { error: e.message }); }
 
     return ok({
       user: {
@@ -116,7 +117,7 @@ export async function GET() {
       })),
     });
   } catch (err) {
-    console.error('[Dashboard] Fatal error:', err.message);
+    log.error('Dashboard', 'Fatal error', { error: err.message });
     return error('Dashboard error: ' + err.message, 500);
   }
 }

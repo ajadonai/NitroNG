@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
 import bcrypt from 'bcryptjs';
 
@@ -58,7 +59,7 @@ export async function POST(req) {
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
-    console.error('[Admin Profile]', err.message);
+    log.error('Admin Profile', err.message);
     return Response.json({ error: 'Failed to update profile' }, { status: 500 });
   }
 }

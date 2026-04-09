@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { requireAdmin } from '@/lib/admin';
 
 export async function GET(req) {
@@ -104,7 +105,7 @@ export async function GET(req) {
       })),
     });
   } catch (err) {
-    console.error('[Admin Analytics]', err.message);
+    log.error('Admin Analytics', err.message);
     return Response.json({ error: 'Failed to load analytics' }, { status: 500 });
   }
 }

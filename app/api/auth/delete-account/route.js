@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { getCurrentUser, clearUserCookie } from '@/lib/auth';
 
 export async function POST() {
@@ -34,7 +35,7 @@ export async function POST() {
 
     return Response.json({ success: true, message: 'Account deleted' });
   } catch (err) {
-    console.error('[Delete Account]', err.message);
+    log.error('Delete Account', err.message);
     return Response.json({ error: 'Failed to delete account' }, { status: 500 });
   }
 }

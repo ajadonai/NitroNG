@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
 import { sendEmail } from '@/lib/email';
 
@@ -25,7 +26,7 @@ export async function GET() {
     const history = await getHistory();
     return Response.json({ history });
   } catch (err) {
-    console.error('[Admin Notifications]', err.message);
+    log.error('Admin Notifications', err.message);
     return Response.json({ error: 'Failed to load' }, { status: 500 });
   }
 }
@@ -123,7 +124,7 @@ export async function POST(req) {
     // Use globalThis.setTimeout as a fire-and-forget background task
     // On Vercel, the function stays alive briefly after response — enough for small batches
     // For large blasts, the history shows "sending" and updates once complete
-    sendInBackground().catch(err => console.error('[Email Blast Background]', err.message));
+    sendInBackground().catch(err => log.error('Email Blast Background', err.message));
 
     return Response.json({
       success: true,
@@ -131,7 +132,7 @@ export async function POST(req) {
       status: 'sending',
     });
   } catch (err) {
-    console.error('[Admin Notifications POST]', err.message);
+    log.error('Admin Notifications POST', err.message);
     return Response.json({ error: 'Failed to send' }, { status: 500 });
   }
 }

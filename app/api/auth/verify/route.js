@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { generateVerifyCode, ok, error } from '@/lib/utils';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
@@ -77,7 +78,7 @@ export async function POST(req) {
     return ok({ message: 'Email verified successfully' });
 
   } catch (err) {
-    console.error('[VERIFY]', err);
+    log.error('VERIFY', err);
     return error('Something went wrong', 500);
   }
 }
@@ -101,7 +102,7 @@ export async function PUT(req) {
     });
 
     sendVerificationEmail(user.email, user.firstName || user.name, verifyToken).catch(err =>
-      console.error('[Verify Resend] Email failed:', err)
+      log.error('Verify', 'Resend email failed')
     );
     if (process.env.NODE_ENV === 'development') {
       console.log(`\n${'='.repeat(50)}\n📧 CODE for ${user.email} (resend): ${verifyToken}\n${'='.repeat(50)}\n`);
@@ -113,7 +114,7 @@ export async function PUT(req) {
     });
 
   } catch (err) {
-    console.error('[VERIFY RESEND]', err);
+    log.error('VERIFY RESEND', err);
     return error('Something went wrong', 500);
   }
 }

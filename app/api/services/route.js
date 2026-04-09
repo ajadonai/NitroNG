@@ -1,3 +1,4 @@
+import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 
@@ -30,7 +31,7 @@ export async function GET() {
       })),
     });
   } catch (err) {
-    console.error('[Services]', err.message);
+    log.error('Services', err.message);
     return Response.json({ error: 'Failed to load services' }, { status: 500 });
   }
 }

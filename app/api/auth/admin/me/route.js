@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { getCurrentAdmin } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
 
@@ -24,7 +25,7 @@ export async function GET() {
 
     return ok({ admin });
   } catch (err) {
-    console.error('[ADMIN ME]', err);
+    log.error('ADMIN ME', err);
     return error('Something went wrong', 500);
   }
 }

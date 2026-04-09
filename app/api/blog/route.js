@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 
 export async function GET(req) {
   try {
@@ -53,7 +54,7 @@ export async function GET(req) {
       categories: categories.map(c => c.category),
     });
   } catch (err) {
-    console.error('[Blog GET]', err.message);
+    log.error('Blog GET', err.message);
     return Response.json({ error: 'Failed to load posts' }, { status: 500 });
   }
 }

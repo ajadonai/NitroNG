@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import crypto from 'crypto';
 import { ok, error } from '@/lib/utils';
 import { sendPasswordResetEmail } from '@/lib/email';
@@ -29,7 +30,7 @@ export async function POST(req) {
     const resetUrl = `${origin}/?reset=${resetToken}`;
 
     sendPasswordResetEmail(user.email, user.firstName || user.name, resetUrl).catch(err =>
-      console.error('[Forgot] Email failed:', err)
+      log.error('Forgot', 'Email send failed')
     );
     if (process.env.NODE_ENV === 'development') {
       console.log(`[RESET] ${email}: ${resetUrl}`);
@@ -40,7 +41,7 @@ export async function POST(req) {
     });
 
   } catch (err) {
-    console.error('[FORGOT]', err);
+    log.error('FORGOT', err);
     return error('Something went wrong', 500);
   }
 }

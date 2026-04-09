@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
 
@@ -34,7 +35,7 @@ export async function GET() {
 
     return ok({ user });
   } catch (err) {
-    console.error('[ME]', err);
+    log.error('ME', err);
     return error('Something went wrong', 500);
   }
 }

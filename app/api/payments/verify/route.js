@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 
 async function getGatewayKeys(gatewayId) {
@@ -91,7 +92,7 @@ export async function POST(req) {
       amount: paidAmount / 100,
     });
   } catch (err) {
-    console.error('[Payments Verify]', err.message);
+    log.error('Payments Verify', err.message);
     return Response.json({ error: 'Verification failed' }, { status: 500 });
   }
 }

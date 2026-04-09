@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
 
 export async function GET() {
@@ -33,7 +34,7 @@ export async function GET() {
       })),
     });
   } catch (err) {
-    console.error('[Admin Orders]', err.message);
+    log.error('Admin Orders', err.message);
     return Response.json({ error: 'Failed to load orders' }, { status: 500 });
   }
 }
@@ -58,7 +59,7 @@ export async function POST(req) {
         try {
           const { cancelOrder } = await import('@/lib/mtp');
           await cancelOrder(order.apiOrderId);
-        } catch (e) { console.warn('[Admin Cancel MTP]', e.message); }
+        } catch (e) { log.warn('Admin Cancel MTP', e.message); }
       }
       await prisma.order.update({ where: { id: order.id }, data: { status: 'Cancelled' } });
       await logActivity(admin.name, `Cancelled order ${orderId}`, 'order');
@@ -70,7 +71,7 @@ export async function POST(req) {
         try {
           const { refillOrder } = await import('@/lib/mtp');
           await refillOrder(order.apiOrderId);
-        } catch (e) { console.warn('[Admin Refill MTP]', e.message); }
+        } catch (e) { log.warn('Admin Refill MTP', e.message); }
       }
       await logActivity(admin.name, `Requested refill for ${orderId}`, 'order');
       return Response.json({ success: true, message: 'Refill requested' });
@@ -97,7 +98,7 @@ export async function POST(req) {
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
-    console.error('[Admin Orders POST]', err.message);
+    log.error('Admin Orders POST', err.message);
     return Response.json({ error: 'Action failed' }, { status: 500 });
   }
 }

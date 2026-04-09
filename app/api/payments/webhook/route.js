@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
 import crypto from 'crypto';
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
@@ -51,7 +52,7 @@ export async function POST(req) {
 
     return Response.json({ received: true });
   } catch (err) {
-    console.error('[Webhook]', err.message);
+    log.error('Webhook', err.message);
     return Response.json({ received: true }); // Always 200 for webhooks
   }
 }
