@@ -119,7 +119,7 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive }) {
           <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: t.textMuted, padding: "0 4px 6px", opacity: .7 }}>Quick Actions</div>
           <div className="dash-qa-grid">
             {[
-              ["New Order", "services", t.accent, <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>],
+              ["Services", "services", t.accent, <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>],
               ["Top Up", "add-funds", dark ? "#6ee7b7" : "#059669", <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>],
               ["History", "orders", dark ? "#a5b4fc" : "#4f46e5", <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>],
               ["Refer", "referrals", dark ? "#e0a458" : "#d97706", <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>],
@@ -440,7 +440,7 @@ function DashboardInner() {
   }, [orders, txs, notifClearedAt]);
   const bellUnread = notifItemIds.filter(id => !readNotifIds.has(id) && !clearedNotifIds.has(id)).length;
 
-  /* New Order state (lifted so sidebars can access) */
+  /* Services/Order state (lifted so sidebars can access) */
   const [noPlatform, setNoPlatform] = useState("instagram");
   const [noSelSvc, setNoSelSvc] = useState(null);
   const [noSelTier, setNoSelTier] = useState(null);
