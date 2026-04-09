@@ -93,20 +93,21 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
     if (newPw.length < 6) { setPwMsg({ type: "error", text: "Minimum 6 characters" }); return; }
     setPwLoading(true);
     try {
-      const res = await fetch("/api/auth/change-password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ currentPassword: curPw, newPassword: newPw }) });
+      const res = await fetch("/api/auth/change-password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ currentPassword: curPw, newPassword: newPw }), signal: AbortSignal.timeout(15000) });
       const data = await res.json();
       if (!res.ok) { setPwMsg({ type: "error", text: data.error || "Failed" }); } else { setPwMsg({ type: "success", text: "Password updated" }); setCurPw(""); setNewPw(""); setConfirmPw(""); }
-    } catch { setPwMsg({ type: "error", text: "Request failed" }); }
+    } catch (err) { setPwMsg({ type: "error", text: err?.name === "TimeoutError" ? "Request timed out" : "Network error. Check your connection." }); }
     setPwLoading(false);
   };
 
   const generateApiKey = async (action) => {
     setApiLoading(true);
     try {
-      const res = await fetch("/api/auth/api-key", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) });
+      const res = await fetch("/api/auth/api-key", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }), signal: AbortSignal.timeout(15000) });
       const data = await res.json();
       if (res.ok && data.apiKey) { setApiKey(data.apiKey); setShowApi(true); }
-    } catch {}
+      else if (!res.ok) { console.warn("API key generation failed:", data.error); }
+    } catch (err) { console.warn("API key request failed:", err.message); }
     setApiLoading(false);
   };
 

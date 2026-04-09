@@ -245,7 +245,9 @@ export default function SupportPage({ dark, t }) {
         if (!prev || typeof prev !== "object") return prev;
         return { ...prev, messages: [...(prev.messages || []), { from: "user", text: txt, time: "Now" }] };
       });
-      fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reply", ticketId: selected.id, message: txt }) }).then(() => refreshTickets()).catch(() => {});
+      fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reply", ticketId: selected.id, message: txt }), signal: AbortSignal.timeout(15000) })
+        .then(r => { if (!r.ok) throw new Error(); refreshTickets(); })
+        .catch(() => { setSelected(prev => ({ ...prev, messages: [...(prev?.messages || []), { from: "system", text: "Failed to send — check your connection and try again", time: "Now" }] })); });
       setTimeout(() => msgsEnd.current?.scrollIntoView({ behavior: "smooth" }), 100);
       return;
     }
@@ -279,17 +281,18 @@ export default function SupportPage({ dark, t }) {
   }, [input, isTicket, isLive, selected, tickets, addBotMsg, handleQuick, refreshTickets]);
 
   /* ── Create ticket ── */
+  const [ticketError, setTicketError] = useState(null);
   const createTicket = useCallback(async () => {
     if (!newSubject.trim() || !newMessage.trim() || ticketLoading) return;
-    setTicketLoading(true);
+    setTicketLoading(true); setTicketError(null);
     try {
-      const res = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", subject: newSubject.trim(), message: newMessage.trim(), category: newCat }) });
+      const res = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", subject: newSubject.trim(), message: newMessage.trim(), category: newCat }), signal: AbortSignal.timeout(15000) });
       if (res.ok) {
         setNewSubject(""); setNewMessage(""); setNewCat("Order Issue");
-        setSelected(null); // back to bot chat
+        setSelected(null);
         refreshTickets();
-      }
-    } catch {}
+      } else { const d = await res.json().catch(() => ({})); setTicketError(d.error || "Failed to create ticket"); }
+    } catch (err) { setTicketError(err?.name === "TimeoutError" ? "Request timed out" : "Network error. Check your connection."); }
     setTicketLoading(false);
   }, [newSubject, newMessage, newCat, ticketLoading, refreshTickets]);
 
@@ -417,6 +420,7 @@ export default function SupportPage({ dark, t }) {
         {/* Input — pinned at bottom */}
         {isNewTicket ? (
           <div style={{ padding: "10px 16px", borderTop: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, flexShrink: 0 }}>
+            {ticketError && <div style={{ padding: "6px 10px", borderRadius: 6, marginBottom: 6, fontSize: 11, background: dark ? "rgba(220,38,38,.08)" : "#fef2f2", color: dark ? "#fca5a5" : "#dc2626" }}>⚠️ {ticketError}</div>}
             <button onClick={createTicket} disabled={!newSubject.trim() || !newMessage.trim() || ticketLoading} style={{ width: "100%", padding: "11px", borderRadius: 10, background: newSubject.trim() && newMessage.trim() ? "linear-gradient(135deg,#c47d8e,#a3586b)" : (dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)"), color: newSubject.trim() && newMessage.trim() ? "#fff" : t.textMuted, fontSize: 13, fontWeight: 600, border: "none", cursor: newSubject.trim() && newMessage.trim() ? "pointer" : "default", fontFamily: "inherit" }}>{ticketLoading ? "Creating..." : "Create Ticket"}</button>
           </div>
         ) : (!selected || canReply) ? (

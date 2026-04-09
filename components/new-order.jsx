@@ -203,13 +203,17 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tierId: selTier.id, link: link.trim(), quantity: qty }),
+        signal: AbortSignal.timeout(30000),
       });
       const data = await res.json();
       if (!res.ok) { setOrderResult({ type: "error", message: data.error || "Order failed" }); setOrderLoading(false); return; }
       setOrderResult({ type: "success", message: `Order placed! ${data.order?.id || ""}`, order: data.order });
       setLink(""); setSelSvc(null); setSelTier(null); setOrderModal(false);
       if (onOrderSuccess) onOrderSuccess();
-    } catch { setOrderResult({ type: "error", message: "Network error" }); }
+    } catch (err) {
+      const msg = err?.name === "TimeoutError" ? "Request timed out. Check your connection." : "Network error. Check your internet and try again.";
+      setOrderResult({ type: "error", message: msg });
+    }
     setOrderLoading(false);
   };
 

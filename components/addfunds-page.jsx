@@ -31,24 +31,27 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
   const valid = numAmount >= 500;
   const balance = user?.balance || 0;
 
+  const [payError, setPayError] = useState(null);
+
   const handlePay = async () => {
     if (!valid || loading) return;
-    setLoading(true);
+    setLoading(true); setPayError(null);
     try {
       const res = await fetch("/api/payments/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: numAmount, method }),
+        signal: AbortSignal.timeout(30000),
       });
       const data = await res.json();
       if (data.authorization_url) {
         window.location.href = data.authorization_url;
       } else {
-        alert(data.error || "Payment initialization failed");
+        setPayError(data.error || "Payment initialization failed");
         setLoading(false);
       }
-    } catch {
-      alert("Something went wrong. Please try again.");
+    } catch (err) {
+      setPayError(err?.name === "TimeoutError" ? "Request timed out. Check your connection." : "Network error. Check your internet and try again.");
       setLoading(false);
     }
   };
@@ -153,6 +156,7 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
               {gatewaysLoading ? <div style={{ fontSize: 12, color: t.textMuted, padding: "8px 0" }}>Loading...</div> : gateways.length === 0 ? <div style={{ fontSize: 12, color: t.textMuted, padding: "8px 0" }}>No payment methods available</div> : gateways.map(g => <Radio key={g.id} gw={g} />)}
             </div>
             <div className="fund-btn-wrap">
+              {payError && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 8, fontSize: 12, background: dark ? "rgba(220,38,38,.08)" : "#fef2f2", border: `1px solid ${dark ? "rgba(220,38,38,.15)" : "#fecaca"}`, color: dark ? "#fca5a5" : "#dc2626", display: "flex", justifyContent: "space-between", alignItems: "center" }}><span>⚠️ {payError}</span><button onClick={() => setPayError(null)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", fontSize: 14 }}>✕</button></div>}
               <button onClick={handlePay} disabled={!valid || loading} className="fund-pay-btn" style={{ background: valid ? `linear-gradient(135deg,#c47d8e,#8b5e6b)` : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"), color: valid ? "#fff" : t.textMuted }}>
                 {loading ? "Processing..." : valid ? `Pay ${fN(numAmount)} Now` : "How much?"}
               </button>
@@ -238,6 +242,7 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
             <div className="fund-mob-method" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
               <div className="fund-method-title" style={{ color: t.text }}>Choose payment method</div>
               {gateways.map(g => <Radio key={g.id} gw={g} />)}
+              {payError && <div style={{ padding: "8px 12px", borderRadius: 8, marginTop: 8, fontSize: 12, background: dark ? "rgba(220,38,38,.08)" : "#fef2f2", border: `1px solid ${dark ? "rgba(220,38,38,.15)" : "#fecaca"}`, color: dark ? "#fca5a5" : "#dc2626" }}>⚠️ {payError}</div>}
               <button onClick={handlePay} disabled={loading} className="fund-pay-btn" style={{ background: `linear-gradient(135deg,#c47d8e,#8b5e6b)`, color: "#fff", marginTop: 12 }}>
                 {loading ? "Processing..." : `Pay ${fN(numAmount)} Now`}
               </button>
