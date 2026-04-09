@@ -125,7 +125,7 @@ function LandingInner(){
       `}</style>
 
       {/* ═══ NAVBAR — outside snap container ═══ */}
-      <nav className="main-nav" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 36px",height:60,background:dark?"#060810":scrolled?"rgba(139,74,94,.98)":"rgba(163,88,107,.95)",borderBottom:`1px solid ${dark?"rgba(255,255,255,.06)":"rgba(255,255,255,.12)"}`,flexShrink:0,zIndex:100,transition:"background 1.2s ease"}}>
+      <nav className="main-nav" style={{display:"flex",alignItems:"center",justifyContent:"space-between",height:60,background:dark?"#060810":scrolled?"rgba(139,74,94,.98)":"rgba(163,88,107,.95)",borderBottom:`1px solid ${dark?"rgba(255,255,255,.06)":"rgba(255,255,255,.12)"}`,flexShrink:0,zIndex:100,transition:"background 1.2s ease"}}>
           <button onClick={()=>scrollRef.current?.scrollTo({top:0,behavior:"smooth"})} style={{display:"flex",alignItems:"center",gap:10,background:"none",padding:0}}>
             <div style={{width:30,height:30,borderRadius:8,background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
             <span className="nav-brand-text" style={{fontSize:17,fontWeight:700,color:"#fff",letterSpacing:1.5}}>NITRO</span>

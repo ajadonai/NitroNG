@@ -164,6 +164,7 @@ input { font-family: inherit; }
 .carousel-track:hover { animation-play-state: paused; }
 
 /* ── Nav ── */
+.main-nav { padding: 0 36px; }
 .nav-links { display: flex; }
 
 /* ══════════════════════════════════════ */
@@ -1370,7 +1371,6 @@ input { font-family: inherit; }
   .carousel-item { gap: 7px; padding: 8px 14px; font-size: 13px; }
   .main-nav { padding: 0 14px; height: 52px; }
   .nav-right { gap: 10px !important; }
-  .nav-brand-text { display: none; }
   .nav-signup-btn { display: none !important; }
   .nav-login-btn { padding: 6px 14px !important; font-size: 12px !important; }
   .theme-toggle { width: 44px !important; height: 24px !important; }
