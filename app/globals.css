@@ -218,7 +218,8 @@ input { font-family: inherit; }
 .s3-heading { font-size: 36px; font-weight: 600; margin-bottom: 8px; }
 .s3-heading-accent { font-style: italic; font-weight: 400; font-size: 40px; }
 .s3-desc { font-size: 16px; margin-bottom: 40px; max-width: 520px; line-height: 1.6; }
-.s3-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 40px; }
+.s3-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 40px; align-items: stretch; }
+.s3-grid > div { display: flex; flex-direction: column; }
 .s3-card { padding: 22px 20px; border-radius: 16px; backdrop-filter: blur(12px); position: relative; overflow: hidden; text-align: left; }
 .s3-card::before { content: ''; position: absolute; top: 0; left: 0; width: 40%; height: 2px; background: var(--card-accent, #c47d8e); border-radius: 0 0 2px 0; }
 .s3-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--card-divider); }
