@@ -607,6 +607,9 @@ input { font-family: inherit; }
   .no-subtitle { font-size: 14px; }
   .no-svc-row { padding: 11px 13px; }
   .no-svc-name { font-size: 15px; }
+  .no-svc-header { flex-wrap: wrap; gap: 6px; }
+  .no-svc-name { white-space: normal; min-width: 0; flex: 1 1 100%; }
+  .no-svc-badges { flex-wrap: wrap; }
   .no-tier-card { padding: 10px; }
   .no-tier-grid { grid-template-columns: 1fr; }
   .no-plat-btn { padding: 10px 14px; font-size: 15px; }
