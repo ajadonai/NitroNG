@@ -22,7 +22,14 @@ export default function BlogPage() {
   const toggle = () => { const n = !dark; setDark(n); localStorage.setItem("nitro-blog-theme", n ? "dark" : "light"); };
 
   useEffect(() => {
-    fetch("/api/blog").then(r => r.json()).then(d => { setPosts(d.posts || []); setCategories(d.categories || []); setLoading(false); }).catch(() => setLoading(false));
+    fetch("/api/blog").then(r => r.json()).then(d => { setPosts(d.posts || []); setCategories(d.categories || []); setLoading(false); 
+      // Auto-open post from ?post=slug query param
+      const params = new URLSearchParams(window.location.search);
+      const slug = params.get("post");
+      if (slug) {
+        fetch("/api/blog?slug=" + slug).then(r => r.json()).then(pd => { if (pd.post) setPost(pd.post); });
+      }
+    }).catch(() => setLoading(false));
   }, []);
 
   const openPost = async (slug) => {

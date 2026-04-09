@@ -59,10 +59,14 @@ export default function HowToPage({ dark, t }) {
                 <h3 style={{ fontSize: 16, fontWeight: 600, color: t.text, margin: "0 0 6px", lineHeight: 1.4 }}>{p.title}</h3>
                 {p.excerpt && <p style={{ fontSize: 13, color: t.textMuted, lineHeight: 1.5, margin: 0 }}>{p.excerpt}</p>}
 
-                {/* Expanded: show full content */}
+                {/* Expanded: show excerpt + link to full post */}
                 {expanded === p.id && (
                   <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${t.cardBorder}` }}>
-                    <div style={{ fontSize: 14, color: t.textSoft, lineHeight: 1.8 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(p.content || "") }} />
+                    {p.excerpt && <p style={{ fontSize: 14, color: t.textSoft, lineHeight: 1.7, marginBottom: 12 }}>{p.excerpt}</p>}
+                    <a href={`/blog?post=${p.slug}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, color: "#fff", background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", padding: "10px 20px", borderRadius: 10, textDecoration: "none" }} onClick={e => e.stopPropagation()}>
+                      Read full post
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </a>
                   </div>
                 )}
 
