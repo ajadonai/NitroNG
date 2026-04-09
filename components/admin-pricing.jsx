@@ -64,7 +64,7 @@ export default function AdminPricingPage({ dark, t }) {
   };
 
   const inputStyle = { width: 70, padding: "6px 10px", borderRadius: 8, background: dark ? "#0d1020" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: t.text, fontSize: 13, textAlign: "right", fontFamily: "'JetBrains Mono',monospace" };
-  const cardStyle = { background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" };
+  const cardStyle = { background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" };
 
   const TierRow = ({ label, keyName, color, state, setState }) => (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

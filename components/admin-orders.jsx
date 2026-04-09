@@ -84,7 +84,7 @@ export default function AdminOrdersPage({ dark, t }) {
       <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search by order ID, service, or user..." className="m adm-search" style={{ borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text }} />
 
       {/* Orders list */}
-      <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
+      <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
         {loading ? (
           <div className="adm-empty" style={{ color: t.textMuted }}>Loading orders...</div>
         ) : paged.length > 0 ? paged.map((o, i) => (

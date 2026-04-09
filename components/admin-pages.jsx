@@ -74,7 +74,7 @@ export function AdminPaymentsPage({ dark, t }) {
       </div>}
 
       {loading ? <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>Loading gateways...</div> : (
-        <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
+        <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
           {gateways.map((g, i) => (
             <div key={g.id} className="adm-list-row" style={{ borderBottom: i < gateways.length - 1 ? `1px solid ${t.cardBorder}` : "none", flexWrap: "wrap", gap: 10 }}>
               <div style={{ flex: 1, minWidth: 160 }}>
@@ -211,7 +211,8 @@ export function AdminAnalyticsPage({ dark, t }) {
           ["New Users", String(s.newUsers || 0), t.blue],
           ["Deposits", fN(s.totalDeposits || 0), t.green],
         ].map(([label, val, color]) => (
-          <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderTopWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderLeftWidth: 3, borderStyle: "solid", borderTopColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", borderRightColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", borderBottomColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", borderLeftColor: color, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
+          <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
+            <div className="dash-stat-dot" style={{ background: color }} />
             <div className="dash-stat-label" style={{ color: t.textMuted }}>{label}</div>
             <div className="m dash-stat-value" style={{ color }}>{val}</div>
           </div>
@@ -220,8 +221,9 @@ export function AdminAnalyticsPage({ dark, t }) {
 
       <div className="adm-grid-2" style={{ marginTop: 24 }}>
         <div>
-          <div className="adm-section-title" style={{ color: t.textMuted, marginBottom: 10 }}>Top Platforms</div>
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
+          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
+            <div className="adm-card-title" style={{ color: t.textMuted, padding: "16px 16px 0" }}>Top platforms</div>
+            <div className="adm-card-divider" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", margin: "12px 0 0" }} />
             {(s.topPlatforms || []).length > 0 ? s.topPlatforms.map((p, i, arr) => (
               <div key={p.name} className="adm-list-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                 <div><div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>{p.name}</div><div style={{ fontSize: 13, color: t.textMuted }}>{p.orders} orders</div></div>
@@ -231,8 +233,9 @@ export function AdminAnalyticsPage({ dark, t }) {
           </div>
         </div>
         <div>
-          <div className="adm-section-title" style={{ color: t.textMuted, marginBottom: 10 }}>Order Status Breakdown</div>
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
+          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
+            <div className="adm-card-title" style={{ color: t.textMuted, padding: "16px 16px 0" }}>Order status breakdown</div>
+            <div className="adm-card-divider" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", margin: "12px 0 0" }} />
             {[["Completed", s.byStatus?.find(x => x.status === "Completed")?.count || 0, t.green], ["Processing", s.byStatus?.find(x => x.status === "Processing")?.count || 0, t.blue], ["Pending", s.byStatus?.find(x => x.status === "Pending")?.count || 0, t.amber], ["Canceled", s.byStatus?.find(x => x.status === "Canceled")?.count || 0, dark ? "#fca5a5" : "#dc2626"]].map(([label, count, color], i, arr) => (
               <div key={label} className="adm-list-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -249,8 +252,9 @@ export function AdminAnalyticsPage({ dark, t }) {
       {/* Top Services */}
       {(s.topServices || []).length > 0 && (
         <div style={{ marginTop: 24 }}>
-          <div className="adm-section-title" style={{ color: t.textMuted, marginBottom: 10 }}>Top Services by Revenue</div>
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
+          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
+            <div className="adm-card-title" style={{ color: t.textMuted, padding: "16px 16px 0" }}>Top services by revenue</div>
+            <div className="adm-card-divider" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", margin: "12px 0 0" }} />
             {s.topServices.map((sv, i, arr) => (
               <div key={i} className="adm-list-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -320,7 +324,7 @@ export function AdminAlertsPage({ dark, t }) {
       </div>
 
       {showNew && (
-        <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, marginTop: 16, marginBottom: 16, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)", borderRadius: 14 }}>
+        <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, marginTop: 16, marginBottom: 16, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)", borderRadius: 14 }}>
           <div style={{ marginBottom: 12 }}>
             <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Message</label>
             <textarea value={newMsg} onChange={e => setNewMsg(e.target.value)} placeholder="Alert message..." rows={2} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }} />
@@ -347,7 +351,7 @@ export function AdminAlertsPage({ dark, t }) {
         </div>
       )}
 
-      <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)", marginTop: showNew ? 0 : 16 }}>
+      <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, marginTop: showNew ? 0 : 16 }}>
         {loading ? (
           <div className="adm-empty" style={{ color: t.textMuted }}>Loading alerts...</div>
         ) : alerts.length > 0 ? alerts.map((a, i) => (
@@ -496,7 +500,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
             <div style={{ fontSize: 15, fontWeight: 600, color: t.text }}>Profile</div>
             {!profileEditing && <button onClick={() => setProfileEditing(true)} style={{ fontSize: 12, color: t.accent, background: "none", border: "none", cursor: "pointer" }}>Edit</button>}
           </div>
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
+          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
             {profileMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 13, background: profileMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: profileMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{profileMsg.type === "success" ? "✓" : "⚠️"} {profileMsg.text}</div>}
             {profileEditing ? (
               <>
@@ -540,7 +544,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         {/* Change password */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>Change Password</div>
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
+          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
             {admPwMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 13, background: admPwMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: admPwMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{admPwMsg.type === "success" ? "✓" : "⚠️"} {admPwMsg.text}</div>}
             <div style={{ marginBottom: 12 }}>
               <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Current Password</label>
@@ -561,7 +565,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         {/* Social Links & Community */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>Social Links & Community</div>
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
+          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
             <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 14, lineHeight: 1.5 }}>These links appear in the user dashboard sidebar, landing page footer, and support page. Leave blank to hide.</div>
 
             {socialMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 13, background: socialMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: socialMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{socialMsg.type === "success" ? "✓" : "⚠️"} {socialMsg.text}</div>}
@@ -587,7 +591,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         {/* Referral Settings */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>Referral Program</div>
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
+          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
             <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 14, lineHeight: 1.5 }}>Bonus amounts in kobo (100 kobo = ₦1). Default ₦500 = 50000 kobo. Set to 0 to disable.</div>
 
             {refMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 13, background: refMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: refMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{refMsg.type === "success" ? "✓" : "⚠️"} {refMsg.text}</div>}
@@ -617,7 +621,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         {/* Cleanup */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>Cleanup</div>
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
+          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
             <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 12, lineHeight: 1.5 }}>Remove unverified accounts older than 7 days that have no orders or transactions.</div>
             <CleanupButton dark={dark} t={t} />
           </div>

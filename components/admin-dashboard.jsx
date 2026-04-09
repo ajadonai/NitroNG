@@ -72,7 +72,8 @@ function AdminOverview({ data, dark, t, setActive }) {
           ["Processing", String(stats.processing || 0), t.amber, "Est. 1-2 hrs"],
           ["Deposits (Today)", fN(stats.deposits || 0), t.green, `${stats.depositsChange || 0}% vs yesterday`],
         ].map(([label, val, color, sub]) => (
-          <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderTopWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderLeftWidth: 3, borderStyle: "solid", borderTopColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", borderRightColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", borderBottomColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", borderLeftColor: color, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
+          <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
+            <div className="dash-stat-dot" style={{ background: color }} />
             <div className="dash-stat-label" style={{ color: t.textMuted }}>{label}</div>
             <div className="m dash-stat-value" style={{ color }}>{val}</div>
             <div className="dash-stat-sub" style={{ color: t.textMuted }}>{sub}</div>
@@ -83,11 +84,12 @@ function AdminOverview({ data, dark, t, setActive }) {
       {/* Two column — Recent Orders + Recent Users */}
       <div className="adm-grid-2">
         <div>
-          <div className="adm-section-header">
-            <span className="adm-section-title" style={{ color: t.textMuted }}>Recent Orders</span>
-            <button onClick={() => setActive("orders")} className="adm-section-link" style={{ color: t.accent }}>View all →</button>
-          </div>
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
+          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
+            <div className="adm-card-header">
+              <span className="adm-card-title" style={{ color: t.textMuted }}>Recent orders</span>
+              <button onClick={() => setActive("orders")} className="adm-section-link" style={{ color: t.accent }}>View all →</button>
+            </div>
+            <div className="adm-card-divider" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)" }} />
             {(recentOrders || []).length > 0 ? (recentOrders || []).slice(0, 5).map((o, i, arr) => (
               <div key={o.id} className="adm-list-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                 <div style={{ minWidth: 0, flex: 1 }}>
@@ -106,11 +108,12 @@ function AdminOverview({ data, dark, t, setActive }) {
         </div>
 
         <div>
-          <div className="adm-section-header">
-            <span className="adm-section-title" style={{ color: t.textMuted }}>New Users</span>
-            <button onClick={() => setActive("users")} className="adm-section-link" style={{ color: t.accent }}>View all →</button>
-          </div>
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
+          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
+            <div className="adm-card-header">
+              <span className="adm-card-title" style={{ color: t.textMuted }}>New users</span>
+              <button onClick={() => setActive("users")} className="adm-section-link" style={{ color: t.accent }}>View all →</button>
+            </div>
+            <div className="adm-card-divider" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)" }} />
             {(recentUsers || []).length > 0 ? (recentUsers || []).slice(0, 5).map((u, i, arr) => (
               <div key={u.id} className="adm-list-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                 <div className="adm-user-avatar" style={{ background: `hsl(${(u.id || i) * 45}, 40%, ${dark ? 30 : 65}%)` }}>{(u.name || "U")[0]}</div>
@@ -131,11 +134,11 @@ function AdminOverview({ data, dark, t, setActive }) {
       </div>
 
       {/* Quick actions */}
-      <div className="adm-section-title" style={{ color: t.textMuted, marginTop: 24, marginBottom: 10 }}>Quick Actions</div>
+      <div className="adm-card-title" style={{ color: t.textMuted, marginTop: 24, marginBottom: 10 }}>Quick actions</div>
       <div className="adm-quick-actions">
-        {[["New Announcement", "🔔", "alerts"], ["Credit User", "💰", "users"], ["Add Service", "➕", "menu-builder"], ["View Analytics", "📈", "analytics"]].map(([label, icon, page]) => (
-          <button key={label} onClick={() => setActive(page)} className="adm-action-btn" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", color: t.text, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
-            <span>{icon}</span> {label}
+        {[["New Announcement", "alerts"], ["Credit User", "users"], ["Add Service", "menu-builder"], ["View Analytics", "analytics"]].map(([label, page]) => (
+          <button key={label} onClick={() => setActive(page)} className="adm-action-btn" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, color: t.text }}>
+            {label}
           </button>
         ))}
       </div>
@@ -172,7 +175,7 @@ function AdminRightSidebar({ data, dark, t }) {
     <>
       <div className="adm-rs-title" style={{ color: t.textMuted }}>Open Tickets</div>
       {(data.openTickets || []).length > 0 ? (data.openTickets || []).slice(0, 4).map((tk, i) => (
-        <div key={tk.id || i} className="adm-rs-ticket" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
+        <div key={tk.id || i} className="adm-rs-ticket" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
           <div className="adm-rs-ticket-top">
             <span className="m" style={{ fontSize: 12, color: t.accent }}>{tk.id}</span>
             <span style={{ fontSize: 11, color: t.textMuted }}>{tk.created ? fD(tk.created) : ""}</span>
