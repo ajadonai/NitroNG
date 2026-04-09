@@ -188,7 +188,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
           <div className="set-section-desc" style={{ color: t.textMuted }}>Choose how Nitro looks for you.</div>
           <div className="set-theme-grid">
             {[["day", "☀ Light"], ["night", "☾ Dark"], ["auto", "◑ Auto"]].map(([id, lb]) => (
-              <button key={id} onClick={() => applyTheme(id)} className="set-theme-btn" style={{ borderWidth: themeMode === id ? 2 : 1, borderStyle: "solid", borderColor: themeMode === id ? t.accent : t.cardBorder, background: themeMode === id ? (dark ? "#2a1a22" : "#fdf2f4") : t.cardBg, color: themeMode === id ? t.accent : t.textSoft }}>{lb}</button>
+              <button key={id} onClick={() => applyTheme(id)} className="set-theme-btn" style={{ borderWidth: 1, borderStyle: "solid", borderColor: themeMode === id ? t.accent : t.cardBorder, background: themeMode === id ? (dark ? "#2a1a22" : "#fdf2f4") : t.cardBg, color: themeMode === id ? t.accent : t.textSoft }}>{lb}</button>
             ))}
           </div>
           {themeMode === "auto" && <div className="set-theme-note" style={{ color: t.textMuted }}>Switches automatically — light 7am–6pm, dark otherwise.</div>}

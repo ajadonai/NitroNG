@@ -218,7 +218,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
       {svc.tiers.map(tier => {
         const s = TS[tier.tier]; const isSel = selTier?.tier === tier.tier && selSvc?.id === svc.id;
         return (
-          <div key={tier.tier} onClick={e => pickTier(tier, e)} className="no-tier-card" style={{ borderWidth: isSel ? 2 : 1, borderStyle: "solid", borderColor: isSel ? s.text : (dark ? s.borderD : s.border), background: isSel ? (dark ? s.bgD : s.bg) : (dark ? "#0e1120" : "#ffffff") }}>
+          <div key={tier.tier} onClick={e => pickTier(tier, e)} className="no-tier-card" style={{ borderWidth: 1, borderStyle: "solid", borderColor: isSel ? s.text : (dark ? s.borderD : s.border), background: isSel ? (dark ? s.bgD : s.bg) : (dark ? "#0e1120" : "#ffffff") }}>
             <div className="no-tier-header">
               <span style={{ fontSize: 13, fontWeight: 700, color: s.text }}>{s.label} {tier.tier}</span>
               <span className="m" style={{ fontSize: 13, fontWeight: 700, color: s.text }}>₦{tier.price.toLocaleString()}<span style={{ fontSize: 11, fontWeight: 400 }}>/{tier.per}</span></span>
@@ -233,7 +233,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
   const ServiceRow = ({ svc }) => {
     const isSel = selSvc?.id === svc.id;
     return (
-      <div onClick={() => pickService(svc)} className="no-svc-row" style={{ borderWidth: isSel ? 2 : 1, borderStyle: "solid", borderColor: isSel ? t.accent : t.cardBorder, background: isSel ? (dark ? "#1e1420" : "#fefbfc") : svc.ng ? (dark ? "rgba(30,80,60,.15)" : "#e8f5ee") : t.cardBg }}>
+      <div onClick={() => pickService(svc)} className="no-svc-row" style={{ borderWidth: 1, borderStyle: "solid", borderColor: isSel ? t.accent : t.cardBorder, background: isSel ? (dark ? "#1e1420" : "#fefbfc") : svc.ng ? (dark ? "rgba(30,80,60,.15)" : "#e8f5ee") : t.cardBg }}>
         <div className="no-svc-header">
           <span className="no-svc-name" style={{ color: svc.ng ? (dark ? "#5dcaa5" : "#0F6E56") : t.text }}>{svc.name}</span>
           <div className="no-svc-badges">
@@ -379,7 +379,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
                       const act = platform === p.id;
                       const count = platformCounts[p.id] || 0;
                       return (
-                        <button key={p.id} onClick={() => { setPlatform(p.id); setCatModal(false); }} className="no-cat-item" style={{ borderWidth: act ? 2 : 1, borderStyle: "solid", borderColor: act ? t.accent : t.cardBorder, background: act ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: act ? t.accent : t.text, position: "relative" }}>
+                        <button key={p.id} onClick={() => { setPlatform(p.id); setCatModal(false); }} className="no-cat-item" style={{ borderWidth: 1, borderStyle: "solid", borderColor: act ? t.accent : t.cardBorder, background: act ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: act ? t.accent : t.text, position: "relative" }}>
                           <span className="no-cat-icon">{p.icon}</span>
                           <span className="no-cat-label">{p.label}</span>
                           {count > 0 && <span className="m" style={{ fontSize: 9, fontWeight: 600, color: act ? t.accent : t.textMuted, position: "absolute", top: 4, right: 6 }}>{count}</span>}

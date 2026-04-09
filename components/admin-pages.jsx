@@ -424,7 +424,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
           <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 10 }}>Theme</div>
           <div style={{ display: "flex", gap: 8 }}>
             {[["day", "☀ Light"], ["night", "☾ Dark"], ["auto", "◑ Auto"]].map(([id, lb]) => (
-              <button key={id} onClick={() => applyTheme(id)} style={{ flex: 1, padding: "12px 10px", borderRadius: 10, borderWidth: themeMode === id ? 2 : 1, borderStyle: "solid", borderColor: themeMode === id ? t.accent : t.cardBorder, background: themeMode === id ? (dark ? "#2a1a22" : "#fdf2f4") : (dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)"), color: themeMode === id ? t.accent : t.textSoft, fontSize: 14, fontWeight: themeMode === id ? 600 : 450, textAlign: "center" }}>{lb}</button>
+              <button key={id} onClick={() => applyTheme(id)} style={{ flex: 1, padding: "12px 10px", borderRadius: 10, borderWidth: 1, borderStyle: "solid", borderColor: themeMode === id ? t.accent : t.cardBorder, background: themeMode === id ? (dark ? "#2a1a22" : "#fdf2f4") : (dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)"), color: themeMode === id ? t.accent : t.textSoft, fontSize: 14, fontWeight: themeMode === id ? 600 : 450, textAlign: "center" }}>{lb}</button>
             ))}
           </div>
         </div>

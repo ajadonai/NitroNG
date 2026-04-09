@@ -107,7 +107,7 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
             {/* Preset buttons */}
             <div className="fund-presets">
               {PRESETS.map(p => (
-                <button key={p} onClick={() => setAmount(String(p))} className="m fund-preset" style={{ borderWidth: numAmount === p ? 2 : 1, borderStyle: "solid", borderColor: numAmount === p ? t.accent : t.cardBorder, background: numAmount === p ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : "transparent", color: numAmount === p ? t.accent : t.textSoft }}>
+                <button key={p} onClick={() => setAmount(String(p))} className="m fund-preset" style={{ borderWidth: 1, borderStyle: "solid", borderColor: numAmount === p ? t.accent : t.cardBorder, background: numAmount === p ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : "transparent", color: numAmount === p ? t.accent : t.textSoft }}>
                   ₦{p >= 1000 ? `${p / 1000}K` : p}
                 </button>
               ))}
