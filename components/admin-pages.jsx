@@ -202,14 +202,14 @@ export function AdminAnalyticsPage({ dark, t }) {
 
       <div className="adm-stats" style={{ marginTop: 16 }}>
         {[
-          ["Total Revenue", s.orderCount ? fN(s.totalRevenue || 0) : "—", t.green],
-          ["Total Cost", s.orderCount ? fN(s.totalCost || 0) : "—", dark ? "#fca5a5" : "#dc2626"],
-          ["Profit", s.orderCount ? fN(s.profit || 0) : "—", s.profit >= 0 ? t.green : (dark ? "#fca5a5" : "#dc2626")],
-          ["Avg Order Value", s.orderCount ? fN(s.avgOrderValue || 0) : "—", t.accent],
-          ["Completion Rate", s.orderCount ? `${s.conversionRate || 0}%` : "—", t.blue],
+          ["Total Revenue", fN(s.totalRevenue || 0), t.green],
+          ["Total Cost", fN(s.totalCost || 0), dark ? "#fca5a5" : "#dc2626"],
+          ["Profit", fN(s.profit || 0), s.profit >= 0 ? t.green : (dark ? "#fca5a5" : "#dc2626")],
+          ["Avg Order Value", fN(s.avgOrderValue || 0), t.accent],
+          ["Completion Rate", `${s.conversionRate || 0}%`, t.blue],
           ["Orders", String(s.orderCount || 0), t.amber],
           ["New Users", String(s.newUsers || 0), t.blue],
-          ["Deposits", s.depositCount ? fN(s.totalDeposits || 0) : "—", t.green],
+          ["Deposits", fN(s.totalDeposits || 0), t.green],
         ].map(([label, val, color]) => (
           <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderTopWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderLeftWidth: 3, borderStyle: "solid", borderTopColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", borderRightColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", borderBottomColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", borderLeftColor: color, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
             <div className="dash-stat-label" style={{ color: t.textMuted }}>{label}</div>
