@@ -189,7 +189,7 @@ function LandingInner(){
             <div className="hero-left">
               <div className="fu hero-eyebrow" style={{display:"inline-flex",alignItems:"center",gap:8,marginBottom:20}}>
                 <div className="hero-live-dot" style={{width:8,height:8,borderRadius:"50%",background:"#34d399",boxShadow:"0 0 12px rgba(52,211,153,.4)"}} />
-                <span className="m" style={{fontSize:12,fontWeight:500,letterSpacing:1.5,textTransform:"uppercase",color:dark?"#34d399":"rgba(255,255,255,.85)"}}>{(siteStats.orders||0).toLocaleString()} orders delivered today</span>
+                <span className="m" style={{fontSize:12,fontWeight:500,letterSpacing:1.5,textTransform:"uppercase",color:dark?"#34d399":"rgba(255,255,255,.85)"}}>{siteStats.orders||"0"} orders delivered today</span>
               </div>
               <h1 className="fu fd1 hero-h1" style={{color:t.heroText}}>Your audience,<br/><span className="serif hero-refined" style={{color:dark?t.accent:"#fff",textShadow:dark?"none":"0 2px 20px rgba(0,0,0,.15)"}}>amplified.</span></h1>
               <div className="fu fd2 hero-value-line m" style={{fontSize:15,fontWeight:500,color:dark?"rgba(244,241,237,.5)":"rgba(255,255,255,.75)",marginBottom:20,display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
@@ -202,7 +202,7 @@ function LandingInner(){
 
               {/* Social proof strip */}
               <div className="fu fd3 hero-proof" style={{display:"flex",alignItems:"center",gap:20,marginBottom:32,flexWrap:"wrap"}}>
-                {[[`${((siteStats.orders||0)/1000).toFixed(0)}K+`,"Orders\ndelivered"],[`${siteStats.users||"0"}+`,"Active\ncreators"],["98%","Delivery\nrate"]].map(([num,label],i)=><>{i>0&&<div style={{width:1,height:24,background:dark?"rgba(255,255,255,.08)":"rgba(255,255,255,.2)"}}/>}<div key={label} style={{display:"flex",alignItems:"center",gap:8}}><span className="m" style={{fontSize:20,fontWeight:600,color:t.heroText}}>{num}</span><span style={{fontSize:13,color:dark?"rgba(244,241,237,.35)":"rgba(255,255,255,.6)",lineHeight:1.3,whiteSpace:"pre-line"}}>{label}</span></div></>)}
+                {[[siteStats.orders||"0","Orders\ndelivered"],[siteStats.users||"0","Active\ncreators"],["98%","Delivery\nrate"]].map(([num,label],i)=><>{i>0&&<div style={{width:1,height:24,background:dark?"rgba(255,255,255,.08)":"rgba(255,255,255,.2)"}}/>}<div key={label} style={{display:"flex",alignItems:"center",gap:8}}><span className="m" style={{fontSize:20,fontWeight:600,color:t.heroText}}>{num}</span><span style={{fontSize:13,color:dark?"rgba(244,241,237,.35)":"rgba(255,255,255,.6)",lineHeight:1.3,whiteSpace:"pre-line"}}>{label}</span></div></>)}
               </div>
 
               {/* CTAs */}
@@ -439,7 +439,7 @@ function LandingInner(){
               {/* Live badge */}
               <div className="s6-badge" style={{background:dark?"rgba(196,125,142,.12)":"rgba(255,255,255,.12)",border:`1px solid ${dark?"rgba(196,125,142,.18)":"rgba(255,255,255,.2)"}`}}>
                 <div className="s6-pulse"/>
-                <span className="m s6-badge-count" style={{color:dark?"#c47d8e":"#fff"}}>{siteStats.users}+</span>
+                <span className="m s6-badge-count" style={{color:dark?"#c47d8e":"#fff"}}>{siteStats.users}</span>
                 <span className="s6-badge-text" style={{color:dark?"rgba(196,125,142,.7)":"rgba(255,255,255,.7)"}}>creators growing right now</span>
               </div>
               <h2 className="s6-h2-bold">Your Audience</h2>
