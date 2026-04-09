@@ -1263,7 +1263,7 @@ input { font-family: inherit; }
   .hero-sub { font-size: 17px; max-width: 480px; text-align: center; margin-bottom: 28px; }
   .nav-links { display: none; }
   .nav-login-btn { padding: 6px 14px !important; font-size: 12px !important; border-radius: 8px !important; }
-  .nav-signup-btn { padding: 6px 14px !important; font-size: 12px !important; border-radius: 8px !important; }
+  .nav-signup-btn { display: none !important; }
   .main-nav { padding: 0 28px; }
   .nav-right { gap: 10px !important; }
   .auth-card { max-width: 420px; height: 660px; max-height: 90dvh; padding: 24px 26px; border-radius: 18px; overflow-y: auto; overflow-x: hidden; }
