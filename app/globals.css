@@ -530,7 +530,7 @@ input { font-family: inherit; }
 .no-form-sum-price { font-size: 20px; font-weight: 600; }
 .no-form-tags { display: flex; gap: 4px; margin-bottom: 14px; flex-wrap: wrap; }
 .no-form-tag { font-size: 12px; padding: 3px 8px; border-radius: 16px; border-width: 1px; border-style: solid; }
-.no-form-submit { width: 100%; padding: 12px; border-radius: 8px; border: none; background: linear-gradient(135deg, #c47d8e, #8b5e6b); color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; }
+.no-form-submit { width: 100%; padding: 12px; border-radius: 8px; border: none; background: linear-gradient(135deg, #c47d8e, #8b5e6b); color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; position: sticky; bottom: 0; z-index: 2; }
 
 /* ── TABLET: 768-1199px ── */
 @media (max-width: 1199px) {
@@ -544,7 +544,7 @@ input { font-family: inherit; }
   .no-bottom-bar { display: flex; position: fixed; bottom: 0; left: 0; right: 0; backdrop-filter: blur(16px); padding: 10px 20px; align-items: center; justify-content: space-between; z-index: 25; gap: 12px; }
 
   .no-modal-overlay { display: flex; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 50; align-items: center; justify-content: center; padding: 24px; }
-  .no-modal { width: 100%; max-width: 420px; border-radius: 16px; max-height: 90vh; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+  .no-modal { width: 100%; max-width: 420px; border-radius: 16px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
 
   .no-cat-overlay { display: flex; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 40; align-items: center; justify-content: center; padding: 24px; }
   .no-cat-modal { width: 100%; max-width: 560px; border-radius: 16px; padding: 24px; max-height: 80vh; overflow: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
@@ -571,7 +571,7 @@ input { font-family: inherit; }
   .no-bar-name { font-size: 14px; }
 
   .no-modal-overlay { display: flex; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 50; align-items: center; justify-content: center; padding: 16px; }
-  .no-modal { width: 100%; max-width: 380px; border-radius: 16px; max-height: 85vh; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+  .no-modal { width: 100%; max-width: 380px; border-radius: 16px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
   .no-form-inner { padding: 16px; }
   .no-form-svc-name { font-size: 15px; }
   .no-form-sum-price { font-size: 18px; }
