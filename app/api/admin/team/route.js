@@ -109,6 +109,18 @@ export async function POST(req) {
       return Response.json({ success: true });
     }
 
+    if (action === 'delete') {
+      if (!adminId) return Response.json({ error: 'Admin ID required' }, { status: 400 });
+      const target = await prisma.admin.findUnique({ where: { id: adminId } });
+      if (!target) return Response.json({ error: 'Admin not found' }, { status: 404 });
+      if (target.role === 'owner') return Response.json({ error: 'Cannot delete owner' }, { status: 403 });
+      if (target.id === admin.id) return Response.json({ error: 'Cannot delete yourself' }, { status: 400 });
+
+      await prisma.admin.delete({ where: { id: adminId } });
+      await logActivity(admin.name, `Deleted admin: ${target.name} (${target.email})`, 'admin');
+      return Response.json({ success: true });
+    }
+
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
     console.error('[Admin Team POST]', err.message);

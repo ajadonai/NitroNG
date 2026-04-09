@@ -528,6 +528,9 @@ function DashboardInner() {
     let interval = null;
     const poll = async () => {
       try {
+        // Check maintenance
+        const mRes = await fetch("/api/maintenance-check");
+        if (mRes.ok) { const m = await mRes.json(); if (m.maintenance) { window.location.replace("/maintenance"); return; } }
         const res = await fetch("/api/dashboard");
         if (res.status === 401) { try { await fetch("/api/auth/logout", { method: "POST" }); } catch {} window.location.replace("/?session_expired=1"); return; }
         if (res.ok) {

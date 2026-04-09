@@ -273,6 +273,7 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
                         })}
                       </div>
                       <button onClick={async e => { e.stopPropagation(); const ok = await confirm({ title: a.status === "Active" ? "Deactivate Admin" : "Activate Admin", message: a.status === "Active" ? `Deactivate ${a.name}?` : `Reactivate ${a.name}?`, confirmLabel: a.status === "Active" ? "Deactivate" : "Activate", danger: a.status === "Active" }); if (ok) { const r = await act({ action: "toggleStatus", adminId: a.id }); if (r) setMsg({ type: "success", text: `${a.name} ${r.status === "Active" ? "activated" : "deactivated"}` }); } }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: a.status === "Active" ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{a.status === "Active" ? "Deactivate" : "Activate"}</button>
+                      <button onClick={async e => { e.stopPropagation(); const ok = await confirm({ title: "Delete Admin", message: `Permanently delete ${a.name}? This cannot be undone.`, confirmLabel: "Delete", danger: true }); if (ok) { const r = await act({ action: "delete", adminId: a.id }); if (r) setMsg({ type: "success", text: `${a.name} deleted` }); } }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.1)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
                     </div>
                   )}
                 </div>
@@ -498,14 +499,9 @@ export function AdminMaintenancePage({ dark, t }) {
         <div style={{ maxWidth: 600, marginTop: 16 }}>
           {/* Status card */}
           <div style={{ borderRadius: 16, background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.95)", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)", padding: 24, marginBottom: 20 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: t.text, marginBottom: 4 }}>Platform Status</div>
-                <div style={{ fontSize: 14, color: t.textMuted }}>{enabled ? "⚠️ Platform is currently offline" : "✅ Platform is online and operational"}</div>
-              </div>
-              <button onClick={() => { setEnabled(!enabled); }} style={{ width: 52, height: 28, borderRadius: 14, position: "relative", border: "none", cursor: "pointer", background: enabled ? "rgba(252,165,165,.2)" : (dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.1)"), borderWidth: 1, borderStyle: "solid", borderColor: enabled ? (dark ? "rgba(252,165,165,.3)" : "rgba(220,38,38,.2)") : (dark ? "rgba(110,231,183,.3)" : "rgba(5,150,105,.2)") }}>
-                <div style={{ width: 22, height: 22, borderRadius: "50%", position: "absolute", top: 2, left: enabled ? 27 : 3, transition: "left .3s ease", background: enabled ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }} />
-              </button>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: t.text, marginBottom: 4 }}>Platform Status</div>
+              <div style={{ fontSize: 14, color: t.textMuted }}>{enabled ? "⚠️ Platform is currently offline" : "✅ Platform is online and operational"}</div>
             </div>
 
             {/* Duration presets */}
@@ -536,7 +532,6 @@ export function AdminMaintenancePage({ dark, t }) {
 
           {/* Action */}
           <button onClick={async () => { const ok = await confirm({ title: enabled ? "Bring Platform Online" : "Take Platform Offline", message: enabled ? "Bring the platform back online for all users?" : "This will take the platform offline. All users will see a maintenance page.", confirmLabel: enabled ? "Go Online" : "Take Offline", danger: !enabled }); if (ok) save(!enabled); }} style={{ width: "100%", padding: "14px 0", borderRadius: 12, fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", background: enabled ? (dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)") : `linear-gradient(135deg,#c47d8e,#8b5e6b)`, color: enabled ? t.green : "#fff", boxShadow: enabled ? "none" : "0 4px 16px rgba(196,125,142,.25)" }}>{enabled ? "🟢 Bring Platform Online" : "🔴 Take Platform Offline"}</button>
-          <button onClick={() => save()} style={{ width: "100%", padding: "12px 0", borderRadius: 10, marginTop: 10, background: "none", color: t.textSoft, fontSize: 14, fontWeight: 500, cursor: "pointer", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>Save Settings</button>
         </div>
       )}
     </>
