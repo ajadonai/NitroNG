@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useConfirm } from "./confirm-dialog";
 
 const DEF_BRACKETS = [
@@ -76,11 +76,13 @@ export default function AdminPricingPage({ dark, t }) {
   /* Number input — allows clearing, restores default on blur */
   const NumInput = ({ value, onChange, min = 0, max = 999999, fallback, width = 64, step, decimal }) => {
     const [raw, setRaw] = useState(String(value));
-    useEffect(() => { setRaw(String(value)); }, [value]);
+    const focused = useRef(false);
+    useEffect(() => { if (!focused.current) setRaw(String(value)); }, [value]);
     return <input
       value={raw}
       inputMode={decimal ? "decimal" : "numeric"}
       style={{ ...inpBase, width }}
+      onFocus={() => { focused.current = true; }}
       onChange={e => {
         const v = e.target.value;
         if (v === "" || (decimal ? /^[0-9]*\.?[0-9]*$/ : /^[0-9]*$/).test(v)) {
@@ -90,6 +92,7 @@ export default function AdminPricingPage({ dark, t }) {
         }
       }}
       onBlur={() => {
+        focused.current = false;
         const n = decimal ? parseFloat(raw) : parseInt(raw, 10);
         if (isNaN(n) || raw === "") { const fb = fallback !== undefined ? fallback : min; onChange(fb); setRaw(String(fb)); }
         else { const clamped = Math.min(max, Math.max(min, n)); onChange(clamped); setRaw(String(clamped)); }
