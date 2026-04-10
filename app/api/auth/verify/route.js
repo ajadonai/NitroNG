@@ -45,25 +45,27 @@ export async function POST(req) {
       },
     });
 
-    // If referred, give bonus to both users
+    // If referred, give bonus to both users (or defer if min deposit required)
     if (user.referredBy) {
       const referrer = await prisma.user.findUnique({
         where: { referralCode: user.referredBy },
       });
       if (referrer) {
-        // Read bonus amounts from settings, fallback to ₦500 (50000 kobo)
         let referrerBonus = 50000;
         let inviteeBonus = 50000;
         let refEnabled = true;
+        let refMinDeposit = 0;
         try {
-          const settings = await prisma.setting.findMany({ where: { key: { in: ['ref_referrer_bonus', 'ref_invitee_bonus', 'ref_enabled'] } } });
+          const settings = await prisma.setting.findMany({ where: { key: { in: ['ref_referrer_bonus', 'ref_invitee_bonus', 'ref_enabled', 'ref_min_deposit'] } } });
           settings.forEach(s => {
             if (s.key === 'ref_referrer_bonus') referrerBonus = Number(s.value) || 50000;
             if (s.key === 'ref_invitee_bonus') inviteeBonus = Number(s.value) || 50000;
             if (s.key === 'ref_enabled') refEnabled = s.value === 'true';
+            if (s.key === 'ref_min_deposit') refMinDeposit = Number(s.value) || 0;
           });
         } catch {}
-        if (refEnabled) {
+        // Pay immediately only if enabled AND no min deposit required
+        if (refEnabled && refMinDeposit <= 0) {
           const ops = [
             prisma.user.update({ where: { id: referrer.id }, data: { balance: { increment: referrerBonus } } }),
             prisma.transaction.create({ data: { userId: referrer.id, type: 'referral', amount: referrerBonus, note: `Referral bonus: ${user.name} signed up` } }),
@@ -76,6 +78,8 @@ export async function POST(req) {
           }
           await prisma.$transaction(ops);
         }
+        // If min deposit > 0, bonuses are deferred until first qualifying deposit
+        // (handled in /api/payments/verify)
       }
     }
 

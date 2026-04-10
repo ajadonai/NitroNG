@@ -144,6 +144,41 @@ export async function POST(req) {
 
     console.log(`[${gateway}] ₦${paidAmount / 100} + ₦${couponBonus / 100} bonus credited to user ${session.id} (ref: ${reference})`);
 
+    // Check for deferred referral bonus (if ref_min_deposit is set)
+    try {
+      const user = await prisma.user.findUnique({ where: { id: session.id }, select: { referredBy: true, name: true } });
+      if (user?.referredBy) {
+        // Check if referral bonus was already paid
+        const alreadyPaid = await prisma.transaction.findFirst({ where: { userId: session.id, type: 'referral' } });
+        if (!alreadyPaid) {
+          const refSettings = await prisma.setting.findMany({ where: { key: { in: ['ref_referrer_bonus', 'ref_invitee_bonus', 'ref_enabled', 'ref_min_deposit'] } } });
+          const rs = {};
+          refSettings.forEach(s => { rs[s.key] = s.value; });
+          const refEnabled = rs.ref_enabled === 'true' || rs.ref_enabled === undefined;
+          const refMinDeposit = Number(rs.ref_min_deposit) || 0;
+          if (refEnabled && refMinDeposit > 0 && paidAmount >= refMinDeposit) {
+            const referrer = await prisma.user.findUnique({ where: { referralCode: user.referredBy } });
+            if (referrer) {
+              const referrerBonus = Number(rs.ref_referrer_bonus) || 50000;
+              const inviteeBonus = Number(rs.ref_invitee_bonus) || 50000;
+              const ops = [
+                prisma.user.update({ where: { id: referrer.id }, data: { balance: { increment: referrerBonus } } }),
+                prisma.transaction.create({ data: { userId: referrer.id, type: 'referral', amount: referrerBonus, note: `Referral bonus: ${user.name} deposited` } }),
+              ];
+              if (inviteeBonus > 0) {
+                ops.push(
+                  prisma.user.update({ where: { id: session.id }, data: { balance: { increment: inviteeBonus } } }),
+                  prisma.transaction.create({ data: { userId: session.id, type: 'referral', amount: inviteeBonus, note: 'Referral welcome bonus' } }),
+                );
+              }
+              await prisma.$transaction(ops);
+              console.log(`[Referral] Deferred bonus paid: referrer ${referrer.id}, invitee ${session.id}`);
+            }
+          }
+        }
+      }
+    } catch (err) { log.error('Deferred referral', err.message); }
+
     return Response.json({
       success: true,
       message: couponBonus > 0 ? `Payment successful! ₦${couponBonus / 100} bonus applied.` : 'Payment successful',
