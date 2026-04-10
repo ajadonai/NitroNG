@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { placeOrder, checkOrder, cancelOrder } from '@/lib/mtp';
+import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 
 export async function GET(req) {
   try {
@@ -147,6 +148,9 @@ export async function PATCH(req) {
 
 export async function POST(req) {
   try {
+    const { limited } = rateLimit(req, { maxAttempts: 10, windowMs: 60 * 1000 });
+    if (limited) return tooManyRequests('Too many orders. Slow down.');
+
     const session = await getCurrentUser();
     if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
 

@@ -58,7 +58,6 @@ export async function POST(req) {
         // Skip services with absurd costs (overflow INT4 limit of ~2.1 billion)
         if (rawCost > 2000000000 || rawCost < 0 || isNaN(rawCost)) { skipped++; continue; }
         const costPer1k = rawCost;
-        const sellPer1k = Math.min(Math.round(costPer1k * (1 + defaultMarkup / 100)), 2000000000);
         const category = categorize(svc.category);
         const data = {
           name: svc.name,
@@ -72,14 +71,22 @@ export async function POST(req) {
 
         const ex = existingMap[apiId];
         if (ex) {
+          // Only update cost and metadata — never overwrite sell prices
+          // Use admin Pricing → Recalculate All to update sell prices via bracket engine
           toUpdate.push(prisma.service.update({
             where: { id: ex.id },
-            data: { ...data, ...(ex.markup === defaultMarkup ? { sellPer1k } : {}) },
+            data,
           }));
           updated++;
         } else {
+          // New service — calculate initial sell price via bracket engine
+          const { calculateTierPrice } = await import('@/lib/markup');
+          const markupRows = await prisma.setting.findMany({ where: { key: { startsWith: 'markup_' } } });
+          const ms = {};
+          markupRows.forEach(s => { ms[s.key] = s.value; });
+          const initialSell = calculateTierPrice(costPer1k, 'Standard', ms, false) || Math.round(costPer1k * 2);
           toCreate.push({
-            apiId, ...data, sellPer1k, markup: defaultMarkup, enabled: false,
+            apiId, ...data, sellPer1k: initialSell, markup: defaultMarkup, enabled: false,
           });
           created++;
         }

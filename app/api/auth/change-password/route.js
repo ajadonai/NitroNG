@@ -2,9 +2,13 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
+import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 
 export async function POST(req) {
   try {
+    const { limited } = rateLimit(req, { maxAttempts: 5, windowMs: 5 * 60 * 1000 });
+    if (limited) return tooManyRequests('Too many attempts. Try again in 5 minutes.');
+
     const session = await getCurrentUser();
     if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
 

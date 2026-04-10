@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 
 async function getCoupons() {
   try {
@@ -19,6 +20,9 @@ async function saveCoupons(coupons) {
 // POST: validate a coupon code
 export async function POST(req) {
   try {
+    const { limited } = rateLimit(req, { maxAttempts: 10, windowMs: 60 * 1000 });
+    if (limited) return tooManyRequests('Too many attempts. Try again in a minute.');
+
     const session = await getCurrentUser();
     if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
 
