@@ -187,7 +187,7 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
                   {!showCoupon ? (
                     <button onClick={() => setShowCoupon(true)} style={{ background: "none", border: "none", color: t.accent, fontSize: 13, fontWeight: 500, cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 6 }}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
-                      Have a coupon code?
+                      Have a coupon code? Tap to apply
                     </button>
                   ) : (
                     <div>
@@ -272,7 +272,7 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
                   {!showCoupon ? (
                     <button onClick={() => setShowCoupon(true)} style={{ background: "none", border: "none", color: t.accent, fontSize: 13, fontWeight: 500, cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 6 }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
-                      Have a coupon code?
+                      Have a coupon code? Tap to apply
                     </button>
                   ) : (
                     <>

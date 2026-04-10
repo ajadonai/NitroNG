@@ -19,6 +19,7 @@ export async function GET(req) {
         id: true, name: true, firstName: true, lastName: true, phone: true,
         email: true, balance: true, status: true,
         emailVerified: true, referralCode: true, createdAt: true,
+        deletedAt: true, deletedName: true, deletedEmail: true,
         _count: { select: { orders: true } },
       },
     });
@@ -100,6 +101,16 @@ export async function POST(req) {
       await prisma.user.update({ where: { id: userId }, data: { status: 'Active' } });
       await logActivity(admin.name, `Activated user ${user.name}`, 'user');
       return Response.json({ success: true, message: `${user.name} activated` });
+    }
+
+    if (action === 'transactions') {
+      const transactions = await prisma.transaction.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+        select: { id: true, type: true, amount: true, status: true, method: true, reference: true, note: true, createdAt: true },
+      });
+      return Response.json({ transactions });
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });

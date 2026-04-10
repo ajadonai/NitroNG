@@ -10,14 +10,16 @@ export async function POST() {
     const user = await prisma.user.findUnique({ where: { id: payload.id } });
     if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
 
-    // Soft delete — anonymize personal data but keep orders/transactions for records
-    // Orders and transactions reference userId, which stays — but the user row is anonymized
+    // Soft delete — anonymize public data but preserve originals for admin
     const anonymizedEmail = `deleted_${user.id}@nitro.ng`;
     const anonymizedName = `Deleted User`;
 
     await prisma.user.update({
       where: { id: user.id },
       data: {
+        deletedName: user.name,
+        deletedEmail: user.email,
+        deletedAt: new Date(),
         name: anonymizedName,
         email: anonymizedEmail,
         password: '', // Can't login anymore
