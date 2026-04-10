@@ -20,13 +20,21 @@ export async function POST(req) {
     const { reference } = await req.json();
     if (!reference) return Response.json({ error: 'Reference required' }, { status: 400 });
 
+    // Find PENDING transaction — only Pending can be processed.
+    // This prevents double-credit if both verify and webhook fire simultaneously.
     const existing = await prisma.transaction.findFirst({
-      where: { reference, userId: session.id },
+      where: { reference, userId: session.id, status: 'Pending' },
     });
 
-    if (!existing) return Response.json({ error: 'Transaction not found' }, { status: 404 });
-    if (existing.status === 'Completed') {
-      return Response.json({ success: true, message: 'Already credited', amount: existing.amount / 100 });
+    if (!existing) {
+      // Check if it was already completed (by webhook)
+      const completed = await prisma.transaction.findFirst({
+        where: { reference, userId: session.id, status: 'Completed' },
+      });
+      if (completed) {
+        return Response.json({ success: true, message: 'Already credited', amount: completed.amount / 100 });
+      }
+      return Response.json({ error: 'Transaction not found' }, { status: 404 });
     }
 
     const gateway = existing.method || 'paystack';
