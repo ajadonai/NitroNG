@@ -76,6 +76,7 @@ export default function AdminPricingPage({ dark, t }) {
   const [floorCeiling, setFloorCeiling] = useState(5000);
   const [ngBonus, setNgBonus] = useState(25);
   const [usdRate, setUsdRate] = useState(1600);
+  const [tierMults, setTierMults] = useState({ Budget: 1.0, Standard: 1.15, Premium: 1.35 });
   const [saving, setSaving] = useState(false);
   const [recalcing, setRecalcing] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -87,7 +88,6 @@ export default function AdminPricingPage({ dark, t }) {
       try {
         if (s.markup_brackets) {
           const parsed = JSON.parse(s.markup_brackets);
-          // Fix null max from JSON.stringify(Infinity) → null
           setBrackets(parsed.map(b => ({ ...b, max: b.max == null ? 999999999 : b.max })));
         }
       } catch {}
@@ -95,10 +95,11 @@ export default function AdminPricingPage({ dark, t }) {
       if (s.markup_floor_ceiling) setFloorCeiling(Number(s.markup_floor_ceiling));
       if (s.markup_ng_bonus) setNgBonus(Number(s.markup_ng_bonus));
       if (s.markup_usd_rate) setUsdRate(Number(s.markup_usd_rate));
+      try { if (s.markup_tier_multipliers) setTierMults(JSON.parse(s.markup_tier_multipliers)); } catch {}
     });
   }, []);
 
-  const pack = () => ({ markup_brackets: JSON.stringify(brackets), markup_margin_floor: String(floorPct), markup_floor_ceiling: String(floorCeiling), markup_ng_bonus: String(ngBonus), markup_usd_rate: String(usdRate) });
+  const pack = () => ({ markup_brackets: JSON.stringify(brackets), markup_margin_floor: String(floorPct), markup_floor_ceiling: String(floorCeiling), markup_ng_bonus: String(ngBonus), markup_usd_rate: String(usdRate), markup_tier_multipliers: JSON.stringify(tierMults) });
 
   const save = async () => {
     setSaving(true); setMsg(null);
@@ -119,9 +120,12 @@ export default function AdminPricingPage({ dark, t }) {
 
   // Simulator
   const simSell = calcSell(simCost, brackets, floorPct, floorCeiling);
-  const simNG = Math.round(simSell * (1 + ngBonus / 100));
-  const simProfit = simSell - simCost;
-  const simMargin = simSell > 0 ? Math.round((simProfit / simSell) * 100) : 0;
+  const simBudget = Math.round(simSell * (tierMults.Budget || 1));
+  const simStandard = Math.round(simSell * (tierMults.Standard || 1.15));
+  const simPremium = Math.round(simSell * (tierMults.Premium || 1.35));
+  const simNG = Math.round(simStandard * (1 + ngBonus / 100));
+  const simProfit = simStandard - simCost;
+  const simMargin = simStandard > 0 ? Math.round((simProfit / simStandard) * 100) : 0;
   const simB = brackets.find(b => simCost >= b.min && simCost < (b.max));
 
   // Shared styles
@@ -179,6 +183,24 @@ export default function AdminPricingPage({ dark, t }) {
         </Row>
       </div>
 
+      {/* ═══ TIER MULTIPLIERS ═══ */}
+      <div className="adm-card" style={{ ...cardS, padding: 20, marginBottom: 16 }}>
+        <div className="set-card-title" style={{ color: t.textMuted }}>Tier multipliers</div>
+        <div className="set-card-desc" style={{ color: t.textMuted }}>Applied on top of the bracket price. Guarantees Budget &lt; Standard &lt; Premium.</div>
+        <div className="set-card-divider" style={divS} />
+        <Tip dark={dark}>Budget is the base price (1.0×). Standard and Premium multiply on top. Example: bracket gives ₦1,000 → Budget stays ₦1,000, Standard at 1.15× = ₦1,150, Premium at 1.35× = ₦1,350.</Tip>
+        {[
+          ["Budget", "Base tier — cheapest option", "Budget"],
+          ["Standard", "Recommended tier — quality balance", "Standard"],
+          ["Premium", "Highest quality — most expensive", "Premium"],
+        ].map(([label, hint, key]) => (
+          <Row key={key} dark={dark} label={label} hint={hint}>
+            <NumInput dark={dark} value={tierMults[key] || 1} onChange={v => setTierMults(prev => ({ ...prev, [key]: v }))} min={0.5} max={5} fallback={key === "Budget" ? 1 : key === "Standard" ? 1.15 : 1.35} width={64} decimal />
+            <span style={{ fontSize: 14, color: t.textMuted }}>×</span>
+          </Row>
+        ))}
+      </div>
+
       {/* ═══ NG BONUS + RATE ═══ */}
       <div className="adm-grid-2" style={{ marginBottom: 16 }}>
         <div className="adm-card" style={{ ...cardS, padding: 20 }}>
@@ -214,16 +236,27 @@ export default function AdminPricingPage({ dark, t }) {
           <NumInput dark={dark} value={simCost} onChange={setSimCost} min={0} max={999999} fallback={500} width={90} />
         </Row>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, margin: "16px 0" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, margin: "16px 0" }}>
           {[
-            ["Sell", `₦${simSell.toLocaleString()}`, t.accent],
-            ["Profit", `₦${simProfit.toLocaleString()}`, dark ? "#6ee7b7" : "#059669"],
-            ["Margin", `${simMargin}%`, simMargin >= floorPct ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626")],
-            ["🇳🇬 Sell", `₦${simNG.toLocaleString()}`, dark ? "#4ade80" : "#16a34a"],
+            ["Budget", `₦${simBudget.toLocaleString()}`, dark ? "#f59e0b" : "#d97706"],
+            ["Standard", `₦${simStandard.toLocaleString()}`, dark ? "#60a5fa" : "#2563eb"],
+            ["Premium", `₦${simPremium.toLocaleString()}`, dark ? "#a78bfa" : "#7c3aed"],
           ].map(([label, val, color]) => (
             <div key={label} style={{ padding: "12px 8px", borderRadius: 10, background: dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.02)", textAlign: "center" }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>{label}</div>
               <div style={{ fontSize: 18, fontWeight: 600, color, fontFamily: "'JetBrains Mono',monospace" }}>{val}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 16 }}>
+          {[
+            ["Margin", `${simMargin}%`, simMargin >= floorPct ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626")],
+            ["🇳🇬 Std", `₦${simNG.toLocaleString()}`, dark ? "#4ade80" : "#16a34a"],
+            ["Base", `₦${simSell.toLocaleString()}`, t.textMuted],
+          ].map(([label, val, color]) => (
+            <div key={label} style={{ padding: "10px 8px", borderRadius: 10, background: dark ? "rgba(255,255,255,.02)" : "rgba(0,0,0,.01)", textAlign: "center" }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 3 }}>{label}</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color, fontFamily: "'JetBrains Mono',monospace" }}>{val}</div>
             </div>
           ))}
         </div>
