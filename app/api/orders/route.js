@@ -108,24 +108,26 @@ export async function PATCH(req) {
         } catch (err) { log.error('Reorder MTP', err.message); }
       }
 
-      const [newOrder] = await prisma.$transaction([
-        prisma.order.create({
+      const newOrder = await prisma.$transaction(async (tx) => {
+        const updated = await tx.$executeRaw`UPDATE users SET balance = balance - ${order.charge} WHERE id = ${session.id} AND balance >= ${order.charge}`;
+        if (updated === 0) throw new Error('INSUFFICIENT_BALANCE');
+        const created = await tx.order.create({
           data: {
             orderId: newOrderId, userId: session.id, serviceId: order.serviceId,
             tierId: order.tierId, link: order.link, quantity: order.quantity,
             charge: order.charge, cost: order.cost,
             status: apiOrderId ? 'Processing' : 'Pending', apiOrderId,
           },
-        }),
-        prisma.user.update({ where: { id: session.id }, data: { balance: { decrement: order.charge } } }),
-        prisma.transaction.create({
+        });
+        await tx.transaction.create({
           data: {
             userId: session.id, type: 'order', amount: -order.charge,
             method: 'wallet', status: 'Completed', reference: newOrderId,
             note: `Reorder ${newOrderId} — ${order.service.name} x${order.quantity.toLocaleString()}`,
           },
-        }),
-      ]);
+        });
+        return created;
+      });
 
       return Response.json({
         success: true,
@@ -135,6 +137,9 @@ export async function PATCH(req) {
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
+    if (err.message === 'INSUFFICIENT_BALANCE') {
+      return Response.json({ error: 'Insufficient balance' }, { status: 400 });
+    }
     log.error('Orders PATCH', err.message);
     return Response.json({ error: 'Action failed' }, { status: 500 });
   }
@@ -199,13 +204,6 @@ export async function POST(req) {
 
     const qty = Number(quantity);
 
-    // Check balance
-    const user = await prisma.user.findUnique({ where: { id: session.id } });
-    if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
-    if (user.balance < charge) {
-      return Response.json({ error: 'Insufficient balance' }, { status: 400 });
-    }
-
     // Generate order ID
     const orderId = `ORD-${Date.now().toString(36).toUpperCase()}`;
 
@@ -229,12 +227,18 @@ export async function POST(req) {
       }
     }
 
-    // Deduct balance + create order + create transaction in one atomic operation
-    const [order] = await prisma.$transaction([
-      prisma.order.create({
+    // Atomic balance check + deduct — prevents race condition where two
+    // simultaneous orders both pass a balance check then both deduct
+    const result = await prisma.$transaction(async (tx) => {
+      // Atomically deduct balance only if sufficient
+      const updated = await tx.$executeRaw`UPDATE users SET balance = balance - ${charge} WHERE id = ${session.id} AND balance >= ${charge}`;
+      if (updated === 0) {
+        throw new Error('INSUFFICIENT_BALANCE');
+      }
+      const order = await tx.order.create({
         data: {
           orderId,
-          userId: user.id,
+          userId: session.id,
           serviceId: service.id,
           tierId: tier ? tier.id : null,
           link: trimmedLink,
@@ -244,14 +248,10 @@ export async function POST(req) {
           status: apiOrderId ? 'Processing' : 'Pending',
           apiOrderId,
         },
-      }),
-      prisma.user.update({
-        where: { id: user.id },
-        data: { balance: { decrement: charge } },
-      }),
-      prisma.transaction.create({
+      });
+      await tx.transaction.create({
         data: {
-          userId: user.id,
+          userId: session.id,
           type: 'order',
           amount: -charge,
           method: 'wallet',
@@ -259,8 +259,9 @@ export async function POST(req) {
           reference: orderId,
           note: `Order ${orderId} — ${tierName} x${qty.toLocaleString()}`,
         },
-      }),
-    ]);
+      });
+      return order;
+    });
 
     return Response.json({
       success: true,
@@ -269,10 +270,13 @@ export async function POST(req) {
         service: tierName,
         quantity: qty,
         charge: charge / 100,
-        status: order.status,
+        status: result.status,
       },
     });
   } catch (err) {
+    if (err.message === 'INSUFFICIENT_BALANCE') {
+      return Response.json({ error: 'Insufficient balance' }, { status: 400 });
+    }
     log.error('Orders POST', err.message);
     return Response.json({ error: 'Failed to place order' }, { status: 500 });
   }
