@@ -281,6 +281,21 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
           </div>
         </div>
 
+        {/* ── SYSTEM STATUS ── */}
+        <div id="set-status" className="set-section">
+          <div className="set-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+            <div className="set-card-title" style={{ color: t.textMuted }}>System status</div>
+            <div className="set-card-divider" style={{ background: t.cardBorder }} />
+            <a href="https://stats.uptimerobot.com/PvHE3u4psX" target="_blank" rel="noopener" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", textDecoration: "none", padding: "2px 0" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#34d399", flexShrink: 0 }} />
+                <span style={{ fontSize: 14, fontWeight: 500, color: t.text }}>All systems operational</span>
+              </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
+          </div>
+        </div>
+
         {/* ── LOG OUT ── */}
         <div id="set-account" className="set-section">
           <button onClick={async () => {
@@ -339,6 +354,7 @@ export function SettingsSidebar({ user, dark, t }) {
         ["Notifications", "set-notifications"],
         ["Active Sessions", "set-active-sessions"],
         ["API Key", "set-api-key"],
+        ["System Status", "set-status"],
         ["Log Out", "set-account"],
         ["Account", "set-danger-zone"],
       ].map(([label, id]) => (

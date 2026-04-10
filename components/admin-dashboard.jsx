@@ -437,10 +437,11 @@ function AdminDashboardInner() {
           <div style={{ flex: 1 }} />
           <div className="dash-sidebar-divider" style={{ background: t.sidebarBorder }} />
           <div style={{ padding: "6px 14px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <a href="https://stats.uptimerobot.com/PvHE3u4psX" target="_blank" rel="noopener" style={{ display: "flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: t.green }} />
               <span style={{ fontSize: 13, color: t.green, fontWeight: 500 }}>All systems operational</span>
-            </div>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ marginLeft: "auto" }}><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
           </div>
         </aside>
 
