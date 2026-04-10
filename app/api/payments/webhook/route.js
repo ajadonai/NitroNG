@@ -35,19 +35,50 @@ export async function POST(req) {
         return Response.json({ received: true });
       }
 
+      // Check for coupon bonus
+      let couponBonus = 0;
+      const couponMatch = (tx.note || '').match(/\[coupon:([^\]]+)\]/);
+      if (couponMatch) {
+        try {
+          const couponId = couponMatch[1];
+          const row = await prisma.setting.findUnique({ where: { key: 'coupons' } });
+          if (row) {
+            const coupons = JSON.parse(row.value);
+            const coupon = coupons.find(c => c.id === couponId && c.enabled !== false);
+            if (coupon) {
+              const notExpired = !coupon.expires || new Date(coupon.expires) >= new Date();
+              const notMaxed = !coupon.maxUses || coupon.maxUses === 0 || (coupon.used || 0) < coupon.maxUses;
+              if (notExpired && notMaxed) {
+                couponBonus = coupon.type === 'percent' ? Math.round(amount * (coupon.value / 100)) : coupon.value * 100;
+                const updated = coupons.map(c => c.id === couponId ? { ...c, used: (c.used || 0) + 1 } : c);
+                await prisma.setting.update({ where: { key: 'coupons' }, data: { value: JSON.stringify(updated) } });
+              }
+            }
+          }
+        } catch {}
+      }
+
+      const totalCredit = amount + couponBonus;
+
       // Credit user wallet + mark complete
-      await prisma.$transaction([
+      const ops = [
         prisma.user.update({
           where: { id: tx.userId },
-          data: { balance: { increment: amount } },
+          data: { balance: { increment: totalCredit } },
         }),
         prisma.transaction.update({
           where: { id: tx.id },
           data: { status: 'Completed', amount },
         }),
-      ]);
+      ];
+      if (couponBonus > 0) {
+        ops.push(prisma.transaction.create({
+          data: { userId: tx.userId, type: 'bonus', amount: couponBonus, status: 'Completed', note: `Coupon bonus on deposit ₦${amount / 100}` },
+        }));
+      }
+      await prisma.$transaction(ops);
 
-      console.log(`[Webhook] ₦${amount / 100} credited to user ${tx.userId} (ref: ${reference})`);
+      console.log(`[Webhook] ₦${amount / 100} + ₦${couponBonus / 100} bonus credited to user ${tx.userId} (ref: ${reference})`);
     }
 
     return Response.json({ received: true });

@@ -31,6 +31,31 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
   const valid = numAmount >= 500;
   const balance = user?.balance || 0;
 
+  // Coupon state
+  const [showCoupon, setShowCoupon] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponApplied, setCouponApplied] = useState(null); // { code, type, value, discount, couponId }
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState("");
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true); setCouponError("");
+    try {
+      const r = await fetch("/api/coupons", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: couponCode, amount: numAmount * 100 }) });
+      const d = await r.json();
+      if (r.ok && d.valid) { setCouponApplied(d); setCouponError(""); }
+      else { setCouponError(d.error || "Invalid code"); setCouponApplied(null); }
+    } catch { setCouponError("Failed to validate"); }
+    setCouponLoading(false);
+  };
+
+  const removeCoupon = () => { setCouponApplied(null); setCouponCode(""); setCouponError(""); };
+
+  // Recalculate discount when amount changes
+  const discount = couponApplied ? (couponApplied.type === "percent" ? Math.round(numAmount * 100 * (couponApplied.value / 100)) : couponApplied.value * 100) : 0;
+  const finalAmount = Math.max(0, numAmount * 100 - discount);
+
   const [payError, setPayError] = useState(null);
 
   const handlePay = async () => {
@@ -40,7 +65,7 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
       const res = await fetch("/api/payments/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: numAmount, method }),
+        body: JSON.stringify({ amount: numAmount, method, couponId: couponApplied?.couponId || undefined }),
         signal: AbortSignal.timeout(30000),
       });
       const data = await res.json();
@@ -156,6 +181,40 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
               {gatewaysLoading ? <div style={{ fontSize: 13, color: t.textMuted, padding: "8px 0" }}>Loading...</div> : gateways.length === 0 ? <div style={{ fontSize: 13, color: t.textMuted, padding: "8px 0" }}>No payment methods available</div> : gateways.map(g => <Radio key={g.id} gw={g} />)}
             </div>
             <div className="fund-btn-wrap">
+              {/* Coupon */}
+              {!couponApplied ? (
+                <div style={{ marginBottom: 10 }}>
+                  {!showCoupon ? (
+                    <button onClick={() => setShowCoupon(true)} style={{ background: "none", border: "none", color: t.accent, fontSize: 13, fontWeight: 500, cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+                      Have a coupon code?
+                    </button>
+                  ) : (
+                    <div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <input value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} placeholder="Enter code" className="m" style={{ flex: 1, padding: "9px 12px", borderRadius: 8, background: dark ? "rgba(255,255,255,.04)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: t.text, fontSize: 14, fontFamily: "'JetBrains Mono',monospace", letterSpacing: 1, outline: "none" }} />
+                        <button onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()} style={{ padding: "9px 16px", borderRadius: 8, background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", color: t.accent, fontSize: 14, fontWeight: 600, cursor: "pointer", border: "none", opacity: couponLoading || !couponCode.trim() ? .5 : 1 }}>{couponLoading ? "..." : "Apply"}</button>
+                      </div>
+                      {couponError && <div style={{ fontSize: 12, color: dark ? "#fca5a5" : "#dc2626", marginTop: 6 }}>⚠️ {couponError}</div>}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8, background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)"}`, fontSize: 13, color: dark ? "#6ee7b7" : "#059669", marginBottom: 10 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  <span><strong className="m">{couponApplied.code}</strong> — {couponApplied.type === "percent" ? `${couponApplied.value}% off` : `₦${couponApplied.value.toLocaleString()} off`}</span>
+                  <button onClick={removeCoupon} style={{ background: "none", border: "none", color: dark ? "#fca5a5" : "#dc2626", fontSize: 12, cursor: "pointer", marginLeft: "auto" }}>Remove</button>
+                </div>
+              )}
+              {couponApplied && discount > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, background: dark ? "rgba(255,255,255,.02)" : "rgba(0,0,0,.015)", marginBottom: 10, fontSize: 14 }}>
+                  <span style={{ color: t.textMuted }}>You pay</span>
+                  <div>
+                    <span className="m" style={{ color: t.textSoft, textDecoration: "line-through", marginRight: 8, fontSize: 13 }}>{fN(numAmount)}</span>
+                    <strong className="m" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN(Math.round(finalAmount / 100))}</strong>
+                  </div>
+                </div>
+              )}
               {payError && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 8, fontSize: 13, background: dark ? "rgba(220,38,38,.08)" : "#fef2f2", border: `1px solid ${dark ? "rgba(220,38,38,.15)" : "#fecaca"}`, color: dark ? "#fca5a5" : "#dc2626", display: "flex", justifyContent: "space-between", alignItems: "center" }}><span>⚠️ {payError}</span><button onClick={() => setPayError(null)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", fontSize: 14 }}>✕</button></div>}
               <button onClick={handlePay} disabled={!valid || loading} className="fund-pay-btn" style={{ background: valid ? `linear-gradient(135deg,#c47d8e,#8b5e6b)` : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"), color: valid ? "#fff" : t.textMuted }}>
                 {loading ? "Processing..." : valid ? `Pay ${fN(numAmount)} Now` : "How much?"}

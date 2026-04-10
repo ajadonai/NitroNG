@@ -26,7 +26,7 @@ export async function POST(req) {
     const user = await prisma.user.findUnique({ where: { id: session.id } });
     if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
 
-    const { amount, method } = await req.json();
+    const { amount, method, couponId } = await req.json();
     const amountNum = Number(amount);
     const gateway = method || 'paystack';
 
@@ -55,7 +55,7 @@ export async function POST(req) {
         method: gateway,
         status: 'Pending',
         reference,
-        note: `${gateway} deposit ₦${amountNum.toLocaleString()}`,
+        note: `${gateway} deposit ₦${amountNum.toLocaleString()}${couponId ? ` [coupon:${couponId}]` : ''}`,
       },
     });
 

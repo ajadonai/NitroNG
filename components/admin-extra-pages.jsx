@@ -295,9 +295,39 @@ export function AdminCouponsPage({ dark, t }) {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ code: "", type: "percent", value: "", minOrder: "", maxUses: "", expires: "" });
 
+  // Referral settings
+  const [refEnabled, setRefEnabled] = useState(true);
+  const [refReferrer, setRefReferrer] = useState("500");
+  const [refInvitee, setRefInvitee] = useState("500");
+  const [refMinDeposit, setRefMinDeposit] = useState("0");
+  const [refSaving, setRefSaving] = useState(false);
+  const [refMsg, setRefMsg] = useState(null);
+
   useEffect(() => {
     fetch("/api/admin/coupons").then(r => r.json()).then(d => { setCoupons(d.coupons || []); setLoading(false); }).catch(() => setLoading(false));
+    fetch("/api/admin/settings").then(r => r.json()).then(d => {
+      if (!d.settings) return;
+      const s = d.settings;
+      if (s.ref_enabled !== undefined) setRefEnabled(s.ref_enabled === "true" || s.ref_enabled === true);
+      if (s.ref_referrer_bonus) setRefReferrer(String(Math.round(Number(s.ref_referrer_bonus) / 100)));
+      if (s.ref_invitee_bonus) setRefInvitee(String(Math.round(Number(s.ref_invitee_bonus) / 100)));
+      if (s.ref_min_deposit) setRefMinDeposit(String(Math.round(Number(s.ref_min_deposit) / 100)));
+    });
   }, []);
+
+  const saveReferral = async () => {
+    setRefSaving(true); setRefMsg(null);
+    try {
+      const r = await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ settings: {
+        ref_enabled: String(refEnabled),
+        ref_referrer_bonus: String(Number(refReferrer || 0) * 100),
+        ref_invitee_bonus: String(Number(refInvitee || 0) * 100),
+        ref_min_deposit: String(Number(refMinDeposit || 0) * 100),
+      }}) });
+      setRefMsg(r.ok ? { ok: true, text: "Referral settings saved" } : { text: "Failed to save" });
+    } catch { setRefMsg({ text: "Request failed" }); }
+    setRefSaving(false);
+  };
 
   const createCoupon = async () => {
     if (!form.code.trim() || !form.value) return;
@@ -307,63 +337,120 @@ export function AdminCouponsPage({ dark, t }) {
     } catch {}
   };
 
-  const deleteCoupon = async (code) => {
+  const deleteCoupon = async (id) => {
     try {
-      await fetch("/api/admin/coupons", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", code }) });
-      setCoupons(prev => prev.filter(c => c.code !== code));
+      await fetch("/api/admin/coupons", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
+      setCoupons(prev => prev.filter(c => c.id !== id));
     } catch {}
   };
 
   const inputStyle = { width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 15, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
+  const numInput = { padding: "9px 12px", borderRadius: 8, background: dark ? "rgba(255,255,255,.04)" : "#fff", borderWidth: "0.5px", borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)", color: t.text, fontSize: 15, fontFamily: "'JetBrains Mono',monospace", outline: "none", textAlign: "right", width: 80 };
+  const cardBg = dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)";
+  const cardBd = `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`;
+  const divBg = dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)";
 
   return (
     <>
       <div className="adm-header">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <div className="adm-title" style={{ color: t.text }}>Coupons</div>
-            <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage promo codes and discounts</div>
-          </div>
-          <button onClick={() => setShowAdd(!showAdd)} className="adm-btn-primary">{showAdd ? "Cancel" : "+ New Coupon"}</button>
-        </div>
+        <div className="adm-title" style={{ color: t.text }}>Rewards</div>
+        <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage referral bonuses and coupon codes</div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {showAdd && (
-        <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, marginTop: 16, marginBottom: 16, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)", borderRadius: 14 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-            <div><label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 4 }}>Code</label><input value={form.code} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase() })} placeholder="WELCOME20" className="m" style={inputStyle} /></div>
-            <div><label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 4 }}>Type</label>
-              <div style={{ display: "flex", gap: 4 }}>
-                {[["percent", "% Off"], ["fixed", "₦ Off"]].map(([id, lb]) => (
-                  <button key={id} onClick={() => setForm({ ...form, type: id })} className="adm-filter-pill" style={{ borderWidth: 1, borderStyle: "solid", borderColor: form.type === id ? t.accent : t.cardBorder, background: form.type === id ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: form.type === id ? t.accent : t.textMuted }}>{lb}</button>
-                ))}
-              </div>
-            </div>
-            <div><label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 4 }}>Value</label><input type="number" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} placeholder={form.type === "percent" ? "20" : "500"} className="m" style={inputStyle} /></div>
-            <div><label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 4 }}>Min Order (₦)</label><input type="number" value={form.minOrder} onChange={e => setForm({ ...form, minOrder: e.target.value })} placeholder="0" className="m" style={inputStyle} /></div>
-            <div><label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 4 }}>Max Uses (0 = unlimited)</label><input type="number" value={form.maxUses} onChange={e => setForm({ ...form, maxUses: e.target.value })} placeholder="0" className="m" style={inputStyle} /></div>
-            <div><label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 4 }}>Expires</label><input type="date" value={form.expires} onChange={e => setForm({ ...form, expires: e.target.value })} style={inputStyle} /></div>
-          </div>
-          <button onClick={createCoupon} className="adm-btn-primary" style={{ opacity: form.code && form.value ? 1 : .4 }}>Create Coupon</button>
-        </div>
-      )}
+      {/* ═══ REFERRAL SETTINGS ═══ */}
+      <div className="adm-card" style={{ background: cardBg, border: cardBd, padding: 20, marginBottom: 20 }}>
+        <div className="set-card-title" style={{ color: t.textMuted }}>Referral program</div>
+        <div className="set-card-divider" style={{ background: divBg }} />
 
-      <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, marginTop: showAdd ? 0 : 16 }}>
+        <div style={{ padding: "10px 14px", borderRadius: 8, background: dark ? "rgba(196,125,142,.05)" : "rgba(196,125,142,.03)", borderLeft: "3px solid #c47d8e", fontSize: 13, color: t.textMuted, lineHeight: 1.6, marginBottom: 16 }}>
+          When a user shares their referral code and someone signs up with it, both receive wallet credit after the new user verifies their email.
+        </div>
+
+        {refMsg && <div style={{ padding: "8px 14px", borderRadius: 8, marginBottom: 12, fontSize: 13, background: refMsg.ok ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: refMsg.ok ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{refMsg.ok ? "✓" : "⚠️"} {refMsg.text}</div>}
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}` }}>
+          <div><div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>Referral program</div><div style={{ fontSize: 12, color: t.textSoft, marginTop: 2 }}>Enable or disable the entire system</div></div>
+          <div onClick={() => setRefEnabled(!refEnabled)} style={{ width: 44, height: 24, borderRadius: 12, background: refEnabled ? "#c47d8e" : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"), position: "relative", cursor: "pointer", flexShrink: 0 }}>
+            <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: refEnabled ? 23 : 3, transition: "left .2s" }} />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}` }}>
+          <div><div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>Referrer bonus</div><div style={{ fontSize: 12, color: t.textSoft, marginTop: 2 }}>Amount credited to the person who shared the code</div></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            <span style={{ fontSize: 14, color: t.textMuted }}>₦</span>
+            <input value={refReferrer} onChange={e => setRefReferrer(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" style={numInput} />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}` }}>
+          <div><div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>New user bonus</div><div style={{ fontSize: 12, color: t.textSoft, marginTop: 2 }}>Welcome credit for the person who signed up with a code</div></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            <span style={{ fontSize: 14, color: t.textMuted }}>₦</span>
+            <input value={refInvitee} onChange={e => setRefInvitee(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" style={numInput} />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0" }}>
+          <div><div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>Minimum deposit to activate</div><div style={{ fontSize: 12, color: t.textSoft, marginTop: 2 }}>New user must deposit this amount before bonuses pay out (0 = immediate)</div></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            <span style={{ fontSize: 14, color: t.textMuted }}>₦</span>
+            <input value={refMinDeposit} onChange={e => setRefMinDeposit(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" style={numInput} />
+          </div>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <button onClick={saveReferral} disabled={refSaving} className="adm-btn-primary" style={{ opacity: refSaving ? .5 : 1 }}>{refSaving ? "Saving..." : "Save Referral Settings"}</button>
+        </div>
+      </div>
+
+      {/* ═══ COUPONS ═══ */}
+      <div className="adm-card" style={{ background: cardBg, border: cardBd, marginBottom: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 16px 0" }}>
+          <div>
+            <div className="set-card-title" style={{ color: t.textMuted, marginBottom: 2 }}>Coupons</div>
+            <div style={{ fontSize: 13, color: t.textSoft }}>Promo codes users can apply when funding their wallet</div>
+          </div>
+          <button onClick={() => setShowAdd(!showAdd)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>{showAdd ? "Cancel" : "+ New"}</button>
+        </div>
+        <div style={{ height: "0.5px", background: divBg, margin: "12px 0 0" }} />
+
+        {showAdd && (
+          <div style={{ padding: 16, borderBottom: `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}` }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+              <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Code</label><input value={form.code} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20) })} placeholder="WELCOME20" className="m" style={inputStyle} /></div>
+              <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Type</label>
+                <div style={{ display: "flex", gap: 4 }}>
+                  {[["percent", "% Off"], ["fixed", "₦ Off"]].map(([id, lb]) => (
+                    <button key={id} onClick={() => setForm({ ...form, type: id })} className="adm-filter-pill" style={{ borderWidth: 1, borderStyle: "solid", borderColor: form.type === id ? t.accent : t.cardBorder, background: form.type === id ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: form.type === id ? t.accent : t.textMuted }}>{lb}</button>
+                  ))}
+                </div>
+              </div>
+              <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Value</label><input type="number" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} placeholder={form.type === "percent" ? "20" : "500"} className="m" style={inputStyle} /></div>
+              <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Min Deposit (₦)</label><input type="number" value={form.minOrder} onChange={e => setForm({ ...form, minOrder: e.target.value })} placeholder="0" className="m" style={inputStyle} /></div>
+              <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Max Uses (0 = unlimited)</label><input type="number" value={form.maxUses} onChange={e => setForm({ ...form, maxUses: e.target.value })} placeholder="0" className="m" style={inputStyle} /></div>
+              <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Expires</label><input type="date" value={form.expires} onChange={e => setForm({ ...form, expires: e.target.value })} style={inputStyle} /></div>
+            </div>
+            <button onClick={createCoupon} className="adm-btn-primary" style={{ opacity: form.code && form.value ? 1 : .4 }}>Create Coupon</button>
+          </div>
+        )}
+
         {loading ? (
           <div className="adm-empty" style={{ color: t.textMuted }}>Loading coupons...</div>
         ) : coupons.length > 0 ? coupons.map((c, i) => (
-          <div key={c.code} className="adm-list-row" style={{ borderBottom: i < coupons.length - 1 ? `1px solid ${t.cardBorder}` : "none", flexWrap: "wrap", gap: 10 }}>
+          <div key={c.id || c.code} className="adm-list-row" style={{ borderBottom: i < coupons.length - 1 ? `1px solid ${t.cardBorder}` : "none", flexWrap: "wrap", gap: 10 }}>
             <div style={{ flex: 1, minWidth: 160 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span className="m" style={{ fontSize: 16, fontWeight: 600, color: t.accent }}>{c.code}</span>
-                <span className="m" style={{ fontSize: 14, color: t.green, fontWeight: 600 }}>{c.type === "percent" ? `${c.value}%` : fN(c.value)} off</span>
+                <span className="m" style={{ fontSize: 14, color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>{c.type === "percent" ? `${c.value}%` : `₦${(c.value || 0).toLocaleString()}`} off</span>
+                {!c.enabled && <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textMuted }}>Disabled</span>}
               </div>
-              <div style={{ fontSize: 14, color: t.textMuted, marginTop: 2 }}>
-                Min: {c.minOrder ? fN(c.minOrder) : "None"} · Uses: {c.uses || 0}/{c.maxUses || "∞"} · {c.expires ? `Expires: ${c.expires}` : "No expiry"}
+              <div style={{ fontSize: 13, color: t.textMuted, marginTop: 2 }}>
+                Min: {c.minOrder ? `₦${c.minOrder.toLocaleString()}` : "None"} · Uses: {c.used || 0}/{c.maxUses || "∞"} · {c.expires ? `Exp: ${c.expires}` : "No expiry"}
               </div>
             </div>
-            <button onClick={async () => { const ok = await confirm({ title: "Delete Coupon", message: `Delete coupon "${c.code}"? This cannot be undone.`, confirmLabel: "Delete", danger: true }); if (ok) deleteCoupon(c.code); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: t.red }}>Delete</button>
+            <button onClick={async () => { const ok = await confirm({ title: "Delete Coupon", message: `Delete coupon "${c.code}"? This cannot be undone.`, confirmLabel: "Delete", danger: true }); if (ok) deleteCoupon(c.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
           </div>
         )) : (
           <div className="adm-empty" style={{ color: t.textMuted }}>No coupons created yet</div>
