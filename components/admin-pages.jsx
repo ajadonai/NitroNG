@@ -278,28 +278,48 @@ export function AdminAlertsPage({ dark, t }) {
   const confirm = useConfirm();
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showNew, setShowNew] = useState(false);
+  const [creating, setCreating] = useState(null); // which slot is creating: "everyone"|"landing"|"users"|"admin"
   const [newMsg, setNewMsg] = useState("");
   const [newType, setNewType] = useState("info");
-  const [newTarget, setNewTarget] = useState("everyone");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/alerts").then(r => r.json()).then(d => { setAlerts(d.alerts || []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  const createAlert = async () => {
-    if (!newMsg.trim()) return;
+  const createAlert = async (target) => {
+    if (!newMsg.trim() || saving) return;
+    setSaving(true);
     try {
-      const res = await fetch("/api/admin/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", message: newMsg, type: newType, target: newTarget }) });
+      const res = await fetch("/api/admin/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", message: newMsg, type: newType, target }) });
       const data = await res.json();
-      if (res.ok && data.alert) { setAlerts(prev => [data.alert, ...prev.map(a => ({ ...a, active: false }))]); setNewMsg(""); setShowNew(false); }
+      if (res.ok && data.alert) {
+        // Auto-pause: if everyone → pause ALL, otherwise pause same-target only
+        setAlerts(prev => [data.alert, ...prev.map(a => {
+          if (target === "everyone") return { ...a, active: false };
+          if (a.target === target) return { ...a, active: false };
+          return a;
+        })]);
+        setNewMsg(""); setCreating(null); setNewType("info");
+      }
     } catch {}
+    setSaving(false);
   };
 
-  const toggleAlert = async (id, active) => {
+  const toggleAlert = async (id, active, target) => {
     try {
       await fetch("/api/admin/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
-      setAlerts(prev => prev.map(a => a.id === id ? { ...a, active: !active } : a));
+      if (!active) {
+        // Activating: if everyone → pause all others, otherwise pause same-target
+        setAlerts(prev => prev.map(a => {
+          if (a.id === id) return { ...a, active: true };
+          if (target === "everyone") return { ...a, active: false };
+          if (a.target === target && a.active) return { ...a, active: false };
+          return a;
+        }));
+      } else {
+        setAlerts(prev => prev.map(a => a.id === id ? { ...a, active: false } : a));
+      }
     } catch {}
   };
 
@@ -313,42 +333,73 @@ export function AdminAlertsPage({ dark, t }) {
   const typeColors = { info: t.accent, warning: dark ? "#fbbf24" : "#d97706", success: dark ? "#6ee7b7" : "#059669", urgent: dark ? "#fca5a5" : "#dc2626" };
   const typeIcons = { info: "📢", warning: "⚠️", success: "✅", urgent: "🚨" };
 
-  return (
-    <>
-      <div className="adm-header">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <div className="adm-title" style={{ color: t.text }}>Announcements</div>
-            <div className="adm-subtitle" style={{ color: t.textMuted }}>Site-wide banners shown to visitors and users</div>
-          </div>
-          <button onClick={() => setShowNew(!showNew)} className="adm-btn-primary">{showNew ? "Cancel" : "+ New Alert"}</button>
-        </div>
-        <div className="page-divider" style={{ background: t.cardBorder }} />
-      </div>
+  const getActive = (target) => alerts.find(a => a.target === target && a.active);
+  const getHistory = (target) => alerts.filter(a => a.target === target && !a.active);
+  const everyoneActive = getActive("everyone");
 
-      {showNew && (
-        <div className="set-section" style={{ marginTop: 16 }}>
-          <div className="set-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-            <div className="set-card-title" style={{ color: t.textMuted }}>New announcement</div>
-            <div className="set-card-divider" style={{ background: t.cardBorder }} />
+  const SlotCard = ({ target, title, desc, isOverride }) => {
+    const active = getActive(target);
+    const history = getHistory(target);
+    const isCreating = creating === target;
+    const cardBorder = isOverride ? (dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.12)") : t.cardBorder;
+    const cardBg = isOverride ? (dark ? "rgba(251,191,36,.03)" : "rgba(217,119,6,.02)") : (dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)");
 
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Message</label>
-              <textarea value={newMsg} onChange={e => setNewMsg(e.target.value)} placeholder="What do you want users to know?" rows={2} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 15, outline: "none", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }} />
+    return (
+      <div className="set-section">
+        <div className="set-card" style={{ background: cardBg, border: `0.5px solid ${cardBorder}` }}>
+          <div className="set-card-title" style={{ color: isOverride ? (dark ? "#fbbf24" : "#d97706") : t.textMuted }}>{isOverride ? "⚡ " : ""}{title}</div>
+          <div className="set-card-desc" style={{ color: t.textMuted }}>{desc}</div>
+          <div className="set-card-divider" style={{ background: cardBorder }} />
+
+          {/* Active alert or empty */}
+          {active ? (
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: dark ? "#6ee7b7" : "#059669", marginBottom: 10 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: dark ? "#6ee7b7" : "#059669" }} />
+                Active
+              </div>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 10, marginBottom: 12,
+                background: dark ? `${typeColors[active.type]}15` : `${typeColors[active.type]}08`,
+                border: `1px solid ${dark ? `${typeColors[active.type]}40` : `${typeColors[active.type]}30`}`,
+                borderLeft: `3px solid ${typeColors[active.type]}`,
+              }}>
+                <span style={{ fontSize: 14, flexShrink: 0 }}>{typeIcons[active.type] || "📢"}</span>
+                <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: t.text }}>{active.message}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 6, background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.06)", color: dark ? "#6ee7b7" : "#059669", flexShrink: 0 }}>Live</span>
+              </div>
+              <div style={{ display: "flex", gap: 6, marginBottom: history.length > 0 ? 12 : 0 }}>
+                <button onClick={() => toggleAlert(active.id, true, target)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: dark ? "#fbbf24" : "#d97706" }}>Pause</button>
+                <button onClick={async () => { const ok = await confirm({ title: "Delete Alert", message: `Delete "${active.message?.slice(0, 50)}..."?`, confirmLabel: "Delete", danger: true }); if (ok) deleteAlert(active.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
+                <button onClick={() => { setCreating(target); setNewMsg(""); setNewType("info"); }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textSoft }}>+ New</button>
+              </div>
+            </>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#555" }} />
+              <span style={{ fontSize: 12, color: "#555" }}>No active alert</span>
+              <button onClick={() => { setCreating(target); setNewMsg(""); setNewType("info"); }} className="adm-btn-primary" style={{ marginLeft: "auto", fontSize: 12, padding: "6px 14px" }}>+ Create</button>
             </div>
+          )}
 
-            <div style={{ display: "flex", gap: 20, marginBottom: 16, flexWrap: "wrap" }}>
-              <div>
-                <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 6 }}>Type</label>
+          {/* Create form — inline */}
+          {isCreating && (
+            <div style={{ marginTop: 8, paddingTop: 12, borderTop: `1px solid ${t.cardBorder}` }}>
+              {active && (
+                <div style={{ fontSize: 12, color: dark ? "#fbbf24" : "#d97706", marginBottom: 10 }}>
+                  Current alert will be auto-paused when you create a new one.
+                </div>
+              )}
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Message</label>
+                <textarea value={newMsg} onChange={e => setNewMsg(e.target.value)} placeholder="What do you want to announce?" rows={2} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }} />
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Type</label>
                 <div style={{ display: "flex", gap: 4 }}>
-                  {[
-                    ["info", "Info", "General announcements"],
-                    ["success", "Success", "Promos, milestones"],
-                    ["warning", "Warning", "Maintenance, delays"],
-                    ["urgent", "Urgent", "Disruptions, critical"],
-                  ].map(([ty, label]) => (
+                  {[["info", "Info"], ["success", "Success"], ["warning", "Warning"], ["urgent", "Urgent"]].map(([ty, label]) => (
                     <button key={ty} onClick={() => setNewType(ty)} style={{
-                      padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                      padding: "6px 12px", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer",
                       borderWidth: 1, borderStyle: "solid", fontFamily: "inherit",
                       borderColor: newType === ty ? typeColors[ty] : t.cardBorder,
                       background: newType === ty ? (dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.02)") : "transparent",
@@ -357,64 +408,55 @@ export function AdminAlertsPage({ dark, t }) {
                   ))}
                 </div>
               </div>
-              <div>
-                <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 6 }}>Show on</label>
-                <div style={{ display: "flex", gap: 4 }}>
-                  {[
-                    ["everyone", "Everyone"],
-                    ["landing", "Landing page"],
-                    ["users", "Users only"],
-                    ["admin", "Admin only"],
-                  ].map(([tg, label]) => (
-                    <button key={tg} onClick={() => setNewTarget(tg)} style={{
-                      padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
-                      borderWidth: 1, borderStyle: "solid", fontFamily: "inherit",
-                      borderColor: newTarget === tg ? t.accent : t.cardBorder,
-                      background: newTarget === tg ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent",
-                      color: newTarget === tg ? t.accent : t.textMuted,
-                    }}>{label}</button>
-                  ))}
-                </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => createAlert(target)} disabled={!newMsg.trim() || saving} className="adm-btn-primary" style={{ opacity: newMsg.trim() && !saving ? 1 : .4, fontSize: 13 }}>{saving ? "Creating..." : isOverride ? "Create override" : "Create & auto-pause old"}</button>
+                <button onClick={() => setCreating(null)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textSoft }}>Cancel</button>
               </div>
             </div>
+          )}
 
-            <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 14, lineHeight: 1.5 }}>
-              <strong style={{ color: t.textSoft }}>Dismiss behavior:</strong> Info & success alerts are permanently dismissed per user. Warning & urgent alerts come back each new session.
-            </div>
-
-            <button onClick={createAlert} className="adm-btn-primary" style={{ opacity: newMsg.trim() ? 1 : .4 }}>Create Alert</button>
-          </div>
-        </div>
-      )}
-
-      <div className="set-section" style={{ marginTop: showNew ? 0 : 16 }}>
-        <div className="set-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}`, padding: 0 }}>
-          {loading ? (
-            <div style={{ padding: 20, fontSize: 14, color: t.textMuted, textAlign: "center" }}>Loading alerts...</div>
-          ) : alerts.length > 0 ? alerts.map((a, i) => (
-            <div key={`${a.id}-${i}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: i < alerts.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 14, flexShrink: 0 }}>{typeIcons[a.type] || "📢"}</span>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: t.text, opacity: a.active ? 1 : .45, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.message}</span>
+          {/* History */}
+          {history.length > 0 && (
+            <>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: "uppercase", color: "#555", marginTop: 14, marginBottom: 6 }}>History</div>
+              {history.slice(0, 5).map(a => (
+                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}`, fontSize: 13 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: "1px 6px", borderRadius: 4, flexShrink: 0, background: dark ? `${typeColors[a.type]}15` : `${typeColors[a.type]}08`, color: typeColors[a.type] || t.textMuted }}>{a.type}</span>
+                  <span style={{ flex: 1, color: "#706c68", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.message}</span>
+                  <span style={{ color: "#555", fontSize: 12, flexShrink: 0 }}>{a.created ? fD(a.created) : ""}</span>
+                  <button onClick={() => toggleAlert(a.id, false, target)} className="adm-btn-sm" style={{ padding: "3px 8px", fontSize: 11, borderColor: t.cardBorder, color: dark ? "#6ee7b7" : "#059669" }}>Reactivate</button>
+                  <button onClick={async () => { const ok = await confirm({ title: "Delete", message: `Delete this alert?`, confirmLabel: "Delete", danger: true }); if (ok) deleteAlert(a.id); }} className="adm-btn-sm" style={{ padding: "3px 8px", fontSize: 11, borderColor: dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.1)", color: dark ? "#fca5a5" : "#dc2626" }}>✕</button>
                 </div>
-                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 3, paddingLeft: 26 }}>
-                  <span style={{ color: typeColors[a.type] || t.textMuted, fontWeight: 600 }}>{a.type}</span>
-                  {" · "}{a.target === "everyone" ? "everywhere" : a.target === "users" ? "users only" : a.target === "admin" ? "admin only" : a.target}
-                  {" · "}{a.active ? "Active" : "Paused"}
-                  {a.created ? ` · ${fD(a.created)}` : ""}
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                <button onClick={() => toggleAlert(a.id, a.active)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: a.active ? (dark ? "#fbbf24" : "#d97706") : (dark ? "#6ee7b7" : "#059669") }}>{a.active ? "Pause" : "Activate"}</button>
-                <button onClick={async () => { const ok = await confirm({ title: "Delete Announcement", message: `Delete this alert? "${a.message?.slice(0, 50)}..."`, confirmLabel: "Delete", danger: true }); if (ok) deleteAlert(a.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
-              </div>
-            </div>
-          )) : (
-            <div style={{ padding: 20, fontSize: 14, color: t.textMuted, textAlign: "center" }}>No announcements yet</div>
+              ))}
+            </>
           )}
         </div>
       </div>
+    );
+  };
+
+  if (loading) return <><div className="adm-header"><div className="adm-title" style={{ color: t.text }}>Announcements</div><div className="adm-subtitle" style={{ color: t.textMuted }}>Loading...</div><div className="page-divider" style={{ background: t.cardBorder }} /></div></>;
+
+  return (
+    <>
+      <div className="adm-header">
+        <div>
+          <div className="adm-title" style={{ color: t.text }}>Announcements</div>
+          <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage banners for each audience independently</div>
+        </div>
+        <div className="page-divider" style={{ background: t.cardBorder }} />
+      </div>
+
+      {everyoneActive && (
+        <div style={{ fontSize: 12, color: dark ? "#fbbf24" : "#d97706", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+          <span>⚡</span> Everyone override is active — individual slot alerts are hidden while this is live.
+        </div>
+      )}
+
+      <SlotCard target="everyone" title="Everyone override" desc="Overrides all slots. Shows on landing page, user dashboard, and admin panel simultaneously." isOverride />
+      <SlotCard target="landing" title="Landing page" desc="Shown to visitors on the landing page before they log in." />
+      <SlotCard target="users" title="Users" desc="Shown to logged-in users across all dashboard pages." />
+      <SlotCard target="admin" title="Admin" desc="Internal notes shown only in the admin panel." />
     </>
   );
 }

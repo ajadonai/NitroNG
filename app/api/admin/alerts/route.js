@@ -39,10 +39,15 @@ export async function POST(req) {
 
     if (action === 'create') {
       if (!message?.trim()) return Response.json({ error: 'Message required' }, { status: 400 });
+      const tgt = target || 'users';
 
-      // Auto-pause all currently active alerts
+      // Auto-pause: "everyone" pauses ALL active alerts, others pause same-target only
       await prisma.alert.updateMany({
-        where: { active: true, deletedAt: null },
+        where: {
+          active: true,
+          deletedAt: null,
+          ...(tgt === 'everyone' ? {} : { target: tgt }),
+        },
         data: { active: false },
       });
 
@@ -50,13 +55,13 @@ export async function POST(req) {
         data: {
           message: message.trim(),
           type: type || 'info',
-          target: target || 'both',
+          target: tgt,
           active: true,
           createdBy: admin.name,
           expiresAt: expiresAt ? new Date(expiresAt) : null,
         },
       });
-      await logActivity(admin.name, `Created alert: "${message.trim().slice(0, 50)}" (previous alerts auto-paused)`, 'alert');
+      await logActivity(admin.name, `Created ${tgt} alert: "${message.trim().slice(0, 50)}"`, 'alert');
       return Response.json({ success: true, alert: { id: alert.id, message: alert.message, type: alert.type, target: alert.target, active: alert.active, created: alert.createdAt.toISOString() } });
     }
 
