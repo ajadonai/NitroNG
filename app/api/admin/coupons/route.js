@@ -45,6 +45,9 @@ export async function POST(req) {
     if (action === 'create') {
       const { code, type, value, minOrder, maxUses, expires } = body;
       if (!code?.trim()) return Response.json({ error: 'Code required' }, { status: 400 });
+      const numValue = Number(value) || 0;
+      if (numValue <= 0) return Response.json({ error: 'Value must be greater than 0' }, { status: 400 });
+      if (type === 'percent' && numValue > 100) return Response.json({ error: 'Percent bonus cannot exceed 100%' }, { status: 400 });
       if (coupons.find(c => c.code === code.toUpperCase())) {
         return Response.json({ error: 'Code already exists' }, { status: 400 });
       }
@@ -52,7 +55,7 @@ export async function POST(req) {
         id: Date.now().toString(),
         code: code.toUpperCase().trim(),
         type: type || 'percent',
-        value: Number(value) || 0,
+        value: numValue,
         minOrder: Number(minOrder) || 0,
         maxUses: Number(maxUses) || 100,
         used: 0,
