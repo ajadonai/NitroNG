@@ -19,6 +19,34 @@ function calcSell(cost, brackets, floorPct, floorCeiling) {
   return sell;
 }
 
+/* Number input — defined outside parent so React doesn't remount on every render */
+function NumInput({ value, onChange, min = 0, max = 999999, fallback, width = 64, decimal, dark }) {
+  const [raw, setRaw] = useState(String(value));
+  const focused = useRef(false);
+  useEffect(() => { if (!focused.current) setRaw(String(value)); }, [value]);
+  const inpStyle = { padding: "9px 12px", borderRadius: 8, background: dark ? "rgba(255,255,255,.04)" : "#fff", borderWidth: "0.5px", borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)", color: dark ? "#e5e5e5" : "#1a1a1a", fontSize: 15, fontFamily: "'JetBrains Mono',monospace", outline: "none", textAlign: "right", boxSizing: "border-box", width };
+  return <input
+    value={raw}
+    inputMode={decimal ? "decimal" : "numeric"}
+    style={inpStyle}
+    onFocus={() => { focused.current = true; }}
+    onChange={e => {
+      const v = e.target.value;
+      if (v === "" || (decimal ? /^[0-9]*\.?[0-9]*$/ : /^[0-9]*$/).test(v)) {
+        setRaw(v);
+        const n = decimal ? parseFloat(v) : parseInt(v, 10);
+        if (!isNaN(n)) onChange(Math.min(max, Math.max(min, n)));
+      }
+    }}
+    onBlur={() => {
+      focused.current = false;
+      const n = decimal ? parseFloat(raw) : parseInt(raw, 10);
+      if (isNaN(n) || raw === "") { const fb = fallback !== undefined ? fallback : min; onChange(fb); setRaw(String(fb)); }
+      else { const clamped = Math.min(max, Math.max(min, n)); onChange(clamped); setRaw(String(clamped)); }
+    }}
+  />;
+}
+
 export default function AdminPricingPage({ dark, t }) {
   const confirm = useConfirm();
   const [brackets, setBrackets] = useState(DEF_BRACKETS);
@@ -71,34 +99,6 @@ export default function AdminPricingPage({ dark, t }) {
   // Shared styles
   const cardS = { background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` };
   const divS = { background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)" };
-  const inpBase = { padding: "9px 12px", borderRadius: 8, background: dark ? "rgba(255,255,255,.04)" : "#fff", borderWidth: "0.5px", borderStyle: "solid", borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)", color: t.text, fontSize: 15, fontFamily: "'JetBrains Mono',monospace", outline: "none", textAlign: "right", boxSizing: "border-box", MozAppearance: "textfield", WebkitAppearance: "none" };
-
-  /* Number input — allows clearing, restores default on blur */
-  const NumInput = ({ value, onChange, min = 0, max = 999999, fallback, width = 64, step, decimal }) => {
-    const [raw, setRaw] = useState(String(value));
-    const focused = useRef(false);
-    useEffect(() => { if (!focused.current) setRaw(String(value)); }, [value]);
-    return <input
-      value={raw}
-      inputMode={decimal ? "decimal" : "numeric"}
-      style={{ ...inpBase, width }}
-      onFocus={() => { focused.current = true; }}
-      onChange={e => {
-        const v = e.target.value;
-        if (v === "" || (decimal ? /^[0-9]*\.?[0-9]*$/ : /^[0-9]*$/).test(v)) {
-          setRaw(v);
-          const n = decimal ? parseFloat(v) : parseInt(v, 10);
-          if (!isNaN(n)) onChange(Math.min(max, Math.max(min, n)));
-        }
-      }}
-      onBlur={() => {
-        focused.current = false;
-        const n = decimal ? parseFloat(raw) : parseInt(raw, 10);
-        if (isNaN(n) || raw === "") { const fb = fallback !== undefined ? fallback : min; onChange(fb); setRaw(String(fb)); }
-        else { const clamped = Math.min(max, Math.max(min, n)); onChange(clamped); setRaw(String(clamped)); }
-      }}
-    />;
-  };
 
   // Tip component
   const Tip = ({ children, green }) => (
@@ -145,7 +145,7 @@ export default function AdminPricingPage({ dark, t }) {
                 <div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>₦{b.min.toLocaleString()} – {b.max === Infinity ? "∞" : `₦${b.max.toLocaleString()}`}</div>
                 <div style={{ fontSize: 12, color: t.textSoft }}>{b.label} · ₦{exCost} → ₦{Math.round(exCost * b.multiplier)}</div>
               </div>
-              <NumInput value={b.multiplier} decimal min={1} max={10} fallback={1} width={64} onChange={v => { const n = [...brackets]; n[i] = { ...b, multiplier: v }; setBrackets(n); }} />
+              <NumInput dark={dark} value={b.multiplier} decimal min={1} max={10} fallback={1} width={64} onChange={v => { const n = [...brackets]; n[i] = { ...b, multiplier: v }; setBrackets(n); }} />
               <span style={{ fontSize: 14, color: t.textMuted, width: 12 }}>×</span>
             </div>
           );
@@ -160,12 +160,12 @@ export default function AdminPricingPage({ dark, t }) {
         <Tip>If a bracket calculates a margin below {floorPct}%, the sell price is raised automatically. Only applies to services costing less than ₦{floorCeiling.toLocaleString()} — expensive services use the bracket multiplier alone.</Tip>
 
         <Row label="Minimum margin" hint={`You keep at least ${floorPct}% of every sale`}>
-          <NumInput value={floorPct} onChange={setFloorPct} min={0} max={90} fallback={50} width={64} />
+          <NumInput dark={dark} value={floorPct} onChange={setFloorPct} min={0} max={90} fallback={50} width={64} />
           <span style={{ fontSize: 14, color: t.textMuted }}>%</span>
         </Row>
         <Row label="Cost ceiling" hint="Floor only applies below this cost per 1K">
           <span style={{ fontSize: 14, color: t.textMuted }}>₦</span>
-          <NumInput value={floorCeiling} onChange={setFloorCeiling} min={0} max={999999} fallback={5000} width={80} />
+          <NumInput dark={dark} value={floorCeiling} onChange={setFloorCeiling} min={0} max={999999} fallback={5000} width={80} />
         </Row>
       </div>
 
@@ -177,7 +177,7 @@ export default function AdminPricingPage({ dark, t }) {
           <div className="set-card-divider" style={divS} />
           <Tip green>Nigerian engagement is premium — local followers look authentic and perform better with geo-targeted algorithms.</Tip>
           <Row label="Bonus markup" hint="Added on top of the bracket sell price">
-            <NumInput value={ngBonus} onChange={setNgBonus} min={0} max={200} fallback={25} width={64} />
+            <NumInput dark={dark} value={ngBonus} onChange={setNgBonus} min={0} max={200} fallback={25} width={64} />
             <span style={{ fontSize: 14, color: t.textMuted }}>%</span>
           </Row>
         </div>
@@ -188,7 +188,7 @@ export default function AdminPricingPage({ dark, t }) {
           <div className="set-card-divider" style={divS} />
           <Row label="USD → NGN" hint={`$1 = ₦${usdRate.toLocaleString()}`}>
             <span style={{ fontSize: 14, color: t.textMuted }}>₦</span>
-            <NumInput value={usdRate} onChange={setUsdRate} min={1} max={999999} fallback={1600} width={80} />
+            <NumInput dark={dark} value={usdRate} onChange={setUsdRate} min={1} max={999999} fallback={1600} width={80} />
           </Row>
         </div>
       </div>
@@ -201,7 +201,7 @@ export default function AdminPricingPage({ dark, t }) {
 
         <Row label="MTP cost per 1K" hint="Enter any value to preview">
           <span style={{ fontSize: 14, color: t.textMuted }}>₦</span>
-          <NumInput value={simCost} onChange={setSimCost} min={0} max={999999} fallback={500} width={90} />
+          <NumInput dark={dark} value={simCost} onChange={setSimCost} min={0} max={999999} fallback={500} width={90} />
         </Row>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, margin: "16px 0" }}>
