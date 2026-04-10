@@ -422,7 +422,7 @@ export function AdminCouponsPage({ dark, t }) {
               <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Code</label><input value={form.code} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20) })} placeholder="WELCOME20" className="m" style={inputStyle} /></div>
               <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Type</label>
                 <div style={{ display: "flex", gap: 4 }}>
-                  {[["percent", "% Off"], ["fixed", "₦ Off"]].map(([id, lb]) => (
+                  {[["percent", "% Bonus"], ["fixed", "₦ Bonus"]].map(([id, lb]) => (
                     <button key={id} onClick={() => setForm({ ...form, type: id })} className="adm-filter-pill" style={{ borderWidth: 1, borderStyle: "solid", borderColor: form.type === id ? t.accent : t.cardBorder, background: form.type === id ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: form.type === id ? t.accent : t.textMuted }}>{lb}</button>
                   ))}
                 </div>
@@ -443,7 +443,7 @@ export function AdminCouponsPage({ dark, t }) {
             <div style={{ flex: 1, minWidth: 160 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span className="m" style={{ fontSize: 16, fontWeight: 600, color: t.accent }}>{c.code}</span>
-                <span className="m" style={{ fontSize: 14, color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>{c.type === "percent" ? `${c.value}%` : `₦${(c.value || 0).toLocaleString()}`} off</span>
+                <span className="m" style={{ fontSize: 14, color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>{c.type === "percent" ? `${c.value}%` : `₦${(c.value || 0).toLocaleString()}`} bonus</span>
                 {!c.enabled && <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textMuted }}>Disabled</span>}
               </div>
               <div style={{ fontSize: 13, color: t.textMuted, marginTop: 2 }}>

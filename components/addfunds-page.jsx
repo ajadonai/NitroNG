@@ -54,7 +54,6 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
 
   // Recalculate discount when amount changes
   const discount = couponApplied ? (couponApplied.type === "percent" ? Math.round(numAmount * 100 * (couponApplied.value / 100)) : couponApplied.value * 100) : 0;
-  const finalAmount = Math.max(0, numAmount * 100 - discount);
 
   const [payError, setPayError] = useState(null);
 
@@ -202,17 +201,20 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
               ) : (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8, background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)"}`, fontSize: 13, color: dark ? "#6ee7b7" : "#059669", marginBottom: 10 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                  <span><strong className="m">{couponApplied.code}</strong> — {couponApplied.type === "percent" ? `${couponApplied.value}% off` : `₦${couponApplied.value.toLocaleString()} off`}</span>
+                  <span><strong className="m">{couponApplied.code}</strong> — {couponApplied.type === "percent" ? `${couponApplied.value}% bonus` : `₦${couponApplied.value.toLocaleString()} bonus`}</span>
                   <button onClick={removeCoupon} style={{ background: "none", border: "none", color: dark ? "#fca5a5" : "#dc2626", fontSize: 12, cursor: "pointer", marginLeft: "auto" }}>Remove</button>
                 </div>
               )}
               {couponApplied && discount > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, background: dark ? "rgba(255,255,255,.02)" : "rgba(0,0,0,.015)", marginBottom: 10, fontSize: 14 }}>
-                  <span style={{ color: t.textMuted }}>You pay</span>
-                  <div>
-                    <span className="m" style={{ color: t.textSoft, textDecoration: "line-through", marginRight: 8, fontSize: 13 }}>{fN(numAmount)}</span>
-                    <strong className="m" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN(Math.round(finalAmount / 100))}</strong>
-                  </div>
+                  <span style={{ color: t.textMuted }}>Coupon bonus</span>
+                  <span className="m" style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+{fN(discount / 100)}</span>
+                </div>
+              )}
+              {couponApplied && discount > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, background: dark ? "rgba(110,231,183,.04)" : "rgba(5,150,105,.03)", marginBottom: 10, fontSize: 14 }}>
+                  <span style={{ color: t.textMuted }}>You get</span>
+                  <strong className="m" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN(numAmount + discount / 100)}</strong>
                 </div>
               )}
               {payError && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 8, fontSize: 13, background: dark ? "rgba(220,38,38,.08)" : "#fef2f2", border: `1px solid ${dark ? "rgba(220,38,38,.15)" : "#fecaca"}`, color: dark ? "#fca5a5" : "#dc2626", display: "flex", justifyContent: "space-between", alignItems: "center" }}><span>⚠️ {payError}</span><button onClick={() => setPayError(null)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", fontSize: 14 }}>✕</button></div>}
@@ -287,7 +289,7 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
               ) : (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, padding: "8px 12px", borderRadius: 8, background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)"}`, fontSize: 13, color: dark ? "#6ee7b7" : "#059669" }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                  <span><strong className="m">{couponApplied.code}</strong> — {couponApplied.type === "percent" ? `${couponApplied.value}% off` : `₦${couponApplied.value.toLocaleString()} off`}</span>
+                  <span><strong className="m">{couponApplied.code}</strong> — {couponApplied.type === "percent" ? `${couponApplied.value}% bonus` : `₦${couponApplied.value.toLocaleString()} bonus`}</span>
                   <button onClick={removeCoupon} style={{ background: "none", border: "none", color: dark ? "#fca5a5" : "#dc2626", fontSize: 12, cursor: "pointer", marginLeft: "auto" }}>Remove</button>
                 </div>
               )}
