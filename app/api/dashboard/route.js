@@ -13,7 +13,7 @@ export async function GET() {
       select: {
         id: true, name: true, firstName: true, lastName: true, phone: true,
         email: true, balance: true,
-        referralCode: true, emailVerified: true, createdAt: true,
+        referralCode: true, referredBy: true, emailVerified: true, createdAt: true,
       },
     });
     if (!user) return error('User not found', 404);
@@ -80,6 +80,23 @@ export async function GET() {
       });
     } catch (e) { log.error('Dashboard', 'Alerts query failed', { error: e.message }); }
 
+    // Check if user has a pending referral bonus (referred but bonus not yet paid)
+    let pendingRefBonus = false;
+    let refMinDepositDisplay = 0;
+    if (user.referredBy) {
+      try {
+        const hasBonusTx = await prisma.transaction.findFirst({ where: { userId: user.id, type: 'referral' } });
+        if (!hasBonusTx) {
+          const minDepRow = await prisma.setting.findUnique({ where: { key: 'ref_min_deposit' } });
+          const minDep = Number(minDepRow?.value) || 0;
+          if (minDep > 0) {
+            pendingRefBonus = true;
+            refMinDepositDisplay = minDep / 100;
+          }
+        }
+      } catch {}
+    }
+
     return ok({
       user: {
         id: user.id, name: user.name,
@@ -93,6 +110,8 @@ export async function GET() {
         earnings: referralEarnings / 100,
         refCode: user.referralCode,
         referralList,
+        pendingRefBonus,
+        refMinDeposit: refMinDepositDisplay,
         themePreference: user.themePreference || 'auto',
         perPagePreference: user.perPagePreference || 10,
       },

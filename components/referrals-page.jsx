@@ -39,6 +39,17 @@ export default function ReferralsPage({ user, dark, t }) {
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
+      {/* Pending referral bonus banner */}
+      {user?.pendingRefBonus && (
+        <div style={{ padding: "12px 16px", borderRadius: 12, background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)"}`, marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round"><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6"/><path d="M2 8h20v4H2z"/><path d="M12 20V8"/></svg>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>Your referral bonus is waiting</div>
+            <div style={{ fontSize: 13, color: t.textMuted, marginTop: 2 }}>Deposit {fN(user.refMinDeposit)} or more to unlock your welcome bonus</div>
+          </div>
+        </div>
+      )}
+
       {/* Share card */}
       <div className="ref-share-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
         <div className="ref-share-label" style={{ color: t.textMuted }}>Your Referral</div>
