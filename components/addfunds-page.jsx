@@ -265,6 +265,33 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
                   </div>
                 )}
               </div>
+
+              {/* Coupon — mobile */}
+              {!couponApplied ? (
+                <div style={{ marginTop: 8 }}>
+                  {!showCoupon ? (
+                    <button onClick={() => setShowCoupon(true)} style={{ background: "none", border: "none", color: t.accent, fontSize: 13, fontWeight: 500, cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+                      Have a coupon code?
+                    </button>
+                  ) : (
+                    <>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <input value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} placeholder="Enter code" className="m" style={{ flex: 1, padding: "9px 12px", borderRadius: 8, background: dark ? "rgba(255,255,255,.04)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: t.text, fontSize: 14, fontFamily: "'JetBrains Mono',monospace", letterSpacing: 1, outline: "none" }} />
+                        <button onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()} style={{ padding: "9px 16px", borderRadius: 8, background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", color: t.accent, fontSize: 14, fontWeight: 600, cursor: "pointer", border: "none", opacity: couponLoading || !couponCode.trim() ? .5 : 1 }}>{couponLoading ? "..." : "Apply"}</button>
+                      </div>
+                      {couponError && <div style={{ fontSize: 12, color: dark ? "#fca5a5" : "#dc2626", marginTop: 6 }}>⚠️ {couponError}</div>}
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, padding: "8px 12px", borderRadius: 8, background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)"}`, fontSize: 13, color: dark ? "#6ee7b7" : "#059669" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  <span><strong className="m">{couponApplied.code}</strong> — {couponApplied.type === "percent" ? `${couponApplied.value}% off` : `₦${couponApplied.value.toLocaleString()} off`}</span>
+                  <button onClick={removeCoupon} style={{ background: "none", border: "none", color: dark ? "#fca5a5" : "#dc2626", fontSize: 12, cursor: "pointer", marginLeft: "auto" }}>Remove</button>
+                </div>
+              )}
+
               <button onClick={() => { if (valid) setMobileStep(2); }} disabled={!valid} className="fund-pay-btn" style={{ background: valid ? `linear-gradient(135deg,#c47d8e,#8b5e6b)` : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"), color: valid ? "#fff" : t.textMuted, marginTop: 8 }}>
                 {valid ? "Proceed →" : "Enter amount"}
               </button>
@@ -290,10 +317,13 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
             <div className="fund-mob-summary" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
               <div className="fund-line"><span style={{ color: t.textMuted }}>Deposit</span><span className="m" style={{ color: t.text, fontWeight: 600 }}>{fN(numAmount)}</span></div>
               <div className="fund-line"><span style={{ color: t.textMuted }}>Fee</span><span className="m" style={{ color: t.green, fontWeight: 600 }}>Free</span></div>
+              {couponApplied && discount > 0 && (
+                <div className="fund-line"><span style={{ color: t.textMuted }}>Coupon ({couponApplied.code})</span><span className="m" style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+{fN(discount / 100)} bonus</span></div>
+              )}
               <div style={{ height: 1, background: t.cardBorder, margin: "8px 0" }} />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span className="fund-total-label" style={{ color: t.textMuted }}>Total</span>
-                <span className="m" style={{ fontSize: 20, fontWeight: 600, color: t.accent }}>{fN(numAmount)}</span>
+                <span className="fund-total-label" style={{ color: t.textMuted }}>{couponApplied && discount > 0 ? "You get" : "Total"}</span>
+                <span className="m" style={{ fontSize: 20, fontWeight: 600, color: t.accent }}>{fN(numAmount + (discount > 0 ? discount / 100 : 0))}</span>
               </div>
             </div>
 
