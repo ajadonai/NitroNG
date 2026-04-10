@@ -80,7 +80,7 @@ export default function BannedPage() {
 
           {/* Actions */}
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <a href="mailto:TheNitroNG@gmail.com" style={{ padding: "14px 32px", borderRadius: 12, fontSize: 15, fontWeight: 600, textDecoration: "none", background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", boxShadow: "0 4px 20px rgba(196,125,142,.3)", display: "flex", alignItems: "center", gap: 8 }}>
+            <a href="mailto:info@nitro.ng" style={{ padding: "14px 32px", borderRadius: 12, fontSize: 15, fontWeight: 600, textDecoration: "none", background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", boxShadow: "0 4px 20px rgba(196,125,142,.3)", display: "flex", alignItems: "center", gap: 8 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
               Contact Support
             </a>
@@ -90,7 +90,7 @@ export default function BannedPage() {
           </div>
 
           <p style={{ fontSize: 13, color: t.tm, marginTop: 24, lineHeight: 1.5 }}>
-            Think this is an error? Email us at <a href="mailto:TheNitroNG@gmail.com" style={{ color: t.ac, textDecoration: "none" }}>TheNitroNG@gmail.com</a> with your account email and we'll review it within 24 hours.
+            Think this is an error? Email us at <a href="mailto:info@nitro.ng" style={{ color: t.ac, textDecoration: "none" }}>info@nitro.ng</a> with your account email and we'll review it within 24 hours.
           </p>
         </div>
       </div>
