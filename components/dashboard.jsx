@@ -5,6 +5,7 @@ import { ThemeProvider, useTheme } from "./shared-nav";
 import NewOrderPage, { PLATFORMS, PLATFORM_GROUPS, OrderForm, ServicesSidebar } from "./new-order";
 import { ToastProvider } from "./toast";
 import { ConfirmProvider } from "./confirm-dialog";
+import AnnouncementBanner from "./announcement-banner";
 import { fN, fD } from "../lib/format";
 
 /* Dynamic imports — only load when user navigates to that page */
@@ -85,23 +86,6 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive }) {
 
   return (
     <>
-      {/* Alert bar — only shows when alerts exist */}
-      {alerts.length > 0 && alerts.map((a, i) => (
-        <div key={a.id || i} className="dash-alert" style={{
-          background: a.type === "warning" ? (dark ? "rgba(217,119,6,.08)" : "rgba(217,119,6,.04)") : (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)"),
-          borderTopWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderLeftWidth: 3,
-          borderStyle: "solid",
-          borderTopColor: a.type === "warning" ? (dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.12)") : (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)"),
-          borderRightColor: a.type === "warning" ? (dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.12)") : (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)"),
-          borderBottomColor: a.type === "warning" ? (dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.12)") : (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)"),
-          borderLeftColor: a.type === "warning" ? (dark ? "#fbbf24" : "#d97706") : t.accent,
-          color: a.type === "warning" ? (dark ? "#fbbf24" : "#92400e") : t.text,
-        }}>
-          <span style={{ fontSize: 16, flexShrink: 0 }}>{a.type === "warning" ? "⚠️" : "📢"}</span>
-          <span style={{ flex: 1 }}>{a.message}</span>
-        </div>
-      ))}
-
       {/* Mobile menu hint */}
       <MobileMenuHint dark={dark} t={t} />
 
@@ -836,7 +820,8 @@ function DashboardInner() {
         {leftOpen && <div className="dash-overlay" onClick={() => setLeftOpen(false)} />}
 
         {/* ── MAIN ── */}
-        <main className="dash-main" style={{ background: t.bg, ...(isSupport ? { overflow: "hidden" } : {}) }}>
+        <main className="dash-main" style={{ background: t.bg, ...(isSupport ? { overflow: "hidden" } : {}), position: "relative" }}>
+          <AnnouncementBanner alerts={alerts} dark={dark} mode="dashboard" />
           {!isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isHowTo && <>
             <div className="dash-welcome" style={{ color: t.text }}>What's good, {firstName}</div>
             <div className="dash-welcome-sub" style={{ color: t.textMuted }}>Here's your empire at a glance</div>

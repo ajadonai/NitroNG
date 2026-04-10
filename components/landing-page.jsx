@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme } from "./shared-nav";
 import { SITE } from "../lib/site";
+import AnnouncementBanner from "./announcement-banner";
 
 const AuthModal = dynamic(() => import("./auth-modal"), { ssr: false });
 
@@ -35,6 +36,7 @@ function LandingInner(){
   const [heroPw,setHeroPw]=useState("");
   const [heroLoading,setHeroLoading]=useState(false);
   const [heroError,setHeroError]=useState("");
+  const [heroSuccess,setHeroSuccess]=useState("");
   const [heroSignupData,setHeroSignupData]=useState(null);
   const [heroSignupStep,setHeroSignupStep]=useState(1);
   const [heroPw2,setHeroPw2]=useState("");
@@ -91,7 +93,7 @@ function LandingInner(){
   const heroForgotSubmit=async()=>{
     setHeroError("");if(!heroEmail){setHeroError("Please enter your email");return;}
     setHeroLoading(true);
-    try{const res=await fetch("/api/auth/forgot-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:heroEmail})});const data=await res.json();if(!res.ok){setHeroError(data.error||"Failed to send reset link");setHeroLoading(false);return;}setHeroError("");setHeroLoading(false);setHeroAuth("login");alert("Reset link sent! Check your email.");}catch{setHeroError("Something went wrong.");setHeroLoading(false);}
+    try{const res=await fetch("/api/auth/forgot-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:heroEmail})});const data=await res.json();if(!res.ok){setHeroError(data.error||"Failed to send reset link");setHeroLoading(false);return;}setHeroError("");setHeroLoading(false);setHeroAuth("login");setHeroSuccess("Reset link sent! Check your email.");}catch{setHeroError("Something went wrong.");setHeroLoading(false);}
   };
 
   const sectionIds=["hero","services","pricing","testimonials","cta"];
@@ -148,12 +150,11 @@ function LandingInner(){
 
       <div ref={scrollRef} className="snap-container" style={{flex:1,overflowY:"auto",overflowX:"hidden",position:"relative"}}>
 
+        {/* Site-wide announcement banner */}
+        <AnnouncementBanner alerts={siteAlerts} dark={dark} mode="landing" />
+
         {/* ━━━ HERO ━━━ */}
         <section id="hero" className="snap-section" style={{overflow:"hidden",background:t.heroBg,position:"relative",display:"flex",flexDirection:"column"}}>
-          {/* Alert banner area */}
-          <div style={{flexShrink:0}}>
-            {siteAlerts.length>0&&siteAlerts.map((a,i)=><div key={i} style={{padding:"10px 24px",textAlign:"center",fontSize:14,fontWeight:500,background:a.type==="warning"?(dark?"rgba(217,119,6,.08)":"rgba(255,255,255,.12)"):(dark?"rgba(196,125,142,.06)":"rgba(255,255,255,.1)"),color:a.type==="warning"?(dark?"#fbbf24":"rgba(255,255,255,.95)"):(dark?"#c47d8e":"rgba(255,255,255,.9)"),borderBottom:`1px solid ${dark?"rgba(255,255,255,.04)":"rgba(255,255,255,.1)"}`,borderLeft:`3px solid ${a.type==="warning"?(dark?"rgba(251,191,36,.3)":"rgba(255,255,255,.35)"):(dark?"rgba(196,125,142,.25)":"rgba(255,255,255,.3)")}`,letterSpacing:.2}}>{a.type==="warning"?"⚠️ ":"🎉 "}{a.message}</div>)}
-          </div>
 
           {/* Ambient orbs + particles */}
           <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
@@ -238,6 +239,7 @@ function LandingInner(){
                 {heroAuth==="signup"&&heroSignupStep===2&&<button onClick={()=>{setHeroSignupStep(1);setHeroError("")}} style={{width:"100%",padding:"8px 0",background:"none",color:t.textSoft,fontSize:14,fontWeight:500,marginBottom:8}}>← Back to Step 1</button>}
                 <div style={{textAlign:"center",fontSize:14,color:t.textSoft}}>{heroAuth==="login"?"Don't have an account? ":heroAuth==="forgot"?"Remember your password? ":"Already have an account? "}<button onClick={()=>{setHeroAuth(heroAuth==="forgot"?"login":heroAuth==="login"?"signup":"login");setHeroSignupStep(1);setHeroError("")}} style={{background:"none",color:t.accent,fontWeight:600,fontSize:14}}>{heroAuth==="forgot"?"Log In":heroAuth==="login"?"Sign Up Free":"Log In"}</button></div>
                 {heroError&&<div style={{marginTop:12,padding:"8px 12px",borderRadius:8,background:dark?"rgba(220,38,38,0.1)":"#fef2f2",border:`1px solid ${dark?"rgba(220,38,38,0.2)":"#fecaca"}`,color:dark?"#fca5a5":"#dc2626",fontSize:13,textAlign:"center"}}>⚠️ {heroError}</div>}
+                {heroSuccess&&<div style={{marginTop:12,padding:"8px 12px",borderRadius:8,background:dark?"rgba(110,231,183,0.08)":"#ecfdf5",border:`1px solid ${dark?"rgba(110,231,183,0.15)":"rgba(5,150,105,0.12)"}`,color:dark?"#6ee7b7":"#059669",fontSize:13,textAlign:"center"}}>✓ {heroSuccess}</div>}
               </div>
             </div>
           </div>

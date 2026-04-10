@@ -1292,7 +1292,8 @@ input { font-family: inherit; }
 .toast-text { flex: 1; min-width: 0; }
 .toast-title { font-size: 15px; font-weight: 600; }
 .toast-desc { font-size: 14px; margin-top: 2px; }
-.toast-close { background: none; border: none; font-size: 16px; padding: 2px; flex-shrink: 0; opacity: .6; cursor: pointer; }
+.toast-close { background: none; border: none; font-size: 16px; padding: 2px; flex-shrink: 0; opacity: .5; cursor: pointer; transition: opacity .15s; }
+.toast-close:hover { opacity: .9; }
 .toast-progress { height: 2px; position: relative; }
 .toast-progress-bar { height: 100%; opacity: .3; animation: toastShrink linear forwards; }
 @keyframes toastShrink { from { width: 100%; } to { width: 0%; } }
@@ -1367,19 +1368,43 @@ input { font-family: inherit; }
 /* ══════════════════════════════════════ */
 /* ══ CONFIRMATION DIALOG ══ */
 /* ══════════════════════════════════════ */
-.confirm-overlay { position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; animation: confirmFadeIn .15s ease; }
+.confirm-overlay { position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; animation: confirmFadeIn .2s ease; }
 @keyframes confirmFadeIn { from { opacity: 0; } to { opacity: 1; } }
-.confirm-dialog { width: 90%; max-width: 420px; border-radius: 16px; padding: 28px; text-align: center; animation: confirmSlideIn .2s ease; }
-@keyframes confirmSlideIn { from { transform: scale(.95) translateY(8px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
-.confirm-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+.confirm-dialog { width: 90%; max-width: 420px; border-radius: 16px; padding: 28px 24px 22px; text-align: center; animation: confirmBounceIn .3s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes confirmBounceIn { from { transform: scale(.92) translateY(8px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+.confirm-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
 .confirm-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
-.confirm-message { font-size: 15px; line-height: 1.6; margin-bottom: 20px; }
+.confirm-message { font-size: 14px; line-height: 1.65; margin-bottom: 22px; }
 .confirm-type-section { margin-bottom: 18px; }
-.confirm-type-label { font-size: 14px; margin-bottom: 8px; }
-.confirm-type-input { width: 100%; padding: 10px 14px; border-radius: 8px; border-width: 1px; border-style: solid; font-size: 16px; text-align: center; outline: none; box-sizing: border-box; }
+.confirm-type-label { font-size: 13px; margin-bottom: 6px; }
+.confirm-type-input { width: 100%; padding: 10px 14px; border-radius: 8px; border-width: 1px; border-style: solid; font-size: 15px; text-align: center; outline: none; box-sizing: border-box; letter-spacing: 2px; }
 .confirm-buttons { display: flex; gap: 10px; }
-.confirm-btn-cancel { flex: 1; padding: 12px 0; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; border-width: 1px; border-style: solid; }
-.confirm-btn-action { flex: 1; padding: 12px 0; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; }
+.confirm-btn-cancel { flex: 1; padding: 12px 0; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; border-width: 1px; border-style: solid; transition: filter .15s, transform .1s; }
+.confirm-btn-cancel:hover { filter: brightness(1.1); }
+.confirm-btn-cancel:active { transform: scale(.97); }
+.confirm-btn-action { flex: 1; padding: 12px 0; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; transition: filter .15s, transform .1s; }
+.confirm-btn-action:hover { filter: brightness(1.1); }
+.confirm-btn-action:active { transform: scale(.97); }
+
+/* ══════════════════════════════════════ */
+/* ══ ANNOUNCEMENT BANNER            ══ */
+/* ══════════════════════════════════════ */
+.nitro-announce { animation: announceIn .35s cubic-bezier(.34,1.2,.64,1) both; }
+.nitro-announce-out { animation: announceOut .25s ease forwards; }
+@keyframes announceIn { 0% { opacity: 0; transform: translateY(-100%); } 100% { opacity: 1; transform: translateY(0); } }
+@keyframes announceOut { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-100%); } }
+.nitro-announce-inner { display: flex; align-items: center; gap: 10px; padding: 10px 24px; padding-right: 44px; justify-content: center; position: relative; }
+.nitro-announce-icon { flex-shrink: 0; }
+.nitro-announce-text { font-size: 14px; font-weight: 500; }
+.nitro-announce-action { font-size: 13px; font-weight: 600; text-decoration: none; margin-left: 6px; }
+.nitro-announce-action:hover { text-decoration: underline; }
+.nitro-announce-x { background: none; border: none; cursor: pointer; padding: 6px 10px; font-size: 14px; opacity: .5; font-family: inherit; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
+.nitro-announce-x:hover { opacity: .8; }
+@media (max-width: 767px) {
+  .nitro-announce-inner { padding: 9px 16px; padding-right: 36px; gap: 8px; }
+  .nitro-announce-text { font-size: 13px; }
+  .nitro-announce-action { font-size: 12px; }
+}
 
 /* ══════════════════════════════════════ */
 /* ══ HOVER EFFECTS (must be last) ══ */

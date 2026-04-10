@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from "react";
 import { useConfirm } from "./confirm-dialog";
+import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
 
 
@@ -565,6 +566,7 @@ export function AdminNotificationsPage({ dark, t }) {
 /* ═══════════════════════════════════════════ */
 export function AdminMaintenancePage({ dark, t }) {
   const confirm = useConfirm();
+  const toast = useToast();
   const [enabled, setEnabled] = useState(false);
   const [msg, setMsg] = useState("We're upgrading our systems to serve you better. We'll be back shortly!");
   const [duration, setDuration] = useState(60);
@@ -587,8 +589,8 @@ export function AdminMaintenancePage({ dark, t }) {
     try {
       const res = await fetch("/api/admin/maintenance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: e, message: msg, durationMinutes: mins, estimatedReturn: formatDuration(mins) }) });
       if (res.ok) { if (newEnabled !== undefined) setEnabled(e); }
-      else { const d = await res.json().catch(() => ({})); alert(d.error || "Failed to save"); }
-    } catch { alert("Network error"); }
+      else { const d = await res.json().catch(() => ({})); toast.error("Failed", d.error || "Failed to save"); }
+    } catch { toast.error("Network error", "Check your connection"); }
   };
 
   return (
