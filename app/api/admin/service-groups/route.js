@@ -216,19 +216,9 @@ export async function POST(req) {
           skipped++;
           continue;
         }
-        // Build settings object — swap in Nigerian markup keys if this is a Nigerian group
-        let tierMs = ms;
-        if (t.group?.nigerian) {
-          tierMs = {
-            ...ms,
-            markup_budget: ms.markup_ng_budget || ms.markup_budget,
-            markup_standard: ms.markup_ng_standard || ms.markup_standard,
-            markup_premium: ms.markup_ng_premium || ms.markup_premium,
-            markup_default: ms.markup_ng_default || ms.markup_default,
-          };
-        }
-        const newSell = Math.min(calculateTierPrice(t.service.costPer1k, t.tier, tierMs), INT4_MAX);
-        if (newSell !== t.sellPer1k) {
+        const isNigerian = !!t.group?.nigerian;
+        const newSell = Math.min(calculateTierPrice(t.service.costPer1k, t.tier, ms, isNigerian), INT4_MAX);
+        if (newSell > 0 && newSell !== t.sellPer1k) {
           ops.push(prisma.serviceTier.update({ where: { id: t.id }, data: { sellPer1k: newSell } }));
           updated++;
         }
