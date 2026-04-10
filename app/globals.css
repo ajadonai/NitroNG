@@ -1399,7 +1399,7 @@ input { font-family: inherit; }
 .dash-logout:hover { opacity: 1 !important; }
 .no-plat-item { transition: background-color .15s ease, color .15s ease !important; }
 .no-plat-item:hover { background-color: rgba(196,125,142,.06) !important; }
-.no-svc-row { transition: background-color .15s ease !important; }
+.no-svc-row { transition: background-color .15s ease, opacity .2s ease, margin .2s ease, box-shadow .2s ease !important; }
 .no-svc-row:hover { background-color: rgba(196,125,142,.03) !important; }
 .no-filter-pill { transition: border-color .15s ease, background-color .15s ease, color .15s ease !important; }
 .no-filter-pill:hover { border-color: rgba(196,125,142,.4) !important; color: #c47d8e !important; }
