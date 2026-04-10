@@ -14,23 +14,27 @@ export async function POST() {
     const anonymizedEmail = `deleted_${user.id}@nitro.ng`;
     const anonymizedName = `Deleted User`;
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        deletedName: user.name,
-        deletedEmail: user.email,
-        deletedAt: new Date(),
-        name: anonymizedName,
-        email: anonymizedEmail,
-        password: '', // Can't login anymore
-        emailVerified: false,
-        referralCode: `DEL-${user.id.slice(0, 8)}`,
-        referredBy: null,
-        status: 'Deleted',
-        verifyToken: null,
-        resetToken: null,
-      },
-    });
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: user.id },
+        data: {
+          deletedName: user.name,
+          deletedEmail: user.email,
+          deletedAt: new Date(),
+          name: anonymizedName,
+          email: anonymizedEmail,
+          password: '', // Can't login anymore
+          emailVerified: false,
+          referralCode: `DEL-${user.id.slice(0, 8)}`,
+          referredBy: null,
+          status: 'Deleted',
+          verifyToken: null,
+          resetToken: null,
+        },
+      }),
+      // Kill all active sessions so other devices can't access the account
+      prisma.session.deleteMany({ where: { userId: user.id } }),
+    ]);
 
     // Clear session cookie
     await clearUserCookie();
