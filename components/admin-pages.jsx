@@ -292,7 +292,7 @@ export function AdminAlertsPage({ dark, t }) {
     try {
       const res = await fetch("/api/admin/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", message: newMsg, type: newType, target: newTarget }) });
       const data = await res.json();
-      if (res.ok && data.alert) { setAlerts(prev => [data.alert, ...prev]); setNewMsg(""); setShowNew(false); }
+      if (res.ok && data.alert) { setAlerts(prev => [data.alert, ...prev.map(a => ({ ...a, active: false }))]); setNewMsg(""); setShowNew(false); }
     } catch {}
   };
 
