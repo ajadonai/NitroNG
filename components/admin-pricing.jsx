@@ -8,12 +8,12 @@ const DEF_BRACKETS = [
   { min: 200, max: 1000, multiplier: 2, label: "Mid" },
   { min: 1000, max: 5000, multiplier: 1.7, label: "High" },
   { min: 5000, max: 20000, multiplier: 1.5, label: "Premium" },
-  { min: 20000, max: Infinity, multiplier: 1.35, label: "Ultra" },
+  { min: 20000, max: 999999999, multiplier: 1.35, label: "Ultra" },
 ];
 const COLORS = ["#34d399","#6ee7b7","#60a5fa","#a78bfa","#e0a458","#c47d8e"];
 
 function calcSell(cost, brackets, floorPct, floorCeiling) {
-  const b = brackets.find(b => cost >= b.min && cost < (b.max === Infinity ? 999999999 : b.max)) || brackets[brackets.length - 1];
+  const b = brackets.find(b => cost >= b.min && cost < (b.max)) || brackets[brackets.length - 1];
   let sell = Math.round(cost * b.multiplier);
   if (cost < floorCeiling) { const min = Math.round(cost / (1 - floorPct / 100)); if (sell < min) sell = min; }
   return sell;
@@ -114,7 +114,7 @@ export default function AdminPricingPage({ dark, t }) {
   const simNG = Math.round(simSell * (1 + ngBonus / 100));
   const simProfit = simSell - simCost;
   const simMargin = simSell > 0 ? Math.round((simProfit / simSell) * 100) : 0;
-  const simB = brackets.find(b => simCost >= b.min && simCost < (b.max === Infinity ? 999999999 : b.max));
+  const simB = brackets.find(b => simCost >= b.min && simCost < (b.max));
 
   // Shared styles
   const cardS = { background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` };
@@ -144,7 +144,7 @@ export default function AdminPricingPage({ dark, t }) {
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < brackets.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}` : "none" }}>
               <div style={{ width: 8, height: 8, borderRadius: 2, background: COLORS[i], flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>₦{b.min.toLocaleString()} – {b.max === Infinity ? "∞" : `₦${b.max.toLocaleString()}`}</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>₦{b.min.toLocaleString()} – {b.max >= 999999999 ? "∞" : `₦${b.max.toLocaleString()}`}</div>
                 <div style={{ fontSize: 12, color: t.textSoft }}>{b.label} · ₦{exCost} → ₦{Math.round(exCost * b.multiplier)}</div>
               </div>
               <NumInput dark={dark} value={b.multiplier} decimal min={1} max={10} fallback={1} width={64} onChange={v => { const n = [...brackets]; n[i] = { ...b, multiplier: v }; setBrackets(n); }} />
@@ -240,7 +240,7 @@ export default function AdminPricingPage({ dark, t }) {
           const margin = Math.round(((sell - cost) / sell) * 100);
           return (
             <div key={name} style={{ display: "flex", alignItems: "center", padding: "10px 0", borderBottom: i < arr.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}` : "none", gap: 8 }}>
-              <div style={{ width: 8, height: 8, borderRadius: 2, background: COLORS[brackets.findIndex(b => cost >= b.min && cost < (b.max === Infinity ? 999999999 : b.max))], flexShrink: 0 }} />
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: COLORS[brackets.findIndex(b => cost >= b.min && cost < (b.max))], flexShrink: 0 }} />
               <div style={{ flex: 1, fontSize: 14, fontWeight: 500, color: t.text }}>{name}</div>
               <span className="m" style={{ fontSize: 13, color: t.textMuted, width: 65, textAlign: "right" }}>₦{cost.toLocaleString()}</span>
               <span style={{ fontSize: 13, color: t.textMuted, width: 12, textAlign: "center" }}>→</span>
