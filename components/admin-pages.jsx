@@ -507,14 +507,15 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      <div style={{ maxWidth: 550, marginTop: 16 }}>
+      <div style={{ marginTop: 16 }}>
         {/* Profile */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: t.text }}>Profile</div>
-            {!profileEditing && <button onClick={() => setProfileEditing(true)} style={{ fontSize: 13, color: t.accent, background: "none", border: "none", cursor: "pointer" }}>Edit</button>}
-          </div>
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
+        <div className="set-section">
+          <div className="set-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div className="set-card-title" style={{ color: t.textMuted }}>Profile</div>
+              {!profileEditing && <button onClick={() => setProfileEditing(true)} style={{ fontSize: 13, color: t.accent, background: "none", border: "none", cursor: "pointer" }}>Edit</button>}
+            </div>
+            <div className="set-card-divider" style={{ background: t.cardBorder }} />
             {profileMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 14, background: profileMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: profileMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{profileMsg.type === "success" ? "✓" : "⚠️"} {profileMsg.text}</div>}
             {profileEditing ? (
               <>
@@ -546,19 +547,23 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         </div>
 
         {/* Theme */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 10 }}>Theme</div>
-          <div style={{ display: "flex", gap: 8 }}>
-            {[["day", "☀ Light"], ["night", "☾ Dark"], ["auto", "◑ Auto"]].map(([id, lb]) => (
-              <button key={id} onClick={() => applyTheme(id)} style={{ flex: 1, padding: "12px 10px", borderRadius: 10, borderWidth: 1, borderStyle: "solid", borderColor: themeMode === id ? t.accent : t.cardBorder, background: themeMode === id ? (dark ? "#2a1a22" : "#fdf2f4") : (dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)"), color: themeMode === id ? t.accent : t.textSoft, fontSize: 15, fontWeight: themeMode === id ? 600 : 450, textAlign: "center" }}>{lb}</button>
-            ))}
+        <div className="set-section">
+          <div className="set-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+            <div className="set-card-title" style={{ color: t.textMuted }}>Theme</div>
+            <div className="set-card-divider" style={{ background: t.cardBorder }} />
+            <div style={{ display: "flex", gap: 8 }}>
+              {[["day", "☀ Light"], ["night", "☾ Dark"], ["auto", "◑ Auto"]].map(([id, lb]) => (
+                <button key={id} onClick={() => applyTheme(id)} style={{ flex: 1, padding: "12px 10px", borderRadius: 10, borderWidth: 1, borderStyle: "solid", borderColor: themeMode === id ? t.accent : t.cardBorder, background: themeMode === id ? (dark ? "#2a1a22" : "#fdf2f4") : (dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)"), color: themeMode === id ? t.accent : t.textSoft, fontSize: 15, fontWeight: themeMode === id ? 600 : 450, textAlign: "center" }}>{lb}</button>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Change password */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 10 }}>Change Password</div>
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
+        <div className="set-section">
+          <div className="set-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+            <div className="set-card-title" style={{ color: t.textMuted }}>Change password</div>
+            <div className="set-card-divider" style={{ background: t.cardBorder }} />
             {admPwMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 14, background: admPwMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: admPwMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{admPwMsg.type === "success" ? "✓" : "⚠️"} {admPwMsg.text}</div>}
             <div style={{ marginBottom: 12 }}>
               <label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 4 }}>Current Password</label>
@@ -577,10 +582,11 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         </div>
 
         {/* Contact Emails */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 10 }}>Contact Emails</div>
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
-            <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 14, lineHeight: 1.5 }}>These appear across the site — landing page, support page, legal pages, banned page. Leave blank to use defaults from site config.</div>
+        <div className="set-section">
+          <div className="set-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+            <div className="set-card-title" style={{ color: t.textMuted }}>Contact emails</div>
+            <div className="set-card-desc" style={{ color: t.textMuted }}>Shown across the site — landing page, support, legal pages, banned page</div>
+            <div className="set-card-divider" style={{ background: t.cardBorder }} />
 
             {emailMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 14, background: emailMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: emailMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{emailMsg.type === "success" ? "✓" : "⚠️"} {emailMsg.text}</div>}
 
@@ -600,10 +606,11 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         </div>
 
         {/* Social Links & Community */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 10 }}>Social Links & Community</div>
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
-            <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 14, lineHeight: 1.5 }}>These links appear in the user dashboard sidebar, landing page footer, and support page. Leave blank to hide.</div>
+        <div className="set-section">
+          <div className="set-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+            <div className="set-card-title" style={{ color: t.textMuted }}>Social links & community</div>
+            <div className="set-card-desc" style={{ color: t.textMuted }}>Shown in sidebar, landing page footer, and support page. Leave blank to hide.</div>
+            <div className="set-card-divider" style={{ background: t.cardBorder }} />
 
             {socialMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 14, background: socialMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: socialMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{socialMsg.type === "success" ? "✓" : "⚠️"} {socialMsg.text}</div>}
 
@@ -626,10 +633,11 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         </div>
 
         {/* Referral Settings */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 10 }}>Referral Program</div>
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: 18, borderRadius: 14, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.25)" : "0 4px 20px rgba(0,0,0,.04)" }}>
-            <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 14, lineHeight: 1.5 }}>Bonus amounts in kobo (100 kobo = ₦1). Default ₦500 = 50000 kobo. Set to 0 to disable.</div>
+        <div className="set-section">
+          <div className="set-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+            <div className="set-card-title" style={{ color: t.textMuted }}>Referral program</div>
+            <div className="set-card-desc" style={{ color: t.textMuted }}>Bonus amounts in kobo (100 kobo = ₦1). Default ₦500 = 50000. Set to 0 to disable.</div>
+            <div className="set-card-divider" style={{ background: t.cardBorder }} />
 
             {refMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 14, background: refMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: refMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{refMsg.type === "success" ? "✓" : "⚠️"} {refMsg.text}</div>}
 
