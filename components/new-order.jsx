@@ -309,7 +309,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
   const ServiceRow = ({ svc }) => {
     const isSel = selSvc?.id === svc.id;
     return (
-      <div onClick={() => pickService(svc)} className={`no-svc-row${isSel ? " no-svc-expanded" : ""}`} style={{ borderWidth: 1, borderStyle: "solid", borderColor: isSel ? t.accent : t.cardBorder, background: isSel ? (dark ? "#1e1420" : "#fefbfc") : svc.ng ? (dark ? "rgba(30,80,60,.15)" : "#e8f5ee") : t.cardBg, ...(isSel ? { boxShadow: dark ? "0 4px 20px rgba(196,125,142,.15)" : "0 4px 20px rgba(196,125,142,.1)", marginTop: 4, marginBottom: 4 } : {}), opacity: selSvc && !isSel ? (dark ? .45 : .5) : 1 }}>
+      <div onClick={() => pickService(svc)} className={`no-svc-row${isSel ? " no-svc-expanded" : ""}`} style={{ borderWidth: 1, borderStyle: "solid", borderColor: isSel ? t.accent : t.cardBorder, background: isSel ? (dark ? "#1e1420" : "#fefbfc") : svc.ng ? (dark ? "rgba(30,80,60,.15)" : "#e8f5ee") : t.cardBg, ...(isSel ? { boxShadow: dark ? "0 4px 20px rgba(196,125,142,.15)" : "0 4px 20px rgba(196,125,142,.1)", marginTop: 4, marginBottom: 4, borderLeftWidth: 3, borderLeftColor: t.accent } : {}), opacity: selSvc && !isSel ? (dark ? .45 : .5) : 1 }}>
         <div className="no-svc-header">
           <span className="no-svc-name" style={{ color: svc.ng ? (dark ? "#5dcaa5" : "#0F6E56") : t.text }}>{svc.name}</span>
           <div className="no-svc-badges">
