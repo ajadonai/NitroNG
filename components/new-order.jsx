@@ -344,13 +344,13 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
         </div>
       )}
 
-      {menuLoading && <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>Loading services...</div>}
-      {menuError && <div style={{ padding: 40, textAlign: "center", color: dark ? "#fca5a5" : "#dc2626" }}>{menuError}</div>}
-
       {/* Mobile/tablet guide — hidden on desktop where right sidebar shows it */}
       <div className="no-mobile-guide">
         <MobileGuide dark={dark} t={t} />
       </div>
+
+      {menuLoading && <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>Loading services...</div>}
+      {menuError && <div style={{ padding: 40, textAlign: "center", color: dark ? "#fca5a5" : "#dc2626" }}>{menuError}</div>}
 
       {!menuLoading && !menuError && <>
       {/* ═══ CONTENT WITH INLINE PLATFORM PICKER ═══ */}
