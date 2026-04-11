@@ -497,7 +497,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
   const confirm = useConfirm();
   const [social, setSocial] = useState({ social_whatsapp: "", social_telegram: "", social_instagram: "", social_twitter: "", social_whatsapp_support: "" });
   const [emails, setEmails] = useState({ site_email_general: "", site_email_support: "" });
-  const [refSettings, setRefSettings] = useState({ ref_referrer_bonus: "50000", ref_invitee_bonus: "50000" });
+  const [refSettings, setRefSettings] = useState({ ref_referrer_bonus: "50000", ref_invitee_bonus: "50000", ref_min_deposit: "0" });
   const [socialLoading, setSocialLoading] = useState(true);
   const [socialSaving, setSocialSaving] = useState(false);
   const [socialMsg, setSocialMsg] = useState(null);
@@ -729,6 +729,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
             {[
               ["ref_referrer_bonus", "Referrer Bonus", "Amount credited to the person who shared their code"],
               ["ref_invitee_bonus", "Invitee Bonus", "Amount credited to the new user who used a referral code"],
+              ["ref_min_deposit", "Minimum Deposit", "New user must deposit this amount before bonuses are paid. Set to 0 to pay immediately"],
             ].map(([key, label, hint]) => (
               <div key={key} style={{ marginBottom: 12 }}>
                 <label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 3 }}>{label} <span style={{ fontSize: 13, color: t.accent, fontWeight: 600 }}>₦{((Number(refSettings[key]) || 0) / 100).toLocaleString()}</span></label>
