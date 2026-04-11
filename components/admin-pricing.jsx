@@ -283,10 +283,10 @@ export default function AdminPricingPage({ dark, t }) {
             <div key={name} style={{ display: "flex", alignItems: "center", padding: "10px 0", borderBottom: i < arr.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}` : "none", gap: 8 }}>
               <div style={{ width: 8, height: 8, borderRadius: 2, background: COLORS[brackets.findIndex(b => cost >= b.min && cost < (b.max))], flexShrink: 0 }} />
               <div style={{ flex: 1, fontSize: 14, fontWeight: 500, color: t.text }}>{name}</div>
-              <span className="m" style={{ fontSize: 13, color: t.textMuted, width: 65, textAlign: "right" }}>₦{cost.toLocaleString()}</span>
+              <span style={{ fontSize: 13, color: t.textMuted, width: 65, textAlign: "right" }}>₦{cost.toLocaleString()}</span>
               <span style={{ fontSize: 13, color: t.textMuted, width: 12, textAlign: "center" }}>→</span>
-              <span className="m" style={{ fontSize: 13, color: t.accent, fontWeight: 600, width: 75, textAlign: "right" }}>₦{sell.toLocaleString()}</span>
-              <span className="m" style={{ fontSize: 12, color: margin >= floorPct ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), width: 36, textAlign: "right" }}>{margin}%</span>
+              <span style={{ fontSize: 13, color: t.accent, fontWeight: 600, width: 75, textAlign: "right" }}>₦{sell.toLocaleString()}</span>
+              <span style={{ fontSize: 12, color: margin >= floorPct ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), width: 36, textAlign: "right" }}>{margin}%</span>
             </div>
           );
         })}

@@ -96,7 +96,7 @@ export default function AdminBlogPage({ dark, t }) {
             </div>
             <div>
               <label style={{ fontSize: 13, color: t.textMuted, fontWeight: 600, display: "block", marginBottom: 4 }}>Slug</label>
-              <input value={slug} onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} placeholder="auto-generated" className="m" style={inputStyle} />
+              <input value={slug} onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} placeholder="auto-generated" style={inputStyle} />
             </div>
           </div>
 
@@ -110,7 +110,7 @@ export default function AdminBlogPage({ dark, t }) {
             </div>
             <div>
               <label style={{ fontSize: 13, color: t.textMuted, fontWeight: 600, display: "block", marginBottom: 4 }}>Thumbnail URL</label>
-              <input value={thumbnail} onChange={e => setThumbnail(e.target.value)} placeholder="https://..." className="m" style={inputStyle} />
+              <input value={thumbnail} onChange={e => setThumbnail(e.target.value)} placeholder="https://..." style={inputStyle} />
             </div>
           </div>
 

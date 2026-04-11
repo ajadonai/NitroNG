@@ -60,7 +60,7 @@ function NotFoundInner() {
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", zIndex: 1, padding: 20 }}>
 
         {/* Ghost 404 */}
-        <div className="m" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-58%)", fontSize: "clamp(120px, 25vw, 180px)", fontWeight: 600, color: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.08)", lineHeight: .85, letterSpacing: -6, pointerEvents: "none", userSelect: "none", fontFamily: "'JetBrains Mono',monospace" }}>404</div>
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-58%)", fontSize: "clamp(120px, 25vw, 180px)", fontWeight: 600, color: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.08)", lineHeight: .85, letterSpacing: -6, pointerEvents: "none", userSelect: "none", fontFamily: "'JetBrains Mono',monospace" }}>404</div>
 
         <div style={{ textAlign: "center", maxWidth: 480, position: "relative", zIndex: 1 }}>
 

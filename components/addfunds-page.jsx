@@ -114,7 +114,7 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
         <div className="fund-bal-bar" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}`, borderRadius: 14, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <div>
             <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5, color: t.textMuted, marginBottom: 2 }}>Current Balance</div>
-            <div className="m" style={{ fontSize: 24, fontWeight: 700, color: t.green }}>{fN(balance)}</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: t.green }}>{fN(balance)}</div>
           </div>
           <div style={{ width: 38, height: 38, borderRadius: 10, background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth="1.5" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
@@ -188,15 +188,15 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
           {/* RIGHT — Summary + Method dropdown + Pay */}
           <div style={{ width: 280, flexShrink: 0, display: "flex" }}>
             <div style={{ flex: 1, display: "flex", flexDirection: "column", background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}`, borderRadius: 14, padding: 22 }}>
-              <div className="fund-line"><span style={{ color: t.textMuted }}>Deposit</span><span className="m" style={{ color: valid ? t.text : t.textMuted, fontWeight: 600 }}>{valid ? fN(numAmount) : "₦0"}</span></div>
-              <div className="fund-line"><span style={{ color: t.textMuted }}>Fee</span><span className="m" style={{ color: t.green, fontWeight: 600 }}>Free</span></div>
+              <div className="fund-line"><span style={{ color: t.textMuted }}>Deposit</span><span style={{ color: valid ? t.text : t.textMuted, fontWeight: 600 }}>{valid ? fN(numAmount) : "₦0"}</span></div>
+              <div className="fund-line"><span style={{ color: t.textMuted }}>Fee</span><span style={{ color: t.green, fontWeight: 600 }}>Free</span></div>
               {couponApplied && discount > 0 && (
-                <div className="fund-line"><span style={{ color: t.textMuted }}>Coupon bonus</span><span className="m" style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+{fN(discount / 100)}</span></div>
+                <div className="fund-line"><span style={{ color: t.textMuted }}>Coupon bonus</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+{fN(discount / 100)}</span></div>
               )}
               <div style={{ height: 1, background: t.cardBorder, margin: "4px 0 14px" }} />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.5, color: t.textMuted }}>{couponApplied && discount > 0 ? "You get" : "Total"}</span>
-                <span className="m" style={{ fontSize: 28, fontWeight: 700, color: valid ? t.accent : t.textMuted }}>{valid ? fN(numAmount + (discount > 0 ? discount / 100 : 0)) : "—"}</span>
+                <span style={{ fontSize: 28, fontWeight: 700, color: valid ? t.accent : t.textMuted }}>{valid ? fN(numAmount + (discount > 0 ? discount / 100 : 0)) : "—"}</span>
               </div>
 
               <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: t.textMuted, marginBottom: 6 }}>Payment method</div>
@@ -313,15 +313,15 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
 
             {/* Summary card */}
             <div className="fund-mob-summary" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-              <div className="fund-line"><span style={{ color: t.textMuted }}>Deposit</span><span className="m" style={{ color: t.text, fontWeight: 600 }}>{fN(numAmount)}</span></div>
-              <div className="fund-line"><span style={{ color: t.textMuted }}>Fee</span><span className="m" style={{ color: t.green, fontWeight: 600 }}>Free</span></div>
+              <div className="fund-line"><span style={{ color: t.textMuted }}>Deposit</span><span style={{ color: t.text, fontWeight: 600 }}>{fN(numAmount)}</span></div>
+              <div className="fund-line"><span style={{ color: t.textMuted }}>Fee</span><span style={{ color: t.green, fontWeight: 600 }}>Free</span></div>
               {couponApplied && discount > 0 && (
-                <div className="fund-line"><span style={{ color: t.textMuted }}>Coupon ({couponApplied.code})</span><span className="m" style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+{fN(discount / 100)} bonus</span></div>
+                <div className="fund-line"><span style={{ color: t.textMuted }}>Coupon ({couponApplied.code})</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+{fN(discount / 100)} bonus</span></div>
               )}
               <div style={{ height: 1, background: t.cardBorder, margin: "8px 0" }} />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span className="fund-total-label" style={{ color: t.textMuted }}>{couponApplied && discount > 0 ? "You get" : "Total"}</span>
-                <span className="m" style={{ fontSize: 20, fontWeight: 600, color: t.accent }}>{fN(numAmount + (discount > 0 ? discount / 100 : 0))}</span>
+                <span style={{ fontSize: 20, fontWeight: 600, color: t.accent }}>{fN(numAmount + (discount > 0 ? discount / 100 : 0))}</span>
               </div>
             </div>
 
@@ -373,7 +373,7 @@ export function AddFundsSidebar({ user, txs, dark, t }) {
       {deposits.length > 0 ? deposits.map((tx, i) => (
         <div key={tx.id || i} className="fund-rs-deposit" style={{ background: t.cardBg }}>
           <div className="fund-rs-dep-row">
-            <span className="m" style={{ color: t.green, fontWeight: 600 }}>+{fN(tx.amount)}</span>
+            <span style={{ color: t.green, fontWeight: 600 }}>+{fN(tx.amount)}</span>
             <span style={{ color: t.textMuted, fontSize: 12 }}>{tx.date ? fD(tx.date) : ""}</span>
           </div>
           <div style={{ fontSize: 14, color: t.textMuted }}>{tx.method || "Deposit"}</div>

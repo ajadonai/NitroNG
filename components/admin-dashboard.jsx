@@ -99,7 +99,7 @@ function AdminOverview({ data, dark, t, setActive }) {
                   <div style={{ fontSize: 14, color: t.textMuted, marginTop: 2 }}><span className="m">{o.id}</span> · {o.user || "user"}</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div className="m" style={{ fontSize: 14, fontWeight: 600, color: t.green }}>{fN(o.charge || 0)}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: t.green }}>{fN(o.charge || 0)}</div>
                   <span className="m adm-badge" style={{ background: o.status === "Completed" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : o.status === "Processing" ? (dark ? "rgba(165,180,252,.1)" : "rgba(79,70,229,.06)") : (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)"), color: o.status === "Completed" ? t.green : o.status === "Processing" ? t.blue : t.amber }}>{o.status}</span>
                 </div>
               </div>
@@ -124,7 +124,7 @@ function AdminOverview({ data, dark, t, setActive }) {
                   <div style={{ fontSize: 14, color: t.textMuted }}>{u.email}</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div className="m" style={{ fontSize: 14, fontWeight: 600, color: t.text }}>{u.orders || 0} orders</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: t.text }}>{u.orders || 0} orders</div>
                   <div style={{ fontSize: 13, color: t.textMuted }}>{u.created ? fD(u.created) : ""}</div>
                 </div>
               </div>
@@ -179,7 +179,7 @@ function AdminRightSidebar({ data, dark, t }) {
       {(data.openTickets || []).length > 0 ? (data.openTickets || []).slice(0, 4).map((tk, i) => (
         <div key={tk.id || i} className="adm-rs-ticket" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
           <div className="adm-rs-ticket-top">
-            <span className="m" style={{ fontSize: 13, color: t.accent }}>{tk.id}</span>
+            <span style={{ fontSize: 13, color: t.accent }}>{tk.id}</span>
             <span style={{ fontSize: 12, color: t.textMuted }}>{tk.created ? fD(tk.created) : ""}</span>
           </div>
           <div style={{ fontSize: 14, fontWeight: 500, color: t.text, marginTop: 3 }}>{tk.subject}</div>
@@ -403,7 +403,7 @@ function AdminDashboardInner() {
           <div className="dash-logo-static">
             <div className="dash-logo-box"><svg width="11" height="11" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
             <span className="dash-logo-text" style={{ color: t.text }}>NITRO</span>
-            <span className="m" style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)", color: t.accent, fontWeight: 600 }}>ADMIN</span>
+            <span style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)", color: t.accent, fontWeight: 600 }}>ADMIN</span>
           </div>
         </div>
         <div className="dash-nav-right">
@@ -460,7 +460,7 @@ function AdminDashboardInner() {
 
           <div className="dash-footer" style={{ borderTopColor: t.sidebarBorder, flexShrink: 0 }}>
             <span style={{ color: t.textMuted }}>© {new Date().getFullYear() > 2026 ? `2026–${new Date().getFullYear()}` : "2026"} Nitro Admin</span>
-            <span className="m" style={{ fontSize: 13, color: t.textMuted }}>v1.0.0</span>
+            <span style={{ fontSize: 13, color: t.textMuted }}>v1.0.0</span>
           </div>
         </main>
 

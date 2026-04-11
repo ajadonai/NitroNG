@@ -98,7 +98,7 @@ export default function AdminUsersPage({ dark, t }) {
       <div className="adm-filters">
         {[["all", "All", users.length], ["active", "Active", users.filter(u => u.status === "Active").length], ["suspended", "Banned", users.filter(u => u.status === "Suspended").length], ["deleted", "Deleted", users.filter(u => u.status === "Deleted").length]].map(([id, label, count]) => (
           <button key={id} onClick={() => { setFilter(id); setPage(1); }} className="adm-filter-pill" style={{ borderWidth: 1, borderStyle: "solid", borderColor: filter === id ? t.accent : t.cardBorder, background: filter === id ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: filter === id ? t.accent : t.textMuted }}>
-            {label} <span className="m">({count})</span>
+            {label} <span>({count})</span>
           </button>
         ))}
       </div>
@@ -116,7 +116,7 @@ export default function AdminUsersPage({ dark, t }) {
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 15, fontWeight: 500, color: u.status === "Deleted" ? t.textMuted : t.text }}>{u.status === "Deleted" ? (u.deletedName || "Deleted User") : u.name}</span>
-                    <span className="m" style={{ fontSize: 12, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: u.status === "Active" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : u.status === "Deleted" ? (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)") : (dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)"), color: u.status === "Active" ? t.green : u.status === "Deleted" ? t.textMuted : t.red }}>{u.status}</span>
+                    <span style={{ fontSize: 12, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: u.status === "Active" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : u.status === "Deleted" ? (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)") : (dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)"), color: u.status === "Active" ? t.green : u.status === "Deleted" ? t.textMuted : t.red }}>{u.status}</span>
                   </div>
                   <div style={{ fontSize: 14, color: t.textMuted, marginTop: 1 }}>{u.status === "Deleted" ? (u.deletedEmail || u.email) : u.email}</div>
                   {u.status === "Deleted" && u.deletedAt && <div style={{ fontSize: 12, color: t.textSoft, marginTop: 2 }}>Deleted {new Date(u.deletedAt).toLocaleDateString("en-NG", { month: "short", day: "numeric", year: "numeric" })}</div>}
@@ -124,11 +124,11 @@ export default function AdminUsersPage({ dark, t }) {
               </div>
               <div className="adm-user-actions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ textAlign: "center" }}>
-                  <div className="m" style={{ fontSize: 15, fontWeight: 600, color: t.green }}>{fN(u.balance || 0)}</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: t.green }}>{fN(u.balance || 0)}</div>
                   <div style={{ fontSize: 12, color: t.textMuted }}>Balance</div>
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div className="m" style={{ fontSize: 15, fontWeight: 600, color: t.text }}>{u.orders || 0}</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: t.text }}>{u.orders || 0}</div>
                   <div style={{ fontSize: 12, color: t.textMuted }}>Orders</div>
                 </div>
                 <div style={{ display: "flex", gap: 4 }}>
@@ -140,7 +140,7 @@ export default function AdminUsersPage({ dark, t }) {
             </div>
             {creditId === u.id && (
               <div style={{ padding: "12px 16px", borderBottom: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.02)" : "rgba(0,0,0,.01)", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                <input type="number" placeholder="Amount" value={creditAmt} onChange={e => setCreditAmt(e.target.value)} className="m" style={{ flex: 1, minWidth: 100, padding: "8px 12px", borderRadius: 8, background: dark ? "#0d1020" : "#fff", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, color: t.text, fontSize: 15, outline: "none" }} />
+                <input type="number" placeholder="Amount" value={creditAmt} onChange={e => setCreditAmt(e.target.value)} style={{ flex: 1, minWidth: 100, padding: "8px 12px", borderRadius: 8, background: dark ? "#0d1020" : "#fff", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, color: t.text, fontSize: 15, outline: "none" }} />
                 {[1000, 5000, 10000, 50000].map(p => (
                   <button key={p} onClick={() => setCreditAmt(String(p))} className="m adm-btn-sm" style={{ borderColor: Number(creditAmt) === p ? t.accent : t.cardBorder, color: Number(creditAmt) === p ? t.accent : t.textMuted }}>{fN(p)}</button>
                 ))}
@@ -168,8 +168,8 @@ export default function AdminUsersPage({ dark, t }) {
                       {txPaged.map((tx, j) => (
                         <div key={tx.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px", borderBottom: j < txPaged.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.03)"}` : "none", fontSize: 13, flexWrap: "wrap" }}>
                           <span style={{ width: 70, color: t.textSoft, fontSize: 12, flexShrink: 0 }}>{new Date(tx.createdAt).toLocaleDateString("en-NG", { month: "short", day: "numeric" })}</span>
-                          <span className="m" style={{ width: 60, fontSize: 11, padding: "1px 6px", borderRadius: 4, textAlign: "center", flexShrink: 0, background: tx.type === "deposit" ? (dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.04)") : tx.type === "order" ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : tx.type === "referral" || tx.type === "bonus" ? (dark ? "rgba(96,165,250,.08)" : "rgba(96,165,250,.04)") : (dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.02)"), color: tx.type === "deposit" ? t.green : tx.type === "order" ? t.accent : tx.type === "referral" || tx.type === "bonus" ? "#60a5fa" : t.textMuted }}>{tx.type}</span>
-                          <span className="m" style={{ width: 80, textAlign: "right", fontWeight: 600, flexShrink: 0, color: tx.type === "deposit" || tx.type === "referral" || tx.type === "bonus" || tx.type === "refund" ? t.green : t.text }}>{tx.type === "order" ? "-" : "+"}{fN(tx.amount / 100)}</span>
+                          <span style={{ width: 60, fontSize: 11, padding: "1px 6px", borderRadius: 4, textAlign: "center", flexShrink: 0, background: tx.type === "deposit" ? (dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.04)") : tx.type === "order" ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : tx.type === "referral" || tx.type === "bonus" ? (dark ? "rgba(96,165,250,.08)" : "rgba(96,165,250,.04)") : (dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.02)"), color: tx.type === "deposit" ? t.green : tx.type === "order" ? t.accent : tx.type === "referral" || tx.type === "bonus" ? "#60a5fa" : t.textMuted }}>{tx.type}</span>
+                          <span style={{ width: 80, textAlign: "right", fontWeight: 600, flexShrink: 0, color: tx.type === "deposit" || tx.type === "referral" || tx.type === "bonus" || tx.type === "refund" ? t.green : t.text }}>{tx.type === "order" ? "-" : "+"}{fN(tx.amount / 100)}</span>
                           <span style={{ fontSize: 12, color: tx.status === "Completed" ? t.textMuted : tx.status === "Pending" ? "#e0a458" : t.red }}>{tx.status}</span>
                           <span style={{ flex: 1, fontSize: 12, color: t.textSoft, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.note || tx.reference || ""}</span>
                         </div>

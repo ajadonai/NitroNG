@@ -36,7 +36,7 @@ function StatusPill({ status, dark }) {
   const c = s === "Open" ? { bg: dark ? "rgba(234,179,8,0.1)" : "rgba(234,179,8,0.08)", color: dark ? "#fcd34d" : "#d97706" }
     : s === "In Progress" ? { bg: dark ? "rgba(59,130,246,0.08)" : "rgba(59,130,246,0.06)", color: dark ? "#60a5fa" : "#2563eb" }
     : { bg: dark ? "rgba(16,185,129,0.08)" : "rgba(16,185,129,0.06)", color: dark ? "#6ee7b7" : "#059669" };
-  return <span className="m" style={{ fontSize: 11, fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: c.bg, color: c.color }}>{s.toLowerCase()}</span>;
+  return <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: c.bg, color: c.color }}>{s.toLowerCase()}</span>;
 }
 
 function FormatText({ text, dark }) {
@@ -336,7 +336,7 @@ export default function SupportPage({ dark, t }) {
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
               <div style={{ width: 5, height: 5, borderRadius: 3, background: dark ? "#6ee7b7" : "#059669", flexShrink: 0 }} />
               <span style={{ fontSize: 13, fontWeight: 500, color: t.text }}>Nitro Bot</span>
-              {isLive && <span className="m" style={{ fontSize: 10, padding: "1px 5px", borderRadius: 3, background: dark ? "rgba(96,165,250,0.1)" : "rgba(59,130,246,0.06)", color: dark ? "#60a5fa" : "#2563eb" }}>live</span>}
+              {isLive && <span style={{ fontSize: 10, padding: "1px 5px", borderRadius: 3, background: dark ? "rgba(96,165,250,0.1)" : "rgba(59,130,246,0.06)", color: dark ? "#60a5fa" : "#2563eb" }}>live</span>}
             </div>
             <div style={{ fontSize: 12, color: t.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", paddingLeft: 11 }}>{msgs[msgs.length - 1]?.text?.slice(0, 45) || ""}</div>
           </div>
@@ -374,9 +374,9 @@ export default function SupportPage({ dark, t }) {
             <div style={{ fontSize: 16, fontWeight: 600, color: t.text, display: "flex", alignItems: "center", gap: 8 }}>
               {chatTitle}
               {isTicket && <StatusPill status={selected.status} dark={dark} />}
-              {!selected && isLive && <span className="m" style={{ fontSize: 11, padding: "2px 7px", borderRadius: 4, background: dark ? "rgba(96,165,250,0.1)" : "rgba(59,130,246,0.06)", color: dark ? "#60a5fa" : "#2563eb" }}>live</span>}
+              {!selected && isLive && <span style={{ fontSize: 11, padding: "2px 7px", borderRadius: 4, background: dark ? "rgba(96,165,250,0.1)" : "rgba(59,130,246,0.06)", color: dark ? "#60a5fa" : "#2563eb" }}>live</span>}
             </div>
-            <div className="m" style={{ fontSize: 12, color: t.textMuted, marginTop: 1 }}>{chatSub}</div>
+            <div style={{ fontSize: 12, color: t.textMuted, marginTop: 1 }}>{chatSub}</div>
           </div>
           {canReply && <button onClick={closeTicket} style={{ padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, background: "none", border: `1px solid ${dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`, color: t.textMuted, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>Close</button>}
         </div>

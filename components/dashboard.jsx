@@ -209,7 +209,7 @@ function RightSidebar({ orders, user, dark, t, setActive }) {
               <div className="dash-rs-item-name" style={{ color: t.text }}>{o.service}</div>
               <div className="dash-rs-item-row">
                 <span style={{ fontWeight: 600, color: sClr(o.status, dark) }}>{o.status}</span>
-                <span className="m" style={{ color: t.textMuted }}>{o.quantity?.toLocaleString() || 0} qty</span>
+                <span style={{ color: t.textMuted }}>{o.quantity?.toLocaleString() || 0} qty</span>
               </div>
             </div>
           ))}
@@ -325,7 +325,7 @@ function NotifDropdown({ orders, txs, dark, t, onClose, readIds, setReadIds, cle
       <div className="dash-notif-header">
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 16, fontWeight: 600, color: t.text }}>Notifications</span>
-          {unreadCount > 0 && <span className="m" style={{ fontSize: 12, padding: "2px 6px", borderRadius: 5, background: dark ? "#1c1015" : "#fdf2f4", color: t.accent, fontWeight: 600 }}>{unreadCount}</span>}
+          {unreadCount > 0 && <span style={{ fontSize: 12, padding: "2px 6px", borderRadius: 5, background: dark ? "#1c1015" : "#fdf2f4", color: t.accent, fontWeight: 600 }}>{unreadCount}</span>}
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           {unreadCount > 0 && <button onClick={markAllRead} style={{ fontSize: 13, fontWeight: 600, color: t.accent, background: "none", border: "none", cursor: "pointer" }}>Mark all read</button>}

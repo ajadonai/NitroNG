@@ -111,7 +111,7 @@ export default function ReferralsPage({ user, dark, t }) {
                 }}>{r.status || "—"}</span>
               </div>
               <div className="ref-info-meta" style={{ color: t.textMuted }}>
-                <span className="m">{r.email || ""}</span>
+                <span>{r.email || ""}</span>
                 <span>{r.joined ? fD(r.joined) : ""}</span>
               </div>
             </div>
@@ -227,7 +227,7 @@ export function ReferralsSidebar({ user, dark, t }) {
         ].map(([label, val, color], i, arr) => (
           <div key={label} className="ref-rs-perf-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
             <span style={{ fontSize: 14, color: t.textMuted }}>{label}</span>
-            <span className="m" style={{ fontSize: 14, fontWeight: 600, color }}>{val}</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color }}>{val}</span>
           </div>
         ))}
       </div>

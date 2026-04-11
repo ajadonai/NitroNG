@@ -38,7 +38,7 @@ function FAQInner() {
 
           {/* Header */}
           <div style={{ marginBottom: 40 }}>
-            <span className="m" style={{ fontSize: 12, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", color: accent, display: "block", marginBottom: 12 }}>Support</span>
+            <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", color: accent, display: "block", marginBottom: 12 }}>Support</span>
             <h1 style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 600, color: t.text, marginBottom: 8, lineHeight: 1.15 }}>Frequently Asked <span style={{ fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", fontWeight: 500, fontSize: "clamp(32px, 5.5vw, 44px)", color: accent }}>Questions</span></h1>
             <p style={{ fontSize: 15, color: t.textSoft, lineHeight: 1.6, maxWidth: 480 }}>Everything you need to know about Nitro. Can't find your answer? Hit us up on WhatsApp — we respond in minutes.</p>
           </div>
@@ -54,7 +54,7 @@ function FAQInner() {
                     background: "none", border: "none", cursor: "pointer", textAlign: "left"
                   }}
                 >
-                  <span className="m" style={{ fontSize: 13, fontWeight: 600, color: open === i ? accent : t.textMuted, minWidth: 28 }}>0{i + 1}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: open === i ? accent : t.textMuted, minWidth: 28 }}>0{i + 1}</span>
                   <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: open === i ? accent : t.text, transition: "color .2s" }}>{q}</span>
                   <div style={{
                     width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,

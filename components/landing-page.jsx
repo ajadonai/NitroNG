@@ -191,7 +191,7 @@ function LandingInner(){
             <div className="hero-left">
               <div className="fu hero-eyebrow" style={{display:"inline-flex",alignItems:"center",gap:8,marginBottom:20}}>
                 <div className="hero-live-dot" style={{width:8,height:8,borderRadius:"50%",background:"#34d399",boxShadow:"0 0 12px rgba(52,211,153,.4)"}} />
-                <span className="m" style={{fontSize:12,fontWeight:500,letterSpacing:1.5,textTransform:"uppercase",color:dark?"#34d399":"rgba(255,255,255,.85)"}}>{siteStats.orders||"0"} orders delivered today</span>
+                <span style={{fontSize:12,fontWeight:500,letterSpacing:1.5,textTransform:"uppercase",color:dark?"#34d399":"rgba(255,255,255,.85)"}}>{siteStats.orders||"0"} orders delivered today</span>
               </div>
               <h1 className="fu fd1 hero-h1" style={{color:t.heroText}}>Your audience,<br/><span className="serif hero-refined" style={{color:dark?t.accent:"#fff",textShadow:dark?"none":"0 2px 20px rgba(0,0,0,.15)"}}>amplified.</span></h1>
               <div className="fu fd2 hero-value-line m" style={{fontSize:15,fontWeight:500,color:dark?"rgba(244,241,237,.5)":"rgba(255,255,255,.75)",marginBottom:20,display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
@@ -204,7 +204,7 @@ function LandingInner(){
 
               {/* Social proof strip */}
               <div className="fu fd3 hero-proof" style={{display:"flex",alignItems:"center",gap:20,marginBottom:32,flexWrap:"wrap"}}>
-                {[[siteStats.orders||"0","Orders\ndelivered"],[siteStats.users||"0","Active\ncreators"],["98%","Delivery\nrate"]].map(([num,label],i)=><>{i>0&&<div style={{width:1,height:24,background:dark?"rgba(255,255,255,.08)":"rgba(255,255,255,.2)"}}/>}<div key={label} style={{display:"flex",alignItems:"center",gap:8}}><span className="m" style={{fontSize:20,fontWeight:600,color:t.heroText}}>{num}</span><span style={{fontSize:13,color:dark?"rgba(244,241,237,.35)":"rgba(255,255,255,.6)",lineHeight:1.3,whiteSpace:"pre-line"}}>{label}</span></div></>)}
+                {[[siteStats.orders||"0","Orders\ndelivered"],[siteStats.users||"0","Active\ncreators"],["98%","Delivery\nrate"]].map(([num,label],i)=><>{i>0&&<div style={{width:1,height:24,background:dark?"rgba(255,255,255,.08)":"rgba(255,255,255,.2)"}}/>}<div key={label} style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:20,fontWeight:600,color:t.heroText}}>{num}</span><span style={{fontSize:13,color:dark?"rgba(244,241,237,.35)":"rgba(255,255,255,.6)",lineHeight:1.3,whiteSpace:"pre-line"}}>{label}</span></div></>)}
               </div>
 
               {/* CTAs */}
@@ -261,12 +261,12 @@ function LandingInner(){
           {/* WHY NITRO — split layout */}
           <div className="s2-why" style={{display:"grid",gridTemplateColumns:"1fr 1.2fr",gap:60,padding:"80px 48px",alignItems:"center"}}>
             <div>
-              <div className="m" style={{fontSize:12,fontWeight:500,letterSpacing:2,textTransform:"uppercase",marginBottom:16,color:t.accent}}>Why Nitro</div>
+              <div style={{fontSize:12,fontWeight:500,letterSpacing:2,textTransform:"uppercase",marginBottom:16,color:t.accent}}>Why Nitro</div>
               <h2 className="s2-big-heading" style={{fontSize:48,fontWeight:700,lineHeight:1.05,letterSpacing:-1.5,marginBottom:16,color:t.text}}>Not just another<br/>SMM panel.<br/><span className="serif" style={{fontStyle:"italic",fontWeight:400,fontSize:54,color:t.accent,display:"block"}}>The last one you'll need.</span></h2>
               <p style={{fontSize:16,lineHeight:1.7,maxWidth:400,marginBottom:28,color:t.textSoft}}>We built Nitro for Nigerian creators who are tired of slow delivery, fake engagement, and platforms that disappear overnight.</p>
               <div style={{display:"flex",gap:32}}>
                 {[["25+","Platforms"],["98%","Delivery rate"],["<60s","Avg. start time"]].map(([num,label])=>(
-                  <div key={label}><div className="m" style={{fontSize:28,fontWeight:600,lineHeight:1,marginBottom:4,color:t.text}}>{num}</div><div style={{fontSize:13,color:t.textMuted}}>{label}</div></div>
+                  <div key={label}><div style={{fontSize:28,fontWeight:600,lineHeight:1,marginBottom:4,color:t.text}}>{num}</div><div style={{fontSize:13,color:t.textMuted}}>{label}</div></div>
                 ))}
               </div>
             </div>
@@ -291,7 +291,7 @@ function LandingInner(){
                 <div key={num} className="s2-step-item" style={{position:"relative",paddingRight:i<3?24:0,"--s2-step-bg":dark?"rgba(255,255,255,.02)":"rgba(255,255,255,.5)","--s2-step-border":`1px solid ${dark?"rgba(255,255,255,.05)":"rgba(0,0,0,.05)"}`}}>
                   {i<3&&<div className="s2-step-connector" style={{position:"absolute",top:20,left:52,right:0,height:1,background:dark?"rgba(255,255,255,.06)":"rgba(0,0,0,.06)"}}/>}
                   <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12,position:"relative",zIndex:1}}>
-                    <div className="m" style={{width:40,height:40,borderRadius:12,background:dark?"rgba(196,125,142,.08)":"rgba(196,125,142,.06)",border:`1px solid ${dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.12)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:600,color:t.accent,flexShrink:0}}>{num}</div>
+                    <div style={{width:40,height:40,borderRadius:12,background:dark?"rgba(196,125,142,.08)":"rgba(196,125,142,.06)",border:`1px solid ${dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.12)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:600,color:t.accent,flexShrink:0}}>{num}</div>
                     <span style={{fontSize:15,fontWeight:600,color:t.text}}>{title}</span>
                   </div>
                   <div className="s2-step-desc" style={{fontSize:14,lineHeight:1.55,paddingLeft:52,color:dark?"rgba(244,241,237,.35)":"rgba(28,27,25,.4)"}}>{desc}</div>
@@ -309,12 +309,12 @@ function LandingInner(){
             <div className="s3-label"><span className="m s3-label-text" style={{color:t.accent}}>Pricing</span></div>
             <div className="s3-content">
               <h2 className="s3-heading" style={{color:t.text}}>Pay per service, <span className="serif s3-heading-accent" style={{color:t.accent}}>no subscriptions.</span></h2>
-              <p className="s3-desc" style={{color:t.textSoft}}>No hidden fees. No monthly plans. Just fund your wallet and order. Prices start from <strong className="m" style={{color:dark?"#34d399":"#059669"}}>{"₦"}150 per 1,000</strong>.</p>
+              <p className="s3-desc" style={{color:t.textSoft}}>No hidden fees. No monthly plans. Just fund your wallet and order. Prices start from <strong style={{color:dark?"#34d399":"#059669"}}>{"₦"}150 per 1,000</strong>.</p>
 
               <div className="s3-grid">
                 {[["Instagram",<svg key="ig" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>,"rgba(225,48,108,.08)",[["Followers","₦850/1K"],["Likes","₦400/1K"],["Views","₦200/1K"]],"₦200",true],["TikTok",<svg key="tt" width="16" height="18" viewBox="0 0 448 512" fill="#ff0050"><path d="M448 209.91a210.06 210.06 0 01-122.77-39.25v178.72A162.55 162.55 0 11185 188.31v89.89a74.62 74.62 0 1052.23 71.18V0h88a121 121 0 00122.77 121.33z"/></svg>,"rgba(255,0,80,.06)",[["Followers","₦1,200/1K"],["Likes","₦500/1K"],["Views","₦150/1K"]],"₦150",false],["YouTube",<svg key="yt" width="20" height="14" viewBox="0 0 576 512" fill="#FF0000"><path d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"/></svg>,"rgba(255,0,0,.06)",[["Subscribers","₦2,500/1K"],["Views","₦350/1K"],["Likes","₦600/1K"]],"₦350",false],["Twitter/X",<svg key="x" width="16" height="16" viewBox="0 0 24 24" fill={dark?"#eee":"#222"}><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,dark?"rgba(255,255,255,.04)":"rgba(0,0,0,.04)",[["Followers","₦1,000/1K"],["Likes","₦450/1K"],["Retweets","₦700/1K"]],"₦450",false],["Facebook",<svg key="fb" width="10" height="18" viewBox="0 0 320 512" fill="#1877F2"><path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z"/></svg>,"rgba(24,119,242,.06)",[["Page Likes","₦900/1K"],["Followers","₦1,100/1K"],["Post Likes","₦350/1K"]],"₦350",false],["Telegram",<svg key="tg" width="18" height="16" viewBox="0 0 496 512" fill="#0088cc"><path d="M248 8C111.033 8 0 119.033 0 256s111.033 248 248 248 248-111.033 248-248S384.967 8 248 8zm114.952 168.66c-3.732 39.215-19.881 134.378-28.1 178.3-3.476 18.584-10.322 24.816-16.948 25.425-14.4 1.326-25.338-9.517-39.287-18.661-21.827-14.308-34.158-23.215-55.346-37.177-24.485-16.135-8.612-25 5.342-39.5 3.652-3.793 67.107-61.51 68.335-66.746.154-.655.3-3.1-1.154-4.384s-3.59-.849-5.135-.5q-3.283.746-104.608 69.142-14.845 10.194-26.894 9.934c-8.855-.191-25.888-5.006-38.551-9.123-15.531-5.048-27.875-7.717-26.8-16.291q.84-6.7 18.45-13.7 108.446-47.248 144.628-62.3c68.872-28.647 83.183-33.623 92.511-33.789 2.052-.034 6.639.474 9.61 2.885a10.452 10.452 0 013.53 6.716 43.765 43.765 0 01.417 9.769z"/></svg>,"rgba(0,136,204,.06)",[["Members","₦1,500/1K"],["Post Views","₦250/1K"],["Reactions","₦500/1K"]],"₦250",false]].map(([platform,icon,iconBg,services,fromPrice,isPopular])=>(
                   <div key={platform} style={{background:dark?"rgba(255,255,255,.03)":"rgba(255,255,255,.85)",border:`${isPopular?"1.5":"1"}px solid ${isPopular?t.accent:(dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.1)")}`,position:"relative",borderRadius:16,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-                    {isPopular&&<div className="m" style={{position:"absolute",top:12,right:12,padding:"3px 10px",borderRadius:6,fontSize:10,fontWeight:600,letterSpacing:.5,textTransform:"uppercase",background:dark?"rgba(196,125,142,.12)":"rgba(196,125,142,.08)",color:t.accent,border:`0.5px solid ${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"}`}}>Most popular</div>}
+                    {isPopular&&<div style={{position:"absolute",top:12,right:12,padding:"3px 10px",borderRadius:6,fontSize:10,fontWeight:600,letterSpacing:.5,textTransform:"uppercase",background:dark?"rgba(196,125,142,.12)":"rgba(196,125,142,.08)",color:t.accent,border:`0.5px solid ${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"}`}}>Most popular</div>}
                     <div style={{padding:"20px 20px 16px",display:"flex",alignItems:"center",gap:10}}>
                       <div style={{width:36,height:36,borderRadius:10,background:iconBg,display:"flex",alignItems:"center",justifyContent:"center"}}>{icon}</div>
                       <span style={{fontSize:16,fontWeight:600,color:t.text}}>{platform}</span>
@@ -323,12 +323,12 @@ function LandingInner(){
                       {services.map(([svc,price])=>(
                         <div key={svc} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 20px",borderTop:`1px solid ${dark?"rgba(255,255,255,.06)":"rgba(0,0,0,.06)"}`}}>
                           <span style={{fontSize:14,color:dark?"rgba(244,241,237,.5)":"rgba(28,27,25,.55)"}}>{svc}</span>
-                          <span className="m" style={{fontSize:14,fontWeight:600,color:dark?"#34d399":"#059669"}}>{price}</span>
+                          <span style={{fontSize:14,fontWeight:600,color:dark?"#34d399":"#059669"}}>{price}</span>
                         </div>
                       ))}
                     </div>
                     <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderTop:`1px solid ${dark?"rgba(255,255,255,.08)":"rgba(0,0,0,.08)"}`,background:dark?"rgba(255,255,255,.02)":"rgba(0,0,0,.015)",marginTop:"auto"}}>
-                      <span style={{fontSize:13,color:dark?"rgba(244,241,237,.3)":"rgba(28,27,25,.35)"}}>From <strong className="m" style={{fontSize:16,fontWeight:600,color:t.text}}>{fromPrice}</strong>/1K</span>
+                      <span style={{fontSize:13,color:dark?"rgba(244,241,237,.3)":"rgba(28,27,25,.35)"}}>From <strong style={{fontSize:16,fontWeight:600,color:t.text}}>{fromPrice}</strong>/1K</span>
                       <button onClick={()=>setModal("signup")} style={{padding:"7px 18px",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer",border:"none",background:dark?"rgba(196,125,142,.12)":"rgba(196,125,142,.08)",color:t.accent}}>Order now</button>
                     </div>
                   </div>
@@ -340,7 +340,7 @@ function LandingInner(){
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={dark?"#34d399":"#059669"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
                 </div>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:15,fontWeight:600,color:t.text}}>Fund your wallet from <span className="m" style={{color:dark?"#34d399":"#059669"}}>{"₦"}500</span></div>
+                  <div style={{fontSize:15,fontWeight:600,color:t.text}}>Fund your wallet from <span style={{color:dark?"#34d399":"#059669"}}>{"₦"}500</span></div>
                   <div style={{fontSize:13,color:t.textSoft,marginTop:2}}>Cards, bank transfer, and crypto accepted. Funds arrive instantly.</div>
                 </div>
                 <button onClick={()=>setModal("signup")} className="s3-deposit-btn" style={{padding:"10px 24px",borderRadius:10,fontSize:14,fontWeight:600,border:"none",background:"#fff",color:"#1a1a1a",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>Add funds {"→"}</button>
@@ -422,7 +422,7 @@ function LandingInner(){
               {/* Eyebrow */}
               <div style={{display:"inline-flex",alignItems:"center",gap:8,marginBottom:24}}>
                 <div className="hero-live-dot" style={{width:8,height:8,borderRadius:"50%",background:"#34d399",boxShadow:"0 0 12px rgba(52,211,153,.5)"}}/>
-                <span className="m" style={{fontSize:12,fontWeight:500,letterSpacing:1.5,textTransform:"uppercase",color:dark?"#34d399":"rgba(255,255,255,.85)"}}>{siteStats.orders||"0"} orders delivered today</span>
+                <span style={{fontSize:12,fontWeight:500,letterSpacing:1.5,textTransform:"uppercase",color:dark?"#34d399":"rgba(255,255,255,.85)"}}>{siteStats.orders||"0"} orders delivered today</span>
               </div>
 
               <h2 style={{fontSize:60,fontWeight:700,color:"#fff",lineHeight:1.02,letterSpacing:-2.5,marginBottom:4}} className="s6-h2-bold">Your Audience</h2>
@@ -470,17 +470,17 @@ function LandingInner(){
               </div>
               {/* Product */}
               <div>
-                <div className="m" style={{fontSize:11,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",marginBottom:16,color:dark?"rgba(244,241,237,.2)":"rgba(28,27,25,.25)"}}>Product</div>
+                <div style={{fontSize:11,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",marginBottom:16,color:dark?"rgba(244,241,237,.2)":"rgba(28,27,25,.25)"}}>Product</div>
                 {[["Services","#services"],["Pricing","#pricing"],["Testimonials","#testimonials"],["Blog","/blog"]].map(([l,h])=>h.startsWith("#")?<div key={l} className="s6-footer-link" style={{display:"block",fontSize:14,fontWeight:450,padding:"5px 0",cursor:"pointer",color:dark?"rgba(244,241,237,.45)":"rgba(28,27,25,.5)"}} onClick={()=>document.getElementById(h.slice(1))?.scrollIntoView({behavior:"smooth"})}>{l}</div>:<a key={l} href={h} className="s6-footer-link" style={{display:"block",fontSize:14,fontWeight:450,padding:"5px 0",textDecoration:"none",color:dark?"rgba(244,241,237,.45)":"rgba(28,27,25,.5)"}}>{l}</a>)}
               </div>
               {/* Company */}
               <div>
-                <div className="m" style={{fontSize:11,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",marginBottom:16,color:dark?"rgba(244,241,237,.2)":"rgba(28,27,25,.25)"}}>Company</div>
+                <div style={{fontSize:11,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",marginBottom:16,color:dark?"rgba(244,241,237,.2)":"rgba(28,27,25,.25)"}}>Company</div>
                 {[["FAQ","/faq"],["Terms","/terms"],["Privacy","/privacy"],["Refund","/refund"],["Cookies","/cookie"]].map(([l,h])=><a key={l} href={h} className="s6-footer-link" style={{display:"block",fontSize:14,fontWeight:450,padding:"5px 0",textDecoration:"none",color:dark?"rgba(244,241,237,.45)":"rgba(28,27,25,.5)"}}>{l}</a>)}
               </div>
               {/* Get in touch */}
               <div>
-                <div className="m" style={{fontSize:11,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",marginBottom:16,color:dark?"rgba(244,241,237,.2)":"rgba(28,27,25,.25)"}}>Get in touch</div>
+                <div style={{fontSize:11,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",marginBottom:16,color:dark?"rgba(244,241,237,.2)":"rgba(28,27,25,.25)"}}>Get in touch</div>
                 <a href={`mailto:${SITE.email.general}`} className="s6-footer-link" style={{display:"block",fontSize:13,fontWeight:450,padding:"5px 0",textDecoration:"none",color:dark?"rgba(244,241,237,.45)":"rgba(28,27,25,.5)"}}>{SITE.email.general}</a>
                 <div className="s6-footer-link" style={{display:"block",fontSize:14,fontWeight:450,padding:"5px 0",cursor:"pointer",color:dark?"rgba(244,241,237,.45)":"rgba(28,27,25,.5)"}} onClick={()=>window.open(socialLinks.social_whatsapp_support?`https://wa.me/${socialLinks.social_whatsapp_support}`:"#","_blank")}>WhatsApp Support</div>
                 <a href={SITE.status} target="_blank" rel="noopener" className="s6-footer-link" style={{display:"flex",alignItems:"center",gap:6,fontSize:14,fontWeight:450,padding:"5px 0",textDecoration:"none",color:dark?"rgba(244,241,237,.45)":"rgba(28,27,25,.5)"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Status Page</a>

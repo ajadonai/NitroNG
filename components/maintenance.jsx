@@ -102,7 +102,7 @@ function MaintenanceInner() {
           {/* Status badge */}
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 14px", borderRadius: 20, background: dark ? "rgba(224,164,88,.06)" : "rgba(224,164,88,.04)", border: `1px solid ${dark ? "rgba(224,164,88,.12)" : "rgba(224,164,88,.1)"}`, marginBottom: 16 }}>
             <div style={{ width: 6, height: 6, borderRadius: "50%", background: amber, boxShadow: `0 0 8px ${amber}` }} />
-            <span className="m" style={{ fontSize: 11, fontWeight: 600, color: amber, letterSpacing: 1.2, textTransform: "uppercase" }}>Maintenance in progress</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: amber, letterSpacing: 1.2, textTransform: "uppercase" }}>Maintenance in progress</span>
           </div>
 
           {/* Heading */}
@@ -114,7 +114,7 @@ function MaintenanceInner() {
           {/* ETA chip */}
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 18px", borderRadius: 10, background: cardGlass, border: `1px solid ${border}`, marginBottom: 24 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={amber} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span className="m" style={{ fontSize: 13, fontWeight: 600, color: amber }}>Estimated: {eta}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: amber }}>Estimated: {eta}</span>
           </div>
 
           {/* Dots */}

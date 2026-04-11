@@ -159,7 +159,7 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
           <div style={{ fontSize: 15, fontWeight: 600, color: t.text, marginBottom: 14 }}>Role Permissions</div>
           {Object.entries(ROLE_INFO).map(([role, info], idx, arr) => (
             <div key={role} style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: idx < arr.length - 1 ? 12 : 0, paddingBottom: idx < arr.length - 1 ? 12 : 0, borderBottom: idx < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-              <span className="m" style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, fontWeight: 600, background: `${info.color}20`, color: info.color, textTransform: "capitalize", flexShrink: 0 }}>{role === "owner" ? "👑 owner" : role}</span>
+              <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, fontWeight: 600, background: `${info.color}20`, color: info.color, textTransform: "capitalize", flexShrink: 0 }}>{role === "owner" ? "👑 owner" : role}</span>
               <span style={{ fontSize: 14, color: t.textMuted, lineHeight: 1.5 }}>{info.desc}</span>
             </div>
           ))}
@@ -200,7 +200,7 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 15, fontWeight: 500, color: t.text }}>{a.name}</span>
-                      <span className="m" style={{ fontSize: 12, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: `${ri.color}20`, color: ri.color, textTransform: "capitalize" }}>{a.role}</span>
+                      <span style={{ fontSize: 12, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: `${ri.color}20`, color: ri.color, textTransform: "capitalize" }}>{a.role}</span>
                       {owner && <span style={{ fontSize: 11 }}>👑</span>}
                       {hasCustom && <span style={{ fontSize: 11, padding: "1px 5px", borderRadius: 4, background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.06)", color: t.accent, fontWeight: 600 }}>custom</span>}
                       {a.status !== "Active" && <span style={{ fontSize: 12, padding: "1px 6px", borderRadius: 4, background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: dark ? "#fca5a5" : "#dc2626", fontWeight: 600 }}>Inactive</span>}
@@ -420,7 +420,7 @@ export function AdminCouponsPage({ dark, t }) {
         {showAdd && (
           <div style={{ padding: 16, borderBottom: `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}` }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-              <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Code</label><input value={form.code} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20) })} placeholder="WELCOME20" className="m" style={inputStyle} /></div>
+              <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Code</label><input value={form.code} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20) })} placeholder="WELCOME20" style={inputStyle} /></div>
               <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Type</label>
                 <div style={{ display: "flex", gap: 4 }}>
                   {[["percent", "% Bonus"], ["fixed", "₦ Bonus"]].map(([id, lb]) => (
@@ -428,9 +428,9 @@ export function AdminCouponsPage({ dark, t }) {
                   ))}
                 </div>
               </div>
-              <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Value</label><input type="number" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} placeholder={form.type === "percent" ? "20" : "500"} className="m" style={inputStyle} /></div>
-              <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Min Deposit (₦)</label><input type="number" value={form.minOrder} onChange={e => setForm({ ...form, minOrder: e.target.value })} placeholder="0" className="m" style={inputStyle} /></div>
-              <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Max Uses (0 = unlimited)</label><input type="number" value={form.maxUses} onChange={e => setForm({ ...form, maxUses: e.target.value })} placeholder="0" className="m" style={inputStyle} /></div>
+              <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Value</label><input type="number" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} placeholder={form.type === "percent" ? "20" : "500"} style={inputStyle} /></div>
+              <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Min Deposit (₦)</label><input type="number" value={form.minOrder} onChange={e => setForm({ ...form, minOrder: e.target.value })} placeholder="0" style={inputStyle} /></div>
+              <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Max Uses (0 = unlimited)</label><input type="number" value={form.maxUses} onChange={e => setForm({ ...form, maxUses: e.target.value })} placeholder="0" style={inputStyle} /></div>
               <div><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Expires</label><input type="date" value={form.expires} onChange={e => setForm({ ...form, expires: e.target.value })} style={inputStyle} /></div>
             </div>
             <button onClick={createCoupon} className="adm-btn-primary" style={{ opacity: form.code && form.value ? 1 : .4 }}>Create Coupon</button>
@@ -444,7 +444,7 @@ export function AdminCouponsPage({ dark, t }) {
             <div style={{ flex: 1, minWidth: 160 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span className="m" style={{ fontSize: 16, fontWeight: 600, color: t.accent }}>{c.code}</span>
-                <span className="m" style={{ fontSize: 14, color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>{c.type === "percent" ? `${c.value}%` : `₦${(c.value || 0).toLocaleString()}`} bonus</span>
+                <span style={{ fontSize: 14, color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>{c.type === "percent" ? `${c.value}%` : `₦${(c.value || 0).toLocaleString()}`} bonus</span>
                 {!c.enabled && <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textMuted }}>Disabled</span>}
               </div>
               <div style={{ fontSize: 13, color: t.textMuted, marginTop: 2 }}>
@@ -551,7 +551,7 @@ export function AdminNotificationsPage({ dark, t }) {
               <div style={{ fontSize: 14, color: t.textSoft, marginTop: 2 }}>{n.message}</div>
               <div style={{ fontSize: 13, color: t.textMuted, marginTop: 4 }}>To: {n.target} · {n.recipients ? `${n.sent || 0}/${n.recipients} delivered` : ""} · By: {n.sentBy} · {n.sentAt ? fD(n.sentAt) : ""}</div>
             </div>
-            <span className="m" style={{ fontSize: 12, padding: "2px 7px", borderRadius: 4, fontWeight: 600, background: n.status === "sent" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : n.status === "sending" ? (dark ? "rgba(96,165,250,.1)" : "rgba(59,130,246,.06)") : (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)"), color: n.status === "sent" ? t.green : n.status === "sending" ? (dark ? "#60a5fa" : "#2563eb") : t.amber }}>{n.status === "sending" ? "sending..." : n.status}</span>
+            <span style={{ fontSize: 12, padding: "2px 7px", borderRadius: 4, fontWeight: 600, background: n.status === "sent" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : n.status === "sending" ? (dark ? "rgba(96,165,250,.1)" : "rgba(59,130,246,.06)") : (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)"), color: n.status === "sent" ? t.green : n.status === "sending" ? (dark ? "#60a5fa" : "#2563eb") : t.amber }}>{n.status === "sending" ? "sending..." : n.status}</span>
           </div>
         )) : (
           <div className="adm-empty" style={{ color: t.textMuted }}>No notifications sent yet</div>
@@ -615,16 +615,16 @@ export function AdminMaintenancePage({ dark, t }) {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
               {PRESETS.map(p => {
                 const active = !useCustom && duration === p.m;
-                return (<button key={p.m} onClick={() => { setDuration(p.m); setUseCustom(false); }} className="m" style={{ padding: "10px 0", borderRadius: 10, fontSize: 14, fontWeight: 600, textAlign: "center", borderWidth: 1, borderStyle: "solid", borderColor: active ? t.accent : t.cardBorder, background: active ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : "transparent", color: active ? t.accent : t.textSoft, cursor: "pointer" }}>{p.label}</button>);
+                return (<button key={p.m} onClick={() => { setDuration(p.m); setUseCustom(false); }} style={{ padding: "10px 0", borderRadius: 10, fontSize: 14, fontWeight: 600, textAlign: "center", borderWidth: 1, borderStyle: "solid", borderColor: active ? t.accent : t.cardBorder, background: active ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : "transparent", color: active ? t.accent : t.textSoft, cursor: "pointer" }}>{p.label}</button>);
               })}
             </div>
             <button onClick={() => setUseCustom(!useCustom)} style={{ fontSize: 15, color: useCustom ? t.accent : t.textSoft, fontWeight: 500, background: "none", marginBottom: useCustom ? 12 : 0, cursor: "pointer" }}>{useCustom ? "▾ Custom duration" : "▸ Custom duration"}</button>
             {useCustom && (
               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                <div style={{ flex: 1 }}><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Hours</label><input type="number" min="0" max="72" value={customH} onChange={e => setCustomH(e.target.value)} placeholder="0" className="m" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: dark ? "#0d1020" : "#fff", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, color: t.text, fontSize: 16, fontWeight: 600, outline: "none", textAlign: "center", boxSizing: "border-box" }} /></div>
+                <div style={{ flex: 1 }}><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Hours</label><input type="number" min="0" max="72" value={customH} onChange={e => setCustomH(e.target.value)} placeholder="0" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: dark ? "#0d1020" : "#fff", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, color: t.text, fontSize: 16, fontWeight: 600, outline: "none", textAlign: "center", boxSizing: "border-box" }} /></div>
                 <span style={{ fontSize: 20, color: t.textMuted, marginTop: 16 }}>:</span>
-                <div style={{ flex: 1 }}><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Minutes</label><input type="number" min="0" max="59" value={customM} onChange={e => setCustomM(e.target.value)} placeholder="0" className="m" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: dark ? "#0d1020" : "#fff", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, color: t.text, fontSize: 16, fontWeight: 600, outline: "none", textAlign: "center", boxSizing: "border-box" }} /></div>
-                <div className="m" style={{ flex: 1, fontSize: 14, color: t.textMuted, marginTop: 16 }}>= {(Number(customH) || 0) * 60 + (Number(customM) || 0)} min</div>
+                <div style={{ flex: 1 }}><label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Minutes</label><input type="number" min="0" max="59" value={customM} onChange={e => setCustomM(e.target.value)} placeholder="0" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: dark ? "#0d1020" : "#fff", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, color: t.text, fontSize: 16, fontWeight: 600, outline: "none", textAlign: "center", boxSizing: "border-box" }} /></div>
+                <div style={{ flex: 1, fontSize: 14, color: t.textMuted, marginTop: 16 }}>= {(Number(customH) || 0) * 60 + (Number(customM) || 0)} min</div>
               </div>
             )}
           </div>
@@ -733,9 +733,9 @@ export function AdminAPIPage({ dark, t }) {
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontSize: 16, fontWeight: 600, color: t.text }}>{p.name}</span>
-                    <span className="m" style={{ fontSize: 12, padding: "2px 7px", borderRadius: 4, fontWeight: 600, background: configured ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)"), color: configured ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fcd34d" : "#d97706") }}>{configured ? "connected" : "not configured"}</span>
+                    <span style={{ fontSize: 12, padding: "2px 7px", borderRadius: 4, fontWeight: 600, background: configured ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)"), color: configured ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fcd34d" : "#d97706") }}>{configured ? "connected" : "not configured"}</span>
                   </div>
-                  <div className="m" style={{ fontSize: 14, color: t.textMuted, marginTop: 4 }}>{p.url || "URL pending"}</div>
+                  <div style={{ fontSize: 14, color: t.textMuted, marginTop: 4 }}>{p.url || "URL pending"}</div>
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
                   {configured && p.id === "mtp" && <button onClick={() => testConnection(p)} disabled={testing === p.id} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: dark ? "#a5b4fc" : "#4f46e5", opacity: testing === p.id ? .5 : 1 }}>{testing === p.id ? "Testing..." : "Test"}</button>}
@@ -750,9 +750,9 @@ export function AdminAPIPage({ dark, t }) {
               )}
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${t.cardBorder}`, fontSize: 13 }}>
-                <div><span style={{ color: t.textMuted }}>Env var:</span> <span className="m" style={{ color: t.textSoft }}>{p.envKey}</span></div>
-                <div><span style={{ color: t.textMuted }}>Services:</span> <span className="m" style={{ color: t.text }}>{p.id === "mtp" ? svcCount.toLocaleString() : "—"}</span></div>
-                <div><span style={{ color: t.textMuted }}>Priority:</span> <span className="m" style={{ color: t.text }}>{i + 1}</span></div>
+                <div><span style={{ color: t.textMuted }}>Env var:</span> <span style={{ color: t.textSoft }}>{p.envKey}</span></div>
+                <div><span style={{ color: t.textMuted }}>Services:</span> <span style={{ color: t.text }}>{p.id === "mtp" ? svcCount.toLocaleString() : "—"}</span></div>
+                <div><span style={{ color: t.textMuted }}>Priority:</span> <span style={{ color: t.text }}>{i + 1}</span></div>
               </div>
             </div>
           );

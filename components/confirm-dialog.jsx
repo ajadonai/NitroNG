@@ -72,7 +72,7 @@ export function ConfirmProvider({ children, dark }) {
             {dialog.requireType && (
               <div className="confirm-type-section">
                 <div className="confirm-type-label" style={{ color: dark ? "#706c68" : "#757170" }}>
-                  Type <span className="m" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{dialog.requireType}</span> to confirm
+                  Type <span style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{dialog.requireType}</span> to confirm
                 </div>
                 <input
                   value={input}

@@ -137,7 +137,7 @@ export default function AdminServicesPage({ dark, t }) {
       </div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search services..." className="m" style={{ flex: 1, minWidth: 160, padding: "8px 12px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none" }} />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search services..." style={{ flex: 1, minWidth: 160, padding: "8px 12px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none" }} />
         <select value={catFilter} onChange={e => setCatFilter(e.target.value)} style={{ padding: "8px 12px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none" }}>
           <option value="all">All Platforms ({services.length})</option>
           {categories.map(cat => <option key={cat} value={cat}>{cat} ({services.filter(s => s.category === cat).length})</option>)}
@@ -162,7 +162,7 @@ export default function AdminServicesPage({ dark, t }) {
                 <div style={{ fontSize: 14, color: t.textMuted, marginTop: 2 }}>{s.category} · API #{s.apiId} · {s.orders || 0} orders</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span className="m" style={{ fontSize: 13, color: t.textMuted }}>₦{s.costPer1k?.toLocaleString()}</span>
+                <span style={{ fontSize: 13, color: t.textMuted }}>₦{s.costPer1k?.toLocaleString()}</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expanded === s.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
               </div>
             </div>
@@ -189,11 +189,11 @@ export default function AdminServicesPage({ dark, t }) {
                       <div><span style={{ color: t.textMuted }}>Category:</span> <span style={{ color: t.text }}>{s.category}</span></div>
                       <div><span style={{ color: t.textMuted }}>Provider:</span> <span style={{ color: t.text }}>MTP #{s.apiId}</span></div>
                       <div><span style={{ color: t.textMuted }}>Status:</span> <span style={{ color: s.enabled ? t.green : t.red }}>{s.enabled ? "Active" : "Disabled"}</span></div>
-                      <div><span style={{ color: t.textMuted }}>Min:</span> <span className="m" style={{ color: t.text }}>{s.min?.toLocaleString() || 0}</span></div>
-                      <div><span style={{ color: t.textMuted }}>Max:</span> <span className="m" style={{ color: t.text }}>{s.max?.toLocaleString() || 0}</span></div>
+                      <div><span style={{ color: t.textMuted }}>Min:</span> <span style={{ color: t.text }}>{s.min?.toLocaleString() || 0}</span></div>
+                      <div><span style={{ color: t.textMuted }}>Max:</span> <span style={{ color: t.text }}>{s.max?.toLocaleString() || 0}</span></div>
                       <div><span style={{ color: t.textMuted }}>Refill:</span> <span style={{ color: s.refill ? t.green : t.textMuted }}>{s.refill ? "Yes" : "No"}</span></div>
-                      <div><span style={{ color: t.textMuted }}>Cost/1K:</span> <span className="m" style={{ color: t.text }}>₦{s.costPer1k?.toLocaleString()}</span></div>
-                      <div><span style={{ color: t.textMuted }}>Sell/1K:</span> <span className="m" style={{ color: t.text }}>₦{s.sellPer1k?.toLocaleString()}</span></div>
+                      <div><span style={{ color: t.textMuted }}>Cost/1K:</span> <span style={{ color: t.text }}>₦{s.costPer1k?.toLocaleString()}</span></div>
+                      <div><span style={{ color: t.textMuted }}>Sell/1K:</span> <span style={{ color: t.text }}>₦{s.sellPer1k?.toLocaleString()}</span></div>
                       <div><span style={{ color: t.textMuted }}>Avg time:</span> <span style={{ color: t.text }}>{s.avgTime || "—"}</span></div>
                     </div>
                     <div style={{ display: "flex", gap: 6 }}>

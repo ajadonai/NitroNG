@@ -80,8 +80,8 @@ export function AdminPaymentsPage({ dark, t }) {
               <div style={{ flex: 1, minWidth: 160 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
                   <span style={{ fontSize: 15, fontWeight: 500, color: t.text }}>{g.name}</span>
-                  <span className="m" style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, fontWeight: 600, background: g.enabled ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"), color: g.enabled ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }}>{g.enabled ? "Active" : "Disabled"}</span>
-                  {g.hasKeys && <span className="m" style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, fontWeight: 600, background: dark ? "rgba(96,165,250,.08)" : "rgba(59,130,246,.06)", color: dark ? "#60a5fa" : "#2563eb" }}>Keys set</span>}
+                  <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, fontWeight: 600, background: g.enabled ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"), color: g.enabled ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }}>{g.enabled ? "Active" : "Disabled"}</span>
+                  {g.hasKeys && <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, fontWeight: 600, background: dark ? "rgba(96,165,250,.08)" : "rgba(59,130,246,.06)", color: dark ? "#60a5fa" : "#2563eb" }}>Keys set</span>}
                 </div>
                 <div style={{ fontSize: 13, color: t.textMuted }}>{g.desc}</div>
               </div>
@@ -227,7 +227,7 @@ export function AdminAnalyticsPage({ dark, t }) {
             {(s.topPlatforms || []).length > 0 ? s.topPlatforms.map((p, i, arr) => (
               <div key={p.name} className="adm-list-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                 <div><div style={{ fontSize: 15, fontWeight: 500, color: t.text }}>{p.name}</div><div style={{ fontSize: 14, color: t.textMuted }}>{p.orders} orders</div></div>
-                <div className="m" style={{ fontSize: 15, fontWeight: 600, color: t.green }}>{fN(p.revenue || 0)}</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: t.green }}>{fN(p.revenue || 0)}</div>
               </div>
             )) : <div className="adm-empty" style={{ color: t.textMuted }}>No platform data yet</div>}
           </div>
@@ -242,7 +242,7 @@ export function AdminAnalyticsPage({ dark, t }) {
                   <div style={{ width: 8, height: 8, borderRadius: 4, background: color }} />
                   <span style={{ fontSize: 15, color: t.text }}>{label}</span>
                 </div>
-                <span className="m" style={{ fontSize: 15, fontWeight: 600, color }}>{count}</span>
+                <span style={{ fontSize: 15, fontWeight: 600, color }}>{count}</span>
               </div>
             ))}
           </div>
@@ -261,7 +261,7 @@ export function AdminAnalyticsPage({ dark, t }) {
                   <div style={{ fontSize: 15, fontWeight: 500, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sv.name}</div>
                   <div style={{ fontSize: 13, color: t.textMuted }}>{sv.category} · {sv.orders} orders</div>
                 </div>
-                <div className="m" style={{ fontSize: 15, fontWeight: 600, color: t.green }}>{fN(sv.revenue || 0)}</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: t.green }}>{fN(sv.revenue || 0)}</div>
               </div>
             ))}
           </div>

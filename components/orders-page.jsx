@@ -12,7 +12,7 @@ function txClr(type, dk) { return type === "deposit" ? (dk ? "#6ee7b7" : "#05966
 function txIcon(type) { return type === "deposit" ? "↓" : type === "referral" ? "★" : type === "refund" ? "↩" : "↑"; }
 
 function Badge({ status, dark }) {
-  return <span className="m" style={{ fontSize: 13, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: sBg(status, dark), color: sClr(status, dark), borderWidth: .5, borderStyle: "solid", borderColor: sBrd(status, dark), whiteSpace: "nowrap", display: "inline-block" }}>{status}</span>;
+  return <span style={{ fontSize: 13, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: sBg(status, dark), color: sClr(status, dark), borderWidth: .5, borderStyle: "solid", borderColor: sBrd(status, dark), whiteSpace: "nowrap", display: "inline-block" }}>{status}</span>;
 }
 
 const PER_PAGE_OPTIONS = [5, 10, 20];
@@ -121,7 +121,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
       <div className="ord-tabs" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", borderColor: t.cardBorder }}>
         {[["orders", "Orders", orders.length], ["transactions", "Transactions", txs.length]].map(([id, lb, count]) => (
           <button key={id} onClick={() => { setTab(id); setOPage(1); setTPage(1); setExpanded(null); }} className="ord-tab" style={{ background: tab === id ? t.navActive : "transparent", color: tab === id ? t.accent : t.textMuted }}>
-            {lb} <span className="m" style={{ fontSize: 13, opacity: .7 }}>({count})</span>
+            {lb} <span style={{ fontSize: 13, opacity: .7 }}>({count})</span>
           </button>
         ))}
       </div>
@@ -132,7 +132,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
         <div className="ord-filters">
           {["all", "Completed", "Processing", "Pending", "Partial", "Cancelled"].map(f => (
             <button key={f} onClick={() => { setFilter(f); setOPage(1); setExpanded(null); }} className="ord-filter-pill" style={{ borderWidth: 1, borderStyle: "solid", borderColor: filter === f ? t.accent : t.cardBorder, background: filter === f ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: filter === f ? t.accent : t.textMuted }}>
-              {f === "all" ? "All" : f} <span className="m" style={{ fontSize: 11 }}>({counts[f] || 0})</span>
+              {f === "all" ? "All" : f} <span style={{ fontSize: 11 }}>({counts[f] || 0})</span>
             </button>
           ))}
         </div>
@@ -236,7 +236,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
               <div className="ord-tx-info">
                 <div className="ord-tx-method" style={{ color: t.text }}>{tx.method}</div>
                 <div className="ord-tx-meta" style={{ color: t.textMuted }}>
-                  <span className="m">{tx.id}</span>
+                  <span>{tx.id}</span>
                   <span>{tx.date ? fD(tx.date) : ""}</span>
                 </div>
               </div>
@@ -298,7 +298,7 @@ export function OrdersSidebar({ orders, dark, t }) {
           <div className="ord-rs-item-name" style={{ color: t.text }}>{o.service}</div>
           <div className="ord-rs-item-row">
             <span style={{ fontWeight: 600, color: sClr(o.status, dark) }}>{o.status}</span>
-            <span className="m" style={{ color: t.textMuted }}>{o.created ? fD(o.created).split(",")[0] : ""}</span>
+            <span style={{ color: t.textMuted }}>{o.created ? fD(o.created).split(",")[0] : ""}</span>
           </div>
         </div>
       ))}

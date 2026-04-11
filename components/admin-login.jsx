@@ -82,7 +82,7 @@ export default function AdminLogin(){
             <div style={{width:28,height:28,borderRadius:7,background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M4,16 L4,4 L16,16 L16,4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
             <span style={{fontSize:15,fontWeight:600,color:"#fff",letterSpacing:1.5}}>NITRO</span>
           </div>
-          <div className="m" style={{fontSize:10,fontWeight:500,color:dark?"rgba(196,125,142,.5)":"rgba(255,255,255,.4)",letterSpacing:2,textTransform:"uppercase"}}>Command Center</div>
+          <div style={{fontSize:10,fontWeight:500,color:dark?"rgba(196,125,142,.5)":"rgba(255,255,255,.4)",letterSpacing:2,textTransform:"uppercase"}}>Command Center</div>
         </div>
 
         {/* Center: Quote */}
@@ -137,7 +137,7 @@ export default function AdminLogin(){
             <div style={{display:"flex",justifyContent:"center",marginBottom:20}}>
               <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"4px 14px",borderRadius:20,background:t.accentLight,border:`1px solid ${dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.1)"}`}}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                <span className="m" style={{fontSize:11,fontWeight:600,color:t.accent,letterSpacing:1}}>ADMIN</span>
+                <span style={{fontSize:11,fontWeight:600,color:t.accent,letterSpacing:1}}>ADMIN</span>
               </div>
             </div>
 

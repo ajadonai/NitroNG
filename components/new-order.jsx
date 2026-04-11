@@ -130,7 +130,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
         <div className="no-form-svc-name" style={{ color: t.text }}>{selSvc?.name}</div>
         {s && <div className="no-form-tier-info">
           <span style={{ color: s.text, fontWeight: 600 }}>{s.label} {selTier.tier}</span>
-          <span className="m" style={{ color: t.textMuted }}> · ₦{selTier.price.toLocaleString()}/{selTier.per}</span>
+          <span style={{ color: t.textMuted }}> · ₦{selTier.price.toLocaleString()}/{selTier.per}</span>
         </div>}
       </div>
       {selTier && <>
@@ -157,7 +157,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             <label className="no-form-label" style={{ color: t.textMuted }}>Answer option number</label>
             <div style={{ display: "flex", gap: 6 }}>
               {[1, 2, 3, 4].map(n => (
-                <button key={n} type="button" onClick={() => setComments(String(n))} className="m" style={{ flex: 1, padding: "10px 0", borderRadius: 8, fontSize: 14, fontWeight: 600, border: `1px solid ${(comments || "") === String(n) ? t.accent : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)")}`, background: (comments || "") === String(n) ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: (comments || "") === String(n) ? t.accent : t.textMuted, cursor: "pointer" }}>Option {n}</button>
+                <button key={n} type="button" onClick={() => setComments(String(n))} style={{ flex: 1, padding: "10px 0", borderRadius: 8, fontSize: 14, fontWeight: 600, border: `1px solid ${(comments || "") === String(n) ? t.accent : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)")}`, background: (comments || "") === String(n) ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: (comments || "") === String(n) ? t.accent : t.textMuted, cursor: "pointer" }}>Option {n}</button>
               ))}
             </div>
             <div style={{ fontSize: 11, color: t.textMuted, marginTop: 4 }}>Select which poll answer to vote for</div>
@@ -173,8 +173,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           </div>
         </div>
         <div className="no-form-summary" style={{ background: dark ? "rgba(255,255,255,.02)" : "rgba(0,0,0,.02)", borderColor: t.cardBorder }}>
-          <div className="no-form-sum-row" style={{ color: t.textMuted }}><span>Rate</span><span className="m">₦{selTier.price.toLocaleString()} / {selTier.per}</span></div>
-          <div className="no-form-sum-row" style={{ color: t.textMuted }}><span>Quantity</span><span className="m">{qty.toLocaleString()}</span></div>
+          <div className="no-form-sum-row" style={{ color: t.textMuted }}><span>Rate</span><span>₦{selTier.price.toLocaleString()} / {selTier.per}</span></div>
+          <div className="no-form-sum-row" style={{ color: t.textMuted }}><span>Quantity</span><span>{qty.toLocaleString()}</span></div>
           <div className="no-form-sum-total" style={{ borderColor: t.cardBorder }}>
             <span style={{ color: t.textMuted, fontWeight: 600 }}>Total</span>
             <span className="m no-form-sum-price" style={{ color: t.accent }}>₦{price.toLocaleString()}</span>
@@ -297,7 +297,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
           <div key={tier.tier} onClick={e => pickTier(tier, e)} className="no-tier-card" style={{ borderWidth: 1, borderStyle: "solid", borderColor: isSel ? s.text : (dark ? s.borderD : s.border), background: isSel ? (dark ? s.bgD : s.bg) : (dark ? "#0e1120" : "#ffffff") }}>
             <div className="no-tier-header">
               <span style={{ fontSize: 14, fontWeight: 600, color: s.text }}>{s.label} {tier.tier}</span>
-              <span className="m" style={{ fontSize: 14, fontWeight: 600, color: s.text }}>₦{tier.price.toLocaleString()}<span style={{ fontSize: 12, fontWeight: 400 }}>/{tier.per}</span></span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: s.text }}>₦{tier.price.toLocaleString()}<span style={{ fontSize: 12, fontWeight: 400 }}>/{tier.per}</span></span>
             </div>
             <div className="no-tier-meta" style={{ color: t.textMuted }}>Refill: <strong style={{ color: t.textSoft }}>{tier.refill}</strong> · {tier.speed}</div>
           </div>
@@ -321,7 +321,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
         {isSel && svc.tiers.length > 1 && <TierCards svc={svc} />}
         {isSel && svc.tiers.length === 1 && (
           <div className="no-svc-single" style={{ color: t.textMuted }}>
-            <span className="m" style={{ fontWeight: 600, color: TS[svc.tiers[0].tier].text }}>₦{svc.tiers[0].price.toLocaleString()}/{svc.tiers[0].per}</span> · Refill: {svc.tiers[0].refill} · {svc.tiers[0].speed}
+            <span style={{ fontWeight: 600, color: TS[svc.tiers[0].tier].text }}>₦{svc.tiers[0].price.toLocaleString()}/{svc.tiers[0].per}</span> · Refill: {svc.tiers[0].refill} · {svc.tiers[0].speed}
           </div>
         )}
       </div>
@@ -368,7 +368,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
                   <button key={p.id} onClick={() => setPlatform(p.id)} className="no-plat-item" style={{ background: active ? t.navActive : "transparent", color: active ? t.accent : t.textSoft, fontWeight: active ? 600 : 430 }}>
                     <span className="no-plat-item-icon" style={{ opacity: active ? 1 : .5 }}>{p.icon}</span>
                     {p.label}
-                    {count > 0 && <span className="m" style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: active ? t.accent : t.textMuted, background: active ? (dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)") : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"), padding: "1px 6px", borderRadius: 8, minWidth: 18, textAlign: "center" }}>{count}</span>}
+                    {count > 0 && <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: active ? t.accent : t.textMuted, background: active ? (dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)") : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"), padding: "1px 6px", borderRadius: 8, minWidth: 18, textAlign: "center" }}>{count}</span>}
                   </button>
                 );
               })}
@@ -397,12 +397,12 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
           )}
 
           {/* Search */}
-          <input placeholder="Search services..." value={search} onChange={e => setSearch(e.target.value)} className="m" style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 13, outline: "none", marginBottom: 10, fontFamily: "'JetBrains Mono', monospace" }} />
+          <input placeholder="Search services..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 13, outline: "none", marginBottom: 10, fontFamily: "'JetBrains Mono', monospace" }} />
 
           {/* Platform name + count */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <span style={{ fontSize: 16, fontWeight: 600, color: t.text }}>{activePlat?.label}</span>
-            <span className="m" style={{ fontSize: 13, color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>({filtered.length} services)</span>
+            <span style={{ fontSize: 13, color: t.textMuted }}>({filtered.length} services)</span>
           </div>
 
           <div className="no-svc-list">
@@ -419,7 +419,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
             <div className="no-bar-name" style={{ color: t.text }}>{selSvc?.name}</div>
             <div className="no-bar-tier">
               <span style={{ color: TS[selTier.tier].text, fontWeight: 600 }}>{TS[selTier.tier].label} {selTier.tier}</span>
-              <span className="m" style={{ color: t.textMuted }}> · ₦{selTier.price.toLocaleString()}/{selTier.per}</span>
+              <span style={{ color: t.textMuted }}> · ₦{selTier.price.toLocaleString()}/{selTier.per}</span>
             </div>
           </div>
           <div className="no-bar-right">
@@ -458,7 +458,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
                         <button key={p.id} onClick={() => { setPlatform(p.id); setCatModal(false); }} className="no-cat-item" style={{ borderWidth: 1, borderStyle: "solid", borderColor: act ? t.accent : t.cardBorder, background: act ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: act ? t.accent : t.text, position: "relative" }}>
                           <span className="no-cat-icon">{p.icon}</span>
                           <span className="no-cat-label">{p.label}</span>
-                          {count > 0 && <span className="m" style={{ fontSize: 10, fontWeight: 600, color: act ? t.accent : t.textMuted, position: "absolute", top: 4, right: 6 }}>{count}</span>}
+                          {count > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: act ? t.accent : t.textMuted, position: "absolute", top: 4, right: 6 }}>{count}</span>}
                         </button>
                       );
                     })}

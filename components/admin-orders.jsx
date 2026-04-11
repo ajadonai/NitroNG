@@ -14,7 +14,7 @@ const STATUS_COLORS = {
 
 function Badge({ status, dark }) {
   const s = STATUS_COLORS[status] || STATUS_COLORS.Canceled;
-  return <span className="m" style={{ fontSize: 13, padding: "2px 8px", borderRadius: 5, fontWeight: 600, background: dark ? s.bg : s.bgL, color: dark ? s.text : s.textL }}>{status}</span>;
+  return <span style={{ fontSize: 13, padding: "2px 8px", borderRadius: 5, fontWeight: 600, background: dark ? s.bg : s.bgL, color: dark ? s.text : s.textL }}>{status}</span>;
 }
 
 export default function AdminOrdersPage({ dark, t }) {
@@ -75,7 +75,7 @@ export default function AdminOrdersPage({ dark, t }) {
       <div className="adm-filters">
         {["all", "Completed", "Processing", "Pending", "Partial", "Canceled"].map(f => (
           <button key={f} onClick={() => { setFilter(f); setPage(1); }} className="adm-filter-pill" style={{ borderWidth: 1, borderStyle: "solid", borderColor: filter === f ? t.accent : t.cardBorder, background: filter === f ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: filter === f ? t.accent : t.textMuted }}>
-            {f === "all" ? "All" : f} <span className="m">({counts[f] || 0})</span>
+            {f === "all" ? "All" : f} <span>({counts[f] || 0})</span>
           </button>
         ))}
       </div>
@@ -98,7 +98,7 @@ export default function AdminOrdersPage({ dark, t }) {
               </div>
               <div style={{ textAlign: "right", display: "flex", alignItems: "center", gap: 10 }}>
                 <div>
-                  <div className="m" style={{ fontSize: 14, fontWeight: 600, color: t.green }}>{fN(o.charge)}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: t.green }}>{fN(o.charge)}</div>
                   <Badge status={o.status} dark={dark} />
                 </div>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expanded === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
@@ -110,8 +110,8 @@ export default function AdminOrdersPage({ dark, t }) {
                   <div><span style={{ color: t.textMuted }}>User:</span> <span style={{ color: t.text }}>{o.user}</span></div>
                   <div><span style={{ color: t.textMuted }}>Email:</span> <span style={{ color: t.text }}>{o.email}</span></div>
                   <div><span style={{ color: t.textMuted }}>Platform:</span> <span style={{ color: t.text }}>{o.category}</span></div>
-                  <div><span style={{ color: t.textMuted }}>Cost:</span> <span className="m" style={{ color: t.red }}>{fN(o.cost || 0)}</span></div>
-                  <div><span style={{ color: t.textMuted }}>Profit:</span> <span className="m" style={{ color: t.green }}>{fN((o.charge || 0) - (o.cost || 0))}</span></div>
+                  <div><span style={{ color: t.textMuted }}>Cost:</span> <span style={{ color: t.red }}>{fN(o.cost || 0)}</span></div>
+                  <div><span style={{ color: t.textMuted }}>Profit:</span> <span style={{ color: t.green }}>{fN((o.charge || 0) - (o.cost || 0))}</span></div>
                   <div><span style={{ color: t.textMuted }}>Date:</span> <span style={{ color: t.text }}>{o.created ? fD(o.created) : ""}</span></div>
                 </div>
                 {o.link && <div style={{ fontSize: 14, color: t.textMuted, marginBottom: 10, wordBreak: "break-all" }}>Link: <span style={{ color: t.accent }}>{o.link}</span></div>}
