@@ -181,12 +181,12 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                       <div className="m ord-detail-val" style={{ color: t.accent, wordBreak: "break-all" }}>{o.link || "—"}</div>
                     </div>
                     <div>
-                      <div className="ord-detail-label" style={{ color: t.textMuted }}>Quantity</div>
-                      <div className="m ord-detail-val" style={{ color: t.text }}>{o.quantity?.toLocaleString() || 0}</div>
+                      <div className="ord-detail-label" style={{ color: t.textMuted }}>Platform</div>
+                      <div className="ord-detail-val" style={{ color: t.text }}>{o.platform || "—"}</div>
                     </div>
                     <div>
-                      <div className="ord-detail-label" style={{ color: t.textMuted }}>Charge</div>
-                      <div className="m ord-detail-val" style={{ color: t.green }}>{fN(o.charge)}</div>
+                      <div className="ord-detail-label" style={{ color: t.textMuted }}>Status</div>
+                      <div style={{ marginTop: 2 }}><Badge status={o.status} dark={dark} /></div>
                     </div>
                   </div>
                   {(o.status === "Processing" || o.status === "Pending") && (
