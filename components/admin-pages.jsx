@@ -497,21 +497,17 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
   const confirm = useConfirm();
   const [social, setSocial] = useState({ social_whatsapp: "", social_telegram: "", social_instagram: "", social_twitter: "", social_whatsapp_support: "" });
   const [emails, setEmails] = useState({ site_email_general: "", site_email_support: "" });
-  const [refSettings, setRefSettings] = useState({ ref_referrer_bonus: "50000", ref_invitee_bonus: "50000", ref_min_deposit: "0" });
   const [socialLoading, setSocialLoading] = useState(true);
   const [socialSaving, setSocialSaving] = useState(false);
   const [socialMsg, setSocialMsg] = useState(null);
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailMsg, setEmailMsg] = useState(null);
-  const [refSaving, setRefSaving] = useState(false);
-  const [refMsg, setRefMsg] = useState(null);
 
   useEffect(() => {
     fetch("/api/admin/settings").then(r => r.json()).then(d => {
       if (d.settings) {
         setSocial(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("social_"))) }));
         setEmails(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("site_email_"))) }));
-        setRefSettings(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("ref_"))) }));
       }
     }).finally(() => setSocialLoading(false));
   }, []);
@@ -714,38 +710,6 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
             ))}
 
             <button onClick={saveSocial} disabled={socialSaving} className="adm-btn-primary" style={{ opacity: socialSaving ? .5 : 1 }}>{socialSaving ? "Saving..." : "Save Social Links"}</button>
-          </div>
-        </div>
-
-        {/* Referral Settings */}
-        <div className="set-section">
-          <div className="set-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-            <div className="set-card-title" style={{ color: t.textMuted }}>Referral program</div>
-            <div className="set-card-desc" style={{ color: t.textMuted }}>Bonus amounts in kobo (100 kobo = ₦1). Default ₦500 = 50000. Set to 0 to disable.</div>
-            <div className="set-card-divider" style={{ background: t.cardBorder }} />
-
-            {refMsg && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 12, fontSize: 14, background: refMsg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: refMsg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{refMsg.type === "success" ? "✓" : "⚠️"} {refMsg.text}</div>}
-
-            {[
-              ["ref_referrer_bonus", "Referrer Bonus", "Amount credited to the person who shared their code"],
-              ["ref_invitee_bonus", "Invitee Bonus", "Amount credited to the new user who used a referral code"],
-              ["ref_min_deposit", "Minimum Deposit", "New user must deposit this amount before bonuses are paid. Set to 0 to pay immediately"],
-            ].map(([key, label, hint]) => (
-              <div key={key} style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 14, color: t.textMuted, display: "block", marginBottom: 3 }}>{label} <span style={{ fontSize: 13, color: t.accent, fontWeight: 600 }}>₦{((Number(refSettings[key]) || 0) / 100).toLocaleString()}</span></label>
-                <input type="number" value={refSettings[key] || ""} onChange={e => setRefSettings(prev => ({ ...prev, [key]: e.target.value }))} placeholder="50000" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 15, outline: "none", boxSizing: "border-box", fontFamily: "'JetBrains Mono', monospace" }} />
-                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2, opacity: .7 }}>{hint}</div>
-              </div>
-            ))}
-
-            <button onClick={async () => {
-              setRefSaving(true); setRefMsg(null);
-              try {
-                const res = await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ settings: refSettings }) });
-                setRefMsg(res.ok ? { type: "success", text: "Referral settings saved" } : { type: "error", text: "Failed to save" });
-              } catch { setRefMsg({ type: "error", text: "Request failed" }); }
-              setRefSaving(false);
-            }} disabled={refSaving} className="adm-btn-primary" style={{ opacity: refSaving ? .5 : 1 }}>{refSaving ? "Saving..." : "Save Referral Settings"}</button>
           </div>
         </div>
 
