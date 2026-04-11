@@ -1379,11 +1379,11 @@ input { font-family: inherit; }
 
 @media (max-width: 767px) {
   .adm-filters { margin-top: 12px; }
-  .adm-search { font-size: 14px; }
-  .adm-user-row { flex-direction: column; align-items: stretch; gap: 10px; }
-  .adm-user-actions { justify-content: space-between; }
-  .adm-list-row { padding: 10px 12px; }
-  .adm-btn-sm { padding: 4px 10px; font-size: 13px; }
+  .adm-search { font-size: 14px; max-width: 100%; }
+  .adm-user-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .adm-user-actions { display: flex; align-items: center; justify-content: space-between; padding-left: 44px; }
+  .adm-list-row { padding: 12px 14px; }
+  .adm-btn-sm { padding: 5px 10px; font-size: 12px; }
   .adm-btn-primary { padding: 8px 18px; font-size: 14px; }
   .adm-detail-grid { grid-template-columns: 1fr 1fr; }
 }
@@ -1472,6 +1472,9 @@ input { font-family: inherit; }
 .sup-filter-bar { display: flex; gap: 3; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-shrink: 0; flex-wrap: nowrap; }
 .sup-filter-bar::-webkit-scrollbar { display: none; }
 
+.sup-info-toggle { display: none !important; }
+.sup-info-inline { display: none !important; }
+
 /* Mobile: full-screen list OR chat */
 @media (max-width: 767px) {
   .sup-split { flex-direction: column; }
@@ -1480,13 +1483,16 @@ input { font-family: inherit; }
   .sup-mobile-back { display: flex !important; }
   .sup-split.sup-view-chat .sup-split-list { display: none !important; }
   .sup-split.sup-view-list .sup-split-chat { display: none !important; }
-  .sup-split.sup-view-list .sup-info-panel { display: none !important; }
-  .sup-info-panel { width: 100% !important; border-left: none !important; border-top: 1px solid var(--card-border, rgba(255,255,255,.08)); max-height: 240px; }
+  .sup-info-panel { display: none !important; }
+  .sup-info-toggle { display: flex !important; }
+  .sup-info-inline { display: block !important; }
 }
-/* Tablet: 40/60 split, hide info panel */
+/* Tablet: 40/60 split, hide info panel, show inline toggle */
 @media (max-width: 1199px) and (min-width: 768px) {
   .sup-split-list { width: 240px !important; }
   .sup-info-panel { display: none !important; }
+  .sup-info-toggle { display: flex !important; }
+  .sup-info-inline { display: block !important; }
 }
 
 /* ═══════════════════════════════════════════ */

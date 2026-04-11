@@ -13,6 +13,7 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
   const [filter, setFilter] = useState("all");
   const [reply, setReply] = useState("");
   const [mobileView, setMobileView] = useState("list");
+  const [showInfo, setShowInfo] = useState(false);
   const [loading, setLoading] = useState(true);
   const msgsEnd = useRef(null);
 
@@ -138,17 +139,47 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
       {/* ═══ CENTER: CONVERSATION ═══ */}
       <div className="sup-split-chat" style={{ minHeight: 0 }}>
         {selected ? <>
-          <div style={{ padding: "14px 18px", borderBottom: `1px solid ${t.cardBorder}`, flexShrink: 0, display: "flex", alignItems: "center", gap: 10 }}>
-            <button className="sup-mobile-back" onClick={() => { setMobileView("list"); }} style={{ background: "none", border: "none", color: t.textMuted, cursor: "pointer", padding: 4, display: "none" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
-            </button>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 500, color: t.text, display: "flex", alignItems: "center", gap: 8 }}>
-                {selected.subject}
-                <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: statusBg(selected.status, dark), color: statusClr(selected.status, dark) }}>{(selected.status || "").toLowerCase()}</span>
+          <div style={{ borderBottom: `1px solid ${t.cardBorder}`, flexShrink: 0 }}>
+            <div style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 10 }}>
+              <button className="sup-mobile-back" onClick={() => { setMobileView("list"); setShowInfo(false); }} style={{ background: "none", border: "none", color: t.textMuted, cursor: "pointer", padding: 4, display: "none" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 16, fontWeight: 500, color: t.text, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  {selected.subject}
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: statusBg(selected.status, dark), color: statusClr(selected.status, dark) }}>{(selected.status || "").toLowerCase()}</span>
+                </div>
+                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 3, fontFamily: "'JetBrains Mono', monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selected.id} · {selected.user}</div>
               </div>
-              <div style={{ fontSize: 12, color: t.textMuted, marginTop: 3, fontFamily: "'JetBrains Mono', monospace" }}>{selected.id} · {selected.user} · {selected.email}</div>
+              <button className="sup-info-toggle" onClick={() => setShowInfo(!showInfo)} style={{ background: showInfo ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : "none", border: `1px solid ${showInfo ? t.accent : t.cardBorder}`, borderRadius: 8, padding: "6px 8px", cursor: "pointer", color: showInfo ? t.accent : t.textMuted, flexShrink: 0, display: "none" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </button>
             </div>
+            {/* Collapsible info — mobile/tablet only */}
+            {showInfo && (
+              <div className="sup-info-inline" style={{ padding: "0 18px 14px", display: "none" }}>
+                <div style={{ padding: 12, borderRadius: 10, background: dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.02)", border: `1px solid ${t.cardBorder}` }}>
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 13 }}>
+                    <div>
+                      <div style={{ fontSize: 10, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>Customer</div>
+                      <div style={{ color: t.text, fontWeight: 500 }}>{selected.user}</div>
+                      <div style={{ color: t.textSoft, fontSize: 12 }}>{selected.email}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>Ticket</div>
+                      <div style={{ color: t.textSoft, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>{selected.id}</div>
+                      <div style={{ fontSize: 12 }}>Status: <span style={{ fontWeight: 600, color: statusClr(selected.status, dark) }}>{selected.status}</span> · {selected.replies?.length || 0} replies</div>
+                    </div>
+                    {selected.orderId && (
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>Order</div>
+                        <div style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>{selected.orderId}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
