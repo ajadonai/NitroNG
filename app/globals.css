@@ -609,8 +609,6 @@ input { font-family: inherit; }
 .ord-row-left { min-width: 0; flex: 1; }
 .ord-row-service { font-size: 15px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 3px; }
 .ord-row-meta { display: flex; align-items: center; gap: 6px; margin-top: 0; font-size: 13px; }
-.ord-row-meta-wide { display: flex; }
-.ord-row-meta-narrow { display: none; }
 .ord-meta-sep { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: .35; flex-shrink: 0; }
 .ord-row-right { text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .ord-row-charge { font-size: 15px; font-weight: 600; }
@@ -618,7 +616,7 @@ input { font-family: inherit; }
 .ord-empty { padding: 40px 20px; text-align: center; font-size: 15px; }
 
 /* Expanded details */
-.ord-expanded { padding: 0 18px 14px; padding-left: 70px; }
+.ord-expanded { padding: 14px 18px 14px 70px; }
 .ord-detail-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 14px; margin-bottom: 12px; }
 .ord-detail-link { grid-column: 1 / -1; }
 .ord-detail-label { font-size: 11px; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 1px; }
@@ -679,12 +677,9 @@ input { font-family: inherit; }
   .ord-platform-icon { width: 34px !important; height: 34px !important; border-radius: 8px; }
   .ord-row-service { font-size: 14px; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .ord-row-meta { font-size: 12px; }
-  .ord-row-meta-wide { display: none; }
-  .ord-row-meta-narrow { display: flex; flex-direction: column; gap: 2px; }
-  .ord-row-meta-narrow .ord-row-meta-sub { display: flex; align-items: center; gap: 5px; }
   .ord-row-charge { font-size: 14px; }
   .ord-row-chevron { display: none; }
-  .ord-expanded { padding: 0 14px 14px; padding-left: 58px; }
+  .ord-expanded { padding: 14px 14px 14px 58px; }
   .ord-detail-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .ord-detail-link { grid-column: 1 / -1; }
   .ord-action-btn { padding: 6px 12px; font-size: 12px; }

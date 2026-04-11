@@ -149,20 +149,10 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                 <PlatformIcon platform={o.platform} dark={dark} />
                 <div className="ord-row-left">
                   <div className="ord-row-service" style={{ color: t.text }}>{o.service}{o.tier ? ` · ${o.tier}` : ""}</div>
-                  <div className="ord-row-meta ord-row-meta-wide" style={{ color: t.textMuted }}>
+                  <div className="ord-row-meta" style={{ color: t.textMuted }}>
                     <span className="m">{o.id}</span>
                     <span className="ord-meta-sep" />
-                    <span>{o.quantity?.toLocaleString() || 0} qty</span>
-                    <span className="ord-meta-sep" />
-                    <span>{o.created ? fD(o.created) : ""}</span>
-                  </div>
-                  <div className="ord-row-meta ord-row-meta-narrow" style={{ color: t.textMuted }}>
-                    <div className="m">{o.id}</div>
-                    <div className="ord-row-meta-sub">
-                      <span>{o.quantity?.toLocaleString() || 0} qty</span>
-                      <span className="ord-meta-sep" />
-                      <span>{o.created ? fD(o.created, true) : ""}</span>
-                    </div>
+                    <span>{o.created ? fD(o.created, true) : ""}</span>
                   </div>
                 </div>
                 <div className="ord-row-right">
@@ -174,19 +164,19 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
 
               {/* Expanded details */}
               {expanded === o.id && (
-                <div className="ord-expanded" style={{ background: dark ? "rgba(255,255,255,.015)" : "rgba(0,0,0,.015)", borderBottom: i < pagedOrders.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
+                <div className="ord-expanded" style={{ background: dark ? "rgba(196,125,142,.04)" : "rgba(196,125,142,.03)", borderBottom: `2px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.12)"}`, borderLeft: `3px solid ${t.accent}` }}>
                   <div className="ord-detail-grid">
                     <div className="ord-detail-link">
                       <div className="ord-detail-label" style={{ color: t.textMuted }}>Link</div>
                       <div className="m ord-detail-val" style={{ color: t.accent, wordBreak: "break-all" }}>{o.link || "—"}</div>
                     </div>
                     <div>
-                      <div className="ord-detail-label" style={{ color: t.textMuted }}>Platform</div>
-                      <div className="ord-detail-val" style={{ color: t.text }}>{o.platform || "—"}</div>
+                      <div className="ord-detail-label" style={{ color: t.textMuted }}>Quantity</div>
+                      <div className="m ord-detail-val" style={{ color: t.text }}>{o.quantity?.toLocaleString() || 0}</div>
                     </div>
                     <div>
-                      <div className="ord-detail-label" style={{ color: t.textMuted }}>Status</div>
-                      <div style={{ marginTop: 2 }}><Badge status={o.status} dark={dark} /></div>
+                      <div className="ord-detail-label" style={{ color: t.textMuted }}>Platform</div>
+                      <div className="ord-detail-val" style={{ color: t.text }}>{o.platform || "—"}</div>
                     </div>
                   </div>
                   {(o.status === "Processing" || o.status === "Pending") && (
