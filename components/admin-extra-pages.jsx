@@ -734,7 +734,7 @@ export function AdminAPIPage({ dark, t }) {
   const syncServices = async (provider) => {
     setSyncing(provider.id); setResult(null);
     try {
-      const res = await fetch("/api/admin/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sync" }) });
+      const res = await fetch("/api/admin/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sync", provider: provider.id }) });
       const data = await res.json();
       if (res.ok) {
         setResult({ id: provider.id, type: "success", message: `Synced! ${data.created} new, ${data.updated} updated, ${data.skipped} skipped (${data.total} total)` });
@@ -777,7 +777,7 @@ export function AdminAPIPage({ dark, t }) {
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
                   {configured && <button onClick={() => testConnection(p)} disabled={testing === p.id} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: dark ? "#a5b4fc" : "#4f46e5", opacity: testing === p.id ? .5 : 1 }}>{testing === p.id ? "Testing..." : "Test"}</button>}
-                  {configured && p.id === "mtp" && <button onClick={() => syncServices(p)} disabled={syncing === p.id} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: dark ? "#6ee7b7" : "#059669", opacity: syncing === p.id ? .5 : 1 }}>{syncing === p.id ? "Syncing..." : "Sync Services"}</button>}
+                  {configured && <button onClick={() => syncServices(p)} disabled={syncing === p.id} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: dark ? "#6ee7b7" : "#059669", opacity: syncing === p.id ? .5 : 1 }}>{syncing === p.id ? "Syncing..." : "Sync Services"}</button>}
                 </div>
               </div>
 

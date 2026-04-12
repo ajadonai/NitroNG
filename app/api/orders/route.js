@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
-import { placeOrder, checkOrder, cancelOrder } from '@/lib/mtp';
+import { placeOrder, checkOrder, cancelOrder } from '@/lib/smm';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 
 export async function GET(req) {
@@ -51,9 +51,10 @@ export async function PATCH(req) {
     if (!order) return Response.json({ error: 'Order not found' }, { status: 404 });
 
     if (action === 'check') {
-      if (order.apiOrderId && process.env.MTP_API_KEY) {
+      if (order.apiOrderId) {
         try {
-          const status = await checkOrder(order.apiOrderId);
+          const provider = order.service?.provider || 'mtp';
+          const status = await checkOrder(provider, order.apiOrderId);
           const statusMap = { 'Completed': 'Completed', 'In progress': 'Processing', 'Processing': 'Processing', 'Pending': 'Pending', 'Partial': 'Partial', 'Canceled': 'Cancelled', 'Refunded': 'Cancelled' };
           const newStatus = statusMap[status.status] || order.status;
           if (newStatus !== order.status) {
@@ -71,8 +72,8 @@ export async function PATCH(req) {
       if (order.status === 'Completed' || order.status === 'Cancelled' || order.status === 'Canceled' || order.status === 'Partial') {
         return Response.json({ error: `Cannot cancel ${order.status.toLowerCase()} order` }, { status: 400 });
       }
-      if (order.apiOrderId && process.env.MTP_API_KEY) {
-        try { await cancelOrder(order.apiOrderId); } catch (e) { log.warn('User Cancel MTP', e.message); }
+      if (order.apiOrderId) {
+        try { const provider = order.service?.provider || 'mtp'; await cancelOrder(provider, order.apiOrderId); } catch (e) { log.warn('Cancel Order', e.message); }
       }
       // Refund to wallet
       await prisma.$transaction([
@@ -102,11 +103,12 @@ export async function PATCH(req) {
 
       const newOrderId = `ORD-${Date.now().toString(36).toUpperCase()}`;
       let apiOrderId = null;
-      if (order.service.apiId && process.env.MTP_API_KEY) {
+      if (order.service.apiId) {
         try {
-          const mtpResult = await placeOrder(order.service.apiId, order.link, order.quantity);
-          apiOrderId = mtpResult.order ? String(mtpResult.order) : null;
-        } catch (err) { log.error('Reorder MTP', err.message); }
+          const provider = order.service.provider || 'mtp';
+          const result = await placeOrder(provider, order.service.apiId, order.link, order.quantity);
+          apiOrderId = result.order ? String(result.order) : null;
+        } catch (err) { log.error('Reorder', err.message); }
       }
 
       const newOrder = await prisma.$transaction(async (tx) => {
@@ -222,11 +224,11 @@ export async function POST(req) {
     // Generate order ID
     const orderId = `ORD-${Date.now().toString(36).toUpperCase()}`;
 
-    // Place order on MTP (if apiId exists)
+    // Place order on provider (MTP, JAP, or DaoSMM)
     let apiOrderId = null;
-    if (service.apiId && process.env.MTP_API_KEY) {
+    if (service.apiId) {
       try {
-        // Build extra params based on service type
+        const provider = service.provider || 'mtp';
         const sType = (serviceType || tier?.group?.type || "").toLowerCase();
         const sName = (tier?.group?.name || service?.name || "").toLowerCase();
         const extra = {};
@@ -235,10 +237,10 @@ export async function POST(req) {
           else if (sName.includes("poll") || sName.includes("vote")) extra.answer_number = comments;
           else extra.comments = comments;
         }
-        const mtpResult = await placeOrder(service.apiId, trimmedLink, qty, extra);
-        apiOrderId = mtpResult.order ? String(mtpResult.order) : null;
+        const result = await placeOrder(provider, service.apiId, trimmedLink, qty, extra);
+        apiOrderId = result.order ? String(result.order) : null;
       } catch (err) {
-        log.error('Order MTP', err.message);
+        log.error('Order Place', err.message);
       }
     }
 

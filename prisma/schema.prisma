@@ -98,9 +98,10 @@ model Admin {
 
 model Service {
   id        String  @id @default(cuid())
-  apiId     Int     @unique
+  apiId     Int
   name      String
   category  String
+  provider  String  @default("mtp") // 'mtp' | 'jap' | 'dao'
   costPer1k Int
   sellPer1k Int
   markup    Int     @default(54)
@@ -115,6 +116,8 @@ model Service {
   orders Order[]
   tiers  ServiceTier[]
 
+  @@unique([apiId, provider])
+  @@index([provider])
   @@map("services")
 }
 
