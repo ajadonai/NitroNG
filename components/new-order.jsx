@@ -332,7 +332,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
     <>
       <div className="no-header">
         <div className="no-title" style={{ color: t.text }}>Services</div>
-        <div className="no-subtitle" style={{ color: t.textMuted }}>{menuData ? `${allGroups.length} services across ${Object.keys(platformCounts).length} platforms — prices per 1,000` : "Loading services..."}</div>
+        <div className="no-subtitle" style={{ color: t.textMuted }}>{menuData ? `${allGroups.length} services across ${Object.keys(platformCounts).length} platforms — prices per 1,000` : "Browse and order social media services"}</div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
@@ -349,7 +349,29 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
         <MobileGuide dark={dark} t={t} />
       </div>
 
-      {menuLoading && <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>Loading services...</div>}
+      {menuLoading && (
+        <div style={{ padding: "0" }}>
+          {/* Skeleton platform button — mobile/tablet */}
+          <div className="no-plat-btn-wrap">
+            <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 42, borderRadius: 10, marginBottom: 10 }} />
+          </div>
+          {/* Skeleton search bar */}
+          <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 38, borderRadius: 8, marginBottom: 14 }} />
+          {/* Skeleton service cards */}
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} style={{ padding: "14px 16px", borderRadius: 10, border: `1px solid ${dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.05)"}`, marginBottom: 8, background: dark ? "rgba(255,255,255,.02)" : "rgba(255,255,255,.6)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 16, width: `${45 + i * 8}%`, borderRadius: 4 }} />
+                <div style={{ display: "flex", gap: 6 }}>
+                  <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 22, width: 58, borderRadius: 4 }} />
+                  {i % 2 === 0 && <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 22, width: 50, borderRadius: 4 }} />}
+                </div>
+              </div>
+              <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 12, width: "30%", borderRadius: 3 }} />
+            </div>
+          ))}
+        </div>
+      )}
       {menuError && <div style={{ padding: 40, textAlign: "center", color: dark ? "#fca5a5" : "#dc2626" }}>{menuError}</div>}
 
       {!menuLoading && !menuError && <>
