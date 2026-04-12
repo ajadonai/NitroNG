@@ -189,39 +189,42 @@ function LandingInner(){
           <div className="hero-split">
             {/* LEFT */}
             <div className="hero-left">
-              <div className="fu hero-eyebrow" style={{display:"inline-flex",alignItems:"center",gap:8,marginBottom:20}}>
-                <div className="hero-live-dot" style={{width:8,height:8,borderRadius:"50%",background:"#34d399",boxShadow:"0 0 12px rgba(52,211,153,.4)"}} />
-                <span style={{fontSize:12,fontWeight:500,letterSpacing:1.5,textTransform:"uppercase",color:dark?"#34d399":"rgba(255,255,255,.85)"}}>{siteStats.orders||"0"} orders delivered today</span>
+              <div className="fu hero-eyebrow" style={{display:"inline-flex",alignItems:"center",gap:6,padding:"5px 12px",borderRadius:20,marginBottom:20,background:dark?"rgba(52,211,153,.06)":"rgba(255,255,255,.1)",border:`1px solid ${dark?"rgba(52,211,153,.12)":"rgba(255,255,255,.15)"}`}}>
+                <div className="hero-live-dot" style={{width:6,height:6,borderRadius:"50%",background:"#34d399",boxShadow:"0 0 8px rgba(52,211,153,.5)"}} />
+                <span style={{fontSize:11,fontWeight:500,letterSpacing:1,textTransform:"uppercase",color:dark?"#34d399":"#fff"}}>{siteStats.orders||"0"} orders delivered today</span>
               </div>
               <h1 className="fu fd1 hero-h1" style={{color:t.heroText}}>Your audience,<br/><span className="serif hero-refined" style={{color:dark?t.accent:"#fff",textShadow:dark?"none":"0 2px 20px rgba(0,0,0,.15)"}}>amplified.</span></h1>
-              <div className="fu fd2 hero-value-line m" style={{fontSize:15,fontWeight:500,color:dark?"rgba(244,241,237,.5)":"rgba(255,255,255,.75)",marginBottom:20,display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
-                <span style={{padding:"3px 10px",borderRadius:6,fontWeight:600,background:dark?"rgba(52,211,153,.08)":"rgba(255,255,255,.15)",color:dark?"#34d399":"#fff",border:`0.5px solid ${dark?"rgba(52,211,153,.15)":"rgba(255,255,255,.25)"}`}}>1,000 followers</span>
+              <div className="fu fd2 hero-value-line" style={{fontSize:14,fontWeight:500,color:dark?"rgba(244,241,237,.5)":"rgba(255,255,255,.75)",marginBottom:16,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                <span className="m" style={{padding:"4px 12px",borderRadius:8,fontWeight:600,fontSize:13,background:dark?"rgba(52,211,153,.08)":"rgba(255,255,255,.15)",color:dark?"#34d399":"#fff",border:`1px solid ${dark?"rgba(52,211,153,.12)":"rgba(255,255,255,.2)"}`}}>1,000 followers</span>
                 <span>from ₦850</span>
-                <span style={{opacity:.3}}>·</span>
-                <span>delivered in minutes</span>
               </div>
-              <p className="fu fd2 hero-sub" style={{color:t.heroSoft}}>Real engagement from real accounts. Instant delivery across Instagram, TikTok, YouTube and 25+ platforms. Trusted by Nigeria's top creators.</p>
+              <p className="fu fd2 hero-sub" style={{color:t.heroSoft}}>Real engagement from real accounts. Instant delivery across Instagram, TikTok, YouTube and 25+ platforms.</p>
 
-              {/* Social proof strip */}
-              <div className="fu fd3 hero-proof" style={{display:"flex",alignItems:"center",gap:20,marginBottom:32,flexWrap:"wrap"}}>
-                {[[siteStats.orders||"0","Orders\ndelivered"],[siteStats.users||"0","Active\ncreators"],["98%","Delivery\nrate"]].map(([num,label],i)=><>{i>0&&<div style={{width:1,height:24,background:dark?"rgba(255,255,255,.08)":"rgba(255,255,255,.2)"}}/>}<div key={label} style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:20,fontWeight:600,color:t.heroText}}>{num}</span><span style={{fontSize:13,color:dark?"rgba(244,241,237,.35)":"rgba(255,255,255,.6)",lineHeight:1.3,whiteSpace:"pre-line"}}>{label}</span></div></>)}
+              {/* Stats — card style */}
+              <div className="fu fd3 hero-stats">
+                {[[siteStats.orders||"0","Orders\ndelivered",false],[siteStats.users||"0","Active\ncreators",false],["98%","Delivery\nrate",true]].map(([num,label,accent],i)=>
+                  <div key={i} className="hero-stat-card" style={{background:accent?(dark?"rgba(196,125,142,.06)":"rgba(255,255,255,.15)"):(dark?"rgba(255,255,255,.04)":"rgba(255,255,255,.1)"),border:`1px solid ${accent?(dark?"rgba(196,125,142,.1)":"rgba(255,255,255,.2)"):(dark?"rgba(255,255,255,.06)":"rgba(255,255,255,.12)")}`}}>
+                    <div className="hero-stat-num" style={{color:accent?(dark?t.accent:"#fff"):t.heroText}}>{num}</div>
+                    <div className="hero-stat-label" style={{color:dark?"rgba(255,255,255,.4)":"rgba(255,255,255,.6)",whiteSpace:"pre-line"}}>{label}</div>
+                  </div>
+                )}
               </div>
 
-              {/* CTAs */}
+              {/* CTAs — desktop */}
               <div className="fu fd4 hero-ctas" style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
                 <button onClick={()=>setModal("signup")} className="hero-cta-btn" style={{padding:"14px 36px",borderRadius:12,background:"#fff",color:"#1a1a1a",fontSize:15,fontWeight:600,border:"none",boxShadow:"0 8px 32px rgba(0,0,0,.15)",cursor:"pointer"}}>Start growing now <span style={{fontSize:18}}>→</span></button>
                 <button onClick={()=>document.getElementById("pricing")?.scrollIntoView({behavior:"smooth"})} className="hero-secondary-btn" style={{padding:"14px 28px",borderRadius:12,fontSize:15,fontWeight:500,background:"none",border:`0.5px solid ${dark?"rgba(255,255,255,.12)":"rgba(255,255,255,.3)"}`,color:dark?"rgba(244,241,237,.7)":"#fff",cursor:"pointer"}}>View pricing</button>
               </div>
 
-              {/* Guarantee */}
-              <div className="fu fd4" style={{display:"flex",alignItems:"center",gap:6,marginTop:16,fontSize:13,color:dark?"rgba(244,241,237,.3)":"rgba(255,255,255,.6)"}}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                Instant refund if we can't deliver
+              {/* Mobile CTA — full width */}
+              <div className="hero-mobile-cta fu fd4" style={{display:"none",width:"100%",maxWidth:300}}>
+                <button onClick={()=>setModal("signup")} className="hero-cta-btn" style={{width:"100%",padding:"15px 0",borderRadius:14,background:"#fff",color:"#1a1a1a",fontSize:16,fontWeight:600,border:"none",boxShadow:"0 8px 32px rgba(0,0,0,.15)"}}>Start growing now →</button>
               </div>
 
-              {/* Mobile CTA — hidden on desktop */}
-              <div className="hero-mobile-cta fu fd4" style={{display:"none"}}>
-                <button onClick={()=>setModal("signup")} className="hero-cta-btn" style={{padding:"14px 40px",borderRadius:14,background:"#fff",color:"#1a1a1a",fontSize:15,fontWeight:600,border:"none",boxShadow:"0 8px 32px rgba(0,0,0,.15)"}}>Start growing now →</button>
+              {/* Guarantee */}
+              <div className="fu fd4 hero-guarantee" style={{display:"flex",alignItems:"center",gap:5,marginTop:14,fontSize:12,color:dark?"rgba(244,241,237,.3)":"rgba(255,255,255,.5)"}}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Instant refund if we can't deliver
               </div>
             </div>
 
