@@ -744,7 +744,7 @@ export function AdminAPIPage({ dark, t }) {
     setSyncing(null);
   };
 
-  if (loading) return <div style={{ padding: 24, color: t.textMuted }}>Loading API settings...</div>;
+  if (loading) return <div style={{ padding: 24 }}>{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 100, borderRadius: 14, marginBottom: 12 }} />)}</div>;
 
   return (
     <>

@@ -43,6 +43,12 @@ export async function POST(req) {
       const markupSetting = await prisma.setting.findUnique({ where: { key: 'defaultMarkup' } });
       const defaultMarkup = Number(markupSetting?.value) || 54;
 
+      // Pre-load markup settings for price calculation
+      const { calculateTierPrice } = await import('@/lib/markup');
+      const markupRows = await prisma.setting.findMany({ where: { key: { startsWith: 'markup_' } } });
+      const ms = {};
+      markupRows.forEach(s => { ms[s.key] = s.value; });
+
       // Scope by provider — different providers can have same apiId numbers
       const existing = await prisma.service.findMany({
         where: { provider: providerId },
@@ -78,10 +84,6 @@ export async function POST(req) {
           toUpdate.push(prisma.service.update({ where: { id: ex.id }, data }));
           updated++;
         } else {
-          const { calculateTierPrice } = await import('@/lib/markup');
-          const markupRows = await prisma.setting.findMany({ where: { key: { startsWith: 'markup_' } } });
-          const ms = {};
-          markupRows.forEach(s => { ms[s.key] = s.value; });
           const initialSell = calculateTierPrice(costPer1k, 'Standard', ms, false) || Math.round(costPer1k * 2);
           toCreate.push({
             apiId, ...data, provider: providerId, sellPer1k: initialSell, markup: defaultMarkup, enabled: false,
@@ -108,7 +110,7 @@ export async function POST(req) {
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
-    log.error('Sync', err.message);
+    log.error('Sync', err.stack || err.message);
     return Response.json({ error: err.message || 'Sync failed' }, { status: 500 });
   }
 }
