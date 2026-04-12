@@ -25,13 +25,24 @@ export async function POST(req) {
     if (event.event === 'charge.success') {
       const { reference, amount, customer } = event.data;
 
-      // Find pending transaction
-      const tx = await prisma.transaction.findFirst({
+      // Atomically claim the pending transaction — only one of verify/webhook can win
+      const claimed = await prisma.transaction.updateMany({
         where: { reference, status: 'Pending' },
+        data: { status: 'Processing' },
+      });
+
+      if (claimed.count === 0) {
+        console.log(`[Webhook] No pending tx for ref: ${reference} (already claimed or missing)`);
+        return Response.json({ received: true });
+      }
+
+      // Now fetch the claimed transaction
+      const tx = await prisma.transaction.findFirst({
+        where: { reference, status: 'Processing' },
       });
 
       if (!tx) {
-        console.log(`[Webhook] No pending tx for ref: ${reference}`);
+        console.log(`[Webhook] Could not find processing tx for ref: ${reference}`);
         return Response.json({ received: true });
       }
 
