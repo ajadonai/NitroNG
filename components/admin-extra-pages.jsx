@@ -688,8 +688,8 @@ export function AdminMaintenancePage({ dark, t }) {
 export function AdminAPIPage({ dark, t }) {
   const PROVIDERS = [
     { id: "mtp", name: "MoreThanPanel (MTP)", url: "https://morethanpanel.com/api/v2", envKey: "MTP_API_KEY", envUrl: "MTP_API_URL" },
-    { id: "jap", name: "JustAnotherPanel (JAP)", url: "", envKey: "JAP_API_KEY", envUrl: "JAP_API_URL" },
-    { id: "dao", name: "DaoSMM", url: "", envKey: "DAO_API_KEY", envUrl: "DAO_API_URL" },
+    { id: "jap", name: "JustAnotherPanel (JAP)", url: "https://justanotherpanel.com/api/v2", envKey: "JAP_API_KEY", envUrl: "JAP_API_URL" },
+    { id: "dao", name: "DaoSMM", url: "https://daosmm.com/api/v2", envKey: "DAOSMM_API_KEY", envUrl: "DAOSMM_API_URL" },
   ];
 
   const [loading, setLoading] = useState(true);
@@ -717,7 +717,7 @@ export function AdminAPIPage({ dark, t }) {
   const testConnection = async (provider) => {
     setTesting(provider.id); setResult(null);
     try {
-      const res = await fetch("/api/admin/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "test" }) });
+      const res = await fetch("/api/admin/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "test", provider: provider.id }) });
       const data = await res.json();
       if (res.ok) {
         const usd = parseFloat(data.balance?.balance || 0);
@@ -776,7 +776,7 @@ export function AdminAPIPage({ dark, t }) {
                   <div style={{ fontSize: 14, color: t.textMuted, marginTop: 4 }}>{p.url || "URL pending"}</div>
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  {configured && p.id === "mtp" && <button onClick={() => testConnection(p)} disabled={testing === p.id} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: dark ? "#a5b4fc" : "#4f46e5", opacity: testing === p.id ? .5 : 1 }}>{testing === p.id ? "Testing..." : "Test"}</button>}
+                  {configured && <button onClick={() => testConnection(p)} disabled={testing === p.id} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: dark ? "#a5b4fc" : "#4f46e5", opacity: testing === p.id ? .5 : 1 }}>{testing === p.id ? "Testing..." : "Test"}</button>}
                   {configured && p.id === "mtp" && <button onClick={() => syncServices(p)} disabled={syncing === p.id} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: dark ? "#6ee7b7" : "#059669", opacity: syncing === p.id ? .5 : 1 }}>{syncing === p.id ? "Syncing..." : "Sync Services"}</button>}
                 </div>
               </div>

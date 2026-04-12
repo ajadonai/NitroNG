@@ -21,12 +21,31 @@ export async function POST(req) {
   if (error) return error;
 
   try {
-    const { action } = await req.json();
+    const { action, provider } = await req.json();
 
     if (action === 'test') {
-      // Test MTP connection
-      const balance = await getBalance();
-      return Response.json({ success: true, balance });
+      const pid = provider || 'mtp';
+      if (pid === 'mtp') {
+        const balance = await getBalance();
+        return Response.json({ success: true, balance });
+      }
+      if (pid === 'jap') {
+        const key = process.env.JAP_API_KEY;
+        if (!key) return Response.json({ error: 'JAP_API_KEY not set' }, { status: 400 });
+        const res = await fetch('https://justanotherpanel.com/api/v2', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: `key=${key}&action=balance` });
+        const data = await res.json();
+        if (data.error) return Response.json({ error: data.error }, { status: 400 });
+        return Response.json({ success: true, balance: { balance: data.balance || 0, currency: data.currency || 'USD' } });
+      }
+      if (pid === 'dao') {
+        const key = process.env.DAOSMM_API_KEY;
+        if (!key) return Response.json({ error: 'DAOSMM_API_KEY not set' }, { status: 400 });
+        const res = await fetch('https://daosmm.com/api/v2', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: `key=${key}&action=balance` });
+        const data = await res.json();
+        if (data.error) return Response.json({ error: data.error }, { status: 400 });
+        return Response.json({ success: true, balance: { balance: data.balance || 0, currency: data.currency || 'USD' } });
+      }
+      return Response.json({ error: 'Unknown provider' }, { status: 400 });
     }
 
     if (action === 'sync') {
