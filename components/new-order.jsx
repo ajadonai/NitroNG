@@ -66,7 +66,7 @@ const TS = {
 /* ═══════════════════════════════════════════ */
 /* ═══ ORDER FORM                          ═══ */
 /* ═══════════════════════════════════════════ */
-export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments }) {
+export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, orderResult }) {
   const price = selTier ? Math.round((qty / 1000) * selTier.price) : 0;
   const s = selTier ? TS[selTier.tier] : null;
   const minQty = selTier?.min || 100;
@@ -99,33 +99,33 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
 
   /* Smart link placeholder per platform */
   const placeholders = {
-    instagram: "https://instagram.com/username or post URL",
-    tiktok: "https://tiktok.com/@username or video URL",
-    youtube: "https://youtube.com/watch?v=... or channel URL",
-    facebook: "https://facebook.com/page or post URL",
-    twitter: "https://x.com/username or tweet URL",
-    telegram: "https://t.me/channel or post URL",
-    threads: "https://threads.net/@username or post URL",
-    snapchat: "https://snapchat.com/add/username",
-    linkedin: "https://linkedin.com/in/username or post URL",
-    pinterest: "https://pinterest.com/pin/...",
-    reddit: "https://reddit.com/r/... or post URL",
-    discord: "https://discord.gg/invite-code",
-    whatsapp: "https://chat.whatsapp.com/group-link",
-    twitch: "https://twitch.tv/username",
-    kick: "https://kick.com/username",
-    spotify: "https://open.spotify.com/track/... or playlist URL",
-    audiomack: "https://audiomack.com/artist/song",
-    boomplay: "https://boomplay.com/songs/...",
-    applemusic: "https://music.apple.com/album/...",
-    soundcloud: "https://soundcloud.com/artist/track",
-    deezer: "https://deezer.com/track/...",
-    tidal: "https://tidal.com/browse/track/...",
-    google: "https://maps.google.com/... or business URL",
-    trustpilot: "https://trustpilot.com/review/...",
+    instagram: "https://instagram.com/...",
+    tiktok: "https://tiktok.com/@...",
+    youtube: "https://youtube.com/...",
+    facebook: "https://facebook.com/...",
+    twitter: "https://x.com/...",
+    telegram: "https://t.me/...",
+    threads: "https://threads.net/@...",
+    snapchat: "https://snapchat.com/...",
+    linkedin: "https://linkedin.com/...",
+    pinterest: "https://pinterest.com/...",
+    reddit: "https://reddit.com/...",
+    discord: "https://discord.gg/...",
+    whatsapp: "https://chat.whatsapp.com/...",
+    twitch: "https://twitch.tv/...",
+    kick: "https://kick.com/...",
+    spotify: "https://open.spotify.com/...",
+    audiomack: "https://audiomack.com/...",
+    boomplay: "https://boomplay.com/...",
+    applemusic: "https://music.apple.com/...",
+    soundcloud: "https://soundcloud.com/...",
+    deezer: "https://deezer.com/...",
+    tidal: "https://tidal.com/...",
+    google: "https://google.com/maps/... or business URL",
+    trustpilot: "https://trustpilot.com/...",
     webtraffic: "https://yourwebsite.com",
-    appstore: "https://apps.apple.com/app/...",
-    playstore: "https://play.google.com/store/apps/details?id=...",
+    appstore: "https://apps.apple.com/...",
+    playstore: "https://play.google.com/...",
   };
   const linkPlaceholder = placeholders[platform] || `https://${platform}.com/...`;
   const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
@@ -195,6 +195,9 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           <span className="m no-form-tag" style={{ borderColor: t.cardBorder, color: t.textMuted }}>refill: {selTier.refill}</span>
           <span className="m no-form-tag" style={{ borderColor: t.cardBorder, color: t.textMuted }}>speed: {selTier.speed || "Instant"}</span>
         </div>
+        {orderResult?.type === "error" && (
+          <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 10, background: dark ? "rgba(220,38,38,.08)" : "#fef2f2", border: `1px solid ${dark ? "rgba(220,38,38,.2)" : "#fecaca"}`, color: dark ? "#fca5a5" : "#dc2626", fontSize: 13 }}>⚠️ {orderResult.message}</div>
+        )}
         <button onClick={onSubmit} disabled={!linkValid || ((needsComments || needsUsernames) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || orderLoading} className="no-form-submit" style={{ opacity: linkValid && (!(needsComments || needsUsernames || needsAnswer) || (comments || "").trim()) && !orderLoading ? 1 : .5 }}>{orderLoading ? "Placing..." : "Place Order"}</button>
       </>}
     </div>
@@ -495,7 +498,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
       {orderModal && hasOrder && (
         <div className="no-modal-overlay" onClick={() => setOrderModal(false)}>
           <div className="no-modal" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#ffffff", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
-            <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => setOrderModal(false)} onSubmit={submitOrder} orderLoading={orderLoading} />
+            <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => setOrderModal(false)} onSubmit={submitOrder} orderLoading={orderLoading} orderResult={orderResult} />
           </div>
         </div>
       )}

@@ -516,7 +516,7 @@ input { font-family: inherit; }
 .no-bar-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .no-bar-tier { font-size: 14px; margin-top: 1px; }
 .no-bar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.no-bar-price { font-size: 18px; font-weight: 600; }
+.no-bar-price { font-size: 18px; font-weight: 600; white-space: nowrap; }
 .no-bar-btn { padding: 10px 22px; border-radius: 8px; border: none; background: linear-gradient(135deg, #c47d8e, #8b5e6b); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
 
 /* Order modal */
