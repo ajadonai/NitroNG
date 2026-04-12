@@ -1,9 +1,4 @@
-import dynamic from 'next/dynamic';
-
-const HomePage = dynamic(() => import('@/components/landing-page'), {
-  loading: () => <div style={{ minHeight: '100vh', background: '#080b14' }} />,
-  ssr: false,
-});
+import HomeClient from '@/components/home-client';
 
 export const metadata = {
   title: 'Nitro — #1 SMM Panel in Nigeria | Buy Followers, Views & Likes',
@@ -12,5 +7,5 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <HomePage />;
+  return <HomeClient />;
 }
