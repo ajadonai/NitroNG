@@ -78,6 +78,7 @@ export default function LeaderboardPage({ dark, t }) {
   const yourRank = data?.yourRank?.[tab];
 
   const periodLabel = period === "month" ? new Date().toLocaleDateString("en-US", { month: "long" }) : "All time";
+  const rewardAnnouncement = data?.rewardAnnouncement;
 
   return (
     <>
@@ -86,6 +87,13 @@ export default function LeaderboardPage({ dark, t }) {
         <div className="lb-subtitle" style={{ color: t.textMuted }}>Top Nitro users · {periodLabel}</div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
+
+      {/* Reward announcement */}
+      {rewardAnnouncement && (
+        <div className="lb-reward-banner" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", borderColor: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.12)", color: t.text }}>
+          {rewardAnnouncement}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="lb-tabs" style={{ borderBottomColor: t.cardBorder }}>

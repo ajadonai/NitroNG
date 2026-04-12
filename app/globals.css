@@ -630,6 +630,7 @@ input { font-family: inherit; }
 .lb-card-name { font-size: 14px; font-weight: 500; flex: 1; }
 .lb-card-val { font-size: 13px; font-weight: 600; flex-shrink: 0; }
 .lb-card-link { display: block; text-align: center; margin-top: 12px; font-size: 13px; font-weight: 500; cursor: pointer; padding: 6px; border-radius: 8px; background: none; border: none; font-family: inherit; width: 100%; }
+.lb-reward-banner { border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; border-width: 1px; border-style: solid; font-size: 14px; font-weight: 500; line-height: 1.5; }
 
 @media (max-width: 767px) {
   .lb-title { font-size: 18px; }

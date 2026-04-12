@@ -102,11 +102,20 @@ export async function GET(req) {
     const yourRefRank = topReferrers.findIndex(r => r.isYou) + 1 || null;
     const yourActiveRank = mostActive.findIndex(a => a.isYou) + 1 || null;
 
+    // Reward announcement
+    let rewardAnnouncement = null;
+    try {
+      const setting = await prisma.siteConfig.findUnique({ where: { key: 'leaderboard_reward_announcement' } });
+      const parsed = setting?.value ? JSON.parse(setting.value) : null;
+      if (parsed?.enabled && parsed?.text) rewardAnnouncement = parsed.text;
+    } catch {}
+
     return Response.json({
       spenders: topSpenders,
       referrers: topReferrers,
       active: mostActive,
       yourRank: { spenders: yourSpenderRank, referrers: yourRefRank, active: yourActiveRank },
+      rewardAnnouncement,
       period,
     });
   } catch (err) {

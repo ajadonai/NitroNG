@@ -13,6 +13,7 @@ import AdminPricingPage from "./admin-pricing";
 import { AdminPaymentsPage, AdminAnalyticsPage, AdminAlertsPage, AdminSettingsPage } from "./admin-pages";
 import { AdminActivityPage, AdminTeamPage, AdminCouponsPage, AdminNotificationsPage, AdminMaintenancePage, AdminAPIPage } from "./admin-extra-pages";
 import AdminBlogPage from "./admin-blog";
+import AdminLeaderboardPage from "./admin-leaderboard";
 import { fN, fD } from "../lib/format";
 import { SITE } from "../lib/site";
 
@@ -28,6 +29,7 @@ const ADMIN_NAV = [
     { id: "overview", label: "Overview", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> },
     { id: "orders", label: "Orders", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
     { id: "users", label: "Users", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> },
+    { id: "leaderboard", label: "Leaderboard", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg> },
     { id: "tickets", label: "Support", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>, badge: true },
   ]},
   { section: "Catalog", items: [
@@ -368,6 +370,7 @@ function AdminDashboardInner() {
       case "overview": return <AdminOverview data={data} dark={dark} t={t} setActive={setActive} />;
       case "orders": return <AdminOrdersPage dark={dark} t={t} />;
       case "users": return <AdminUsersPage dark={dark} t={t} />;
+      case "leaderboard": return <AdminLeaderboardPage dark={dark} t={t} />;
       case "tickets": return <AdminTicketsPage dark={dark} t={t} adminName={admin?.name || "Admin"} />;
       case "services": return <AdminServicesPage dark={dark} t={t} />;
       case "menu-builder": return <AdminServiceGroupsPage dark={dark} t={t} />;
