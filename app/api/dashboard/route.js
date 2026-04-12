@@ -127,6 +127,7 @@ export async function GET() {
       })),
       transactions: transactions.map(tx => ({
         id: tx.id, type: tx.type,
+        reference: tx.reference || null,
         amount: tx.amount / 100,
         method: tx.method || tx.type,
         date: tx.createdAt.toISOString(),

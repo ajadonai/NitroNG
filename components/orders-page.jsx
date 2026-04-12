@@ -231,7 +231,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
               <div className="ord-tx-info">
                 <div className="ord-tx-method" style={{ color: t.text }}>{tx.method}</div>
                 <div className="ord-tx-meta" style={{ color: t.textMuted }}>
-                  <span>{tx.id}</span>
+                  <span>{tx.reference || tx.id}</span>
                   <span>{tx.date ? fD(tx.date) : ""}</span>
                 </div>
               </div>
