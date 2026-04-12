@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { requireAdmin, logActivity } from '@/lib/admin';
+import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
 import { sendEmail } from '@/lib/email';
 
 export async function GET(req) {
@@ -128,6 +128,7 @@ export async function POST(req) {
     const { action, userId, amount, note, announcement, config } = await req.json();
 
     if (action === 'reward') {
+      if (!canPerformAction(admin, 'leaderboard.reward')) return Response.json({ error: 'Not authorized to send rewards' }, { status: 403 });
       if (!userId || !amount || amount <= 0) {
         return Response.json({ error: 'User and amount required' }, { status: 400 });
       }
@@ -169,6 +170,7 @@ export async function POST(req) {
     }
 
     if (action === 'set_announcement') {
+      if (!canPerformAction(admin, 'leaderboard.announcement')) return Response.json({ error: 'Not authorized' }, { status: 403 });
       const value = announcement ? JSON.stringify({ text: announcement.text || '', enabled: announcement.enabled ?? true }) : JSON.stringify({ text: '', enabled: false });
       await prisma.setting.upsert({
         where: { key: 'leaderboard_reward_announcement' },
@@ -180,6 +182,7 @@ export async function POST(req) {
     }
 
     if (action === 'set_auto_reward') {
+      if (!canPerformAction(admin, 'leaderboard.autoReward')) return Response.json({ error: 'Not authorized' }, { status: 403 });
       const value = JSON.stringify(config || { enabled: false, category: 'spenders', slots: [] });
       await prisma.setting.upsert({
         where: { key: 'leaderboard_auto_reward' },
