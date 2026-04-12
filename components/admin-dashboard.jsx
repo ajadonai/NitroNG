@@ -345,6 +345,13 @@ function AdminDashboardInner() {
               {[1,2,3,4,5].map(i => <div key={i} style={{ padding: 18, borderRadius: 14, background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}><div className={skBone} style={{ width: "60%", height: 10, marginBottom: 10 }} /><div className={skBone} style={{ width: "45%", height: 22 }} /></div>)}
             </div>
           </main>
+          <div className="dash-right" style={{ background: t.sidebarBg, borderLeft: `0.5px solid ${t.sidebarBorder}` }}>
+            <div className={skBone} style={{ width: 100, height: 8, marginBottom: 14 }} />
+            {[1,2,3].map(i => <div key={i} className={skBone} style={{ height: 50, borderRadius: 10, marginBottom: 6 }} />)}
+            <div style={{ height: 2, background: t.sidebarBorder, margin: "12px 0" }} />
+            <div className={skBone} style={{ width: 80, height: 8, marginBottom: 14 }} />
+            <div className={skBone} style={{ height: 80, borderRadius: 12 }} />
+          </div>
         </div>
       </div>
     );
