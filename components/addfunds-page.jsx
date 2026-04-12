@@ -209,11 +209,8 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
                 <div style={{ fontSize: 13, color: t.textMuted, padding: "8px 0" }}>Loading...</div>
               ) : (
                 <select value={method} onChange={e => setMethod(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: dark ? "rgba(255,255,255,.04)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: t.text, fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", outline: "none", appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${dark ? "%23666" : "%23999"}' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: 32 }}>
-                  {gateways.length > 0 ? gateways.map(g => <option key={g.id} value={g.id}>{g.name}</option>) : <option value="">Coming soon</option>}
+                  {gateways.length > 0 ? gateways.map(g => <option key={g.id} value={g.id}>{g.name}</option>) : <option value="">Select payment method</option>}
                 </select>
-              )}
-              {gateways.length === 0 && !gatewaysLoading && (
-                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 6, lineHeight: 1.5 }}>Payment gateway setup in progress. Check back soon!</div>
               )}
 
               {/* Spacer pushes button to bottom */}
@@ -339,12 +336,9 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
                   {gateways.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                 </select>
               ) : (
-                <>
-                  <select disabled style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: dark ? "rgba(255,255,255,.04)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: t.textMuted, fontSize: 14, fontFamily: "'Outfit',sans-serif", outline: "none", appearance: "none" }}>
-                    <option>Coming soon</option>
-                  </select>
-                  <div style={{ fontSize: 12, color: t.textMuted, marginTop: 6 }}>Payment setup in progress</div>
-                </>
+                <select disabled style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: dark ? "rgba(255,255,255,.04)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: t.textMuted, fontSize: 14, fontFamily: "'Outfit',sans-serif", outline: "none", appearance: "none" }}>
+                  <option>Select payment method</option>
+                </select>
               )}
               {payError && <div style={{ padding: "8px 12px", borderRadius: 8, marginTop: 8, fontSize: 13, background: dark ? "rgba(220,38,38,.08)" : "#fef2f2", border: `1px solid ${dark ? "rgba(220,38,38,.15)" : "#fecaca"}`, color: dark ? "#fca5a5" : "#dc2626" }}>⚠️ {payError}</div>}
               <button onClick={handlePay} disabled={loading} className="fund-pay-btn" style={{ background: `linear-gradient(135deg,#c47d8e,#8b5e6b)`, color: "#fff", marginTop: 12 }}>

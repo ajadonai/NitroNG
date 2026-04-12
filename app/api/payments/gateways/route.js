@@ -6,7 +6,7 @@ const GATEWAY_INFO = {
   alatpay: { name: 'ALATPay (Wema)', desc: 'Direct bank debit' },
   monnify: { name: 'Monnify', desc: 'Auto-confirmed bank transfer' },
   korapay: { name: 'KoraPay', desc: 'Cards, Bank Transfer' },
-  crypto: { name: 'Crypto', desc: 'BTC, ETH, USDT, USDC' },
+  crypto: { name: 'Crypto', desc: 'USDT (TRC-20 / ERC-20)' },
   manual: { name: 'Bank Transfer', desc: 'Manual bank transfer' },
 };
 
