@@ -97,6 +97,15 @@ export async function GET() {
       } catch {}
     }
 
+    // User badge based on all-time order count
+    let totalOrders = 0;
+    try { totalOrders = await prisma.order.count({ where: { userId: user.id, deletedAt: null } }); } catch {}
+    const badge = totalOrders >= 1000 ? { title: 'Legend', emoji: '👑' }
+      : totalOrders >= 201 ? { title: 'Elite', emoji: '💎' }
+      : totalOrders >= 51 ? { title: 'Power User', emoji: '⚡' }
+      : totalOrders >= 11 ? { title: 'Regular', emoji: '🔥' }
+      : { title: 'Starter', emoji: '🌱' };
+
     return ok({
       user: {
         id: user.id, name: user.name,
@@ -114,6 +123,9 @@ export async function GET() {
         refMinDeposit: refMinDepositDisplay,
         themePreference: user.themePreference || 'auto',
         perPagePreference: user.perPagePreference || 10,
+        badge: badge.title,
+        badgeEmoji: badge.emoji,
+        totalOrders,
       },
       orders: orders.map(o => ({
         id: o.orderId || o.id,
