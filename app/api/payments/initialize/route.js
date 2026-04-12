@@ -81,6 +81,53 @@ export async function POST(req) {
       return Response.json({ authorization_url: data.data.link, reference });
     }
 
+    // ═══ CRYPTO (NowPayments — USDT TRC-20) ═══
+    if (gateway === 'crypto') {
+      const npKey = process.env.NOWPAYMENTS_API_KEY;
+      if (!npKey) return Response.json({ error: 'Crypto payments not configured' }, { status: 503 });
+
+      // Convert NGN to USD (use a rough rate, NowPayments handles exact crypto conversion)
+      const ngnToUsd = amountNum / 1600; // approximate rate
+      if (ngnToUsd < 11) return Response.json({ error: 'Minimum crypto deposit is ~₦17,600 ($11 USD)' }, { status: 400 });
+
+      const res = await fetchWithRetry('https://api.nowpayments.io/v1/payment', {
+        method: 'POST',
+        headers: { 'x-api-key': npKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          price_amount: Math.round(ngnToUsd * 100) / 100,
+          price_currency: 'usd',
+          pay_currency: 'usdttrc20',
+          order_id: reference,
+          order_description: `Nitro deposit ₦${amountNum.toLocaleString()}`,
+          ipn_callback_url: `${origin}/api/payments/nowpayments-webhook`,
+          is_fixed_rate: true,
+          is_fee_paid_by_user: true,
+        }),
+      });
+      const data = await res.json();
+      if (!data.pay_address) {
+        log.error('NowPayments Init', JSON.stringify(data));
+        return Response.json({ error: data.message || 'Failed to create crypto payment' }, { status: 400 });
+      }
+
+      // Update transaction with NowPayments payment ID
+      await prisma.transaction.update({
+        where: { reference },
+        data: { note: `crypto deposit ₦${amountNum.toLocaleString()} | NP:${data.payment_id} | $${ngnToUsd.toFixed(2)}` },
+      });
+
+      return Response.json({
+        type: 'crypto',
+        reference,
+        payAddress: data.pay_address,
+        payAmount: data.pay_amount,
+        payCurrency: 'USDT (TRC-20)',
+        paymentId: data.payment_id,
+        expiresAt: data.expiration_estimate_date || null,
+        priceUsd: Math.round(ngnToUsd * 100) / 100,
+      });
+    }
+
     // ═══ UNSUPPORTED GATEWAY ═══
     return Response.json({ error: `Gateway '${gateway}' is not yet supported for payments` }, { status: 400 });
 

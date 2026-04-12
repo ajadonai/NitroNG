@@ -22,6 +22,11 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
   const [gateways, setGateways] = useState([]);
   const [gatewaysLoading, setGatewaysLoading] = useState(true);
 
+  /* Crypto payment modal */
+  const [cryptoModal, setCryptoModal] = useState(null); // { payAddress, payAmount, payCurrency, reference, amountUsd, amountNgn, expiresAt }
+  const [cryptoStatus, setCryptoStatus] = useState(null); // 'Pending' | 'Confirming' | 'Completed' | 'Canceled'
+  const [cryptoPolling, setCryptoPolling] = useState(false);
+
   // Fetch enabled gateways from API
   useEffect(() => {
     fetch("/api/payments/gateways").then(r => r.json()).then(d => {
@@ -65,6 +70,47 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
   const handlePay = async () => {
     if (!valid || loading) return;
     setLoading(true); setPayError(null);
+
+    // ═══ CRYPTO — different flow ═══
+    if (method === "crypto") {
+      try {
+        const res = await fetch("/api/payments/crypto", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: numAmount, couponId: couponApplied?.couponId || undefined }),
+          signal: AbortSignal.timeout(30000),
+        });
+        const data = await res.json();
+        if (data.payAddress) {
+          setCryptoModal(data);
+          setCryptoStatus("Pending");
+          // Start polling for payment confirmation
+          setCryptoPolling(true);
+          const poll = setInterval(async () => {
+            try {
+              const sr = await fetch(`/api/payments/crypto?reference=${data.reference}`);
+              const sd = await sr.json();
+              setCryptoStatus(sd.status || sd.npStatus || "Pending");
+              if (sd.status === "Completed" || sd.status === "Canceled") {
+                clearInterval(poll);
+                setCryptoPolling(false);
+                if (sd.status === "Completed" && setPaymentStatus) setPaymentStatus("success");
+              }
+            } catch {}
+          }, 15000); // Check every 15 seconds
+          // Stop polling after 30 minutes
+          setTimeout(() => { clearInterval(poll); setCryptoPolling(false); }, 30 * 60 * 1000);
+        } else {
+          setPayError(data.error || "Failed to create crypto payment");
+        }
+      } catch (err) {
+        setPayError(err?.name === "TimeoutError" ? "Request timed out." : "Network error.");
+      }
+      setLoading(false);
+      return;
+    }
+
+    // ═══ CARD/TRANSFER — redirect flow ═══
     try {
       const res = await fetch("/api/payments/initialize", {
         method: "POST",
@@ -353,6 +399,67 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
           </>
         )}
       </div>
+
+      {/* ═══ CRYPTO PAYMENT MODAL ═══ */}
+      {cryptoModal && (
+        <div onClick={() => { if (cryptoStatus === "Completed" || cryptoStatus === "Canceled") setCryptoModal(null); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 400, border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}`, boxShadow: "0 20px 60px rgba(0,0,0,.3)" }}>
+            {cryptoStatus === "Completed" ? (
+              <>
+                <div style={{ textAlign: "center", padding: "20px 0" }}>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
+                  <div style={{ fontSize: 18, fontWeight: 600, color: t.text, marginBottom: 6 }}>Payment Confirmed!</div>
+                  <div style={{ fontSize: 14, color: t.textMuted }}>{fN(cryptoModal.amountNgn)} has been added to your wallet</div>
+                </div>
+                <button onClick={() => { setCryptoModal(null); window.location.reload(); }} style={{ width: "100%", padding: "12px 0", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Done</button>
+              </>
+            ) : cryptoStatus === "Canceled" ? (
+              <>
+                <div style={{ textAlign: "center", padding: "20px 0" }}>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>❌</div>
+                  <div style={{ fontSize: 18, fontWeight: 600, color: t.text, marginBottom: 6 }}>Payment Expired</div>
+                  <div style={{ fontSize: 14, color: t.textMuted }}>This payment has expired or was canceled. Try again.</div>
+                </div>
+                <button onClick={() => setCryptoModal(null)} style={{ width: "100%", padding: "12px 0", borderRadius: 10, border: `1px solid ${t.cardBorder}`, background: "none", color: t.text, fontSize: 15, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>Close</button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 4 }}>Send USDT (TRC-20)</div>
+                <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 16 }}>Send exactly the amount below to this address</div>
+
+                {/* Amount */}
+                <div style={{ padding: 14, borderRadius: 10, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.02)", border: `1px solid ${t.cardBorder}`, marginBottom: 12, textAlign: "center" }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: t.textMuted, marginBottom: 4 }}>Amount to send</div>
+                  <div className="m" style={{ fontSize: 28, fontWeight: 700, color: dark ? "#6ee7b7" : "#059669" }}>{cryptoModal.payAmount} USDT</div>
+                  <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>≈ ${cryptoModal.amountUsd} USD · {fN(cryptoModal.amountNgn)}</div>
+                </div>
+
+                {/* Address */}
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: t.textMuted, marginBottom: 4 }}>TRC-20 Address</div>
+                  <div style={{ padding: "10px 12px", borderRadius: 8, background: dark ? "#0d1020" : "#f8f8f8", border: `1px solid ${t.cardBorder}`, fontSize: 12, fontFamily: "'JetBrains Mono',monospace", wordBreak: "break-all", color: t.text, lineHeight: 1.5 }}>
+                    {cryptoModal.payAddress}
+                  </div>
+                  <button onClick={() => { navigator.clipboard.writeText(cryptoModal.payAddress); }} style={{ marginTop: 6, padding: "6px 14px", borderRadius: 6, border: `1px solid ${t.accent}`, background: "none", color: t.accent, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Copy address</button>
+                </div>
+
+                {/* Status */}
+                <div style={{ padding: "10px 14px", borderRadius: 8, background: dark ? "rgba(251,191,36,.04)" : "rgba(217,119,6,.03)", border: `1px solid ${dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.08)"}`, marginBottom: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    {cryptoPolling && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#fbbf24", animation: "pulse-dot 1.5s ease-in-out infinite" }} />}
+                    <span style={{ fontSize: 13, color: dark ? "#fbbf24" : "#d97706", fontWeight: 500 }}>
+                      {cryptoStatus === "Confirming" ? "Payment detected — confirming on blockchain..." : "Waiting for payment..."}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: t.textMuted, marginTop: 4 }}>We check automatically every 15 seconds. Do not close this page.</div>
+                </div>
+
+                <button onClick={() => setCryptoModal(null)} style={{ width: "100%", padding: "10px 0", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: "none", color: t.textMuted, fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }
