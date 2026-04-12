@@ -126,17 +126,17 @@ export async function POST(req) {
       const user = await prisma.user.findUnique({ where: { id: userId } });
       if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
 
-      await prisma.$transaction([
-        prisma.user.update({ where: { id: userId }, data: { balance: { increment: amountKobo } } }),
-        prisma.transaction.create({
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({ where: { id: userId }, data: { balance: { increment: amountKobo } } });
+        await tx.transaction.create({
           data: {
             userId, type: 'bonus', amount: amountKobo,
             method: 'wallet', status: 'Completed',
             reference: `LB-REWARD-${Date.now().toString(36).toUpperCase()}`,
             note: note || `Leaderboard reward — ₦${amount.toLocaleString()}`,
           },
-        }),
-      ]);
+        });
+      });
 
       await logActivity(admin.id, 'leaderboard_reward', `Rewarded ${user.name || user.email} with ₦${amount.toLocaleString()}`);
       return Response.json({ success: true, message: `₦${amount.toLocaleString()} credited to ${user.name || user.email}` });
