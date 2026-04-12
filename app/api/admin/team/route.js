@@ -12,7 +12,7 @@ export async function GET() {
       orderBy: { createdAt: 'asc' },
       select: {
         id: true, name: true, email: true, role: true,
-        status: true, customPages: true, lastActive: true, createdAt: true,
+        status: true, customPages: true, customActions: true, lastActive: true, createdAt: true,
       },
     });
 
@@ -22,6 +22,7 @@ export async function GET() {
         lastActive: a.lastActive.toISOString(),
         joined: a.createdAt.toISOString(),
         customPages: a.customPages ? JSON.parse(a.customPages) : null,
+        customActions: a.customActions || null,
       })),
       currentRole: admin.role,
     });
@@ -36,7 +37,7 @@ export async function POST(req) {
   if (error) return error;
 
   try {
-    const { action, adminId, name, email, password, role, status, pages, newPassword } = await req.json();
+    const { action, adminId, name, email, password, role, status, pages, newPassword, actions } = await req.json();
 
     // Prevent creating owner or superadmin via API
     const ASSIGNABLE = ['admin', 'support', 'finance'];
@@ -92,6 +93,18 @@ export async function POST(req) {
       const customPages = Array.isArray(pages) ? JSON.stringify(pages) : null;
       await prisma.admin.update({ where: { id: adminId }, data: { customPages } });
       await logActivity(admin.name, `Updated permissions for ${target.name}${customPages ? ' (custom)' : ' (reset to default)'}`, 'admin');
+      return Response.json({ success: true });
+    }
+
+    if (action === 'updateActions') {
+      if (!adminId) return Response.json({ error: 'Admin ID required' }, { status: 400 });
+      const target = await prisma.admin.findUnique({ where: { id: adminId } });
+      if (!target) return Response.json({ error: 'Admin not found' }, { status: 404 });
+      if (target.role === 'owner') return Response.json({ error: 'Cannot modify owner' }, { status: 403 });
+
+      const customActions = Array.isArray(actions) && actions.length > 0 ? JSON.stringify(actions) : null;
+      await prisma.admin.update({ where: { id: adminId }, data: { customActions } });
+      await logActivity(admin.name, `Updated action permissions for ${target.name}: ${actions?.join(', ') || 'cleared'}`, 'admin');
       return Response.json({ success: true });
     }
 

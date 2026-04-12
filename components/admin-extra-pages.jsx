@@ -80,20 +80,31 @@ const ROLE_INFO = {
 };
 const ASSIGNABLE_ROLES = ["admin", "support", "finance"];
 const ALL_PAGES = [
-  { id:"overview", label:"Overview", g:"Main" },{ id:"orders", label:"Orders", g:"Main" },{ id:"users", label:"Users", g:"Main" },{ id:"tickets", label:"Tickets", g:"Main" },
-  { id:"services", label:"Services", g:"Catalog" },{ id:"menu-builder", label:"Menu Builder", g:"Catalog" },{ id:"blog", label:"Blog", g:"Catalog" },{ id:"payments", label:"Payments", g:"Catalog" },
-  { id:"analytics", label:"Analytics", g:"Insights" },{ id:"activity", label:"Activity Log", g:"Insights" },
-  { id:"alerts", label:"Alerts", g:"System" },{ id:"team", label:"Team", g:"System" },{ id:"coupons", label:"Coupons", g:"System" },{ id:"notifications", label:"Notifications", g:"System" },{ id:"maintenance", label:"Maintenance", g:"System" },{ id:"api", label:"API Management", g:"System" },{ id:"settings", label:"Settings", g:"System" },
+  { id:"overview", label:"Overview", g:"Main" },{ id:"orders", label:"Orders", g:"Main" },{ id:"users", label:"Users", g:"Main" },{ id:"leaderboard", label:"Leaderboard", g:"Main" },{ id:"tickets", label:"Tickets", g:"Main" },
+  { id:"services", label:"Services", g:"Catalog" },{ id:"menu-builder", label:"Menu Builder", g:"Catalog" },{ id:"pricing", label:"Pricing", g:"Catalog" },{ id:"blog", label:"Blog", g:"Catalog" },
+  { id:"payments", label:"Payments", g:"Finance" },{ id:"analytics", label:"Analytics", g:"Finance" },{ id:"rewards", label:"Rewards", g:"Finance" },
+  { id:"alerts", label:"Alerts", g:"System" },{ id:"notifications", label:"Notifications", g:"System" },{ id:"activity", label:"Activity Log", g:"System" },{ id:"team", label:"Team", g:"System" },{ id:"api", label:"API", g:"System" },{ id:"maintenance", label:"Maintenance", g:"System" },{ id:"settings", label:"Settings", g:"System" },
+];
+const GRANTABLE_ACTIONS = [
+  { id: "payments.approve", label: "Approve/Reject Deposits", g: "Finance" },
+  { id: "payments.configure", label: "Configure Gateways", g: "Finance" },
+  { id: "users.adjustBalance", label: "Credit User Balance", g: "Users" },
+  { id: "users.ban", label: "Suspend/Ban Users", g: "Users" },
+  { id: "leaderboard.reward", label: "Send Leaderboard Rewards", g: "Marketing" },
+  { id: "leaderboard.announcement", label: "Set Reward Announcement", g: "Marketing" },
+  { id: "notifications.send", label: "Send Email Blasts", g: "Marketing" },
 ];
 const DEFAULT_PAGES = {
-  admin: ["overview","orders","users","services","menu-builder","api","payments","tickets","activity","alerts","analytics","coupons","notifications","maintenance","blog"],
+  admin: ["overview","orders","users","leaderboard","services","menu-builder","pricing","tickets","activity","alerts","analytics","rewards","blog"],
   support: ["overview","orders","users","tickets"],
-  finance: ["overview","orders","payments","analytics"],
+  finance: ["overview","orders","payments","analytics","leaderboard"],
 };
 const PAGE_GROUPS = [...new Set(ALL_PAGES.map(p => p.g))];
+const ACTION_GROUPS = [...new Set(GRANTABLE_ACTIONS.map(a => a.g))];
 
 export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
   const confirm = useConfirm();
+  const parseActions = (str) => { try { return str ? JSON.parse(str) : []; } catch(e) { return []; } };
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -106,6 +117,7 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
   const [newRole, setNewRole] = useState("admin");
   const [resetPw, setResetPw] = useState("");
   const [localPages, setLocalPages] = useState(null);
+  const [localActions, setLocalActions] = useState(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
 
@@ -194,7 +206,7 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
 
           return (
             <div key={a.id} style={{ borderBottom: i < admins.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-              <div onClick={() => { if (!owner && canManage) { if (expanded) { setExpandedId(null); } else { setExpandedId(a.id); setPermTab("permissions"); setResetPw(""); setLocalPages(null); setMsg(null); } } }} style={{ padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", cursor: owner || !canManage ? "default" : "pointer", background: expanded ? (dark ? "rgba(196,125,142,.03)" : "rgba(196,125,142,.02)") : "transparent" }}>
+              <div onClick={() => { if (!owner && canManage) { if (expanded) { setExpandedId(null); } else { setExpandedId(a.id); setPermTab("permissions"); setResetPw(""); setLocalPages(null); setLocalActions(null); setMsg(null); } } }} style={{ padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", cursor: owner || !canManage ? "default" : "pointer", background: expanded ? (dark ? "rgba(196,125,142,.03)" : "rgba(196,125,142,.02)") : "transparent" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 180 }}>
                   <div className="adm-user-avatar" style={{ background: ri.color }}>{(a.name || "A")[0]}</div>
                   <div>
@@ -249,7 +261,33 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
                           </div>
                         </div>
                       ))}
-                      <button onClick={e => { e.stopPropagation(); act({ action: "updatePermissions", adminId: a.id, pages: localPages || pages }).then(ok => { if (ok) { setMsg({ type: "success", text: "Permissions saved" }); setLocalPages(null); } }); }} disabled={saving} className="adm-btn-primary" style={{ width: "100%", marginTop: 4, opacity: saving ? .5 : 1 }}>{saving ? "Saving..." : "Save Permissions"}</button>
+
+                      {/* ═══ ACTION GRANTS ═══ */}
+                      <div style={{ marginTop: 16, paddingTop: 14, borderTop: `1px solid ${t.cardBorder}` }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>Action Permissions</div>
+                        <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 10, lineHeight: 1.5 }}>Grant specific abilities beyond page access.</div>
+                        {ACTION_GROUPS.map(group => (
+                          <div key={group} style={{ marginBottom: 10 }}>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: t.accent, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>{group}</div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
+                              {GRANTABLE_ACTIONS.filter(ga => ga.g === group).map(ga => {
+                                const parsed = localActions !== null ? localActions : parseActions(a.customActions);
+                                const on = parsed.includes(ga.id);
+                                return (
+                                  <button key={ga.id} onClick={e => { e.stopPropagation(); const cur = localActions !== null ? localActions : parseActions(a.customActions); setLocalActions(on ? cur.filter(x => x !== ga.id) : [...cur, ga.id]); }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: on ? t.accent : t.cardBorder, background: on ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : "transparent", cursor: "pointer", textAlign: "left" }}>
+                                    <div style={{ width: 14, height: 14, borderRadius: 4, borderWidth: 1.5, borderStyle: "solid", borderColor: on ? t.accent : t.textMuted, background: on ? t.accent : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                      {on && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
+                                    </div>
+                                    <span style={{ fontSize: 12, color: on ? t.text : t.textMuted, fontWeight: on ? 500 : 400 }}>{ga.label}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <button onClick={e => { e.stopPropagation(); const savePages = act({ action: "updatePermissions", adminId: a.id, pages: localPages || pages }); const saveActions = localActions !== null ? act({ action: "updateActions", adminId: a.id, actions: localActions }) : Promise.resolve(true); Promise.all([savePages, saveActions]).then(([p, ac]) => { if (p && ac !== false) { setMsg({ type: "success", text: "Permissions saved" }); setLocalPages(null); setLocalActions(null); } }); }} disabled={saving} className="adm-btn-primary" style={{ width: "100%", marginTop: 8, opacity: saving ? .5 : 1 }}>{saving ? "Saving..." : "Save Permissions"}</button>
                     </div>
                   ) : <div style={{ padding: "16px 0", textAlign: "center", color: t.textMuted, fontSize: 13 }}>Superadmin has full access. No customization needed.</div>)}
 

@@ -83,6 +83,7 @@ model Admin {
   role       String   @default("admin")
   status      String   @default("Active")
   customPages String?  // JSON array of page slugs — overrides role defaults when set
+  customActions String? // JSON array of granted action keys — e.g. ["payments.approve"]
   lastActive  DateTime @default(now())
   themePreference String @default("auto") // "auto" | "night" | "day"
   createdAt  DateTime @default(now())

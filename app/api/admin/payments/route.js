@@ -110,6 +110,8 @@ export async function GET(req) {
       gateways: masked,
       deposits: deposits.map(formatTx),
       pendingCount: deposits.filter(d => d.status === 'Pending').length,
+      canApprove: canPerformAction(admin, 'payments.approve'),
+      canConfigure: canPerformAction(admin, 'payments.configure'),
     });
   } catch (err) {
     log.error('Admin Payments GET', err.message);

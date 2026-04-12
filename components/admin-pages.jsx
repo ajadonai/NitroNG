@@ -24,6 +24,8 @@ export function AdminPaymentsPage({ dark, t }) {
   const [statusFilter, setStatusFilter] = useState("Pending");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [canApprove, setCanApprove] = useState(false);
+  const [canConfigure, setCanConfigure] = useState(false);
 
   const refresh = (s, st, df, dt) => {
     const params = new URLSearchParams();
@@ -35,6 +37,8 @@ export function AdminPaymentsPage({ dark, t }) {
       if (d.gateways) setGateways(d.gateways);
       if (d.deposits) setDeposits(d.deposits);
       if (d.pendingCount != null) setPendingCount(d.pendingCount);
+      if (d.canApprove != null) setCanApprove(d.canApprove);
+      if (d.canConfigure != null) setCanConfigure(d.canConfigure);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
@@ -112,7 +116,7 @@ export function AdminPaymentsPage({ dark, t }) {
           Deposits
           {pendingCount > 0 && <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 10, background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent, fontWeight: 700 }}>{pendingCount}</span>}
         </button>
-        <button onClick={() => setTab("gateways")} style={{ padding: "8px 18px", fontSize: 14, fontWeight: tab === "gateways" ? 600 : 500, color: tab === "gateways" ? t.accent : t.textMuted, background: "none", border: "none", borderBottom: `2px solid ${tab === "gateways" ? t.accent : "transparent"}`, marginBottom: -1, cursor: "pointer", fontFamily: "inherit" }}>Gateway Config</button>
+        {canConfigure && <button onClick={() => setTab("gateways")} style={{ padding: "8px 18px", fontSize: 14, fontWeight: tab === "gateways" ? 600 : 500, color: tab === "gateways" ? t.accent : t.textMuted, background: "none", border: "none", borderBottom: `2px solid ${tab === "gateways" ? t.accent : "transparent"}`, marginBottom: -1, cursor: "pointer", fontFamily: "inherit" }}>Gateway Config</button>}
       </div>
 
       {msg && <div style={{ padding: "10px 14px", borderRadius: 8, marginBottom: 12, background: msg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: msg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), fontSize: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -165,11 +169,14 @@ export function AdminPaymentsPage({ dark, t }) {
                       {" · "}{fD(tx.date)}
                     </div>
                   </div>
-                  {tx.status === "Pending" && (
+                  {tx.status === "Pending" && canApprove && (
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <button onClick={() => approveManual(tx)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(110,231,183,.2)" : "rgba(5,150,105,.15)", color: dark ? "#6ee7b7" : "#059669" }}>Approve</button>
                       <button onClick={() => rejectManual(tx)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(220,38,38,.2)" : "rgba(220,38,38,.1)", color: dark ? "#fca5a5" : "#dc2626" }}>Reject</button>
                     </div>
+                  )}
+                  {tx.status === "Pending" && !canApprove && (
+                    <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 4, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: t.textMuted }}>View only</span>
                   )}
                 </div>
               );
