@@ -643,7 +643,7 @@ input { font-family: inherit; }
   .lb-tab-full { display: none; }
   .lb-tab-short { display: inline; }
   .lb-podium { gap: 8px; }
-  .lb-pod { padding: 12px 8px; border-radius: 12px; }
+  .lb-pod { padding: 14px 10px; border-radius: 12px; }
   .lb-pod-name { font-size: 12px; }
   .lb-pod-val { font-size: 13px; }
   .lb-pod-avatar { width: 36px !important; height: 36px !important; font-size: 13px !important; }
@@ -1619,5 +1619,9 @@ input { font-family: inherit; }
 .dash-menu-hint { display: none; }
 @media (max-width: 1199px) { .dash-menu-hint { display: flex; } }
 
-/* Hide mobile tier info on desktop (sidebar shows it) */
+/* Leaderboard responsive — tiers + your rank */
 @media (min-width: 1200px) { .lb-tiers-mobile { display: none !important; } }
+@media (max-width: 1199px) { .lb-you-desktop { display: none !important; } }
+.lb-tiers-mobile summary::-webkit-details-marker { display: none; }
+.lb-tiers-mobile[open] .lb-chevron { transform: rotate(180deg); }
+.lb-chevron { transition: transform .2s ease; }

@@ -7,7 +7,6 @@ const TABS = [
   { id: "active", label: "Most Active", shortLabel: "Active" },
 ];
 
-/* Podium card colors per rank */
 const POD = {
   1: { bg: "#2a2308", bgL: "#fef9e7", border: "#5c4a10", borderL: "#e8d576", medal: "🥇", valDk: "#ffd700", valLt: "#b8860b" },
   2: { bg: "#1a1e24", bgL: "#f0f2f5", border: "#3a4050", borderL: "#b0b8c8", medal: "🥈", valDk: "#c0c0c0", valLt: "#6b7280" },
@@ -15,6 +14,25 @@ const POD = {
 };
 
 const UserIcon = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+
+/* Shield badge SVG — scales with size prop, color from tier */
+function ShieldBadge({ color = "#6B7280", size = 20, tier = "Starter" }) {
+  const s = size / 40;
+  const isStarter = tier === "Starter";
+  const isRegular = tier === "Regular";
+  const isPower = tier === "Power User";
+  const isElite = tier === "Elite";
+  const isLegend = tier === "Legend";
+  return (
+    <svg width={size} height={size * 1.1} viewBox="0 0 40 44" fill="none">
+      <path d="M20 2L38 10V22C38 32 30 40 20 44C10 40 2 32 2 22V10L20 2Z" fill={color} fillOpacity={isStarter ? 0.15 : 0.2} stroke={color} strokeWidth={isLegend ? 2 : 1.5}/>
+      <path d="M20 14L22 18H26L23 21L24 25L20 22L16 25L17 21L14 18H18Z" fill={color} fillOpacity={isStarter ? 0.4 : 1} transform={isElite || isLegend ? "translate(0,-2) scale(1.15) translate(-2.6, -0.5)" : undefined}/>
+      {(isPower || isElite || isLegend) && <line x1="12" y1="8" x2="28" y2="8" stroke={color} strokeWidth="1" opacity="0.5"/>}
+      {(isElite || isLegend) && <line x1="14" y1="5" x2="26" y2="5" stroke={color} strokeWidth="0.8" opacity="0.3"/>}
+      {isLegend && <circle cx="20" cy="22" r="16" fill="none" stroke={color} strokeWidth="0.5" opacity="0.3"/>}
+    </svg>
+  );
+}
 
 function getVal(entry, tab) {
   if (tab === "referrers") return `${entry.referrals} refs`;
@@ -30,6 +48,7 @@ function PodiumCard({ entry, rank, dark, tab }) {
       background: dark ? p.bg : p.bgL,
       borderColor: dark ? p.border : p.borderL,
       order: rank === 1 ? 0 : rank === 2 ? -1 : 1,
+      padding: isFirst ? "20px 16px" : "16px 12px",
     }}>
       <div className="lb-medal" style={{ fontSize: isFirst ? 30 : 24 }}>{p.medal}</div>
       <div className="lb-pod-avatar" style={{
@@ -38,10 +57,10 @@ function PodiumCard({ entry, rank, dark, tab }) {
         color: dark ? "#c47d8e" : "#a3586b",
         ...(entry.isYou ? { border: "2px solid #c47d8e" } : {}),
       }}><UserIcon size={isFirst ? 22 : 17} /></div>
-      <div className="lb-pod-name" style={{ fontSize: isFirst ? 15 : 13 }}>
+      <div className="lb-pod-name" style={{ fontSize: isFirst ? 15 : 13, marginBottom: 4 }}>
         {entry.name}{entry.isYou ? " (You)" : ""}
       </div>
-      {entry.badge && <div style={{ fontSize: 11, color: dark ? "rgba(255,255,255,.5)" : "rgba(0,0,0,.4)", marginTop: 2 }}><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: entry.badgeColor || "#6B7280", marginRight: 4 }} />{entry.badge}</div>}
+      {entry.badge && <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4 }}><ShieldBadge color={entry.badgeColor || "#6B7280"} size={14} tier={entry.badge} /><span style={{ fontSize: 11, color: entry.badgeColor || (dark ? "rgba(255,255,255,.5)" : "rgba(0,0,0,.4)") }}>{entry.badge}</span></div>}
       <div className="m lb-pod-val" style={{ color: dark ? p.valDk : p.valLt, fontSize: isFirst ? 16 : 14 }}>{val}</div>
     </div>
   );
@@ -55,7 +74,7 @@ function ListRow({ entry, dark, t, tab, isLast }) {
       <div className="lb-avatar" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: dark ? "rgba(255,255,255,.5)" : "rgba(0,0,0,.45)" }}><UserIcon size={14} /></div>
       <div className="lb-info">
         <div className="lb-name" style={{ color: t.text }}>{entry.name}{entry.isYou ? " (You)" : ""}</div>
-        {entry.badge && <div style={{ fontSize: 11, color: t.textMuted }}><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: entry.badgeColor || "#6B7280", marginRight: 4 }} />{entry.badge}</div>}
+        {entry.badge && <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}><ShieldBadge color={entry.badgeColor || "#6B7280"} size={12} tier={entry.badge} /><span style={{ fontSize: 11, color: t.textMuted }}>{entry.badge}</span></div>}
       </div>
       <div style={{ marginLeft: "auto", textAlign: "right" }}>
         <div className="m lb-val" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{val}</div>
@@ -118,23 +137,41 @@ export default function LeaderboardPage({ dark, t }) {
         ))}
       </div>
 
-      {/* Tier info — collapsible for mobile/tablet (sidebar handles desktop) */}
+      {/* Mobile/tablet: merged loyalty + your rank card (hidden on desktop via CSS) */}
       {data?.tiers?.length > 0 && (
-        <details className="lb-tiers-mobile" style={{ marginBottom: 16, borderRadius: 10, border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, background: dark ? "rgba(255,255,255,.02)" : "rgba(0,0,0,.01)" }}>
-          <summary style={{ padding: "10px 14px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: t.textMuted, listStyle: "none", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span>🏆 Loyalty Tiers & Perks</span>
-            <span style={{ fontSize: 11, color: t.accent }}>{yourBadge ? `You: ${yourBadge.name}` : "View"}</span>
+        <details className="lb-tiers-mobile" style={{ marginBottom: 16, borderRadius: 12, border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)"}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.9)" }}>
+          <summary style={{ padding: "12px 16px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: t.text, listStyle: "none", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {yourBadge && <ShieldBadge color={yourBadge.color} size={18} tier={yourBadge.name} />}
+              <span>Loyalty Tiers</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {yourBadge && <span style={{ fontSize: 12, color: yourBadge.color, fontWeight: 600 }}>{yourBadge.name}</span>}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lb-chevron"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
           </summary>
-          <div style={{ padding: "0 14px 12px" }}>
+          <div style={{ padding: "0 16px 14px" }}>
+            {yourBadge && yourRank && (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", marginBottom: 12 }}>
+                <div className="m" style={{ fontSize: 20, fontWeight: 700, color: t.accent }}>#{yourRank}</div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: t.text }}>Your Rank</div>
+                  <div style={{ fontSize: 11, color: t.textMuted }}>
+                    {yourBadge.nextTier ? `₦${(yourBadge.nextTier.remaining / 100).toLocaleString()} to ${yourBadge.nextTier.name}` : "Max tier reached"}
+                  </div>
+                </div>
+              </div>
+            )}
             {data.tiers.map((tier, i) => {
               const isCurrent = yourBadge?.name === tier.name;
               return (
-                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: i < data.tiers.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}` : "none" }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: tier.color, marginTop: 5, flexShrink: 0 }} />
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: isCurrent ? 700 : 500, color: isCurrent ? tier.color : t.text }}>{tier.name} {isCurrent && "(You)"}</div>
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: i < data.tiers.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` : "none" }}>
+                  <ShieldBadge color={tier.color} size={16} tier={tier.name} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: isCurrent ? 700 : 500, color: isCurrent ? tier.color : t.text }}>{tier.name}{isCurrent ? " (You)" : ""}</div>
                     <div style={{ fontSize: 11, color: t.textMuted }}>{tier.perks || (tier.discount > 0 ? `${tier.discount}% discount` : "No perks")}</div>
                   </div>
+                  {tier.discount > 0 && <div style={{ fontSize: 11, fontWeight: 600, color: dark ? "#6ee7b7" : "#059669", flexShrink: 0 }}>{tier.discount}% off</div>}
                 </div>
               );
             })}
@@ -153,11 +190,12 @@ export default function LeaderboardPage({ dark, t }) {
         <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>No data yet. Place orders to appear on the leaderboard!</div>
       ) : <>
 
+        {/* Your rank — desktop only (mobile shows it in the collapsible above) */}
         {yourRank && (
-          <div className="lb-you" style={{ background: dark ? "rgba(196,125,142,.04)" : "rgba(196,125,142,.04)", borderColor: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.1)" }}>
+          <div className="lb-you lb-you-desktop" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", borderColor: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>
             <div className="m lb-you-rank" style={{ color: t.accent }}>#{yourRank}</div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: t.text, display: "flex", alignItems: "center", gap: 6 }}>Your Rank {yourBadge && <><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: yourBadge.color || "#6B7280" }} /><span style={{ color: yourBadge.color }}>{yourBadge.name}</span></>}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: t.text, display: "flex", alignItems: "center", gap: 6 }}>Your Rank {yourBadge && <><ShieldBadge color={yourBadge.color} size={14} tier={yourBadge.name} /><span style={{ color: yourBadge.color }}>{yourBadge.name}</span></>}</div>
               <div style={{ fontSize: 12, color: t.textMuted }}>
                 {tab === "spenders" && `${list.find(e => e.isYou)?.orders || 0} orders`}
                 {tab === "referrers" && `${list.find(e => e.isYou)?.referrals || 0} referrals`}
@@ -176,7 +214,7 @@ export default function LeaderboardPage({ dark, t }) {
         )}
 
         {rest.length > 0 && (
-          <div className="lb-list" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", borderColor: t.cardBorder }}>
+          <div className="lb-list" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.9)", borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)" }}>
             {rest.map((entry, i) => (
               <ListRow key={i} entry={entry} dark={dark} t={t} tab={tab} isLast={i === rest.length - 1} />
             ))}
@@ -184,7 +222,7 @@ export default function LeaderboardPage({ dark, t }) {
         )}
 
         {podium.length < 3 && (
-          <div className="lb-list" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", borderColor: t.cardBorder }}>
+          <div className="lb-list" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.9)", borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)" }}>
             {list.map((entry, i) => (
               <ListRow key={i} entry={entry} dark={dark} t={t} tab={tab} isLast={i === list.length - 1} />
             ))}
@@ -241,15 +279,17 @@ export function TierPerksCard({ dark, t }) {
   if (!tiers.length) return null;
 
   return (
-    <div style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: t.textMuted, marginBottom: 12 }}>Loyalty Tiers</div>
+    <div style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.9)", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)"}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: t.textMuted, marginBottom: 12 }}>Loyalty tiers</div>
       {yourBadge && (
-        <div style={{ padding: "8px 12px", borderRadius: 8, background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", marginBottom: 12, fontSize: 13, color: t.text }}>
-          <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: yourBadge.color, marginRight: 6 }} />
-          You are <strong>{yourBadge.name}</strong>
-          {yourBadge.discount > 0 && <span style={{ color: dark ? "#6ee7b7" : "#059669" }}> · {yourBadge.discount}% off</span>}
+        <div style={{ padding: "10px 12px", borderRadius: 8, background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", marginBottom: 12, fontSize: 13, color: t.text }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+            <ShieldBadge color={yourBadge.color} size={16} tier={yourBadge.name} />
+            <span>You are <strong style={{ color: yourBadge.color }}>{yourBadge.name}</strong></span>
+            {yourBadge.discount > 0 && <span style={{ color: dark ? "#6ee7b7" : "#059669", fontSize: 12 }}>{yourBadge.discount}% off</span>}
+          </div>
           {yourBadge.nextTier && (
-            <div style={{ fontSize: 11, color: t.textMuted, marginTop: 4 }}>
+            <div style={{ fontSize: 11, color: t.textMuted }}>
               ₦{(yourBadge.nextTier.remaining / 100).toLocaleString()} to {yourBadge.nextTier.name}
             </div>
           )}
@@ -258,11 +298,11 @@ export function TierPerksCard({ dark, t }) {
       {tiers.map((tier, i) => {
         const isCurrent = yourBadge?.name === tier.name;
         return (
-          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: i < tiers.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}` : "none", opacity: isCurrent ? 1 : 0.7 }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: tier.color, marginTop: 5, flexShrink: 0 }} />
-            <div>
-              <div style={{ fontSize: 13, fontWeight: isCurrent ? 700 : 500, color: isCurrent ? tier.color : t.text }}>{tier.name}</div>
-              <div style={{ fontSize: 11, color: t.textMuted }}>{tier.perks || (tier.discount > 0 ? `${tier.discount}% discount` : "No perks")}</div>
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: i < tiers.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` : "none", opacity: isCurrent ? 1 : 0.65 }}>
+            <ShieldBadge color={tier.color} size={14} tier={tier.name} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: isCurrent ? 700 : 500, color: isCurrent ? tier.color : t.text }}>{tier.name}</div>
+              <div style={{ fontSize: 10, color: t.textMuted }}>{tier.perks || (tier.discount > 0 ? `${tier.discount}% discount` : "No perks")}</div>
             </div>
           </div>
         );
