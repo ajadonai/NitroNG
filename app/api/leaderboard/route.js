@@ -105,7 +105,7 @@ export async function GET(req) {
     // Reward announcement
     let rewardAnnouncement = null;
     try {
-      const setting = await prisma.siteConfig.findUnique({ where: { key: 'leaderboard_reward_announcement' } });
+      const setting = await prisma.setting.findUnique({ where: { key: 'leaderboard_reward_announcement' } });
       const parsed = setting?.value ? JSON.parse(setting.value) : null;
       if (parsed?.enabled && parsed?.text) rewardAnnouncement = parsed.text;
     } catch {}

@@ -51,7 +51,7 @@ export async function GET(req) {
     // Get reward announcement
     let rewardAnnouncement = null;
     try {
-      const setting = await prisma.siteConfig.findUnique({ where: { key: 'leaderboard_reward_announcement' } });
+      const setting = await prisma.setting.findUnique({ where: { key: 'leaderboard_reward_announcement' } });
       rewardAnnouncement = setting?.value ? JSON.parse(setting.value) : null;
     } catch {}
 
@@ -144,7 +144,7 @@ export async function POST(req) {
 
     if (action === 'set_announcement') {
       const value = announcement ? JSON.stringify({ text: announcement.text || '', enabled: announcement.enabled ?? true }) : JSON.stringify({ text: '', enabled: false });
-      await prisma.siteConfig.upsert({
+      await prisma.setting.upsert({
         where: { key: 'leaderboard_reward_announcement' },
         update: { value },
         create: { key: 'leaderboard_reward_announcement', value },
