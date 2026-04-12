@@ -258,32 +258,6 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
           </div>
         </div>
 
-        {/* ── API KEY ── */}
-        <div id="set-api-key" className="set-section">
-          <div className="set-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-            <div className="set-card-title" style={{ color: t.textMuted }}>API key</div>
-            <div className="set-card-desc" style={{ color: t.textMuted }}>For advanced users and resellers. Keep this secret.</div>
-            <div className="set-card-divider" style={{ background: t.cardBorder }} />
-            {apiKey ? (
-              <>
-                <div className="set-api-row">
-                  <div className="m set-api-key" style={{ background: dark ? "rgba(255,255,255,.04)" : "#fff", borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)", color: t.textSoft }}>
-                    {showApi ? apiKey : "••••••••••••••••••••••••••••••••"}
-                  </div>
-                  <button onClick={() => setShowApi(!showApi)} className="set-btn-outline" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)", color: t.textSoft }}>{showApi ? "Hide" : "Show"}</button>
-                  <button onClick={copyApi} className="set-btn-outline" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)", color: copied ? t.green : t.textSoft }}>{copied ? "Copied ✓" : "Copy"}</button>
-                </div>
-                <button onClick={async () => { const ok = await confirm({ title: "Reset API Key", message: "This will invalidate your current key. Any integrations using it will stop working.", confirmLabel: "Reset", danger: true }); if (ok) generateApiKey("regenerate"); }} disabled={apiLoading} className="m set-btn-danger-sm" style={{ borderColor: dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.1)", color: dark ? "#fca5a5" : "#dc2626", marginTop: 10 }}>{apiLoading ? "..." : "Reset Key"}</button>
-              </>
-            ) : (
-              <>
-                <div style={{ fontSize: 14, color: t.textMuted, marginBottom: 12 }}>No API key generated yet. Generate one to access Nitro's API.</div>
-                <button onClick={() => generateApiKey("generate")} disabled={apiLoading} className="set-btn-primary" style={{ opacity: apiLoading ? .5 : 1 }}>{apiLoading ? "Generating..." : "Create API Key"}</button>
-              </>
-            )}
-          </div>
-        </div>
-
         {/* ── SYSTEM STATUS ── */}
         <div id="set-status" className="set-section">
           <div className="set-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
@@ -372,7 +346,6 @@ export function SettingsSidebar({ user, dark, t }) {
         ["Theme", "set-theme"],
         ["Notifications", "set-notifications"],
         ["Active Sessions", "set-active-sessions"],
-        ["API Key", "set-api-key"],
         ["System Status", "set-status"],
         ["Log Out", "set-account"],
         ["Account", "set-danger-zone"],
