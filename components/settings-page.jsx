@@ -4,6 +4,22 @@ import { useConfirm } from "./confirm-dialog";
 import { fN } from "../lib/format";
 import { SITE } from "../lib/site";
 
+function ShieldBadge({ color = "#6B7280", size = 20, tier = "Starter" }) {
+  const isStarter = tier === "Starter";
+  const isPower = tier === "Power User";
+  const isElite = tier === "Elite";
+  const isLegend = tier === "Legend";
+  return (
+    <svg width={size} height={size * 1.1} viewBox="0 0 40 44" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M20 2L38 10V22C38 32 30 40 20 44C10 40 2 32 2 22V10L20 2Z" fill={color} fillOpacity={isStarter ? 0.15 : 0.2} stroke={color} strokeWidth={isLegend ? 2 : 1.5}/>
+      <path d="M20 14L22 18H26L23 21L24 25L20 22L16 25L17 21L14 18H18Z" fill={color} fillOpacity={isStarter ? 0.4 : 1} transform={isElite || isLegend ? "translate(0,-2) scale(1.15) translate(-2.6, -0.5)" : undefined}/>
+      {(isPower || isElite || isLegend) && <line x1="12" y1="8" x2="28" y2="8" stroke={color} strokeWidth="1" opacity="0.5"/>}
+      {(isElite || isLegend) && <line x1="14" y1="5" x2="26" y2="5" stroke={color} strokeWidth="0.8" opacity="0.3"/>}
+      {isLegend && <circle cx="20" cy="22" r="16" fill="none" stroke={color} strokeWidth="0.5" opacity="0.3"/>}
+    </svg>
+  );
+}
+
 
 function Toggle({ on, onToggle, accent }) {
   return (
@@ -142,7 +158,11 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
               <div className="set-profile-avatar" style={{ background: t.accent }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
               <div>
                 <div className="set-profile-name" style={{ color: t.text }}>{user?.name || "User"}</div>
-                <div className="set-profile-since" style={{ color: t.textMuted }}>Member since Mar 2026</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}>
+                  {user?.badgeColor && <ShieldBadge color={user.badgeColor} size={14} tier={user.badge} />}
+                  <span style={{ fontSize: 12, color: user?.badgeColor || t.textMuted, fontWeight: 600 }}>{user?.badge || "Starter"}</span>
+                  {user?.badgeDiscount > 0 && <span style={{ fontSize: 11, color: dark ? "#6ee7b7" : "#059669" }}>· {user.badgeDiscount}% off</span>}
+                </div>
               </div>
             </div>
             <div className="set-profile-grid">
@@ -334,6 +354,10 @@ export function SettingsSidebar({ user, dark, t }) {
       <div className="set-rs-account" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
         <div className="set-rs-avatar" style={{ background: t.accent }}><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
         <div className="set-rs-name" style={{ color: t.text }}>{user?.name?.toUpperCase() || "USER"}</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginBottom: 4 }}>
+          {user?.badgeColor && <ShieldBadge color={user.badgeColor} size={14} tier={user.badge} />}
+          <span style={{ fontSize: 12, color: user?.badgeColor || t.textMuted, fontWeight: 600 }}>{user?.badge || "Starter"}</span>
+        </div>
         <div className="set-rs-email" style={{ color: t.textMuted }}>{user?.email || ""}</div>
         <div className="m set-rs-ref" style={{ color: t.accent }}>{user?.refCode || "—"}</div>
       </div>
