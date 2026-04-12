@@ -139,7 +139,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
             <div className="set-card-desc" style={{ color: t.textMuted }}>Your account information. Contact support to update.</div>
             <div className="set-card-divider" style={{ background: t.cardBorder }} />
             <div className="set-profile-header">
-              <div className="set-profile-avatar" style={{ background: t.accent }}>{initials}</div>
+              <div className="set-profile-avatar" style={{ background: t.accent }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
               <div>
                 <div className="set-profile-name" style={{ color: t.text }}>{user?.name || "User"}</div>
                 <div className="set-profile-since" style={{ color: t.textMuted }}>Member since Mar 2026</div>
@@ -332,7 +332,7 @@ export function SettingsSidebar({ user, dark, t }) {
     <>
       <div className="set-rs-title" style={{ color: t.textMuted }}>Account</div>
       <div className="set-rs-account" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
-        <div className="set-rs-avatar" style={{ background: t.accent }}>{initials}</div>
+        <div className="set-rs-avatar" style={{ background: t.accent }}><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
         <div className="set-rs-name" style={{ color: t.text }}>{user?.name?.toUpperCase() || "USER"}</div>
         <div className="set-rs-email" style={{ color: t.textMuted }}>{user?.email || ""}</div>
         <div className="m set-rs-ref" style={{ color: t.accent }}>{user?.refCode || "—"}</div>

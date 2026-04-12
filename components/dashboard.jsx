@@ -777,7 +777,7 @@ function DashboardInner() {
           </div>
           {/* Avatar → Settings */}
           <button onClick={() => { setActive("settings"); setLeftOpen(false); }} className="dash-avatar-btn">
-            <div className="dash-avatar" style={{ background: t.accent }}>{initials}</div>
+            <div className="dash-avatar" style={{ background: t.accent }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
             <span className="dash-nav-name" style={{ color: t.text, textTransform: "uppercase" }}>{firstName}</span>
           </button>
         </div>
