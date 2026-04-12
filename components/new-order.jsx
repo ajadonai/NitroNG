@@ -412,17 +412,24 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
         })}
       </div>
 
-      {/* ═══ MOBILE/TABLET: 5 popular icons + expandable grid ═══ */}
+      {/* ═══ MOBILE/TABLET: 5 icon window + expandable grid ═══ */}
       <div className="no-mob-plat">
         <div className="no-mob-popular">
-          {visiblePlatforms.slice(0, 5).map(p => {
-            const isActive = platform === p.id;
-            return (
-              <button key={p.id} onClick={() => { setPlatform(p.id); setPlatExpanded(false); }} className={`no-mob-plat-btn${isActive ? " no-mob-plat-on" : ""}`} style={{ borderColor: isActive ? t.accent : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : (dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)"), color: isActive ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)") }}>
-                <span className="no-mob-plat-icon">{p.icon}</span>
-              </button>
-            );
-          })}
+          {(() => {
+            const idx = visiblePlatforms.findIndex(p => p.id === platform);
+            const total = visiblePlatforms.length;
+            const windowSize = Math.min(5, total);
+            let start = Math.max(0, idx - 2);
+            if (start + windowSize > total) start = Math.max(0, total - windowSize);
+            return visiblePlatforms.slice(start, start + windowSize).map(p => {
+              const isActive = platform === p.id;
+              return (
+                <button key={p.id} onClick={() => { setPlatform(p.id); setPlatExpanded(false); }} className={`no-mob-plat-btn${isActive ? " no-mob-plat-on" : ""}`} style={{ borderColor: isActive ? t.accent : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : (dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)"), color: isActive ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)") }}>
+                  <span className="no-mob-plat-icon">{p.icon}</span>
+                </button>
+              );
+            });
+          })()}
         </div>
         {visiblePlatforms.length > 5 && (
           <button onClick={() => setPlatExpanded(!platExpanded)} className="no-mob-viewall" style={{ color: t.textMuted, borderColor: t.cardBorder }}>
