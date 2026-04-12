@@ -298,6 +298,13 @@ function NotifDropdown({ orders, txs, dark, t, onClose, readIds, setReadIds, cle
       color: dark ? "#6ee7b7" : "#059669",
       icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>,
     })),
+    ...txs.filter(tx => tx.type === "bonus" || tx.type === "admin_credit").map(tx => ({
+      id: `bonus-${tx.id || tx.reference}`, type: "reward", title: tx.type === "bonus" ? "Reward received! 🎁" : "Balance credited",
+      desc: `${fN(tx.amount)} — ${tx.description || "Bonus from Nitro"}`,
+      time: tx.date ? fD(tx.date) : "", ts: tx.date ? new Date(tx.date) : null,
+      color: dark ? "#e0a458" : "#d97706",
+      icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/></svg>,
+    })),
   ];
 
   // Filter out cleared items (by ID or by timestamp)

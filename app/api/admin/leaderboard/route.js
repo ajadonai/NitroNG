@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
+import { sendEmail } from '@/lib/email';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('leaderboard');
@@ -147,6 +148,23 @@ export async function POST(req) {
       });
 
       await logActivity(admin.id, 'leaderboard_reward', `Rewarded ${user.name || user.email} with ₦${amount.toLocaleString()}`);
+
+      // Email notification
+      if (user.email) {
+        const rewardNote = note || `Leaderboard reward — ₦${amount.toLocaleString()}`;
+        sendEmail(user.email, `🎁 You received ₦${amount.toLocaleString()} on Nitro!`,
+          `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
+            <h2 style="color:#c47d8e;margin:0 0 8px;">You've been rewarded! 🎁</h2>
+            <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
+              <strong>₦${amount.toLocaleString()}</strong> has been added to your Nitro wallet.
+            </p>
+            <p style="color:#666;font-size:14px;line-height:1.5;margin:0 0 20px;">${rewardNote}</p>
+            <a href="https://nitro.ng/dashboard" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#c47d8e,#8b5e6b);color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;">Check your balance →</a>
+            <p style="color:#999;font-size:12px;margin:24px 0 0;">— The Nitro Team</p>
+          </div>`
+        ).catch(() => {});
+      }
+
       return Response.json({ success: true, message: `₦${amount.toLocaleString()} credited to ${user.name || user.email}` });
     }
 

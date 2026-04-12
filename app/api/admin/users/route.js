@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
+import { sendEmail } from '@/lib/email';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('users');
@@ -105,6 +106,21 @@ export async function POST(req) {
       ]);
 
       await logActivity(admin.name, `Credited ₦${Number(amount).toLocaleString()} to ${user.name}`, 'user');
+
+      // Email notification
+      if (user.email) {
+        sendEmail(user.email, `₦${Number(amount).toLocaleString()} credited to your Nitro wallet`,
+          `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
+            <h2 style="color:#c47d8e;margin:0 0 8px;">Balance credited</h2>
+            <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
+              <strong>₦${Number(amount).toLocaleString()}</strong> has been added to your Nitro wallet.
+            </p>
+            <a href="https://nitro.ng/dashboard" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#c47d8e,#8b5e6b);color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;">Check your balance →</a>
+            <p style="color:#999;font-size:12px;margin:24px 0 0;">— The Nitro Team</p>
+          </div>`
+        ).catch(() => {});
+      }
+
       return Response.json({ success: true, message: `₦${Number(amount).toLocaleString()} credited to ${user.name}` });
     }
 
