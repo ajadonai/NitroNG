@@ -32,23 +32,27 @@ export async function POST(req) {
 
     log.info('NowPayments Webhook', `${order_id} → ${payment_status} (paid: ${actually_paid})`);
 
-    // Find our transaction
-    const tx = await prisma.transaction.findFirst({
-      where: { reference: order_id, method: 'crypto' },
-    });
-
-    if (!tx) {
-      log.warn('NowPayments Webhook', `Transaction not found: ${order_id}`);
-      return Response.json({ ok: true }); // Don't error — NP retries
-    }
-
-    // Already processed
-    if (tx.status === 'Completed') {
-      return Response.json({ ok: true });
-    }
-
     // Payment confirmed
     if (payment_status === 'finished' || payment_status === 'confirmed') {
+      // Atomically claim the pending transaction — prevents double credit on webhook retries
+      const claimed = await prisma.transaction.updateMany({
+        where: { reference: order_id, method: 'crypto', status: 'Pending' },
+        data: { status: 'Processing' },
+      });
+
+      if (claimed.count === 0) {
+        log.info('NowPayments Webhook', `No pending tx for ${order_id} (already claimed or missing)`);
+        return Response.json({ ok: true });
+      }
+
+      const tx = await prisma.transaction.findFirst({
+        where: { reference: order_id, method: 'crypto', status: 'Processing' },
+      });
+
+      if (!tx) {
+        return Response.json({ ok: true });
+      }
+
       await prisma.$transaction(async (db) => {
         await db.transaction.update({
           where: { id: tx.id },
@@ -64,10 +68,15 @@ export async function POST(req) {
 
     // Payment failed or expired
     if (payment_status === 'expired' || payment_status === 'failed' || payment_status === 'refunded') {
-      await prisma.transaction.update({
-        where: { id: tx.id },
-        data: { status: 'Canceled' },
+      const tx = await prisma.transaction.findFirst({
+        where: { reference: order_id, method: 'crypto', status: { in: ['Pending', 'Processing'] } },
       });
+      if (tx) {
+        await prisma.transaction.update({
+          where: { id: tx.id },
+          data: { status: 'Canceled' },
+        });
+      }
       log.info('NowPayments Webhook', `✗ ${payment_status}: ${order_id}`);
     }
 

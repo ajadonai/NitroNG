@@ -189,8 +189,7 @@ export async function POST(req) {
 
     if (action === 'approve_manual') {
       if (!canPerformAction(admin, 'payments.approve')) return Response.json({ error: 'Not authorized to approve deposits' }, { status: 403 });
-      const { transactionId } = await req.json().catch(() => ({})) || {};
-      const txId = transactionId || gatewayId; // gatewayId reused for txId here
+      const txId = gatewayId; // gatewayId carries the transaction ID for approve/reject actions
       const tx = await prisma.transaction.findUnique({ where: { id: txId } });
       if (!tx || tx.method !== 'manual' || tx.status !== 'Pending') return Response.json({ error: 'Transaction not found or already processed' }, { status: 404 });
 

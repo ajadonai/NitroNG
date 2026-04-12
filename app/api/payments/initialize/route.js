@@ -13,7 +13,6 @@ async function getGatewayKeys(gatewayId) {
     } catch {}
   }
   // Fallback to env vars
-  if (gatewayId === 'paystack') return { secretKey: process.env.PAYSTACK_SECRET_KEY || '', publicKey: process.env.PAYSTACK_PUBLIC_KEY || '' };
   if (gatewayId === 'flutterwave') return { secretKey: process.env.FLUTTERWAVE_SECRET_KEY || '', publicKey: process.env.FLUTTERWAVE_PUBLIC_KEY || '' };
   return {};
 }
@@ -58,27 +57,6 @@ export async function POST(req) {
         note: `${gateway} deposit ₦${amountNum.toLocaleString()}${couponId ? ` [coupon:${couponId}]` : ''}`,
       },
     });
-
-    // ═══ PAYSTACK ═══
-    if (gateway === 'paystack') {
-      const res = await fetchWithRetry('https://api.paystack.co/transaction/initialize', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${keys.secretKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: user.email,
-          amount: amountKobo,
-          reference,
-          callback_url: `${origin}/dashboard?verify=${reference}`,
-          metadata: { userId: user.id, name: user.name },
-        }),
-      });
-      const data = await res.json();
-      if (!data.status) {
-        log.error('Paystack Init', data.message);
-        return Response.json({ error: data.message || 'Payment initialization failed' }, { status: 400 });
-      }
-      return Response.json({ authorization_url: data.data.authorization_url, reference });
-    }
 
     // ═══ FLUTTERWAVE ═══
     if (gateway === 'flutterwave') {

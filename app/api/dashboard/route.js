@@ -41,7 +41,7 @@ export async function GET() {
     let referralList = [];
     try {
       const referred = await prisma.user.findMany({
-        where: { referredBy: user.referralCode },
+        where: { referredBy: user.referralCode, status: { not: 'Deleted' } },
         select: { id: true, name: true, emailVerified: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 50,

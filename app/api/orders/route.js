@@ -208,7 +208,7 @@ export async function POST(req) {
       const NITRO_MINS = { followers: 100, likes: 50, views: 500, comments: 10, engagement: 50, plays: 500, reviews: 10 };
       const nitroMin = NITRO_MINS[tier.group.type?.toLowerCase()] || 50;
       const effectiveMin = Math.max(service.min, nitroMin);
-      const qty = Number(quantity);
+      const qty = Math.floor(Number(quantity));
       if (!qty || isNaN(qty) || qty <= 0 || !Number.isFinite(qty)) {
         return Response.json({ error: 'Invalid quantity' }, { status: 400 });
       }
@@ -223,7 +223,7 @@ export async function POST(req) {
       if (!service || !service.enabled) {
         return Response.json({ error: 'Service not available' }, { status: 400 });
       }
-      const qty = Number(quantity);
+      const qty = Math.floor(Number(quantity));
       if (!qty || isNaN(qty) || qty <= 0 || !Number.isFinite(qty)) {
         return Response.json({ error: 'Invalid quantity' }, { status: 400 });
       }
@@ -240,7 +240,7 @@ export async function POST(req) {
       return Response.json({ error: 'Service pricing not configured' }, { status: 400 });
     }
 
-    const qty = Number(quantity);
+    const qty = Math.floor(Number(quantity));
 
     // Generate order ID
     const orderId = `ORD-${Date.now().toString(36).toUpperCase()}`;
@@ -254,9 +254,10 @@ export async function POST(req) {
         const sName = (tier?.group?.name || service?.name || "").toLowerCase();
         const extra = {};
         if (comments) {
-          if (sName.includes("mention")) extra.usernames = comments;
-          else if (sName.includes("poll") || sName.includes("vote")) extra.answer_number = comments;
-          else extra.comments = comments;
+          const safeComments = comments.trim().slice(0, 5000);
+          if (sName.includes("mention")) extra.usernames = safeComments;
+          else if (sName.includes("poll") || sName.includes("vote")) extra.answer_number = safeComments;
+          else extra.comments = safeComments;
         }
         const result = await placeOrder(provider, service.apiId, trimmedLink, qty, extra);
         apiOrderId = result.order ? String(result.order) : null;
