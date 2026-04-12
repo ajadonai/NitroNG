@@ -55,6 +55,13 @@ export async function GET(req) {
       rewardAnnouncement = setting?.value ? JSON.parse(setting.value) : null;
     } catch {}
 
+    // Get auto-reward config
+    let autoReward = null;
+    try {
+      const setting = await prisma.setting.findUnique({ where: { key: 'leaderboard_auto_reward' } });
+      autoReward = setting?.value ? JSON.parse(setting.value) : null;
+    } catch {}
+
     // Get past rewards
     const rewards = await prisma.transaction.findMany({
       where: { type: 'bonus', note: { contains: 'Leaderboard' } },
@@ -96,6 +103,7 @@ export async function GET(req) {
         profit: ((a._sum.charge || 0) - (a._sum.cost || 0)) / 100,
       })),
       rewardAnnouncement,
+      autoReward,
       rewards: rewards.map(r => ({
         id: r.id,
         amount: r.amount / 100,
@@ -116,7 +124,7 @@ export async function POST(req) {
   if (error) return error;
 
   try {
-    const { action, userId, amount, note, announcement } = await req.json();
+    const { action, userId, amount, note, announcement, config } = await req.json();
 
     if (action === 'reward') {
       if (!userId || !amount || amount <= 0) {
@@ -150,6 +158,17 @@ export async function POST(req) {
         create: { key: 'leaderboard_reward_announcement', value },
       });
       await logActivity(admin.id, 'leaderboard_announcement', `Updated leaderboard announcement`);
+      return Response.json({ success: true });
+    }
+
+    if (action === 'set_auto_reward') {
+      const value = JSON.stringify(config || { enabled: false, category: 'spenders', slots: [] });
+      await prisma.setting.upsert({
+        where: { key: 'leaderboard_auto_reward' },
+        update: { value },
+        create: { key: 'leaderboard_auto_reward', value },
+      });
+      await logActivity(admin.id, 'auto_reward_config', `Updated auto-reward config`);
       return Response.json({ success: true });
     }
 

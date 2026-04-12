@@ -13,7 +13,7 @@ import AdminPricingPage from "./admin-pricing";
 import { AdminPaymentsPage, AdminAnalyticsPage, AdminAlertsPage, AdminSettingsPage } from "./admin-pages";
 import { AdminActivityPage, AdminTeamPage, AdminCouponsPage, AdminNotificationsPage, AdminMaintenancePage, AdminAPIPage } from "./admin-extra-pages";
 import AdminBlogPage from "./admin-blog";
-import AdminLeaderboardPage from "./admin-leaderboard";
+import AdminLeaderboardPage, { AdminLeaderboardSidebar } from "./admin-leaderboard";
 import { fN, fD } from "../lib/format";
 import { SITE } from "../lib/site";
 
@@ -475,7 +475,7 @@ function AdminDashboardInner() {
         </main>
 
         <div className="dash-right" style={{ background: t.sidebarBg, borderLeft: `0.5px solid ${t.sidebarBorder}` }}>
-          <AdminRightSidebar data={data} dark={dark} t={t} />
+          {active === "leaderboard" ? <AdminLeaderboardSidebar dark={dark} t={t} /> : <AdminRightSidebar data={data} dark={dark} t={t} />}
         </div>
       </div>
     </div>
