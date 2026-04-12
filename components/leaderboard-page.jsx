@@ -118,6 +118,30 @@ export default function LeaderboardPage({ dark, t }) {
         ))}
       </div>
 
+      {/* Tier info — collapsible for mobile/tablet (sidebar handles desktop) */}
+      {data?.tiers?.length > 0 && (
+        <details className="lb-tiers-mobile" style={{ marginBottom: 16, borderRadius: 10, border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, background: dark ? "rgba(255,255,255,.02)" : "rgba(0,0,0,.01)" }}>
+          <summary style={{ padding: "10px 14px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: t.textMuted, listStyle: "none", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span>🏆 Loyalty Tiers & Perks</span>
+            <span style={{ fontSize: 11, color: t.accent }}>{yourBadge ? `You: ${yourBadge.name}` : "View"}</span>
+          </summary>
+          <div style={{ padding: "0 14px 12px" }}>
+            {data.tiers.map((tier, i) => {
+              const isCurrent = yourBadge?.name === tier.name;
+              return (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: i < data.tiers.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}` : "none" }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: tier.color, marginTop: 5, flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: isCurrent ? 700 : 500, color: isCurrent ? tier.color : t.text }}>{tier.name} {isCurrent && "(You)"}</div>
+                    <div style={{ fontSize: 11, color: t.textMuted }}>{tier.perks || (tier.discount > 0 ? `${tier.discount}% discount` : "No perks")}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </details>
+      )}
+
       {loading ? (
         <div>
           <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>{[1,2].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 30, width: 90, borderRadius: 20 }} />)}</div>
@@ -198,6 +222,51 @@ export function LeaderboardCard({ dark, t, onViewAll }) {
         </div>
       ))}
       {onViewAll && <button onClick={onViewAll} className="lb-card-link" style={{ color: t.accent }}>View full leaderboard →</button>}
+    </div>
+  );
+}
+
+/* ═══ TIER PERKS — right sidebar on desktop ═══ */
+export function TierPerksCard({ dark, t }) {
+  const [data, setData] = useState(null);
+  useEffect(() => {
+    fetch("/api/leaderboard?period=all")
+      .then(r => r.json())
+      .then(d => setData(d))
+      .catch(() => {});
+  }, []);
+
+  const tiers = data?.tiers || [];
+  const yourBadge = data?.yourBadge;
+  if (!tiers.length) return null;
+
+  return (
+    <div style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: t.textMuted, marginBottom: 12 }}>Loyalty Tiers</div>
+      {yourBadge && (
+        <div style={{ padding: "8px 12px", borderRadius: 8, background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", marginBottom: 12, fontSize: 13, color: t.text }}>
+          <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: yourBadge.color, marginRight: 6 }} />
+          You are <strong>{yourBadge.name}</strong>
+          {yourBadge.discount > 0 && <span style={{ color: dark ? "#6ee7b7" : "#059669" }}> · {yourBadge.discount}% off</span>}
+          {yourBadge.nextTier && (
+            <div style={{ fontSize: 11, color: t.textMuted, marginTop: 4 }}>
+              ₦{(yourBadge.nextTier.remaining / 100).toLocaleString()} to {yourBadge.nextTier.name}
+            </div>
+          )}
+        </div>
+      )}
+      {tiers.map((tier, i) => {
+        const isCurrent = yourBadge?.name === tier.name;
+        return (
+          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: i < tiers.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}` : "none", opacity: isCurrent ? 1 : 0.7 }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: tier.color, marginTop: 5, flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: isCurrent ? 700 : 500, color: isCurrent ? tier.color : t.text }}>{tier.name}</div>
+              <div style={{ fontSize: 11, color: t.textMuted }}>{tier.perks || (tier.discount > 0 ? `${tier.discount}% discount` : "No perks")}</div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

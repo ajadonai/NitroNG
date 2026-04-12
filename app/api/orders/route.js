@@ -240,6 +240,28 @@ export async function POST(req) {
       return Response.json({ error: 'Service pricing not configured' }, { status: 400 });
     }
 
+    // Apply loyalty discount based on total lifetime spend
+    let loyaltyDiscount = 0;
+    let loyaltyTierName = null;
+    try {
+      const loyaltyEnabledRow = await prisma.setting.findUnique({ where: { key: 'loyalty_enabled' } });
+      if (loyaltyEnabledRow?.value !== 'false') {
+        const ltRow = await prisma.setting.findUnique({ where: { key: 'loyalty_tiers' } });
+        if (ltRow) {
+          const tiers = JSON.parse(ltRow.value);
+          const spendAgg = await prisma.order.aggregate({ where: { userId: session.id, deletedAt: null }, _sum: { charge: true } });
+          const totalSpend = spendAgg._sum.charge || 0;
+          let userTier = tiers[0];
+          for (const t2 of tiers) { if (totalSpend >= t2.threshold) userTier = t2; }
+          if (userTier.discount > 0) {
+            loyaltyDiscount = Math.round(charge * (userTier.discount / 100));
+            loyaltyTierName = userTier.name;
+            charge = charge - loyaltyDiscount;
+          }
+        }
+      }
+    } catch (err) { log.warn('Loyalty discount', err.message); }
+
     const qty = Math.floor(Number(quantity));
 
     // Generate order ID
@@ -296,7 +318,7 @@ export async function POST(req) {
           method: 'wallet',
           status: 'Completed',
           reference: orderId,
-          note: `Order ${orderId} — ${tierName} x${qty.toLocaleString()}`,
+          note: `Order ${orderId} — ${tierName} x${qty.toLocaleString()}${loyaltyDiscount > 0 ? ` (${loyaltyTierName} -₦${(loyaltyDiscount/100).toLocaleString()})` : ''}`,
         },
       });
       return order;
@@ -310,6 +332,7 @@ export async function POST(req) {
         quantity: qty,
         charge: charge / 100,
         status: result.status,
+        ...(loyaltyDiscount > 0 ? { loyaltyDiscount: loyaltyDiscount / 100, loyaltyTier: loyaltyTierName } : {}),
       },
     });
   } catch (err) {

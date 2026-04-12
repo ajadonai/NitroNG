@@ -49,6 +49,27 @@ export async function GET(req) {
     };
     const DEFAULT_MIN = 50;
 
+    // Get user's loyalty discount
+    let loyaltyDiscount = 0;
+    let loyaltyTierName = null;
+    try {
+      const loyaltyEnabledRow = await prisma.setting.findUnique({ where: { key: 'loyalty_enabled' } });
+      if (loyaltyEnabledRow?.value !== 'false') {
+        const ltRow = await prisma.setting.findUnique({ where: { key: 'loyalty_tiers' } });
+        if (ltRow) {
+          const tiers = JSON.parse(ltRow.value);
+          const spendAgg = await prisma.order.aggregate({ where: { userId: session.id, deletedAt: null }, _sum: { charge: true } });
+          const totalSpend = spendAgg._sum.charge || 0;
+          let userTier = tiers[0];
+          for (const t2 of tiers) { if (totalSpend >= t2.threshold) userTier = t2; }
+          if (userTier.discount > 0) {
+            loyaltyDiscount = userTier.discount;
+            loyaltyTierName = userTier.name;
+          }
+        }
+      }
+    } catch {}
+
     return Response.json({
       groups: groups.map(g => {
         const nitroMin = NITRO_MINS[g.type?.toLowerCase()] || DEFAULT_MIN;
@@ -71,6 +92,7 @@ export async function GET(req) {
         };
       }).filter(g => g.tiers.length > 0),
       platforms: platforms.map(p => p.platform),
+      ...(loyaltyDiscount > 0 ? { loyaltyDiscount, loyaltyTier: loyaltyTierName } : {}),
     });
   } catch (err) {
     log.error('Services Menu', err.message);

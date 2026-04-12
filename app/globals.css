@@ -1619,3 +1619,5 @@ input { font-family: inherit; }
 .dash-menu-hint { display: none; }
 @media (max-width: 1199px) { .dash-menu-hint { display: flex; } }
 
+/* Hide mobile tier info on desktop (sidebar shows it) */
+@media (min-width: 1200px) { .lb-tiers-mobile { display: none !important; } }
