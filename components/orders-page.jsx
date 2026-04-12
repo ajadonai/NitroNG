@@ -119,9 +119,9 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
       </div>
 
       {/* Tab switcher */}
-      <div className="ord-tabs" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", borderColor: t.cardBorder }}>
+      <div className="ord-tabs" style={{ borderBottomColor: t.cardBorder }}>
         {[["orders", "Orders", orders.length], ["transactions", "Transactions", txs.length]].map(([id, lb, count]) => (
-          <button key={id} onClick={() => { setTab(id); setOPage(1); setTPage(1); setExpanded(null); }} className="ord-tab" style={{ background: tab === id ? t.navActive : "transparent", color: tab === id ? t.accent : t.textMuted }}>
+          <button key={id} onClick={() => { setTab(id); setOPage(1); setTPage(1); setExpanded(null); }} className="ord-tab" style={{ color: tab === id ? t.accent : t.textMuted, borderBottomColor: tab === id ? t.accent : "transparent", fontWeight: tab === id ? 600 : 500 }}>
             {lb} <span style={{ fontSize: 13, opacity: .7 }}>({count})</span>
           </button>
         ))}
@@ -139,7 +139,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
         </div>
 
         {/* Search */}
-        <input placeholder="Search by order ID or service..." value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="m ord-search" style={{ borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text }} />
+        <input placeholder="Search by order ID or service..." value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="ord-search" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.03)" : "#fff", color: t.text }} />
 
         {/* Order list */}
         <div className="ord-list" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>

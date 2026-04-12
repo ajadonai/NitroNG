@@ -601,16 +601,16 @@ input { font-family: inherit; }
 .ord-title { font-size: 22px; font-weight: 600; margin-bottom: 2px; }
 .ord-subtitle { font-size: 15px; }
 
-/* Tab switcher */
-.ord-tabs { display: flex; gap: 4px; padding: 3px; border-radius: 10px; border-width: 1px; border-style: solid; margin-bottom: 16px; align-self: flex-start; }
-.ord-tab { padding: 8px 20px; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; }
+/* Tab switcher — underline style */
+.ord-tabs { display: flex; gap: 0; margin-bottom: 16px; border-bottom-width: 1px; border-bottom-style: solid; }
+.ord-tab { padding: 8px 20px; font-size: 15px; font-weight: 500; cursor: pointer; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; font-family: inherit; }
 
 /* Filters */
 .ord-filters { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
-.ord-filter-pill { padding: 4px 14px; border-radius: 20px; font-size: 14px; font-weight: 500; cursor: pointer; }
+.ord-filter-pill { padding: 5px 14px; border-radius: 20px; font-size: 14px; font-weight: 500; cursor: pointer; background: none; font-family: inherit; }
 
-/* Search */
-.ord-search { width: 100%; max-width: 400px; padding: 10px 14px; border-radius: 10px; border-width: 1px; border-style: solid; font-size: 14px; outline: none; margin-bottom: 14px; box-sizing: border-box; }
+/* Search — matches services page style */
+.ord-search { width: 100%; padding: 10px 14px; border-radius: 10px; border-width: 1px; border-style: solid; font-size: 14px; font-family: inherit; outline: none; margin-bottom: 14px; box-sizing: border-box; }
 
 /* Platform icon */
 .ord-platform-icon { border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -669,7 +669,7 @@ input { font-family: inherit; }
   .ord-subtitle { font-size: 14px; }
   .ord-tab { padding: 7px 14px; font-size: 14px; }
   .ord-filter-pill { padding: 4px 10px; font-size: 13px; }
-  .ord-search { max-width: 100%; }
+  .ord-search { font-size: 13px; }
   .ord-row { padding: 14px 16px; gap: 12px; }
   .ord-expanded { padding-left: 66px; }
 }
