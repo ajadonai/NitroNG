@@ -22,9 +22,11 @@ export async function POST(req) {
 
   try {
     const { action, provider: pid } = await req.json();
+    const VALID_PROVIDERS = ['mtp', 'jap', 'dao'];
 
     if (action === 'test') {
       const providerId = pid || 'mtp';
+      if (!VALID_PROVIDERS.includes(providerId)) return Response.json({ error: `Unknown provider: ${providerId}. Use: ${VALID_PROVIDERS.join(', ')}` }, { status: 400 });
       if (!isProviderConfigured(providerId)) return Response.json({ error: `${getProviderName(providerId)} API key not set` }, { status: 400 });
       const balance = await getBalance(providerId);
       return Response.json({ success: true, balance });
@@ -32,6 +34,7 @@ export async function POST(req) {
 
     if (action === 'sync') {
       const providerId = pid || 'mtp';
+      if (!VALID_PROVIDERS.includes(providerId)) return Response.json({ error: `Unknown provider: ${providerId}. Use: ${VALID_PROVIDERS.join(', ')}` }, { status: 400 });
       if (!isProviderConfigured(providerId)) return Response.json({ error: `${getProviderName(providerId)} API key not set` }, { status: 400 });
 
       const providerServices = await getServices(providerId);
