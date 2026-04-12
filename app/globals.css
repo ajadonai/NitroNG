@@ -1383,15 +1383,15 @@ input { font-family: inherit; }
 /* Admin shared elements */
 .adm-detail-grid { grid-template-columns: 1fr 1fr 1fr; }
 .adm-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; margin-top: 16px; }
-.adm-filter-pill { padding: 4px 14px; border-radius: 20px; font-size: 14px; font-weight: 500; cursor: pointer; }
-.adm-search { width: 100%; max-width: 400px; padding: 10px 14px; border-radius: 10px; border-width: 1px; border-style: solid; font-size: 15px; outline: none; margin-bottom: 16px; box-sizing: border-box; }
+.adm-filter-pill { padding: 5px 14px; border-radius: 20px; font-size: 14px; font-weight: 500; cursor: pointer; background: none; font-family: inherit; }
+.adm-search { width: 100%; padding: 10px 14px; border-radius: 10px; border-width: 1px; border-style: solid; font-size: 14px; font-family: inherit; outline: none; margin-bottom: 16px; box-sizing: border-box; }
 .adm-btn-sm { padding: 5px 12px; border-radius: 6px; border-width: 1px; border-style: solid; font-size: 14px; font-weight: 600; cursor: pointer; background: none; }
 .adm-btn-primary { padding: 10px 24px; border-radius: 8px; background: linear-gradient(135deg, #c47d8e, #8b5e6b); color: #fff; font-size: 15px; font-weight: 600; border: none; cursor: pointer; }
 .adm-pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; flex-wrap: wrap; gap: 10px; }
 
 @media (max-width: 767px) {
   .adm-filters { margin-top: 12px; }
-  .adm-search { font-size: 14px; max-width: 100%; }
+  .adm-search { font-size: 13px; }
   .adm-user-row { flex-direction: column; align-items: stretch; gap: 8px; }
   .adm-user-actions { display: flex; align-items: center; justify-content: space-between; padding-left: 44px; }
   .adm-list-row { padding: 12px 14px; }
