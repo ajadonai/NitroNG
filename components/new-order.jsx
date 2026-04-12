@@ -319,7 +319,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
     const lowestPer = svc.tiers.find(ti => ti.price === lowestPrice)?.per || "1K";
     const activeTier = isSel && selTier ? selTier : null;
     return (
-      <div onClick={() => pickService(svc)} className={`no-svc-card${isSel ? " no-svc-card-sel" : ""}${svc.ng ? " no-svc-ng" : ""}`} style={{ borderColor: isSel ? t.accent : t.cardBorder, background: isSel ? (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.035)") : svc.ng ? (dark ? "rgba(30,80,60,.15)" : "#e8f5ee") : t.cardBg, opacity: selSvc && !isSel ? (dark ? .4 : .45) : 1 }}>
+      <div onClick={() => pickService(svc)} className={`no-svc-card${isSel ? " no-svc-card-sel" : ""}${svc.ng ? " no-svc-ng" : ""}`} style={{ borderColor: isSel ? t.accent : t.cardBorder, background: isSel ? (dark ? "rgba(196,125,142,.1)" : "#fdf2f4") : svc.ng ? (dark ? "rgba(30,80,60,.15)" : "#e8f5ee") : t.cardBg, opacity: selSvc && !isSel ? (dark ? .35 : .4) : 1 }}>
         <div className="no-svc-card-top">
           <div className="no-svc-card-info">
             <div className="no-svc-card-name" style={{ color: svc.ng ? (dark ? "#5dcaa5" : "#0F6E56") : t.text }}>{svc.name}</div>

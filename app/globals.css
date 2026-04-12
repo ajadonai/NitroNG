@@ -495,10 +495,10 @@ input { font-family: inherit; }
 /* Service cards */
 .no-svc-list { display: flex; flex-direction: column; gap: 8px; }
 .no-svc-card { border-radius: 14px; padding: 16px 20px; cursor: pointer; border-width: 1px; border-style: solid; transition: all .15s ease; }
-.no-svc-card-sel { border-left-width: 3px; border-left-color: #c47d8e; box-shadow: 0 6px 24px rgba(196,125,142,.12); position: relative; z-index: 1; }
+.no-svc-card-sel { border-left-width: 3px; border-left-color: #c47d8e; border-color: #c47d8e; box-shadow: 0 4px 20px rgba(196,125,142,.15), 0 0 0 1px rgba(196,125,142,.1); position: relative; z-index: 1; }
 
 /* Prompt text when service expanded but no tier selected */
-.no-svc-prompt { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; font-weight: 500; padding: 8px 12px; border-radius: 8px; background: rgba(196,125,142,.04); }
+.no-svc-prompt { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; font-weight: 500; padding: 8px 12px; border-radius: 8px; background: rgba(196,125,142,.06); }
 .no-svc-ng { border-left-width: 3px !important; border-left-style: solid !important; border-left-color: #4ade80 !important; }
 .no-svc-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .no-svc-card-info { flex: 1; min-width: 0; }
