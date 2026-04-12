@@ -290,6 +290,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
 
   const [platGroup, setPlatGroup] = useState("Social Platforms");
   const [platExpanded, setPlatExpanded] = useState(false);
+  const [platWindowStart, setPlatWindowStart] = useState(0);
 
   /* Platforms in the selected group with services */
   const groupPlatforms = PLATFORM_GROUPS.find(g => g.label === platGroup)?.platforms || [];
@@ -415,21 +416,14 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
       {/* ═══ MOBILE/TABLET: 5 icon window + expandable grid ═══ */}
       <div className="no-mob-plat">
         <div className="no-mob-popular">
-          {(() => {
-            const idx = visiblePlatforms.findIndex(p => p.id === platform);
-            const total = visiblePlatforms.length;
-            const windowSize = Math.min(5, total);
-            let start = Math.max(0, idx - 2);
-            if (start + windowSize > total) start = Math.max(0, total - windowSize);
-            return visiblePlatforms.slice(start, start + windowSize).map(p => {
-              const isActive = platform === p.id;
-              return (
-                <button key={p.id} onClick={() => { setPlatform(p.id); setPlatExpanded(false); }} className={`no-mob-plat-btn${isActive ? " no-mob-plat-on" : ""}`} style={{ borderColor: isActive ? t.accent : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : (dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)"), color: isActive ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)") }}>
-                  <span className="no-mob-plat-icon">{p.icon}</span>
-                </button>
-              );
-            });
-          })()}
+          {visiblePlatforms.slice(platWindowStart, platWindowStart + 5).map(p => {
+            const isActive = platform === p.id;
+            return (
+              <button key={p.id} onClick={() => setPlatform(p.id)} className={`no-mob-plat-btn${isActive ? " no-mob-plat-on" : ""}`} style={{ borderColor: isActive ? t.accent : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : (dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)"), color: isActive ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)") }}>
+                <span className="no-mob-plat-icon">{p.icon}</span>
+              </button>
+            );
+          })}
         </div>
         {visiblePlatforms.length > 5 && (
           <button onClick={() => setPlatExpanded(!platExpanded)} className="no-mob-viewall" style={{ color: t.textMuted, borderColor: t.cardBorder }}>
@@ -439,10 +433,10 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
         {platExpanded && (
           <div className="no-mob-expanded" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.02)" : "rgba(0,0,0,.01)" }}>
             <div className="no-mob-expanded-grid">
-              {visiblePlatforms.map(p => {
+              {visiblePlatforms.map((p, i) => {
                 const isActive = platform === p.id;
                 return (
-                  <button key={p.id} onClick={() => { setPlatform(p.id); setPlatExpanded(false); }} className={`no-mob-plat-btn${isActive ? " no-mob-plat-on" : ""}`} style={{ borderColor: isActive ? t.accent : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : (dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)"), color: isActive ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)") }}>
+                  <button key={p.id} onClick={() => { setPlatform(p.id); const rowStart = Math.floor(i / 5) * 5; setPlatWindowStart(Math.min(rowStart, Math.max(0, visiblePlatforms.length - 5))); setPlatExpanded(false); }} className={`no-mob-plat-btn${isActive ? " no-mob-plat-on" : ""}`} style={{ borderColor: isActive ? t.accent : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : (dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.8)"), color: isActive ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)") }}>
                     <span className="no-mob-plat-icon">{p.icon}</span>
                   </button>
                 );
