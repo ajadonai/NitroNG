@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /verify/
+Disallow: /banned/
+Disallow: /maintenance/
+
+Sitemap: https://nitro.ng/sitemap.xml

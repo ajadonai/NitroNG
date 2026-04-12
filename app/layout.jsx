@@ -2,14 +2,59 @@ import './globals.css';
 import SentryInit from '@/components/sentry-init';
 
 export const metadata = {
-  title: 'Nitro — #1 SMM Panel in Nigeria',
-  description: 'Buy Instagram followers, TikTok views, YouTube subscribers and more. Instant delivery, real engagement, cheapest rates in Nigeria.',
+  title: {
+    default: 'Nitro — #1 SMM Panel in Nigeria',
+    template: '%s | Nitro',
+  },
+  description: 'Buy Instagram followers, TikTok views, YouTube subscribers and more. Instant delivery, real engagement, cheapest rates in Nigeria. 35+ platforms supported.',
+  keywords: ['SMM panel', 'buy Instagram followers Nigeria', 'buy TikTok views', 'YouTube subscribers', 'social media marketing', 'SMM panel Nigeria', 'buy followers', 'buy likes', 'Nigerian SMM', 'cheap followers', 'instant delivery'],
+  authors: [{ name: 'Nitro', url: 'https://nitro.ng' }],
+  creator: 'Nitro',
+  publisher: 'Nitro',
+  metadataBase: new URL('https://nitro.ng'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'Nitro — #1 SMM Panel in Nigeria',
+    description: 'Buy Instagram followers, TikTok views, YouTube subscribers and more. Instant delivery, real engagement, 35+ platforms.',
+    url: 'https://nitro.ng',
+    siteName: 'Nitro',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Nitro SMM Panel' }],
+    locale: 'en_NG',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Nitro — #1 SMM Panel in Nigeria',
+    description: 'Buy Instagram followers, TikTok views, YouTube subscribers and more. Instant delivery, real engagement.',
+    images: ['/og-image.png'],
+    creator: '@TheNitroNG',
+    site: '@TheNitroNG',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   icons: {
     icon: [
       { url: '/favicon.png', sizes: '32x32', type: 'image/png' },
       { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
     ],
     apple: '/apple-touch-icon.png',
+  },
+  manifest: '/manifest.json',
+  verification: {
+    // Add these when you set up Google Search Console and Bing Webmaster Tools
+    // google: 'your-google-verification-code',
+    // yandex: 'your-yandex-verification-code',
   },
 };
 
