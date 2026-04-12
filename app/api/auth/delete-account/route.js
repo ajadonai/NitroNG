@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getCurrentUser, clearUserCookie } from '@/lib/auth';
-import { cancelOrder } from '@/lib/mtp';
+import { cancelOrder, isProviderConfigured } from '@/lib/smm';
 import bcrypt from 'bcryptjs';
 
 export async function POST(req) {
@@ -22,14 +22,16 @@ export async function POST(req) {
     // Cancel active orders and refund
     const activeOrders = await prisma.order.findMany({
       where: { userId: user.id, status: { in: ['Pending', 'Processing'] } },
+      include: { service: { select: { provider: true } } },
     });
 
     const refundOps = [];
     let totalRefund = 0;
     for (const order of activeOrders) {
-      // Try to cancel on MTP (best effort, don't block deletion)
-      if (order.apiOrderId && process.env.MTP_API_KEY) {
-        try { await cancelOrder(order.apiOrderId); } catch {}
+      // Try to cancel on the correct provider (best effort, don't block deletion)
+      const provider = order.service?.provider || 'mtp';
+      if (order.apiOrderId && isProviderConfigured(provider)) {
+        try { await cancelOrder(provider, order.apiOrderId); } catch {}
       }
       refundOps.push(prisma.order.update({ where: { id: order.id }, data: { status: 'Cancelled' } }));
       refundOps.push(prisma.transaction.create({

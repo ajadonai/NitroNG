@@ -66,17 +66,20 @@ export async function POST(req) {
         } catch {}
         // Pay immediately only if enabled AND no min deposit required
         if (refEnabled && refMinDeposit <= 0) {
-          const ops = [
-            prisma.user.update({ where: { id: referrer.id }, data: { balance: { increment: referrerBonus } } }),
-            prisma.transaction.create({ data: { userId: referrer.id, type: 'referral', amount: referrerBonus, note: `Referral bonus: ${user.name} signed up` } }),
-          ];
-          if (inviteeBonus > 0) {
-            ops.push(
-              prisma.user.update({ where: { id: user.id }, data: { balance: { increment: inviteeBonus } } }),
-              prisma.transaction.create({ data: { userId: user.id, type: 'referral', amount: inviteeBonus, note: 'Welcome bonus from referral' } }),
-            );
-          }
-          await prisma.$transaction(ops);
+          const markerNote = `[ref-marker:${user.id}]`;
+          try {
+            await prisma.$transaction(async (tx) => {
+              // Double-check inside transaction to prevent race condition
+              const exists = await tx.transaction.findFirst({ where: { userId: user.id, type: 'referral', note: { contains: markerNote } } });
+              if (exists) return; // already paid by another request
+              await tx.user.update({ where: { id: referrer.id }, data: { balance: { increment: referrerBonus } } });
+              await tx.transaction.create({ data: { userId: referrer.id, type: 'referral', amount: referrerBonus, note: `Referral bonus: ${user.name} signed up` } });
+              if (inviteeBonus > 0) {
+                await tx.user.update({ where: { id: user.id }, data: { balance: { increment: inviteeBonus } } });
+              }
+              await tx.transaction.create({ data: { userId: user.id, type: 'referral', amount: inviteeBonus, note: `Welcome bonus from referral ${markerNote}` } });
+            });
+          } catch (txErr) { log.warn('Verify referral race', txErr.message); }
         }
         // If min deposit > 0, bonuses are deferred until first qualifying deposit
         // (handled in /api/payments/verify)
