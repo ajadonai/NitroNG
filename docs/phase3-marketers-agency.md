@@ -240,3 +240,14 @@ if (hostname === 'marketers.nitro.ng') {
 - Marketer ≠ referral. Referrals are one-time bonuses for casual users. Marketers are structured sales partners with recurring commissions.
 - Both roles can coexist: a marketer who recruits enough volume can upgrade to agency tier for wholesale pricing.
 - Anti-abuse: marketers cannot recruit themselves or existing users. Commission only on genuinely new signups that place orders.
+
+---
+
+## Also Deferred to Phase 3
+
+### API Management Page
+- Admin API page with test/sync for all providers (MTP, JAP, DaoSMM)
+- Multi-provider routing (JAP for Audiomack/Boomplay/Apple Music/WhatsApp, DaoSMM for Nigerian-specific)
+- Test + Sync buttons for each provider (currently only MTP has them)
+- Fix env var naming: DAOSMM_API_KEY, JAP_API_KEY
+- Provider URLs: JAP = justanotherpanel.com/api/v2, DaoSMM = daosmm.com/api/v2

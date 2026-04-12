@@ -11,7 +11,7 @@ export async function GET() {
     status: {
       mtp: !!process.env.MTP_API_KEY,
       jap: !!process.env.JAP_API_KEY,
-      dao: !!process.env.DAO_API_KEY,
+      dao: !!process.env.DAOSMM_API_KEY,
     },
   });
 }
