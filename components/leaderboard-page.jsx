@@ -186,7 +186,11 @@ export default function LeaderboardPage({ dark, t }) {
           {[1,2,3,4].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 48, borderRadius: 8, marginBottom: 6 }} />)}
         </div>
       ) : list.length === 0 ? (
-        <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>No data yet. Place orders to appear on the leaderboard!</div>
+        <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>
+          {tab === "spenders" && "No orders yet. Be the first to top the leaderboard!"}
+          {tab === "referrers" && "No referrals yet. Share your code to climb the ranks!"}
+          {tab === "active" && "No activity yet. Place your first order to get started!"}
+        </div>
       ) : <>
 
         {/* Your rank — desktop only (mobile shows it in the collapsible above) */}

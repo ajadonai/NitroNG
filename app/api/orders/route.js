@@ -99,12 +99,32 @@ export async function PATCH(req) {
 
       // Recalculate charge from current tier/service price (not the old order's charge)
       const currentSellPer1k = order.tier?.sellPer1k || order.service.sellPer1k;
-      const charge = Math.round((currentSellPer1k / 1000) * order.quantity);
+      let charge = Math.round((currentSellPer1k / 1000) * order.quantity);
       const cost = Math.round((order.service.costPer1k / 1000) * order.quantity);
 
       if (!charge || charge <= 0) {
         return Response.json({ error: 'Service pricing not configured' }, { status: 400 });
       }
+
+      // Apply loyalty discount to reorder
+      let reorderLoyaltyDiscount = 0;
+      try {
+        const loyaltyEnabledRow = await prisma.setting.findUnique({ where: { key: 'loyalty_enabled' } });
+        if (loyaltyEnabledRow?.value !== 'false') {
+          const ltRow = await prisma.setting.findUnique({ where: { key: 'loyalty_tiers' } });
+          if (ltRow) {
+            const tiers = JSON.parse(ltRow.value);
+            const spendAgg = await prisma.order.aggregate({ where: { userId: session.id, deletedAt: null }, _sum: { charge: true } });
+            const totalSpend = spendAgg._sum.charge || 0;
+            let userTier = tiers[0];
+            for (const t2 of tiers) { if (totalSpend >= t2.threshold) userTier = t2; }
+            if (userTier.discount > 0) {
+              reorderLoyaltyDiscount = Math.round(charge * (userTier.discount / 100));
+              charge = Math.max(1, charge - reorderLoyaltyDiscount); // floor at 1 kobo
+            }
+          }
+        }
+      } catch (err) { log.warn('Reorder loyalty discount', err.message); }
 
       const user = await prisma.user.findUnique({ where: { id: session.id } });
       if (user.balance < charge) {
@@ -256,7 +276,7 @@ export async function POST(req) {
           if (userTier.discount > 0) {
             loyaltyDiscount = Math.round(charge * (userTier.discount / 100));
             loyaltyTierName = userTier.name;
-            charge = charge - loyaltyDiscount;
+            charge = Math.max(1, charge - loyaltyDiscount); // floor at 1 kobo
           }
         }
       }

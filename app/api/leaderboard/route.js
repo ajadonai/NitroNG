@@ -165,7 +165,7 @@ export async function GET(req) {
       referrers: topReferrers,
       active: mostActive,
       yourRank: { spenders: yourSpenderRank, referrers: yourRefRank, active: yourActiveRank },
-      yourBadge: { name: yourBadge.name, color: yourBadge.color, discount: yourBadge.discount, perks: yourBadge.perks, totalOrders: yourTotalOrders, nextTier: nextTier ? { name: nextTier.name, color: nextTier.color, threshold: nextTier.threshold, remaining: Math.max(0, nextTier.threshold - yourTotalSpend) } : null },
+      yourBadge: { name: yourBadge.name, color: yourBadge.color, discount: yourBadge.discount, perks: yourBadge.perks, totalOrders: yourTotalOrders, nextTier: nextTier ? { name: nextTier.name, color: nextTier.color } : null },
       tiers,
       rewardAnnouncement,
       period,

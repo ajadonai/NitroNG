@@ -146,7 +146,7 @@ export async function GET() {
         badgeDiscount: badge.discount,
         badgePerks: badge.perks,
         totalOrders,
-        nextTier: nextTier ? { name: nextTier.name, color: nextTier.color, remaining: Math.max(0, nextTier.threshold - totalSpend) } : null,
+        nextTier: nextTier ? { name: nextTier.name, color: nextTier.color } : null,
       },
       orders: orders.map(o => ({
         id: o.orderId || o.id,
