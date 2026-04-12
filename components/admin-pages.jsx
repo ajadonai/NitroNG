@@ -8,6 +8,8 @@ import { fN, fD } from "../lib/format";
 /* ═══ PAYMENTS PAGE                       ═══ */
 /* ═══════════════════════════════════════════ */
 export function AdminPaymentsPage({ dark, t }) {
+  const confirm = useConfirm();
+  const [tab, setTab] = useState("pending");
   const [gateways, setGateways] = useState([]);
   const [loading, setLoading] = useState(true);
   const [configuring, setConfiguring] = useState(null);
@@ -35,7 +37,6 @@ export function AdminPaymentsPage({ dark, t }) {
   };
 
   const openConfig = (g) => {
-    // Pre-fill with empty strings for each field (masked values aren't editable)
     const fields = {};
     const defaultFields = { flutterwave: ["secretKey", "publicKey"], alatpay: ["secretKey", "publicKey"], monnify: ["apiKey", "secretKey", "contractCode"], korapay: ["secretKey", "publicKey"], crypto: ["apiKey"], manual: ["bankName", "accountNumber", "accountName"] };
     (defaultFields[g.id] || ["secretKey", "publicKey"]).forEach(k => { fields[k] = ""; });
@@ -45,14 +46,29 @@ export function AdminPaymentsPage({ dark, t }) {
 
   const saveConfig = async () => {
     if (!configuring) return;
-    // Only send non-empty fields
     const nonEmpty = Object.fromEntries(Object.entries(configFields).filter(([, v]) => v.trim()));
-    if (Object.keys(nonEmpty).length === 0) { setMsg({ type: "error", text: "Enter at least one key" }); return; }
+    if (Object.keys(nonEmpty).length === 0) { setMsg({ type: "error", text: "Enter at least one field" }); return; }
     setSaving(true);
     const res = await fetch("/api/admin/payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "configure", gatewayId: configuring.id, fields: nonEmpty }) });
-    if (res.ok) { setMsg({ type: "success", text: `${configuring.name} keys saved` }); setConfiguring(null); refresh(); }
+    if (res.ok) { setMsg({ type: "success", text: `${configuring.name} saved` }); setConfiguring(null); refresh(); }
     else { const d = await res.json(); setMsg({ type: "error", text: d.error || "Save failed" }); }
     setSaving(false);
+  };
+
+  const approveManual = async (tx) => {
+    const ok = await confirm({ title: "Approve deposit?", message: `Credit ₦${tx.amount.toLocaleString()} to ${tx.user} (${tx.email})?\nRef: ${tx.reference}${tx.senderRef ? `\nBank ref: ${tx.senderRef}` : ""}`, confirmText: "Approve", danger: false });
+    if (!ok) return;
+    const res = await fetch("/api/admin/payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "approve_manual", gatewayId: tx.id }) });
+    if (res.ok) { setMsg({ type: "success", text: `₦${tx.amount.toLocaleString()} approved for ${tx.user}` }); refresh(); }
+    else { const d = await res.json(); setMsg({ type: "error", text: d.error || "Failed" }); }
+  };
+
+  const rejectManual = async (tx) => {
+    const ok = await confirm({ title: "Reject deposit?", message: `Reject ₦${tx.amount.toLocaleString()} from ${tx.user}? This cannot be undone.`, confirmText: "Reject", danger: true });
+    if (!ok) return;
+    const res = await fetch("/api/admin/payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reject_manual", gatewayId: tx.id }) });
+    if (res.ok) { setMsg({ type: "success", text: "Deposit rejected" }); refresh(); }
+    else { const d = await res.json(); setMsg({ type: "error", text: d.error || "Failed" }); }
   };
 
   const FIELD_LABELS = { secretKey: "Secret Key", publicKey: "Public Key", apiKey: "API Key", contractCode: "Contract Code", bankName: "Bank Name", accountNumber: "Account Number", accountName: "Account Name" };
@@ -60,14 +76,18 @@ export function AdminPaymentsPage({ dark, t }) {
   return (
     <>
       <div className="adm-header">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <div className="adm-title" style={{ color: t.text }}>Payments</div>
-            <div className="adm-subtitle" style={{ color: t.textMuted }}>Configure payment gateways. Enable and add API keys to accept payments.</div>
-          </div>
-          <button onClick={() => setAddModal(true)} className="adm-btn-primary" style={{ flexShrink: 0 }}>+ Add Gateway</button>
-        </div>
+        <div className="adm-title" style={{ color: t.text }}>Payments</div>
+        <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage deposits and payment gateways</div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
+      </div>
+
+      {/* Tab switcher */}
+      <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: `1px solid ${t.cardBorder}` }}>
+        <button onClick={() => setTab("pending")} style={{ padding: "8px 18px", fontSize: 14, fontWeight: tab === "pending" ? 600 : 500, color: tab === "pending" ? t.accent : t.textMuted, background: "none", border: "none", borderBottom: `2px solid ${tab === "pending" ? t.accent : "transparent"}`, marginBottom: -1, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
+          Pending Payments
+          {pendingManual.length > 0 && <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 10, background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent, fontWeight: 700 }}>{pendingManual.length}</span>}
+        </button>
+        <button onClick={() => setTab("gateways")} style={{ padding: "8px 18px", fontSize: 14, fontWeight: tab === "gateways" ? 600 : 500, color: tab === "gateways" ? t.accent : t.textMuted, background: "none", border: "none", borderBottom: `2px solid ${tab === "gateways" ? t.accent : "transparent"}`, marginBottom: -1, cursor: "pointer", fontFamily: "inherit" }}>Gateway Config</button>
       </div>
 
       {msg && <div style={{ padding: "10px 14px", borderRadius: 8, marginBottom: 12, background: msg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: msg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), fontSize: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -75,56 +95,68 @@ export function AdminPaymentsPage({ dark, t }) {
         <button onClick={() => setMsg(null)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", fontSize: 14 }}>✕</button>
       </div>}
 
-      {loading ? <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>Loading gateways...</div> : (
-        <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
-          {gateways.map((g, i) => (
-            <div key={g.id} className="adm-list-row" style={{ borderBottom: i < gateways.length - 1 ? `1px solid ${t.cardBorder}` : "none", flexWrap: "wrap", gap: 10 }}>
-              <div style={{ flex: 1, minWidth: 160 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                  <span style={{ fontSize: 15, fontWeight: 500, color: t.text }}>{g.name}</span>
-                  <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, fontWeight: 600, background: g.enabled ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"), color: g.enabled ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }}>{g.enabled ? "Active" : "Disabled"}</span>
-                  {g.hasKeys && <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, fontWeight: 600, background: dark ? "rgba(96,165,250,.08)" : "rgba(59,130,246,.06)", color: dark ? "#60a5fa" : "#2563eb" }}>Keys set</span>}
-                </div>
-                <div style={{ fontSize: 13, color: t.textMuted }}>{g.desc}</div>
-              </div>
-              <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                <button onClick={() => toggle(g.id, !g.enabled)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: g.enabled ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{g.enabled ? "Disable" : "Enable"}</button>
-                <button onClick={() => openConfig(g)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>Configure</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Pending manual deposits */}
-      {pendingManual.length > 0 && (
-        <div style={{ marginTop: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: t.textMuted, marginBottom: 10 }}>Pending Bank Transfers ({pendingManual.length})</div>
+      {/* ═══ PENDING PAYMENTS TAB ═══ */}
+      {tab === "pending" && (
+        loading ? <div>{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 60, borderRadius: 8, marginBottom: 6 }} />)}</div> :
+        pendingManual.length === 0 ? (
+          <div style={{ padding: "60px 20px", textAlign: "center" }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>✓</div>
+            <div style={{ fontSize: 16, fontWeight: 500, color: t.text, marginBottom: 4 }}>No pending transfers</div>
+            <div style={{ fontSize: 14, color: t.textMuted }}>Manual bank transfer deposits will appear here for approval</div>
+          </div>
+        ) : (
           <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
             {pendingManual.map((tx, i) => (
               <div key={tx.id} className="adm-list-row" style={{ borderBottom: i < pendingManual.length - 1 ? `1px solid ${t.cardBorder}` : "none", gap: 10, flexWrap: "wrap" }}>
                 <div style={{ flex: 1, minWidth: 160 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#6ee7b7" : "#059669" }}>{fN(tx.amount)}</div>
-                  <div style={{ fontSize: 13, color: t.text, marginTop: 2 }}>{tx.user} · {tx.email}</div>
-                  <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>{tx.reference} · {new Date(tx.date).toLocaleDateString("en-NG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: dark ? "#6ee7b7" : "#059669" }}>{fN(tx.amount)}</span>
+                    <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, fontWeight: 600, background: tx.confirmed ? (dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.04)") : (dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.04)"), color: tx.confirmed ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fbbf24" : "#d97706") }}>{tx.confirmed ? "User confirmed" : "Awaiting transfer"}</span>
+                  </div>
+                  <div style={{ fontSize: 14, color: t.text }}>{tx.user} · <span style={{ color: t.textMuted }}>{tx.email}</span></div>
+                  <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>
+                    Ref: <span className="m" style={{ color: t.text }}>{tx.reference}</span>
+                    {tx.senderRef && <> · Bank ref: <span style={{ color: t.accent }}>{tx.senderRef}</span></>}
+                    {" · "}{new Date(tx.date).toLocaleDateString("en-NG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, fontWeight: 600, background: tx.confirmed ? (dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.04)") : (dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.04)"), color: tx.confirmed ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fbbf24" : "#d97706") }}>{tx.confirmed ? "User confirmed" : "Awaiting"}</span>
-                  <button onClick={async () => {
-                    const res = await fetch("/api/admin/payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "approve_manual", gatewayId: tx.id }) });
-                    if (res.ok) { setMsg({ type: "success", text: `₦${tx.amount.toLocaleString()} approved` }); refresh(); }
-                    else { const d = await res.json(); setMsg({ type: "error", text: d.error || "Failed" }); }
-                  }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(110,231,183,.2)" : "rgba(5,150,105,.15)", color: dark ? "#6ee7b7" : "#059669" }}>Approve</button>
-                  <button onClick={async () => {
-                    const res = await fetch("/api/admin/payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reject_manual", gatewayId: tx.id }) });
-                    if (res.ok) { setMsg({ type: "success", text: "Deposit rejected" }); refresh(); }
-                    else { const d = await res.json(); setMsg({ type: "error", text: d.error || "Failed" }); }
-                  }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(220,38,38,.2)" : "rgba(220,38,38,.1)", color: dark ? "#fca5a5" : "#dc2626" }}>Reject</button>
+                  <button onClick={() => approveManual(tx)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(110,231,183,.2)" : "rgba(5,150,105,.15)", color: dark ? "#6ee7b7" : "#059669" }}>Approve</button>
+                  <button onClick={() => rejectManual(tx)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(220,38,38,.2)" : "rgba(220,38,38,.1)", color: dark ? "#fca5a5" : "#dc2626" }}>Reject</button>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        )
+      )}
+
+      {/* ═══ GATEWAY CONFIG TAB ═══ */}
+      {tab === "gateways" && (
+        <>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+            <button onClick={() => setAddModal(true)} className="adm-btn-primary" style={{ flexShrink: 0 }}>+ Add Gateway</button>
+          </div>
+          {loading ? <div>{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 52, borderRadius: 8, marginBottom: 6 }} />)}</div> : (
+            <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
+              {gateways.map((g, i) => (
+                <div key={g.id} className="adm-list-row" style={{ borderBottom: i < gateways.length - 1 ? `1px solid ${t.cardBorder}` : "none", flexWrap: "wrap", gap: 10 }}>
+                  <div style={{ flex: 1, minWidth: 160 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                      <span style={{ fontSize: 15, fontWeight: 500, color: t.text }}>{g.name}</span>
+                      <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, fontWeight: 600, background: g.enabled ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"), color: g.enabled ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }}>{g.enabled ? "Active" : "Disabled"}</span>
+                      {g.hasKeys && <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, fontWeight: 600, background: dark ? "rgba(96,165,250,.08)" : "rgba(59,130,246,.06)", color: dark ? "#60a5fa" : "#2563eb" }}>Keys set</span>}
+                    </div>
+                    <div style={{ fontSize: 13, color: t.textMuted }}>{g.desc}</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                    <button onClick={() => toggle(g.id, !g.enabled)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: g.enabled ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{g.enabled ? "Disable" : "Enable"}</button>
+                    <button onClick={() => openConfig(g)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>Configure</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
       {configuring && (
         <div onClick={() => setConfiguring(null)} style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,.5)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>

@@ -282,7 +282,7 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
                 <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 42, borderRadius: 10 }} />
               ) : (
                 <select value={method} onChange={e => setMethod(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: dark ? "rgba(255,255,255,.04)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: t.text, fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", outline: "none", appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${dark ? "%23666" : "%23999"}' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: 32 }}>
-                  {gateways.length > 0 ? gateways.map(g => <option key={g.id} value={g.id}>{g.name}</option>) : <option value="">Select payment method</option>}
+                  {gateways.length > 0 ? gateways.map(g => <option key={g.id} value={g.id}>{g.name}{g.id === "manual" ? " (⏳ Slower)" : ""}</option>) : <option value="">Select payment method</option>}
                 </select>
               )}
 
@@ -406,7 +406,7 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
               <div style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: t.textMuted, marginBottom: 6 }}>Payment method</div>
               {gateways.length > 0 ? (
                 <select value={method} onChange={e => setMethod(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: dark ? "rgba(255,255,255,.04)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: t.text, fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", outline: "none", appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${dark ? "%23666" : "%23999"}' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: 32 }}>
-                  {gateways.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                  {gateways.map(g => <option key={g.id} value={g.id}>{g.name}{g.id === "manual" ? " (⏳ Slower)" : ""}</option>)}
                 </select>
               ) : (
                 <select disabled style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: dark ? "rgba(255,255,255,.04)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)"}`, color: t.textMuted, fontSize: 14, fontFamily: "'Outfit',sans-serif", outline: "none", appearance: "none" }}>
@@ -497,14 +497,19 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
                 <div style={{ textAlign: "center", padding: "20px 0" }}>
                   <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
                   <div style={{ fontSize: 18, fontWeight: 600, color: t.text, marginBottom: 6 }}>Transfer Submitted</div>
-                  <div style={{ fontSize: 14, color: t.textMuted, lineHeight: 1.5 }}>We'll verify your payment and credit your wallet. This usually takes 5-15 minutes during business hours.</div>
+                  <div style={{ fontSize: 14, color: t.textMuted, lineHeight: 1.5 }}>We'll verify your payment and credit your wallet. This may take 15-60 minutes during business hours.</div>
                 </div>
                 <button onClick={() => setManualModal(null)} style={{ width: "100%", padding: "12px 0", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Done</button>
               </>
             ) : (
               <>
                 <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 4 }}>Bank Transfer</div>
-                <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 16 }}>Transfer exactly {fN(manualModal.amount)} to the account below</div>
+                <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 10 }}>Transfer exactly {fN(manualModal.amount)} to the account below</div>
+
+                {/* Slow warning */}
+                <div style={{ padding: "8px 12px", borderRadius: 8, background: dark ? "rgba(251,191,36,.04)" : "rgba(217,119,6,.03)", border: `1px solid ${dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.08)"}`, marginBottom: 14, fontSize: 12, color: dark ? "#fbbf24" : "#d97706", lineHeight: 1.5 }}>
+                  ⏳ Manual transfers are verified by our team. This may take 15-60 minutes during business hours.
+                </div>
 
                 {/* Bank details */}
                 <div style={{ padding: 14, borderRadius: 10, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.02)", border: `1px solid ${t.cardBorder}`, marginBottom: 14 }}>
@@ -525,15 +530,18 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
                   </div>
                 </div>
 
+                {/* Reference — mandatory */}
+                <div style={{ padding: "10px 14px", borderRadius: 8, background: dark ? "rgba(196,125,142,.04)" : "rgba(196,125,142,.03)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)"}`, marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: t.accent, marginBottom: 4 }}>Use this as your transfer narration</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span className="m" style={{ fontSize: 16, fontWeight: 700, color: t.text, letterSpacing: 1 }}>{manualModal.reference}</span>
+                    <button onClick={() => navigator.clipboard.writeText(manualModal.reference)} style={{ padding: "3px 10px", borderRadius: 6, border: `1px solid ${t.accent}`, background: "none", color: t.accent, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Copy</button>
+                  </div>
+                </div>
+
                 {/* Amount reminder */}
                 <div style={{ padding: "10px 14px", borderRadius: 8, background: dark ? "rgba(110,231,183,.04)" : "rgba(5,150,105,.03)", border: `1px solid ${dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)"}`, marginBottom: 14, textAlign: "center" }}>
                   <span style={{ fontSize: 13, color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>Send exactly {fN(manualModal.amount)}</span>
-                </div>
-
-                {/* Transfer reference */}
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Your transfer reference / narration (optional)</label>
-                  <input value={manualRef} onChange={e => setManualRef(e.target.value)} placeholder="e.g. your bank transfer reference" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
                 </div>
 
                 <div style={{ display: "flex", gap: 8 }}>
@@ -541,7 +549,7 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
                   <button onClick={async () => {
                     setManualSubmitting(true);
                     try {
-                      const res = await fetch("/api/payments/manual", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: manualModal.reference, senderRef: manualRef }) });
+                      const res = await fetch("/api/payments/manual", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: manualModal.reference, senderRef: manualModal.reference }) });
                       if (res.ok) setManualDone(true);
                       else { const d = await res.json(); setPayError(d.error || "Failed"); }
                     } catch { setPayError("Network error"); }

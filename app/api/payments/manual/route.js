@@ -15,6 +15,21 @@ export async function POST(req) {
     const amountNum = Number(amount);
     if (!amountNum || amountNum < 500) return Response.json({ error: 'Minimum deposit is ₦500' }, { status: 400 });
 
+    // Check for existing pending manual transfer
+    const existingPending = await prisma.transaction.findFirst({
+      where: { userId: user.id, method: 'manual', status: 'Pending' },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (existingPending) {
+      // If older than 24 hours, auto-expire it
+      const ageMs = Date.now() - new Date(existingPending.createdAt).getTime();
+      if (ageMs > 24 * 60 * 60 * 1000) {
+        await prisma.transaction.update({ where: { id: existingPending.id }, data: { status: 'Failed', note: existingPending.note + ' [expired]' } });
+      } else {
+        return Response.json({ error: 'You already have a pending bank transfer. Please complete or wait for it to expire before creating another.' }, { status: 400 });
+      }
+    }
+
     // Get bank details from admin config
     const setting = await prisma.setting.findUnique({ where: { key: 'gateway_manual' } });
     if (!setting) return Response.json({ error: 'Bank transfer not configured' }, { status: 503 });

@@ -291,7 +291,7 @@ function NotifDropdown({ orders, txs, dark, t, onClose, readIds, setReadIds, cle
       color: dark ? "#e0a458" : "#d97706",
       icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
     })),
-    ...txs.filter(tx => tx.type === "deposit").map(tx => ({
+    ...txs.filter(tx => tx.type === "deposit" && tx.status === "Completed").map(tx => ({
       id: `dep-${tx.id || tx.reference}`, type: "deposit", title: "Funds added",
       desc: `${fN(tx.amount)} added via ${tx.method || "Paystack"}`,
       time: tx.date ? fD(tx.date) : "", ts: tx.date ? new Date(tx.date) : null,

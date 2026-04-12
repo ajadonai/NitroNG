@@ -71,7 +71,7 @@ export async function GET() {
       hasKeys: Object.values(g.fields).some(v => v && v.length > 4),
     }));
 
-    return Response.json({ gateways: masked, pendingManual: pendingManual.map(tx => ({ id: tx.id, amount: tx.amount / 100, reference: tx.reference, note: tx.note, date: tx.createdAt.toISOString(), user: tx.user ? `${tx.user.firstName || tx.user.name || ''} ${tx.user.lastName || ''}`.trim() : 'Unknown', email: tx.user?.email || '', confirmed: tx.note?.includes('[user_confirmed') })) });
+    return Response.json({ gateways: masked, pendingManual: pendingManual.map(tx => { const refMatch = tx.note?.match(/\[user_confirmed:?([^\]]*)\]/); return { id: tx.id, amount: tx.amount / 100, reference: tx.reference, note: tx.note, date: tx.createdAt.toISOString(), user: tx.user ? `${tx.user.firstName || tx.user.name || ''} ${tx.user.lastName || ''}`.trim() : 'Unknown', email: tx.user?.email || '', confirmed: tx.note?.includes('[user_confirmed'), senderRef: refMatch?.[1] || null }; }) });
   } catch (err) {
     log.error('Admin Payments GET', err.message);
     return Response.json({ error: 'Failed to load gateways' }, { status: 500 });
