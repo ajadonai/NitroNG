@@ -57,9 +57,9 @@ export const PLATFORM_GROUPS = [
 export const PLATFORMS = PLATFORM_GROUPS.flatMap(g => g.platforms);
 
 const TS = {
-  Budget: { bg: "#fef7ed", border: "#e8d5b8", text: "#854F0B", bgD: "#1f1a10", borderD: "#3d3020", label: "💰" },
-  Standard: { bg: "#eef4fb", border: "#b8d0e8", text: "#185FA5", bgD: "#101828", borderD: "#1e3050", label: "⚡" },
-  Premium: { bg: "#f5eef5", border: "#d4b8d4", text: "#534AB7", bgD: "#1a1028", borderD: "#302050", label: "👑" },
+  Budget: { bg: "#fef7ed", border: "#e8d5b8", text: "#854F0B", bgD: "#2d2210", borderD: "#5a4020", label: "💰" },
+  Standard: { bg: "#eef4fb", border: "#b8d0e8", text: "#185FA5", bgD: "#0f1e30", borderD: "#1e4070", label: "⚡" },
+  Premium: { bg: "#f5eef5", border: "#d4b8d4", text: "#534AB7", bgD: "#221535", borderD: "#3d2060", label: "👑" },
 };
 
 
@@ -336,7 +336,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
         const s = TS[tier.tier];
         const isSel = selTier?.tier === tier.tier && selSvc?.id === svc.id;
         return (
-          <button key={tier.tier} onClick={e => pickTier(tier, e)} className={`no-tier-chip${isSel ? " no-tier-chip-sel" : ""}`} style={{ background: isSel ? (dark ? s.bgD : s.bg) : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"), color: s.text, borderColor: isSel ? s.text : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)") }}>
+          <button key={tier.tier} onClick={e => pickTier(tier, e)} className={`no-tier-chip${isSel ? " no-tier-chip-sel" : ""}`} style={{ background: dark ? s.bgD : s.bg, color: s.text, borderColor: isSel ? s.text : (dark ? s.borderD : s.border) }}>
             {s.label} {tier.tier} · ₦{tier.price.toLocaleString()}
           </button>
         );

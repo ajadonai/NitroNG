@@ -505,9 +505,10 @@ input { font-family: inherit; }
 .no-tier-badge { font-size: 12px; padding: 2px 7px; border-radius: 4px; font-weight: 600; }
 
 /* Tier chips */
-.no-tier-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px; }
-.no-tier-chip { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border-width: 1px; border-style: solid; background: none; font-family: inherit; }
-.no-tier-chip-sel { box-shadow: 0 0 0 1.5px #c47d8e; }
+.no-tier-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.no-tier-chip { padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border-width: 1.5px; border-style: solid; font-family: inherit; transition: all .15s ease; }
+.no-tier-chip:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.no-tier-chip-sel { border-width: 2px; box-shadow: 0 2px 8px rgba(0,0,0,.2); transform: translateY(-1px); }
 
 /* Tier detail row */
 .no-tier-detail { margin-top: 10px; padding: 12px 14px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-width: 1px; border-style: solid; }
