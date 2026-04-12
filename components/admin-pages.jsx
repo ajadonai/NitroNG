@@ -16,10 +16,12 @@ export function AdminPaymentsPage({ dark, t }) {
   const [msg, setMsg] = useState(null);
   const [addModal, setAddModal] = useState(false);
   const [newGw, setNewGw] = useState({ id: "", name: "", desc: "" });
+  const [pendingManual, setPendingManual] = useState([]);
 
   const refresh = () => {
     fetch("/api/admin/payments").then(r => r.json()).then(d => {
       if (d.gateways) setGateways(d.gateways);
+      if (d.pendingManual) setPendingManual(d.pendingManual);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
@@ -94,7 +96,36 @@ export function AdminPaymentsPage({ dark, t }) {
         </div>
       )}
 
-      {/* Configure modal */}
+      {/* Pending manual deposits */}
+      {pendingManual.length > 0 && (
+        <div style={{ marginTop: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: t.textMuted, marginBottom: 10 }}>Pending Bank Transfers ({pendingManual.length})</div>
+          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
+            {pendingManual.map((tx, i) => (
+              <div key={tx.id} className="adm-list-row" style={{ borderBottom: i < pendingManual.length - 1 ? `1px solid ${t.cardBorder}` : "none", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ flex: 1, minWidth: 160 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: dark ? "#6ee7b7" : "#059669" }}>{fN(tx.amount)}</div>
+                  <div style={{ fontSize: 13, color: t.text, marginTop: 2 }}>{tx.user} · {tx.email}</div>
+                  <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>{tx.reference} · {new Date(tx.date).toLocaleDateString("en-NG", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, fontWeight: 600, background: tx.confirmed ? (dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.04)") : (dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.04)"), color: tx.confirmed ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fbbf24" : "#d97706") }}>{tx.confirmed ? "User confirmed" : "Awaiting"}</span>
+                  <button onClick={async () => {
+                    const res = await fetch("/api/admin/payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "approve_manual", gatewayId: tx.id }) });
+                    if (res.ok) { setMsg({ type: "success", text: `₦${tx.amount.toLocaleString()} approved` }); refresh(); }
+                    else { const d = await res.json(); setMsg({ type: "error", text: d.error || "Failed" }); }
+                  }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(110,231,183,.2)" : "rgba(5,150,105,.15)", color: dark ? "#6ee7b7" : "#059669" }}>Approve</button>
+                  <button onClick={async () => {
+                    const res = await fetch("/api/admin/payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reject_manual", gatewayId: tx.id }) });
+                    if (res.ok) { setMsg({ type: "success", text: "Deposit rejected" }); refresh(); }
+                    else { const d = await res.json(); setMsg({ type: "error", text: d.error || "Failed" }); }
+                  }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(220,38,38,.2)" : "rgba(220,38,38,.1)", color: dark ? "#fca5a5" : "#dc2626" }}>Reject</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {configuring && (
         <div onClick={() => setConfiguring(null)} style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,.5)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
           <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 440, background: dark ? "#111728" : "#fff", borderRadius: 16, padding: 24, border: `1px solid ${t.cardBorder}`, boxShadow: "0 20px 60px rgba(0,0,0,.3)" }}>

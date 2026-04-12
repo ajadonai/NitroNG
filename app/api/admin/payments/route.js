@@ -55,6 +55,13 @@ export async function GET() {
 
     const gateways = await getGateways();
 
+    // Get pending manual deposits
+    const pendingManual = await prisma.transaction.findMany({
+      where: { method: 'manual', status: 'Pending' },
+      orderBy: { createdAt: 'desc' },
+      include: { user: { select: { name: true, firstName: true, lastName: true, email: true } } },
+    });
+
     // Mask secret keys for display (show last 4 chars)
     const masked = gateways.map(g => ({
       ...g,
@@ -64,7 +71,7 @@ export async function GET() {
       hasKeys: Object.values(g.fields).some(v => v && v.length > 4),
     }));
 
-    return Response.json({ gateways: masked });
+    return Response.json({ gateways: masked, pendingManual: pendingManual.map(tx => ({ id: tx.id, amount: tx.amount / 100, reference: tx.reference, note: tx.note, date: tx.createdAt.toISOString(), user: tx.user ? `${tx.user.firstName || tx.user.name || ''} ${tx.user.lastName || ''}`.trim() : 'Unknown', email: tx.user?.email || '', confirmed: tx.note?.includes('[user_confirmed') })) });
   } catch (err) {
     log.error('Admin Payments GET', err.message);
     return Response.json({ error: 'Failed to load gateways' }, { status: 500 });
@@ -136,6 +143,51 @@ export async function POST(req) {
         update: { value: JSON.stringify(updated) },
         create: { key: `gateway_${gatewayId}`, value: JSON.stringify(updated) },
       });
+      return Response.json({ success: true });
+    }
+
+    if (action === 'approve_manual') {
+      const { transactionId } = await req.json().catch(() => ({})) || {};
+      const txId = transactionId || gatewayId; // gatewayId reused for txId here
+      const tx = await prisma.transaction.findUnique({ where: { id: txId } });
+      if (!tx || tx.method !== 'manual' || tx.status !== 'Pending') return Response.json({ error: 'Transaction not found or already processed' }, { status: 404 });
+
+      await prisma.$transaction(async (db) => {
+        await db.transaction.update({ where: { id: txId }, data: { status: 'Completed', note: tx.note.replace(/\[user_confirmed[^\]]*\]|\[awaiting_confirmation\]/, `[approved_by:${admin.name}]`) } });
+        await db.user.update({ where: { id: tx.userId }, data: { balance: { increment: tx.amount } } });
+      });
+
+      // Check for coupon bonus
+      if (tx.note?.includes('[coupon:')) {
+        try {
+          const couponMatch = tx.note.match(/\[coupon:([^\]]+)\]/);
+          if (couponMatch) {
+            const cSetting = await prisma.setting.findUnique({ where: { key: 'coupons' } });
+            if (cSetting) {
+              const coupons = JSON.parse(cSetting.value);
+              const coupon = coupons.find(c => c.id === couponMatch[1]);
+              if (coupon) {
+                const bonus = coupon.type === 'percent' ? Math.round(tx.amount * coupon.value / 100) : coupon.value * 100;
+                if (bonus > 0) {
+                  await prisma.user.update({ where: { id: tx.userId }, data: { balance: { increment: bonus } } });
+                  await prisma.transaction.create({ data: { userId: tx.userId, type: 'bonus', amount: bonus, method: 'coupon', status: 'Completed', reference: `COUPON-${tx.reference}`, note: `Coupon bonus on manual deposit` } });
+                }
+              }
+            }
+          }
+        } catch {}
+      }
+
+      await logActivity(admin.name, `Approved manual deposit ₦${(tx.amount / 100).toLocaleString()} for user ${tx.userId}`, 'payment');
+      return Response.json({ success: true });
+    }
+
+    if (action === 'reject_manual') {
+      const txId = gatewayId;
+      const tx = await prisma.transaction.findUnique({ where: { id: txId } });
+      if (!tx || tx.method !== 'manual' || tx.status !== 'Pending') return Response.json({ error: 'Transaction not found or already processed' }, { status: 404 });
+      await prisma.transaction.update({ where: { id: txId }, data: { status: 'Failed', note: tx.note.replace(/\[user_confirmed[^\]]*\]|\[awaiting_confirmation\]/, `[rejected_by:${admin.name}]`) } });
+      await logActivity(admin.name, `Rejected manual deposit ₦${(tx.amount / 100).toLocaleString()} for user ${tx.userId}`, 'payment');
       return Response.json({ success: true });
     }
 

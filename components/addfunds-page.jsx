@@ -23,9 +23,15 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
   const [gatewaysLoading, setGatewaysLoading] = useState(true);
 
   /* Crypto payment modal */
-  const [cryptoModal, setCryptoModal] = useState(null); // { payAddress, payAmount, payCurrency, reference, amountUsd, amountNgn, expiresAt }
-  const [cryptoStatus, setCryptoStatus] = useState(null); // 'Pending' | 'Confirming' | 'Completed' | 'Canceled'
+  const [cryptoModal, setCryptoModal] = useState(null);
+  const [cryptoStatus, setCryptoStatus] = useState(null);
   const [cryptoPolling, setCryptoPolling] = useState(false);
+
+  /* Manual bank transfer modal */
+  const [manualModal, setManualModal] = useState(null); // { bankName, accountNumber, accountName, reference, amount }
+  const [manualRef, setManualRef] = useState("");
+  const [manualSubmitting, setManualSubmitting] = useState(false);
+  const [manualDone, setManualDone] = useState(false);
 
   // Fetch enabled gateways from API
   useEffect(() => {
@@ -106,6 +112,27 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
       } catch (err) {
         setPayError(err?.name === "TimeoutError" ? "Request timed out." : "Network error.");
       }
+      setLoading(false);
+      return;
+    }
+
+    // ═══ MANUAL BANK TRANSFER ═══
+    if (method === "manual") {
+      try {
+        const res = await fetch("/api/payments/manual", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: numAmount, couponId: couponApplied?.couponId || undefined }),
+        });
+        const data = await res.json();
+        if (data.bankName) {
+          setManualModal(data);
+          setManualDone(false);
+          setManualRef("");
+        } else {
+          setPayError(data.error || "Failed to create transfer request");
+        }
+      } catch { setPayError("Network error"); }
       setLoading(false);
       return;
     }
@@ -455,6 +482,72 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
                 </div>
 
                 <button onClick={() => setCryptoModal(null)} style={{ width: "100%", padding: "10px 0", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: "none", color: t.textMuted, fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ MANUAL BANK TRANSFER MODAL ═══ */}
+      {manualModal && (
+        <div onClick={() => { if (manualDone) setManualModal(null); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 420, border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}`, boxShadow: "0 20px 60px rgba(0,0,0,.3)" }}>
+            {manualDone ? (
+              <>
+                <div style={{ textAlign: "center", padding: "20px 0" }}>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
+                  <div style={{ fontSize: 18, fontWeight: 600, color: t.text, marginBottom: 6 }}>Transfer Submitted</div>
+                  <div style={{ fontSize: 14, color: t.textMuted, lineHeight: 1.5 }}>We'll verify your payment and credit your wallet. This usually takes 5-15 minutes during business hours.</div>
+                </div>
+                <button onClick={() => setManualModal(null)} style={{ width: "100%", padding: "12px 0", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Done</button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 4 }}>Bank Transfer</div>
+                <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 16 }}>Transfer exactly {fN(manualModal.amount)} to the account below</div>
+
+                {/* Bank details */}
+                <div style={{ padding: 14, borderRadius: 10, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.02)", border: `1px solid ${t.cardBorder}`, marginBottom: 14 }}>
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: t.textMuted, marginBottom: 2 }}>Bank</div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: t.text }}>{manualModal.bankName}</div>
+                  </div>
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: t.textMuted, marginBottom: 2 }}>Account Number</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span className="m" style={{ fontSize: 18, fontWeight: 700, color: t.text, letterSpacing: 1 }}>{manualModal.accountNumber}</span>
+                      <button onClick={() => navigator.clipboard.writeText(manualModal.accountNumber)} style={{ padding: "3px 10px", borderRadius: 6, border: `1px solid ${t.accent}`, background: "none", color: t.accent, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Copy</button>
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: t.textMuted, marginBottom: 2 }}>Account Name</div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: t.text }}>{manualModal.accountName}</div>
+                  </div>
+                </div>
+
+                {/* Amount reminder */}
+                <div style={{ padding: "10px 14px", borderRadius: 8, background: dark ? "rgba(110,231,183,.04)" : "rgba(5,150,105,.03)", border: `1px solid ${dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)"}`, marginBottom: 14, textAlign: "center" }}>
+                  <span style={{ fontSize: 13, color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>Send exactly {fN(manualModal.amount)}</span>
+                </div>
+
+                {/* Transfer reference */}
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ fontSize: 13, color: t.textMuted, display: "block", marginBottom: 4 }}>Your transfer reference / narration (optional)</label>
+                  <input value={manualRef} onChange={e => setManualRef(e.target.value)} placeholder="e.g. your bank transfer reference" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
+                </div>
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => setManualModal(null)} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: "none", color: t.textMuted, fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
+                  <button onClick={async () => {
+                    setManualSubmitting(true);
+                    try {
+                      const res = await fetch("/api/payments/manual", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: manualModal.reference, senderRef: manualRef }) });
+                      if (res.ok) setManualDone(true);
+                      else { const d = await res.json(); setPayError(d.error || "Failed"); }
+                    } catch { setPayError("Network error"); }
+                    setManualSubmitting(false);
+                  }} disabled={manualSubmitting} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", opacity: manualSubmitting ? .5 : 1 }}>{manualSubmitting ? "Submitting..." : "I've sent the money"}</button>
+                </div>
               </>
             )}
           </div>
