@@ -1,10 +1,7 @@
 import dynamic from 'next/dynamic';
 
 const HomePage = dynamic(() => import('@/components/landing-page'), {
-  loading: () => {
-    const LoadingScreen = require('@/components/loading-screen').default;
-    return <LoadingScreen />;
-  },
+  loading: () => <div style={{ minHeight: '100vh', background: '#080b14' }} />,
   ssr: false,
 });
 
