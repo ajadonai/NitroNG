@@ -24,6 +24,7 @@ const HowToPage = dynamic(() => import("./howto-page").then(m => m.default), { s
 const HowToSidebar = dynamic(() => import("./howto-page").then(m => m.HowToSidebar), { ssr: false });
 const LeaderboardPage = dynamic(() => import("./leaderboard-page").then(m => m.default), { ssr: false });
 const LeaderboardCard = dynamic(() => import("./leaderboard-page").then(m => m.LeaderboardCard), { ssr: false });
+const TierPerksCard = dynamic(() => import("./leaderboard-page").then(m => m.TierPerksCard), { ssr: false });
 
 /* ═══════════════════════════════════════════ */
 /* ═══ SVG ICONS                          ═══ */
@@ -901,7 +902,7 @@ function DashboardInner() {
           ) : isHowTo ? (
             <HowToSidebar dark={dark} t={t} />
           ) : isLeaderboard ? (
-            <LeaderboardCard dark={dark} t={t} />
+            <><TierPerksCard dark={dark} t={t} /><LeaderboardCard dark={dark} t={t} /></>
           ) : (
             <RightSidebar orders={orders} user={user} dark={dark} t={t} setActive={setActive} />
           )}
