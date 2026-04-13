@@ -105,22 +105,14 @@ export default function LeaderboardPage({ dark, t }) {
   const periodLabel = period === "month" ? new Date().toLocaleDateString("en-US", { month: "long" }) : "All time";
   const rewardAnnouncement = data?.rewardAnnouncement;
 
+  const ddStyle = { padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`, color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)", appearance: "none", cursor: "pointer", fontFamily: "inherit", backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='${dark ? "%23666" : "%23999"}' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center" };
+
   return (
     <>
       <div className="lb-header">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
-          <div>
-            <div className="lb-title" style={{ color: t.text }}>Leaderboard</div>
-            <div className="lb-subtitle" style={{ color: t.textMuted }}>Top Nitro users · {periodLabel}</div>
-          </div>
-          <div className="lb-tabs">
-            {TABS.map(tb => (
-              <button key={tb.id} onClick={() => setTab(tb.id)} className={`lb-tab${tab === tb.id ? " lb-tab-on" : ""}`}>
-                <span className="lb-tab-full">{tb.label}</span>
-                <span className="lb-tab-short">{tb.shortLabel}</span>
-              </button>
-            ))}
-          </div>
+        <div>
+          <div className="lb-title" style={{ color: t.text }}>Leaderboard</div>
+          <div className="lb-subtitle" style={{ color: t.textMuted }}>Top Nitro users · {periodLabel}</div>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -131,12 +123,14 @@ export default function LeaderboardPage({ dark, t }) {
         </div>
       )}
 
-      <div className="lb-time">
-        {["month", "all"].map(p => (
-          <button key={p} onClick={() => setPeriod(p)} className="lb-time-btn" style={{ borderColor: period === p ? t.accent : t.cardBorder, color: period === p ? t.accent : t.textMuted, background: period === p ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)") : "transparent" }}>
-            {p === "month" ? "This Month" : "All Time"}
-          </button>
-        ))}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", justifyContent: "flex-end" }}>
+        <select value={tab} onChange={e => setTab(e.target.value)} style={ddStyle}>
+          {TABS.map(tb => <option key={tb.id} value={tb.id}>{tb.label}</option>)}
+        </select>
+        <select value={period} onChange={e => setPeriod(e.target.value)} style={ddStyle}>
+          <option value="month">This Month</option>
+          <option value="all">All Time</option>
+        </select>
       </div>
 
       {/* Mobile/tablet: merged loyalty + your rank card (hidden on desktop via CSS) */}

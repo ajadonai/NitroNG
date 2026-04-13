@@ -182,8 +182,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
       {/* ═══ LEADERBOARD TAB ═══ */}
       {view === "leaderboard" && <>
         {/* Filters + mass actions */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
-          <div style={{ flex: 1 }} />
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
           <select value={tab} onChange={e => { setTab(e.target.value); clearSel(); }} style={ddStyle}>
             {TABS.map(tb => <option key={tb.id} value={tb.id}>{tb.label}</option>)}
           </select>
@@ -205,7 +204,13 @@ export default function AdminLeaderboardPage({ dark, t }) {
         </div>
 
       {/* Table */}
-      {loading ? <div>{[1,2,3,4,5,6].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 48, borderRadius: 8, marginBottom: 6 }} />)}</div> : list.length === 0 ? <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>No data for this period</div> : (
+      {loading ? <div>{[1,2,3,4,5,6].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 48, borderRadius: 8, marginBottom: 6 }} />)}</div> : list.length === 0 ? (
+        <div style={{ padding: "60px 20px", textAlign: "center" }}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.1)"} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 16px", display: "block" }}><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg>
+          <div style={{ fontSize: 16, fontWeight: 600, color: t.textSoft, marginBottom: 4 }}>No leaderboard data yet</div>
+          <div style={{ fontSize: 14, color: t.textMuted }}>Rankings will appear once users start placing orders</div>
+        </div>
+      ) : (
         <div style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)" }}>
           <div style={{ display: "flex", padding: "10px 16px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}`, gap: 12, alignItems: "center" }}>
             <span style={{ width: 24 }}></span><span style={{ width: 30 }}>#</span><span style={{ flex: 1 }}>User</span>
