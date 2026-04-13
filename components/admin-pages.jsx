@@ -22,17 +22,30 @@ export function AdminPaymentsPage({ dark, t }) {
   const [newGw, setNewGw] = useState({ id: "", name: "", desc: "" });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Pending");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateRange, setDateRange] = useState("all");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
   const [canApprove, setCanApprove] = useState(false);
   const [canConfigure, setCanConfigure] = useState(false);
 
-  const refresh = (s, st, df, dt) => {
+  const getDateRange = (range, cf, ct) => {
+    const now = new Date();
+    let from = "", to = "";
+    if (range === "today") { from = now.toISOString().split("T")[0]; }
+    else if (range === "7d") { const d = new Date(now - 7*24*60*60*1000); from = d.toISOString().split("T")[0]; }
+    else if (range === "30d") { const d = new Date(now - 30*24*60*60*1000); from = d.toISOString().split("T")[0]; }
+    else if (range === "90d") { const d = new Date(now - 90*24*60*60*1000); from = d.toISOString().split("T")[0]; }
+    else if (range === "custom") { from = cf || customFrom; to = ct || customTo; }
+    return { from, to };
+  };
+
+  const refresh = (s, st, range, cf, ct) => {
     const params = new URLSearchParams();
     if (s || search) params.set("search", s ?? search);
     if ((st ?? statusFilter) !== "all") params.set("status", st ?? statusFilter);
-    if (df || dateFrom) params.set("from", df || dateFrom);
-    if (dt || dateTo) params.set("to", dt || dateTo);
+    const { from, to } = getDateRange(range ?? dateRange, cf, ct);
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
     fetch(`/api/admin/payments?${params}`).then(r => r.json()).then(d => {
       if (d.gateways) setGateways(d.gateways);
       if (d.deposits) setDeposits(d.deposits);
@@ -49,8 +62,9 @@ export function AdminPaymentsPage({ dark, t }) {
     return () => clearInterval(interval);
   }, [tab]);
 
-  const doSearch = () => refresh(search, statusFilter, dateFrom, dateTo);
-  const changeStatus = (s) => { setStatusFilter(s); refresh(search, s, dateFrom, dateTo); };
+  const doSearch = () => refresh(search, statusFilter, dateRange);
+  const changeStatus = (s) => { setStatusFilter(s); refresh(search, s, dateRange); };
+  const changeDateRange = (r) => { setDateRange(r); if (r !== "custom") refresh(search, statusFilter, r); };
 
   const downloadCSV = () => {
     const rows = [["Date", "Reference", "User", "Email", "Amount", "Method", "Status", "Approved/Rejected By", "Bank Ref"]];
@@ -138,9 +152,15 @@ export function AdminPaymentsPage({ dark, t }) {
           <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && doSearch()} placeholder="Search ref, user, email..." style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.04)" : "#fff", color: t.text, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
         </div>
         {/* Filters */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end" }}>
-          <input type="date" value={dateFrom} placeholder="From" onChange={e => { setDateFrom(e.target.value); refresh(search, statusFilter, e.target.value, dateTo); }} style={{ padding: "7px 10px", borderRadius: 8, border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: dateFrom ? (dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)") : (dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)"), fontSize: 12, fontFamily: "inherit", outline: "none" }} />
-          <input type="date" value={dateTo} placeholder="To" onChange={e => { setDateTo(e.target.value); refresh(search, statusFilter, dateFrom, e.target.value); }} style={{ padding: "7px 10px", borderRadius: 8, border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: dateTo ? (dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)") : (dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)"), fontSize: 12, fontFamily: "inherit", outline: "none" }} />
+        <div style={{ display: "flex", gap: 8, marginBottom: dateRange === "custom" ? 8 : 14, flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end" }}>
+          <select value={dateRange} onChange={e => changeDateRange(e.target.value)} style={{ padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`, color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)", appearance: "none", cursor: "pointer", fontFamily: "inherit", backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='${dark ? "%23666" : "%23999"}' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center" }}>
+            <option value="all">All time</option>
+            <option value="today">Today</option>
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+            <option value="90d">Last 90 days</option>
+            <option value="custom">Custom range</option>
+          </select>
           <select value={statusFilter} onChange={e => changeStatus(e.target.value)} style={{ padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`, color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)", appearance: "none", cursor: "pointer", fontFamily: "inherit", backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='${dark ? "%23666" : "%23999"}' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center" }}>
             <option value="all">All statuses</option>
             <option value="Pending">Pending</option>
@@ -149,6 +169,14 @@ export function AdminPaymentsPage({ dark, t }) {
           </select>
           <button onClick={downloadCSV} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`, background: "none", color: t.textMuted, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>↓ CSV</button>
         </div>
+        {dateRange === "custom" && (
+          <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end" }}>
+            <span style={{ fontSize: 12, color: t.textMuted }}>From</span>
+            <input type="date" value={customFrom} onChange={e => { setCustomFrom(e.target.value); refresh(search, statusFilter, "custom", e.target.value, customTo); }} style={{ padding: "7px 10px", borderRadius: 8, border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)", fontSize: 12, fontFamily: "inherit", outline: "none" }} />
+            <span style={{ fontSize: 12, color: t.textMuted }}>To</span>
+            <input type="date" value={customTo} onChange={e => { setCustomTo(e.target.value); refresh(search, statusFilter, "custom", customFrom, e.target.value); }} style={{ padding: "7px 10px", borderRadius: 8, border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)", fontSize: 12, fontFamily: "inherit", outline: "none" }} />
+          </div>
+        )}
 
         {loading ? <div>{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 60, borderRadius: 8, marginBottom: 6 }} />)}</div> :
         deposits.length === 0 ? (
