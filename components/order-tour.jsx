@@ -124,42 +124,6 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
     return () => { if (tab) tab.classList.remove("tour-nav-ring"); };
   }, [visible, phase]);
 
-  // Raise order modal/form above tour overlay for steps 3-5
-  useEffect(() => {
-    if (phase !== "touring" || !visible || step < 2) return;
-    
-    const boost = () => {
-      // Mobile/tablet modal
-      const modal = document.querySelector(".no-modal-overlay");
-      if (modal) { modal.style.zIndex = "101"; modal.style.position = "fixed"; }
-      // The modal content inside
-      const modalContent = document.querySelector(".no-modal");
-      if (modalContent) modalContent.style.zIndex = "102";
-      // Mobile bottom bar (shows tier + Order button)
-      const bar = document.querySelector(".no-bottom-bar");
-      if (bar) bar.style.zIndex = "101";
-      // Desktop sidebar
-      const sidebar = document.querySelector(".dash-right");
-      if (sidebar) sidebar.style.zIndex = "101";
-    };
-    
-    boost();
-    // Re-run after a delay in case modal opens late
-    const timer = setTimeout(boost, 500);
-    
-    return () => {
-      clearTimeout(timer);
-      const modal = document.querySelector(".no-modal-overlay");
-      const modalContent = document.querySelector(".no-modal");
-      const bar = document.querySelector(".no-bottom-bar");
-      const sidebar = document.querySelector(".dash-right");
-      if (modal) modal.style.zIndex = "";
-      if (modalContent) modalContent.style.zIndex = "";
-      if (bar) bar.style.zIndex = "";
-      if (sidebar) sidebar.style.zIndex = "";
-    };
-  }, [step, phase, visible]);
-
   if (!visible) return null;
 
   const accent = "#c47d8e";
@@ -196,7 +160,7 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
 
       {/* WELCOME */}
       {phase === "welcome" && (
-        <div data-tour-tooltip style={{
+        <div style={{
           position: "fixed", zIndex: 101, top: "50%", left: "50%",
           transform: "translate(-50%, -50%)", textAlign: "center",
           background: bg, border: `1.5px solid ${border}`, borderRadius: 16,
@@ -218,7 +182,7 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
 
       {/* TOUR STEP */}
       {phase === "touring" && (
-        <div data-tour-tooltip style={{
+        <div style={{
           position: "fixed", zIndex: 101, left: "50%", bottom: 90,
           transform: "translateX(-50%)", animation: "otFadeIn 0.3s ease",
           background: bg, border: `1.5px solid ${border}`, borderRadius: 14,

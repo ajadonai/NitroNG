@@ -285,8 +285,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
       // If click is inside the service list, the card's own onClick handles it
       // If click is outside the service list entirely, collapse
       if (listRef.current && !listRef.current.contains(e.target)) {
-        // Don't collapse if clicking inside order form, modal, bottom bar, or tour
-        if (e.target.closest('.no-modal-overlay') || e.target.closest('.no-bottom-bar') || e.target.closest('.no-form-wrap') || e.target.closest('[data-tour-tooltip]') || e.target.closest('svg[style*="z-index"]')) return;
+        // Don't collapse if clicking inside order form, modal, or bottom bar
+        if (e.target.closest('.no-modal-overlay') || e.target.closest('.no-bottom-bar') || e.target.closest('.no-form-wrap')) return;
         setSelSvc(null); setSelTier(null);
       }
     };
