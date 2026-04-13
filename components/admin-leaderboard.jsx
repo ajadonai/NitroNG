@@ -117,20 +117,20 @@ export default function AdminLeaderboardPage({ dark, t }) {
   const ddStyle = { padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`, color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)", appearance: "none", cursor: "pointer", fontFamily: "inherit", backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='${dark ? "%23666" : "%23999"}' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center" };
 
   return (
-    <div style={{ padding: "24px", maxWidth: 900 }}>
+    <>
       {/* Header */}
-      <div style={{ marginBottom: 20 }}>
+      <div className="adm-header">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 600, color: t.text, marginBottom: 2 }}>Leaderboard</div>
-            <div style={{ fontSize: 14, color: t.textMuted }}>{view === "settings" ? "Announcement & reward settings" : `Top users · ${periodLabel}`}</div>
+            <div className="adm-title" style={{ color: t.text }}>Leaderboard</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>{view === "settings" ? "Announcement & reward settings" : `Top users · ${periodLabel}`}</div>
           </div>
           <div style={{ display: "flex", gap: 4 }}>
             <button onClick={() => setView("settings")} style={viewStyle("settings")}>Settings</button>
             <button onClick={() => setView("leaderboard")} style={viewStyle("leaderboard")}>Leaderboard</button>
           </div>
         </div>
-        <div className="page-divider" style={{ background: t.cardBorder, marginTop: 12 }} />
+        <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
       {/* ═══ SETTINGS TAB ═══ */}
@@ -295,7 +295,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

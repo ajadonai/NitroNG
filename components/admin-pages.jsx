@@ -133,19 +133,21 @@ export function AdminPaymentsPage({ dark, t }) {
 
       {/* ═══ DEPOSITS TAB ═══ */}
       {tab === "deposits" && (<>
-        {/* Search + filters */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && doSearch()} placeholder="Search ref, user, email..." style={{ flex: 1, minWidth: 180, padding: "8px 12px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.04)" : "#fff", color: t.text, fontSize: 13, outline: "none", fontFamily: "inherit" }} />
-          <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); refresh(search, statusFilter, e.target.value, dateTo); }} style={{ padding: "7px 10px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.04)" : "#fff", color: t.text, fontSize: 12, fontFamily: "inherit", outline: "none" }} />
-          <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); refresh(search, statusFilter, dateFrom, e.target.value); }} style={{ padding: "7px 10px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.04)" : "#fff", color: t.text, fontSize: 12, fontFamily: "inherit", outline: "none" }} />
-          <button onClick={downloadCSV} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: "none", color: t.textMuted, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>↓ CSV</button>
+        {/* Search */}
+        <div style={{ marginBottom: 10 }}>
+          <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && doSearch()} placeholder="Search ref, user, email..." style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.04)" : "#fff", color: t.text, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
         </div>
-
-        {/* Status filter pills */}
-        <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
-          {["Pending", "Completed", "Failed", "all"].map(s => (
-            <button key={s} onClick={() => changeStatus(s)} style={{ padding: "4px 12px", borderRadius: 16, fontSize: 12, fontWeight: 500, border: `1px solid ${statusFilter === s ? t.accent : t.cardBorder}`, color: statusFilter === s ? t.accent : t.textMuted, background: statusFilter === s ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : "transparent", cursor: "pointer", fontFamily: "inherit" }}>{s === "all" ? "All" : s}</button>
-          ))}
+        {/* Filters */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end" }}>
+          <input type="date" value={dateFrom} placeholder="From" onChange={e => { setDateFrom(e.target.value); refresh(search, statusFilter, e.target.value, dateTo); }} style={{ padding: "7px 10px", borderRadius: 8, border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: dateFrom ? (dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)") : (dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)"), fontSize: 12, fontFamily: "inherit", outline: "none" }} />
+          <input type="date" value={dateTo} placeholder="To" onChange={e => { setDateTo(e.target.value); refresh(search, statusFilter, dateFrom, e.target.value); }} style={{ padding: "7px 10px", borderRadius: 8, border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", color: dateTo ? (dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)") : (dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)"), fontSize: 12, fontFamily: "inherit", outline: "none" }} />
+          <select value={statusFilter} onChange={e => changeStatus(e.target.value)} style={{ padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`, color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)", appearance: "none", cursor: "pointer", fontFamily: "inherit", backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='${dark ? "%23666" : "%23999"}' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center" }}>
+            <option value="all">All statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Completed">Completed</option>
+            <option value="Failed">Failed</option>
+          </select>
+          <button onClick={downloadCSV} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`, background: "none", color: t.textMuted, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>↓ CSV</button>
         </div>
 
         {loading ? <div>{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 60, borderRadius: 8, marginBottom: 6 }} />)}</div> :
