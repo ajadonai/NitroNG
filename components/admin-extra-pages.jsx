@@ -82,7 +82,7 @@ const ASSIGNABLE_ROLES = ["admin", "support", "finance"];
 const ALL_PAGES = [
   { id:"overview", label:"Overview", g:"Main" },{ id:"orders", label:"Orders", g:"Main" },{ id:"users", label:"Users", g:"Main" },{ id:"leaderboard", label:"Leaderboard", g:"Main" },{ id:"tickets", label:"Tickets", g:"Main" },
   { id:"services", label:"Services", g:"Catalog" },{ id:"menu-builder", label:"Menu Builder", g:"Catalog" },{ id:"pricing", label:"Pricing", g:"Catalog" },{ id:"blog", label:"Blog", g:"Catalog" },
-  { id:"payments", label:"Payments", g:"Finance" },{ id:"analytics", label:"Analytics", g:"Finance" },{ id:"financials", label:"Financials", g:"Finance" },{ id:"rewards", label:"Rewards", g:"Finance" },
+  { id:"payments", label:"Payments", g:"Finance" },{ id:"finance", label:"Finance", g:"Finance" },{ id:"financials", label:"Breakdown (Finance)", g:"Finance" },{ id:"rewards", label:"Rewards", g:"Finance" },
   { id:"alerts", label:"Alerts", g:"System" },{ id:"notifications", label:"Notifications", g:"System" },{ id:"activity", label:"Activity Log", g:"System" },{ id:"team", label:"Team", g:"System" },{ id:"api", label:"API", g:"System" },{ id:"maintenance", label:"Maintenance", g:"System" },{ id:"settings", label:"Settings", g:"System" },
 ];
 const GRANTABLE_ACTIONS = [
@@ -95,9 +95,9 @@ const GRANTABLE_ACTIONS = [
   { id: "notifications.send", label: "Send Email Blasts", g: "Marketing" },
 ];
 const DEFAULT_PAGES = {
-  admin: ["overview","orders","users","leaderboard","services","menu-builder","pricing","tickets","activity","alerts","analytics","rewards","blog"],
+  admin: ["overview","orders","users","leaderboard","services","menu-builder","pricing","tickets","activity","alerts","finance","rewards","blog"],
   support: ["overview","orders","users","tickets"],
-  finance: ["overview","orders","payments","analytics","financials","leaderboard"],
+  finance: ["overview","orders","payments","finance","financials","leaderboard"],
 };
 const PAGE_GROUPS = [...new Set(ALL_PAGES.map(p => p.g))];
 const ACTION_GROUPS = [...new Set(GRANTABLE_ACTIONS.map(a => a.g))];

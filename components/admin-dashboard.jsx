@@ -10,7 +10,7 @@ import AdminTicketsPage from "./admin-tickets";
 import AdminServicesPage from "./admin-services";
 import AdminServiceGroupsPage from "./admin-service-groups";
 import AdminPricingPage from "./admin-pricing";
-import { AdminPaymentsPage, AdminAnalyticsPage, AdminAlertsPage, AdminSettingsPage, AdminFinancialsPage } from "./admin-pages";
+import { AdminPaymentsPage, AdminFinancePage, AdminAlertsPage, AdminSettingsPage } from "./admin-pages";
 import { AdminActivityPage, AdminTeamPage, AdminCouponsPage, AdminNotificationsPage, AdminMaintenancePage, AdminAPIPage } from "./admin-extra-pages";
 import AdminBlogPage from "./admin-blog";
 import AdminLeaderboardPage, { AdminLeaderboardSidebar } from "./admin-leaderboard";
@@ -45,8 +45,7 @@ const ADMIN_NAV = [
   ]},
   { section: "System", items: [
     { id: "payments", label: "Payments", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },
-    { id: "analytics", label: "Analytics", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
-    { id: "financials", label: "Financials", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> },
+    { id: "finance", label: "Finance", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
     { id: "activity", label: "Logs", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
     { id: "team", label: "Team", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 00-3 3v1a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M19 8a2 2 0 00-2 2v1a2 2 0 004 0v-1a2 2 0 00-2-2z"/><path d="M5 8a2 2 0 00-2 2v1a2 2 0 004 0v-1a2 2 0 00-2-2z"/><path d="M3 21v-2a4 4 0 014-4h1"/><path d="M21 21v-2a4 4 0 00-4-4h-1"/><path d="M8 21v-2a4 4 0 014-4 4 4 0 014 4v2"/></svg> },
     { id: "api", label: "API", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> },
@@ -141,7 +140,7 @@ function AdminOverview({ data, dark, t, setActive }) {
       {/* Quick actions */}
       <div className="adm-card-title" style={{ color: t.textMuted, marginTop: 24, marginBottom: 10 }}>Quick actions</div>
       <div className="adm-quick-actions">
-        {[["New Announcement", "alerts"], ["Credit User", "users"], ["Add Service", "menu-builder"], ["View Analytics", "analytics"]].map(([label, page]) => (
+        {[["New Announcement", "alerts"], ["Credit User", "users"], ["Add Service", "menu-builder"], ["View Finance", "finance"]].map(([label, page]) => (
           <button key={label} onClick={() => setActive(page)} className="adm-action-btn" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, color: t.text }}>
             {label}
           </button>
@@ -378,8 +377,7 @@ function AdminDashboardInner() {
       case "pricing": return <AdminPricingPage dark={dark} t={t} />;
       case "blog": return <AdminBlogPage dark={dark} t={t} />;
       case "payments": return <AdminPaymentsPage dark={dark} t={t} />;
-      case "analytics": return <AdminAnalyticsPage dark={dark} t={t} admin={admin} />;
-      case "financials": return <AdminFinancialsPage dark={dark} t={t} />;
+      case "finance": return <AdminFinancePage dark={dark} t={t} admin={admin} />;
       case "alerts": return <AdminAlertsPage dark={dark} t={t} />;
       case "rewards": return <AdminCouponsPage dark={dark} t={t} />;
       case "notifications": return <AdminNotificationsPage dark={dark} t={t} />;

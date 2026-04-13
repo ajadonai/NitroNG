@@ -293,7 +293,39 @@ export function AdminPaymentsPage({ dark, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ ANALYTICS PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
-export function AdminAnalyticsPage({ dark, t }) {
+export function AdminFinancePage({ dark, t, admin }) {
+  const [tab, setTab] = useState("overview");
+  const canBreakdown = admin?.pages === "*" || (Array.isArray(admin?.pages) && admin.pages.includes("financials"));
+
+  const tabStyle = (id) => ({
+    padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: tab === id ? 600 : 400,
+    background: tab === id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent",
+    color: tab === id ? t.accent : t.textMuted,
+    border: `1px solid ${tab === id ? (dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)") : "transparent"}`,
+    cursor: "pointer",
+  });
+
+  return (
+    <>
+      <div className="adm-header">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+          <div>
+            <div className="adm-title" style={{ color: t.text }}>Finance</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>{tab === "overview" ? "Revenue, growth, and performance" : "Complete money flow breakdown"}</div>
+          </div>
+          <div style={{ display: "flex", gap: 4 }}>
+            <button onClick={() => setTab("overview")} style={tabStyle("overview")}>Overview</button>
+            {canBreakdown && <button onClick={() => setTab("breakdown")} style={tabStyle("breakdown")}>Breakdown</button>}
+          </div>
+        </div>
+        <div className="page-divider" style={{ background: t.cardBorder }} />
+      </div>
+      {tab === "overview" ? <FinanceOverviewTab dark={dark} t={t} /> : <FinanceBreakdownTab dark={dark} t={t} />}
+    </>
+  );
+}
+
+function FinanceOverviewTab({ dark, t }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState("30d");
@@ -306,27 +338,32 @@ export function AdminAnalyticsPage({ dark, t }) {
 
   const changeRange = (r) => { setRange(r); load(r); };
 
-  if (loading) return <><div className="adm-header"><div className="adm-title" style={{ color: t.text }}>Analytics</div><div className="adm-subtitle" style={{ color: t.textMuted }}>Loading data...</div><div className="page-divider" style={{ background: t.cardBorder }} /></div><div className="adm-stats">{[1,2,3,4].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 90, borderRadius: 12 }} />)}</div><div style={{ marginTop: 16 }}>{[1,2].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 200, borderRadius: 12, marginBottom: 12 }} />)}</div></>;
+  if (loading) return <div className="adm-stats">{[1,2,3,4].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 90, borderRadius: 12 }} />)}</div>;
 
   const s = stats || {};
   return (
     <>
-      <div className="adm-header">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
-          <div>
-            <div className="adm-title" style={{ color: t.text }}>Analytics</div>
-            <div className="adm-subtitle" style={{ color: t.textMuted }}>Revenue, growth, and performance</div>
-          </div>
-          <div style={{ display: "flex", gap: 4 }}>
-            {[["24h", "24h"], ["7d", "7 days"], ["30d", "30 days"], ["90d", "90 days"]].map(([id, lb]) => (
-              <button key={id} onClick={() => changeRange(id)} style={{ padding: "6px 12px", borderRadius: 6, fontSize: 13, fontWeight: range === id ? 600 : 400, background: range === id ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: range === id ? t.accent : t.textMuted, borderWidth: 1, borderStyle: "solid", borderColor: range === id ? t.accent : t.cardBorder }}>{lb}</button>
+      {/* Range filter */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: dark ? "rgba(255,255,255,.3)" : "rgba(0,0,0,.3)" }}>Time range</span>
+          <select value={range} onChange={e => changeRange(e.target.value)} style={{
+            padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500, width: "fit-content",
+            background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)",
+            border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`,
+            color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)",
+            appearance: "none", cursor: "pointer", fontFamily: "inherit",
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='${dark ? "%23666" : "%23999"}' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`,
+            backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center",
+          }}>
+            {[["24h", "Today"], ["7d", "Last 7 days"], ["30d", "Last 30 days"], ["90d", "Last 90 days"]].map(([v, l]) => (
+              <option key={v} value={v}>{l}</option>
             ))}
-          </div>
+          </select>
         </div>
-        <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      <div className="adm-stats" style={{ marginTop: 16 }}>
+      <div className="adm-stats" style={{ marginTop: 0 }}>
         {[
           ["Total Revenue", fN(s.totalRevenue || 0), t.green],
           ["Total Cost", fN(s.totalCost || 0), dark ? "#fca5a5" : "#dc2626"],
@@ -863,7 +900,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
 /* ═══════════════════════════════════════════ */
 /* ═══ FINANCIALS PAGE                     ═══ */
 /* ═══════════════════════════════════════════ */
-export function AdminFinancialsPage({ dark, t }) {
+function FinanceBreakdownTab({ dark, t }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState("30d");
@@ -919,10 +956,7 @@ export function AdminFinancialsPage({ dark, t }) {
   );
 
   if (loading) return (
-    <>
-      <div className="adm-header"><div className="adm-title" style={{ color: t.text }}>Financials</div><div className="adm-subtitle" style={{ color: t.textMuted }}>Loading...</div><div className="page-divider" style={{ background: t.cardBorder }} /></div>
-      <div className="adm-stats">{[1,2,3,4,5,6].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 80, borderRadius: 12 }} />)}</div>
-    </>
+    <div className="adm-stats">{[1,2,3,4,5,6].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 80, borderRadius: 12 }} />)}</div>
   );
 
   const s = stats || {};
@@ -935,16 +969,6 @@ export function AdminFinancialsPage({ dark, t }) {
 
   return (
     <>
-      <div className="adm-header">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
-          <div>
-            <div className="adm-title" style={{ color: t.text }}>Financials</div>
-            <div className="adm-subtitle" style={{ color: t.textMuted }}>Complete money flow overview</div>
-          </div>
-        </div>
-        <div className="page-divider" style={{ background: t.cardBorder }} />
-      </div>
-
       {/* Filters */}
       <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
         <DropdownFilter label="Time range" value={range} onChange={setRange} options={[
