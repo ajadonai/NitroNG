@@ -124,6 +124,20 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
     return () => { if (tab) tab.classList.remove("tour-nav-ring"); };
   }, [visible, phase]);
 
+  // Step 5 only: raise the modal above the overlay so Place Order is visible
+  useEffect(() => {
+    if (phase !== "touring" || !visible || step !== 4) return;
+    const timer = setTimeout(() => {
+      const modal = document.querySelector(".no-modal-overlay");
+      if (modal) modal.style.zIndex = "101";
+    }, 200);
+    return () => {
+      clearTimeout(timer);
+      const modal = document.querySelector(".no-modal-overlay");
+      if (modal) modal.style.zIndex = "";
+    };
+  }, [step, phase, visible]);
+
   if (!visible) return null;
 
   const accent = "#c47d8e";
