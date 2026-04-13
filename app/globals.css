@@ -605,8 +605,9 @@ input { font-family: inherit; }
 .lb-header { padding: 0 0 14px; }
 .lb-title { font-size: 22px; font-weight: 600; margin-bottom: 2px; }
 .lb-subtitle { font-size: 15px; }
-.lb-tabs { display: flex; gap: 0; margin-bottom: 16px; border-bottom-width: 1px; border-bottom-style: solid; }
-.lb-tab { padding: 8px 18px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; font-family: inherit; }
+.lb-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+.lb-tab { padding: 8px 20px; font-size: 13px; font-weight: 400; cursor: pointer; border: 1px solid transparent; border-radius: 8px; background: none; font-family: inherit; color: var(--text-muted, #999); }
+.lb-tab-on { font-weight: 600; color: #c47d8e !important; background: rgba(196,125,142,.08); border-color: rgba(196,125,142,.15); }
 .lb-tab-on { font-weight: 600; }
 .lb-tab-short { display: none; }
 .lb-time { display: flex; gap: 4px; margin-bottom: 16px; }
@@ -639,7 +640,7 @@ input { font-family: inherit; }
 
 @media (max-width: 767px) {
   .lb-title { font-size: 18px; }
-  .lb-tab { padding: 6px 12px; font-size: 12px; }
+  .lb-tab { padding: 6px 14px; font-size: 12px; }
   .lb-tab-full { display: none; }
   .lb-tab-short { display: inline; }
   .lb-podium { gap: 6px; }
@@ -666,8 +667,9 @@ input { font-family: inherit; }
 .ord-subtitle { font-size: 15px; }
 
 /* Tab switcher — underline style */
-.ord-tabs { display: flex; gap: 0; margin-bottom: 16px; border-bottom-width: 1px; border-bottom-style: solid; }
-.ord-tab { padding: 8px 20px; font-size: 15px; font-weight: 500; cursor: pointer; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; font-family: inherit; }
+.ord-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+.ord-tab { padding: 8px 20px; font-size: 13px; font-weight: 400; cursor: pointer; border: 1px solid transparent; border-radius: 8px; background: none; font-family: inherit; color: var(--text-muted, #999); }
+.ord-tab-on { font-weight: 600; color: #c47d8e; background: rgba(196,125,142,.08); border-color: rgba(196,125,142,.15); }
 
 /* Filters */
 .ord-filters { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
@@ -731,7 +733,7 @@ input { font-family: inherit; }
 @media (max-width: 1199px) {
   .ord-title { font-size: 18px; }
   .ord-subtitle { font-size: 14px; }
-  .ord-tab { padding: 7px 14px; font-size: 14px; }
+  .ord-tab { padding: 7px 14px; font-size: 13px; }
   .ord-filter-pill { padding: 4px 10px; font-size: 13px; }
   .ord-search { font-size: 13px; }
   .ord-row { padding: 14px 16px; gap: 12px; }
@@ -744,7 +746,7 @@ input { font-family: inherit; }
   .ord-title { font-size: 18px; }
   .ord-subtitle { font-size: 14px; }
   .ord-tabs { margin-bottom: 12px; }
-  .ord-tab { padding: 7px 12px; font-size: 14px; }
+  .ord-tab { padding: 6px 14px; font-size: 12px; }
   .ord-filters { gap: 4px; margin-bottom: 8px; }
   .ord-filter-pill { padding: 4px 10px; font-size: 13px; }
   .ord-search { padding: 9px 12px; margin-bottom: 10px; }

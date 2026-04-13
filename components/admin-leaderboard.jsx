@@ -164,9 +164,9 @@ export default function AdminLeaderboardPage({ dark, t }) {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: `1px solid ${t.cardBorder}` }}>
+      <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
         {TABS.map(tb => (
-          <button key={tb.id} onClick={() => { setTab(tb.id); clearSel(); }} style={{ padding: "8px 18px", fontSize: 14, fontWeight: tab === tb.id ? 600 : 500, color: tab === tb.id ? t.accent : t.textMuted, background: "none", border: "none", borderBottom: `2px solid ${tab === tb.id ? t.accent : "transparent"}`, marginBottom: -1, cursor: "pointer", fontFamily: "inherit" }}>{tb.label}</button>
+          <button key={tb.id} onClick={() => { setTab(tb.id); clearSel(); }} style={{ padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: tab === tb.id ? 600 : 400, background: tab === tb.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", color: tab === tb.id ? t.accent : t.textMuted, border: `1px solid ${tab === tb.id ? (dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)") : "transparent"}`, cursor: "pointer", fontFamily: "inherit" }}>{tb.label}</button>
         ))}
       </div>
 

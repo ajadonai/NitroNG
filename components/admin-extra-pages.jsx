@@ -456,9 +456,9 @@ export function AdminCouponsPage({ dark, t }) {
       </div>
 
       {/* ═══ TABS ═══ */}
-      <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
+      <div style={{ display: "flex", gap: 4, marginBottom: 20 }}>
         {[["referrals", "Referrals"], ["coupons", "Coupons"], ["loyalty", "Loyalty"]].map(([id, label]) => (
-          <button key={id} onClick={() => setRewardsTab(id)} style={{ padding: "10px 20px", fontSize: 14, fontWeight: rewardsTab === id ? 600 : 450, color: rewardsTab === id ? t.accent : t.textMuted, borderBottom: `2px solid ${rewardsTab === id ? t.accent : "transparent"}`, background: "none", cursor: "pointer", fontFamily: "inherit" }}>{label}</button>
+          <button key={id} onClick={() => setRewardsTab(id)} style={{ padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: rewardsTab === id ? 600 : 400, background: rewardsTab === id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", color: rewardsTab === id ? t.accent : t.textMuted, border: `1px solid ${rewardsTab === id ? (dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)") : "transparent"}`, cursor: "pointer", fontFamily: "inherit" }}>{label}</button>
         ))}
       </div>
 

@@ -119,9 +119,9 @@ export default function LeaderboardPage({ dark, t }) {
         </div>
       )}
 
-      <div className="lb-tabs" style={{ borderBottomColor: t.cardBorder }}>
+      <div className="lb-tabs">
         {TABS.map(tb => (
-          <button key={tb.id} onClick={() => setTab(tb.id)} className={`lb-tab${tab === tb.id ? " lb-tab-on" : ""}`} style={{ color: tab === tb.id ? t.accent : t.textMuted, borderBottomColor: tab === tb.id ? t.accent : "transparent" }}>
+          <button key={tb.id} onClick={() => setTab(tb.id)} className={`lb-tab${tab === tb.id ? " lb-tab-on" : ""}`}>
             <span className="lb-tab-full">{tb.label}</span>
             <span className="lb-tab-short">{tb.shortLabel}</span>
           </button>

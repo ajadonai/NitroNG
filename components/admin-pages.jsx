@@ -116,12 +116,12 @@ export function AdminPaymentsPage({ dark, t }) {
       </div>
 
       {/* Tab switcher */}
-      <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: `1px solid ${t.cardBorder}` }}>
-        <button onClick={() => setTab("deposits")} style={{ padding: "8px 18px", fontSize: 14, fontWeight: tab === "deposits" ? 600 : 500, color: tab === "deposits" ? t.accent : t.textMuted, background: "none", border: "none", borderBottom: `2px solid ${tab === "deposits" ? t.accent : "transparent"}`, marginBottom: -1, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
+      <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+        <button onClick={() => setTab("deposits")} style={{ padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: tab === "deposits" ? 600 : 400, background: tab === "deposits" ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", color: tab === "deposits" ? t.accent : t.textMuted, border: `1px solid ${tab === "deposits" ? (dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)") : "transparent"}`, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
           Deposits
           {pendingCount > 0 && <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 10, background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent, fontWeight: 700 }}>{pendingCount}</span>}
         </button>
-        {canConfigure && <button onClick={() => setTab("gateways")} style={{ padding: "8px 18px", fontSize: 14, fontWeight: tab === "gateways" ? 600 : 500, color: tab === "gateways" ? t.accent : t.textMuted, background: "none", border: "none", borderBottom: `2px solid ${tab === "gateways" ? t.accent : "transparent"}`, marginBottom: -1, cursor: "pointer", fontFamily: "inherit" }}>Gateway Config</button>}
+        {canConfigure && <button onClick={() => setTab("gateways")} style={{ padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: tab === "gateways" ? 600 : 400, background: tab === "gateways" ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", color: tab === "gateways" ? t.accent : t.textMuted, border: `1px solid ${tab === "gateways" ? (dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)") : "transparent"}`, cursor: "pointer", fontFamily: "inherit" }}>Gateway Config</button>}
       </div>
 
       {msg && <div style={{ padding: "10px 14px", borderRadius: 8, marginBottom: 12, background: msg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: msg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), fontSize: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>

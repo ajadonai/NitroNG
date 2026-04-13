@@ -119,10 +119,10 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
       </div>
 
       {/* Tab switcher */}
-      <div className="ord-tabs" style={{ borderBottomColor: t.cardBorder }}>
+      <div className="ord-tabs">
         {[["orders", "Orders", orders.length], ["transactions", "Transactions", txs.length]].map(([id, lb, count]) => (
-          <button key={id} onClick={() => { setTab(id); setOPage(1); setTPage(1); setExpanded(null); }} className="ord-tab" style={{ color: tab === id ? t.accent : t.textMuted, borderBottomColor: tab === id ? t.accent : "transparent", fontWeight: tab === id ? 600 : 500 }}>
-            {lb} <span style={{ fontSize: 13, opacity: .7 }}>({count})</span>
+          <button key={id} onClick={() => { setTab(id); setOPage(1); setTPage(1); setExpanded(null); }} className={`ord-tab${tab === id ? " ord-tab-on" : ""}`}>
+            {lb} <span style={{ fontSize: 12, opacity: .7 }}>({count})</span>
           </button>
         ))}
       </div>
