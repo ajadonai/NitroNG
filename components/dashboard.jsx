@@ -916,7 +916,7 @@ function DashboardInner() {
           ))}
         </div>
       )}
-      <nav ref={bottomNavRef} className="dash-bottom-nav" style={{ background: dark ? "#0a0e1a" : "#f8f5f1", borderTop: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)"}` }}>
+      <nav ref={bottomNavRef} className={`dash-bottom-nav ${dark ? "dark" : "light"}`} style={{ background: dark ? "#0a0e1a" : "#f8f5f1", borderTop: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)"}` }}>
         {BOTTOM_TABS.map(tab => {
           const isMore = tab.id === "more";
           return (

@@ -1684,15 +1684,16 @@ input { font-family: inherit; }
   .dash-bottom-tab {
     flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
     background: none; border: none; cursor: pointer; padding: 2px 0;
-    font-family: inherit; color: inherit;
+    font-family: inherit;
     transition: none !important;
   }
-  .dash-bottom-icon { height: 22px; display: flex; align-items: center; opacity: 0.45; color: inherit; transition: none !important; }
+  .dash-bottom-nav.dark .dash-bottom-tab { color: rgba(255,255,255,.45); }
+  .dash-bottom-nav.light .dash-bottom-tab { color: rgba(0,0,0,.4); }
+  .dash-bottom-icon { height: 22px; display: flex; align-items: center; color: inherit; transition: none !important; }
   .dash-bottom-icon svg { stroke: currentColor; transition: none !important; }
-  .dash-bottom-label { font-size: 10px; font-weight: 400; letter-spacing: 0.2px; opacity: 0.55; color: inherit; transition: none !important; }
+  .dash-bottom-label { font-size: 10px; font-weight: 400; letter-spacing: 0.2px; color: inherit; transition: none !important; }
   .dash-bottom-tab.active { color: #c47d8e !important; }
-  .dash-bottom-tab.active .dash-bottom-icon { opacity: 1; }
-  .dash-bottom-tab.active .dash-bottom-label { font-weight: 600; opacity: 1; }
+  .dash-bottom-tab.active .dash-bottom-label { font-weight: 600; }
   .dash-bottom-tab.primary .dash-bottom-icon { opacity: 0.55; }
   .dash-bottom-tab.primary .dash-bottom-icon svg { width: 22px; height: 22px; }
   .dash-bottom-tab.primary.active .dash-bottom-icon { opacity: 1; }
