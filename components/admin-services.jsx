@@ -133,7 +133,12 @@ export default function AdminServicesPage({ dark, t }) {
 
       {inUseDisabledCount > 0 && <div style={{ padding: "10px 14px", borderRadius: 8, marginBottom: 12, background: dark ? "rgba(224,164,88,.06)" : "rgba(217,119,6,.04)", border: `1px solid ${dark ? "rgba(224,164,88,.15)" : "rgba(217,119,6,.1)"}`, color: dark ? "#e0a458" : "#92400e", fontSize: 13, lineHeight: 1.5 }}>⚠️ {inUseDisabledCount} service{inUseDisabledCount > 1 ? "s" : ""} used by Menu Builder {inUseDisabledCount > 1 ? "are" : "is"} disabled. Users can see {inUseDisabledCount > 1 ? "them" : "it"} in the menu but orders may fail.</div>}
 
-      {/* Provider + Status filters */}
+      {/* Search */}
+      <div style={{ marginBottom: 10 }}>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search services..." style={{ width: "100%", padding: "8px 12px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+      </div>
+
+      {/* Filters */}
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", justifyContent: "flex-end" }}>
         {providers.length > 1 && (
           <select value={providerFilter} onChange={e => setProviderFilter(e.target.value)} style={{
@@ -166,12 +171,16 @@ export default function AdminServicesPage({ dark, t }) {
             <option key={val} value={val}>{label}</option>
           ))}
         </select>
-      </div>
-
-      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search services..." style={{ flex: 1, minWidth: 160, padding: "8px 12px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none" }} />
-        <select value={catFilter} onChange={e => setCatFilter(e.target.value)} style={{ padding: "8px 12px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none" }}>
-          <option value="all">All Platforms ({services.length})</option>
+        <select value={catFilter} onChange={e => setCatFilter(e.target.value)} style={{
+          padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500,
+          background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)",
+          border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`,
+          color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)",
+          appearance: "none", cursor: "pointer", fontFamily: "inherit",
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='${dark ? "%23666" : "%23999"}' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`,
+          backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center",
+        }}>
+          <option value="all">All platforms ({services.length})</option>
           {categories.map(cat => <option key={cat} value={cat}>{cat} ({services.filter(s => s.category === cat).length})</option>)}
         </select>
       </div>

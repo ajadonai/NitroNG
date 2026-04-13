@@ -102,6 +102,8 @@ export default function AdminUsersPage({ dark, t }) {
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
+      <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search by name or email..." className="m adm-search" style={{ borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text }} />
+
       <div className="adm-filters" style={{ display: "flex", justifyContent: "flex-end" }}>
         <select value={filter} onChange={e => { setFilter(e.target.value); setPage(1); }} style={{
           padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500,
@@ -117,8 +119,6 @@ export default function AdminUsersPage({ dark, t }) {
           ))}
         </select>
       </div>
-
-      <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search by name or email..." className="m adm-search" style={{ borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text }} />
 
       <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
         {loading ? (

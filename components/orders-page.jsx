@@ -131,6 +131,9 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
 
       {/* ═══ ORDERS TAB ═══ */}
       {tab === "orders" && <>
+        {/* Search */}
+        <input placeholder="Search by order ID or service..." value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="ord-search" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.03)" : "#fff", color: t.text }} />
+
         {/* Status filters */}
         <div className="ord-filters" style={{ display: "flex", justifyContent: "flex-end" }}>
           <select value={filter} onChange={e => { setFilter(e.target.value); setOPage(1); setExpanded(null); }} style={{
@@ -147,9 +150,6 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
             ))}
           </select>
         </div>
-
-        {/* Search */}
-        <input placeholder="Search by order ID or service..." value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="ord-search" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.03)" : "#fff", color: t.text }} />
 
         {/* Order list */}
         <div className="ord-list" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>

@@ -71,6 +71,9 @@ export default function AdminOrdersPage({ dark, t }) {
 
       {msg && <div style={{ padding: "8px 14px", borderRadius: 8, marginBottom: 12, fontSize: 14, background: msg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: msg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), display: "flex", justifyContent: "space-between", alignItems: "center" }}><span>{msg.type === "success" ? "✓" : "⚠️"} {msg.text}</span><button onClick={() => setMsg(null)} style={{ background: "none", color: "inherit", border: "none", cursor: "pointer" }}>✕</button></div>}
 
+      {/* Search */}
+      <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search by order ID, service, or user..." className="adm-search" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.03)" : "#fff", color: t.text }} />
+
       {/* Filters */}
       <div className="adm-filters" style={{ display: "flex", justifyContent: "flex-end" }}>
         <select value={filter} onChange={e => { setFilter(e.target.value); setPage(1); }} style={{
@@ -87,9 +90,6 @@ export default function AdminOrdersPage({ dark, t }) {
           ))}
         </select>
       </div>
-
-      {/* Search */}
-      <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search by order ID, service, or user..." className="adm-search" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.03)" : "#fff", color: t.text }} />
 
       {/* Orders list */}
       <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
