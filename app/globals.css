@@ -1182,7 +1182,7 @@ input { font-family: inherit; }
   .nav-signup-btn { display: none !important; }
   .main-nav { padding: 0 28px; }
   .nav-right { gap: 10px !important; }
-  .auth-card { max-width: 420px; height: 660px; max-height: 90dvh; padding: 24px 26px; border-radius: 18px; overflow-y: auto; overflow-x: hidden; }
+  .auth-card { max-width: 420px; height: auto; max-height: 90dvh; padding: 24px 26px; border-radius: 18px; overflow-y: auto; overflow-x: hidden; }
   .auth-card h2 { font-size: 20px; }
   .auth-card p { font-size: 14px; margin-bottom: 18px; }
   .auth-card input { padding: 10px 12px; font-size: 15px; border-radius: 10px; margin-bottom: 6px; }
@@ -1268,7 +1268,7 @@ input { font-family: inherit; }
   .nav-login-btn { padding: 6px 14px !important; font-size: 13px !important; border-radius: 8px !important; }
   .theme-toggle { width: 44px !important; height: 24px !important; }
   .theme-toggle > div { width: 18px !important; height: 18px !important; }
-  .auth-card { max-width: 100%; height: 620px; max-height: 85dvh; padding: 20px 18px; border-radius: 16px; overflow-y: auto; overflow-x: hidden; }
+  .auth-card { max-width: 100%; height: auto; max-height: 88dvh; padding: 20px 18px; border-radius: 16px; overflow-y: auto; overflow-x: hidden; }
   .auth-card h2 { font-size: 19px; }
   .auth-card p { font-size: 14px; margin-bottom: 12px; }
   .auth-card input { padding: 9px 12px; font-size: 15px; border-radius: 10px; margin-bottom: 6px; }
