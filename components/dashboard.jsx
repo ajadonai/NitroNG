@@ -905,7 +905,7 @@ function DashboardInner() {
       {/* ═══ MOBILE BOTTOM NAV ═══ */}
       {moreOpen && <div className="dash-more-overlay" onClick={() => setMoreOpen(false)} />}
       {moreOpen && (
-        <div className="dash-more-popup" style={{ background: dark ? "#161b2e" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+        <div className="dash-more-popup" style={{ background: dark ? "#161b2e" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.12)"}` }}>
           {MORE_ITEMS.map(item => (
             <button key={item.id} onClick={() => { setActive(item.id); setMoreOpen(false); }} className="dash-more-item" style={{ background: active === item.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : (dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.02)"), color: active === item.id ? t.accent : (dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.6)"), fontWeight: active === item.id ? 600 : 500 }}>
               <div className="dash-more-item-icon" style={{ background: active === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)"), color: active === item.id ? t.accent : (dark ? "rgba(255,255,255,.4)" : "rgba(0,0,0,.35)") }}>{I[item.id]}</div>
@@ -918,14 +918,9 @@ function DashboardInner() {
         {BOTTOM_TABS.map(tab => {
           const isMore = tab.id === "more";
           const isActive = isMore ? moreOpen : active === tab.id;
-          const isPrimary = tab.primary;
           return (
-            <button key={tab.id} onClick={() => { if (isMore) { setMoreOpen(!moreOpen); } else { setActive(tab.id); setMoreOpen(false); setLeftOpen(false); } }} className={`dash-bottom-tab${isActive ? " dash-bottom-tab-active" : ""}${isPrimary ? " dash-bottom-tab-primary" : ""}`} style={{ color: isActive ? t.accent : (dark ? "rgba(255,255,255,.5)" : "rgba(0,0,0,.45)") }}>
-              {isPrimary ? (
-                <div className="dash-bottom-order-btn" style={{ background: isActive ? t.accent : (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)"), color: isActive ? "#fff" : t.accent }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
-              ) : (
-                <span className="dash-bottom-icon">{isMore ? MoreIcon : I[tab.id]}</span>
-              )}
+            <button key={tab.id} onClick={() => { if (isMore) { setMoreOpen(!moreOpen); } else { setActive(tab.id); setMoreOpen(false); setLeftOpen(false); } }} className={`dash-bottom-tab${isActive ? " active" : ""}${tab.primary ? " primary" : ""}`}>
+              <span className="dash-bottom-icon">{isMore ? MoreIcon : I[tab.id]}</span>
               <span className="dash-bottom-label">{tab.label}</span>
             </button>
           );

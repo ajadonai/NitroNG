@@ -1684,16 +1684,16 @@ input { font-family: inherit; }
   .dash-bottom-tab {
     flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
     background: none; border: none; cursor: pointer; padding: 2px 0;
-    font-family: inherit;
+    font-family: inherit; color: inherit;
   }
-  .dash-bottom-icon { opacity: 0.6; height: 22px; display: flex; align-items: center; }
-  .dash-bottom-tab-active .dash-bottom-icon { opacity: 1; }
-  .dash-bottom-label { font-size: 10px; font-weight: 400; letter-spacing: 0.2px; }
-  .dash-bottom-tab-active .dash-bottom-label { font-weight: 600; }
-  .dash-bottom-order-btn {
-    width: 36px; height: 36px; border-radius: 11px;
-    display: flex; align-items: center; justify-content: center;
-  }
+  .dash-bottom-icon { height: 22px; display: flex; align-items: center; opacity: 0.45; }
+  .dash-bottom-label { font-size: 10px; font-weight: 400; letter-spacing: 0.2px; opacity: 0.55; }
+  .dash-bottom-tab.active .dash-bottom-icon { opacity: 1; color: #c47d8e; }
+  .dash-bottom-tab.active .dash-bottom-label { font-weight: 600; opacity: 1; color: #c47d8e; }
+  .dash-bottom-tab.primary .dash-bottom-icon { opacity: 0.55; }
+  .dash-bottom-tab.primary .dash-bottom-icon svg { width: 22px; height: 22px; }
+  .dash-bottom-tab.primary.active .dash-bottom-icon { opacity: 1; color: #c47d8e; }
+  .dash-bottom-tab.primary.active .dash-bottom-icon svg { width: 24px; height: 24px; }
   .dash-main { padding-bottom: 64px !important; }
   .dash-footer { margin-bottom: 0; }
   .dash-hamburger-bars, .dash-menu-btn svg { display: none !important; }
