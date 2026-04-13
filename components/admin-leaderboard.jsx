@@ -9,6 +9,7 @@ const TABS = [
 ];
 
 export default function AdminLeaderboardPage({ dark, t }) {
+  const [view, setView] = useState("leaderboard");
   const [tab, setTab] = useState("spenders");
   const [period, setPeriod] = useState("month");
   const [data, setData] = useState(null);
@@ -112,80 +113,96 @@ export default function AdminLeaderboardPage({ dark, t }) {
   const modalOvr = { position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 };
   const modalBox = { background: dark ? "#0e1120" : "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 420, border: `1px solid ${t.cardBorder}`, boxShadow: "0 20px 60px rgba(0,0,0,.3)" };
 
+  const viewStyle = (id) => ({ padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: view === id ? 600 : 400, background: view === id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", color: view === id ? t.accent : t.textMuted, border: `1px solid ${view === id ? (dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)") : "transparent"}`, cursor: "pointer", fontFamily: "inherit" });
+  const ddStyle = { padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`, color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)", appearance: "none", cursor: "pointer", fontFamily: "inherit", backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='${dark ? "%23666" : "%23999"}' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center" };
+
   return (
     <div style={{ padding: "24px", maxWidth: 900 }}>
+      {/* Header */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
           <div>
             <div style={{ fontSize: 22, fontWeight: 600, color: t.text, marginBottom: 2 }}>Leaderboard</div>
-            <div style={{ fontSize: 14, color: t.textMuted }}>Top users · {periodLabel}</div>
+            <div style={{ fontSize: 14, color: t.textMuted }}>{view === "settings" ? "Announcement & reward settings" : `Top users · ${periodLabel}`}</div>
           </div>
           <div style={{ display: "flex", gap: 4 }}>
-            {TABS.map(tb => (
-              <button key={tb.id} onClick={() => { setTab(tb.id); clearSel(); }} style={{ padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: tab === tb.id ? 600 : 400, background: tab === tb.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", color: tab === tb.id ? t.accent : t.textMuted, border: `1px solid ${tab === tb.id ? (dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)") : "transparent"}`, cursor: "pointer", fontFamily: "inherit" }}>{tb.label}</button>
-            ))}
+            <button onClick={() => setView("settings")} style={viewStyle("settings")}>Settings</button>
+            <button onClick={() => setView("leaderboard")} style={viewStyle("leaderboard")}>Leaderboard</button>
           </div>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder, marginTop: 12 }} />
       </div>
 
-      {/* Announcement */}
-      <div style={card}>
-        <div style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: t.textMuted, marginBottom: 8 }}>Reward Announcement</div>
-        <input value={annoText} onChange={e => setAnnoText(e.target.value)} placeholder="🎁 Top 3 spenders this month win bonus credits!" style={{ ...inp, marginBottom: 8 }} />
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: t.textMuted, cursor: "pointer" }}><input type="checkbox" checked={annoEnabled} onChange={e => setAnnoEnabled(e.target.checked)} style={{ accentColor: "#c47d8e" }} /> Show on leaderboard</label>
-          <button onClick={saveAnno} disabled={annoSaving} style={{ ...smBtn, borderColor: t.accent, color: t.accent }}>{annoSaving ? "..." : "Save"}</button>
-          {annoMsg && <span style={{ fontSize: 11, color: annoMsg.type === "success" ? t.green : t.red }}>{annoMsg.text}</span>}
-        </div>
-      </div>
-
-      {/* Auto-reward */}
-      <div style={card}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: t.textMuted }}>Auto-Reward (Monthly)</div>
-          <button onClick={() => { if (!autoConfig) setAutoConfig({ enabled: false, category: "spenders", slots: [{ rank: 1, amount: 5000 }, { rank: 2, amount: 3000 }, { rank: 3, amount: 1000 }] }); setAutoModal(!autoModal); }} style={smBtn}>{autoModal ? "Close" : "Configure"}</button>
-        </div>
-        {autoConfig && !autoModal && <div style={{ fontSize: 13, color: autoConfig.enabled ? t.green : t.textMuted, marginTop: 6 }}>{autoConfig.enabled ? `Active — ${autoConfig.category}, top ${autoConfig.slots?.length || 0} rewarded monthly` : "Disabled"}</div>}
-        {autoModal && autoConfig && (
-          <div style={{ marginTop: 10 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: t.textMuted, marginBottom: 10, cursor: "pointer" }}><input type="checkbox" checked={autoConfig.enabled} onChange={e => setAutoConfig({ ...autoConfig, enabled: e.target.checked })} style={{ accentColor: "#c47d8e" }} /> Enable auto-reward</label>
-            <div style={{ marginBottom: 10 }}>
-              <label style={{ fontSize: 12, color: t.textMuted, display: "block", marginBottom: 4 }}>Category</label>
-              <select value={autoConfig.category} onChange={e => setAutoConfig({ ...autoConfig, category: e.target.value })} style={{ ...inp, width: "auto" }}><option value="spenders">Top Spenders</option><option value="referrers">Top Referrers</option><option value="active">Most Active</option></select>
-            </div>
-            <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 6 }}>Reward per rank</div>
-            {(autoConfig.slots || []).map((slot, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                <span style={{ fontSize: 13, color: t.textMuted, width: 40 }}>#{slot.rank}</span>
-                <input type="number" value={slot.amount} onChange={e => { const s = [...autoConfig.slots]; s[i] = { ...slot, amount: Number(e.target.value) }; setAutoConfig({ ...autoConfig, slots: s }); }} style={{ ...inp, width: 100 }} />
-                <span style={{ fontSize: 12, color: t.textMuted }}>₦</span>
-                <button onClick={() => setAutoConfig({ ...autoConfig, slots: autoConfig.slots.filter((_, j) => j !== i) })} style={{ background: "none", border: "none", color: t.red, fontSize: 14, cursor: "pointer" }}>✕</button>
-              </div>
-            ))}
-            <button onClick={() => setAutoConfig({ ...autoConfig, slots: [...(autoConfig.slots || []), { rank: (autoConfig.slots?.length || 0) + 1, amount: 1000 }] })} style={{ fontSize: 12, color: t.accent, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: "4px 0" }}>+ Add slot</button>
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button onClick={saveAuto} disabled={autoSaving} style={gradBtn}>{autoSaving ? "Saving..." : "Save Config"}</button>
-              {autoMsg && <span style={{ fontSize: 12, color: autoMsg.type === "success" ? t.green : t.red, alignSelf: "center" }}>{autoMsg.text}</span>}
-            </div>
+      {/* ═══ SETTINGS TAB ═══ */}
+      {view === "settings" && <>
+        {/* Announcement */}
+        <div style={card}>
+          <div style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: t.textMuted, marginBottom: 8 }}>Reward Announcement</div>
+          <input value={annoText} onChange={e => setAnnoText(e.target.value)} placeholder="🎁 Top 3 spenders this month win bonus credits!" style={{ ...inp, marginBottom: 8 }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: t.textMuted, cursor: "pointer" }}><input type="checkbox" checked={annoEnabled} onChange={e => setAnnoEnabled(e.target.checked)} style={{ accentColor: "#c47d8e" }} /> Show on leaderboard</label>
+            <button onClick={saveAnno} disabled={annoSaving} style={{ ...smBtn, borderColor: t.accent, color: t.accent }}>{annoSaving ? "..." : "Save"}</button>
+            {annoMsg && <span style={{ fontSize: 11, color: annoMsg.type === "success" ? t.green : t.red }}>{annoMsg.text}</span>}
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Time + mass actions */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
-        {["month", "all"].map(p => <button key={p} onClick={() => setPeriod(p)} style={pill(period === p)}>{p === "month" ? "This Month" : "All Time"}</button>)}
-        <div style={{ flex: 1 }} />
-        {list.length > 0 && <>
-          <button onClick={() => selectTop(3)} style={smBtn}>Top 3</button>
-          <button onClick={() => selectTop(5)} style={smBtn}>Top 5</button>
-          <button onClick={() => selectTop(10)} style={smBtn}>Top 10</button>
-          {selected.size > 0 && <>
-            <button onClick={clearSel} style={smBtn}>Clear</button>
-            <button onClick={() => { setMassModal(true); setMassMsg(null); }} style={gradBtn}>Reward {selected.size} users</button>
+        {/* Auto-reward */}
+        <div style={card}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: t.textMuted }}>Auto-Reward (Monthly)</div>
+            <button onClick={() => { if (!autoConfig) setAutoConfig({ enabled: false, category: "spenders", slots: [{ rank: 1, amount: 5000 }, { rank: 2, amount: 3000 }, { rank: 3, amount: 1000 }] }); setAutoModal(!autoModal); }} style={smBtn}>{autoModal ? "Close" : "Configure"}</button>
+          </div>
+          {autoConfig && !autoModal && <div style={{ fontSize: 13, color: autoConfig.enabled ? t.green : t.textMuted, marginTop: 6 }}>{autoConfig.enabled ? `Active — ${autoConfig.category}, top ${autoConfig.slots?.length || 0} rewarded monthly` : "Disabled"}</div>}
+          {autoModal && autoConfig && (
+            <div style={{ marginTop: 10 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: t.textMuted, marginBottom: 10, cursor: "pointer" }}><input type="checkbox" checked={autoConfig.enabled} onChange={e => setAutoConfig({ ...autoConfig, enabled: e.target.checked })} style={{ accentColor: "#c47d8e" }} /> Enable auto-reward</label>
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ fontSize: 12, color: t.textMuted, display: "block", marginBottom: 4 }}>Category</label>
+                <select value={autoConfig.category} onChange={e => setAutoConfig({ ...autoConfig, category: e.target.value })} style={{ ...inp, width: "auto" }}><option value="spenders">Top Spenders</option><option value="referrers">Top Referrers</option><option value="active">Most Active</option></select>
+              </div>
+              <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 6 }}>Reward per rank</div>
+              {(autoConfig.slots || []).map((slot, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontSize: 13, color: t.textMuted, width: 40 }}>#{slot.rank}</span>
+                  <input type="number" value={slot.amount} onChange={e => { const s = [...autoConfig.slots]; s[i] = { ...slot, amount: Number(e.target.value) }; setAutoConfig({ ...autoConfig, slots: s }); }} style={{ ...inp, width: 100 }} />
+                  <span style={{ fontSize: 12, color: t.textMuted }}>₦</span>
+                  <button onClick={() => setAutoConfig({ ...autoConfig, slots: autoConfig.slots.filter((_, j) => j !== i) })} style={{ background: "none", border: "none", color: t.red, fontSize: 14, cursor: "pointer" }}>✕</button>
+                </div>
+              ))}
+              <button onClick={() => setAutoConfig({ ...autoConfig, slots: [...(autoConfig.slots || []), { rank: (autoConfig.slots?.length || 0) + 1, amount: 1000 }] })} style={{ fontSize: 12, color: t.accent, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: "4px 0" }}>+ Add slot</button>
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <button onClick={saveAuto} disabled={autoSaving} style={gradBtn}>{autoSaving ? "Saving..." : "Save Config"}</button>
+                {autoMsg && <span style={{ fontSize: 12, color: autoMsg.type === "success" ? t.green : t.red, alignSelf: "center" }}>{autoMsg.text}</span>}
+              </div>
+            </div>
+          )}
+        </div>
+      </>}
+
+      {/* ═══ LEADERBOARD TAB ═══ */}
+      {view === "leaderboard" && <>
+        {/* Filters + mass actions */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ flex: 1 }} />
+          <select value={tab} onChange={e => { setTab(e.target.value); clearSel(); }} style={ddStyle}>
+            {TABS.map(tb => <option key={tb.id} value={tb.id}>{tb.label}</option>)}
+          </select>
+          <select value={period} onChange={e => setPeriod(e.target.value)} style={ddStyle}>
+            <option value="month">This Month</option>
+            <option value="all">All Time</option>
+          </select>
+        </div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {list.length > 0 && <>
+            <button onClick={() => selectTop(3)} style={smBtn}>Top 3</button>
+            <button onClick={() => selectTop(5)} style={smBtn}>Top 5</button>
+            <button onClick={() => selectTop(10)} style={smBtn}>Top 10</button>
+            {selected.size > 0 && <>
+              <button onClick={clearSel} style={smBtn}>Clear</button>
+              <button onClick={() => { setMassModal(true); setMassMsg(null); }} style={gradBtn}>Reward {selected.size} users</button>
+            </>}
           </>}
-        </>}
-      </div>
+        </div>
 
       {/* Table */}
       {loading ? <div>{[1,2,3,4,5,6].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 48, borderRadius: 8, marginBottom: 6 }} />)}</div> : list.length === 0 ? <div style={{ padding: 40, textAlign: "center", color: t.textMuted }}>No data for this period</div> : (
@@ -218,6 +235,8 @@ export default function AdminLeaderboardPage({ dark, t }) {
           })}
         </div>
       )}
+
+      </>}
 
       {/* Single reward modal */}
       {rewardModal && (
