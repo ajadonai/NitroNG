@@ -1747,3 +1747,22 @@ input { font-family: inherit; }
 @media (min-width: 768px) and (max-width: 1199px) {
   .tour-tooltip { left: 50% !important; bottom: 40px !important; }
 }
+
+/* ═══ TOUR NAV RING ═══ */
+.tour-nav-ring {
+  position: relative;
+  z-index: 52 !important;
+}
+.tour-nav-ring::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 12px;
+  border: 2.5px solid #c47d8e;
+  animation: tourRingPulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes tourRingPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.03); }
+}

@@ -134,6 +134,15 @@ export default function TourGuide({ dark, onComplete, onNavigate, onOpenMore }) 
     }
   }, [step, phase, visible]);
 
+  // Highlight current step's bottom nav tab with ring
+  useEffect(() => {
+    if (phase !== "touring" || !visible) return;
+    const s = STEPS[step];
+    const tab = document.querySelector(`[data-tab="${s.bottomId}"]`);
+    if (tab) tab.classList.add("tour-nav-ring");
+    return () => { if (tab) tab.classList.remove("tour-nav-ring"); };
+  }, [step, phase, visible]);
+
   if (!visible) return null;
 
   const accent = "#c47d8e";

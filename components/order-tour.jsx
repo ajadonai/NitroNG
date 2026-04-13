@@ -72,6 +72,14 @@ export default function OrderTour({ dark, onComplete }) {
     return () => clearTimeout(timer);
   }, [step, visible]);
 
+  // Highlight "Order" tab on bottom nav throughout the tour
+  useEffect(() => {
+    if (!visible) return;
+    const tab = document.querySelector('[data-tab="services"]');
+    if (tab) tab.classList.add("tour-nav-ring");
+    return () => { if (tab) tab.classList.remove("tour-nav-ring"); };
+  }, [visible]);
+
   if (!visible) return null;
 
   const accent = "#c47d8e";
