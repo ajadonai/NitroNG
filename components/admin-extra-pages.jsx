@@ -19,8 +19,16 @@ export function AdminActivityPage({ dark, t }) {
     fetch("/api/admin/activity").then(r => r.json()).then(d => { setLogs(d.activity || []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  const types = [...new Set(logs.map(l => l.type))].filter(Boolean);
-  const filtered = filter === "all" ? logs : logs.filter(l => l.type === filter);
+  const typeLabels = { user: "Users", order: "Orders", alert: "Alerts", blog: "Blog", coupon: "Coupons", settings: "Settings", service: "Services", payment: "Payments", leaderboard_reward: "Rewards", leaderboard_announcement: "Rewards", auto_reward_config: "Rewards", team: "Team" };
+  const groupedTypes = {};
+  logs.forEach(l => { const label = typeLabels[l.type] || (l.type ? l.type.charAt(0).toUpperCase() + l.type.slice(1) : "Other"); groupedTypes[label] = (groupedTypes[label] || 0) + 1; });
+  const typeEntries = Object.entries(groupedTypes).sort((a, b) => b[1] - a[1]);
+  const typeGroupMap = {};
+  Object.entries(typeLabels).forEach(([raw, label]) => { if (!typeGroupMap[label]) typeGroupMap[label] = []; typeGroupMap[label].push(raw); });
+  const filtered = filter === "all" ? logs : logs.filter(l => {
+    const group = typeGroupMap[filter];
+    return group ? group.includes(l.type) : l.type === filter;
+  });
 
   const typeColor = (type) => {
     if (type === "order") return t.blue;
@@ -49,7 +57,7 @@ export function AdminActivityPage({ dark, t }) {
           backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center",
         }}>
           <option value="all">All ({logs.length})</option>
-          {types.map(ty => <option key={ty} value={ty}>{ty} ({logs.filter(l => l.type === ty).length})</option>)}
+          {typeEntries.map(([label, count]) => <option key={label} value={label}>{label} ({count})</option>)}
         </select>
       </div>
 
