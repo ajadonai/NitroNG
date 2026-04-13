@@ -524,7 +524,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
 
       {/* Fixed bottom bar — mobile/tablet */}
       {hasOrder && (
-        <div className="no-bottom-bar" style={{ background: dark ? "rgba(8,11,20,.97)" : "rgba(244,241,237,.97)", borderTop: `1px solid ${t.cardBorder}` }}>
+        <div className="no-bottom-bar" data-tour="no-order-bar" style={{ background: dark ? "rgba(8,11,20,.97)" : "rgba(244,241,237,.97)", borderTop: `1px solid ${t.cardBorder}` }}>
           <div className="no-bar-info">
             <div className="no-bar-name" style={{ color: t.text }}>{selSvc?.name}</div>
             <div className="no-bar-tier">

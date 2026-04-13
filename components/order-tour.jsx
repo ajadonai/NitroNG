@@ -6,7 +6,7 @@ const STEPS = [
   { target: "no-service-list", findFirst: ".no-svc-card", title: "Choose a service", desc: "Browse available services — followers, likes, views, comments, and more. Tap one to select it.", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg> },
   { target: "no-tier-select", title: "Select your tier", desc: "Budget is cheapest, Standard is balanced, Premium is highest quality. Pick what fits your needs.", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>, before: "selectService" },
   { target: "no-link-input", title: "Enter your link & quantity", desc: "Paste your profile or post URL and set how many you want. Minimum varies by service.", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>, before: "selectTier" },
-  { target: "no-submit-btn", title: "Place your order", desc: "Review the total, hit the button, and you're done. We start processing immediately.", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
+  { target: "no-order-bar", title: "Place your order", desc: "Review your selection, tap Order, enter your link and you're done. We start processing immediately.", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
 ];
 
 function findTarget(s) {
@@ -124,24 +124,17 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
     return () => { if (tab) tab.classList.remove("tour-nav-ring"); };
   }, [visible, phase]);
 
-  // Step 5 only: raise the modal above the overlay so Place Order is visible
+  // Step 5 only: raise the bottom bar above the overlay so it's visible
   useEffect(() => {
     if (phase !== "touring" || !visible || step !== 4) return;
     const timer = setTimeout(() => {
-      const modalOverlay = document.querySelector(".no-modal-overlay");
-      const modalContent = document.querySelector(".no-modal");
-      if (modalOverlay) {
-        modalOverlay.style.zIndex = "101";
-        modalOverlay.style.background = "transparent";
-      }
-      if (modalContent) modalContent.style.zIndex = "102";
+      const bar = document.querySelector(".no-bottom-bar");
+      if (bar) bar.style.zIndex = "101";
     }, 200);
     return () => {
       clearTimeout(timer);
-      const modalOverlay = document.querySelector(".no-modal-overlay");
-      const modalContent = document.querySelector(".no-modal");
-      if (modalOverlay) { modalOverlay.style.zIndex = ""; modalOverlay.style.background = ""; }
-      if (modalContent) modalContent.style.zIndex = "";
+      const bar = document.querySelector(".no-bottom-bar");
+      if (bar) bar.style.zIndex = "";
     };
   }, [step, phase, visible]);
 
