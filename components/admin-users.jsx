@@ -102,7 +102,7 @@ export default function AdminUsersPage({ dark, t }) {
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      <div className="adm-filters">
+      <div className="adm-filters" style={{ display: "flex", justifyContent: "flex-end" }}>
         <select value={filter} onChange={e => { setFilter(e.target.value); setPage(1); }} style={{
           padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500,
           background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)",

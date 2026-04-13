@@ -113,24 +113,26 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
     <>
       {/* Header */}
       <div className="ord-header">
-        <div className="ord-title" style={{ color: t.text }}>History</div>
-        <div className="ord-subtitle" style={{ color: t.textMuted }}>Your order history and transactions</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+          <div>
+            <div className="ord-title" style={{ color: t.text }}>History</div>
+            <div className="ord-subtitle" style={{ color: t.textMuted }}>Your order history and transactions</div>
+          </div>
+          <div className="ord-tabs">
+            {[["orders", "Orders", orders.length], ["transactions", "Transactions", txs.length]].map(([id, lb, count]) => (
+              <button key={id} onClick={() => { setTab(id); setOPage(1); setTPage(1); setExpanded(null); }} className={`ord-tab${tab === id ? " ord-tab-on" : ""}`}>
+                {lb} <span style={{ fontSize: 12, opacity: .7 }}>({count})</span>
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
-      </div>
-
-      {/* Tab switcher */}
-      <div className="ord-tabs">
-        {[["orders", "Orders", orders.length], ["transactions", "Transactions", txs.length]].map(([id, lb, count]) => (
-          <button key={id} onClick={() => { setTab(id); setOPage(1); setTPage(1); setExpanded(null); }} className={`ord-tab${tab === id ? " ord-tab-on" : ""}`}>
-            {lb} <span style={{ fontSize: 12, opacity: .7 }}>({count})</span>
-          </button>
-        ))}
       </div>
 
       {/* ═══ ORDERS TAB ═══ */}
       {tab === "orders" && <>
         {/* Status filters */}
-        <div className="ord-filters">
+        <div className="ord-filters" style={{ display: "flex", justifyContent: "flex-end" }}>
           <select value={filter} onChange={e => { setFilter(e.target.value); setOPage(1); setExpanded(null); }} style={{
             padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500,
             background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)",
@@ -226,7 +228,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
 
       {/* ═══ TRANSACTIONS TAB ═══ */}
       {tab === "transactions" && <>
-        <div className="ord-filters">
+        <div className="ord-filters" style={{ display: "flex", justifyContent: "flex-end" }}>
           <select value={txFilter} onChange={e => { setTxFilter(e.target.value); setTPage(1); }} style={{
             padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500,
             background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)",

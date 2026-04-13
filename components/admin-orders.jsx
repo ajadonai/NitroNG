@@ -72,7 +72,7 @@ export default function AdminOrdersPage({ dark, t }) {
       {msg && <div style={{ padding: "8px 14px", borderRadius: 8, marginBottom: 12, fontSize: 14, background: msg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: msg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), display: "flex", justifyContent: "space-between", alignItems: "center" }}><span>{msg.type === "success" ? "✓" : "⚠️"} {msg.text}</span><button onClick={() => setMsg(null)} style={{ background: "none", color: "inherit", border: "none", cursor: "pointer" }}>✕</button></div>}
 
       {/* Filters */}
-      <div className="adm-filters">
+      <div className="adm-filters" style={{ display: "flex", justifyContent: "flex-end" }}>
         <select value={filter} onChange={e => { setFilter(e.target.value); setPage(1); }} style={{
           padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500,
           background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)",

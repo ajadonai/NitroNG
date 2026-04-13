@@ -108,8 +108,20 @@ export default function LeaderboardPage({ dark, t }) {
   return (
     <>
       <div className="lb-header">
-        <div className="lb-title" style={{ color: t.text }}>Leaderboard</div>
-        <div className="lb-subtitle" style={{ color: t.textMuted }}>Top Nitro users · {periodLabel}</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+          <div>
+            <div className="lb-title" style={{ color: t.text }}>Leaderboard</div>
+            <div className="lb-subtitle" style={{ color: t.textMuted }}>Top Nitro users · {periodLabel}</div>
+          </div>
+          <div className="lb-tabs">
+            {TABS.map(tb => (
+              <button key={tb.id} onClick={() => setTab(tb.id)} className={`lb-tab${tab === tb.id ? " lb-tab-on" : ""}`}>
+                <span className="lb-tab-full">{tb.label}</span>
+                <span className="lb-tab-short">{tb.shortLabel}</span>
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
@@ -118,15 +130,6 @@ export default function LeaderboardPage({ dark, t }) {
           {rewardAnnouncement}
         </div>
       )}
-
-      <div className="lb-tabs">
-        {TABS.map(tb => (
-          <button key={tb.id} onClick={() => setTab(tb.id)} className={`lb-tab${tab === tb.id ? " lb-tab-on" : ""}`}>
-            <span className="lb-tab-full">{tb.label}</span>
-            <span className="lb-tab-short">{tb.shortLabel}</span>
-          </button>
-        ))}
-      </div>
 
       <div className="lb-time">
         {["month", "all"].map(p => (

@@ -134,7 +134,7 @@ export default function AdminServicesPage({ dark, t }) {
       {inUseDisabledCount > 0 && <div style={{ padding: "10px 14px", borderRadius: 8, marginBottom: 12, background: dark ? "rgba(224,164,88,.06)" : "rgba(217,119,6,.04)", border: `1px solid ${dark ? "rgba(224,164,88,.15)" : "rgba(217,119,6,.1)"}`, color: dark ? "#e0a458" : "#92400e", fontSize: 13, lineHeight: 1.5 }}>⚠️ {inUseDisabledCount} service{inUseDisabledCount > 1 ? "s" : ""} used by Menu Builder {inUseDisabledCount > 1 ? "are" : "is"} disabled. Users can see {inUseDisabledCount > 1 ? "them" : "it"} in the menu but orders may fail.</div>}
 
       {/* Provider + Status filters */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", justifyContent: "flex-end" }}>
         {providers.length > 1 && (
           <select value={providerFilter} onChange={e => setProviderFilter(e.target.value)} style={{
             padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500,
