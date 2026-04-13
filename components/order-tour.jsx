@@ -17,6 +17,17 @@ function findTarget(s) {
   return document.querySelector(`[data-tour="${s.target}"]`);
 }
 
+// Wait for an element to appear in DOM, then call callback
+function waitForEl(selector, cb, maxWait = 3000) {
+  const start = Date.now();
+  const check = () => {
+    const el = document.querySelector(selector);
+    if (el) { cb(el); return; }
+    if (Date.now() - start < maxWait) requestAnimationFrame(check);
+  };
+  check();
+}
+
 export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, setQty }) {
   const [phase, setPhase] = useState("welcome");
   const [step, setStep] = useState(0);
@@ -37,25 +48,6 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
     setTimeout(() => onComplete?.(), 300);
   }, [onComplete, setSelSvc, setSelTier]);
 
-  const clickFirstService = () => {
-    const card = document.querySelector(".no-svc-card");
-    if (card) card.click();
-  };
-
-  const clickFirstTier = () => {
-    // pickTier needs e.stopPropagation/preventDefault — dispatch proper event
-    const chip = document.querySelector(".no-tier-chip");
-    if (chip) {
-      const evt = new MouseEvent("click", { bubbles: true, cancelable: true });
-      chip.dispatchEvent(evt);
-    }
-    // Also open the mobile modal if needed
-    setTimeout(() => {
-      const modalBtn = document.querySelector(".no-bar-btn");
-      if (modalBtn && window.innerWidth < 1200) modalBtn.click();
-    }, 200);
-  };
-
   const startTour = () => {
     setPhase("touring");
     setStep(0);
@@ -65,13 +57,33 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
     const s = STEPS[idx];
 
     if (s.before === "selectService") {
-      clickFirstService();
-      setTimeout(() => setStep(idx), 500);
+      // Wait for service cards to exist, then click the first one
+      waitForEl(".no-svc-card", (card) => {
+        card.click();
+        // Wait for tier chips to render after selection
+        waitForEl(".no-tier-chip", () => {
+          setStep(idx);
+        });
+      });
       return;
     }
+
     if (s.before === "selectTier") {
-      clickFirstTier();
-      setTimeout(() => setStep(idx), 600);
+      // Wait for tier chips, click the first one
+      waitForEl(".no-tier-chip", (chip) => {
+        chip.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+        // On mobile, also open the order modal
+        if (window.innerWidth < 1200) {
+          setTimeout(() => {
+            const modalBtn = document.querySelector(".no-bar-btn");
+            if (modalBtn) modalBtn.click();
+          }, 300);
+        }
+        // Wait for the form/submit button to appear
+        waitForEl('[data-tour="no-link-input"]', () => {
+          setStep(idx);
+        });
+      });
       return;
     }
 
@@ -99,16 +111,13 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
       rafRef.current = requestAnimationFrame(update);
     };
 
-    // Longer delay for steps that auto-select (DOM needs time to update)
-    const delay = STEPS[step].before ? 400 : 200;
-    const timer = setTimeout(update, delay);
+    const timer = setTimeout(update, 300);
     return () => { clearTimeout(timer); if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [step, phase, visible]);
 
   // Scroll target into view
   useEffect(() => {
     if (phase !== "touring" || !visible || STEPS[step].noScroll) return;
-    const delay = STEPS[step].before ? 500 : 200;
     const timer = setTimeout(() => {
       const el = findTarget(STEPS[step]);
       if (el) {
@@ -116,7 +125,7 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
         const inView = r.top >= 60 && r.bottom <= window.innerHeight - 180;
         if (!inView) el.scrollIntoView({ behavior: "smooth", block: "center" });
       }
-    }, delay);
+    }, 400);
     return () => clearTimeout(timer);
   }, [step, phase, visible]);
 
@@ -147,7 +156,6 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
         @keyframes otWelcomeFadeIn { from { opacity: 0; transform: translate(-50%, -48%); } to { opacity: 1; transform: translate(-50%, -50%); } }
       `}</style>
 
-      {/* SVG overlay */}
       <svg onClick={finish} style={{ position: "fixed", inset: 0, width: "100%", height: "100%", zIndex: 100 }}>
         <defs>
           <mask id="orderTourMask">
