@@ -24,8 +24,13 @@ export default function CookieBanner() {
       }
     };
     check();
-    const interval = setInterval(check, 2000);
-    return () => clearInterval(interval);
+    // Re-check when storage changes or on theme toggle
+    window.addEventListener('storage', check);
+    // Also listen for custom theme change events
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true });
+    const interval = setInterval(check, 500);
+    return () => { window.removeEventListener('storage', check); observer.disconnect(); clearInterval(interval); };
   }, []);
 
   const accept = () => {
