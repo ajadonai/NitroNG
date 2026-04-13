@@ -906,7 +906,7 @@ function DashboardInner() {
       </div>
 
       {/* ═══ TOUR GUIDE ═══ */}
-      {showTour && <TourGuide dark={dark} onComplete={() => setShowTour(false)} />}
+      {showTour && <TourGuide dark={dark} onComplete={() => setShowTour(false)} onNavigate={(page) => setActive(page)} onOpenMore={() => setMoreOpen(true)} />}
 
       {/* ═══ MOBILE BOTTOM NAV ═══ */}
       {moreOpen && <div className="dash-more-overlay" onClick={() => setMoreOpen(false)} />}
