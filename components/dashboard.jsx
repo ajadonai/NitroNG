@@ -125,26 +125,6 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive }) {
         ))}
       </div>
 
-      {/* Quick actions — mobile/tablet only */}
-      <div className="dash-quick-actions">
-        <div className="dash-qa-card" style={{ background: dark ? "rgba(196,125,142,.04)" : "rgba(196,125,142,.03)", border: `1px solid ${dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)"}`, borderRadius: 14, padding: "10px 10px 12px" }}>
-          <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: t.textMuted, padding: "0 4px 6px", opacity: .7 }}>Quick Actions</div>
-          <div className="dash-qa-grid">
-            {[
-              ["New Order", "services", t.accent, <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>],
-              ["Top Up", "add-funds", dark ? "#6ee7b7" : "#059669", <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>],
-              ["History", "orders", dark ? "#a5b4fc" : "#4f46e5", <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>],
-              ["Refer", "referrals", dark ? "#e0a458" : "#d97706", <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>],
-            ].map(([label, page, color, icon]) => (
-              <button key={page} onClick={() => setActive(page)} className="dash-qa-btn" style={{ background: dark ? "rgba(255,255,255,.06)" : "#fff" }}>
-                <div className="dash-qa-icon" style={{ color, background: `${color}15` }}>{icon}</div>
-                <span style={{ fontSize: 11, fontWeight: 600, color: t.textSoft }}>{label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* Recent orders */}
       <div className="dash-orders-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
         <div style={{ padding: "16px 18px 0" }}>
@@ -934,13 +914,13 @@ function DashboardInner() {
           ))}
         </div>
       )}
-      <nav className="dash-bottom-nav" style={{ background: dark ? "#0a0e1a" : "#f8f5f1", borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.08)"}` }}>
+      <nav className="dash-bottom-nav" style={{ background: dark ? "#0a0e1a" : "#f8f5f1", borderTop: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)"}` }}>
         {BOTTOM_TABS.map(tab => {
           const isMore = tab.id === "more";
           const isActive = isMore ? moreOpen : active === tab.id;
           const isPrimary = tab.primary;
           return (
-            <button key={tab.id} onClick={() => { if (isMore) { setMoreOpen(!moreOpen); } else { setActive(tab.id); setMoreOpen(false); setLeftOpen(false); } }} className={`dash-bottom-tab${isActive ? " dash-bottom-tab-active" : ""}${isPrimary ? " dash-bottom-tab-primary" : ""}`} style={{ color: isActive ? t.accent : (dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)") }}>
+            <button key={tab.id} onClick={() => { if (isMore) { setMoreOpen(!moreOpen); } else { setActive(tab.id); setMoreOpen(false); setLeftOpen(false); } }} className={`dash-bottom-tab${isActive ? " dash-bottom-tab-active" : ""}${isPrimary ? " dash-bottom-tab-primary" : ""}`} style={{ color: isActive ? t.accent : (dark ? "rgba(255,255,255,.5)" : "rgba(0,0,0,.45)") }}>
               {isPrimary ? (
                 <div className="dash-bottom-order-btn" style={{ background: isActive ? t.accent : (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)"), color: isActive ? "#fff" : t.accent }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
               ) : (

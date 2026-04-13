@@ -1684,20 +1684,20 @@ input { font-family: inherit; }
   .dash-bottom-tab {
     flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
     background: none; border: none; cursor: pointer; padding: 2px 0;
-    transition: color 0.15s; font-family: inherit;
+    font-family: inherit;
   }
-  .dash-bottom-icon { opacity: 0.5; height: 22px; display: flex; align-items: center; }
+  .dash-bottom-icon { opacity: 0.6; height: 22px; display: flex; align-items: center; }
   .dash-bottom-tab-active .dash-bottom-icon { opacity: 1; }
-  .dash-bottom-label { font-size: 9px; font-weight: 400; letter-spacing: 0.2px; }
+  .dash-bottom-label { font-size: 10px; font-weight: 400; letter-spacing: 0.2px; }
   .dash-bottom-tab-active .dash-bottom-label { font-weight: 600; }
   .dash-bottom-order-btn {
     width: 36px; height: 36px; border-radius: 11px;
     display: flex; align-items: center; justify-content: center;
-    transition: all 0.15s;
   }
   .dash-main { padding-bottom: 64px !important; }
   .dash-footer { margin-bottom: 0; }
-  .dash-menu-btn { display: none !important; }
+  .dash-hamburger-bars, .dash-menu-btn svg { display: none !important; }
+  .dash-menu-btn { pointer-events: none; }
   .dash-more-overlay {
     display: block; position: fixed; inset: 0; z-index: 88;
     background: rgba(0,0,0,0.4);
