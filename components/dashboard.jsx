@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useTransition } from "react";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme } from "./shared-nav";
 import NewOrderPage, { PLATFORMS, PLATFORM_GROUPS, OrderForm, ServicesSidebar } from "./new-order";
@@ -388,12 +388,14 @@ export default function Dashboard() {
 function DashboardInner() {
   const { dark, setDark, toggleTheme, t: baseT, themeMode, setThemeMode } = useTheme();
   const [active, setActiveRaw] = useState("overview");
-  const setActive = (page) => { setActiveRaw(page); try { localStorage.setItem("nitro-page", page); } catch {} };
+  const [navActive, setNavActive] = useState("overview");
+  const [, startTransition] = useTransition();
+  const setActive = (page) => { setNavActive(page); startTransition(() => { setActiveRaw(page); try { localStorage.setItem("nitro-page", page); } catch {} }); };
   useEffect(() => {
     try {
       const nav = performance.getEntriesByType?.("navigation")?.[0];
       const isReload = nav?.type === "reload" || nav?.type === "back_forward";
-      if (isReload) { const saved = localStorage.getItem("nitro-page"); if (saved) setActiveRaw(saved); }
+      if (isReload) { const saved = localStorage.getItem("nitro-page"); if (saved) { setActiveRaw(saved); setNavActive(saved); } }
       else { localStorage.removeItem("nitro-page"); }
     } catch {}
   }, []);
@@ -907,8 +909,8 @@ function DashboardInner() {
       {moreOpen && (
         <div className="dash-more-popup" style={{ background: dark ? "#161b2e" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.12)"}` }}>
           {MORE_ITEMS.map(item => (
-            <button key={item.id} onClick={() => { setActive(item.id); setMoreOpen(false); }} className="dash-more-item" style={{ background: active === item.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : (dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.02)"), color: active === item.id ? t.accent : (dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.6)"), fontWeight: active === item.id ? 600 : 500 }}>
-              <div className="dash-more-item-icon" style={{ background: active === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)"), color: active === item.id ? t.accent : (dark ? "rgba(255,255,255,.4)" : "rgba(0,0,0,.35)") }}>{I[item.id]}</div>
+            <button key={item.id} onClick={() => { setActive(item.id); setMoreOpen(false); }} className="dash-more-item" style={{ background: navActive === item.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : (dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.02)"), color: navActive === item.id ? t.accent : (dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.6)"), fontWeight: navActive === item.id ? 600 : 500 }}>
+              <div className="dash-more-item-icon" style={{ background: navActive === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)"), color: navActive === item.id ? t.accent : (dark ? "rgba(255,255,255,.4)" : "rgba(0,0,0,.35)") }}>{I[item.id]}</div>
               {item.label}
             </button>
           ))}
@@ -917,7 +919,7 @@ function DashboardInner() {
       <nav className="dash-bottom-nav" style={{ background: dark ? "#0a0e1a" : "#f8f5f1", borderTop: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)"}` }}>
         {BOTTOM_TABS.map(tab => {
           const isMore = tab.id === "more";
-          const isActive = isMore ? moreOpen : active === tab.id;
+          const isActive = isMore ? moreOpen : navActive === tab.id;
           return (
             <button key={tab.id} onClick={() => { if (isMore) { setMoreOpen(!moreOpen); } else { setActive(tab.id); setMoreOpen(false); setLeftOpen(false); } }} className={`dash-bottom-tab${isActive ? " active" : ""}${tab.primary ? " primary" : ""}`}>
               <span className="dash-bottom-icon">{isMore ? MoreIcon : I[tab.id]}</span>
