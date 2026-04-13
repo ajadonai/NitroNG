@@ -1751,7 +1751,7 @@ input { font-family: inherit; }
 /* ═══ TOUR NAV RING ═══ */
 .tour-nav-ring {
   position: relative;
-  z-index: 52 !important;
+  z-index: 102 !important;
 }
 .tour-nav-ring::after {
   content: "";

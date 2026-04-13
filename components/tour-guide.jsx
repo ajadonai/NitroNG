@@ -94,9 +94,8 @@ export default function TourGuide({ dark, onComplete, onNavigate, onOpenMore }) 
 
       if (mobile) {
         if (s.mobileAction === "openMore") {
-          // Find Support inside More popup
+          // ALWAYS spotlight Support inside the popup, not the More button
           el = [...document.querySelectorAll(".dash-more-item")].find(e => e.textContent?.includes("Support"));
-          if (!el) el = document.querySelector(`[data-tab="${s.bottomId}"]`);
         } else {
           el = document.querySelector(`[data-tab="${s.bottomId}"]`);
         }
@@ -117,7 +116,7 @@ export default function TourGuide({ dark, onComplete, onNavigate, onOpenMore }) 
     return () => { clearTimeout(timer); if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [step, phase, visible]);
 
-  // During support step on mobile, raise More popup above overlay
+  // During support step on mobile: raise More popup and its overlay above tour overlay
   useEffect(() => {
     if (phase !== "touring" || !visible) return;
     const s = STEPS[step];
@@ -125,8 +124,8 @@ export default function TourGuide({ dark, onComplete, onNavigate, onOpenMore }) 
     if (mobile && s.mobileAction === "openMore") {
       const popup = document.querySelector(".dash-more-popup");
       const overlay = document.querySelector(".dash-more-overlay");
-      if (popup) popup.style.zIndex = "52";
-      if (overlay) overlay.style.zIndex = "51";
+      if (popup) popup.style.zIndex = "101";
+      if (overlay) overlay.style.zIndex = "99";
       return () => {
         if (popup) popup.style.zIndex = "";
         if (overlay) overlay.style.zIndex = "";
@@ -135,12 +134,32 @@ export default function TourGuide({ dark, onComplete, onNavigate, onOpenMore }) 
   }, [step, phase, visible]);
 
   // Highlight current step's bottom nav tab with ring
+  // For support step: give More an active color but ring goes on Support inside popup
   useEffect(() => {
     if (phase !== "touring" || !visible) return;
     const s = STEPS[step];
-    const tab = document.querySelector(`[data-tab="${s.bottomId}"]`);
-    if (tab) tab.classList.add("tour-nav-ring");
-    return () => { if (tab) tab.classList.remove("tour-nav-ring"); };
+    const mobile = isMobile();
+
+    if (mobile && s.mobileAction === "openMore") {
+      // More button gets active color only (no ring)
+      const moreTab = document.querySelector('[data-tab="more"]');
+      if (moreTab) moreTab.classList.add("active");
+      // Support item gets ring
+      const timer = setTimeout(() => {
+        const supportItem = [...document.querySelectorAll(".dash-more-item")].find(e => e.textContent?.includes("Support"));
+        if (supportItem) supportItem.classList.add("tour-nav-ring");
+      }, 200);
+      return () => {
+        clearTimeout(timer);
+        if (moreTab) moreTab.classList.remove("active");
+        const supportItem = [...document.querySelectorAll(".dash-more-item")].find(e => e.textContent?.includes("Support"));
+        if (supportItem) supportItem.classList.remove("tour-nav-ring");
+      };
+    } else {
+      const tab = document.querySelector(`[data-tab="${s.bottomId}"]`);
+      if (tab) tab.classList.add("tour-nav-ring");
+      return () => { if (tab) tab.classList.remove("tour-nav-ring"); };
+    }
   }, [step, phase, visible]);
 
   if (!visible) return null;
@@ -164,8 +183,8 @@ export default function TourGuide({ dark, onComplete, onNavigate, onOpenMore }) 
         @keyframes tourWelcomeFadeIn { from { opacity: 0; transform: translate(-50%, -48%); } to { opacity: 1; transform: translate(-50%, -50%); } }
       `}</style>
 
-      {/* SVG overlay with spotlight cutout */}
-      <svg onClick={finish} style={{ position: "fixed", inset: 0, width: "100%", height: "100%", zIndex: 50 }}>
+      {/* SVG overlay — z-index 100 to sit above bottom nav (90) */}
+      <svg onClick={finish} style={{ position: "fixed", inset: 0, width: "100%", height: "100%", zIndex: 100 }}>
         <defs>
           <mask id="tourSpotMask">
             <rect width="100%" height="100%" fill="white" />
@@ -185,7 +204,7 @@ export default function TourGuide({ dark, onComplete, onNavigate, onOpenMore }) 
       {/* WELCOME */}
       {phase === "welcome" && (
         <div style={{
-          position: "fixed", zIndex: 53, top: "50%", left: "50%",
+          position: "fixed", zIndex: 101, top: "50%", left: "50%",
           transform: "translate(-50%, -50%)", textAlign: "center",
           background: bg, border: `1.5px solid ${border}`, borderRadius: 16,
           padding: "28px 28px 24px", maxWidth: 360, width: "calc(100% - 32px)",
@@ -205,12 +224,12 @@ export default function TourGuide({ dark, onComplete, onNavigate, onOpenMore }) 
       {/* TOUR STEP */}
       {phase === "touring" && (
         <div className="tour-tooltip" style={{
-          position: "fixed", zIndex: 53,
+          position: "fixed", zIndex: 101,
           background: bg, border: `1.5px solid ${border}`, borderRadius: 16,
           padding: "22px 24px", maxWidth: 360, width: "calc(100% - 32px)",
           boxShadow: dark ? "0 12px 40px rgba(0,0,0,0.5)" : "0 12px 40px rgba(0,0,0,0.12)",
           animation: "tourFadeIn 0.3s ease",
-          left: "50%", bottom: isSupportStep ? 260 : 90, transform: "translateX(-50%)",
+          left: "50%", bottom: isSupportStep ? 280 : 90, transform: "translateX(-50%)",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, background: dark ? "rgba(196,125,142,0.1)" : "rgba(196,125,142,0.06)", display: "flex", alignItems: "center", justifyContent: "center", color: accent }}>{STEPS[step].icon}</div>
