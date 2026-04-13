@@ -1741,12 +1741,6 @@ input { font-family: inherit; }
 }
 
 /* ═══ TOUR GUIDE ═══ */
-@media (min-width: 1200px) {
-  .tour-tooltip { left: 260px !important; bottom: auto !important; top: 50% !important; transform: translateY(-50%) !important; }
-}
-@media (min-width: 768px) and (max-width: 1199px) {
-  .tour-tooltip { left: 50% !important; bottom: 40px !important; }
-}
 
 /* ═══ TOUR NAV RING ═══ */
 .tour-nav-ring {
