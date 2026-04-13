@@ -68,6 +68,7 @@ const MORE_ITEMS = [
   { id: "settings", label: "Settings" },
 ];
 const MoreIcon = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>;
+const OrderIcon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 
 
 /* ── Status helpers ── */
@@ -931,7 +932,7 @@ function DashboardInner() {
                 setActive(tab.id); setMoreOpen(false); setLeftOpen(false);
               }
             }} className={`dash-bottom-tab${(!moreOpen && active === tab.id) || (isMore && moreOpen) ? " active" : ""}${tab.primary ? " primary" : ""}`}>
-              <span className="dash-bottom-icon">{isMore ? MoreIcon : I[tab.id]}</span>
+              <span className="dash-bottom-icon">{isMore ? MoreIcon : tab.primary ? OrderIcon : I[tab.id]}</span>
               <span className="dash-bottom-label">{tab.label}</span>
             </button>
           );
