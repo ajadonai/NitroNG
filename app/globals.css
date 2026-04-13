@@ -1421,9 +1421,9 @@ input { font-family: inherit; }
 .adm-nav-section { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; padding: 10px 14px 4px; }
 
 /* Admin sidebar — distribute items evenly across full height */
-.admin-sidebar { padding: 10px 12px; display: flex; flex-direction: column; overflow: hidden; }
-.admin-sidebar .dash-nav-item { padding: 7px 14px; font-size: 14px; gap: 10px; margin-bottom: 0; }
-.admin-sidebar .adm-nav-section { font-size: 11px; padding: 16px 14px 4px; }
+.admin-sidebar { padding: 8px 10px; display: flex; flex-direction: column; overflow: hidden; }
+.admin-sidebar .dash-nav-item { padding: 5px 12px; font-size: 13px; gap: 9px; margin-bottom: 0; }
+.admin-sidebar .adm-nav-section { font-size: 10px; padding: 12px 12px 3px; }
 
 @media (max-width: 1199px) {
   .admin-sidebar { overflow: auto; justify-content: flex-start; }
