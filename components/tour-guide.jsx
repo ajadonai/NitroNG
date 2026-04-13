@@ -176,14 +176,23 @@ export default function TourGuide({ dark, onComplete, onNavigate, onOpenMore }) 
 
   const isSupportStep = STEPS[step]?.mobileAction === "openMore" && isMobile();
 
-  // Position tooltip away from spotlight
+  // Position tooltip close to spotlight but not overlapping
   const tooltipPos = (() => {
     if (isSupportStep) return { top: 20 };
     if (!sr) return { bottom: 90 };
-    const screenMid = window.innerHeight / 2;
-    const spotMid = sr.y + sr.h / 2;
-    if (spotMid > screenMid) return { top: 20 };
-    return { bottom: 90 };
+    const tooltipHeight = 200;
+    const gap = 16;
+    const spotBottom = sr.y + sr.h;
+    const spotTop = sr.y;
+    const spaceBelow = window.innerHeight - spotBottom;
+    const spaceAbove = spotTop;
+
+    if (spaceBelow > tooltipHeight + gap + 70) {
+      return { top: spotBottom + gap };
+    } else if (spaceAbove > tooltipHeight + gap) {
+      return { bottom: window.innerHeight - spotTop + gap };
+    }
+    return spaceBelow > spaceAbove ? { top: spotBottom + gap } : { bottom: window.innerHeight - spotTop + gap };
   })();
 
   return (

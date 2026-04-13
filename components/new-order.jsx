@@ -593,6 +593,10 @@ function MobileGuide({ dark, t }) {
             <div style={{ marginBottom: 3 }}>• <b style={{ color: t.text }}>Start small</b> — test Budget first</div>
             <div>• Set profile to <b style={{ color: t.text }}>public</b> before ordering</div>
           </div>
+          <button onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent("nitro-order-tour")); }} style={{ marginTop: 12, padding: "9px 0", width: "100%", borderRadius: 8, border: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)"}`, background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)", color: "#c47d8e", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Need a walkthrough?
+          </button>
         </div>
       )}
     </div>

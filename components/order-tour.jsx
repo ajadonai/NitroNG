@@ -150,17 +150,25 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
   const pad = 8;
   const sr = spotRect;
 
-  // Position tooltip away from spotlight
+  // Position tooltip close to spotlight but not overlapping
   const tooltipPos = (() => {
     if (!sr) return { bottom: 90 };
-    const screenMid = window.innerHeight / 2;
-    const spotMid = sr.y + sr.h / 2;
-    if (spotMid > screenMid) {
-      // Spotlight in bottom half → tooltip at top
-      return { top: 20 };
+    const tooltipHeight = 180; // approximate
+    const gap = 16;
+    const spotBottom = sr.y + sr.h;
+    const spotTop = sr.y;
+    const spaceBelow = window.innerHeight - spotBottom;
+    const spaceAbove = spotTop;
+
+    if (spaceBelow > tooltipHeight + gap + 70) {
+      // Place below spotlight
+      return { top: spotBottom + gap };
+    } else if (spaceAbove > tooltipHeight + gap) {
+      // Place above spotlight
+      return { bottom: window.innerHeight - spotTop + gap };
     }
-    // Spotlight in top half → tooltip at bottom
-    return { bottom: 90 };
+    // Fallback — whichever side has more room
+    return spaceBelow > spaceAbove ? { top: spotBottom + gap } : { bottom: window.innerHeight - spotTop + gap };
   })();
 
   return (
