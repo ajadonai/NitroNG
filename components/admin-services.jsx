@@ -20,6 +20,8 @@ export default function AdminServicesPage({ dark, t }) {
   const [providerFilter, setProviderFilter] = useState("all");
   const [expanded, setExpanded] = useState(null);
   const [editMode, setEditMode] = useState(null);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(50);
 
   useEffect(() => {
     fetch("/api/admin/services").then(r => r.json()).then(d => { setServices(d.services || []); setLoading(false); }).catch(() => setLoading(false));
@@ -41,6 +43,8 @@ export default function AdminServicesPage({ dark, t }) {
     if (search) { const q = search.toLowerCase(); return s.name?.toLowerCase().includes(q) || s.category?.toLowerCase().includes(q); }
     return true;
   });
+  const totalPages = Math.ceil(filtered.length / perPage);
+  const paged = filtered.slice((page - 1) * perPage, page * perPage);
 
   const [editData, setEditData] = useState({});
   const [saving, setSaving] = useState(false);
@@ -135,13 +139,13 @@ export default function AdminServicesPage({ dark, t }) {
 
       {/* Search */}
       <div style={{ marginBottom: 10 }}>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search services..." style={{ width: "100%", padding: "8px 12px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+        <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search services..." style={{ width: "100%", padding: "8px 12px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, background: dark ? "#0d1020" : "#fff", color: t.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
       </div>
 
       {/* Filters */}
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", justifyContent: "flex-end" }}>
         {providers.length > 1 && (
-          <select value={providerFilter} onChange={e => setProviderFilter(e.target.value)} style={{
+          <select value={providerFilter} onChange={e => { setProviderFilter(e.target.value); setPage(1); }} style={{
             padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500,
             background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)",
             border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`,
@@ -158,7 +162,7 @@ export default function AdminServicesPage({ dark, t }) {
             })}
           </select>
         )}
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{
+        <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }} style={{
           padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500,
           background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)",
           border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`,
@@ -171,7 +175,7 @@ export default function AdminServicesPage({ dark, t }) {
             <option key={val} value={val}>{label}</option>
           ))}
         </select>
-        <select value={catFilter} onChange={e => setCatFilter(e.target.value)} style={{
+        <select value={catFilter} onChange={e => { setCatFilter(e.target.value); setPage(1); }} style={{
           padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500,
           background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)",
           border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`,
@@ -190,9 +194,9 @@ export default function AdminServicesPage({ dark, t }) {
       <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
         {loading ? (
           <div className="adm-empty">{[1,2,3,4,5].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: 44, borderRadius: 6, marginBottom: 6 }} />)}</div>
-        ) : filtered.length > 0 ? filtered.map((s, i) => (
+        ) : paged.length > 0 ? paged.map((s, i) => (
           <div key={s.id}>
-            <div className="adm-list-row" onClick={() => { setExpanded(expanded === s.id ? null : s.id); if (editMode === s.id) setEditMode(null); }} style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${t.cardBorder}` : "none", cursor: "pointer" }}>
+            <div className="adm-list-row" onClick={() => { setExpanded(expanded === s.id ? null : s.id); if (editMode === s.id) setEditMode(null); }} style={{ borderBottom: i < paged.length - 1 ? `1px solid ${t.cardBorder}` : "none", cursor: "pointer" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ fontSize: 15, fontWeight: 500, color: t.text }}>{s.name}</span>
@@ -252,6 +256,32 @@ export default function AdminServicesPage({ dark, t }) {
           <div className="adm-empty" style={{ color: t.textMuted }}>No services found</div>
         )}
       </div>
+
+      {/* Pagination */}
+      {filtered.length > perPage && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, flexWrap: "wrap", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+            <span style={{ color: t.textMuted }}>Show</span>
+            <select value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }} style={{
+              padding: "5px 24px 5px 8px", borderRadius: 6, fontSize: 13, border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.04)" : "#fff", color: t.text, appearance: "none", cursor: "pointer", fontFamily: "inherit",
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='${dark ? "%23666" : "%23999"}' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`,
+              backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center",
+            }}>
+              {[25, 50, 100, 200].map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+            <span style={{ color: t.textMuted }}>{filtered.length} total</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} style={{ padding: "5px 8px", borderRadius: 6, border: `1px solid ${t.cardBorder}`, background: "none", color: t.textSoft, cursor: page <= 1 ? "default" : "pointer", opacity: page <= 1 ? .3 : 1 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <span style={{ fontSize: 13, color: t.textMuted, padding: "0 8px" }}>{page} / {totalPages}</span>
+            <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages} style={{ padding: "5px 8px", borderRadius: 6, border: `1px solid ${t.cardBorder}`, background: "none", color: t.textSoft, cursor: page >= totalPages ? "default" : "pointer", opacity: page >= totalPages ? .3 : 1 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
