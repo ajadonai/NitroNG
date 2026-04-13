@@ -150,6 +150,19 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
   const pad = 8;
   const sr = spotRect;
 
+  // Position tooltip away from spotlight
+  const tooltipPos = (() => {
+    if (!sr) return { bottom: 90 };
+    const screenMid = window.innerHeight / 2;
+    const spotMid = sr.y + sr.h / 2;
+    if (spotMid > screenMid) {
+      // Spotlight in bottom half → tooltip at top
+      return { top: 20 };
+    }
+    // Spotlight in top half → tooltip at bottom
+    return { bottom: 90 };
+  })();
+
   return (
     <>
       <style>{`
@@ -197,7 +210,8 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
       {/* TOUR STEP */}
       {phase === "touring" && (
         <div data-tour-tooltip style={{
-          position: "fixed", zIndex: 101, left: "50%", bottom: 90,
+          position: "fixed", zIndex: 101, left: "50%",
+          ...tooltipPos,
           transform: "translateX(-50%)", animation: "otFadeIn 0.3s ease",
           background: bg, border: `1.5px solid ${border}`, borderRadius: 14,
           padding: "18px 20px", maxWidth: 340, width: "calc(100% - 32px)",

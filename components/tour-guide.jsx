@@ -176,6 +176,16 @@ export default function TourGuide({ dark, onComplete, onNavigate, onOpenMore }) 
 
   const isSupportStep = STEPS[step]?.mobileAction === "openMore" && isMobile();
 
+  // Position tooltip away from spotlight
+  const tooltipPos = (() => {
+    if (isSupportStep) return { top: 20 };
+    if (!sr) return { bottom: 90 };
+    const screenMid = window.innerHeight / 2;
+    const spotMid = sr.y + sr.h / 2;
+    if (spotMid > screenMid) return { top: 20 };
+    return { bottom: 90 };
+  })();
+
   return (
     <>
       <style>{`
@@ -229,7 +239,7 @@ export default function TourGuide({ dark, onComplete, onNavigate, onOpenMore }) 
           padding: "22px 24px", maxWidth: 360, width: "calc(100% - 32px)",
           boxShadow: dark ? "0 12px 40px rgba(0,0,0,0.5)" : "0 12px 40px rgba(0,0,0,0.12)",
           animation: "tourFadeIn 0.3s ease",
-          left: "50%", bottom: isSupportStep ? 280 : 90, transform: "translateX(-50%)",
+          left: "50%", ...tooltipPos, transform: "translateX(-50%)",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, background: dark ? "rgba(196,125,142,0.1)" : "rgba(196,125,142,0.06)", display: "flex", alignItems: "center", justifyContent: "center", color: accent }}>{STEPS[step].icon}</div>
