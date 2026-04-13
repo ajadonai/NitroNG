@@ -14,6 +14,7 @@ export async function GET() {
         id: true, name: true, firstName: true, lastName: true, phone: true,
         email: true, balance: true,
         referralCode: true, referredBy: true, emailVerified: true, createdAt: true,
+        tourCompleted: true, orderTourCompleted: true,
       },
     });
     if (!user) return error('User not found', 404);

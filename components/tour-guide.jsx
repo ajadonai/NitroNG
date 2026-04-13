@@ -52,6 +52,7 @@ export default function TourGuide({ dark, onComplete, onNavigate, onOpenMore }) 
   const finish = useCallback(() => {
     setVisible(false);
     try { localStorage.setItem("nitro-tour-done", "1"); } catch {}
+    fetch("/api/auth/tour", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tour: "nav" }) }).catch(() => {});
     onNavigate?.("overview");
     setTimeout(() => onComplete?.(), 300);
   }, [onComplete, onNavigate]);

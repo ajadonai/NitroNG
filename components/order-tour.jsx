@@ -43,6 +43,7 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
   const finish = useCallback(() => {
     setVisible(false);
     try { localStorage.setItem("nitro-order-tour-done", "1"); } catch {}
+    fetch("/api/auth/tour", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tour: "order" }) }).catch(() => {});
     setSelSvc?.(null);
     setSelTier?.(null);
     setTimeout(() => onComplete?.(), 300);

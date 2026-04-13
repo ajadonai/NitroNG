@@ -8,8 +8,8 @@ import { ConfirmProvider } from "./confirm-dialog";
 import AnnouncementBanner from "./announcement-banner";
 import { PlatformIcon } from "./platform-icon";
 import { fN, fD } from "../lib/format";
-import TourGuide, { shouldShowTour } from "./tour-guide";
-import OrderTour, { shouldShowOrderTour } from "./order-tour";
+import TourGuide from "./tour-guide";
+import OrderTour from "./order-tour";
 
 /* Dynamic imports — only load when user navigates to that page */
 const OrdersPage = dynamic(() => import("./orders-page").then(m => m.default), { ssr: false });
@@ -478,15 +478,15 @@ function DashboardInner() {
 
   // Trigger order tour on first visit to services page
   useEffect(() => {
-    if (isServices && !orderTourChecked.current && !showTour) {
+    if (isServices && !orderTourChecked.current && !showTour && user) {
       orderTourChecked.current = true;
-      if (shouldShowOrderTour()) {
-        // Small delay so the page renders first
+      const orderDone = user.orderTourCompleted || localStorage.getItem("nitro-order-tour-done");
+      if (!orderDone) {
         const timer = setTimeout(() => setShowOrderTour(true), 800);
         return () => clearTimeout(timer);
       }
     }
-  }, [isServices, showTour]);
+  }, [isServices, showTour, user]);
 
   // Manual order tour trigger from sidebar button
   useEffect(() => {
@@ -564,8 +564,23 @@ function DashboardInner() {
         } catch {}
       } catch { setUser({ name: "User", email: "", balance: 0, refCode: "—", refs: 0, earnings: 0 }); }
     }
-    load().then(() => { if (shouldShowTour()) setShowTour(true); });
+    load().then(() => {
+      // Check tour state from DB (via user data) + localStorage as fallback
+      const u = document.querySelector("[data-user-tour]");
+      // We'll check after user state is set
+    });
   }, []);
+
+  // Trigger tours based on user data from DB
+  useEffect(() => {
+    if (!user || user.name === "User") return;
+    const navDone = user.tourCompleted || localStorage.getItem("nitro-tour-done");
+    const orderDone = user.orderTourCompleted || localStorage.getItem("nitro-order-tour-done");
+    if (!navDone) setShowTour(true);
+    // Sync localStorage with DB
+    if (user.tourCompleted) try { localStorage.setItem("nitro-tour-done", "1"); } catch {}
+    if (user.orderTourCompleted) try { localStorage.setItem("nitro-order-tour-done", "1"); } catch {}
+  }, [user]);
 
   /* Smart polling — refresh data every 45s, pause when tab is hidden */
   useEffect(() => {
