@@ -20,15 +20,16 @@ export function AdminActivityPage({ dark, t }) {
   }, []);
 
   const typeLabels = { user: "Users", order: "Orders", alert: "Alerts", blog: "Blog", coupon: "Coupons", settings: "Settings", service: "Services", payment: "Payments", reward: "Rewards", leaderboard_reward: "Rewards", leaderboard_announcement: "Rewards", auto_reward_config: "Rewards", team: "Team", admin: "Admin", ticket: "Tickets", maintenance: "Maintenance" };
+  const getTypeLabel = (type) => {
+    if (!type) return "Other";
+    if (typeLabels[type]) return typeLabels[type];
+    if (type.startsWith("Rewarded") || type.startsWith("Updated auto-reward") || type.startsWith("Updated leaderboard")) return "Rewards";
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  };
   const groupedTypes = {};
-  logs.forEach(l => { const label = typeLabels[l.type] || (l.type ? l.type.charAt(0).toUpperCase() + l.type.slice(1) : "Other"); groupedTypes[label] = (groupedTypes[label] || 0) + 1; });
+  logs.forEach(l => { const label = getTypeLabel(l.type); groupedTypes[label] = (groupedTypes[label] || 0) + 1; });
   const typeEntries = Object.entries(groupedTypes).sort((a, b) => b[1] - a[1]);
-  const typeGroupMap = {};
-  Object.entries(typeLabels).forEach(([raw, label]) => { if (!typeGroupMap[label]) typeGroupMap[label] = []; typeGroupMap[label].push(raw); });
-  const filtered = filter === "all" ? logs : logs.filter(l => {
-    const group = typeGroupMap[filter];
-    return group ? group.includes(l.type) : l.type === filter;
-  });
+  const filtered = filter === "all" ? logs : logs.filter(l => getTypeLabel(l.type) === filter);
 
   const typeColor = (type) => {
     if (type === "order") return t.blue;
