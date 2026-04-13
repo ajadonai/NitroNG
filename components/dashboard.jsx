@@ -453,7 +453,7 @@ function DashboardInner() {
     const cutoff = notifClearedAt ? new Date(notifClearedAt) : null;
     orders.filter(o => o.status === "Completed").filter(o => !cutoff || (o.created && new Date(o.created) > cutoff)).forEach(o => ids.push(`ord-${o.id}`));
     orders.filter(o => o.status === "Processing" || o.status === "Pending").filter(o => !cutoff || (o.created && new Date(o.created) > cutoff)).forEach(o => ids.push(`proc-${o.id}`));
-    txs.filter(tx => tx.type === "deposit").filter(tx => !cutoff || (tx.date && new Date(tx.date) > cutoff)).forEach(tx => ids.push(`dep-${tx.id || tx.reference}`));
+    txs.filter(tx => tx.type === "deposit" && tx.status === "Completed").filter(tx => !cutoff || (tx.date && new Date(tx.date) > cutoff)).forEach(tx => ids.push(`dep-${tx.id || tx.reference}`));
     return ids;
   }, [orders, txs, notifClearedAt]);
   const bellUnread = notifItemIds.filter(id => !readNotifIds.has(id) && !clearedNotifIds.has(id)).length;
