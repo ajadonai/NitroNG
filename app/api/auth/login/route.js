@@ -34,6 +34,9 @@ export async function POST(req) {
     if (user.status === 'Deleted') {
       return error('Invalid email or password', 401);
     }
+    if (user.status === 'PendingDeletion') {
+      return Response.json({ error: 'This account is scheduled for deletion. Contact support@nitro.ng to reinstate it.', banned: false }, { status: 403 });
+    }
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {

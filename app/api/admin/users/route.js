@@ -137,6 +137,24 @@ export async function POST(req) {
       return Response.json({ success: true, message: `${user.name} activated` });
     }
 
+    if (action === 'reinstate') {
+      const originalName = user.deletedName || user.name;
+      const originalEmail = user.deletedEmail || user.email;
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          status: 'Active',
+          name: originalName,
+          email: originalEmail,
+          deletedAt: null,
+          deletedName: null,
+          deletedEmail: null,
+        },
+      });
+      await logActivity(admin.name, `Reinstated user ${originalName} (${originalEmail})`, 'user');
+      return Response.json({ success: true, message: `${originalName} reinstated` });
+    }
+
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
     log.error('Admin Users POST', err.message);

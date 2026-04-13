@@ -311,7 +311,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <div id="set-danger-zone" className="set-section">
           <div className="set-danger-card" style={{ background: dark ? "rgba(220,38,38,.04)" : "rgba(220,38,38,.02)", border: `0.5px solid ${dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.08)"}` }}>
             <div className="set-danger-title" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Delete account</div>
-            <div className="set-danger-desc" style={{ color: t.textMuted }}>Permanently delete your account. Orders and transactions preserved, personal data removed.</div>
+            <div className="set-danger-desc" style={{ color: t.textMuted }}>Schedule your account for deletion. You have 30 days to change your mind.</div>
             {showDelete ? (
               <div style={{ marginTop: 12 }}>
                 <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 6 }}>Enter your password to confirm</div>
@@ -319,7 +319,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
                   <input type="password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} placeholder="Your password" style={{ flex: 1, minWidth: 160, padding: "10px 14px", borderRadius: 8, background: dark ? "#0d1020" : "#fff", border: `1px solid ${dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.12)"}`, color: t.text, fontSize: 14, outline: "none" }} />
                   <button onClick={async () => {
                     if (!deletePassword) return;
-                    const ok = await confirm({ title: "Delete Your Account", message: "This will permanently delete your account. Your orders and transaction history will be kept for records but your personal info will be removed. This cannot be undone.", confirmLabel: "Delete Account", danger: true, requireType: "DELETE" });
+                    const ok = await confirm({ title: "Delete Your Account", message: "Your account will be scheduled for deletion in 30 days. During this period you cannot log in or sign up with this email. Contact support@nitro.ng to cancel. After 30 days, your data will be permanently removed.", confirmLabel: "Delete Account", danger: true, requireType: "DELETE" });
                     if (ok) {
                       try {
                         const res = await fetch("/api/auth/delete-account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: deletePassword }) });

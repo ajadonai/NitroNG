@@ -26,7 +26,8 @@ export default function AdminUsersPage({ dark, t }) {
   const filtered = users.filter(u => {
     if (filter === "active" && u.status !== "Active") return false;
     if (filter === "suspended" && u.status !== "Suspended") return false;
-    if (filter === "deleted" && u.status !== "Deleted") return false;
+    if (filter === "deleted" && u.status !== "Deleted" && u.status !== "PendingDeletion") return false;
+    if (filter === "pending-deletion" && u.status !== "PendingDeletion") return false;
     if (search) { const q = search.toLowerCase(); const name = (u.deletedName || u.name || "").toLowerCase(); const email = (u.deletedEmail || u.email || "").toLowerCase(); return name.includes(q) || email.includes(q); }
     return true;
   });
@@ -41,13 +42,19 @@ export default function AdminUsersPage({ dark, t }) {
       if (res.ok) {
         if (action === "credit") { setUsers(prev => prev.map(u => u.id === userId ? { ...u, balance: (u.balance || 0) + (Number(amount) || 0) } : u)); setCreditId(null); setCreditAmt(""); }
         if (action === "suspend" || action === "activate") { setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: action === "suspend" ? "Suspended" : "Active" } : u)); }
+        if (action === "reinstate") { setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: "Active", name: u.deletedName || u.name, email: u.deletedEmail || u.email } : u)); }
       }
     } catch {}
   };
 
   const handleBan = async (user) => {
-    const ok = await confirm({ title: user.status === "Active" ? "Ban User" : "Activate User", message: user.status === "Active" ? `Are you sure you want to ban ${user.name} (${user.email})? They will lose access to their account.` : `Reactivate ${user.name}'s account?`, confirmLabel: user.status === "Active" ? "Ban User" : "Activate", danger: user.status === "Active" });
-    if (ok) doAction(user.id, user.status === "Active" ? "suspend" : "activate");
+    if (user.status === "PendingDeletion") {
+      const ok = await confirm({ title: "Reinstate Account", message: `Reinstate ${user.deletedName || user.name}'s account (${user.deletedEmail || user.email})? They will be able to log in again.`, confirmLabel: "Reinstate", danger: false });
+      if (ok) doAction(user.id, "reinstate");
+    } else {
+      const ok = await confirm({ title: user.status === "Active" ? "Ban User" : "Activate User", message: user.status === "Active" ? `Are you sure you want to ban ${user.name} (${user.email})? They will lose access to their account.` : `Reactivate ${user.name}'s account?`, confirmLabel: user.status === "Active" ? "Ban User" : "Activate", danger: user.status === "Active" });
+      if (ok) doAction(user.id, user.status === "Active" ? "suspend" : "activate");
+    }
   };
 
   const handleCredit = async (user) => {
@@ -96,7 +103,7 @@ export default function AdminUsersPage({ dark, t }) {
       </div>
 
       <div className="adm-filters">
-        {[["all", "All", users.length], ["active", "Active", users.filter(u => u.status === "Active").length], ["suspended", "Banned", users.filter(u => u.status === "Suspended").length], ["deleted", "Deleted", users.filter(u => u.status === "Deleted").length]].map(([id, label, count]) => (
+        {[["all", "All", users.length], ["active", "Active", users.filter(u => u.status === "Active").length], ["suspended", "Banned", users.filter(u => u.status === "Suspended").length], ["pending-deletion", "Pending Del.", users.filter(u => u.status === "PendingDeletion").length], ["deleted", "Deleted", users.filter(u => u.status === "Deleted").length]].map(([id, label, count]) => (
           <button key={id} onClick={() => { setFilter(id); setPage(1); }} className="adm-filter-pill" style={{ borderWidth: 1, borderStyle: "solid", borderColor: filter === id ? t.accent : t.cardBorder, background: filter === id ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: filter === id ? t.accent : t.textMuted }}>
             {label} <span>({count})</span>
           </button>
@@ -115,10 +122,11 @@ export default function AdminUsersPage({ dark, t }) {
                 <div className="adm-user-avatar" style={{ background: u.status === "Deleted" ? (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)") : `hsl(${(u.id?.charCodeAt(0) || i) * 45}, 40%, ${dark ? 30 : 65}%)` }}>{((u.deletedName || u.name || "U")[0])}</div>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 15, fontWeight: 500, color: u.status === "Deleted" ? t.textMuted : t.text }}>{u.status === "Deleted" ? (u.deletedName || "Deleted User") : u.name}</span>
-                    <span style={{ fontSize: 12, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: u.status === "Active" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : u.status === "Deleted" ? (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)") : (dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)"), color: u.status === "Active" ? t.green : u.status === "Deleted" ? t.textMuted : t.red }}>{u.status}</span>
+                    <span style={{ fontSize: 15, fontWeight: 500, color: u.status === "Deleted" || u.status === "PendingDeletion" ? t.textMuted : t.text }}>{u.status === "Deleted" || u.status === "PendingDeletion" ? (u.deletedName || u.name) : u.name}</span>
+                    <span style={{ fontSize: 12, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: u.status === "Active" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : u.status === "PendingDeletion" ? (dark ? "rgba(249,115,22,.1)" : "rgba(249,115,22,.06)") : u.status === "Deleted" ? (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)") : (dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)"), color: u.status === "Active" ? t.green : u.status === "PendingDeletion" ? (dark ? "#fdba74" : "#ea580c") : u.status === "Deleted" ? t.textMuted : t.red }}>{u.status === "PendingDeletion" ? "Pending Deletion" : u.status}</span>
                   </div>
-                  <div style={{ fontSize: 14, color: t.textMuted, marginTop: 1 }}>{u.status === "Deleted" ? (u.deletedEmail || u.email) : u.email}</div>
+                  <div style={{ fontSize: 14, color: t.textMuted, marginTop: 1 }}>{u.status === "Deleted" || u.status === "PendingDeletion" ? (u.deletedEmail || u.email) : u.email}</div>
+                  {u.status === "PendingDeletion" && u.deletedAt && <div style={{ fontSize: 12, color: dark ? "#fdba74" : "#ea580c", marginTop: 2 }}>Deletes on {new Date(u.deletedAt).toLocaleDateString("en-NG", { month: "short", day: "numeric", year: "numeric" })}</div>}
                   {u.status === "Deleted" && u.deletedAt && <div style={{ fontSize: 12, color: t.textSoft, marginTop: 2 }}>Deleted {new Date(u.deletedAt).toLocaleDateString("en-NG", { month: "short", day: "numeric", year: "numeric" })}</div>}
                 </div>
               </div>
@@ -134,7 +142,7 @@ export default function AdminUsersPage({ dark, t }) {
                 <div style={{ display: "flex", gap: 4 }}>
                   <button onClick={() => viewTransactions(u)} className="adm-btn-sm" style={{ borderColor: txUser?.id === u.id ? t.accent : t.cardBorder, color: txUser?.id === u.id ? t.accent : t.textSoft }}>Txns</button>
                   {u.status !== "Deleted" && <button onClick={() => setCreditId(creditId === u.id ? null : u.id)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>Credit</button>}
-                  {u.status !== "Deleted" && <button onClick={() => handleBan(u)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: u.status === "Active" ? t.red : t.green }}>{u.status === "Active" ? "Ban" : "Activate"}</button>}
+                  {u.status !== "Deleted" && <button onClick={() => handleBan(u)} className="adm-btn-sm" style={{ borderColor: u.status === "PendingDeletion" ? (dark ? "rgba(110,231,183,.2)" : "rgba(5,150,105,.15)") : (dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)"), color: u.status === "PendingDeletion" ? t.green : (u.status === "Active" ? t.red : t.green) }}>{u.status === "PendingDeletion" ? "Reinstate" : (u.status === "Active" ? "Ban" : "Activate")}</button>}
                 </div>
               </div>
             </div>

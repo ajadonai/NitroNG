@@ -42,8 +42,37 @@ export async function GET(req) {
 
     log.info('Cleanup', `Deleted ${toDelete.length} unverified users older than 7 days`);
 
+    // ═══ PERMANENT DELETION — users past their 30-day deletion window ═══
+    const pendingUsers = await prisma.user.findMany({
+      where: {
+        status: 'PendingDeletion',
+        deletedAt: { lt: new Date() }, // past the scheduled date
+      },
+      select: { id: true, email: true, deletedEmail: true, deletedName: true },
+    });
+
+    let permDeleted = 0;
+    for (const pu of pendingUsers) {
+      try {
+        const uid = pu.id;
+        await prisma.$transaction([
+          prisma.ticketReply.deleteMany({ where: { ticket: { userId: uid } } }),
+          prisma.transaction.deleteMany({ where: { userId: uid } }),
+          prisma.order.deleteMany({ where: { userId: uid } }),
+          prisma.ticket.deleteMany({ where: { userId: uid } }),
+          prisma.session.deleteMany({ where: { userId: uid } }),
+          prisma.user.delete({ where: { id: uid } }),
+        ]);
+        permDeleted++;
+        log.info('Cleanup', `Permanently deleted user ${pu.deletedEmail || pu.email} (${uid})`);
+      } catch (e) {
+        log.error('Cleanup', `Failed to permanently delete user ${pu.id}: ${e.message}`);
+      }
+    }
+
     return Response.json({
       deleted: toDelete.length,
+      permanentlyDeleted: permDeleted,
       emails: toDelete.map(u => u.email),
     });
   } catch (err) {

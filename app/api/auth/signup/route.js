@@ -37,6 +37,9 @@ export async function POST(req) {
     // Check if user exists
     const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (existing) {
+      if (existing.status === 'PendingDeletion') {
+        return error('This email is associated with an account scheduled for deletion. Contact support@nitro.ng to reinstate it.');
+      }
       // If unverified and verify code expired, delete and allow re-signup
       if (!existing.emailVerified && existing.verifyExpires && existing.verifyExpires < new Date()) {
         await prisma.user.delete({ where: { id: existing.id } });
