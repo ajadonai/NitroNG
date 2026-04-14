@@ -7,12 +7,17 @@ export async function GET() {
   if (error) return error;
 
   try {
-    const services = await prisma.service.findMany({
-      orderBy: { category: 'asc' },
-      include: {
-        _count: { select: { orders: true, tiers: true } },
-      },
-    });
+    const [services, usdSetting] = await Promise.all([
+      prisma.service.findMany({
+        orderBy: { category: 'asc' },
+        include: {
+          _count: { select: { orders: true, tiers: true } },
+        },
+      }),
+      prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } }),
+    ]);
+
+    const usdRate = Number(usdSetting?.value || 1600);
 
     return Response.json({
       services: services.map(s => ({
@@ -20,7 +25,7 @@ export async function GET() {
         apiId: s.apiId,
         name: s.name,
         category: s.category,
-        costPer1k: s.costPer1k / 100,
+        costPer1k: Math.round(s.costPer1k * usdRate) / 100,
         sellPer1k: s.sellPer1k / 100,
         markup: s.markup,
         min: s.min,
