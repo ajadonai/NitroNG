@@ -435,7 +435,7 @@ function AdminDashboardInner() {
             </div>
           </button>
           <button onClick={() => { setActive("settings"); setLeftOpen(false); }} className="dash-avatar-btn">
-            <div className="dash-avatar" style={{ background: t.accent }}>{initials}</div>
+            <div className="dash-avatar" style={{ background: t.accent }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
             <span className="dash-nav-name" style={{ color: t.text, textTransform: "uppercase" }}>{admin.name}</span>
           </button>
         </div>
@@ -469,6 +469,12 @@ function AdminDashboardInner() {
               <span style={{ fontSize: 13, color: t.green, fontWeight: 500 }}>All systems operational</span>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ marginLeft: "auto" }}><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             </a>
+          </div>
+          <div style={{ padding: "4px 14px 10px" }}>
+            <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 10px", borderRadius: 8, border: "none", background: dark ? "rgba(220,38,38,.08)" : "rgba(220,38,38,.04)", color: dark ? "#fca5a5" : "#dc2626", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Log Out
+            </button>
           </div>
         </aside>
 
