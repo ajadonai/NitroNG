@@ -61,12 +61,10 @@ export async function GET(req) {
         where: orderWhere,
         select: { charge: true, cost: true, service: { select: { category: true } } },
       }),
-      // By tier
-      prisma.order.groupBy({
-        by: ['tierName'],
+      // By tier (can't groupBy relation field, so fetch and aggregate in JS)
+      prisma.order.findMany({
         where: orderWhere,
-        _sum: { charge: true, cost: true },
-        _count: true,
+        select: { charge: true, cost: true, tier: { select: { tier: true } } },
       }),
       // Top spenders
       prisma.order.groupBy({
@@ -102,17 +100,17 @@ export async function GET(req) {
       .map(p => ({ ...p, profit: p.revenue - p.cost, margin: p.revenue > 0 ? Math.round(((p.revenue - p.cost) / p.revenue) * 100) : 0 }))
       .sort((a, b) => b.profit - a.profit);
 
-    // By tier
-    const byTier = ordersByTier
-      .filter(t => t.tierName)
-      .map(t => ({
-        name: t.tierName,
-        revenue: t._sum.charge || 0,
-        cost: t._sum.cost || 0,
-        profit: (t._sum.charge || 0) - (t._sum.cost || 0),
-        orders: t._count,
-        margin: (t._sum.charge || 0) > 0 ? Math.round((((t._sum.charge || 0) - (t._sum.cost || 0)) / (t._sum.charge || 0)) * 100) : 0,
-      }))
+    // By tier — aggregate from raw orders
+    const tierMap = {};
+    ordersByTier.forEach(o => {
+      const name = o.tier?.tier || "Unknown";
+      if (!tierMap[name]) tierMap[name] = { name, revenue: 0, cost: 0, orders: 0 };
+      tierMap[name].orders++;
+      tierMap[name].revenue += o.charge || 0;
+      tierMap[name].cost += o.cost || 0;
+    });
+    const byTier = Object.values(tierMap)
+      .map(t => ({ ...t, profit: t.revenue - t.cost, margin: t.revenue > 0 ? Math.round(((t.revenue - t.cost) / t.revenue) * 100) : 0 }))
       .sort((a, b) => b.profit - a.profit);
 
     const grossRevenue = ordersAgg._sum.charge || 0;
@@ -158,6 +156,6 @@ export async function GET(req) {
     });
   } catch (err) {
     log.error('Admin Financials', err.message);
-    return Response.json({ error: 'Failed to load financials', detail: err.message }, { status: 500 });
+    return Response.json({ error: 'Failed to load financials' }, { status: 500 });
   }
 }
