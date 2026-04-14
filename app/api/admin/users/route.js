@@ -59,7 +59,7 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { action, userId, amount } = body;
+    const { action, userId, amount, subtype } = body;
 
     if (!userId) return Response.json({ error: 'User ID required' }, { status: 400 });
 
@@ -87,6 +87,9 @@ export async function POST(req) {
       if (!canPerformAction(admin, 'users.adjustBalance')) return Response.json({ error: 'Not authorized to adjust balances' }, { status: 403 });
       const amountKobo = Math.round(Number(amount) * 100);
       if (!amountKobo || amountKobo <= 0) return Response.json({ error: 'Invalid amount' }, { status: 400 });
+      const isGift = subtype === 'gift';
+      const txType = isGift ? 'admin_gift' : 'admin_credit';
+      const label = isGift ? 'Gifted' : 'Credited';
 
       await prisma.$transaction([
         prisma.user.update({
@@ -96,16 +99,16 @@ export async function POST(req) {
         prisma.transaction.create({
           data: {
             userId,
-            type: 'admin_credit',
+            type: txType,
             amount: amountKobo,
             method: 'admin',
             status: 'Completed',
-            note: `Credited by ${admin.name}`,
+            note: `${label} by ${admin.name}`,
           },
         }),
       ]);
 
-      await logActivity(admin.name, `Credited ₦${Number(amount).toLocaleString()} to ${user.name}`, 'user');
+      await logActivity(admin.name, `${label} ₦${Number(amount).toLocaleString()} to ${user.name}`, 'user');
 
       // Email notification
       if (user.email) {

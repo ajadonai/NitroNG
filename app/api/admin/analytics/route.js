@@ -17,7 +17,7 @@ export async function GET(req) {
     else if (range === '90d') since = new Date(now - 90 * 24 * 60 * 60 * 1000);
     else since = new Date(now - 30 * 24 * 60 * 60 * 1000);
 
-    const [ordersAgg, userCount, depositAgg, ordersByStatus, topServices, allOrders] = await Promise.all([
+    const [ordersAgg, userCount, depositAgg, adminCreditAgg, adminGiftAgg, couponBonusAgg, referralBonusAgg, refundAgg, ordersByStatus, topServices, allOrders] = await Promise.all([
       prisma.order.aggregate({
         where: { createdAt: { gte: since }, deletedAt: null, status: { notIn: ['Cancelled'] } },
         _sum: { charge: true, cost: true },
@@ -26,6 +26,27 @@ export async function GET(req) {
       prisma.user.count({ where: { createdAt: { gte: since }, emailVerified: true } }),
       prisma.transaction.aggregate({
         where: { type: 'deposit', status: 'Completed', createdAt: { gte: since } },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      prisma.transaction.aggregate({
+        where: { type: 'admin_credit', status: 'Completed', createdAt: { gte: since }, amount: { gt: 0 } },
+        _sum: { amount: true },
+      }),
+      prisma.transaction.aggregate({
+        where: { type: 'admin_gift', status: 'Completed', createdAt: { gte: since }, amount: { gt: 0 } },
+        _sum: { amount: true },
+      }),
+      prisma.transaction.aggregate({
+        where: { type: 'bonus', status: 'Completed', createdAt: { gte: since }, note: { contains: 'Coupon' } },
+        _sum: { amount: true },
+      }),
+      prisma.transaction.aggregate({
+        where: { type: 'bonus', status: 'Completed', createdAt: { gte: since }, note: { contains: 'referral' } },
+        _sum: { amount: true },
+      }),
+      prisma.transaction.aggregate({
+        where: { type: 'refund', status: 'Completed', createdAt: { gte: since } },
         _sum: { amount: true },
         _count: true,
       }),
@@ -81,13 +102,15 @@ export async function GET(req) {
     const cancelledCount = ordersByStatus.find(s => s.status === 'Cancelled')?._count || 0;
     const conversionRate = orderCount > 0 ? Math.round((completedCount / orderCount) * 100) : 0;
 
-    // Refund tracking
-    const refundAgg = await prisma.transaction.aggregate({
-      where: { type: 'refund', status: 'Completed', createdAt: { gte: since } },
-      _sum: { amount: true },
-      _count: true,
-    });
     const totalRefunds = (refundAgg._sum.amount || 0) / 100;
+    const totalDeposits = (depositAgg._sum.amount || 0) / 100;
+    const totalAdminCredits = (adminCreditAgg._sum.amount || 0) / 100;
+    const totalAdminGifts = (adminGiftAgg._sum.amount || 0) / 100;
+    const totalCouponBonuses = (couponBonusAgg._sum.amount || 0) / 100;
+    const totalReferralBonuses = (referralBonusAgg._sum.amount || 0) / 100;
+    const totalMoneyIn = totalDeposits + totalAdminCredits;
+    const totalMoneyOut = totalCost + totalRefunds + totalCouponBonuses + totalReferralBonuses + totalAdminGifts;
+    const netCashFlow = totalMoneyIn - totalMoneyOut;
 
     return Response.json({
       range,
@@ -101,7 +124,10 @@ export async function GET(req) {
       avgOrderValue: Math.round(avgOrderValue),
       conversionRate,
       newUsers: userCount,
-      totalDeposits: (depositAgg._sum.amount || 0) / 100,
+      totalDeposits,
+      totalMoneyIn,
+      totalMoneyOut,
+      netCashFlow,
       depositCount: depositAgg._count || 0,
       byStatus: ordersByStatus.map(s => ({
         status: s.status,

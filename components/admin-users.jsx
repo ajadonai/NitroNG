@@ -12,6 +12,7 @@ export default function AdminUsersPage({ dark, t }) {
   const [search, setSearch] = useState("");
   const [creditId, setCreditId] = useState(null);
   const [creditAmt, setCreditAmt] = useState("");
+  const [creditType, setCreditType] = useState("credit");
   const [txUser, setTxUser] = useState(null); // user whose transactions are shown
   const [txList, setTxList] = useState([]);
   const [txLoading, setTxLoading] = useState(false);
@@ -35,12 +36,12 @@ export default function AdminUsersPage({ dark, t }) {
   const totalPages = Math.ceil(filtered.length / perPage);
   const paged = filtered.slice((page - 1) * perPage, page * perPage);
 
-  const doAction = async (userId, action, amount) => {
+  const doAction = async (userId, action, amount, subtype) => {
     try {
-      const res = await fetch("/api/admin/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, userId, amount: Number(amount) || 0 }) });
+      const res = await fetch("/api/admin/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, userId, amount: Number(amount) || 0, subtype }) });
       const data = await res.json();
       if (res.ok) {
-        if (action === "credit") { setUsers(prev => prev.map(u => u.id === userId ? { ...u, balance: (u.balance || 0) + (Number(amount) || 0) } : u)); setCreditId(null); setCreditAmt(""); }
+        if (action === "credit") { setUsers(prev => prev.map(u => u.id === userId ? { ...u, balance: (u.balance || 0) + (Number(amount) || 0) } : u)); setCreditId(null); setCreditAmt(""); setCreditType("credit"); }
         if (action === "suspend" || action === "activate") { setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: action === "suspend" ? "Suspended" : "Active" } : u)); }
         if (action === "reinstate") { setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: "Active", name: u.deletedName || u.name, email: u.deletedEmail || u.email } : u)); }
       }
@@ -59,8 +60,9 @@ export default function AdminUsersPage({ dark, t }) {
 
   const handleCredit = async (user) => {
     if (Number(creditAmt) <= 0) return;
-    const ok = await confirm({ title: "Credit Wallet", message: `Credit ${fN(Number(creditAmt))} to ${user.name}'s wallet?`, confirmLabel: `Credit ${fN(Number(creditAmt))}` });
-    if (ok) doAction(user.id, "credit", creditAmt);
+    const label = creditType === "gift" ? "Gift" : "Credit";
+    const ok = await confirm({ title: `${label} Wallet`, message: `${label} ${fN(Number(creditAmt))} to ${user.name}'s wallet?${creditType === "gift" ? "\n\nThis will be recorded as a gift (counts as an expense)." : ""}`, confirmLabel: `${label} ${fN(Number(creditAmt))}` });
+    if (ok) doAction(user.id, "credit", creditAmt, creditType);
   };
 
   const viewTransactions = async (user) => {
@@ -156,12 +158,17 @@ export default function AdminUsersPage({ dark, t }) {
             </div>
             {creditId === u.id && (
               <div style={{ padding: "12px 16px", borderBottom: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.02)" : "rgba(0,0,0,.01)", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", borderRadius: 8, overflow: "hidden", border: `1px solid ${t.cardBorder}` }}>
+                  {[["credit", "Payment"], ["gift", "Gift"]].map(([val, label]) => (
+                    <button key={val} onClick={() => setCreditType(val)} style={{ padding: "6px 12px", fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer", fontFamily: "inherit", background: creditType === val ? (val === "gift" ? (dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.08)") : (dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.08)")) : "transparent", color: creditType === val ? (val === "gift" ? (dark ? "#fbbf24" : "#d97706") : t.green) : t.textMuted }}>{label}</button>
+                  ))}
+                </div>
                 <input type="number" placeholder="Amount" value={creditAmt} onChange={e => setCreditAmt(e.target.value)} style={{ flex: 1, minWidth: 100, padding: "8px 12px", borderRadius: 8, background: dark ? "#0d1020" : "#fff", borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder, color: t.text, fontSize: 15, outline: "none" }} />
                 {[1000, 5000, 10000, 50000].map(p => (
                   <button key={p} onClick={() => setCreditAmt(String(p))} className="m adm-btn-sm" style={{ borderColor: Number(creditAmt) === p ? t.accent : t.cardBorder, color: Number(creditAmt) === p ? t.accent : t.textMuted }}>{fN(p)}</button>
                 ))}
-                <button onClick={() => handleCredit(u)} className="adm-btn-primary" style={{ opacity: Number(creditAmt) > 0 ? 1 : .4 }}>Credit {creditAmt ? fN(Number(creditAmt)) : ""}</button>
-                <button onClick={() => setCreditId(null)} style={{ color: t.textMuted, fontSize: 16, padding: 4, background: "none" }}>✕</button>
+                <button onClick={() => handleCredit(u)} className="adm-btn-primary" style={{ opacity: Number(creditAmt) > 0 ? 1 : .4 }}>{creditType === "gift" ? "Gift" : "Credit"} {creditAmt ? fN(Number(creditAmt)) : ""}</button>
+                <button onClick={() => { setCreditId(null); setCreditType("credit"); }} style={{ color: t.textMuted, fontSize: 16, padding: 4, background: "none" }}>✕</button>
               </div>
             )}
             {txUser?.id === u.id && (

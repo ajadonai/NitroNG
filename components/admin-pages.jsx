@@ -394,14 +394,14 @@ function FinanceOverviewTab({ dark, t }) {
 
       <div className="adm-stats" style={{ marginTop: 0 }}>
         {[
-          ["Total Revenue", fN(s.totalRevenue || 0), t.green],
-          ["Total Cost", fN(s.totalCost || 0), dark ? "#fca5a5" : "#dc2626"],
+          ["Revenue", fN(s.totalRevenue || 0), t.green],
+          ["Provider Cost", fN(s.totalCost || 0), dark ? "#fca5a5" : "#dc2626"],
           ["Profit", fN(s.profit || 0), s.profit >= 0 ? t.green : (dark ? "#fca5a5" : "#dc2626")],
-          ["Avg Order Value", fN(s.avgOrderValue || 0), t.accent],
-          ["Completion Rate", `${s.conversionRate || 0}%`, t.blue],
+          ["Money In", fN(s.totalMoneyIn || 0), t.green],
+          ["Money Out", fN(s.totalMoneyOut || 0), dark ? "#fca5a5" : "#dc2626"],
+          ["Net Cash Flow", fN(s.netCashFlow || 0), (s.netCashFlow || 0) >= 0 ? t.green : (dark ? "#fca5a5" : "#dc2626")],
           ["Orders", String(s.orderCount || 0), t.amber],
           ["New Users", String(s.newUsers || 0), t.blue],
-          ["Deposits", fN(s.totalDeposits || 0), t.green],
         ].map(([label, val, color]) => (
           <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
             <div className="dash-stat-dot" style={{ background: color }} />
@@ -990,8 +990,8 @@ function FinanceBreakdownTab({ dark, t }) {
   const mIn = s.moneyIn || {};
   const mOut = s.moneyOut || {};
   const lib = s.liability || {};
-  const totalIn = (mIn.deposits || 0) + (mIn.couponBonuses || 0) + (mIn.adminCredits || 0) + (mIn.referralBonuses || 0);
-  const totalOut = (mOut.providerCosts || 0) + (mOut.refunds || 0) + (mOut.referralBonuses || 0);
+  const totalIn = (mIn.deposits || 0) + (mIn.adminCredits || 0);
+  const totalOut = (mOut.providerCosts || 0) + (mOut.refunds || 0) + (mOut.couponBonuses || 0) + (mOut.referralBonuses || 0) + (mOut.adminGifts || 0);
 
   return (
     <>
@@ -1040,9 +1040,7 @@ function FinanceBreakdownTab({ dark, t }) {
             </div>
             {[
               ["Deposits", mIn.deposits],
-              ["Coupon Bonuses", mIn.couponBonuses],
               ["Admin Credits", mIn.adminCredits],
-              ["Referral Bonuses", mIn.referralBonuses],
             ].map(([label, val]) => (
               <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: `0.5px solid ${rowBorder}` }}>
                 <span style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.5)" : "rgba(0,0,0,.5)" }}>{label}</span>
@@ -1064,7 +1062,9 @@ function FinanceBreakdownTab({ dark, t }) {
             {[
               ["Provider Costs", mOut.providerCosts],
               ["Order Refunds", mOut.refunds],
+              ["Coupon Bonuses", mOut.couponBonuses],
               ["Referral Bonuses", mOut.referralBonuses],
+              ["Admin Gifts", mOut.adminGifts],
             ].map(([label, val]) => (
               <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: `0.5px solid ${rowBorder}` }}>
                 <span style={{ fontSize: 13, color: dark ? "rgba(255,255,255,.5)" : "rgba(0,0,0,.5)" }}>{label}</span>

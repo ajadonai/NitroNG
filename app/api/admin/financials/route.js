@@ -39,7 +39,7 @@ export async function GET(req) {
 
     const [
       ordersAgg, cancelledAgg,
-      depositsAgg, refundsAgg, referralBonusAgg, couponBonusAgg, adminCreditAgg,
+      depositsAgg, refundsAgg, referralBonusAgg, couponBonusAgg, adminCreditAgg, adminGiftAgg,
       walletLiability,
       ordersByPlatform, ordersByTier,
       topSpenders,
@@ -48,12 +48,13 @@ export async function GET(req) {
       prisma.order.aggregate({ where: orderWhere, _sum: { charge: true, cost: true }, _count: true }),
       // Cancelled orders
       prisma.order.aggregate({ where: { ...orderWhere, status: 'Cancelled' }, _sum: { charge: true }, _count: true }),
-      // Money in
+      // Money in/out
       prisma.transaction.aggregate({ where: { ...txWhere, type: 'deposit', status: 'Completed' }, _sum: { amount: true }, _count: true }),
       prisma.transaction.aggregate({ where: { ...txWhere, type: 'refund', status: 'Completed' }, _sum: { amount: true }, _count: true }),
       prisma.transaction.aggregate({ where: { ...txWhere, type: 'bonus', status: 'Completed', note: { contains: 'referral' } }, _sum: { amount: true }, _count: true }),
       prisma.transaction.aggregate({ where: { ...txWhere, type: 'bonus', status: 'Completed', note: { contains: 'Coupon' } }, _sum: { amount: true }, _count: true }),
       prisma.transaction.aggregate({ where: { ...txWhere, type: 'admin_credit', status: 'Completed', amount: { gt: 0 } }, _sum: { amount: true }, _count: true }),
+      prisma.transaction.aggregate({ where: { ...txWhere, type: 'admin_gift', status: 'Completed', amount: { gt: 0 } }, _sum: { amount: true }, _count: true }),
       // Wallet liability (all time)
       prisma.user.aggregate({ where: { status: 'Active', balance: { gt: 0 } }, _sum: { balance: true }, _count: true }),
       // By platform
@@ -134,14 +135,14 @@ export async function GET(req) {
       },
       moneyIn: {
         deposits: k(depositsAgg._sum.amount),
-        couponBonuses: k(couponBonusAgg._sum.amount),
         adminCredits: k(adminCreditAgg._sum.amount),
-        referralBonuses: k(referralBonusAgg._sum.amount),
       },
       moneyOut: {
         providerCosts: k(totalCost),
         refunds: k(totalRefunds),
+        couponBonuses: k(couponBonusAgg._sum.amount),
         referralBonuses: k(referralBonusAgg._sum.amount),
+        adminGifts: k(adminGiftAgg._sum.amount),
       },
       liability: {
         walletBalances: k(walletLiability._sum.balance),
