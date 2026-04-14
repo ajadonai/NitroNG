@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useConfirm } from "./confirm-dialog";
 import { fN, fD } from "../lib/format";
 
@@ -370,46 +370,44 @@ function FinanceOverviewTab({ dark, t }) {
   };
   useEffect(() => { load(range); }, []);
 
-  // Load Chart.js dynamically
+  // Render chart when data is ready
   useEffect(() => {
-    if (!window.Chart) {
+    if (!stats?.chartData?.length) return;
+    const tryRender = () => {
+      if (!chartRef.current) return;
+      if (chartInstance.current) chartInstance.current.destroy();
+      const cd = stats.chartData;
+      const gridColor = dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
+      const tickColor = dark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)";
+      chartInstance.current = new window.Chart(chartRef.current, {
+        type: "bar",
+        data: {
+          labels: cd.map(d => { const dt = new Date(d.date); return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }),
+          datasets: [
+            { label: "Orders", data: cd.map(d => d.orders), backgroundColor: dark ? "rgba(196,125,142,0.5)" : "rgba(196,125,142,0.6)", borderRadius: 4, barPercentage: 0.6, yAxisID: "y" },
+            { label: "Deposits", data: cd.map(d => d.deposits), type: "line", borderColor: "#059669", backgroundColor: "transparent", tension: 0.3, pointRadius: 2, pointBackgroundColor: "#059669", borderWidth: 2, yAxisID: "y1" },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ctx.dataset.label === "Deposits" ? "Deposits: ₦" + ctx.parsed.y.toLocaleString() : "Orders: " + ctx.parsed.y } } },
+          scales: {
+            x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 15 } },
+            y: { position: "left", grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 }, stepSize: 1 }, title: { display: true, text: "Orders", color: tickColor, font: { size: 11 } } },
+            y1: { position: "right", grid: { drawOnChartArea: false }, ticks: { color: tickColor, font: { size: 11 }, callback: (v) => "₦" + (v >= 1000 ? Math.round(v / 1000) + "K" : v) }, title: { display: true, text: "Deposits", color: tickColor, font: { size: 11 } } },
+          },
+        },
+      });
+    };
+    if (window.Chart) { tryRender(); } else {
       const s = document.createElement("script");
       s.src = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js";
-      s.onload = () => renderChart();
+      s.onload = tryRender;
       document.head.appendChild(s);
     }
-  }, []);
-
-  // Render/update chart when data or theme changes
-  const renderChart = useCallback(() => {
-    if (!chartRef.current || !stats?.chartData || !window.Chart) return;
-    if (chartInstance.current) chartInstance.current.destroy();
-    const cd = stats.chartData;
-    const gridColor = dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
-    const tickColor = dark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)";
-    chartInstance.current = new window.Chart(chartRef.current, {
-      type: "bar",
-      data: {
-        labels: cd.map(d => { const dt = new Date(d.date); return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }),
-        datasets: [
-          { label: "Orders", data: cd.map(d => d.orders), backgroundColor: dark ? "rgba(196,125,142,0.5)" : "rgba(196,125,142,0.6)", borderRadius: 4, barPercentage: 0.6, yAxisID: "y" },
-          { label: "Deposits", data: cd.map(d => d.deposits), type: "line", borderColor: "#059669", backgroundColor: "transparent", tension: 0.3, pointRadius: 2, pointBackgroundColor: "#059669", borderWidth: 2, yAxisID: "y1" },
-        ],
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        interaction: { mode: "index", intersect: false },
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ctx.dataset.label === "Deposits" ? "Deposits: ₦" + ctx.parsed.y.toLocaleString() : "Orders: " + ctx.parsed.y } } },
-        scales: {
-          x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 15 } },
-          y: { position: "left", grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 }, stepSize: 1 }, title: { display: true, text: "Orders", color: tickColor, font: { size: 11 } } },
-          y1: { position: "right", grid: { drawOnChartArea: false }, ticks: { color: tickColor, font: { size: 11 }, callback: (v) => "₦" + (v >= 1000 ? Math.round(v / 1000) + "K" : v) }, title: { display: true, text: "Deposits", color: tickColor, font: { size: 11 } } },
-        },
-      },
-    });
+    return () => { if (chartInstance.current) { chartInstance.current.destroy(); chartInstance.current = null; } };
   }, [stats, dark]);
-
-  useEffect(() => { renderChart(); }, [renderChart]);
 
   const changeRange = (r) => { setRange(r); load(r); };
 
