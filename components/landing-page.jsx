@@ -308,7 +308,7 @@ function LandingInner(){
           </div>
 
           {/* HOW IT WORKS — horizontal timeline */}
-          <div className="s2-how" style={{padding:"0 48px 80px"}}>
+          <div className="s2-how" style={{padding:"60px 48px 80px",margin:"0 -48px",background:dark?"rgba(0,0,0,.15)":"rgba(0,0,0,.03)",borderTop:`1px solid ${dark?"rgba(255,255,255,.04)":"rgba(0,0,0,.04)"}`,borderBottom:`1px solid ${dark?"rgba(255,255,255,.04)":"rgba(0,0,0,.04)"}`}}>
             <div style={{display:"flex",alignItems:"baseline",gap:16,marginBottom:40}}>
               <h3 style={{fontSize:28,fontWeight:600,letterSpacing:-.5,color:t.text}}>How it <span className="serif" style={{fontStyle:"italic",fontWeight:500,fontSize:32,color:t.accent}}>works</span></h3>
               <div style={{flex:1,height:.5,background:dark?"rgba(255,255,255,.06)":"rgba(0,0,0,.06)"}}/>
