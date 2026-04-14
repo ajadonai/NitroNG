@@ -356,7 +356,7 @@ function LandingInner(){
                     </div>
                     <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderTop:`1px solid ${dark?"rgba(255,255,255,.08)":"rgba(0,0,0,.08)"}`,background:dark?"rgba(255,255,255,.02)":"rgba(0,0,0,.015)",marginTop:"auto"}}>
                       <span style={{fontSize:13,color:dark?"rgba(244,241,237,.3)":"rgba(28,27,25,.35)"}}>From <strong style={{fontSize:16,fontWeight:600,color:t.text}}>{fromPrice}</strong>/1K</span>
-                      <button onClick={()=>setModal("signup")} style={{padding:"7px 18px",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer",border:"none",background:dark?"rgba(196,125,142,.12)":"rgba(196,125,142,.08)",color:t.accent}}>Order now</button>
+                      <button onClick={()=>setModal("signup")} style={{padding:"8px 22px",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer",border:`1.5px solid ${t.accent}`,background:dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.1)",color:t.accent,transition:"all .2s",fontFamily:"inherit"}}>Order now</button>
                     </div>
                   </div>
                 ))}
