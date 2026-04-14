@@ -109,10 +109,10 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
           // Stop polling after 30 minutes
           setTimeout(() => { clearInterval(poll); setCryptoPolling(false); }, 30 * 60 * 1000);
         } else {
-          toast.error("Payment failed", data.error || "Failed to create crypto payment");
+          toast.error("Payment failed", data.error || "Failed to create crypto payment", { position: "bottom" });
         }
       } catch (err) {
-        toast.error(err?.name === "TimeoutError" ? "Timed out" : "Network error", "Check your connection");
+        toast.error(err?.name === "TimeoutError" ? "Timed out" : "Network error", "Check your connection", { position: "bottom" });
       }
       setLoading(false);
       return;
@@ -132,9 +132,9 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
           setManualDone(false);
           setManualRef("");
         } else {
-          toast.error("Transfer failed", data.error || "Failed to create request");
+          toast.error("Transfer failed", data.error || "Failed to create request", { position: "bottom" });
         }
-      } catch { toast.error("Network error", "Check your connection"); }
+      } catch { toast.error("Network error", "Check your connection", { position: "bottom" }); }
       setLoading(false);
       return;
     }
@@ -151,11 +151,11 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
       if (data.authorization_url) {
         window.location.href = data.authorization_url;
       } else {
-        toast.error("Payment failed", data.error || "Initialization failed");
+        toast.error("Payment failed", data.error || "Initialization failed", { position: "bottom" });
         setLoading(false);
       }
     } catch (err) {
-      toast.error(err?.name === "TimeoutError" ? "Timed out" : "Network error", "Check your connection");
+      toast.error(err?.name === "TimeoutError" ? "Timed out" : "Network error", "Check your connection", { position: "bottom" });
       setLoading(false);
     }
   };
@@ -551,8 +551,8 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
                     try {
                       const res = await fetch("/api/payments/manual", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: manualModal.reference, senderRef: manualModal.reference }) });
                       if (res.ok) setManualDone(true);
-                      else { const d = await res.json(); toast.error("Failed", d.error || "Something went wrong"); }
-                    } catch { toast.error("Network error", "Check your connection"); }
+                      else { const d = await res.json(); toast.error("Failed", d.error || "Something went wrong", { position: "bottom" }); }
+                    } catch { toast.error("Network error", "Check your connection", { position: "bottom" }); }
                     setManualSubmitting(false);
                   }} disabled={manualSubmitting} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", opacity: manualSubmitting ? .5 : 1 }}>{manualSubmitting ? "Submitting..." : "I've sent the money"}</button>
                 </div>

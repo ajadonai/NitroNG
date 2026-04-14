@@ -211,7 +211,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
 /* ═══════════════════════════════════════════ */
 /* ═══ NEW ORDER PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
-export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, catModal, setCatModal }) {
+export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrders, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, catModal, setCatModal }) {
   const toast = useToast();
   const [filterType, setFilterType] = useState("all");
   const [search, setSearch] = useState("");
@@ -339,13 +339,13 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
         signal: AbortSignal.timeout(30000),
       });
       const data = await res.json();
-      if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong"); setOrderLoading(false); return; }
-      toast.success("Order placed!", `${data.order?.id || ""} — ${selSvc?.name || "Service"}`);
+      if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong", { position: "bottom" }); setOrderLoading(false); return; }
+      toast.success("Order placed!", `${data.order?.id || ""} — ${selSvc?.name || "Service"}`, { position: "bottom", cta: onViewOrders ? { label: "View Orders →", onClick: onViewOrders } : null });
       setLink(""); setOrderModal(false);
       if (onOrderSuccess) onOrderSuccess();
     } catch (err) {
       const msg = err?.name === "TimeoutError" ? "Request timed out" : "Network error";
-      toast.error(msg, "Check your connection and try again.");
+      toast.error(msg, "Check your connection and try again.", { position: "bottom" });
     }
     setOrderLoading(false);
   };

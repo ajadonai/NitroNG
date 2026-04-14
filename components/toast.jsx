@@ -35,9 +35,12 @@ const TYPES = {
 export function ToastProvider({ children, dark }) {
   const [toasts, setToasts] = useState([]);
 
-  const addToast = useCallback((type, title, desc, duration = 5000) => {
+  const addToast = useCallback((type, title, desc, opts = {}) => {
     const id = ++toastId;
-    setToasts(prev => [...prev, { id, type, title, desc, duration }]);
+    const duration = opts.duration || 5000;
+    const position = opts.position || "top";
+    const cta = opts.cta || null;
+    setToasts(prev => [...prev, { id, type, title, desc, duration, position, cta }]);
     setTimeout(() => removeToast(id), duration);
   }, []);
 
@@ -47,40 +50,55 @@ export function ToastProvider({ children, dark }) {
   };
 
   const toast = useMemo(() => ({
-    success: (title, desc) => addToast("success", title, desc),
-    error: (title, desc) => addToast("error", title, desc),
-    warning: (title, desc) => addToast("warning", title, desc),
-    info: (title, desc) => addToast("info", title, desc),
+    success: (title, desc, opts) => addToast("success", title, desc, opts),
+    error: (title, desc, opts) => addToast("error", title, desc, opts),
+    warning: (title, desc, opts) => addToast("warning", title, desc, opts),
+    info: (title, desc, opts) => addToast("info", title, desc, opts),
   }), [addToast]);
+
+  const topToasts = toasts.filter(t => t.position === "top");
+  const bottomToasts = toasts.filter(t => t.position === "bottom");
+
+  const renderToast = (t) => {
+    const tt = TYPES[t.type];
+    const isBottom = t.position === "bottom";
+    return (
+      <div key={t.id} className={`toast-item ${t.leaving ? (isBottom ? "toast-exit-bottom" : "toast-exit") : (isBottom ? "toast-enter-bottom" : "toast-enter")}`} style={{
+        background: dark ? tt.bgD : tt.bgL,
+        borderWidth: 1, borderStyle: "solid",
+        borderColor: dark ? tt.brdD : tt.brdL,
+      }}>
+        <div className="toast-content">
+          <div className="toast-icon" style={{ color: dark ? tt.colD : tt.colL }}>{tt.icon}</div>
+          <div className="toast-text">
+            <div className="toast-title" style={{ color: dark ? "#f5f3f0" : "#1a1917" }}>{t.title}</div>
+            {t.desc && <div className="toast-desc" style={{ color: dark ? "#a09b95" : "#555250" }}>{t.desc}</div>}
+          </div>
+          {t.cta && (
+            <button onClick={() => { t.cta.onClick(); removeToast(t.id); }} style={{ padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer", fontFamily: "inherit", background: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)", color: dark ? "#f5f3f0" : "#1a1917", whiteSpace: "nowrap", flexShrink: 0 }}>{t.cta.label}</button>
+          )}
+          <button onClick={() => removeToast(t.id)} className="toast-close" style={{ color: dark ? "#706c68" : "#757170" }}>✕</button>
+        </div>
+        <div className="toast-progress">
+          <div className="toast-progress-bar" style={{ background: dark ? tt.colD : tt.colL, animationDuration: `${t.duration}ms` }} />
+        </div>
+      </div>
+    );
+  };
 
   return (
     <ToastContext.Provider value={toast}>
       {children}
-      {/* Toast container */}
-      <div className="toast-container">
-        {toasts.map(t => {
-          const tt = TYPES[t.type];
-          return (
-            <div key={t.id} className={`toast-item ${t.leaving ? "toast-exit" : "toast-enter"}`} style={{
-              background: dark ? tt.bgD : tt.bgL,
-              borderWidth: 1, borderStyle: "solid",
-              borderColor: dark ? tt.brdD : tt.brdL,
-            }}>
-              <div className="toast-content">
-                <div className="toast-icon" style={{ color: dark ? tt.colD : tt.colL }}>{tt.icon}</div>
-                <div className="toast-text">
-                  <div className="toast-title" style={{ color: dark ? "#f5f3f0" : "#1a1917" }}>{t.title}</div>
-                  {t.desc && <div className="toast-desc" style={{ color: dark ? "#a09b95" : "#555250" }}>{t.desc}</div>}
-                </div>
-                <button onClick={() => removeToast(t.id)} className="toast-close" style={{ color: dark ? "#706c68" : "#757170" }}>✕</button>
-              </div>
-              <div className="toast-progress">
-                <div className="toast-progress-bar" style={{ background: dark ? tt.colD : tt.colL, animationDuration: `${t.duration}ms` }} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {topToasts.length > 0 && (
+        <div className="toast-container toast-top">
+          {topToasts.map(renderToast)}
+        </div>
+      )}
+      {bottomToasts.length > 0 && (
+        <div className="toast-container toast-bottom">
+          {bottomToasts.map(renderToast)}
+        </div>
+      )}
     </ToastContext.Provider>
   );
 }

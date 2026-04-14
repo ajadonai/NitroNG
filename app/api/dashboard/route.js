@@ -150,6 +150,7 @@ export async function GET() {
         badgePerks: badge.perks,
         totalOrders,
         nextTier: nextTier ? { name: nextTier.name, color: nextTier.color } : null,
+        createdAt: user.createdAt,
       },
       orders: orders.map(o => ({
         id: o.orderId || o.id,
