@@ -340,7 +340,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       });
       const data = await res.json();
       if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong", { position: "bottom" }); setOrderLoading(false); return; }
-      toast.success("Order placed!", `${data.order?.id || ""} — ${selSvc?.name || "Service"}`, { position: "bottom", cta: onViewOrders ? { label: "View Orders →", onClick: onViewOrders } : null });
+      toast.success("Order placed", platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", { position: "bottom", cta: onViewOrders ? { label: "View Orders →", onClick: onViewOrders } : null });
       setLink(""); setOrderModal(false);
       if (onOrderSuccess) onOrderSuccess();
     } catch (err) {
