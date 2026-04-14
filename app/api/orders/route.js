@@ -139,7 +139,11 @@ export async function PATCH(req) {
       if (order.service.apiId) {
         try {
           const provider = order.service.provider || 'mtp';
-          const result = await placeOrder(provider, order.service.apiId, order.link, order.quantity);
+          const { calculateDripFeed } = await import('@/lib/drip-feed');
+          const dripFeed = calculateDripFeed(order.service.category, order.quantity);
+          const extra = {};
+          if (dripFeed) { extra.runs = dripFeed.runs; extra.interval = dripFeed.interval; }
+          const result = await placeOrder(provider, order.service.apiId, order.link, order.quantity, extra);
           apiOrderId = result.order ? String(result.order) : null;
         } catch (err) { log.error('Reorder', err.message); }
       }
@@ -307,6 +311,13 @@ export async function POST(req) {
           if (sName.includes("mention")) extra.usernames = safeComments;
           else if (sName.includes("poll") || sName.includes("vote")) extra.answer_number = safeComments;
           else extra.comments = safeComments;
+        }
+        // Drip-feed: spread delivery over time based on platform + quantity
+        const { calculateDripFeed } = await import('@/lib/drip-feed');
+        const dripFeed = calculateDripFeed(service.category, qty);
+        if (dripFeed) {
+          extra.runs = dripFeed.runs;
+          extra.interval = dripFeed.interval;
         }
         const result = await placeOrder(provider, service.apiId, trimmedLink, qty, extra);
         apiOrderId = result.order ? String(result.order) : null;
