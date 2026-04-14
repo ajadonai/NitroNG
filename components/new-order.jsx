@@ -67,14 +67,14 @@ const TS = {
 /* ═══ ORDER FORM                          ═══ */
 /* ═══════════════════════════════════════════ */
 export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, orderResult, loyaltyDiscount = 0, loyaltyTier = null }) {
-  const basePrice = selTier ? Math.round((qtyNum / 1000) * selTier.price) : 0;
-  const discountAmount = loyaltyDiscount > 0 ? Math.round(basePrice * (loyaltyDiscount / 100)) : 0;
-  const price = Math.max(0, basePrice - discountAmount);
-  const s = selTier ? TS[selTier.tier] : null;
   const minQty = selTier?.min || 100;
   const maxQty = selTier?.max || 50000;
   const qtyNum = Number(qty) || 0;
   const qtyOutOfRange = qty !== "" && qtyNum > 0 && (qtyNum < minQty || qtyNum > maxQty);
+  const basePrice = selTier ? Math.round((qtyNum / 1000) * selTier.price) : 0;
+  const discountAmount = loyaltyDiscount > 0 ? Math.round(basePrice * (loyaltyDiscount / 100)) : 0;
+  const price = Math.max(0, basePrice - discountAmount);
+  const s = selTier ? TS[selTier.tier] : null;
   const [linkError, setLinkError] = useState("");
 
   /* Link validation */
