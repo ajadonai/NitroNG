@@ -15,6 +15,7 @@ export async function GET() {
         email: true, balance: true,
         referralCode: true, referredBy: true, emailVerified: true, createdAt: true,
         tourCompleted: true, orderTourCompleted: true,
+        notifOrders: true, notifPromo: true, notifEmail: true,
       },
     });
     if (!user) return error('User not found', 404);
@@ -151,6 +152,9 @@ export async function GET() {
         totalOrders,
         nextTier: nextTier ? { name: nextTier.name, color: nextTier.color } : null,
         createdAt: user.createdAt,
+        notifOrders: user.notifOrders,
+        notifPromo: user.notifPromo,
+        notifEmail: user.notifEmail,
       },
       orders: orders.map(o => ({
         id: o.orderId || o.id,
