@@ -99,7 +99,7 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
               const sr = await fetch(`/api/payments/crypto?reference=${data.reference}`);
               const sd = await sr.json();
               setCryptoStatus(sd.status || sd.npStatus || "Pending");
-              if (sd.status === "Completed" || sd.status === "Canceled") {
+              if (sd.status === "Completed" || sd.status === "Cancelled") {
                 clearInterval(poll);
                 setCryptoPolling(false);
                 if (sd.status === "Completed" && setPaymentStatus) setPaymentStatus("success");
@@ -429,7 +429,7 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
 
       {/* ═══ CRYPTO PAYMENT MODAL ═══ */}
       {cryptoModal && (
-        <div onClick={() => { if (cryptoStatus === "Completed" || cryptoStatus === "Canceled") setCryptoModal(null); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div onClick={() => { if (cryptoStatus === "Completed" || cryptoStatus === "Cancelled") setCryptoModal(null); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 400, border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}`, boxShadow: "0 20px 60px rgba(0,0,0,.3)" }}>
             {cryptoStatus === "Completed" ? (
               <>
@@ -440,7 +440,7 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
                 </div>
                 <button onClick={() => { setCryptoModal(null); window.location.reload(); }} style={{ width: "100%", padding: "12px 0", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Done</button>
               </>
-            ) : cryptoStatus === "Canceled" ? (
+            ) : cryptoStatus === "Cancelled" ? (
               <>
                 <div style={{ textAlign: "center", padding: "20px 0" }}>
                   <div style={{ fontSize: 48, marginBottom: 12 }}>❌</div>
