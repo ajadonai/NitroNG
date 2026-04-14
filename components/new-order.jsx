@@ -276,7 +276,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
   const types = [...new Set(services.map(s => s.type))];
   const filtered = filterType === "all" ? services : services.filter(s => s.type === filterType);
   const hasOrder = selSvc && selTier;
-  const price = selTier ? Math.round((qty / 1000) * selTier.price) : 0;
+  const price = selTier ? Math.round(((Number(qty) || 0) / 1000) * selTier.price) : 0;
   const activePlat = PLATFORMS.find(p => p.id === platform);
 
   useEffect(() => { setSelSvc(null); setSelTier(null); setFilterType("all"); setOrderModal(false); setOrderResult(null); setSearch(""); }, [platform]);
