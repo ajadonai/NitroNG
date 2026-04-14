@@ -17,7 +17,7 @@ export async function GET(req) {
     else if (range === '90d') since = new Date(now - 90 * 24 * 60 * 60 * 1000);
     else since = new Date(now - 30 * 24 * 60 * 60 * 1000);
 
-    const [ordersAgg, userCount, depositAgg, adminCreditAgg, adminGiftAgg, couponBonusAgg, referralBonusAgg, refundAgg, ordersByStatus, topServices, allOrders] = await Promise.all([
+    const [ordersAgg, userCount, depositAgg, adminCreditAgg, adminGiftAgg, couponBonusAgg, referralBonusAgg, refundAgg, ordersByStatus, topServices, allOrders, chartOrders, chartDeposits] = await Promise.all([
       prisma.order.aggregate({
         where: { createdAt: { gte: since }, deletedAt: null, status: { notIn: ['Cancelled'] } },
         _sum: { charge: true, cost: true },
@@ -69,6 +69,18 @@ export async function GET(req) {
         where: { createdAt: { gte: since }, deletedAt: null, status: { notIn: ['Cancelled'] } },
         select: { charge: true, service: { select: { category: true } } },
       }),
+      // Chart: daily order counts + revenue
+      prisma.order.findMany({
+        where: { createdAt: { gte: since }, deletedAt: null },
+        select: { createdAt: true, charge: true, status: true },
+        orderBy: { createdAt: 'asc' },
+      }),
+      // Chart: daily deposits
+      prisma.transaction.findMany({
+        where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: since } },
+        select: { createdAt: true, amount: true },
+        orderBy: { createdAt: 'asc' },
+      }),
     ]);
 
     // Resolve service names
@@ -112,6 +124,29 @@ export async function GET(req) {
     const totalMoneyOut = totalCost + totalRefunds + totalCouponBonuses + totalReferralBonuses + totalAdminGifts;
     const netCashFlow = totalMoneyIn - totalMoneyOut;
 
+    // Build daily chart data
+    const dayMap = {};
+    const toDay = (d) => new Date(d).toISOString().slice(0, 10);
+    chartOrders.forEach(o => {
+      const day = toDay(o.createdAt);
+      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, deposits: 0 };
+      dayMap[day].orders++;
+      if (o.status !== 'Cancelled') dayMap[day].revenue += (o.charge || 0) / 100;
+    });
+    chartDeposits.forEach(tx => {
+      const day = toDay(tx.createdAt);
+      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, deposits: 0 };
+      dayMap[day].deposits += (tx.amount || 0) / 100;
+    });
+    // Fill in missing days
+    const chartData = [];
+    const d = new Date(since);
+    while (d <= now) {
+      const key = d.toISOString().slice(0, 10);
+      chartData.push({ date: key, orders: dayMap[key]?.orders || 0, revenue: Math.round(dayMap[key]?.revenue || 0), deposits: Math.round(dayMap[key]?.deposits || 0) });
+      d.setDate(d.getDate() + 1);
+    }
+
     return Response.json({
       range,
       totalRevenue,
@@ -129,6 +164,7 @@ export async function GET(req) {
       totalMoneyOut,
       netCashFlow,
       depositCount: depositAgg._count || 0,
+      chartData,
       byStatus: ordersByStatus.map(s => ({
         status: s.status,
         count: s._count,

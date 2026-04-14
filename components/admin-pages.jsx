@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useConfirm } from "./confirm-dialog";
 import { fN, fD } from "../lib/format";
 
@@ -361,12 +361,55 @@ function FinanceOverviewTab({ dark, t }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState("30d");
+  const chartRef = useRef(null);
+  const chartInstance = useRef(null);
 
   const load = (r) => {
     setLoading(true);
     fetch(`/api/admin/analytics?range=${r}`).then(res => res.json()).then(d => { setStats(d); setLoading(false); }).catch(() => setLoading(false));
   };
   useEffect(() => { load(range); }, []);
+
+  // Load Chart.js dynamically
+  useEffect(() => {
+    if (!window.Chart) {
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js";
+      s.onload = () => renderChart();
+      document.head.appendChild(s);
+    }
+  }, []);
+
+  // Render/update chart when data or theme changes
+  const renderChart = useCallback(() => {
+    if (!chartRef.current || !stats?.chartData || !window.Chart) return;
+    if (chartInstance.current) chartInstance.current.destroy();
+    const cd = stats.chartData;
+    const gridColor = dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
+    const tickColor = dark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)";
+    chartInstance.current = new window.Chart(chartRef.current, {
+      type: "bar",
+      data: {
+        labels: cd.map(d => { const dt = new Date(d.date); return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }),
+        datasets: [
+          { label: "Orders", data: cd.map(d => d.orders), backgroundColor: dark ? "rgba(196,125,142,0.5)" : "rgba(196,125,142,0.6)", borderRadius: 4, barPercentage: 0.6, yAxisID: "y" },
+          { label: "Deposits", data: cd.map(d => d.deposits), type: "line", borderColor: "#059669", backgroundColor: "transparent", tension: 0.3, pointRadius: 2, pointBackgroundColor: "#059669", borderWidth: 2, yAxisID: "y1" },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ctx.dataset.label === "Deposits" ? "Deposits: ₦" + ctx.parsed.y.toLocaleString() : "Orders: " + ctx.parsed.y } } },
+        scales: {
+          x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 15 } },
+          y: { position: "left", grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 }, stepSize: 1 }, title: { display: true, text: "Orders", color: tickColor, font: { size: 11 } } },
+          y1: { position: "right", grid: { drawOnChartArea: false }, ticks: { color: tickColor, font: { size: 11 }, callback: (v) => "₦" + (v >= 1000 ? Math.round(v / 1000) + "K" : v) }, title: { display: true, text: "Deposits", color: tickColor, font: { size: 11 } } },
+        },
+      },
+    });
+  }, [stats, dark]);
+
+  useEffect(() => { renderChart(); }, [renderChart]);
 
   const changeRange = (r) => { setRange(r); load(r); };
 
@@ -410,6 +453,22 @@ function FinanceOverviewTab({ dark, t }) {
           </div>
         ))}
       </div>
+
+      {/* Chart — Orders & Deposits */}
+      {stats?.chartData?.length > 0 && (
+        <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}`, padding: "16px", marginBottom: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div className="adm-card-title" style={{ color: t.textMuted }}>Orders & Deposits</div>
+            <div style={{ display: "flex", gap: 12, fontSize: 12, color: t.textMuted }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: dark ? "rgba(196,125,142,0.5)" : "rgba(196,125,142,0.6)" }} />Orders</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: "#059669" }} />Deposits</span>
+            </div>
+          </div>
+          <div style={{ position: "relative", height: 240 }}>
+            <canvas ref={chartRef} />
+          </div>
+        </div>
+      )}
 
       <div className="adm-grid-2" style={{ marginTop: 24 }}>
         <div>
