@@ -177,6 +177,14 @@ export default function TourGuide({ dark, onComplete, onNavigate, onOpenMore }) 
     }
   }, [step, phase, visible]);
 
+  // Force re-render on resize so tooltip repositions
+  const [, setResize] = useState(0);
+  useEffect(() => {
+    const handler = () => setResize(n => n + 1);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+
   if (!visible) return null;
 
   const accent = "#c47d8e";
