@@ -123,7 +123,7 @@ export default function AdminOrdersPage({ dark, t }) {
                   <div><span style={{ color: t.textMuted }}>Profit:</span> <span style={{ color: t.green }}>{fN((o.charge || 0) - (o.cost || 0))}</span></div>
                   <div><span style={{ color: t.textMuted }}>Date:</span> <span style={{ color: t.text }}>{o.created ? fD(o.created) : ""}</span></div>
                 </div>
-                {o.link && <div style={{ fontSize: 14, color: t.textMuted, marginBottom: 10, wordBreak: "break-all" }}>Link: <span style={{ color: t.accent }}>{o.link}</span></div>}
+                {o.link && <div style={{ fontSize: 14, color: t.textMuted, marginBottom: 10, wordBreak: "break-all" }}>Link: <a href={o.link} target="_blank" rel="noopener noreferrer" style={{ color: t.accent, textDecoration: "none" }}>{o.link}</a></div>}
                 <div style={{ display: "flex", gap: 6 }}>
                   <button onClick={() => doAction(o.id, "check")} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textSoft }}>Check Status</button>
                   {o.status !== "Canceled" && o.status !== "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? This may issue a refund.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: t.red }}>Cancel</button>}

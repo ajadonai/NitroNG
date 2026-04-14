@@ -178,7 +178,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                   <div className="ord-detail-grid">
                     <div className="ord-detail-link">
                       <div className="ord-detail-label" style={{ color: t.textMuted }}>Link</div>
-                      <div className="m ord-detail-val" style={{ color: t.accent, wordBreak: "break-all" }}>{o.link || "—"}</div>
+                      <div className="m ord-detail-val" style={{ color: t.accent, wordBreak: "break-all" }}>{o.link ? <a href={o.link} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{o.link}</a> : "—"}</div>
                     </div>
                     <div>
                       <div className="ord-detail-label" style={{ color: t.textMuted }}>Quantity</div>
