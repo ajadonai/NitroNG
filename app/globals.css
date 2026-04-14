@@ -196,7 +196,8 @@ input { font-family: inherit; }
 .s3-desc { font-size: 16px; margin-bottom: 40px; max-width: 520px; line-height: 1.6; }
 .s3-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 40px; align-items: stretch; }
 .s3-grid > div { display: flex; flex-direction: column; }
-.s3-card { padding: 22px 20px; border-radius: 16px; backdrop-filter: blur(12px); position: relative; overflow: hidden; text-align: left; }
+.s3-card { padding: 22px 20px; border-radius: 16px; backdrop-filter: blur(12px); position: relative; overflow: hidden; text-align: left; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; cursor: pointer; }
+.s3-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,.12); border-color: rgba(196,125,142,.3) !important; }
 .s3-deposit { display: flex; align-items: center; gap: 16px; padding: 20px 24px; border-radius: 16px; text-align: left; }
 
 /* ══════════════════════════════════════ */
