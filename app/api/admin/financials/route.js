@@ -158,6 +158,6 @@ export async function GET(req) {
     });
   } catch (err) {
     log.error('Admin Financials', err.message);
-    return Response.json({ error: 'Failed to load financials' }, { status: 500 });
+    return Response.json({ error: 'Failed to load financials', detail: err.message }, { status: 500 });
   }
 }
