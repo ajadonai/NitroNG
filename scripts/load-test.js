@@ -20,20 +20,31 @@ async function api(method, path, body = null, expectFail = false) {
   const opts = { method, headers };
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(`${BASE}${path}`, opts);
-  // Capture all cookies from response
-  const raw = res.headers.getSetCookie?.() || [];
-  for (const c of raw) {
-    if (c.includes('nitro_token=')) {
-      token = c.split(';')[0]; // nitro_token=xxx
+
+  // Capture cookie from response — try multiple methods
+  // Method 1: getSetCookie (Node 20+)
+  const setCookies = res.headers.getSetCookie?.() || [];
+  for (const c of setCookies) {
+    if (c.startsWith('nitro_token=')) {
+      token = c.split(';')[0];
     }
   }
-  // Fallback: try get('set-cookie')
-  if (!token) {
+  // Method 2: raw headers iteration
+  if (!token || !token.includes('nitro_token')) {
+    const raw = res.headers.raw?.()?.['set-cookie'] || [];
+    for (const c of raw) {
+      if (c.startsWith('nitro_token=')) {
+        token = c.split(';')[0];
+      }
+    }
+  }
+  // Method 3: get('set-cookie') single string
+  if (!token || !token.includes('nitro_token')) {
     const sc = res.headers.get('set-cookie') || '';
-    if (sc.includes('nitro_token=')) {
-      token = sc.split(';')[0];
-    }
+    const match = sc.match(/nitro_token=([^;]+)/);
+    if (match) token = `nitro_token=${match[1]}`;
   }
+
   let data;
   try { data = await res.json(); } catch { data = { status: res.status }; }
   return { ok: res.ok, status: res.status, data };
@@ -56,6 +67,11 @@ async function main() {
   const login = await api('POST', '/api/auth/login', { email: EMAIL, password: PASSWORD });
   log('Login', login.ok, login.ok ? 'Authenticated' : login.data?.error);
   if (!login.ok) { console.error('Cannot continue without auth'); process.exit(1); }
+  console.log(`  Token captured: ${token ? 'yes (' + token.slice(0, 30) + '...)' : 'NO — cookie not accessible from Node.js fetch'}`);
+  if (!token) {
+    console.log('  Note: httpOnly cookies cannot be captured by Node.js fetch.');
+    console.log('  Skipping authenticated tests. Unauth tests will still run.\n');
+  }
 
   // Get initial balance
   const dash = await api('GET', '/api/dashboard');
