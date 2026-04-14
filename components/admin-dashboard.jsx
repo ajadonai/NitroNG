@@ -193,6 +193,18 @@ function AdminRightSidebar({ data, dark, t }) {
 
       <div className="adm-rs-divider" style={{ background: t.sidebarBorder }} />
 
+      <div className="adm-rs-title" style={{ color: t.textMuted }}>Provider Colors</div>
+      <div style={{ display: "flex", gap: 12, padding: "4px 0" }}>
+        {[["MTP", "#ef4444"], ["JAP", "#3b82f6"], ["DAO", "#22c55e"]].map(([name, color]) => (
+          <div key={name} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: color }} />
+            <span style={{ fontSize: 12, color: t.textMuted, fontWeight: 500 }}>{name}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="adm-rs-divider" style={{ background: t.sidebarBorder }} />
+
       <div className="adm-rs-title" style={{ color: t.textMuted }}>Recent Activity</div>
       {(data.activity || []).slice(0, 6).map((a, i) => (
         <div key={i} className="adm-rs-activity">
@@ -204,18 +216,6 @@ function AdminRightSidebar({ data, dark, t }) {
         </div>
       ))}
       {(data.activity || []).length === 0 && <div style={{ fontSize: 14, color: t.textMuted, padding: "8px 4px" }}>No recent activity</div>}
-
-      <div className="adm-rs-divider" style={{ background: t.sidebarBorder }} />
-
-      <div className="adm-rs-title" style={{ color: t.textMuted }}>Provider Colors</div>
-      <div style={{ display: "flex", gap: 12, padding: "4px 0" }}>
-        {[["MTP", "#ef4444"], ["JAP", "#3b82f6"], ["DAO", "#22c55e"]].map(([name, color]) => (
-          <div key={name} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: color }} />
-            <span style={{ fontSize: 12, color: t.textMuted, fontWeight: 500 }}>{name}</span>
-          </div>
-        ))}
-      </div>
     </>
   );
 }

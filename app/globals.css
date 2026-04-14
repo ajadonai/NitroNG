@@ -507,7 +507,7 @@ input { font-family: inherit; }
 
 /* Tier chips */
 .no-tier-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
-.no-tier-chip { padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border-width: 1.5px; border-style: solid; font-family: inherit; transition: all .15s ease; }
+.no-tier-chip { padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border-width: 1.5px; border-style: solid; font-family: inherit; transition: all .15s ease; display: flex; align-items: center; gap: 6px; }
 .no-tier-chip:hover { filter: brightness(1.1); transform: translateY(-1px); }
 .no-tier-chip-sel { border-width: 2px; box-shadow: 0 2px 8px rgba(0,0,0,.2); transform: translateY(-1px); }
 
