@@ -17,12 +17,22 @@ let failed = 0;
 async function api(method, path, body = null, expectFail = false) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Cookie'] = token;
-  const opts = { method, headers, redirect: 'manual' };
+  const opts = { method, headers };
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(`${BASE}${path}`, opts);
-  const setCookie = res.headers.get('set-cookie');
-  if (setCookie && setCookie.includes('session=')) {
-    token = setCookie.split(';')[0];
+  // Capture all cookies from response
+  const raw = res.headers.getSetCookie?.() || [];
+  for (const c of raw) {
+    if (c.includes('nitro_token=')) {
+      token = c.split(';')[0]; // nitro_token=xxx
+    }
+  }
+  // Fallback: try get('set-cookie')
+  if (!token) {
+    const sc = res.headers.get('set-cookie') || '';
+    if (sc.includes('nitro_token=')) {
+      token = sc.split(';')[0];
+    }
   }
   let data;
   try { data = await res.json(); } catch { data = { status: res.status }; }
