@@ -40,8 +40,8 @@ export async function POST(req) {
         'Processing': 'Processing',
         'Pending': 'Pending',
         'Partial': 'Partial',
-        'Canceled': 'Canceled',
-        'Refunded': 'Canceled',
+        'Canceled': 'Cancelled',
+        'Refunded': 'Cancelled',
       };
 
       const newStatus = statusMap[providerStatus.status] || order.status;

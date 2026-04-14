@@ -74,7 +74,7 @@ export async function POST(req) {
       if (tx) {
         await prisma.transaction.update({
           where: { id: tx.id },
-          data: { status: 'Canceled' },
+          data: { status: 'Cancelled' },
         });
       }
       log.info('NowPayments Webhook', `✗ ${payment_status}: ${order_id}`);

@@ -10,11 +10,11 @@ const STATUS_COLORS = {
   Processing: { bg: "rgba(165,180,252,.1)", bgL: "rgba(79,70,229,.06)", text: "#a5b4fc", textL: "#4f46e5" },
   Pending: { bg: "rgba(252,211,77,.1)", bgL: "rgba(217,119,6,.06)", text: "#fcd34d", textL: "#d97706" },
   Partial: { bg: "rgba(252,165,165,.1)", bgL: "rgba(220,38,38,.06)", text: "#fca5a5", textL: "#dc2626" },
-  Canceled: { bg: "rgba(160,160,160,.1)", bgL: "rgba(100,100,100,.06)", text: "#a3a3a3", textL: "#737373" },
+  Cancelled: { bg: "rgba(160,160,160,.1)", bgL: "rgba(100,100,100,.06)", text: "#a3a3a3", textL: "#737373" },
 };
 
 function Badge({ status, dark }) {
-  const s = STATUS_COLORS[status] || STATUS_COLORS.Canceled;
+  const s = STATUS_COLORS[status] || STATUS_COLORS.Cancelled;
   return <span style={{ fontSize: 13, padding: "2px 8px", borderRadius: 5, fontWeight: 600, background: dark ? s.bg : s.bgL, color: dark ? s.text : s.textL }}>{status}</span>;
 }
 
