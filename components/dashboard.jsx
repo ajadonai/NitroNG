@@ -304,6 +304,13 @@ function NotifDropdown({ orders, txs, dark, t, onClose, readIds, setReadIds, cle
       color: dark ? "#e0a458" : "#d97706",
       icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
     })),
+    ...orders.filter(o => o.status === "Cancelled").map(o => ({
+      id: `cancel-${o.id}`, type: "order", title: "Order cancelled",
+      desc: `${o.id} · ${o.service || "Service"} cancelled`,
+      time: o.created ? fD(o.created) : "", ts: o.created ? new Date(o.created) : null,
+      color: dark ? "#fca5a5" : "#dc2626",
+      icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
+    })),
     ...txs.filter(tx => tx.type === "deposit" && tx.status === "Completed").map(tx => ({
       id: `dep-${tx.id || tx.reference}`, type: "deposit", title: "Funds added",
       desc: `${fN(tx.amount)} added via ${tx.method || "Paystack"}`,
@@ -465,6 +472,7 @@ function DashboardInner() {
     const cutoff = notifClearedAt ? new Date(notifClearedAt) : null;
     orders.filter(o => o.status === "Completed").filter(o => !cutoff || (o.created && new Date(o.created) > cutoff)).forEach(o => ids.push(`ord-${o.id}`));
     orders.filter(o => o.status === "Processing" || o.status === "Pending").filter(o => !cutoff || (o.created && new Date(o.created) > cutoff)).forEach(o => ids.push(`proc-${o.id}`));
+    orders.filter(o => o.status === "Cancelled").filter(o => !cutoff || (o.created && new Date(o.created) > cutoff)).forEach(o => ids.push(`cancel-${o.id}`));
     txs.filter(tx => tx.type === "deposit" && tx.status === "Completed").filter(tx => !cutoff || (tx.date && new Date(tx.date) > cutoff)).forEach(tx => ids.push(`dep-${tx.id || tx.reference}`));
     return ids;
   }, [orders, txs, notifClearedAt]);
