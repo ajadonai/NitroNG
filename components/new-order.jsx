@@ -265,6 +265,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
           speed: tier.speed || "0-2 hrs",
           min: tier.min,
           max: tier.max,
+          provider: tier.provider || "mtp",
         })),
       }));
   })();
@@ -361,8 +362,10 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, platform, 
       {svc.tiers.map(tier => {
         const s = TS[tier.tier];
         const isSel = selTier?.tier === tier.tier && selSvc?.id === svc.id;
+        const PROV_COLORS = { mtp: "#ef4444", jap: "#3b82f6", dao: "#22c55e" };
         return (
-          <button key={tier.tier} onClick={e => pickTier(tier, e)} className={`no-tier-chip${isSel ? " no-tier-chip-sel" : ""}`} style={{ background: dark ? s.bgD : s.bg, color: s.text, borderColor: isSel ? s.text : (dark ? s.borderD : s.border) }}>
+          <button key={tier.tier} onClick={e => pickTier(tier, e)} className={`no-tier-chip${isSel ? " no-tier-chip-sel" : ""}`} style={{ background: dark ? s.bgD : s.bg, color: s.text, borderColor: isSel ? s.text : (dark ? s.borderD : s.border), position: "relative" }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: PROV_COLORS[tier.provider] || PROV_COLORS.mtp, flexShrink: 0 }} />
             {s.label} {tier.tier} · ₦{tier.price.toLocaleString()}
           </button>
         );
