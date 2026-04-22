@@ -177,7 +177,7 @@ Instagram does not ban accounts for having followers — they take action agains
 
 If you are looking to buy Instagram followers in Nigeria, [Nitro](https://nitro.ng) offers reliable, affordable services with real delivery and 24/7 support. Sign up today and give your Instagram the boost it needs.',
   'Guides',
-  '/blog/grow-instagram-nigeria.svg',
+  '/blog/buy-instagram-followers.svg',
   true,
   false,
   0,
@@ -284,7 +284,7 @@ A good panel should be easy to use:
 
 Whether you are growing a personal brand, managing clients, or building a business online — having the right SMM panel makes all the difference.',
   'Guides',
-  '/blog/5-tips-nitro.svg',
+  '/blog/best-smm-panel.svg',
   true,
   false,
   0,
@@ -397,7 +397,7 @@ TikTok is the biggest growth opportunity for Nigerian creators and businesses ri
 
 Need a boost? [Visit Nitro](https://nitro.ng) to explore TikTok growth services and start building your presence today.',
   'Tips & Tricks',
-  '/blog/getting-started.svg',
+  '/blog/tiktok-views-followers.svg',
   true,
   false,
   0,
@@ -501,7 +501,7 @@ YouTube is a long-term game, but every successful channel had to start somewhere
 
 Ready to boost your channel? [Visit Nitro](https://nitro.ng) to explore YouTube subscriber services and start your journey to monetisation.',
   'Guides',
-  '/blog/service-tiers.svg',
+  '/blog/youtube-subscribers.svg',
   true,
   false,
   0,

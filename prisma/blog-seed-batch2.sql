@@ -1,10 +1,10 @@
--- ══ UPDATE existing posts with backdated timestamps ══
+-- ══ UPDATE existing posts: backdated timestamps + unique thumbnails ══
 
 UPDATE blog_posts SET "createdAt" = '2026-01-28T12:00:00Z', "updatedAt" = '2026-01-28T12:00:00Z' WHERE slug = 'how-to-grow-instagram-account-nigeria';
-UPDATE blog_posts SET "createdAt" = '2026-02-14T10:00:00Z', "updatedAt" = '2026-02-14T10:00:00Z' WHERE slug = 'buy-instagram-followers-nigeria-guide';
-UPDATE blog_posts SET "createdAt" = '2026-03-01T15:00:00Z', "updatedAt" = '2026-03-01T15:00:00Z' WHERE slug = 'best-smm-panel-nigeria';
-UPDATE blog_posts SET "createdAt" = '2026-03-12T09:00:00Z', "updatedAt" = '2026-03-12T09:00:00Z' WHERE slug = 'how-to-get-tiktok-views-followers';
-UPDATE blog_posts SET "createdAt" = '2026-03-28T11:00:00Z', "updatedAt" = '2026-03-28T11:00:00Z' WHERE slug = 'how-to-buy-youtube-subscribers-nigeria';
+UPDATE blog_posts SET "createdAt" = '2026-02-14T10:00:00Z', "updatedAt" = '2026-02-14T10:00:00Z', thumbnail = '/blog/buy-instagram-followers.svg' WHERE slug = 'buy-instagram-followers-nigeria-guide';
+UPDATE blog_posts SET "createdAt" = '2026-03-01T15:00:00Z', "updatedAt" = '2026-03-01T15:00:00Z', thumbnail = '/blog/best-smm-panel.svg' WHERE slug = 'best-smm-panel-nigeria';
+UPDATE blog_posts SET "createdAt" = '2026-03-12T09:00:00Z', "updatedAt" = '2026-03-12T09:00:00Z', thumbnail = '/blog/tiktok-views-followers.svg' WHERE slug = 'how-to-get-tiktok-views-followers';
+UPDATE blog_posts SET "createdAt" = '2026-03-28T11:00:00Z', "updatedAt" = '2026-03-28T11:00:00Z', thumbnail = '/blog/youtube-subscribers.svg' WHERE slug = 'how-to-buy-youtube-subscribers-nigeria';
 UPDATE blog_posts SET "createdAt" = '2026-04-10T14:00:00Z', "updatedAt" = '2026-04-10T14:00:00Z' WHERE slug = 'is-buying-social-media-followers-safe';
 
 -- ══ INSERT new blog posts ══
@@ -123,7 +123,7 @@ Whether you are a creator, business owner, or aspiring reseller — Nitro gives 
 
 [Get started at nitro.ng](https://nitro.ng) — it is free to create an account.',
   'Guides',
-  '/blog/getting-started.svg',
+  '/blog/what-is-smm-panel.svg',
   true,
   false,
   0,
@@ -246,7 +246,7 @@ If you are a reseller looking for API access, check what each panel offers in te
 
 [Try Nitro free](https://nitro.ng) — create an account, fund your wallet, and place your first order in under a minute.',
   'Guides',
-  '/blog/5-tips-nitro.svg',
+  '/blog/best-smm-panel.svg',
   true,
   false,
   0,
@@ -377,7 +377,7 @@ The SMM reselling market in Nigeria is growing fast, and the barrier to entry is
 
 [Sign up on Nitro](https://nitro.ng), fund your wallet with as little as ₦1,000, and start fulfilling your first orders today. Your reselling business starts with one order.',
   'Guides',
-  '/blog/referral-program.svg',
+  '/blog/smm-reseller-business.svg',
   true,
   false,
   0,
@@ -491,7 +491,7 @@ Combine good timing with quality content and strategic engagement boosts, and yo
 
 Ready to boost your posts? [Visit Nitro](https://nitro.ng) for instant Instagram engagement services.',
   'Tips & Tricks',
-  '/blog/grow-instagram-nigeria.svg',
+  '/blog/best-time-instagram.svg',
   true,
   false,
   0,
@@ -604,7 +604,7 @@ On [Nitro](https://nitro.ng), follower services come with automatic refill guara
 
 [Start growing with Nitro](https://nitro.ng) — your followers are protected.',
   'Tips & Tricks',
-  '/blog/is-smm-safe.svg',
+  '/blog/followers-drop.svg',
   true,
   false,
   0,
@@ -745,7 +745,7 @@ Telegram member pricing varies by quality:
 
 [Visit Nitro](https://nitro.ng) to explore Telegram growth services and start building your channel today.',
   'Guides',
-  '/blog/service-tiers.svg',
+  '/blog/telegram-members.svg',
   true,
   false,
   0,
