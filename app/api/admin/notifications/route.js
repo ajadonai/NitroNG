@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
-import { sendEmail } from '@/lib/email';
+import { sendEmail, emailWrap } from '@/lib/email';
 
 async function getHistory() {
   try {
@@ -71,19 +71,14 @@ export async function POST(req) {
       return Response.json({ error: 'No users match the target' }, { status: 400 });
     }
 
-    // Build email HTML
-    const html = `
-      <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <div style="width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg, #c47d8e, #8b5e6b); display: inline-flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #fff;">N</div>
-        </div>
-        <h1 style="font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center; margin-bottom: 16px;">${subj}</h1>
-        <div style="font-size: 15px; color: #444; line-height: 1.7; white-space: pre-wrap;">${msg}</div>
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
-          <p style="font-size: 12px; color: #bbb;">Nitro — Premium SMM Services</p>
-        </div>
-      </div>
-    `;
+    // Build email HTML using branded wrapper
+    const html = emailWrap({
+      label: 'Announcement',
+      labelBg: 'rgba(196,125,142,.12)',
+      labelColor: '#c47d8e',
+      title: subj,
+      body: `<p style="font-size:15px;color:#444;line-height:1.7;white-space:pre-wrap;margin:0;">${msg}</p>`,
+    });
 
     // Save to history immediately as "sending"
     const historyId = Date.now().toString();
