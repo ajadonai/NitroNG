@@ -2,7 +2,7 @@ import Dashboard from '@/components/dashboard';
 import { GET as getDashboard } from '@/app/api/dashboard/route';
 
 export const metadata = {
-  title: 'Dashboard',
+  title: { absolute: 'Nitro' },
   description: 'Manage your orders, fund your wallet, and track your social media growth on Nitro.',
   robots: { index: false, follow: false },
 };

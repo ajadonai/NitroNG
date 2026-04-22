@@ -1,154 +1,10 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
-
-async function main() {
-  console.log('Seeding database...');
-
-  // ── Clear existing data ──
-  await prisma.blogPost.deleteMany();
-  await prisma.ticketReply.deleteMany();
-  await prisma.ticket.deleteMany();
-  await prisma.transaction.deleteMany();
-  await prisma.order.deleteMany();
-  await prisma.service.deleteMany();
-  await prisma.alert.deleteMany();
-  await prisma.activityLog.deleteMany();
-  await prisma.setting.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.admin.deleteMany();
-
-  const pw = await bcrypt.hash('password123', 12);
-  const adminPw = await bcrypt.hash('admin123', 12);
-
-  // ── Admins ──
-  const superadmin = await prisma.admin.create({
-    data: { name: 'Owner', email: 'admin@nitro.ng', password: adminPw, role: 'superadmin' },
-  });
-  await prisma.admin.createMany({
-    data: [
-      { name: 'David Ojo', email: 'david@nitro.ng', password: adminPw, role: 'admin' },
-      { name: 'Grace Adebayo', email: 'grace@nitro.ng', password: adminPw, role: 'support' },
-      { name: 'Ibrahim Musa', email: 'ibrahim@nitro.ng', password: adminPw, role: 'finance', status: 'Inactive' },
-    ],
-  });
-
-  // ── Users ──
-  const users = await Promise.all([
-    prisma.user.create({ data: { name: 'Chidi Okafor', email: 'chidi@gmail.com', password: pw, balance: 4500000, referralCode: 'NTR-C4K1', emailVerified: true } }),
-    prisma.user.create({ data: { name: 'Amina Bello', email: 'amina@yahoo.com', password: pw, balance: 12050000, referralCode: 'NTR-A8B2', emailVerified: true } }),
-    prisma.user.create({ data: { name: 'Tunde Adeyemi', email: 'tunde@outlook.com', password: pw, balance: 825000, referralCode: 'NTR-T3A9', emailVerified: true } }),
-    prisma.user.create({ data: { name: 'Ngozi Eze', email: 'ngozi@gmail.com', password: pw, balance: 31000000, referralCode: 'NTR-N7E5', emailVerified: true } }),
-    prisma.user.create({ data: { name: 'Segun Akinola', email: 'segun@mail.com', password: pw, balance: 0, referralCode: 'NTR-S2A0', emailVerified: true, status: 'Suspended' } }),
-    prisma.user.create({ data: { name: 'Fatima Yusuf', email: 'fatima@gmail.com', password: pw, balance: 5400000, referralCode: 'NTR-F1Y6', emailVerified: true } }),
-    prisma.user.create({ data: { name: 'Emeka Nwankwo', email: 'emeka@live.com', password: pw, balance: 2200000, referralCode: 'NTR-E9N3', emailVerified: true } }),
-    prisma.user.create({ data: { name: 'Blessing Okoro', email: 'blessing@gmail.com', password: pw, balance: 8700000, referralCode: 'NTR-B4O8', emailVerified: true } }),
-  ]);
-
-  // ── Services ──
-  const services = await Promise.all([
-    prisma.service.create({ data: { apiId: 1001, name: 'IG Followers [Real]', category: 'Instagram', costPer1k: 251800, sellPer1k: 387500, refill: true, avgTime: '0-2 hrs' } }),
-    prisma.service.create({ data: { apiId: 1002, name: 'IG Likes [Instant]', category: 'Instagram', costPer1k: 120900, sellPer1k: 186000, refill: false, avgTime: '0-30 min' } }),
-    prisma.service.create({ data: { apiId: 2001, name: 'TikTok Followers', category: 'TikTok', costPer1k: 302300, sellPer1k: 465000, refill: true, avgTime: '0-4 hrs' } }),
-    prisma.service.create({ data: { apiId: 2002, name: 'TikTok Views', category: 'TikTok', costPer1k: 30200, sellPer1k: 46500, refill: false, avgTime: '0-15 min' } }),
-    prisma.service.create({ data: { apiId: 3001, name: 'YT Subscribers', category: 'YouTube', costPer1k: 806000, sellPer1k: 1240000, refill: true, avgTime: '0-12 hrs' } }),
-    prisma.service.create({ data: { apiId: 3002, name: 'YT Views', category: 'YouTube', costPer1k: 201500, sellPer1k: 310000, refill: false, avgTime: '0-6 hrs' } }),
-    prisma.service.create({ data: { apiId: 4001, name: 'Twitter/X Followers', category: 'Twitter/X', costPer1k: 403000, sellPer1k: 620000, refill: true, avgTime: '0-4 hrs' } }),
-    prisma.service.create({ data: { apiId: 5001, name: 'FB Page Likes', category: 'Facebook', costPer1k: 503800, sellPer1k: 775000, refill: true, avgTime: '0-6 hrs' } }),
-    prisma.service.create({ data: { apiId: 6001, name: 'Telegram Members', category: 'Telegram', costPer1k: 352600, sellPer1k: 542500, enabled: false, refill: true, avgTime: '0-6 hrs' } }),
-    prisma.service.create({ data: { apiId: 7001, name: 'Spotify Plays', category: 'Spotify', costPer1k: 181400, sellPer1k: 279000, refill: false, avgTime: '0-12 hrs' } }),
-  ]);
-
-  // ── Orders ──
-  await prisma.order.createMany({
-    data: [
-      { orderId: 'ORD-28491', userId: users[0].id, serviceId: services[0].id, link: 'instagram.com/coolbrand', quantity: 5000, charge: 1937500, cost: 1259400, status: 'Completed', apiOrderId: 'MTP-991204' },
-      { orderId: 'ORD-28490', userId: users[1].id, serviceId: services[3].id, link: 'tiktok.com/@user/video/123', quantity: 50000, charge: 2325000, cost: 1511300, status: 'Processing', apiOrderId: 'MTP-991203' },
-      { orderId: 'ORD-28489', userId: users[2].id, serviceId: services[4].id, link: 'youtube.com/@mychannel', quantity: 1000, charge: 1240000, cost: 806000, status: 'Pending', apiOrderId: 'MTP-991202' },
-      { orderId: 'ORD-28488', userId: users[3].id, serviceId: services[6].id, link: 'x.com/mybrand', quantity: 2000, charge: 1240000, cost: 806000, status: 'Completed', apiOrderId: 'MTP-991201' },
-      { orderId: 'ORD-28487', userId: users[4].id, serviceId: services[1].id, link: 'instagram.com/p/ABC123', quantity: 10000, charge: 1860000, cost: 1209000, status: 'Partial', apiOrderId: 'MTP-991200', remains: 3500 },
-      { orderId: 'ORD-28486', userId: users[5].id, serviceId: services[9].id, link: 'open.spotify.com/track/xyz', quantity: 100000, charge: 27900000, cost: 18135000, status: 'Completed', apiOrderId: 'MTP-991199' },
-      { orderId: 'ORD-28485', userId: users[6].id, serviceId: services[7].id, link: 'facebook.com/mybiz', quantity: 3000, charge: 2325000, cost: 1511300, status: 'Completed', apiOrderId: 'MTP-991198' },
-      { orderId: 'ORD-28484', userId: users[7].id, serviceId: services[8].id, link: 't.me/mychannel', quantity: 5000, charge: 2712500, cost: 1763100, status: 'Processing', apiOrderId: 'MTP-991197' },
-    ],
-  });
-
-  // ── Transactions ──
-  await prisma.transaction.createMany({
-    data: [
-      { userId: users[0].id, type: 'deposit', amount: 7750000, method: 'Flutterwave', reference: 'PAY-20260322-001', status: 'Completed' },
-      { userId: users[0].id, type: 'charge', amount: -1937500, method: null, reference: 'CHG-ORD-28491', note: 'Order ORD-28491' },
-      { userId: users[1].id, type: 'deposit', amount: 15500000, method: 'Flutterwave', reference: 'PAY-20260321-001', status: 'Completed' },
-      { userId: users[1].id, type: 'charge', amount: -2325000, method: null, reference: 'CHG-ORD-28490', note: 'Order ORD-28490' },
-      { userId: users[2].id, type: 'deposit', amount: 2000000, method: 'Flutterwave', reference: 'PAY-20260320-001', status: 'Completed' },
-      { userId: users[3].id, type: 'deposit', amount: 31000000, method: 'Bank Transfer', reference: 'BNK-20260315-001', status: 'Completed' },
-    ],
-  });
-
-  // ── Tickets ──
-  const tickets = await Promise.all([
-    prisma.ticket.create({ data: { ticketId: 'TK-401', userId: users[0].id, subject: 'Order not delivered', message: 'My Instagram followers order stuck on processing for 3 hours.', orderId: 'ORD-28491', status: 'Open' } }),
-    prisma.ticket.create({ data: { ticketId: 'TK-400', userId: users[1].id, subject: 'Followers dropped', message: 'Lost about 500 followers. Service says 30-day refill.', orderId: 'ORD-28480', status: 'Open' } }),
-    prisma.ticket.create({ data: { ticketId: 'TK-399', userId: users[2].id, subject: 'Payment not credited', message: 'Flutterwave payment not reflected. Ref: PAY-2026032109.', status: 'In Progress' } }),
-    prisma.ticket.create({ data: { ticketId: 'TK-398', userId: users[3].id, subject: 'Refund request', message: 'Wrong service. Please refund.', orderId: 'ORD-28470', status: 'Resolved' } }),
-  ]);
-
-  // Ticket replies
-  await prisma.ticketReply.createMany({
-    data: [
-      { ticketId: tickets[2].id, from: 'David Ojo', message: 'Checking with Flutterwave.' },
-      { ticketId: tickets[3].id, from: 'Owner', message: 'Refunded to wallet.' },
-    ],
-  });
-
-  // ── Alerts ──
-  await prisma.alert.createMany({
-    data: [
-      { message: 'Scheduled maintenance tonight 11PM - 1AM WAT. Orders may be delayed.', type: 'warning', target: 'both', active: true, createdBy: 'Owner', expiresAt: new Date('2026-03-24T01:00:00') },
-      { message: 'New! TikTok services now available with 30-day refill guarantee.', type: 'info', target: 'dashboard', active: true, createdBy: 'David Ojo' },
-      { message: 'Flutterwave maintenance completed. All payments are back to normal.', type: 'info', target: 'login', active: false, createdBy: 'Owner' },
-    ],
-  });
-
-  // ── Activity Log ──
-  await prisma.activityLog.createMany({
-    data: [
-      { adminName: 'Owner', action: 'Credited ₦5,000 to Chidi Okafor', type: 'credit' },
-      { adminName: 'David Ojo', action: 'Cancelled order ORD-28483', type: 'cancel' },
-      { adminName: 'Grace Adebayo', action: 'Replied to ticket TK-399', type: 'ticket' },
-      { adminName: 'Owner', action: 'Suspended user Segun Akinola', type: 'ban' },
-      { adminName: 'David Ojo', action: 'Synced 10 services from API', type: 'sync' },
-      { adminName: 'Owner', action: 'Updated exchange rate', type: 'settings' },
-    ],
-  });
-
-  // ── Settings ──
-  await prisma.setting.createMany({
-    data: [
-      { key: 'site_name', value: 'Nitro' },
-      { key: 'currency', value: 'NGN' },
-      { key: 'default_markup', value: '54' },
-      { key: 'referral_bonus', value: '50000' },
-      { key: 'min_deposit', value: '100000' },
-      { key: 'maintenance_mode', value: 'false' },
-      { key: 'smm_api_url', value: 'https://morethanpanel.com/api/v2' },
-      { key: 'smm_api_key', value: '' },
-    ],
-  });
-
-  // ── Blog Posts ──
-  await prisma.blogPost.createMany({
-    data: [
-      {
-        title: 'How to Grow Your Instagram Account Fast in Nigeria',
-        slug: 'how-to-grow-instagram-account-nigeria',
-        excerpt: 'Proven strategies to grow your Instagram following in Nigeria — from content planning to smart engagement tactics that actually work.',
-        category: 'Guides',
-        thumbnail: '/blog/grow-instagram-nigeria.svg',
-        published: true,
-        authorName: 'Nitro Team',
-        content: `## Why Instagram Growth Matters in Nigeria
+INSERT INTO blog_posts (id, title, slug, excerpt, content, category, thumbnail, published, "showInHowTo", "sortOrder", "authorName", views, "createdAt", "updatedAt")
+VALUES (
+  gen_random_uuid(),
+  'How to Grow Your Instagram Account Fast in Nigeria',
+  'how-to-grow-instagram-account-nigeria',
+  'Proven strategies to grow your Instagram following in Nigeria — from content planning to smart engagement tactics that actually work.',
+  '## Why Instagram Growth Matters in Nigeria
 
 Instagram is one of the most powerful platforms for Nigerian creators, businesses, and influencers. With over 10 million active users in the country, having a strong Instagram presence can directly translate to brand deals, sales, and opportunities.
 
@@ -234,17 +90,25 @@ Review your analytics weekly and do more of what works.
 
 Instagram growth is a combination of great content, consistent effort, and smart strategy. Whether you are a business owner in Lagos, a creator in Abuja, or a student building a personal brand — these strategies will help you grow.
 
-Ready to accelerate your growth? [Visit Nitro](https://nitro.ng) to explore our Instagram growth services and give your account the boost it deserves.`,
-      },
-      {
-        title: 'How to Buy Instagram Followers in Nigeria (2026 Guide)',
-        slug: 'buy-instagram-followers-nigeria-guide',
-        excerpt: 'A complete guide to buying Instagram followers in Nigeria — what to look for, how to stay safe, and the best way to get real results.',
-        category: 'Guides',
-        thumbnail: '/blog/grow-instagram-nigeria.svg',
-        published: true,
-        authorName: 'Nitro Team',
-        content: `## Why People Buy Instagram Followers
+Ready to accelerate your growth? [Visit Nitro](https://nitro.ng) to explore our Instagram growth services and give your account the boost it deserves.',
+  'Guides',
+  '/blog/grow-instagram-nigeria.svg',
+  true,
+  false,
+  0,
+  'Nitro Team',
+  0,
+  NOW(),
+  NOW()
+);
+
+INSERT INTO blog_posts (id, title, slug, excerpt, content, category, thumbnail, published, "showInHowTo", "sortOrder", "authorName", views, "createdAt", "updatedAt")
+VALUES (
+  gen_random_uuid(),
+  'How to Buy Instagram Followers in Nigeria (2026 Guide)',
+  'buy-instagram-followers-nigeria-guide',
+  'A complete guide to buying Instagram followers in Nigeria — what to look for, how to stay safe, and the best way to get real results.',
+  '## Why People Buy Instagram Followers
 
 Whether you are a business trying to build credibility, an influencer chasing brand deals, or a creator who wants social proof — buying Instagram followers is a common growth strategy used by millions of accounts worldwide.
 
@@ -311,17 +175,25 @@ Instagram does not ban accounts for having followers — they take action agains
 
 ## Ready to Grow?
 
-If you are looking to buy Instagram followers in Nigeria, [Nitro](https://nitro.ng) offers reliable, affordable services with real delivery and 24/7 support. Sign up today and give your Instagram the boost it needs.`,
-      },
-      {
-        title: 'Best SMM Panel in Nigeria: What to Look For in 2026',
-        slug: 'best-smm-panel-nigeria',
-        excerpt: 'How to choose the best SMM panel in Nigeria — key features, pricing, and what separates reliable panels from scams.',
-        category: 'Guides',
-        thumbnail: '/blog/5-tips-nitro.svg',
-        published: true,
-        authorName: 'Nitro Team',
-        content: `## What Is an SMM Panel?
+If you are looking to buy Instagram followers in Nigeria, [Nitro](https://nitro.ng) offers reliable, affordable services with real delivery and 24/7 support. Sign up today and give your Instagram the boost it needs.',
+  'Guides',
+  '/blog/grow-instagram-nigeria.svg',
+  true,
+  false,
+  0,
+  'Nitro Team',
+  0,
+  NOW(),
+  NOW()
+);
+
+INSERT INTO blog_posts (id, title, slug, excerpt, content, category, thumbnail, published, "showInHowTo", "sortOrder", "authorName", views, "createdAt", "updatedAt")
+VALUES (
+  gen_random_uuid(),
+  'Best SMM Panel in Nigeria: What to Look For in 2026',
+  'best-smm-panel-nigeria',
+  'How to choose the best SMM panel in Nigeria — key features, pricing, and what separates reliable panels from scams.',
+  '## What Is an SMM Panel?
 
 An SMM (Social Media Marketing) panel is an online platform where you can buy social media services like followers, likes, views, comments, and subscribers. Think of it as a one-stop shop for growing your social media presence across multiple platforms.
 
@@ -410,17 +282,25 @@ A good panel should be easy to use:
 3. Browse services across all platforms
 4. Place your first order — it takes less than 30 seconds
 
-Whether you are growing a personal brand, managing clients, or building a business online — having the right SMM panel makes all the difference.`,
-      },
-      {
-        title: 'How to Get More TikTok Views and Followers in 2026',
-        slug: 'how-to-get-tiktok-views-followers',
-        excerpt: 'Everything you need to know about growing on TikTok in Nigeria — from content strategy to boosting your views and follower count.',
-        category: 'Tips & Tricks',
-        thumbnail: '/blog/getting-started.svg',
-        published: true,
-        authorName: 'Nitro Team',
-        content: `## TikTok Growth in Nigeria
+Whether you are growing a personal brand, managing clients, or building a business online — having the right SMM panel makes all the difference.',
+  'Guides',
+  '/blog/5-tips-nitro.svg',
+  true,
+  false,
+  0,
+  'Nitro Team',
+  0,
+  NOW(),
+  NOW()
+);
+
+INSERT INTO blog_posts (id, title, slug, excerpt, content, category, thumbnail, published, "showInHowTo", "sortOrder", "authorName", views, "createdAt", "updatedAt")
+VALUES (
+  gen_random_uuid(),
+  'How to Get More TikTok Views and Followers in 2026',
+  'how-to-get-tiktok-views-followers',
+  'Everything you need to know about growing on TikTok in Nigeria — from content strategy to boosting your views and follower count.',
+  '## TikTok Growth in Nigeria
 
 TikTok has exploded in Nigeria. From comedy skits to business tutorials, Nigerian creators are building massive audiences and turning views into real income. But with millions of creators competing for attention, standing out requires strategy.
 
@@ -445,7 +325,7 @@ You have about 1-2 seconds before someone scrolls past. Start with:
 - A surprising statement or question
 - Movement or visual change
 - Text overlay that creates curiosity
-- "Wait for it..." or "Here's what happened..."
+- "Wait for it..." or "Here''s what happened..."
 
 ### Keep Videos Short
 
@@ -509,23 +389,31 @@ The strategy is simple: use paid boosts on your best content to give the algorit
 - **Ignoring trends** — TikTok rewards creators who participate in trends
 - **Not engaging** — posting and leaving is a missed opportunity
 - **Inconsistent posting** — the algorithm forgets about inactive accounts quickly
-- **Copying content exactly** — put your own spin on trends, don't just replicate
+- **Copying content exactly** — put your own spin on trends, don''t just replicate
 
 ## Start Growing Today
 
 TikTok is the biggest growth opportunity for Nigerian creators and businesses right now. Combine great content with smart strategy, and you can build a significant audience faster than on any other platform.
 
-Need a boost? [Visit Nitro](https://nitro.ng) to explore TikTok growth services and start building your presence today.`,
-      },
-      {
-        title: 'How to Buy YouTube Subscribers in Nigeria',
-        slug: 'how-to-buy-youtube-subscribers-nigeria',
-        excerpt: 'A practical guide to buying YouTube subscribers in Nigeria — how it works, what to expect, and how to grow your channel faster.',
-        category: 'Guides',
-        thumbnail: '/blog/service-tiers.svg',
-        published: true,
-        authorName: 'Nitro Team',
-        content: `## Why YouTube Subscribers Matter
+Need a boost? [Visit Nitro](https://nitro.ng) to explore TikTok growth services and start building your presence today.',
+  'Tips & Tricks',
+  '/blog/getting-started.svg',
+  true,
+  false,
+  0,
+  'Nitro Team',
+  0,
+  NOW(),
+  NOW()
+);
+
+INSERT INTO blog_posts (id, title, slug, excerpt, content, category, thumbnail, published, "showInHowTo", "sortOrder", "authorName", views, "createdAt", "updatedAt")
+VALUES (
+  gen_random_uuid(),
+  'How to Buy YouTube Subscribers in Nigeria',
+  'how-to-buy-youtube-subscribers-nigeria',
+  'A practical guide to buying YouTube subscribers in Nigeria — how it works, what to expect, and how to grow your channel faster.',
+  '## Why YouTube Subscribers Matter
 
 YouTube is the second-largest search engine in the world, and in Nigeria, it is one of the top platforms for content creators to build audiences and earn money. But growing a YouTube channel is notoriously slow.
 
@@ -611,17 +499,25 @@ Buying subscribers can help you reach the 1,000 threshold faster, but you still 
 
 YouTube is a long-term game, but every successful channel had to start somewhere. Whether you are a vlogger, educator, or entertainer — building your subscriber base gives you the foundation to grow.
 
-Ready to boost your channel? [Visit Nitro](https://nitro.ng) to explore YouTube subscriber services and start your journey to monetisation.`,
-      },
-      {
-        title: 'Is Buying Social Media Followers Safe? Everything You Need to Know',
-        slug: 'is-buying-social-media-followers-safe',
-        excerpt: 'The honest truth about buying followers — what the risks are, how to stay safe, and what to look for in a trustworthy SMM provider.',
-        category: 'Guides',
-        thumbnail: '/blog/is-smm-safe.svg',
-        published: true,
-        authorName: 'Nitro Team',
-        content: `## The Big Question
+Ready to boost your channel? [Visit Nitro](https://nitro.ng) to explore YouTube subscriber services and start your journey to monetisation.',
+  'Guides',
+  '/blog/service-tiers.svg',
+  true,
+  false,
+  0,
+  'Nitro Team',
+  0,
+  NOW(),
+  NOW()
+);
+
+INSERT INTO blog_posts (id, title, slug, excerpt, content, category, thumbnail, published, "showInHowTo", "sortOrder", "authorName", views, "createdAt", "updatedAt")
+VALUES (
+  gen_random_uuid(),
+  'Is Buying Social Media Followers Safe? Everything You Need to Know',
+  'is-buying-social-media-followers-safe',
+  'The honest truth about buying followers — what the risks are, how to stay safe, and what to look for in a trustworthy SMM provider.',
+  '## The Big Question
 
 If you have ever considered buying followers, likes, or views for your social media accounts, you have probably asked yourself: is it safe? Will my account get banned? Is it worth the risk?
 
@@ -711,7 +607,7 @@ The key principle: platforms go after automation and manipulation at scale, not 
 ## When Buying Followers Makes Sense
 
 - **Launching a new brand**: Social proof helps convert your first real customers
-- **Reaching platform thresholds**: Like YouTube's 1,000-subscriber monetisation requirement
+- **Reaching platform thresholds**: Like YouTube''s 1,000-subscriber monetisation requirement
 - **Attracting brand deals**: Sponsors often have minimum follower requirements
 - **Building credibility**: New accounts struggle to grow because nobody wants to be the first follower
 - **Competitive markets**: In saturated niches, social proof helps you stand out
@@ -726,18 +622,15 @@ The key principle: platforms go after automation and manipulation at scale, not 
 
 Buying followers is safe when done correctly — through reputable providers, in gradual amounts, paired with real content and engagement. The risks come from bad providers and unrealistic expectations, not from the platforms themselves.
 
-If you are ready to grow your social media presence safely, [Nitro](https://nitro.ng) offers reliable, high-quality services with secure payments and full customer support. Start small, see the results, and scale from there.`,
-      },
-    ],
-  });
+If you are ready to grow your social media presence safely, [Nitro](https://nitro.ng) offers reliable, high-quality services with secure payments and full customer support. Start small, see the results, and scale from there.',
+  'Guides',
+  '/blog/is-smm-safe.svg',
+  true,
+  false,
+  0,
+  'Nitro Team',
+  0,
+  NOW(),
+  NOW()
+);
 
-  console.log('Seed complete!');
-  console.log('');
-  console.log('Test accounts:');
-  console.log('  User:  chidi@gmail.com / password123');
-  console.log('  Admin: admin@nitro.ng / admin123');
-}
-
-main()
-  .catch((e) => { console.error(e); process.exit(1); })
-  .finally(() => prisma.$disconnect());
