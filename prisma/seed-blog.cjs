@@ -81,7 +81,7 @@ const POSTS = [
   {
     title: "Understanding Budget, Standard & Premium Tiers",
     slug: "understanding-tiers",
-    thumbnail: "/blog/understanding-tiers.svg",
+    thumbnail: "/blog/service-tiers.svg",
     excerpt: "Not sure which tier to pick? Here's what Budget, Standard, and Premium mean for your order quality, speed, and refill guarantee.",
     category: "Tutorials",
     showInHowTo: true,
@@ -237,6 +237,7 @@ async function seed() {
         excerpt: post.excerpt,
         content: post.content.trim(),
         category: post.category,
+        thumbnail: post.thumbnail,
         published: true,
         showInHowTo: post.showInHowTo,
         sortOrder: post.sortOrder,

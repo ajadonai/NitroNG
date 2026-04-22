@@ -735,6 +735,7 @@ Evaluated, intentionally not in Phase 1. Filed in `/docs/DEFERRED.md`.
 | Crypto deposit coupon not applied | Payment | Bonus stored but never credited; fix when crypto flow finalized |
 | Unsupported gateway creates pending records | Payment | Only if unconfigured gateway enabled; fix when providers confirmed |
 | WhatsApp manual payment confirmation | Payment | User clicks button → opens WhatsApp with receipt; admin confirms and credits |
+| Bulk order page | Payment | Multi-account orders: users add multiple links, each with its own service, tier, and quantity; single checkout. Competitive differentiator |
 
 **Not on this list (intentionally not in any phase):** KYC, AML, formal SLO contracts, formal DR RTO/RPO, third-party status page service. An SMM panel at this scale doesn't need them.
 

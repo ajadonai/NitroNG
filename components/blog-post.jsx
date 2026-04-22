@@ -32,7 +32,7 @@ function BlogPostInner({ post }) {
           </div>
         </div>
         {post.thumbnail && <div className="rounded-xl bg-cover bg-center mb-8" style={{ height: "clamp(180px,25vw,300px)", backgroundImage: "url(" + post.thumbnail + ")", backgroundColor: thumbBg }} />}
-        <div className="blog-article-body" style={{ color: bodyColor }} dangerouslySetInnerHTML={{ __html: md(post.content) }} />
+        <div className="blog-article-body" data-theme={dark ? 'dark' : 'light'} style={{ color: bodyColor }} dangerouslySetInnerHTML={{ __html: md(post.content) }} />
         <div className="h-px my-8" style={{ background: t.surfaceBrd }} />
         <a href="/blog" className="inline-block py-2.5 px-5 rounded-lg text-sm no-underline" style={{ border: "1px solid " + t.surfaceBrd, color: t.muted }}>{"\u2190"} Back to all posts</a>
       </article>
