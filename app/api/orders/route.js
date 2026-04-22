@@ -75,24 +75,25 @@ export async function PATCH(req) {
       if (order.apiOrderId) {
         try { const provider = order.service?.provider || 'mtp'; await cancelOrder(provider, order.apiOrderId); } catch (e) { log.warn('Cancel Order', e.message); }
       }
-      // Refund to wallet — conditional claim prevents double-refund on concurrent requests
-      const claimed = await prisma.order.updateMany({
-        where: { id: order.id, status: { in: ['Pending', 'Processing', 'In progress'] } },
-        data: { status: 'Cancelled' },
-      });
-      if (claimed.count === 0) return Response.json({ error: 'Order already processed' }, { status: 409 });
-
-      await prisma.$transaction([
-        prisma.user.update({ where: { id: session.id }, data: { balance: { increment: order.charge } } }),
-        prisma.transaction.create({
+      // Atomic claim + refund — conditional update inside transaction prevents double-refund
+      const refunded = await prisma.$transaction(async (tx) => {
+        const claimed = await tx.order.updateMany({
+          where: { id: order.id, status: { in: ['Pending', 'Processing', 'In progress'] } },
+          data: { status: 'Cancelled' },
+        });
+        if (claimed.count === 0) return false;
+        await tx.user.update({ where: { id: session.id }, data: { balance: { increment: order.charge } } });
+        await tx.transaction.create({
           data: {
             userId: session.id, type: 'refund', amount: order.charge,
             method: 'wallet', status: 'Completed',
             reference: `refund-${order.orderId || order.id}`,
             note: `Refund for cancelled order ${order.orderId || order.id}`,
           },
-        }),
-      ]);
+        });
+        return true;
+      });
+      if (!refunded) return Response.json({ error: 'Order already processed' }, { status: 409 });
       return Response.json({ success: true, status: 'Cancelled', refunded: order.charge / 100 });
     }
 

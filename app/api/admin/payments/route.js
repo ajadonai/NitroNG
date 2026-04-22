@@ -193,14 +193,17 @@ export async function POST(req) {
       const tx = await prisma.transaction.findUnique({ where: { id: txId } });
       if (!tx || tx.method !== 'manual' || tx.status !== 'Pending') return Response.json({ error: 'Transaction not found or already processed' }, { status: 404 });
 
-      // Conditional claim prevents double-credit on concurrent approvals
-      const claimed = await prisma.transaction.updateMany({
-        where: { id: txId, status: 'Pending' },
-        data: { status: 'Completed', note: tx.note.replace(/\[user_confirmed[^\]]*\]|\[awaiting_confirmation\]/, `[approved_by:${admin.name}]`) },
+      // Atomic claim + credit — conditional update inside transaction prevents double-credit
+      const approved = await prisma.$transaction(async (db) => {
+        const claimed = await db.transaction.updateMany({
+          where: { id: txId, status: 'Pending' },
+          data: { status: 'Completed', note: tx.note.replace(/\[user_confirmed[^\]]*\]|\[awaiting_confirmation\]/, `[approved_by:${admin.name}]`) },
+        });
+        if (claimed.count === 0) return false;
+        await db.user.update({ where: { id: tx.userId }, data: { balance: { increment: tx.amount } } });
+        return true;
       });
-      if (claimed.count === 0) return Response.json({ error: 'Transaction already processed' }, { status: 409 });
-
-      await prisma.user.update({ where: { id: tx.userId }, data: { balance: { increment: tx.amount } } });
+      if (!approved) return Response.json({ error: 'Transaction already processed' }, { status: 409 });
 
       // Check for coupon bonus
       if (tx.note?.includes('[coupon:')) {
