@@ -76,7 +76,6 @@ Before any Phase 1 work:
 
 ### 3.2 Out of Scope (tracked in §24)
 
-- Mobile bottom nav (Phase 2)
 - Budget sub-brand (Phase 3)
 - ALATPay / KoraPay / Monnify wiring (Phase 3)
 - Marketer account type and dashboard (Phase 3)
@@ -717,24 +716,17 @@ Evaluated, intentionally not in Phase 1. Filed in `/docs/DEFERRED.md`.
 
 | Item | Phase | Reason |
 |---|---|---|
-| Refund flow spec + UI | 2 | Phase 1 documents current behavior only |
 | Order cancellation by user | 2 | Same — document, don't spec |
 | Wholesale price drift handling | 2 | No auto-refresh policy today |
 | Service catalog sync cadence | 2 | 4,405 services; refresh formalization needed |
 | Admin audit log table | 2 | 90-day superadmin sessions with no trail; worth doing soon |
 | NDPR — data export / deletion / correction | 2 | Nigerian data subject rights; UI not urgent, policy is |
-| ToS + Privacy Policy versioning / acceptance | 2 | Where / when / how users re-accept |
 | Fraud + chargeback handling | 2 | Flutterwave dispute flow coverage enough for launch; formalize later |
-| Coupon abuse rules | 2 | Single-use, per-user limit, stacking, expiry, redemption races |
-| Referral payout rules + self-referral guard | 2 | Who earns, when credited, caps, self-referral prevention |
 | Email deliverability monitoring (bounce rate) | 2 | Phase 1 confirms DNS; ongoing monitoring is Phase 2 |
-| In-app incident banner | 2 | Simpler than a status page; enough for SMM |
-| Maintenance mode mechanics | 2 | Who toggles, what's reachable, drain vs kill |
 | Database backup restore cadence | 2 | Phase 1 confirms one successful test restore |
 | TypeScript migration | 3 | Large, risky, post-launch |
 | CI/CD + automated tests | 3 | Post-launch foundation |
 | Railway workers / queues | 3 | Needed when async dispatch demands it |
-| Mobile bottom nav bar | 2 | Approved in concept |
 | Budget sub-brand | 3 | Pricing + UI spin-off |
 | Marketer account type | 3 | Full dashboard + attribution system |
 | Ticket assignment system | 3 | Post-launch support scaling |

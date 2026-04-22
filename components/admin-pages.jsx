@@ -474,7 +474,14 @@ function FinanceOverviewTab({ dark, t }) {
                 <div><div className="text-[15px] font-medium" style={{ color: t.text }}>{p.name}</div><div className="text-sm" style={{ color: t.textMuted }}>{p.orders} orders</div></div>
                 <div className="text-[15px] font-semibold" style={{ color: t.green }}>{fN(p.revenue || 0)}</div>
               </div>
-            )) : <div className="adm-empty" style={{ color: t.textMuted }}>No platform data yet</div>}
+            )) : <div className="py-8 px-5 text-center">
+              <svg width="36" height="36" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 10px", opacity: .7 }}>
+                <rect x="6" y="28" width="14" height="24" rx="3" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
+                <rect x="25" y="12" width="14" height="40" rx="3" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
+                <rect x="44" y="20" width="14" height="32" rx="3" stroke={t.accent} strokeWidth="1.5" opacity=".25" />
+              </svg>
+              <div className="text-sm font-semibold" style={{ color: t.textSoft }}>No platform data yet</div>
+            </div>}
           </div>
         </div>
         <div>

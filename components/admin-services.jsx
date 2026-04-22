@@ -248,7 +248,16 @@ export default function AdminServicesPage({ dark, t }) {
             )}
           </div>
         )) : (
-          <div className="adm-empty" style={{ color: t.textMuted }}>No services found</div>
+          <div className="py-[60px] px-5 text-center">
+            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
+              <rect x="8" y="8" width="20" height="20" rx="4" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
+              <rect x="36" y="8" width="20" height="20" rx="4" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
+              <rect x="8" y="36" width="20" height="20" rx="4" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
+              <rect x="36" y="36" width="20" height="20" rx="4" stroke={t.accent} strokeWidth="1.5" opacity=".15" />
+            </svg>
+            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No services found</div>
+            <div className="text-sm" style={{ color: t.textMuted }}>Services will appear here once synced</div>
+          </div>
         )}
       </div>
 

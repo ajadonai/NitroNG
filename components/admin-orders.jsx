@@ -132,8 +132,15 @@ export default function AdminOrdersPage({ dark, t }) {
           </div>
         )) : (
           <div className="py-[60px] px-5 text-center">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.1)"} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4 block"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <div className="text-base font-semibold" style={{ color: t.textSoft }}>No orders found</div>
+            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
+              <rect x="12" y="8" width="40" height="48" rx="6" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
+              <line x1="20" y1="22" x2="44" y2="22" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
+              <line x1="20" y1="30" x2="38" y2="30" stroke={t.accent} strokeWidth="1.5" opacity=".15" strokeLinecap="round" />
+              <circle cx="32" cy="38" r="8" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
+              <path d="M29 38l2 2 4-4" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity=".4" />
+            </svg>
+            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No orders found</div>
+            <div className="text-sm" style={{ color: t.textMuted }}>Orders will appear here once placed</div>
           </div>
         )}
       </div>

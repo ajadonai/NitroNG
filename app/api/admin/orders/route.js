@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
+import { sendEmail, walletCreditEmail } from '@/lib/email';
 import { checkOrder, cancelOrder, refillOrder, isProviderConfigured, getProviderName } from '@/lib/smm';
 
 export async function GET(req) {
@@ -80,9 +81,35 @@ export async function POST(req) {
           await cancelOrder(provider, order.apiOrderId);
         } catch (e) { log.warn(`Admin Cancel ${providerLabel}`, e.message); }
       }
-      await prisma.order.update({ where: { id: order.id }, data: { status: 'Cancelled' } });
-      await logActivity(admin.name, `Cancelled order ${orderId} (${providerLabel})`, 'order');
-      return Response.json({ success: true, message: 'Order cancelled' });
+
+      if (order.charge > 0) {
+        await prisma.$transaction([
+          prisma.order.update({ where: { id: order.id }, data: { status: 'Cancelled' } }),
+          prisma.user.update({ where: { id: order.userId }, data: { balance: { increment: order.charge } } }),
+          prisma.transaction.create({
+            data: {
+              userId: order.userId, type: 'refund', amount: order.charge,
+              method: 'wallet', status: 'Completed',
+              reference: `ADM-REF-${order.orderId || order.id}`,
+              note: `Refund — order cancelled by admin`,
+            },
+          }),
+        ]);
+
+        // Refund email notification
+        try {
+          const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true, notifEmail: true } });
+          if (user?.email && user.notifEmail !== false) {
+            const amount = order.charge / 100;
+            sendEmail(user.email, `₦${amount.toLocaleString()} refunded to your Nitro wallet`, walletCreditEmail(user.name || 'there', amount, 'Order cancelled — refund processed')).catch(() => {});
+          }
+        } catch {}
+      } else {
+        await prisma.order.update({ where: { id: order.id }, data: { status: 'Cancelled' } });
+      }
+
+      await logActivity(admin.name, `Cancelled order ${orderId} (${providerLabel})${order.charge > 0 ? ` — ₦${(order.charge / 100).toLocaleString()} refunded` : ''}`, 'order');
+      return Response.json({ success: true, message: order.charge > 0 ? `Order cancelled — ₦${(order.charge / 100).toLocaleString()} refunded` : 'Order cancelled' });
     }
 
     if (action === 'refill') {

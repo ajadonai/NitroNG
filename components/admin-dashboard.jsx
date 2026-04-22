@@ -106,7 +106,14 @@ function AdminOverview({ data, dark, t, setActive }) {
                 </div>
               </div>
             )) : (
-              <div className="adm-empty" style={{ color: t.textMuted }}>No orders yet</div>
+              <div className="py-8 px-5 text-center">
+                <svg width="36" height="36" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 10px", opacity: .7 }}>
+                  <rect x="12" y="8" width="40" height="48" rx="6" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
+                  <line x1="20" y1="22" x2="44" y2="22" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
+                  <line x1="20" y1="30" x2="38" y2="30" stroke={t.accent} strokeWidth="1.5" opacity=".15" strokeLinecap="round" />
+                </svg>
+                <div className="text-sm font-semibold" style={{ color: t.textSoft }}>No orders yet</div>
+              </div>
             )}
           </div>
         </div>
@@ -131,7 +138,13 @@ function AdminOverview({ data, dark, t, setActive }) {
                 </div>
               </div>
             )) : (
-              <div className="adm-empty" style={{ color: t.textMuted }}>No users yet</div>
+              <div className="py-8 px-5 text-center">
+                <svg width="36" height="36" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 10px", opacity: .7 }}>
+                  <circle cx="32" cy="22" r="10" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
+                  <path d="M14 52c0-10 8-16 18-16s18 6 18 16" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
+                </svg>
+                <div className="text-sm font-semibold" style={{ color: t.textSoft }}>No users yet</div>
+              </div>
             )}
           </div>
         </div>

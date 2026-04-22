@@ -23,8 +23,12 @@ export async function GET() {
   if (error) return error;
 
   try {
-    const history = await getHistory();
-    return Response.json({ history });
+    const [history, promoCount, totalCount] = await Promise.all([
+      getHistory(),
+      prisma.user.count({ where: { status: 'Active', notifEmail: true, notifPromo: true } }),
+      prisma.user.count({ where: { status: 'Active' } }),
+    ]);
+    return Response.json({ history, promoCount, totalCount });
   } catch (err) {
     log.error('Admin Notifications', err.message);
     return Response.json({ error: 'Failed to load' }, { status: 500 });
@@ -37,7 +41,13 @@ export async function POST(req) {
   if (!canPerformAction(admin, 'notifications.send')) return Response.json({ error: 'Not authorized to send notifications' }, { status: 403 });
 
   try {
-    const { subject, message, target } = await req.json();
+    const { subject, message, target, clearHistory } = await req.json();
+
+    if (clearHistory) {
+      await saveHistory([]);
+      return Response.json({ success: true });
+    }
+
     if (!message?.trim()) return Response.json({ error: 'Message required' }, { status: 400 });
 
     const subj = subject?.trim() || 'Notification from Nitro';
@@ -53,7 +63,7 @@ export async function POST(req) {
     }
 
     const users = await prisma.user.findMany({
-      where: whereClause,
+      where: { ...whereClause, notifEmail: true, notifPromo: true },
       select: { email: true, name: true },
     });
 

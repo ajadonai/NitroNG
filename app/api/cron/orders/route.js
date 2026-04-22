@@ -115,7 +115,7 @@ async function refundOrder(order, amount = null) {
   // Get user email for notification
   let userEmail = null;
   try {
-    const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true } });
+    const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true, notifEmail: true, notifOrders: true } });
     userEmail = user?.email;
   } catch {}
 
@@ -140,7 +140,7 @@ async function refundOrder(order, amount = null) {
   });
 
   // Send refund email notification
-  if (userEmail && process.env.BREVO_API_KEY) {
+  if (userEmail && process.env.BREVO_API_KEY && user?.notifEmail !== false && user?.notifOrders !== false) {
     try {
       const isPartial = amount && amount !== order.charge;
       const nairaAmount = (refundAmount / 100).toLocaleString();

@@ -111,7 +111,15 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
           ))}
         </div>
         <div className="flex-1 overflow-y-auto">
-          {filtered.length === 0 && <div className="p-[30px] text-center text-xs" style={{ color: t.textMuted }}>No tickets</div>}
+          {filtered.length === 0 && <div className="py-8 px-5 text-center">
+            <svg width="36" height="36" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 10px", opacity: .7 }}>
+              <rect x="8" y="8" width="48" height="40" rx="8" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
+              <line x1="18" y1="22" x2="46" y2="22" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
+              <line x1="18" y1="30" x2="38" y2="30" stroke={t.accent} strokeWidth="1.5" opacity=".15" strokeLinecap="round" />
+              <path d="M20 48l12 8 12-8" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <div className="text-sm font-semibold" style={{ color: t.textSoft }}>No tickets</div>
+          </div>}
           {filtered.map(tk => {
             const last = tk.replies?.[tk.replies.length - 1];
             const lastText = last ? `${last.from === "admin" ? `${last.name || "You"}` : (tk.user?.split(" ")[0] || "User")}: ${last.msg?.slice(0, 50)}` : tk.message?.slice(0, 50);

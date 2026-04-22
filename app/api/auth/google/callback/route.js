@@ -115,6 +115,12 @@ export async function GET(req) {
         if (referrer) referredBy = referralCode;
       }
 
+      // Extract IP + ToS version before user creation
+      const hdrs = await headers();
+      const signupIp = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown';
+      let tosVersion = '2026-03-23';
+      try { const s = await prisma.setting.findUnique({ where: { key: 'tos_version' } }); if (s) tosVersion = s.value; } catch {}
+
       user = await prisma.user.create({
         data: {
           name,
@@ -125,6 +131,9 @@ export async function GET(req) {
           referralCode: refCode,
           referredBy,
           emailVerified: true, // Google already verified the email
+          signupIp,
+          tosAcceptedAt: new Date(),
+          tosVersion,
         },
       });
 
@@ -132,7 +141,11 @@ export async function GET(req) {
       if (referredBy) {
         try {
           const referrer = await prisma.user.findUnique({ where: { referralCode: referredBy } });
-          if (referrer) {
+          // Self-referral guard
+          const sameIp = referrer?.signupIp && user.signupIp
+            && referrer.signupIp !== 'unknown' && referrer.signupIp === user.signupIp;
+          if (sameIp) { log.warn('Referral', `Self-referral suspected: ${user.email} → ${referrer.email} (same IP ${user.signupIp})`); }
+          if (referrer && !sameIp) {
             const refSettings = await prisma.setting.findMany({
               where: { key: { in: ['ref_referrer_bonus', 'ref_invitee_bonus', 'ref_enabled', 'ref_min_deposit'] } },
             });

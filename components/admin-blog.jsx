@@ -192,10 +192,15 @@ export default function AdminBlogPage({ dark, t }) {
 
       <div className="adm-card mt-4" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
         {loading ? <div className="adm-empty">{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[60px] rounded-lg mb-2`} />)}</div> : posts.length === 0 ? (
-          <div className="adm-empty p-10 text-center" style={{ color: t.textMuted }}>
-            <div className="text-[32px] mb-3">📝</div>
-            <div className="text-[15px] mb-1">No blog posts yet</div>
-            <div className="text-[13px]">Create your first post to get started.</div>
+          <div className="py-[60px] px-5 text-center">
+            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
+              <rect x="12" y="8" width="40" height="48" rx="6" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
+              <line x1="22" y1="20" x2="42" y2="20" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
+              <line x1="22" y1="28" x2="38" y2="28" stroke={t.accent} strokeWidth="1.5" opacity=".15" strokeLinecap="round" />
+              <line x1="22" y1="36" x2="34" y2="36" stroke={t.accent} strokeWidth="1.5" opacity=".15" strokeLinecap="round" />
+            </svg>
+            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No blog posts yet</div>
+            <div className="text-sm" style={{ color: t.textMuted }}>Create your first post to get started</div>
           </div>
         ) : posts.map((p, i) => (
           <div key={p.id} className="adm-list-row flex-wrap gap-2.5" style={{ borderBottom: i < posts.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>

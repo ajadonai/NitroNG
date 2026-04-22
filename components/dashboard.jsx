@@ -429,11 +429,11 @@ function NotifDropdown({ orders, txs, dark, t, onClose, readIds, setReadIds, cle
 /* ═══════════════════════════════════════════ */
 /* ═══ MAIN DASHBOARD SHELL               ═══ */
 /* ═══════════════════════════════════════════ */
-export default function Dashboard() {
-  return <ThemeProvider><DashboardInner /></ThemeProvider>;
+export default function Dashboard({ initialData }) {
+  return <ThemeProvider><DashboardInner initialData={initialData} /></ThemeProvider>;
 }
 
-function DashboardInner() {
+function DashboardInner({ initialData }) {
   const { dark, setDark, toggleTheme, t: baseT, themeMode, setThemeMode } = useTheme();
   const [active, setActiveRaw] = useState("services");
   const [, startTransition] = useTransition();
@@ -480,10 +480,13 @@ function DashboardInner() {
     if (!themeSyncedRef.current) { themeSyncedRef.current = true; return; }
     fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ themePreference: themeMode }) }).catch(() => {});
   }, [themeMode]);
-  const [user, setUser] = useState(null);
-  const [orders, setOrders] = useState([]);
-  const [txs, setTxs] = useState([]);
-  const [alerts, setAlerts] = useState([]);
+  const [user, setUser] = useState(initialData?.user || null);
+  const [orders, setOrders] = useState(initialData?.orders || []);
+  const [txs, setTxs] = useState(initialData?.transactions || []);
+  const [alerts, setAlerts] = useState(initialData?.alerts || []);
+  const [currentTosVersion, setCurrentTosVersion] = useState(initialData?.currentTosVersion || null);
+  const [tosChecked, setTosChecked] = useState(false);
+  const [tosAccepting, setTosAccepting] = useState(false);
   const [socialLinks, setSocialLinks] = useState({});
   const [paymentStatus, setPaymentStatusRaw] = useState(() => {
     if (typeof window === 'undefined') return null;
@@ -563,6 +566,7 @@ function DashboardInner() {
         if (data.orders) setOrders(data.orders);
         if (data.transactions) setTxs(data.transactions);
         if (data.alerts) setAlerts(data.alerts);
+        if (data.currentTosVersion) setCurrentTosVersion(data.currentTosVersion);
       }
     } catch {}
   };
@@ -581,16 +585,20 @@ function DashboardInner() {
         /* Check maintenance mode first */
         const maintRes = await fetch("/api/maintenance-check");
         if (maintRes.ok) { const m = await maintRes.json(); if (m.maintenance) { window.location.replace("/maintenance"); return; } }
-        
-        const res = await fetch("/api/dashboard");
-        if (res.status === 401) { try { await fetch("/api/auth/logout", { method: "POST" }); } catch {} window.location.replace("/?session_expired=1"); return; }
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user);
-          if (data.orders) setOrders(data.orders);
-          if (data.transactions) setTxs(data.transactions);
-          if (data.alerts) setAlerts(data.alerts);
-        } else setUser({ name: "User", email: "", balance: 0, refCode: "—", refs: 0, earnings: 0 });
+
+        /* Skip dashboard fetch if server already provided data */
+        if (!initialData) {
+          const res = await fetch("/api/dashboard");
+          if (res.status === 401) { try { await fetch("/api/auth/logout", { method: "POST" }); } catch {} window.location.replace("/?session_expired=1"); return; }
+          if (res.ok) {
+            const data = await res.json();
+            setUser(data.user);
+            if (data.orders) setOrders(data.orders);
+            if (data.transactions) setTxs(data.transactions);
+            if (data.alerts) setAlerts(data.alerts);
+            if (data.currentTosVersion) setCurrentTosVersion(data.currentTosVersion);
+          } else setUser({ name: "User", email: "", balance: 0, refCode: "—", refs: 0, earnings: 0 });
+        }
         /* Fetch social links */
         try { const sr = await fetch("/api/settings"); if (sr.ok) { const sd = await sr.json(); setSocialLinks(sd.settings || {}); } } catch {}
         /* Load notification state + preferences from server (merges with localStorage) */
@@ -1051,6 +1059,46 @@ function DashboardInner() {
           );
         })}
       </nav>
+
+      {/* ToS re-acceptance modal */}
+      {currentTosVersion && user && user.tosVersion !== currentTosVersion && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: t.cardBg, borderRadius: 16, padding: "32px 28px", maxWidth: 420, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,.3)" }}>
+            <div style={{ textAlign: "center", marginBottom: 20 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: `linear-gradient(135deg, ${t.accent}, ${dark ? "#6b3a4a" : "#8b5e6b"})`, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: "#fff" }}>N</div>
+            </div>
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: t.text, textAlign: "center", margin: "0 0 8px" }}>We've updated our Terms</h2>
+            <p style={{ fontSize: 13, color: t.textMuted, textAlign: "center", margin: "0 0 20px", lineHeight: 1.6 }}>
+              Our Terms of Service and Privacy Policy have been updated. Please review and accept to continue using Nitro.
+            </p>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", marginBottom: 20 }}>
+              <a href="/terms" target="_blank" rel="noopener" style={{ fontSize: 13, color: t.accent, textDecoration: "none", fontWeight: 500 }}>Terms of Service ↗</a>
+              <a href="/privacy" target="_blank" rel="noopener" style={{ fontSize: 13, color: t.accent, textDecoration: "none", fontWeight: 500 }}>Privacy Policy ↗</a>
+            </div>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", marginBottom: 20, padding: "12px 14px", borderRadius: 10, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)" }}>
+              <input type="checkbox" checked={tosChecked} onChange={e => setTosChecked(e.target.checked)} aria-label="Agree to updated terms" style={{ marginTop: 2, accentColor: t.accent }} />
+              <span style={{ fontSize: 13, color: t.text, lineHeight: 1.5 }}>I have read and agree to the updated Terms of Service and Privacy Policy</span>
+            </label>
+            <button
+              disabled={!tosChecked || tosAccepting}
+              onClick={async () => {
+                setTosAccepting(true);
+                try {
+                  const res = await fetch("/api/auth/tos-accept", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ version: currentTosVersion }) });
+                  if (res.ok) setUser(prev => ({ ...prev, tosVersion: currentTosVersion }));
+                } catch {}
+                setTosAccepting(false);
+              }}
+              style={{
+                width: "100%", padding: "12px 0", borderRadius: 10, border: "none", cursor: tosChecked && !tosAccepting ? "pointer" : "default",
+                background: tosChecked ? t.accent : dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)",
+                color: tosChecked ? "#fff" : t.textMuted, fontSize: 14, fontWeight: 600, fontFamily: "inherit",
+                opacity: tosAccepting ? 0.7 : 1, transition: "all .2s",
+              }}
+            >{tosAccepting ? "Accepting…" : "Accept & Continue"}</button>
+          </div>
+        </div>
+      )}
     </div>
     </ConfirmProvider>
     </ToastProvider>

@@ -107,6 +107,14 @@ export async function POST(req) {
       }
     }
 
+    // Extract IP + ToS version before user creation
+    const hdrs = await headers();
+    const ua = hdrs.get('user-agent') || '';
+    const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown';
+
+    let tosVersion = '2026-03-23';
+    try { const s = await prisma.setting.findUnique({ where: { key: 'tos_version' } }); if (s) tosVersion = s.value; } catch {}
+
     // Create user
     const derivedName = (firstName && lastName) ? `${firstName} ${lastName}` : name.trim();
     const user = await prisma.user.create({
@@ -121,6 +129,9 @@ export async function POST(req) {
         referredBy,
         verifyToken,
         verifyExpires,
+        signupIp: ip,
+        tosAcceptedAt: new Date(),
+        tosVersion,
       },
     });
 
@@ -137,9 +148,6 @@ export async function POST(req) {
     await setUserCookie(token);
 
     // Create session
-    const hdrs = await headers();
-    const ua = hdrs.get('user-agent') || '';
-    const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown';
     const device = detectDevice(ua);
     await prisma.session.create({ data: { userId: user.id, tokenHash: hashToken(token), deviceType: device.type, deviceInfo: device.info, ip } });
 

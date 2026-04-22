@@ -73,7 +73,15 @@ export function AdminActivityPage({ dark, t }) {
             </div>
           </div>
         )) : (
-          <div className="adm-empty" style={{ color: t.textMuted }}>No activity logged yet</div>
+          <div className="py-[60px] px-5 text-center">
+            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
+              <circle cx="32" cy="32" r="22" stroke={t.accent} strokeWidth="1.5" opacity=".25" />
+              <line x1="32" y1="18" x2="32" y2="32" stroke={t.accent} strokeWidth="2" opacity=".3" strokeLinecap="round" />
+              <line x1="32" y1="32" x2="42" y2="38" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
+            </svg>
+            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No activity logged yet</div>
+            <div className="text-sm" style={{ color: t.textMuted }}>Activity will appear here as actions are taken</div>
+          </div>
         )}
       </div>
     </>
@@ -562,7 +570,15 @@ export function AdminCouponsPage({ dark, t }) {
             <button onClick={async () => { const ok = await confirm({ title: "Delete Coupon", message: `Delete coupon "${c.code}"? This cannot be undone.`, confirmLabel: "Delete", danger: true }); if (ok) deleteCoupon(c.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.15)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
           </div>
         )) : (
-          <div className="adm-empty" style={{ color: t.textMuted }}>No coupons created yet</div>
+          <div className="py-[60px] px-5 text-center">
+            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
+              <rect x="8" y="16" width="48" height="32" rx="6" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
+              <circle cx="32" cy="32" r="6" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
+              <line x1="8" y1="24" x2="24" y2="24" stroke={t.accent} strokeWidth="1.5" opacity=".15" strokeLinecap="round" />
+            </svg>
+            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No coupons created yet</div>
+            <div className="text-sm" style={{ color: t.textMuted }}>Create a coupon to offer discounts</div>
+          </div>
         )}
       </div>
       )}
@@ -632,15 +648,18 @@ export function AdminCouponsPage({ dark, t }) {
 /* ═══════════════════════════════════════════ */
 export function AdminNotificationsPage({ dark, t }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [target, setTarget] = useState("all");
   const [sending, setSending] = useState(false);
+  const [promoCount, setPromoCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
-    fetch("/api/admin/notifications").then(r => r.json()).then(d => { setHistory(d.history || []); setLoading(false); }).catch(() => setLoading(false));
+    fetch("/api/admin/notifications").then(r => r.json()).then(d => { setHistory(d.history || []); setPromoCount(d.promoCount || 0); setTotalCount(d.totalCount || 0); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
   const send = async () => {
@@ -706,11 +725,15 @@ export function AdminNotificationsPage({ dark, t }) {
           </div>
           <button onClick={send} disabled={sending || !message.trim()} className="adm-btn-primary" style={{ opacity: message.trim() && !sending ? 1 : .4 }}>{sending ? "Sending..." : "Send Notification"}</button>
         </div>
+        <div className="text-[12px] mt-2.5" style={{ color: t.textMuted }}>{promoCount} of {totalCount} users opted in to promotional emails</div>
       </div>
 
       {/* History */}
       <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }}>
-        <div className="adm-card-title pt-4 px-4 pb-0" style={{ color: t.textMuted }}>Sent history</div>
+        <div className="flex items-center justify-between pt-4 px-4 pb-0">
+          <div className="adm-card-title" style={{ color: t.textMuted }}>Sent history</div>
+          {history.length > 0 && <button onClick={async () => { const ok = await confirm({ title: "Clear History", message: "Clear all notification history? This cannot be undone.", confirmLabel: "Clear", danger: true }); if (ok) { fetch("/api/admin/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clearHistory: true }) }).then(r => r.json()).then(() => setHistory([])).catch(() => {}); } }} className="bg-transparent border-none text-[12px] cursor-pointer font-[inherit]" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Clear all</button>}
+        </div>
         <div className="adm-card-divider mt-3" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)" }} />
         {loading ? (
           <div className="adm-empty">{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-11 rounded-md mb-1.5`} />)}</div>
@@ -724,7 +747,14 @@ export function AdminNotificationsPage({ dark, t }) {
             <span className="text-xs py-0.5 px-[7px] rounded font-semibold" style={{ background: n.status === "sent" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : n.status === "sending" ? (dark ? "rgba(96,165,250,.1)" : "rgba(59,130,246,.06)") : (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)"), color: n.status === "sent" ? t.green : n.status === "sending" ? (dark ? "#60a5fa" : "#2563eb") : t.amber }}>{n.status === "sending" ? "sending..." : n.status}</span>
           </div>
         )) : (
-          <div className="adm-empty" style={{ color: t.textMuted }}>No notifications sent yet</div>
+          <div className="py-[60px] px-5 text-center">
+            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
+              <path d="M32 10c-10 0-18 7-18 16v10l-4 6h44l-4-6V26c0-9-8-16-18-16z" stroke={t.accent} strokeWidth="1.5" opacity=".3" strokeLinejoin="round" />
+              <path d="M26 46c0 4 3 6 6 6s6-2 6-6" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
+            </svg>
+            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No notifications sent yet</div>
+            <div className="text-sm" style={{ color: t.textMuted }}>Send a notification to your users</div>
+          </div>
         )}
       </div>
     </>

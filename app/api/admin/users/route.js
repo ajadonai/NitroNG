@@ -111,7 +111,7 @@ export async function POST(req) {
       await logActivity(admin.name, `${label} ₦${Number(amount).toLocaleString()} to ${user.name}`, 'user');
 
       // Email notification
-      if (user.email) {
+      if (user.email && user.notifEmail !== false) {
         const reason = isGift ? 'You received a gift!' : 'Balance credited';
         sendEmail(user.email, `₦${Number(amount).toLocaleString()} credited to your Nitro wallet`, walletCreditEmail(user.name, Number(amount), reason)).catch(() => {});
       }

@@ -122,11 +122,8 @@ export async function POST(req) {
 
     // Check for deferred referral bonus (if ref_min_deposit is set)
     try {
-      const user = await prisma.user.findUnique({ where: { id: session.id }, select: { referredBy: true, name: true } });
+      const user = await prisma.user.findUnique({ where: { id: session.id }, select: { referredBy: true, name: true, signupIp: true } });
       if (user?.referredBy) {
-        // Atomic check: try to create a referral marker transaction
-        // If one already exists, createMany with skipDuplicates will create 0 rows
-        // We use a unique note pattern to detect duplicates
         const markerNote = `[ref-marker:${session.id}]`;
         const alreadyPaid = await prisma.transaction.findFirst({ where: { userId: session.id, type: 'referral', note: { contains: markerNote } } });
         if (!alreadyPaid) {
@@ -137,7 +134,11 @@ export async function POST(req) {
           const refMinDeposit = Number(rs.ref_min_deposit) || 0;
           if (refEnabled && refMinDeposit > 0 && paidAmount >= refMinDeposit) {
             const referrer = await prisma.user.findUnique({ where: { referralCode: user.referredBy } });
-            if (referrer) {
+            // Self-referral guard
+            const sameIp = referrer?.signupIp && user.signupIp
+              && referrer.signupIp !== 'unknown' && referrer.signupIp === user.signupIp;
+            if (sameIp) { log.warn('Referral', `Self-referral suspected: ${session.id} → ${referrer.id} (same IP ${user.signupIp})`); }
+            if (referrer && !sameIp) {
               const referrerBonus = Number(rs.ref_referrer_bonus) || 50000;
               const inviteeBonus = Number(rs.ref_invitee_bonus) || 50000;
               try {

@@ -205,7 +205,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
             </div>
           )) : (
             <div className="p-10 text-center text-[15px]" style={{ color: t.textMuted }}>
-              <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ marginBottom: 14, opacity: .5, display: "block", margin: "0 auto 14px" }}>
+              <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ marginBottom: 14, opacity: .7, display: "block", margin: "0 auto 14px" }}>
                 <rect x="12" y="8" width="40" height="48" rx="6" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
                 <line x1="20" y1="22" x2="44" y2="22" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
                 <line x1="20" y1="30" x2="38" y2="30" stroke={t.accent} strokeWidth="1.5" opacity=".15" strokeLinecap="round" />
@@ -255,7 +255,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
             </div>
           )) : (
             <div className="p-10 text-center text-[15px]" style={{ color: t.textMuted }}>
-              <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ marginBottom: 14, opacity: .5, display: "block", margin: "0 auto 14px" }}>
+              <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ marginBottom: 14, opacity: .7, display: "block", margin: "0 auto 14px" }}>
                 <rect x="8" y="16" width="48" height="32" rx="6" stroke={t.accent} strokeWidth="1.5" opacity=".25" />
                 <rect x="38" y="26" width="18" height="12" rx="3" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
                 <circle cx="46" cy="32" r="2" stroke={t.accent} strokeWidth="1.5" opacity=".3" />

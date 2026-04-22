@@ -217,7 +217,11 @@ export default function AdminLeaderboardPage({ dark, t }) {
       {/* Table */}
       {loading ? <div>{[1,2,3,4,5,6].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-12 rounded-lg mb-1.5`} />)}</div> : list.length === 0 ? (
         <div className="py-[60px] px-5 text-center">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.1)"} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4 block"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg>
+          <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
+            <rect x="6" y="28" width="14" height="24" rx="3" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
+            <rect x="25" y="12" width="14" height="40" rx="3" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
+            <rect x="44" y="20" width="14" height="32" rx="3" stroke={t.accent} strokeWidth="1.5" opacity=".25" />
+          </svg>
           <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No leaderboard data yet</div>
           <div className="text-sm" style={{ color: t.textMuted }}>Rankings will appear once users start placing orders</div>
         </div>

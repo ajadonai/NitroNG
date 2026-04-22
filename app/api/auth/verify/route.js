@@ -64,8 +64,13 @@ export async function POST(req) {
             if (s.key === 'ref_min_deposit') refMinDeposit = Number(s.value) || 0;
           });
         } catch {}
-        // Pay immediately only if enabled AND no min deposit required
-        if (refEnabled && refMinDeposit <= 0) {
+        // Self-referral guard: skip bonus if referrer and invitee share signup IP
+        const sameIp = referrer.signupIp && user.signupIp
+          && referrer.signupIp !== 'unknown' && referrer.signupIp === user.signupIp;
+        if (sameIp) { log.warn('Referral', `Self-referral suspected: ${user.email} → ${referrer.email} (same IP ${user.signupIp})`); }
+
+        // Pay immediately only if enabled AND no min deposit required AND not self-referral
+        if (refEnabled && refMinDeposit <= 0 && !sameIp) {
           const markerNote = `[ref-marker:${user.id}]`;
           try {
             await prisma.$transaction(async (tx) => {

@@ -119,7 +119,7 @@ export default function ReferralsPage({ user, dark, t }) {
           </div>
         )) : (
           <div className="p-10 text-center">
-            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ marginBottom: 14, opacity: .5 }}>
+            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
               <circle cx="24" cy="24" r="8" stroke={t.accent} strokeWidth="1.5" opacity=".25" />
               <circle cx="40" cy="24" r="8" stroke={t.accent} strokeWidth="1.5" opacity=".15" />
               <path d="M24 36c-8 0-14 4-14 10v2h28v-2c0-6-6-10-14-10z" stroke={t.accent} strokeWidth="1.5" opacity=".2" />

@@ -218,7 +218,14 @@ export default function AdminUsersPage({ dark, t }) {
             )}
           </div>
         )) : (
-          <div className="adm-empty" style={{ color: t.textMuted }}>No users found</div>
+          <div className="py-[60px] px-5 text-center">
+            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
+              <circle cx="32" cy="22" r="10" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
+              <path d="M14 52c0-10 8-16 18-16s18 6 18 16" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
+            </svg>
+            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No users found</div>
+            <div className="text-sm" style={{ color: t.textMuted }}>Users will appear here once they sign up</div>
+          </div>
         )}
       </div>
 

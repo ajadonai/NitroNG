@@ -37,6 +37,9 @@ model User {
   perPagePreference Int @default(10) // Orders per page: 10, 25, 50
   tourCompleted     Boolean @default(false)
   orderTourCompleted Boolean @default(false)
+  signupIp        String?
+  tosAcceptedAt   DateTime?
+  tosVersion      String?
   status        String   @default("Active")
   deletedAt     DateTime?
   deletedName   String?

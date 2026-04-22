@@ -16,6 +16,7 @@ export async function GET() {
         referralCode: true, referredBy: true, emailVerified: true, createdAt: true,
         tourCompleted: true, orderTourCompleted: true,
         notifOrders: true, notifPromo: true, notifEmail: true,
+        tosVersion: true,
       },
     });
     if (!user) return error('User not found', 404);
@@ -113,6 +114,12 @@ export async function GET() {
       if (ltRow) loyaltyTiers = JSON.parse(ltRow.value);
     } catch {}
 
+    let currentTosVersion = null;
+    try {
+      const tosSetting = await prisma.setting.findUnique({ where: { key: 'tos_version' } });
+      if (tosSetting) currentTosVersion = tosSetting.value;
+    } catch {}
+
     let totalOrders = 0;
     let totalSpend = 0;
     try {
@@ -155,6 +162,7 @@ export async function GET() {
         notifOrders: user.notifOrders,
         notifPromo: user.notifPromo,
         notifEmail: user.notifEmail,
+        tosVersion: user.tosVersion || null,
       },
       orders: orders.map(o => ({
         id: o.orderId || o.id,
@@ -177,6 +185,7 @@ export async function GET() {
       alerts: alerts.map(a => ({
         id: a.id, message: a.message, type: a.type,
       })),
+      currentTosVersion,
     });
   } catch (err) {
     log.error('Dashboard', 'Fatal error', { error: err.message });

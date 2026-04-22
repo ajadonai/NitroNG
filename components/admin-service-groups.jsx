@@ -203,7 +203,14 @@ export default function AdminServiceGroupsPage({ dark, t }) {
       </div>
 
       {/* Groups list */}
-      {filtered.length === 0 && <div className="p-10 text-center text-sm" style={{ color: t.textMuted }}>No service groups yet. Create one to get started.</div>}
+      {filtered.length === 0 && <div className="py-[60px] px-5 text-center">
+        <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
+          <rect x="8" y="28" width="48" height="24" rx="4" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
+          <rect x="8" y="12" width="48" height="24" rx="4" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
+        </svg>
+        <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No service groups yet</div>
+        <div className="text-sm" style={{ color: t.textMuted }}>Create one to get started</div>
+      </div>}
 
       {filtered.map(g => (
         <div key={g.id} className={`sg-card ${cardCls} mb-3`} style={{ ...cardStyle, opacity: g.enabled ? 1 : .5, borderLeft: g.nigerian ? `3px solid ${dark ? "#4ade80" : "#16a34a"}` : undefined }}>
