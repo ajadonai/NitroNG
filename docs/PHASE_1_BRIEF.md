@@ -734,6 +734,7 @@ Evaluated, intentionally not in Phase 1. Filed in `/docs/DEFERRED.md`.
 | Manual deposit coupon bypass | 2 | Admin-mediated path skips coupon validation; tighten post-launch |
 | Crypto deposit coupon not applied | Payment | Bonus stored but never credited; fix when crypto flow finalized |
 | Unsupported gateway creates pending records | Payment | Only if unconfigured gateway enabled; fix when providers confirmed |
+| WhatsApp manual payment confirmation | Payment | User clicks button → opens WhatsApp with receipt; admin confirms and credits |
 
 **Not on this list (intentionally not in any phase):** KYC, AML, formal SLO contracts, formal DR RTO/RPO, third-party status page service. An SMM panel at this scale doesn't need them.
 
