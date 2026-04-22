@@ -1,0 +1,117 @@
+import prisma from '@/lib/prisma';
+import { log } from "@/lib/logger";
+import { getCurrentUser } from '@/lib/auth';
+
+export async function GET() {
+  try {
+    const session = await getCurrentUser();
+    if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
+
+    const tickets = await prisma.ticket.findMany({
+      where: { userId: session.id },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        replies: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+
+    return Response.json({
+      tickets: tickets.map(tk => ({
+        id: tk.ticketId || tk.id,
+        subject: tk.subject,
+        message: tk.message,
+        category: tk.orderId ? 'Order Issue' : 'General',
+        status: tk.status === 'Archived' ? 'Resolved' : tk.status,
+        created: tk.createdAt.toISOString(),
+        messages: [
+          { from: 'user', text: tk.message, time: tk.createdAt.toISOString() },
+          ...tk.replies.map(r => {
+            const fromStr = r.from || 'user';
+            const isAdmin = fromStr.startsWith('admin');
+            const adminName = isAdmin ? (fromStr.split(':')[1] || 'Support') : null;
+            return { from: isAdmin ? 'admin' : 'user', name: isAdmin ? `${adminName} - Nitro` : undefined, text: r.message, time: r.createdAt.toISOString() };
+          }),
+        ],
+      })),
+    });
+  } catch (err) {
+    log.error('User Tickets GET', err.message);
+    return Response.json({ error: 'Failed to load tickets' }, { status: 500 });
+  }
+}
+
+export async function POST(req) {
+  try {
+    const session = await getCurrentUser();
+    if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
+
+    const { action, ticketId, subject, message, category } = await req.json();
+
+    if (action === 'create') {
+      if (!subject?.trim() || !message?.trim()) {
+        return Response.json({ error: 'Subject and message required' }, { status: 400 });
+      }
+
+      // Generate ticket ID
+      const count = await prisma.ticket.count({ where: { userId: session.id } });
+      const newTicketId = `NTR-${String(count + 1).padStart(4, '0')}`;
+
+      const ticket = await prisma.ticket.create({
+        data: {
+          ticketId: newTicketId,
+          userId: session.id,
+          subject: subject.trim().slice(0, 200),
+          message: message.trim().slice(0, 2000),
+          orderId: category === 'Order Issue' ? (message.match(/NTR-\d+|[A-Z0-9]{8,}/)?.[0] || null) : null,
+        },
+      });
+
+      return Response.json({
+        success: true,
+        ticket: {
+          id: ticket.ticketId,
+          subject: ticket.subject,
+          status: ticket.status,
+          created: ticket.createdAt.toISOString(),
+        },
+      });
+    }
+
+    if (action === 'reply') {
+      if (!ticketId || !message?.trim()) {
+        return Response.json({ error: 'Ticket ID and message required' }, { status: 400 });
+      }
+
+      const ticket = await prisma.ticket.findFirst({
+        where: { OR: [{ ticketId }, { id: ticketId }], userId: session.id },
+      });
+      if (!ticket) return Response.json({ error: 'Ticket not found' }, { status: 404 });
+      if (ticket.status === 'Resolved') return Response.json({ error: 'Ticket is resolved' }, { status: 400 });
+
+      await prisma.ticketReply.create({
+        data: { ticketId: ticket.id, from: 'user', message: message.trim().slice(0, 2000) },
+      });
+
+      // Reopen if it was In Progress
+      if (ticket.status === 'In Progress') {
+        await prisma.ticket.update({ where: { id: ticket.id }, data: { status: 'Open' } });
+      }
+
+      return Response.json({ success: true, message: 'Reply sent' });
+    }
+
+    if (action === 'close') {
+      if (!ticketId) return Response.json({ error: 'Ticket ID required' }, { status: 400 });
+      const ticket = await prisma.ticket.findFirst({ where: { OR: [{ ticketId }, { id: ticketId }], userId: session.id } });
+      if (!ticket) return Response.json({ error: 'Ticket not found' }, { status: 404 });
+      await prisma.ticket.update({ where: { id: ticket.id }, data: { status: 'Resolved' } });
+      return Response.json({ success: true, message: 'Ticket closed' });
+    }
+
+    return Response.json({ error: 'Unknown action' }, { status: 400 });
+  } catch (err) {
+    log.error('User Tickets POST', err.message);
+    return Response.json({ error: 'Action failed' }, { status: 500 });
+  }
+}
