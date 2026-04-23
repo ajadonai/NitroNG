@@ -241,7 +241,7 @@ async function seed() {
         published: true,
         showInHowTo: post.showInHowTo,
         sortOrder: post.sortOrder,
-        authorName: "Nitro",
+        authorName: "Nitro Team",
       },
     });
     console.log(`  ✅ ${post.title}`);

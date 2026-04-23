@@ -102,11 +102,16 @@ export default function BlogListing({ initialPosts, initialCategories, initialTo
         </div>
       </div>
       {categories.length > 1 && (
-        <div className="flex gap-1.5 justify-center px-5 pb-6 flex-wrap">
-          <button onClick={() => changeCat("all")} className="py-[5px] px-4 rounded-[18px] text-[13px] cursor-pointer font-[inherit]" style={{ border: "1px solid " + (activeCat === "all" ? v.acc : v.bdr), background: activeCat === "all" ? v.acc : "transparent", color: activeCat === "all" ? "#fff" : v.mut }}>All</button>
-          {categories.map(cat => (
-            <button key={cat} onClick={() => changeCat(cat)} className="py-[5px] px-4 rounded-[18px] text-[13px] cursor-pointer font-[inherit] capitalize" style={{ border: "1px solid " + (activeCat === cat ? v.acc : v.bdr), background: activeCat === cat ? v.acc : "transparent", color: activeCat === cat ? "#fff" : v.mut }}>{cat}</button>
-          ))}
+        <div className="flex justify-center px-5 pb-6">
+          <select
+            value={activeCat}
+            onChange={e => changeCat(e.target.value)}
+            className="py-[7px] pl-[10px] pr-[28px] rounded-lg text-[13px] font-medium appearance-none cursor-pointer font-[inherit] bg-no-repeat bg-[right_8px_center]"
+            style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`, color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)", backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='${dark ? "%23666" : "%23999"}' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")` }}
+          >
+            <option value="all">All Categories</option>
+            {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+          </select>
         </div>
       )}
       <div className="grid grid-cols-3 max-[899px]:grid-cols-2 max-[599px]:grid-cols-1 gap-6 max-[899px]:gap-4 max-[899px]:px-5 max-[899px]:pb-10 max-w-[1100px] mx-auto" style={{ padding: "0 clamp(16px,3vw,40px) 40px" }}>

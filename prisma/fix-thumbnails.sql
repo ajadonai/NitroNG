@@ -1,4 +1,4 @@
--- Fix all duplicate/missing blog post thumbnails
+-- Fix all duplicate/missing blog post thumbnails + author names
 -- Run in Neon SQL editor
 
 -- instagram grow + best-time were sharing a thumbnail
@@ -21,3 +21,6 @@ UPDATE blog_posts SET thumbnail = '/blog/referral-program.svg' WHERE slug = 'ref
 -- missing thumbnails
 UPDATE blog_posts SET thumbnail = '/blog/smm-panel-comparison.svg' WHERE slug = 'best-smm-panel-nigeria-2026-comparison';
 UPDATE blog_posts SET thumbnail = '/blog/leaderboard.svg' WHERE slug = 'leaderboard';
+
+-- Standardize all author names to "Nitro Team"
+UPDATE blog_posts SET "authorName" = 'Nitro Team' WHERE "authorName" != 'Nitro Team';
