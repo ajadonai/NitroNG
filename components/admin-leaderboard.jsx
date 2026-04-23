@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from "react";
 import { fN, fD } from "../lib/format";
+import { SegPill } from "./seg-pill";
 
 const TABS = [
   { id: "spenders", label: "Top Spenders" },
@@ -122,8 +123,6 @@ export default function AdminLeaderboardPage({ dark, t }) {
   const modalBoxCls = "rounded-2xl p-6 w-full max-w-[420px]";
   const modalBox = { background: dark ? "#0e1120" : "#fff", border: `1px solid ${t.cardBorder}`, boxShadow: "0 20px 60px rgba(0,0,0,.3)" };
 
-  const viewStyleCls = "py-2 px-5 rounded-lg text-[13px] cursor-pointer font-[inherit]";
-  const viewStyle = (id) => ({ fontWeight: view === id ? 600 : 400, background: view === id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", color: view === id ? t.accent : t.textMuted, border: `1px solid ${view === id ? (dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)") : "transparent"}` });
   const ddCls = "py-[7px] pr-7 pl-2.5 rounded-lg text-[13px] font-medium appearance-none cursor-pointer font-[inherit]";
   const ddStyle = { backgroundColor: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`, color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)", backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='${dark ? "%23666" : "%23999"}' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center" };
 
@@ -136,10 +135,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Leaderboard</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>{view === "settings" ? "Announcement & reward settings" : `Top users · ${periodLabel}`}</div>
           </div>
-          <div className="flex gap-1">
-            <button onClick={() => setView("settings")} className={viewStyleCls} style={viewStyle("settings")}>Settings</button>
-            <button onClick={() => setView("leaderboard")} className={viewStyleCls} style={viewStyle("leaderboard")}>Leaderboard</button>
-          </div>
+          <SegPill value={view} options={[{value: "settings", label: "Settings"}, {value: "leaderboard", label: "Leaderboard"}]} onChange={setView} dark={dark} t={t} />
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>

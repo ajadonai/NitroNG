@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
+import { SegPill } from "./seg-pill";
 import { fN, fD } from "../lib/format";
 
 
@@ -118,13 +119,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
             <div className="text-lg desktop:text-[22px] font-semibold mb-0.5" style={{ color: t.text }}>History</div>
             <div className="text-sm desktop:text-[15px]" style={{ color: t.textMuted }}>Your order history and transactions</div>
           </div>
-          <div className="flex gap-1 mb-3 desktop:mb-4">
-            {[["orders", "Orders", orders.length], ["transactions", "Transactions", txs.length]].map(([id, lb, count]) => (
-              <button key={id} onClick={() => { setTab(id); setOPage(1); setTPage(1); setExpanded(null); }} className={`py-1.5 px-3.5 desktop:py-2 desktop:px-5 text-xs desktop:text-[13px] cursor-pointer rounded-lg bg-transparent font-normal border ${tab === id ? "font-semibold text-[#c47d8e] border-[rgba(196,125,142,.15)]" : "border-transparent"}`} style={tab === id ? { background: "rgba(196,125,142,.08)" } : { color: "var(--text-muted, #999)" }}>
-                {lb} <span className="text-xs opacity-70">({count})</span>
-              </button>
-            ))}
-          </div>
+          <SegPill value={tab} options={[{value: "orders", label: `Orders (${orders.length})`}, {value: "transactions", label: `Transactions (${txs.length})`}]} onChange={(v) => { setTab(v); setOPage(1); setTPage(1); setExpanded(null); }} dark={dark} t={t} />
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>

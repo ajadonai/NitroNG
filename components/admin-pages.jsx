@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
+import { SegPill } from "./seg-pill";
 
 const ADM_SELECT = "py-[7px] pl-[10px] pr-[28px] rounded-lg text-[13px] font-medium appearance-none cursor-pointer font-[inherit] bg-no-repeat bg-[right_8px_center]";
 
@@ -132,13 +133,7 @@ export function AdminPaymentsPage({ dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Payments</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage deposits and payment gateways</div>
           </div>
-          <div className="flex gap-1">
-            <button onClick={() => setTab("deposits")} className="py-2 px-5 rounded-lg text-[13px] cursor-pointer font-[inherit] flex items-center gap-1.5" style={{ fontWeight: tab === "deposits" ? 600 : 400, background: tab === "deposits" ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", color: tab === "deposits" ? t.accent : t.textMuted, border: `1px solid ${tab === "deposits" ? (dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)") : "transparent"}` }}>
-              Deposits
-              {pendingCount > 0 && <span className="text-[11px] py-px px-1.5 rounded-[10px] font-bold" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>{pendingCount}</span>}
-            </button>
-            {canConfigure && <button onClick={() => setTab("gateways")} className="py-2 px-5 rounded-lg text-[13px] cursor-pointer font-[inherit]" style={{ fontWeight: tab === "gateways" ? 600 : 400, background: tab === "gateways" ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", color: tab === "gateways" ? t.accent : t.textMuted, border: `1px solid ${tab === "gateways" ? (dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)") : "transparent"}` }}>Gateway Config</button>}
-          </div>
+          <SegPill value={tab} options={[{value: "deposits", label: `Deposits${pendingCount > 0 ? ` (${pendingCount})` : ""}`}, ...(canConfigure ? [{value: "gateways", label: "Gateway Config"}] : [])]} onChange={setTab} dark={dark} t={t} />
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -335,12 +330,7 @@ export function AdminFinancePage({ dark, t, admin }) {
   const [tab, setTab] = useState("overview");
   const canBreakdown = admin?.pages === "*" || (Array.isArray(admin?.pages) && admin.pages.includes("financials"));
 
-  const tabStyle = (id) => ({
-    fontWeight: tab === id ? 600 : 400,
-    background: tab === id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent",
-    color: tab === id ? t.accent : t.textMuted,
-    border: `1px solid ${tab === id ? (dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)") : "transparent"}`,
-  });
+
 
   return (
     <>
@@ -350,10 +340,7 @@ export function AdminFinancePage({ dark, t, admin }) {
             <div className="adm-title" style={{ color: t.text }}>Finance</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>{tab === "overview" ? "Revenue, growth, and performance" : "Complete money flow breakdown"}</div>
           </div>
-          <div className="flex gap-1">
-            <button onClick={() => setTab("overview")} className="py-2 px-5 rounded-lg text-[13px] cursor-pointer" style={tabStyle("overview")}>Overview</button>
-            {canBreakdown && <button onClick={() => setTab("breakdown")} className="py-2 px-5 rounded-lg text-[13px] cursor-pointer" style={tabStyle("breakdown")}>Breakdown</button>}
-          </div>
+          <SegPill value={tab} options={[{value: "overview", label: "Overview"}, ...(canBreakdown ? [{value: "breakdown", label: "Breakdown"}] : [])]} onChange={setTab} dark={dark} t={t} />
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>

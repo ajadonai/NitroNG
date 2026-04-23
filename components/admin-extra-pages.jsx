@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
+import { SegPill } from "./seg-pill";
 
 
 const ROLE_COLORS = { superadmin: "#c47d8e", admin: "#a5b4fc", support: "#6ee7b7", finance: "#fcd34d" };
@@ -253,10 +254,8 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
 
               {expanded && (
                 <div className="px-4 pb-4" style={{ background: dark ? "rgba(0,0,0,.15)" : "rgba(0,0,0,.02)" }}>
-                  <div className="flex gap-1 mb-3.5 rounded-lg p-0.5" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)" }}>
-                    {[["permissions","🔐 Permissions"],["password","🔑 Password"],["role","🏷️ Role"]].map(([id, label]) => (
-                      <button key={id} onClick={e => { e.stopPropagation(); setPermTab(id); }} className="flex-1 py-[7px] rounded-md text-[13px] border-none cursor-pointer" style={{ fontWeight: permTab === id ? 600 : 430, background: permTab === id ? (dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)") : "transparent", color: permTab === id ? t.accent : t.textMuted }}>{label}</button>
-                    ))}
+                  <div className="mb-3.5" onClick={e => e.stopPropagation()}>
+                    <SegPill value={permTab} options={[{value: "permissions", label: "🔐 Permissions"}, {value: "password", label: "🔑 Password"}, {value: "role", label: "🏷️ Role"}]} onChange={setPermTab} dark={dark} t={t} />
                   </div>
 
                   {permTab === "permissions" && (a.role !== "superadmin" ? (
@@ -459,11 +458,7 @@ export function AdminCouponsPage({ dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Rewards</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage referrals, coupons, and loyalty program</div>
           </div>
-          <div className="flex gap-1">
-            {[["referrals", "Referrals"], ["coupons", "Coupons"], ["loyalty", "Loyalty"]].map(([id, label]) => (
-              <button key={id} onClick={() => setRewardsTab(id)} className="py-2 px-5 rounded-lg text-[13px] cursor-pointer font-[inherit]" style={{ fontWeight: rewardsTab === id ? 600 : 400, background: rewardsTab === id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", color: rewardsTab === id ? t.accent : t.textMuted, border: `1px solid ${rewardsTab === id ? (dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)") : "transparent"}` }}>{label}</button>
-            ))}
-          </div>
+          <SegPill value={rewardsTab} options={[{value: "referrals", label: "Referrals"}, {value: "coupons", label: "Coupons"}, {value: "loyalty", label: "Loyalty"}]} onChange={setRewardsTab} dark={dark} t={t} />
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>

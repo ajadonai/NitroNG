@@ -7,6 +7,7 @@ import { ToastProvider } from "./toast";
 import { ConfirmProvider } from "./confirm-dialog";
 import AnnouncementBanner from "./announcement-banner";
 import { PlatformIcon } from "./platform-icon";
+import { SegPill } from "./seg-pill";
 import { fN, fD } from "../lib/format";
 import TourGuide from "./tour-guide";
 import OrderTour from "./order-tour";
@@ -356,10 +357,8 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
         </div>
       </div>
       {/* Filter tabs */}
-      <div className="flex gap-1 px-3.5 pb-2.5">
-        {[["all", "All"], ["order", "Orders"], ["deposit", "Deposits"]].map(([id, label]) => (
-          <button key={id} onClick={() => setFilter(id)} className="py-[3px] px-2.5 rounded-[7px] text-[13px] font-medium border-none cursor-pointer" style={{ background: filter === id ? (dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)") : "transparent", color: filter === id ? t.accent : t.textMuted }}>{label}</button>
-        ))}
+      <div className="px-3.5 pb-2.5">
+        <SegPill value={filter} options={[{value: "all", label: "All"}, {value: "order", label: "Orders"}, {value: "deposit", label: "Deposits"}]} onChange={setFilter} dark={dark} t={t} fill />
       </div>
       <div className="h-px" style={{ background: t.cardBorder }} />
       {/* List */}

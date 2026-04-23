@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { fD } from "../lib/format";
 import { useConfirm } from "./confirm-dialog";
+import { SegPill } from "./seg-pill";
 
 function statusClr(s, dk) { return s === "Open" ? (dk ? "#fcd34d" : "#d97706") : s === "In Progress" ? (dk ? "#60a5fa" : "#2563eb") : (dk ? "#6ee7b7" : "#059669"); }
 function statusBg(s, dk) { return s === "Open" ? (dk ? "rgba(234,179,8,0.1)" : "rgba(234,179,8,0.06)") : s === "In Progress" ? (dk ? "rgba(96,165,250,0.08)" : "rgba(37,99,235,0.06)") : (dk ? "rgba(110,231,183,0.08)" : "rgba(16,185,129,0.06)"); }
@@ -105,10 +106,8 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
           <div className="text-[15px] font-semibold" style={{ color: t.text }}>Support inbox</div>
           <div className="text-xs mt-0.5" style={{ color: t.textMuted }}>{openCount} active</div>
         </div>
-        <div className="sup-filter-bar gap-[3px] py-2 px-2.5" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-          {[["all", "All"], ["unread", "Unread"], ["active", "Active"], ["Resolved", "Done"], ["archived", "Archived"]].map(([v, l]) => (
-            <button key={v} onClick={() => setFilter(v)} className="py-1 px-2.5 rounded-[5px] text-[11px] border-none cursor-pointer shrink-0 whitespace-nowrap" style={{ fontWeight: filter === v ? 600 : 450, background: filter === v ? (dark ? "rgba(196,125,142,0.1)" : "rgba(196,125,142,0.06)") : "transparent", color: filter === v ? t.accent : t.textMuted }}>{l}</button>
-          ))}
+        <div className="py-2 px-2.5" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
+          <SegPill value={filter} options={[{value: "all", label: "All"}, {value: "unread", label: "Unread"}, {value: "active", label: "Active"}, {value: "Resolved", label: "Done"}, {value: "archived", label: "Archived"}]} onChange={setFilter} dark={dark} t={t} fill compact />
         </div>
         <div className="flex-1 overflow-y-auto">
           {filtered.length === 0 && <div className="py-8 px-5 text-center">

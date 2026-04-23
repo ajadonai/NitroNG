@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { fD } from "../lib/format";
 import { SITE } from "../lib/site";
+import { SegPill } from "./seg-pill";
 
 const BOT_RESPONSES = {
   check_order: { text: "To check your order status, go to **History** in your dashboard. Each order shows its current status. You can also tap **Check** on any order to refresh from the provider.", followUp: "What do the statuses mean?" },
@@ -333,10 +334,8 @@ export default function SupportPage({ dark, t }) {
           }
         </div>
 
-        <div className="sup-filter-bar" style={{ gap: 3, padding: "6px 10px", borderBottom: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}` }}>
-          {[["all","All"],["active","Active"],["Resolved","Done"]].map(([v,l])=>
-            <button key={v} onClick={()=>setFilter(v)} className="py-[3px] px-2 rounded text-[11px] border-none cursor-pointer shrink-0 whitespace-nowrap" style={{ fontWeight:filter===v?600:450,background:filter===v?(dark?"rgba(196,125,142,0.1)":"rgba(196,125,142,0.06)"):"transparent",color:filter===v?t.accent:t.textMuted }}>{l}</button>
-          )}
+        <div style={{ padding: "6px 10px", borderBottom: `1px solid ${dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}` }}>
+          <SegPill value={filter} options={[{value: "all", label: "All"}, {value: "active", label: "Active"}, {value: "Resolved", label: "Done"}]} onChange={setFilter} dark={dark} t={t} fill />
         </div>
 
         <div className="flex-1 overflow-y-auto min-h-0">
