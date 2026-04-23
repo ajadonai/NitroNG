@@ -141,8 +141,6 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
             </div>
             <div className="grid grid-cols-2 max-desktop:grid-cols-1 gap-y-3.5 gap-x-6">
               {[
-                ["First name", user?.firstName || user?.name?.split(" ")[0] || "—"],
-                ["Last name", user?.lastName || user?.name?.split(" ").slice(1).join(" ") || "—"],
                 ["Email", user?.email || "—"],
                 ["Phone", user?.phone || "—"],
                 ["Referral code", user?.refCode || "—"],
