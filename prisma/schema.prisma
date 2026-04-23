@@ -184,6 +184,7 @@ model Order {
   status     String   @default("Pending")
   apiOrderId String?
   tierId     String?
+  batchId    String?
   remains    Int?
   createdAt  DateTime @default(now())
   deletedAt  DateTime?
@@ -194,6 +195,7 @@ model Order {
   tier    ServiceTier? @relation(fields: [tierId], references: [id])
 
   @@index([userId])
+  @@index([userId, batchId])
   @@index([status])
   @@index([createdAt])
   @@map("orders")

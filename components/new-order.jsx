@@ -1,7 +1,8 @@
 'use client';
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, forwardRef } from "react";
 import { fN } from "../lib/format";
 import { useToast } from "./toast";
+import { SegPill } from "./seg-pill";
 
 /* ═══════════════════════════════════════════ */
 /* ═══ PLATFORM DATA — 35 platforms        ═══ */
@@ -65,6 +66,75 @@ const TS = {
 };
 
 
+function compactPrice(n) {
+  if (n >= 1_000_000) return `₦${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (n >= 10_000) return `₦${(n / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
+  return `₦${n.toLocaleString()}`;
+}
+
+function getPresets(min, max) {
+  const nice = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
+  const pool = nice.filter(v => v >= min && v <= max);
+  if (!pool.length || pool[0] !== min) pool.unshift(min);
+  if (pool[pool.length - 1] !== max) pool.push(max);
+  if (pool.length <= 5) return pool;
+  const step = (pool.length - 1) / 4;
+  return [0, 1, 2, 3, 4].map(i => pool[Math.round(i * step)]);
+}
+
+const LINK_HINTS = {
+  instagram: "https://instagram.com/p/...",
+  tiktok: "https://tiktok.com/@.../video/...",
+  youtube: "https://youtube.com/watch?v=...",
+  facebook: "https://facebook.com/...",
+  twitter: "https://x.com/.../status/...",
+  telegram: "https://t.me/...",
+  threads: "https://threads.net/@...",
+  snapchat: "https://snapchat.com/...",
+  linkedin: "https://linkedin.com/in/...",
+  pinterest: "https://pinterest.com/pin/...",
+  reddit: "https://reddit.com/r/.../...",
+  discord: "https://discord.gg/...",
+  whatsapp: "https://chat.whatsapp.com/...",
+  twitch: "https://twitch.tv/...",
+  kick: "https://kick.com/...",
+  spotify: "https://open.spotify.com/track/...",
+  audiomack: "https://audiomack.com/...",
+  boomplay: "https://boomplay.com/...",
+  applemusic: "https://music.apple.com/...",
+  soundcloud: "https://soundcloud.com/...",
+  deezer: "https://deezer.com/track/...",
+  tidal: "https://tidal.com/track/...",
+  google: "https://google.com/maps/...",
+  trustpilot: "https://trustpilot.com/review/...",
+  webtraffic: "https://yourwebsite.com",
+  appstore: "https://apps.apple.com/app/...",
+  playstore: "https://play.google.com/store/apps/...",
+};
+
+function isValidLink(link) {
+  const v = link.trim();
+  if (v.length < 5 || v.length > 500) return false;
+  if (v.includes("://") || /^https?:?$/i.test(v)) return /^https?:\/\/[^\s/]+\.[^\s/]+/.test(v);
+  return /^@?[a-zA-Z0-9._]{1,100}$/.test(v);
+}
+
+const CART_KEY = "nitro_bulk_cart_v1";
+const CART_TTL = 86400000;
+
+function loadCart() {
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    if (!raw) return [];
+    const { rows, savedAt } = JSON.parse(raw);
+    if (Date.now() - savedAt > CART_TTL) { localStorage.removeItem(CART_KEY); return []; }
+    return rows || [];
+  } catch { return []; }
+}
+function saveCart(rows) {
+  try { localStorage.setItem(CART_KEY, JSON.stringify({ rows, savedAt: Date.now() })); } catch {}
+}
+
 /* ═══════════════════════════════════════════ */
 /* ═══ ORDER FORM                          ═══ */
 /* ═══════════════════════════════════════════ */
@@ -83,9 +153,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const validateLink = (val) => {
     setLink(val);
     if (!val.trim()) { setLinkError(""); return; }
-    const v = val.trim();
-    if (!/^https?:\/\//i.test(v)) { setLinkError("Link must start with https://"); return; }
-    try { new URL(v); setLinkError(""); } catch { setLinkError("Enter a valid URL"); }
+    if (isValidLink(val)) { setLinkError(""); return; }
+    setLinkError("Enter a valid URL or @username");
   };
   const linkValid = link.trim() && !linkError;
 
@@ -103,37 +172,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const needsUsernames = isMention;
   const needsAnswer = isPoll;
 
-  /* Smart link placeholder per platform */
-  const placeholders = {
-    instagram: "https://instagram.com/...",
-    tiktok: "https://tiktok.com/@...",
-    youtube: "https://youtube.com/...",
-    facebook: "https://facebook.com/...",
-    twitter: "https://x.com/...",
-    telegram: "https://t.me/...",
-    threads: "https://threads.net/@...",
-    snapchat: "https://snapchat.com/...",
-    linkedin: "https://linkedin.com/...",
-    pinterest: "https://pinterest.com/...",
-    reddit: "https://reddit.com/...",
-    discord: "https://discord.gg/...",
-    whatsapp: "https://chat.whatsapp.com/...",
-    twitch: "https://twitch.tv/...",
-    kick: "https://kick.com/...",
-    spotify: "https://open.spotify.com/...",
-    audiomack: "https://audiomack.com/...",
-    boomplay: "https://boomplay.com/...",
-    applemusic: "https://music.apple.com/...",
-    soundcloud: "https://soundcloud.com/...",
-    deezer: "https://deezer.com/...",
-    tidal: "https://tidal.com/...",
-    google: "https://google.com/maps/... or business URL",
-    trustpilot: "https://trustpilot.com/...",
-    webtraffic: "https://yourwebsite.com",
-    appstore: "https://apps.apple.com/...",
-    playstore: "https://play.google.com/...",
-  };
-  const linkPlaceholder = placeholders[platform] || `https://${platform}.com/...`;
+  const linkPlaceholder = LINK_HINTS[platform] || `https://${platform}.com/...`;
   const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
 
   return (
@@ -152,20 +191,20 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
       {selTier && <>
         <div className="mb-3.5" data-tour="no-link-input">
           <label className="text-sm block mb-[5px]" style={{ color: t.textMuted }}>{linkLabel}</label>
-          <input type="url" inputMode="url" placeholder={linkPlaceholder} value={link} onChange={e => validateLink(e.target.value)} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[15px] outline-none box-border font-[inherit]" style={{ borderColor: linkError ? (dark ? "#f87171" : "#dc2626") : dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text }} />
+          <input type="url" inputMode="url" aria-label={linkLabel} disabled={orderLoading} placeholder={linkPlaceholder} value={link} onChange={e => validateLink(e.target.value)} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[15px] outline-none box-border font-[inherit] disabled:opacity-50" style={{ borderColor: linkError ? (dark ? "#f87171" : "#dc2626") : dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text }} />
           <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626", visibility: linkError ? "visible" : "hidden" }}>{linkError || '\u00A0'}</div>
         </div>
         {needsComments && (
           <div className="mb-3.5">
             <label className="text-sm block mb-[5px]" style={{ color: t.textMuted }}>{isReview ? "Reviews" : "Comments"} <span className="font-normal text-[11px]">(one per line)</span></label>
-            <textarea placeholder={isReview ? "Great service, highly recommend!\nFast delivery and excellent quality\nBest experience I've had, 5 stars" : "Great content! 🔥\nLove this post!\nAmazing work, keep it up 💯\nThis is fire 🙌"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={4} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
+            <textarea disabled={orderLoading} placeholder={isReview ? "Great service, highly recommend!\nFast delivery and excellent quality\nBest experience I've had, 5 stars" : "Great content! 🔥\nLove this post!\nAmazing work, keep it up 💯\nThis is fire 🙌"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={4} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
             <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>{(comments || "").split("\n").filter(l => l.trim()).length} {isReview ? "reviews" : "comments"} entered · we'll cycle through them</div>
           </div>
         )}
         {needsUsernames && (
           <div className="mb-3.5">
             <label className="text-sm block mb-[5px]" style={{ color: t.textMuted }}>Usernames to mention <span className="font-normal text-[11px]">(one per line, without @)</span></label>
-            <textarea placeholder={"username1\nusername2\nusername3"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={4} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
+            <textarea disabled={orderLoading} placeholder={"username1\nusername2\nusername3"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={4} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)", background: dark ? "#0d1020" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
             <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>{(comments || "").split("\n").filter(l => l.trim()).length} usernames entered</div>
           </div>
         )}
@@ -174,7 +213,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             <label className="text-sm block mb-[5px]" style={{ color: t.textMuted }}>Answer option number</label>
             <div className="flex gap-1.5">
               {[1, 2, 3, 4].map(n => (
-                <button key={n} type="button" onClick={() => setComments(String(n))} className="flex-1 py-2.5 px-0 rounded-lg text-sm font-semibold cursor-pointer border border-solid" style={{ borderColor: (comments || "") === String(n) ? t.accent : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)"), background: (comments || "") === String(n) ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: (comments || "") === String(n) ? t.accent : t.textMuted }}>Option {n}</button>
+                <button key={n} type="button" disabled={orderLoading} onClick={() => setComments(String(n))} className="flex-1 py-2.5 px-0 rounded-lg text-sm font-semibold cursor-pointer border border-solid disabled:opacity-40" style={{ borderColor: (comments || "") === String(n) ? t.accent : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)"), background: (comments || "") === String(n) ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: (comments || "") === String(n) ? t.accent : t.textMuted }}>Option {n}</button>
               ))}
             </div>
             <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>Select which poll answer to vote for</div>
@@ -182,11 +221,11 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
         )}
         <div className="mb-3.5">
           <label className="text-sm block mb-[5px]" style={{ color: t.textMuted }}>Quantity</label>
-          <input type="number" value={qty} onChange={e => setQty(e.target.value === "" ? "" : e.target.value)} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[15px] outline-none box-border font-[inherit]" style={{ borderColor: qtyOutOfRange ? (dark ? "rgba(220,38,38,.4)" : "rgba(220,38,38,.3)") : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)"), background: dark ? "#0d1020" : "#fff", color: t.text }} />
+          <input type="number" aria-label="Quantity" disabled={orderLoading} value={qty} onChange={e => setQty(e.target.value === "" ? "" : e.target.value)} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[15px] outline-none box-border font-[inherit] disabled:opacity-50" style={{ borderColor: qtyOutOfRange ? (dark ? "rgba(220,38,38,.4)" : "rgba(220,38,38,.3)") : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)"), background: dark ? "#0d1020" : "#fff", color: t.text }} />
           {qtyOutOfRange && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{qtyNum < minQty ? `Minimum: ${minQty.toLocaleString()}` : `Maximum: ${maxQty.toLocaleString()}`}</div>}
           <div className="flex gap-1 mt-1.5">
-            {[500, 1000, 2500, 5000, 10000].map(q => (
-              <button key={q} onClick={() => setQty(q)} className="m flex-1 py-[5px] rounded-md text-[13px] border border-solid cursor-pointer bg-transparent font-[inherit]" style={{ borderColor: qty === q ? t.accent : t.cardBorder, background: qty === q ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: qty === q ? t.accent : t.textMuted }}>{q >= 1000 ? `${q / 1000}K` : q}</button>
+            {getPresets(minQty, maxQty).map(q => (
+              <button key={q} onClick={() => setQty(q)} disabled={orderLoading} className="m flex-1 py-[5px] rounded-md text-[13px] border border-solid cursor-pointer bg-transparent font-[inherit] disabled:opacity-40" style={{ borderColor: qty === q ? t.accent : t.cardBorder, background: qty === q ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: qty === q ? t.accent : t.textMuted }}>{q >= 1000 ? `${q / 1000}K` : q}</button>
             ))}
           </div>
         </div>
@@ -222,6 +261,44 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   const [menuError, setMenuError] = useState("");
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(null);
+
+  // Bulk mode state — hydrate from storage after mount to avoid SSR mismatch
+  const [orderMode, setOrderMode] = useState("single");
+  const [cartRows, setCartRows] = useState([]);
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (hydratedRef.current) return;
+    hydratedRef.current = true;
+    try { const saved = sessionStorage.getItem("nitro_order_mode"); if (saved) setOrderMode(saved); } catch {}
+    const loaded = loadCart();
+    if (loaded.length) setCartRows(loaded);
+  }, []);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkSuccess, setBulkSuccess] = useState(null);
+  const [bulkError, setBulkError] = useState(null);
+  const cartBarRef = useRef(null);
+  const cartRowsRef = useRef(null);
+  const toastCoalesceRef = useRef({ count: 0, timer: null });
+  const mainRef = useRef(null);
+  const [cartBounds, setCartBounds] = useState(null);
+
+  useEffect(() => {
+    const el = mainRef.current?.closest(".dash-main");
+    if (!el) return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      const isMobile = window.innerWidth < 1200;
+      const inset = isMobile ? 14 : 20;
+      setCartBounds({ left: r.left + inset, right: window.innerWidth - r.right + inset, bottom: isMobile ? 56 + 14 : inset });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  useEffect(() => { try { sessionStorage.setItem("nitro_order_mode", orderMode); } catch {} }, [orderMode]);
+  useEffect(() => { saveCart(cartRows); }, [cartRows]);
 
   /* Fetch real services from API */
   useEffect(() => {
@@ -304,7 +381,49 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     }
     else { setSelSvc(svc); setSelTier(null); }
   };
-  const pickTier = (tier, e) => { if (e?.stopPropagation) e.stopPropagation(); if (e?.preventDefault) e.preventDefault(); setSelTier(tier); setQty(tier.min || 100); setOrderModal(true); };
+  const pickTier = (tier, e) => {
+    if (e?.stopPropagation) e.stopPropagation();
+    if (e?.preventDefault) e.preventDefault();
+    if (orderMode === "bulk") { addToCart(tier, e); return; }
+    setSelTier(tier); setQty(tier.min || 100); setOrderModal(true);
+  };
+
+  const addToCart = useCallback((tier) => {
+    if (cartRows.length >= 50) { toast.info("Cart full", "50-row limit reached"); return; }
+    const svc = services.find(s => s.tiers.some(t2 => t2.id === tier.id));
+    const svcName = svc?.name || "Service";
+    const svcType = (svc?.type || "").toLowerCase();
+    const needsComments = (svcType.includes("comment") || svcName.toLowerCase().includes("comment")) && !svcName.toLowerCase().includes("comment like");
+    const needsMentions = svcName.toLowerCase().includes("mention");
+    const needsPoll = svcName.toLowerCase().includes("poll vote") || (svcName.toLowerCase().includes("poll") && !svcName.toLowerCase().includes("upvote"));
+    const needsReview = svcName.toLowerCase().includes("review") && !svcName.toLowerCase().includes("review like");
+
+    setCartRows(prev => [...prev, {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      svcId: svc?.id, tierId: tier.id, tier: tier.tier,
+      name: svcName, platform, link: "", qty: tier.min || 1000,
+      min: tier.min || 100, max: tier.max || 50000,
+      storedPricePer1k: tier.price || 0,
+      needsComments: needsComments || needsReview,
+      needsMentions, needsPoll, comments: "", commentsOpen: false,
+      expanded: true,
+    }]);
+
+    // Pulse cart bar
+    if (cartBarRef.current) {
+      cartBarRef.current.classList.remove("bulk-pulse"); void cartBarRef.current.offsetWidth; cartBarRef.current.classList.add("bulk-pulse");
+    }
+
+    // Debounced toast
+    const c = toastCoalesceRef.current;
+    c.count++;
+    clearTimeout(c.timer);
+    c.timer = setTimeout(() => {
+      if (c.count === 1) toast.success("Added to cart", `${svcName} (${tier.tier})`);
+      else toast.success("Added to cart", `${c.count} orders added`);
+      c.count = 0;
+    }, 800);
+  }, [cartRows.length, services, platform, toast]);
 
   // Tour integration — listen for tour events to auto-select service/tier
   useEffect(() => {
@@ -351,6 +470,120 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     }
     setOrderLoading(false);
   };
+
+  const scrollToRow = (idx) => {
+    if (cartRowsRef.current) {
+      const el = cartRowsRef.current.querySelector(`[data-row="${idx}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      el?.classList.remove("bulk-row-flash"); void el?.offsetWidth; el?.classList.add("bulk-row-flash");
+    }
+  };
+
+  const submitBulk = async () => {
+    if (bulkLoading || cartRows.length === 0) return;
+    setBulkError(null);
+    const emptyIdx = cartRows.findIndex(r => !r.link.trim());
+    if (emptyIdx >= 0) {
+      const count = cartRows.filter(r => !r.link.trim()).length;
+      toast.error("Missing links", `${count} row${count > 1 ? "s" : ""} need links`);
+      scrollToRow(emptyIdx);
+      return;
+    }
+    const badLink = cartRows.findIndex(r => !isValidLink(r.link));
+    if (badLink >= 0) {
+      toast.error("Invalid link", `Row ${badLink + 1}: enter a valid URL or @username`);
+      scrollToRow(badLink);
+      return;
+    }
+    const qtyBad = cartRows.findIndex(r => r.qty < r.min || r.qty > r.max);
+    if (qtyBad >= 0) {
+      toast.error("Invalid quantity", `Row ${qtyBad + 1}: must be ${cartRows[qtyBad].min.toLocaleString()}–${cartRows[qtyBad].max.toLocaleString()}`);
+      scrollToRow(qtyBad);
+      return;
+    }
+    const dupIdx = cartRows.findIndex((r, i) => isDuplicate(cartRows, i));
+    if (dupIdx >= 0) {
+      toast.error("Duplicate order", "Remove duplicate rows before placing");
+      scrollToRow(dupIdx);
+      return;
+    }
+    const needsComments = cartRows.findIndex(r => (r.needsComments || r.needsMentions) && !r.comments.trim());
+    if (needsComments >= 0) {
+      toast.error("Missing comments", `Row ${needsComments + 1} needs comments`);
+      scrollToRow(needsComments);
+      return;
+    }
+
+    // Price drift guard — compare cart prices against fresh menu data
+    if (menuData?.groups) {
+      const drifted = [];
+      for (const row of cartRows) {
+        const price = getRowPrice(row, menuData);
+        const storedPrice = Math.round((row.storedPricePer1k || 0) / 1000 * row.qty);
+        if (row.storedPricePer1k && storedPrice > 0 && Math.abs(price - storedPrice) / storedPrice > 0.05) {
+          drifted.push(row.id);
+        }
+      }
+      if (drifted.length > 0) {
+        toast.error("Prices changed", "Review updated prices before placing");
+        setCartRows(prev => prev.map(r => ({ ...r, storedPricePer1k: getRowPricePer1k(r, menuData) })));
+        return;
+      }
+    }
+
+    const idempotencyKey = crypto.randomUUID();
+    setBulkLoading(true);
+    try {
+      const res = await fetch("/api/orders/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          idempotencyKey,
+          orders: cartRows.map(r => ({
+            tierId: r.tierId, link: r.link.trim(), quantity: r.qty,
+            ...(r.comments.trim() ? { comments: r.comments.trim() } : {}),
+          })),
+        }),
+        signal: AbortSignal.timeout(120000),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.error === "Insufficient balance") {
+          setBulkError({ type: "balance", needed: data.needed || 0 });
+        } else {
+          toast.error("Bulk order failed", data.error || "Something went wrong");
+        }
+        setBulkLoading(false);
+        return;
+      }
+      setBulkSuccess({ ...data, rows: cartRows.map(r => ({ ...r })) });
+      setCartRows([]);
+      localStorage.removeItem(CART_KEY);
+      if (onOrderSuccess) onOrderSuccess();
+    } catch (err) {
+      const msg = err?.name === "TimeoutError" ? "Request timed out — orders may still be processing" : "Couldn't reach Nitro";
+      setBulkError({ type: "network", message: msg });
+    }
+    setBulkLoading(false);
+  };
+
+  function getRowPricePer1k(row, menu) {
+    if (!menu?.groups) return 0;
+    for (const g of menu.groups) { const ti = g.tiers.find(t2 => t2.id === row.tierId); if (ti) return ti.price; }
+    return 0;
+  }
+
+  // Keyboard shortcuts: Esc closes cart, Cmd/Ctrl+Enter submits
+  const submitBulkRef = useRef(submitBulk);
+  submitBulkRef.current = submitBulk;
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === "Escape" && cartOpen) { setCartOpen(false); e.preventDefault(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && cartOpen && !bulkLoading && cartRows.length > 0) { submitBulkRef.current(); e.preventDefault(); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [cartOpen, bulkLoading, cartRows.length]);
 
   const [platGroup, setPlatGroup] = useState("Social Platforms");
   const [platExpanded, setPlatExpanded] = useState(false);
@@ -421,12 +654,23 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   };
 
   return (
-    <>
+    <div ref={mainRef} style={{ paddingBottom: orderMode === "bulk" ? 82 : 0 }}>
       <div className="pb-2 desktop:pb-3.5">
-        <div className="text-lg desktop:text-[22px] font-semibold mb-0.5" style={{ color: t.text }}>New Order</div>
-        <div className="text-sm desktop:text-[15px]" style={{ color: t.textMuted }}>{menuData ? `${allGroups.length} services across ${Object.keys(platformCounts).length} platforms — prices per 1,000` : "Browse and order social media services"}</div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-lg desktop:text-[22px] font-semibold" style={{ color: t.text }}>New Order</div>
+          <SegPill value={orderMode} options={["single", "bulk"]} onChange={setOrderMode} label="Order mode" dark={dark} t={t} />
+        </div>
+        <div className="text-sm desktop:text-[15px] max-md:text-xs mt-0.5" style={{ color: t.textMuted }}>{menuData ? `${allGroups.length} services across ${Object.keys(platformCounts).length} platforms` : "Browse and order social media services"}</div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
+
+      {/* Bulk mode banner */}
+      {orderMode === "bulk" && (
+        <div className="flex items-center gap-2.5 rounded-[10px] py-3 px-4 mb-3 border border-solid" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)", borderColor: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)" }}>
+          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: t.accent }} />
+          <span className="text-[13px] font-medium" style={{ color: t.accent }}>Bulk mode · Tap any tier chip to add it to your cart.</span>
+        </div>
+      )}
 
       {/* Mobile/tablet guide */}
       <div className="hidden max-desktop:block">
@@ -523,8 +767,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
         {filtered.length === 0 && <div className="py-10 text-center text-[15px]" style={{ color: t.textMuted }}>Coming soon.</div>}
       </div>
 
-      {/* Fixed bottom bar — mobile/tablet */}
-      {hasOrder && (
+      {/* Fixed bottom bar — mobile/tablet — single mode only */}
+      {orderMode === "single" && hasOrder && (
         <div className="no-bottom-bar flex fixed bottom-0 left-0 right-0 backdrop-blur-[16px] py-2.5 px-5 max-md:px-4 items-center justify-between z-30 gap-3" data-tour="no-order-bar" style={{ background: dark ? "rgba(8,11,20,.97)" : "rgba(244,241,237,.97)", borderTop: `1px solid ${t.cardBorder}` }}>
           <div className="min-w-0 flex-1">
             <div className="text-[15px] max-md:text-sm font-semibold whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: t.text }}>{selSvc?.name}</div>
@@ -540,9 +784,9 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
         </div>
       )}
 
-      {/* Order modal — mobile/tablet */}
-      {(orderModal || orderSuccess) && hasOrder && (
-        <div className="no-modal-overlay flex fixed inset-0 bg-black/40 z-50 items-center max-md:items-end justify-center p-6 max-md:p-0" onClick={() => { setOrderModal(false); setOrderSuccess(null); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null)}}}>
+      {/* Order modal — single mode only */}
+      {orderMode === "single" && (orderModal || orderSuccess) && hasOrder && (
+        <div className="no-modal-overlay flex fixed inset-0 bg-black/40 z-50 items-center max-md:items-end justify-center p-6 max-md:p-0" onClick={() => { setOrderModal(false); setOrderSuccess(null); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null)}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!orderSuccess&&!orderLoading){submitOrder()}}}>
           <div role="dialog" aria-modal="true" aria-label="Order summary" className="w-full max-w-[420px] max-md:max-w-none rounded-2xl max-md:rounded-b-none max-h-[90vh] max-md:max-h-[80vh] overflow-y-auto shadow-[0_20px_60px_rgba(0,0,0,.3)] border border-solid max-md:border-b-0 max-md:pb-[env(safe-area-inset-bottom)]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#ffffff", borderColor: t.cardBorder }}>
             {orderSuccess ? (
               <div className="p-6 max-md:p-5 text-center">
@@ -570,8 +814,12 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           </div>
         </div>
       )}
+
+      {/* ═══ BULK CART BAR + EXPANDED ═══ */}
+      {orderMode === "bulk" && cartBounds && <BulkCartBar ref={cartBarRef} rows={cartRows} dark={dark} t={t} menuData={menuData} bounds={cartBounds} cartOpen={cartOpen} onClick={() => { if (cartRows.length > 0) setCartOpen(true); }} />}
+      {orderMode === "bulk" && cartOpen && cartBounds && <BulkCartExpanded rows={cartRows} setRows={setCartRows} dark={dark} t={t} menuData={menuData} bounds={cartBounds} onClose={() => setCartOpen(false)} onClear={() => { setCartRows([]); setCartOpen(false); }} onPlace={submitBulk} loading={bulkLoading} rowsScrollRef={cartRowsRef} bulkError={bulkError} setBulkError={setBulkError} bulkSuccess={bulkSuccess} setBulkSuccess={setBulkSuccess} onViewOrders={onViewOrders} />}
       </>}
-    </>
+    </div>
   );
 }
 
@@ -623,6 +871,333 @@ function MobileGuide({ dark, t }) {
         </div>
       )}
     </div>
+  );
+}
+
+/* ═══════════════════════════════════════════ */
+/* ═══ BULK CART BAR (collapsed)           ═══ */
+/* ═══════════════════════════════════════════ */
+
+const CartIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1.5"/><circle cx="18" cy="21" r="1.5"/><path d="M3 3h2l2.6 13.2a2 2 0 002 1.6h8.4a2 2 0 002-1.6L22 6H6"/></svg>;
+
+function getRowPrice(row, menuData) {
+  if (!menuData?.groups) return 0;
+  for (const g of menuData.groups) {
+    const tier = g.tiers.find(t2 => t2.id === row.tierId);
+    if (tier) return Math.round((tier.price / 1000) * row.qty);
+  }
+  return 0;
+}
+
+const BulkCartBar = forwardRef(function BulkCartBar({ rows, dark, t, menuData, bounds, cartOpen, onClick }, ref) {
+  const empty = rows.length === 0;
+  const platforms = [...new Set(rows.map(r => r.platform))];
+  const total = rows.reduce((s, r) => s + getRowPrice(r, menuData), 0);
+  const shown = platforms.slice(0, 6);
+  const overflow = platforms.length - shown.length;
+  const bp = typeof window !== "undefined" && window.innerWidth < 640 ? "sm" : "lg";
+
+  return (
+    <div ref={ref} role={empty ? undefined : "button"} tabIndex={empty ? undefined : 0} aria-expanded={cartOpen} aria-label={empty ? "Empty cart" : `${rows.length} orders in cart`} onClick={onClick} onKeyDown={e => { if (!empty && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onClick(); } }} className={`fixed rounded-[16px] py-3 px-4 max-md:py-2.5 max-md:px-3 flex items-center gap-5 max-md:gap-3 border-2 border-solid z-[50] transition-all duration-200 ${empty ? "opacity-85" : "cursor-pointer hover:-translate-y-px"}`} style={{ left: bounds.left, right: bounds.right, bottom: bounds.bottom, background: dark ? "#171d32" : "#fcfaf8", borderColor: dark ? "rgba(196,125,142,.35)" : "rgba(196,125,142,.3)", boxShadow: dark ? "0 -6px 32px rgba(0,0,0,.35), 0 0 0 1px rgba(196,125,142,.1)" : "0 -6px 32px rgba(0,0,0,.1), 0 0 0 1px rgba(196,125,142,.06), 0 4px 16px rgba(196,125,142,.08)" }}>
+      {/* Left — cart icon + count */}
+      <div className="flex items-center gap-3 shrink-0">
+        <div className="w-[38px] h-[38px] max-md:w-[34px] max-md:h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: t.accent, color: "#fff" }}><CartIcon /></div>
+        <div className="flex flex-col gap-px">
+          <span className="text-[13.5px] font-semibold leading-tight" style={{ color: empty ? t.textMuted : t.text }}>{empty ? "Your cart" : `${rows.length} ${rows.length === 1 ? "order" : "orders"}`}</span>
+          <span className="text-[10.5px] leading-tight" style={{ color: t.textMuted }}>{empty ? "Tap a tier chip to add an order" : "in cart"}</span>
+        </div>
+      </div>
+
+      {/* Spacer when empty, separator + platforms when filled */}
+      {empty && <div className="flex-1" />}
+      {!empty && <div className="w-px self-stretch shrink-0" style={{ background: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)" }} />}
+      {!empty && (
+        <div className="flex-1 flex items-center min-w-0 overflow-hidden">
+          <div className="flex items-center gap-1.5">
+            {shown.map(p => {
+              const plat = PLATFORMS.find(pl => pl.id === p);
+              return <span key={p} className="flex items-center justify-center w-5 h-5 shrink-0 [&_svg]:w-[18px] [&_svg]:h-[18px]" style={{ color: t.textMuted }}>{plat?.icon}</span>;
+            })}
+            {overflow > 0 && <span className="text-[11px] font-medium shrink-0" style={{ color: t.textMuted }}>+{overflow}</span>}
+          </div>
+          <span className="text-xs ml-3 overflow-hidden text-ellipsis whitespace-nowrap min-w-0 hidden desktop:inline" style={{ color: t.textMuted }}>
+            {platforms.length <= 3 ? platforms.map(p => PLATFORMS.find(pl => pl.id === p)?.label || p).join(" · ") : `${PLATFORMS.find(pl => pl.id === platforms[0])?.label || platforms[0]} · ${PLATFORMS.find(pl => pl.id === platforms[1])?.label || platforms[1]} · +${platforms.length - 2} more`}
+          </span>
+        </div>
+      )}
+
+      {/* Separator */}
+      {!empty && <div className="w-px self-stretch shrink-0" style={{ background: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)" }} />}
+
+      {/* Right — total + chevron */}
+      <div className="flex items-center gap-3.5 shrink-0">
+        {!empty && (
+          <div className="flex flex-col items-end gap-px">
+            <span className="text-[10px] uppercase tracking-[1.5px] font-medium hidden desktop:block" style={{ color: t.textMuted }}>Total</span>
+            <span className="text-[17px] max-md:text-[15px] font-semibold whitespace-nowrap" style={{ color: t.accent }}>{bp === "sm" ? compactPrice(total) : `₦${total.toLocaleString()}`}</span>
+          </div>
+        )}
+        <div className="w-[34px] h-[34px] max-md:w-[30px] max-md:h-[30px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: t.accent }}>
+          <span className="w-2 h-2 border-r-2 border-t-2 border-solid rotate-[-45deg]" style={{ borderColor: "#fff" }} />
+        </div>
+      </div>
+    </div>
+  );
+});
+
+/* ═══════════════════════════════════════════ */
+/* ═══ BULK CART EXPANDED (overlay)        ═══ */
+/* ═══════════════════════════════════════════ */
+
+function isDuplicate(rows, idx) {
+  const row = rows[idx];
+  if (!row.link.trim()) return false;
+  return rows.some((r, i) => i !== idx && r.svcId === row.svcId && r.tier === row.tier && r.link.trim() === row.link.trim());
+}
+
+function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, onClear, onPlace, loading, rowsScrollRef, bulkError, setBulkError, bulkSuccess, setBulkSuccess, onViewOrders }) {
+  const loyaltyDiscount = menuData?.loyaltyDiscount || 0;
+  const loyaltyTier = menuData?.loyaltyTier || null;
+  const subtotal = rows.reduce((s, r) => s + getRowPrice(r, menuData), 0);
+  const discount = loyaltyDiscount > 0 ? Math.round(subtotal * (loyaltyDiscount / 100)) : 0;
+  const total = subtotal - discount;
+
+  const updateRow = (idx, patch) => setRows(prev => prev.map((r, i) => i === idx ? { ...r, ...patch } : r));
+  const removeRow = (idx) => setRows(prev => prev.filter((_, i) => i !== idx));
+
+  const fileInputRef = useRef(null);
+  const [uploadIdx, setUploadIdx] = useState(null);
+
+  const handleTxtUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 500 * 1024) { e.target.value = ""; return; }
+    if (file.type && file.type !== "text/plain") { e.target.value = ""; return; }
+    file.text().then(text => {
+      const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+      if (lines.length > 10000) lines.length = 10000;
+      if (uploadIdx !== null) updateRow(uploadIdx, { comments: lines.join("\n") });
+      e.target.value = "";
+    });
+  };
+
+  useEffect(() => {
+    const handler = (e) => {
+      const clickedCard = e.target.closest('[data-row]');
+      const clickedIdx = clickedCard ? Number(clickedCard.getAttribute('data-row')) : -1;
+      setRows(prev => prev.map((r, i) => {
+        if (i === clickedIdx) return r;
+        if (!r.expanded) return r;
+        const emptyLink = !r.link.trim();
+        const validLink = !emptyLink && isValidLink(r.link);
+        const qtyOk = r.qty >= r.min && r.qty <= r.max;
+        const needsComments = (r.needsComments || r.needsMentions) && !r.comments.trim() && !emptyLink;
+        const dup = isDuplicate(prev, i);
+        if (!validLink || !qtyOk || needsComments || dup) return r;
+        return { ...r, expanded: undefined };
+      }));
+    };
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
+  }, [setRows]);
+
+  return (
+    <>
+    <div className="fixed inset-0 z-[55]" onClick={onClose} style={{ background: dark ? "rgba(0,0,0,.45)" : "rgba(0,0,0,.2)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }} />
+    <div role="dialog" aria-modal="true" aria-label="Bulk order cart" aria-busy={loading} className="fixed max-h-[85vh] rounded-[14px] border border-solid flex flex-col z-[60] overflow-hidden" style={{ left: bounds.left, right: bounds.right, bottom: bounds.bottom, background: dark ? "#12172a" : "#fff", borderColor: "rgba(196,125,142,.2)", boxShadow: "0 -16px 48px rgba(0,0,0,.14), 0 -4px 12px rgba(0,0,0,.06)" }}>
+      <input ref={fileInputRef} type="file" accept=".txt,text/plain" className="hidden" onChange={handleTxtUpload} aria-label="Upload comments file" />
+
+      {/* Header */}
+      <div className="py-3.5 px-[18px] flex items-center gap-4 border-b border-solid select-none shrink-0" style={{ borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)" }}>
+        <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: t.accent, color: "#fff" }}><CartIcon /></div>
+        <div className="flex flex-col gap-px flex-1 min-w-0">
+          <span className="text-[13.5px] font-medium" style={{ color: t.text }}>{rows.length} {rows.length === 1 ? "order" : "orders"}</span>
+          <span className="text-[10.5px]" style={{ color: t.textMuted }}>in cart</span>
+        </div>
+        <button onClick={onClear} disabled={loading} className="py-1 px-2.5 rounded-md border border-solid text-[11px] font-medium cursor-pointer bg-transparent font-[inherit] hover:opacity-80 transition-opacity shrink-0 disabled:opacity-40 disabled:cursor-not-allowed" style={{ borderColor: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)", color: t.textMuted }}>Clear cart</button>
+        <div className="flex items-center gap-3.5 shrink-0">
+          <span className="text-[17px] font-medium" style={{ color: t.accent }}>₦{total.toLocaleString()}</span>
+          <div className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center cursor-pointer" onClick={onClose} style={{ background: t.accent }}>
+            <span className="w-2 h-2 border-r-2 border-t-2 border-solid rotate-[135deg]" style={{ borderColor: "#fff" }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Success overlay */}
+      {bulkSuccess && (
+        <div className="flex-1 overflow-y-auto py-6 px-[18px] max-md:py-4 max-md:px-3.5 flex flex-col items-center">
+          <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)" }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div className="text-lg font-semibold mb-1" style={{ color: t.text }}>Bulk order placed</div>
+          <div className="text-sm mb-4 text-center" style={{ color: t.textMuted }}>{bulkSuccess.total} order{bulkSuccess.total !== 1 ? "s" : ""} placed · {bulkSuccess.placed} processing{bulkSuccess.failed > 0 ? ` · ${bulkSuccess.failed} pending` : ""}</div>
+          {bulkSuccess.loyaltyDiscount > 0 && (
+            <div className="text-[12.5px] mb-3 py-1.5 px-3 rounded-full" style={{ background: dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.06)", color: dark ? "#6ee7b7" : "#059669" }}>{bulkSuccess.loyaltyTier} discount applied ({bulkSuccess.loyaltyDiscount}%)</div>
+          )}
+          <div className="w-full rounded-xl p-4 mb-5 border border-solid" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.02)", borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)" }}>
+            <div className="flex justify-between text-sm mb-2" style={{ color: t.textMuted }}>
+              <span>Batch</span><span className="font-medium font-[JetBrains_Mono,monospace] text-xs" style={{ color: t.text }}>{bulkSuccess.batchId}</span>
+            </div>
+            <div className="flex justify-between text-sm mb-2" style={{ color: t.textMuted }}>
+              <span>Total charged</span><span className="font-medium" style={{ color: t.accent }}>₦{(bulkSuccess.totalCharge || 0).toLocaleString()}</span>
+            </div>
+            {(bulkSuccess.orders || []).slice(0, 5).map((o, i) => (
+              <div key={i} className="flex justify-between text-xs py-1 border-t border-dashed" style={{ borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", color: t.textMuted }}>
+                <span className="truncate flex-1 min-w-0 mr-2">{o.service || o.link}</span>
+                <span className="shrink-0 font-medium" style={{ color: o.status === "Processing" ? (dark ? "#6ee7b7" : "#059669") : t.accent }}>{o.status}</span>
+              </div>
+            ))}
+            {(bulkSuccess.orders || []).length > 5 && <div className="text-xs mt-1 text-center" style={{ color: t.textMuted }}>+{bulkSuccess.orders.length - 5} more</div>}
+          </div>
+          <div className="flex gap-3 w-full max-md:flex-col">
+            <button onClick={() => { setBulkSuccess(null); onClose(); }} className="flex-1 py-2.5 rounded-[10px] text-sm font-semibold border border-solid cursor-pointer" style={{ background: "transparent", borderColor: t.cardBorder, color: t.text }}>Place another</button>
+            {onViewOrders && <button onClick={() => { setBulkSuccess(null); onClose(); onViewOrders(); }} className="flex-1 py-2.5 rounded-[10px] text-sm font-semibold border-none cursor-pointer" style={{ background: t.accent, color: "#fff" }}>View orders</button>}
+          </div>
+        </div>
+      )}
+
+      {/* Error banners */}
+      {!bulkSuccess && bulkError && (
+        <div className="mx-[18px] max-md:mx-3.5 mt-3 py-3 px-3.5 rounded-[10px] border border-solid flex items-start gap-3" style={{ background: bulkError.type === "balance" ? (dark ? "rgba(250,204,21,.06)" : "rgba(250,204,21,.08)") : (dark ? "rgba(239,68,68,.06)" : "rgba(239,68,68,.06)"), borderColor: bulkError.type === "balance" ? (dark ? "rgba(250,204,21,.2)" : "rgba(250,204,21,.3)") : (dark ? "rgba(239,68,68,.2)" : "rgba(239,68,68,.2)") }}>
+          <span className="text-sm shrink-0 mt-px">{bulkError.type === "balance" ? "💰" : "⚠️"}</span>
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-medium mb-0.5" style={{ color: bulkError.type === "balance" ? (dark ? "#fcd34d" : "#b45309") : (dark ? "#fca5a5" : "#dc2626") }}>{bulkError.type === "balance" ? "Insufficient balance" : "Connection error"}</div>
+            <div className="text-[11.5px]" style={{ color: t.textMuted }}>{bulkError.type === "balance" ? `You need ₦${(bulkError.needed || 0).toLocaleString()} more to place this order.` : bulkError.message}</div>
+          </div>
+          <button onClick={() => setBulkError(null)} className="bg-transparent border-none text-xs cursor-pointer p-1 shrink-0" style={{ color: t.textMuted }}>✕</button>
+        </div>
+      )}
+
+      {/* Rows */}
+      {!bulkSuccess && (
+      <div ref={rowsScrollRef} className="overflow-y-auto flex-1 min-h-0 py-4 px-[18px] max-md:py-3 max-md:px-3.5 flex flex-col gap-3">
+        {rows.length === 0 && (
+          <div className="py-10 text-center text-xs" style={{ color: t.textMuted }}>Cart is empty. Tap any tier chip to add an order.</div>
+        )}
+        {rows.map((row, idx) => {
+          const dup = isDuplicate(rows, idx);
+          const emptyLink = !row.link.trim();
+          const badLink = !emptyLink && !isValidLink(row.link);
+          const qtyBad = row.qty < row.min || row.qty > row.max;
+          const needsCommentsWarning = (row.needsComments || row.needsMentions) && !row.comments.trim() && !emptyLink;
+          const hasErrors = dup || badLink || qtyBad || needsCommentsWarning;
+          const hasValidLink = !emptyLink && isValidLink(row.link);
+          const isCollapsed = hasValidLink && !hasErrors && !row.expanded;
+          const rowPrice = getRowPrice(row, menuData);
+          const commentCount = row.comments ? row.comments.split("\n").filter(l => l.trim()).length : 0;
+          const linkPreview = row.link.trim() ? (row.link.replace(/^https?:\/\//, "").slice(0, 40) + (row.link.length > 48 ? "…" : "")) : "";
+
+          if (isCollapsed) return (
+            <div key={row.id} data-row={idx} onClick={() => updateRow(idx, { expanded: true })} className="rounded-[12px] py-2.5 px-3.5 max-md:py-2 max-md:px-3 border border-solid cursor-pointer transition-all duration-200 hover:border-[rgba(196,125,142,.25)]" style={{ background: dark ? "rgba(255,255,255,.03)" : "#f7f5f1", borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)" }}>
+              <div className="flex items-center gap-2.5">
+                <span className="flex items-center justify-center w-5 h-5 shrink-0 [&_svg]:w-[18px] [&_svg]:h-[18px]" style={{ color: t.textMuted }}>{PLATFORMS.find(pl => pl.id === row.platform)?.icon}</span>
+                <div className="text-[13px] font-medium flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{row.name}</div>
+                <span className="text-[10.5px] font-medium py-0.5 px-2.5 rounded-full shrink-0" style={{ background: dark ? TS[row.tier]?.bgD : TS[row.tier]?.bg, color: TS[row.tier]?.text }}>{row.tier}</span>
+                <span className="text-[11px] max-w-[120px] truncate font-[JetBrains_Mono,monospace] hidden md:inline" style={{ color: t.textMuted }}>{linkPreview}</span>
+                <span className="text-[12.5px] font-medium shrink-0" style={{ color: t.textMuted }}>₦{rowPrice.toLocaleString()}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+            </div>
+          );
+
+          return (
+            <div key={row.id} data-row={idx} className={`rounded-[12px] p-3.5 px-4 max-md:p-3 max-md:px-3.5 border border-solid transition-all duration-200`} style={{ background: dup ? (dark ? "rgba(226,75,74,.08)" : "#fbe7e7") : badLink ? (dark ? "rgba(226,75,74,.05)" : "#fef5f5") : (dark ? "rgba(255,255,255,.03)" : "#f7f5f1"), borderColor: dup ? (dark ? "#e47373" : "#c23a3a") : badLink ? (dark ? "#e47373" : "#dc2626") : emptyLink ? "rgba(196,125,142,.4)" : qtyBad ? "rgba(196,125,142,.4)" : needsCommentsWarning ? "rgba(196,125,142,.4)" : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)") }}>
+              {/* Top: platform + name + tier + collapse + remove */}
+              <div className="flex items-center gap-2.5 mb-3">
+                <span className="flex items-center justify-center w-5 h-5 shrink-0 [&_svg]:w-[18px] [&_svg]:h-[18px]" style={{ color: t.textMuted }}>{PLATFORMS.find(pl => pl.id === row.platform)?.icon}</span>
+                <div className="text-[13px] font-medium flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{row.name}</div>
+                <span className="text-[10.5px] font-medium py-0.5 px-2.5 rounded-full shrink-0" style={{ background: dark ? TS[row.tier]?.bgD : TS[row.tier]?.bg, color: TS[row.tier]?.text }}>{row.tier}</span>
+                {hasValidLink && <button onClick={() => updateRow(idx, { expanded: false })} className="w-[24px] h-[24px] rounded-full bg-transparent border border-solid flex items-center justify-center shrink-0 p-0 cursor-pointer" style={{ borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)", color: t.textMuted }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>}
+                <button onClick={() => removeRow(idx)} disabled={loading} className="w-[24px] h-[24px] rounded-full bg-transparent border border-solid flex items-center justify-center text-[10px] shrink-0 p-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed" style={{ borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)", color: t.textMuted }}>✕</button>
+              </div>
+
+              {/* Link + qty */}
+              <div className="flex gap-2 items-center mb-2.5">
+                <input aria-label="Link" disabled={loading} placeholder={LINK_HINTS[row.platform] || `https://${row.platform}.com/...`} value={row.link} onChange={e => updateRow(idx, { link: e.target.value })} className="flex-1 py-2 px-3 rounded-lg border border-solid text-[12px] outline-none min-w-0 font-[JetBrains_Mono,monospace] disabled:opacity-50" style={{ background: emptyLink ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : (dark ? "#0f1322" : "#fff"), borderColor: badLink ? (dark ? "#e47373" : "#dc2626") : emptyLink ? t.accent : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"), color: t.text }} />
+                <input aria-label="Quantity" disabled={loading} type="number" min={1} step="1" value={row.qty} onChange={e => { const v = Math.min(row.max, Math.floor(Number(e.target.value)) || 0); updateRow(idx, { qty: v }); }} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="w-[76px] py-2 px-2.5 rounded-lg border border-solid text-[12px] font-medium text-right outline-none shrink-0 font-[JetBrains_Mono,monospace] disabled:opacity-50" style={{ background: dark ? "#0f1322" : "#fff", borderColor: qtyBad ? t.accent : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"), color: t.text }} />
+              </div>
+
+              {/* Presets + price */}
+              <div className="flex justify-between items-center gap-3">
+                <div className="flex gap-1 flex-wrap">
+                  {getPresets(row.min, row.max).map(v => (
+                    <button key={v} onClick={() => updateRow(idx, { qty: v })} disabled={loading} className="py-[3px] px-2 rounded-full border border-solid text-[10.5px] font-medium cursor-pointer bg-transparent font-[inherit] disabled:opacity-40" style={{ borderColor: row.qty === v ? t.accent : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"), color: row.qty === v ? t.accent : t.textMuted }}>{v >= 1000 ? `${v / 1000}K` : v}</button>
+                  ))}
+                </div>
+                <span className="text-[12.5px] font-medium shrink-0" style={{ color: t.textMuted }}>₦{rowPrice.toLocaleString()}</span>
+              </div>
+
+              {/* Warnings */}
+              {dup && <div className="text-[10.5px] mt-1.5 flex items-center gap-1.5" style={{ color: dark ? "#e47373" : "#c23a3a" }}>● Duplicate — remove one or change the tier</div>}
+              {emptyLink && !dup && <div className="text-[10.5px] mt-1.5 flex items-center gap-1.5" style={{ color: t.accent }}>○ Paste a link for this row</div>}
+              {badLink && !dup && <div className="text-[10.5px] mt-1.5 flex items-center gap-1.5" style={{ color: dark ? "#e47373" : "#dc2626" }}>● Enter a valid URL or @username</div>}
+              {qtyBad && !dup && <div className="text-[10.5px] mt-1.5" style={{ color: t.accent }}>{row.qty < row.min ? `Min ${row.min.toLocaleString()} for this service` : `Max ${row.max.toLocaleString()} for this service`}</div>}
+              {needsCommentsWarning && !dup && <div className="text-[10.5px] mt-1.5" style={{ color: t.accent }}>○ This service needs at least one comment</div>}
+
+              {/* Comment section */}
+              {(row.needsComments || row.needsMentions) && (
+                <div className="mt-2 pt-2 border-t border-dashed" style={{ borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)" }}>
+                  {commentCount > 0 && !row.commentsOpen ? (
+                    <>
+                      <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[5px] px-3 rounded-full border border-solid text-[11.5px] font-medium cursor-pointer font-[inherit]" style={{ background: dark ? "rgba(127,184,74,.18)" : "#e4f3d9", borderColor: dark ? "#639922" : "#7fb84a", color: dark ? "#b4db7a" : "#27500A" }}>
+                        <span className="w-[5px] h-[5px] rounded-full" style={{ background: dark ? "#b4db7a" : "#27500A" }} />
+                        <span><b>{commentCount}</b> {row.needsMentions ? "username" : "comment"}{commentCount !== 1 ? "s" : ""}</span>
+                        <span className="text-[10.5px] underline ml-1" style={{ color: t.textMuted }}>edit</span>
+                      </button>
+                      <div className="text-[10.5px] mt-1.5" style={{ color: t.textMuted }}>We'll cycle through them to fill your order</div>
+                    </>
+                  ) : row.commentsOpen ? (
+                    <div className="rounded-lg border border-solid p-2.5" style={{ background: dark ? "#0f1322" : "#fff", borderColor: t.accent }}>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-[11px] font-medium" style={{ color: t.text }}>{row.needsMentions ? "Usernames — one per line" : "Seed comments — one per line"}</span>
+                        <button onClick={() => updateRow(idx, { commentsOpen: false })} className="bg-transparent border-none text-[11px] cursor-pointer py-0.5 px-1.5 rounded font-[inherit] hover:bg-[rgba(0,0,0,.04)]" style={{ color: t.textMuted }}>Done</button>
+                      </div>
+                      <textarea placeholder={row.needsMentions ? "username1\nusername2\nusername3" : "Fire post 🔥\nLove this\nLegendary..."} value={row.comments} onChange={e => updateRow(idx, { comments: e.target.value })} rows={4} className="w-full min-h-[90px] rounded-md border border-solid py-2 px-2.5 text-[11.5px] font-[JetBrains_Mono,monospace] outline-none resize-y" style={{ background: dark ? "rgba(255,255,255,.03)" : "#f7f5f1", borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)", color: t.text }} />
+                      <div className="flex justify-between items-center mt-2 text-[10.5px] flex-wrap gap-2" style={{ color: t.textMuted }}>
+                        <div className="flex items-center gap-1"><strong style={{ color: t.accent }}>{commentCount}</strong> seed {row.needsMentions ? "username" : "comment"}{commentCount !== 1 ? "s" : ""} · will cycle to fill {row.qty.toLocaleString()}</div>
+                        {row.qty > 100 && <button onClick={() => { setUploadIdx(idx); fileInputRef.current?.click(); }} className="inline-flex items-center gap-1 py-1 px-2.5 rounded-md border border-solid text-[10.5px] font-medium cursor-pointer bg-transparent font-[inherit]" style={{ borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)", color: t.textMuted }}>↑ Upload .txt</button>}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[7px] px-3 rounded-lg border border-solid text-[11.5px] font-medium cursor-pointer font-[inherit]" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)", borderColor: t.accent, color: t.accent }}>+ Add {row.needsMentions ? "usernames" : "comments"}</button>
+                      <div className="text-[10.5px] mt-1.5" style={{ color: t.textMuted }}>We'll cycle through them to fill your order</div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      )}
+
+      {/* Footer */}
+      {!bulkSuccess && rows.length > 0 && (
+        <div className="py-3.5 px-[18px] max-md:py-3 max-md:px-3.5 border-t border-solid shrink-0" style={{ borderColor: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)" }}>
+          <div className="flex justify-between text-[12.5px] mb-1.5" style={{ color: t.textMuted }}>
+            <span>{rows.length} order{rows.length !== 1 ? "s" : ""} subtotal</span><span>₦{subtotal.toLocaleString()}</span>
+          </div>
+          {discount > 0 && (
+            <div className="flex justify-between text-[12.5px] mb-1.5" style={{ color: dark ? "#b4db7a" : "#27500A" }}>
+              <span>Loyalty discount ({loyaltyDiscount}%)</span><span>−₦{discount.toLocaleString()}</span>
+            </div>
+          )}
+          <div className="flex justify-between items-baseline my-2.5">
+            <span className="text-[10px] uppercase tracking-[2px] font-medium" style={{ color: t.textMuted }}>Total</span>
+            <span className="text-[22px] font-medium" style={{ color: t.accent }}>₦{total.toLocaleString()}</span>
+          </div>
+          <button onClick={onPlace} disabled={loading} className="w-full py-3 rounded-[10px] border-none text-[13px] font-medium cursor-pointer font-[inherit] tracking-[.3px]" style={{ background: t.accent, color: "#fff", opacity: loading ? .6 : 1 }}>
+            {loading ? "Placing orders..." : `Place ${rows.length} order${rows.length !== 1 ? "s" : ""}`}
+          </button>
+        </div>
+      )}
+    </div>
+    </>
   );
 }
 
