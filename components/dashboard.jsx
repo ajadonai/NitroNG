@@ -307,54 +307,17 @@ function RightSidebar({ orders, user, dark, t, setActive }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ NOTIFICATION DROPDOWN              ═══ */
 /* ═══════════════════════════════════════════ */
-function NotifDropdown({ orders, txs, dark, t, onClose, readIds, setReadIds, clearedIds, setClearedIds, notifClearedAt, setClearedAt }) {
+const NOTIF_ICONS = {
+  check: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+  clock: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+  x: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
+  dollar: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>,
+  gift: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/></svg>,
+};
+
+function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedIds, setClearedIds, setClearedAt }) {
   const [filter, setFilter] = useState("all");
 
-  /* Build ALL notification items from real data */
-  const allItems = [
-    ...orders.filter(o => o.status === "Completed").map(o => ({
-      id: `ord-${o.id}`, type: "order", title: "Order delivered",
-      desc: `${o.id} · ${o.service || "Service"} delivered`,
-      time: o.created ? fD(o.created) : "", ts: o.created ? new Date(o.created) : null,
-      color: dark ? "#60a5fa" : "#2563eb",
-      icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
-    })),
-    ...orders.filter(o => o.status === "Processing" || o.status === "Pending").map(o => ({
-      id: `proc-${o.id}`, type: "order", title: "Order in progress",
-      desc: `${o.id} · ${o.service || "Service"} started`,
-      time: o.created ? fD(o.created) : "", ts: o.created ? new Date(o.created) : null,
-      color: dark ? "#e0a458" : "#d97706",
-      icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
-    })),
-    ...orders.filter(o => o.status === "Cancelled").map(o => ({
-      id: `cancel-${o.id}`, type: "order", title: "Order cancelled",
-      desc: `${o.id} · ${o.service || "Service"} cancelled`,
-      time: o.created ? fD(o.created) : "", ts: o.created ? new Date(o.created) : null,
-      color: dark ? "#fca5a5" : "#dc2626",
-      icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
-    })),
-    ...txs.filter(tx => tx.type === "deposit" && tx.status === "Completed").map(tx => ({
-      id: `dep-${tx.id || tx.reference}`, type: "deposit", title: "Funds added",
-      desc: `${fN(tx.amount)} added via ${tx.method || "Flutterwave"}`,
-      time: tx.date ? fD(tx.date) : "", ts: tx.date ? new Date(tx.date) : null,
-      color: dark ? "#6ee7b7" : "#059669",
-      icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>,
-    })),
-    ...txs.filter(tx => tx.type === "bonus" || tx.type === "admin_credit").map(tx => ({
-      id: `bonus-${tx.id || tx.reference}`, type: "reward", title: tx.type === "bonus" ? "Reward received! 🎁" : "Balance credited",
-      desc: `${fN(tx.amount)} — ${tx.description || "Bonus from Nitro"}`,
-      time: tx.date ? fD(tx.date) : "", ts: tx.date ? new Date(tx.date) : null,
-      color: dark ? "#e0a458" : "#d97706",
-      icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/></svg>,
-    })),
-  ];
-
-  // Filter out cleared items (by ID or by timestamp)
-  const items = allItems.filter(n => {
-    if (clearedIds.has(n.id)) return false;
-    if (notifClearedAt && n.ts && n.ts <= notifClearedAt) return false;
-    return true;
-  }).sort((a, b) => (b.ts || 0) - (a.ts || 0));
   const filtered = filter === "all" ? items : items.filter(n => n.type === filter);
   const display = filtered.slice(0, 10);
   const hasMore = filtered.length > 10;
@@ -405,7 +368,7 @@ function NotifDropdown({ orders, txs, dark, t, onClose, readIds, setReadIds, cle
           const isRead = readIds.has(n.id);
           return (
             <div key={n.id} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => markRead(n.id)} className="flex items-start gap-2.5 py-3 px-4 transition-colors duration-150 hover:bg-[rgba(196,125,142,.05)]" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: !isRead ? (dark ? "rgba(196,125,142,.03)" : "rgba(196,125,142,.02)") : "transparent", cursor: "pointer" }}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${n.color}15`, color: n.color }}>{n.icon}</div>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${n.color}15`, color: n.color }}>{NOTIF_ICONS[n.icon]}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center gap-1.5">
                   <span className="text-sm" style={{ fontWeight: isRead ? 450 : 600, color: t.text }}>{n.title}</span>
@@ -498,18 +461,53 @@ function DashboardInner({ initialData }) {
   };
   const notifRef = useRef(null);
 
-  // Compute bell badge count — must match NotifDropdown filtering exactly
-  const bellUnread = useMemo(() => {
-    const cutoff = notifClearedAt ? new Date(notifClearedAt) : null;
-    const afterCutoff = (ts) => !cutoff || (ts && new Date(ts) > cutoff);
-    const ids = [];
-    orders.filter(o => o.status === "Completed" && afterCutoff(o.created)).forEach(o => ids.push(`ord-${o.id}`));
-    orders.filter(o => (o.status === "Processing" || o.status === "Pending") && afterCutoff(o.created)).forEach(o => ids.push(`proc-${o.id}`));
-    orders.filter(o => o.status === "Cancelled" && afterCutoff(o.created)).forEach(o => ids.push(`cancel-${o.id}`));
-    txs.filter(tx => tx.type === "deposit" && tx.status === "Completed" && afterCutoff(tx.date)).forEach(tx => ids.push(`dep-${tx.id || tx.reference}`));
-    txs.filter(tx => (tx.type === "bonus" || tx.type === "admin_credit") && afterCutoff(tx.date)).forEach(tx => ids.push(`bonus-${tx.id || tx.reference}`));
-    return ids.filter(id => !readNotifIds.has(id) && !clearedNotifIds.has(id)).length;
-  }, [orders, txs, notifClearedAt, readNotifIds, clearedNotifIds]);
+  // Build notification items — single source of truth for both bell badge and dropdown
+  const notifItems = useMemo(() => {
+    const dark_ = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+    const all = [
+      ...orders.filter(o => o.status === "Completed").map(o => ({
+        id: `ord-${o.id}`, type: "order", title: "Order delivered",
+        desc: `${o.id} · ${o.service || "Service"} delivered`,
+        time: o.created ? fD(o.created) : "", ts: o.created ? new Date(o.created) : null,
+        color: dark_ ? "#60a5fa" : "#2563eb",
+        icon: "check",
+      })),
+      ...orders.filter(o => o.status === "Processing" || o.status === "Pending").map(o => ({
+        id: `proc-${o.id}`, type: "order", title: "Order in progress",
+        desc: `${o.id} · ${o.service || "Service"} started`,
+        time: o.created ? fD(o.created) : "", ts: o.created ? new Date(o.created) : null,
+        color: dark_ ? "#e0a458" : "#d97706",
+        icon: "clock",
+      })),
+      ...orders.filter(o => o.status === "Cancelled").map(o => ({
+        id: `cancel-${o.id}`, type: "order", title: "Order cancelled",
+        desc: `${o.id} · ${o.service || "Service"} cancelled`,
+        time: o.created ? fD(o.created) : "", ts: o.created ? new Date(o.created) : null,
+        color: dark_ ? "#fca5a5" : "#dc2626",
+        icon: "x",
+      })),
+      ...txs.filter(tx => tx.type === "deposit" && tx.status === "Completed").map(tx => ({
+        id: `dep-${tx.id || tx.reference}`, type: "deposit", title: "Funds added",
+        desc: `${fN(tx.amount)} added via ${tx.method || "Flutterwave"}`,
+        time: tx.date ? fD(tx.date) : "", ts: tx.date ? new Date(tx.date) : null,
+        color: dark_ ? "#6ee7b7" : "#059669",
+        icon: "dollar",
+      })),
+      ...txs.filter(tx => tx.type === "bonus" || tx.type === "admin_credit" || tx.type === "referral").map(tx => ({
+        id: `bonus-${tx.id || tx.reference}`, type: "reward", title: tx.type === "referral" ? "Referral bonus" : tx.type === "bonus" ? "Reward received!" : "Balance credited",
+        desc: `${fN(tx.amount)} — ${tx.description || "Bonus from Nitro"}`,
+        time: tx.date ? fD(tx.date) : "", ts: tx.date ? new Date(tx.date) : null,
+        color: dark_ ? "#e0a458" : "#d97706",
+        icon: "gift",
+      })),
+    ];
+    return all.filter(n => {
+      if (clearedNotifIds.has(n.id)) return false;
+      if (notifClearedAt && n.ts && n.ts <= new Date(notifClearedAt)) return false;
+      return true;
+    }).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  }, [orders, txs, notifClearedAt, clearedNotifIds]);
+  const bellUnread = notifItems.filter(n => !readNotifIds.has(n.id)).length;
 
   /* Services/Order state (lifted so sidebars can access) */
   const [noPlatform, setNoPlatform] = useState("instagram");
@@ -878,7 +876,7 @@ function DashboardInner({ initialData }) {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
               {bellUnread > 0 && <div className="dash-bell-badge">{bellUnread > 10 ? "10+" : bellUnread}</div>}
             </button>
-            {notifOpen && <NotifDropdown orders={orders} txs={txs} dark={dark} t={t} onClose={() => setNotifOpen(false)} readIds={readNotifIds} setReadIds={setReadNotifIds} clearedIds={clearedNotifIds} setClearedIds={setClearedNotifIds} notifClearedAt={notifClearedAt} setClearedAt={setNotifClearedAt} />}
+            {notifOpen && <NotifDropdown items={notifItems} dark={dark} t={t} onClose={() => setNotifOpen(false)} readIds={readNotifIds} setReadIds={setReadNotifIds} clearedIds={clearedNotifIds} setClearedIds={setClearedNotifIds} setClearedAt={setNotifClearedAt} />}
           </div>
           {/* Avatar → Settings */}
           <button onClick={() => { setActive("settings"); setLeftOpen(false); }} className="dash-avatar-btn">
