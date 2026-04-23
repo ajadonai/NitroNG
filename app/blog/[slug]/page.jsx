@@ -36,12 +36,48 @@ export async function generateMetadata({ params }) {
   };
 }
 
+async function getLiveValues() {
+  const rows = await prisma.setting.findMany({
+    where: { key: { in: ['ref_referrer_bonus', 'ref_invitee_bonus', 'ref_min_deposit', 'min_deposit'] } },
+  });
+  const s = {};
+  rows.forEach(r => { s[r.key] = r.value; });
+
+  const platformCount = await prisma.serviceGroup.findMany({
+    where: { enabled: true }, distinct: ['platform'], select: { platform: true },
+  });
+
+  const fmt = (v, fallback) => {
+    const n = Math.round((Number(v) || fallback) / 100);
+    return n.toLocaleString('en-NG');
+  };
+
+  return {
+    '{{referrer_bonus}}': '₦' + fmt(s.ref_referrer_bonus, 50000),
+    '{{invitee_bonus}}': '₦' + fmt(s.ref_invitee_bonus, 50000),
+    '{{ref_min_deposit}}': '₦' + fmt(s.ref_min_deposit, 0),
+    '{{min_deposit}}': '₦' + fmt(s.min_deposit, 50000),
+    '{{platform_count}}': String(platformCount.length || 28),
+  };
+}
+
+function injectLiveValues(content, values) {
+  let result = content;
+  for (const [token, val] of Object.entries(values)) {
+    result = result.replaceAll(token, val);
+  }
+  return result;
+}
+
 export default async function BlogPostPage({ params }) {
   const { slug } = await params;
-  const post = await prisma.blogPost.findFirst({
-    where: { slug, published: true },
-  });
+  const [post, liveValues] = await Promise.all([
+    prisma.blogPost.findFirst({ where: { slug, published: true } }),
+    getLiveValues(),
+  ]);
   if (!post) notFound();
+
+  post.content = injectLiveValues(post.content, liveValues);
 
   // Increment views (fire-and-forget)
   prisma.blogPost.update({ where: { id: post.id }, data: { views: { increment: 1 } } }).catch(() => {});

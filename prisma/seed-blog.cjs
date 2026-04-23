@@ -16,7 +16,7 @@ const POSTS = [
 <p>Placing an order on Nitro takes less than 60 seconds. Here's how:</p>
 
 <h3>Step 1 — Go to Services</h3>
-<p>Click <strong>Services</strong> in your dashboard sidebar. You'll see a list of platforms on the left — Instagram, TikTok, YouTube, Twitter/X, and 24 more.</p>
+<p>Click <strong>Services</strong> in your dashboard sidebar. You'll see a list of platforms on the left — Instagram, TikTok, YouTube, Twitter/X, and {{platform_count}}+ more.</p>
 
 <h3>Step 2 — Pick a Platform</h3>
 <p>Click any platform to see available services. Each platform shows a count badge so you know how many services are available before clicking.</p>
@@ -72,7 +72,7 @@ const POSTS = [
 
 <h3>Good to Know</h3>
 <ul>
-  <li>Minimum deposit: ₦500</li>
+  <li>Minimum deposit: {{min_deposit}}</li>
   <li>No maximum limit</li>
   <li>Funds are added instantly after payment confirmation</li>
   <li>All transactions are recorded in your dashboard</li>
@@ -140,12 +140,13 @@ const POSTS = [
   <li>Go to <strong>Referrals</strong> in your dashboard</li>
   <li>Copy your unique referral link</li>
   <li>Share it with friends, on social media, or in your community</li>
-  <li>When someone signs up and funds their wallet, you earn a bonus</li>
+  <li>When someone signs up and funds their wallet, you both earn a bonus</li>
 </ol>
 
 <h3>What You Earn</h3>
 <ul>
-  <li>A percentage of your referral's first deposit is credited to your wallet</li>
+  <li><strong>You (referrer):</strong> {{referrer_bonus}} credited to your wallet</li>
+  <li><strong>Your friend (invitee):</strong> {{invitee_bonus}} bonus on signup</li>
   <li>No limit on how many people you can refer</li>
   <li>Track all your referrals and earnings in the Referrals dashboard</li>
 </ul>
