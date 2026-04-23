@@ -335,9 +335,8 @@ export default function AddFundsPage({ user, dark, t, paymentStatus, setPaymentS
               {amountInput}
               {couponSection}
               <PayButton onClick={() => { if (valid) setMobileStep(2); }} disabled={!valid} text={valid ? "Proceed →" : "Enter amount"} className="mt-2" />
+              <AcceptedRow centered />
             </div>
-
-            <AcceptedRow centered />
           </>
         )}
 
