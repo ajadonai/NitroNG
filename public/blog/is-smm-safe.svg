@@ -1,0 +1,20 @@
+<svg width="1200" height="640" xmlns="http://www.w3.org/2000/svg">
+<rect width="1200" height="640" fill="#1a0f14"/>
+<circle cx="1000" cy="120" r="360" fill="#6ee7b7" opacity="0.05"/>
+<circle cx="1060" cy="200" r="220" fill="#6ee7b7" opacity="0.04"/>
+<polygon points="0,640 0,540 260,640" fill="#c47d8e" opacity="0.06"/>
+<rect x="740" y="100" width="360" height="280" rx="24" fill="rgba(110,231,183,0.04)" stroke="rgba(110,231,183,0.08)" stroke-width="1.5"/>
+<path d="M920,160 L920,300" fill="none" stroke="rgba(110,231,183,0.1)" stroke-width="1"/>
+<circle cx="920" cy="200" r="48" fill="rgba(110,231,183,0.06)" stroke="rgba(110,231,183,0.15)" stroke-width="1.5"/>
+<path d="M920,175 L920,208 M920,208 L920,175 L903,192 L920,175 L937,192" fill="none" stroke="#6ee7b7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+<path d="M920,180 C920,180 940,200 920,220 C900,200 920,180 920,180" fill="none" stroke="#6ee7b7" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+<text x="880" y="280" font-family="system-ui" font-size="14" fill="rgba(110,231,183,0.4)" text-anchor="middle">No password needed</text>
+<text x="920" y="306" font-family="system-ui" font-size="14" fill="rgba(110,231,183,0.3)" text-anchor="middle">Auto-refill guarantee</text>
+<text x="920" y="332" font-family="system-ui" font-size="14" fill="rgba(110,231,183,0.3)" text-anchor="middle">24/7 support</text>
+<rect x="72" y="72" width="96" height="96" rx="24" fill="#059669"/>
+<path d="M104,120 L104,120 C104,100 136,100 136,120 L136,140 L104,140 Z" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M96,120 L96,148 C96,156 104,162 120,162 C136,162 144,156 144,148 L144,120" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="80" y="440" font-family="Georgia, serif" font-size="60" fill="white" font-weight="700" letter-spacing="-1">Is SMM safe?</text>
+<text x="80" y="516" font-family="Georgia, serif" font-size="60" fill="#6ee7b7" font-weight="700" letter-spacing="-1">What to know</text>
+<text x="80" y="590" font-family="system-ui" font-size="22" fill="rgba(255,255,255,0.3)" letter-spacing="6">NITRO BLOG</text>
+</svg>

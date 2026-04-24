@@ -1,0 +1,25 @@
+<svg width="1200" height="640" xmlns="http://www.w3.org/2000/svg">
+<rect width="1200" height="640" fill="#1a0f14"/>
+<circle cx="1000" cy="130" r="340" fill="#f59e0b" opacity="0.06"/>
+<circle cx="1060" cy="210" r="200" fill="#f59e0b" opacity="0.04"/>
+<polygon points="0,640 0,540 240,640" fill="#c47d8e" opacity="0.06"/>
+<rect x="740" y="100" width="360" height="280" rx="24" fill="rgba(245,158,11,0.03)" stroke="rgba(245,158,11,0.08)" stroke-width="1.5"/>
+<!-- Shield icon -->
+<path d="M920,140 L960,155 L960,200 C960,235 940,260 920,270 C900,260 880,235 880,200 L880,155 Z" fill="rgba(245,158,11,0.06)" stroke="rgba(245,158,11,0.2)" stroke-width="1.5"/>
+<path d="M908,200 L916,208 L932,192" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+<!-- Checklist -->
+<rect x="820" y="300" width="12" height="12" rx="3" fill="rgba(245,158,11,0.15)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+<path d="M823,306 L826,309 L831,304" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+<rect x="840" y="303" width="80" height="6" rx="3" fill="rgba(245,158,11,0.12)"/>
+<rect x="820" y="324" width="12" height="12" rx="3" fill="rgba(245,158,11,0.15)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+<path d="M823,330 L826,333 L831,328" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+<rect x="840" y="327" width="100" height="6" rx="3" fill="rgba(245,158,11,0.12)"/>
+<rect x="820" y="348" width="12" height="12" rx="3" fill="rgba(245,158,11,0.1)" stroke="rgba(245,158,11,0.15)" stroke-width="1"/>
+<rect x="840" y="351" width="60" height="6" rx="3" fill="rgba(245,158,11,0.08)"/>
+<!-- Icon -->
+<rect x="72" y="72" width="96" height="96" rx="24" fill="#d97706"/>
+<path d="M120,96 L140,106 L140,126 C140,142 130,154 120,158 C110,154 100,142 100,126 L100,106 Z" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="80" y="440" font-family="Georgia, serif" font-size="60" fill="white" font-weight="700" letter-spacing="-1">Is SMM safe?</text>
+<text x="80" y="516" font-family="Georgia, serif" font-size="60" fill="#f59e0b" font-weight="700" letter-spacing="-1">Quick guide</text>
+<text x="80" y="590" font-family="system-ui" font-size="22" fill="rgba(255,255,255,0.3)" letter-spacing="6">NITRO BLOG</text>
+</svg>

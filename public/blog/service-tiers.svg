@@ -1,0 +1,28 @@
+<svg width="1200" height="640" xmlns="http://www.w3.org/2000/svg">
+<rect width="1200" height="640" fill="#1a0f14"/>
+<circle cx="1020" cy="140" r="340" fill="#c47d8e" opacity="0.1"/>
+<polygon points="0,640 0,540 240,640" fill="#c47d8e" opacity="0.06"/>
+<rect x="680" y="100" width="140" height="280" rx="16" fill="rgba(224,164,88,0.06)" stroke="rgba(224,164,88,0.12)" stroke-width="1.5"/>
+<rect x="710" y="130" width="80" height="10" rx="5" fill="rgba(224,164,88,0.25)"/>
+<rect x="710" y="152" width="60" height="8" rx="4" fill="rgba(224,164,88,0.12)"/>
+<rect x="710" y="184" width="80" height="28" rx="8" fill="rgba(224,164,88,0.15)"/>
+<text x="730" y="204" font-family="system-ui" font-size="13" fill="#e0a458" font-weight="600">Budget</text>
+<rect x="840" y="80" width="140" height="320" rx="16" fill="rgba(96,165,250,0.06)" stroke="rgba(96,165,250,0.15)" stroke-width="1.5"/>
+<rect x="870" y="110" width="80" height="10" rx="5" fill="rgba(96,165,250,0.25)"/>
+<rect x="870" y="132" width="60" height="8" rx="4" fill="rgba(96,165,250,0.12)"/>
+<rect x="870" y="164" width="80" height="28" rx="8" fill="rgba(96,165,250,0.2)"/>
+<text x="882" y="184" font-family="system-ui" font-size="13" fill="#60a5fa" font-weight="600">Standard</text>
+<text x="890" y="60" font-family="system-ui" font-size="11" fill="#60a5fa" font-weight="600" text-anchor="middle" letter-spacing="2">★ RECOMMENDED</text>
+<rect x="1000" y="100" width="140" height="280" rx="16" fill="rgba(167,139,250,0.06)" stroke="rgba(167,139,250,0.12)" stroke-width="1.5"/>
+<rect x="1030" y="130" width="80" height="10" rx="5" fill="rgba(167,139,250,0.25)"/>
+<rect x="1030" y="152" width="60" height="8" rx="4" fill="rgba(167,139,250,0.12)"/>
+<rect x="1030" y="184" width="80" height="28" rx="8" fill="rgba(167,139,250,0.15)"/>
+<text x="1044" y="204" font-family="system-ui" font-size="13" fill="#a78bfa" font-weight="600">Premium</text>
+<rect x="72" y="72" width="96" height="96" rx="24" fill="#c47d8e"/>
+<rect x="96" y="92" width="48" height="14" rx="4" fill="white" opacity="0.9"/>
+<rect x="96" y="114" width="48" height="14" rx="4" fill="white" opacity="0.6"/>
+<rect x="96" y="136" width="48" height="14" rx="4" fill="white" opacity="0.3"/>
+<text x="80" y="440" font-family="Georgia, serif" font-size="60" fill="white" font-weight="700" letter-spacing="-1">Understanding</text>
+<text x="80" y="516" font-family="Georgia, serif" font-size="60" fill="#c47d8e" font-weight="700" letter-spacing="-1">service tiers</text>
+<text x="80" y="590" font-family="system-ui" font-size="22" fill="rgba(255,255,255,0.3)" letter-spacing="6">NITRO BLOG</text>
+</svg>
