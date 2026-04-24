@@ -1,0 +1,18 @@
+<svg width="1200" height="640" xmlns="http://www.w3.org/2000/svg">
+<rect width="1200" height="640" fill="#1a0f14"/>
+<circle cx="1000" cy="120" r="350" fill="#34d399" opacity="0.06"/>
+<circle cx="1060" cy="200" r="200" fill="#34d399" opacity="0.04"/>
+<polygon points="0,640 0,540 240,640" fill="#c47d8e" opacity="0.06"/>
+<rect x="740" y="120" width="360" height="240" rx="24" fill="rgba(52,211,153,0.04)" stroke="rgba(52,211,153,0.08)" stroke-width="1.5"/>
+<rect x="780" y="160" width="280" height="36" rx="8" fill="rgba(52,211,153,0.06)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+<text x="800" y="184" font-family="'JetBrains Mono',monospace" font-size="16" fill="#34d399" opacity="0.6">₦ 5,000</text>
+<rect x="780" y="220" width="130" height="32" rx="8" fill="rgba(52,211,153,0.12)"/>
+<text x="812" y="242" font-family="system-ui" font-size="14" fill="#34d399" font-weight="600">Deposit</text>
+<rect x="920" y="220" width="130" height="32" rx="8" fill="rgba(196,125,142,0.08)" stroke="rgba(196,125,142,0.12)" stroke-width="1"/>
+<text x="940" y="242" font-family="system-ui" font-size="13" fill="#c47d8e">WELCOME20</text>
+<rect x="72" y="72" width="96" height="96" rx="24" fill="#059669"/>
+<text x="96" y="132" font-family="system-ui" font-size="40" fill="white" font-weight="600">₦</text>
+<text x="80" y="440" font-family="Georgia, serif" font-size="60" fill="white" font-weight="700" letter-spacing="-1">How to add funds</text>
+<text x="80" y="516" font-family="Georgia, serif" font-size="60" fill="#34d399" font-weight="700" letter-spacing="-1">to your wallet</text>
+<text x="80" y="590" font-family="system-ui" font-size="22" fill="rgba(255,255,255,0.3)" letter-spacing="6">NITRO BLOG</text>
+</svg>
