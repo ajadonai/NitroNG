@@ -1,0 +1,2 @@
+ALTER TABLE "users" ADD COLUMN "tourCompleted" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "users" ADD COLUMN "orderTourCompleted" BOOLEAN NOT NULL DEFAULT false;

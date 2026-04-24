@@ -1,0 +1,28 @@
+<svg width="1200" height="640" xmlns="http://www.w3.org/2000/svg">
+<rect width="1200" height="640" fill="#1a0f14"/>
+<circle cx="1000" cy="130" r="340" fill="#a78bfa" opacity="0.06"/>
+<circle cx="1060" cy="210" r="200" fill="#a78bfa" opacity="0.04"/>
+<polygon points="0,640 0,540 240,640" fill="#c47d8e" opacity="0.06"/>
+<rect x="740" y="90" width="360" height="290" rx="24" fill="rgba(167,139,250,0.03)" stroke="rgba(167,139,250,0.08)" stroke-width="1.5"/>
+<!-- Podium -->
+<rect x="860" y="220" width="50" height="100" rx="4" fill="rgba(167,139,250,0.12)" stroke="rgba(167,139,250,0.2)" stroke-width="1"/>
+<text x="885" y="310" font-family="system-ui" font-size="16" fill="rgba(167,139,250,0.5)" text-anchor="middle" font-weight="700">2</text>
+<rect x="920" y="180" width="50" height="140" rx="4" fill="rgba(245,158,11,0.12)" stroke="rgba(245,158,11,0.2)" stroke-width="1"/>
+<text x="945" y="310" font-family="system-ui" font-size="16" fill="rgba(245,158,11,0.5)" text-anchor="middle" font-weight="700">1</text>
+<path d="M935,170 L945,160 L955,170" fill="none" stroke="rgba(245,158,11,0.4)" stroke-width="2" stroke-linecap="round"/>
+<rect x="980" y="250" width="50" height="70" rx="4" fill="rgba(196,125,142,0.1)" stroke="rgba(196,125,142,0.15)" stroke-width="1"/>
+<text x="1005" y="310" font-family="system-ui" font-size="16" fill="rgba(196,125,142,0.4)" text-anchor="middle" font-weight="700">3</text>
+<!-- Avatars -->
+<circle cx="885" cy="206" r="12" fill="rgba(167,139,250,0.15)" stroke="rgba(167,139,250,0.3)" stroke-width="1"/>
+<circle cx="945" cy="166" r="14" fill="rgba(245,158,11,0.15)" stroke="rgba(245,158,11,0.3)" stroke-width="1"/>
+<circle cx="1005" cy="236" r="11" fill="rgba(196,125,142,0.12)" stroke="rgba(196,125,142,0.2)" stroke-width="1"/>
+<!-- Ranking lines -->
+<rect x="790" y="340" width="120" height="6" rx="3" fill="rgba(167,139,250,0.1)"/>
+<rect x="790" y="356" width="90" height="6" rx="3" fill="rgba(167,139,250,0.06)"/>
+<!-- Icon -->
+<rect x="72" y="72" width="96" height="96" rx="24" fill="#7c3aed"/>
+<text x="98" y="138" font-family="Georgia, serif" font-size="48" fill="white" font-weight="700">🏆</text>
+<text x="80" y="440" font-family="Georgia, serif" font-size="60" fill="white" font-weight="700" letter-spacing="-1">Leaderboard</text>
+<text x="80" y="516" font-family="Georgia, serif" font-size="60" fill="#a78bfa" font-weight="700" letter-spacing="-1">top users</text>
+<text x="80" y="590" font-family="system-ui" font-size="22" fill="rgba(255,255,255,0.3)" letter-spacing="6">NITRO BLOG</text>
+</svg>

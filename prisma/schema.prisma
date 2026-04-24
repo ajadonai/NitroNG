@@ -1,0 +1,384 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ──────────────────────────────────────
+// USERS
+// ──────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  name          String
+  firstName     String?
+  lastName      String?
+  phone         String?
+  balance       Int      @default(0)
+  referralCode  String   @unique @default(cuid())
+  referredBy    String?
+  emailVerified Boolean  @default(false)
+  verifyToken   String?
+  verifyExpires DateTime?
+  resetToken    String?
+  resetExpires  DateTime?
+  apiKey        String?   @unique
+  notifOrders   Boolean  @default(true)
+  notifPromo    Boolean  @default(true)
+  notifEmail    Boolean  @default(true)
+  notifClearedAt DateTime?
+  notifReadIds  String?  // JSON array of read notification IDs
+  themePreference String @default("auto") // "auto" | "night" | "day"
+  perPagePreference Int @default(10) // Orders per page: 10, 25, 50
+  tourCompleted     Boolean @default(false)
+  orderTourCompleted Boolean @default(false)
+  signupIp        String?
+  tosAcceptedAt   DateTime?
+  tosVersion      String?
+  status        String   @default("Active")
+  deletedAt     DateTime?
+  deletedName   String?
+  deletedEmail  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  orders       Order[]
+  transactions Transaction[]
+  tickets      Ticket[]
+  sessions     Session[]
+  waitlist     Waitlist[]
+
+  @@map("users")
+}
+
+// ──────────────────────────────────────
+// SESSIONS
+// ──────────────────────────────────────
+
+model Session {
+  id          String   @id @default(cuid())
+  userId      String
+  tokenHash   String   @unique
+  deviceType  String   @default("web") // "web" or "mobile"
+  deviceInfo  String?  // e.g. "Chrome · macOS", "Safari · iPhone"
+  ip          String?
+  lastActive  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceType])
+  @@map("sessions")
+}
+
+// ──────────────────────────────────────
+// ADMINS
+// ──────────────────────────────────────
+
+model Admin {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  password   String
+  name       String
+  role       String   @default("admin")
+  status      String   @default("Active")
+  customPages String?  // JSON array of page slugs — overrides role defaults when set
+  customActions String? // JSON array of granted action keys — e.g. ["payments.approve"]
+  lastActive  DateTime @default(now())
+  themePreference String @default("auto") // "auto" | "night" | "day"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("admins")
+}
+
+// ──────────────────────────────────────
+// SERVICES
+// ──────────────────────────────────────
+
+model Service {
+  id        String  @id @default(cuid())
+  apiId     Int
+  name      String
+  category  String
+  provider  String  @default("mtp") // 'mtp' | 'jap' | 'dao'
+  costPer1k Int
+  sellPer1k Int
+  markup    Int     @default(54)
+  min       Int     @default(100)
+  max       Int     @default(50000)
+  refill    Boolean @default(false)
+  avgTime   String  @default("0-2 hrs")
+  enabled   Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+  tiers  ServiceTier[]
+
+  @@unique([apiId, provider])
+  @@index([provider])
+  @@map("services")
+}
+
+// ──────────────────────────────────────
+// SERVICE GROUPS (Menu Builder)
+// ──────────────────────────────────────
+
+model ServiceGroup {
+  id       String  @id @default(cuid())
+  name     String
+  platform String
+  type     String  @default("Standard")
+  nigerian Boolean @default(false)
+  enabled  Boolean @default(true)
+  sortOrder Int    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tiers ServiceTier[]
+
+  @@map("service_groups")
+}
+
+model ServiceTier {
+  id        String  @id @default(cuid())
+  groupId   String
+  serviceId String?
+  tier      String  @default("Standard")
+  sellPer1k Int
+  refill    Boolean @default(false)
+  speed     String  @default("0-2 hrs")
+  enabled   Boolean @default(true)
+  sortOrder Int     @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group   ServiceGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  service Service?     @relation(fields: [serviceId], references: [id])
+  orders  Order[]
+
+  @@index([groupId])
+  @@index([serviceId])
+  @@map("service_tiers")
+}
+
+// ──────────────────────────────────────
+// ORDERS
+// ──────────────────────────────────────
+
+model Order {
+  id         String   @id @default(cuid())
+  orderId    String   @unique
+  userId     String
+  serviceId  String
+  link       String
+  quantity   Int
+  charge     Int
+  cost       Int
+  status          String   @default("Pending")
+  apiOrderId      String?
+  tierId          String?
+  batchId         String?
+  remains         Int?
+  comments        String?  @db.Text
+  retryCount      Int      @default(0)
+  lastError       String?
+  dispatchedAt    DateTime?
+  refundedAt      DateTime?
+  loyaltyDiscount Int      @default(0)
+  createdAt       DateTime @default(now())
+  deletedAt       DateTime?
+  updatedAt       DateTime @updatedAt
+
+  user    User         @relation(fields: [userId], references: [id])
+  service Service      @relation(fields: [serviceId], references: [id])
+  tier    ServiceTier? @relation(fields: [tierId], references: [id])
+
+  @@index([userId])
+  @@index([userId, batchId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+// ──────────────────────────────────────
+// TRANSACTIONS
+// ──────────────────────────────────────
+
+model Transaction {
+  id              String   @id @default(cuid())
+  userId          String
+  type            String
+  amount          Int
+  method          String?
+  reference       String?  @unique
+  idempotencyKey  String?
+  gatewayUrl      String?
+  status          String   @default("Completed")
+  note            String?
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+// ──────────────────────────────────────
+// SUPPORT TICKETS
+// ──────────────────────────────────────
+
+model Ticket {
+  id        String   @id @default(cuid())
+  ticketId  String   @unique
+  userId    String
+  subject   String
+  message   String
+  orderId   String?
+  status    String   @default("Open")
+  lockedBy      String?
+  lockedAt      DateTime?
+  unreadByAdmin Boolean  @default(true)
+  unreadByUser  Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user    User          @relation(fields: [userId], references: [id])
+  replies TicketReply[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("tickets")
+}
+
+model TicketReply {
+  id        String   @id @default(cuid())
+  ticketId  String
+  from      String
+  message   String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+
+  @@index([ticketId])
+  @@map("ticket_replies")
+}
+
+// ──────────────────────────────────────
+// ALERTS
+// ──────────────────────────────────────
+
+model Alert {
+  id        String    @id @default(cuid())
+  message   String
+  type      String    @default("info")
+  target    String    @default("both")
+  active    Boolean   @default(true)
+  createdBy String
+  expiresAt DateTime?
+  deletedAt  DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([active])
+  @@index([target])
+  @@map("alerts")
+}
+
+// ──────────────────────────────────────
+// ACTIVITY LOG
+// ──────────────────────────────────────
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  adminName String
+  action    String
+  type      String
+  createdAt DateTime @default(now())
+
+  @@index([adminName])
+  @@index([createdAt])
+  @@map("activity_log")
+}
+
+// ──────────────────────────────────────
+// SITE SETTINGS
+// ──────────────────────────────────────
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+// ──────────────────────────────────────
+// BLOG POSTS
+// ──────────────────────────────────────
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  excerpt     String?
+  content     String   @db.Text
+  category    String   @default("Tutorials")
+  thumbnail   String?
+  published   Boolean  @default(false)
+  showInHowTo Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  authorName  String
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([published])
+  @@index([showInHowTo])
+  @@index([category])
+  @@map("blog_posts")
+}
+
+// ──────────────────────────────────────
+// IDEMPOTENCY
+// ──────────────────────────────────────
+
+model IdempotencyKey {
+  key       String   @id
+  userId    String
+  batchId   String?
+  status    String   // 'processing' | 'completed' | 'failed'
+  response  Json?
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}
+
+// ──────────────────────────────────────
+// WAITLIST
+// ──────────────────────────────────────
+
+model Waitlist {
+  id        String   @id @default(cuid())
+  userId    String
+  feature   String
+  email     String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, feature])
+  @@map("waitlist")
+}
