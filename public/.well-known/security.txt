@@ -1,0 +1,3 @@
+Contact: mailto:TheNitroNG@gmail.com
+Preferred-Languages: en
+Canonical: https://nitro.ng/.well-known/security.txt

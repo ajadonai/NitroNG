@@ -1,0 +1,26 @@
+<svg width="1200" height="640" xmlns="http://www.w3.org/2000/svg">
+<rect width="1200" height="640" fill="#1a0f14"/>
+<circle cx="1000" cy="130" r="340" fill="#E1306C" opacity="0.07"/>
+<circle cx="1060" cy="210" r="200" fill="#E1306C" opacity="0.05"/>
+<polygon points="0,640 0,530 260,640" fill="#c47d8e" opacity="0.06"/>
+<rect x="740" y="110" width="360" height="270" rx="24" fill="rgba(225,48,108,0.04)" stroke="rgba(225,48,108,0.08)" stroke-width="1.5"/>
+<rect x="780" y="150" width="120" height="40" rx="10" fill="rgba(225,48,108,0.12)"/>
+<text x="840" y="177" font-family="system-ui" font-size="16" fill="#E1306C" text-anchor="middle" font-weight="600">+ 5,000</text>
+<rect x="780" y="210" width="280" height="1" fill="rgba(225,48,108,0.1)"/>
+<circle cx="810" cy="250" r="18" fill="rgba(225,48,108,0.1)" stroke="rgba(225,48,108,0.15)" stroke-width="1"/>
+<rect x="838" y="242" width="100" height="8" rx="4" fill="rgba(225,48,108,0.12)"/>
+<rect x="838" y="258" width="60" height="6" rx="3" fill="rgba(225,48,108,0.07)"/>
+<circle cx="810" cy="300" r="18" fill="rgba(225,48,108,0.1)" stroke="rgba(225,48,108,0.15)" stroke-width="1"/>
+<rect x="838" y="292" width="110" height="8" rx="4" fill="rgba(225,48,108,0.12)"/>
+<rect x="838" y="308" width="70" height="6" rx="3" fill="rgba(225,48,108,0.07)"/>
+<circle cx="810" cy="350" r="18" fill="rgba(225,48,108,0.1)" stroke="rgba(225,48,108,0.15)" stroke-width="1"/>
+<rect x="838" y="342" width="90" height="8" rx="4" fill="rgba(225,48,108,0.12)"/>
+<rect x="838" y="358" width="50" height="6" rx="3" fill="rgba(225,48,108,0.07)"/>
+<rect x="72" y="72" width="96" height="96" rx="24" fill="#E1306C"/>
+<rect x="96" y="96" width="48" height="48" rx="12" fill="none" stroke="white" stroke-width="3.5"/>
+<circle cx="120" cy="120" r="12" fill="none" stroke="white" stroke-width="3"/>
+<circle cx="140" cy="100" r="4" fill="white"/>
+<text x="80" y="440" font-family="Georgia, serif" font-size="56" fill="white" font-weight="700" letter-spacing="-1">Buy IG followers</text>
+<text x="80" y="516" font-family="Georgia, serif" font-size="56" fill="#E1306C" font-weight="700" letter-spacing="-1">Nigeria guide</text>
+<text x="80" y="590" font-family="system-ui" font-size="22" fill="rgba(255,255,255,0.3)" letter-spacing="6">NITRO BLOG</text>
+</svg>

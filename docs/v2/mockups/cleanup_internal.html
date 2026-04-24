@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nitro Cleanup â concept v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Cormorant+Garamond:wght@500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg-page: #f4f1ed;
+    --bg-alt: #e6e3dc;
+    --bg-surface: #ffffff;
+    --bg-muted: #f7f5f1;
+    --bg-hover: #ede9e3;
+    --border-soft: rgba(0, 0, 0, 0.08);
+    --border-strong: rgba(0, 0, 0, 0.14);
+    --text-primary: #1a1a1a;
+    --text-secondary: #5a5a5a;
+    --text-tertiary: #8a8a8a;
+    --accent: #c47d8e;
+    --accent-soft: #f5e6ea;
+    --accent-softer: rgba(196, 125, 142, 0.08);
+    --accent-hover: #b16d7e;
+    --tag-inactive-bg: #fff4dc;
+    --tag-inactive-fg: #8a5d0b;
+    --tag-nonfollower-bg: #ede9ff;
+    --tag-nonfollower-fg: #3e368f;
+    --tag-ghost-bg: #e4efff;
+    --tag-ghost-fg: #0e4a8a;
+    --tag-keep-bg: #e4f3d9;
+    --tag-keep-fg: #27500A;
+    --success-bg: #e4f3d9;
+    --success-fg: #27500A;
+    --danger: #c23a3a;
+    --danger-bg: #fbe7e7;
+    --font-ui: 'Outfit', system-ui, -apple-system, sans-serif;
+    --font-serif: 'Cormorant Garamond', Georgia, serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --shadow-soft: 0 1px 2px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02);
+    --shadow-bar: 0 -8px 24px rgba(0,0,0,0.06), 0 -2px 6px rgba(0,0,0,0.03);
+    --shadow-lift: 0 4px 14px rgba(196, 125, 142, 0.14);
+  }
+
+  [data-theme="dark"] {
+    --bg-page: #080b14;
+    --bg-alt: #0f1322;
+    --bg-surface: #12172a;
+    --bg-muted: #0f1322;
+    --bg-hover: #1a2038;
+    --border-soft: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --text-primary: #f0eee9;
+    --text-secondary: #a8a59e;
+    --text-tertiary: #6b6862;
+    --accent: #c47d8e;
+    --accent-soft: rgba(196, 125, 142, 0.18);
+    --accent-softer: rgba(196, 125, 142, 0.06);
+    --accent-hover: #d18e9e;
+    --tag-inactive-bg: rgba(239, 159, 39, 0.15);
+    --tag-inactive-fg: #f0b966;
+    --tag-nonfollower-bg: rgba(127, 119, 221, 0.20);
+    --tag-nonfollower-fg: #b3adf0;
+    --tag-ghost-bg: rgba(55, 138, 221, 0.18);
+    --tag-ghost-fg: #7fb0e4;
+    --tag-keep-bg: rgba(127, 184, 74, 0.18);
+    --tag-keep-fg: #b4db7a;
+    --success-bg: rgba(127, 184, 74, 0.18);
+    --success-fg: #b4db7a;
+    --shadow-soft: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-bar: 0 -8px 24px rgba(0,0,0,0.4);
+    --shadow-lift: 0 4px 14px rgba(196, 125, 142, 0.25);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font-ui); background: var(--bg-alt); color: var(--text-primary); min-height: 100vh; -webkit-font-smoothing: antialiased; transition: background 0.3s ease, color 0.3s ease; }
+  .shell { max-width: 1440px; margin: 0 auto; padding: 24px; }
+
+  .icon { display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
+  .icon svg { display: block; }
+
+  .page-doc-header { margin-bottom: 20px; }
+  .page-doc-header h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .page-doc-header p { font-size: 13px; color: var(--text-secondary); margin: 0; line-height: 1.5; }
+
+  .controls { background: var(--bg-surface); border: 1px solid var(--border-soft); border-radius: 14px; padding: 14px 18px; margin-bottom: 24px; display: flex; gap: 16px; flex-wrap: wrap; align-items: center; box-shadow: var(--shadow-soft); }
+  .control-group { display: flex; align-items: center; gap: 8px; }
+  .control-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-tertiary); font-weight: 500; }
+  .seg { display: inline-flex; background: var(--bg-muted); border-radius: 999px; padding: 3px; border: 1px solid var(--border-soft); }
+  .seg-btn { background: transparent; border: none; padding: 6px 12px; font-size: 12px; font-weight: 500; color: var(--text-secondary); cursor: pointer; border-radius: 999px; font-family: inherit; white-space: nowrap; }
+  .seg-btn.active { background: var(--accent); color: #fff; }
+  .theme-icon-btn { width: 34px; height: 34px; border-radius: 999px; background: var(--bg-muted); border: 1px solid var(--border-soft); color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+  .preview-frame { background: var(--bg-page); border: 1px solid var(--border-soft); border-radius: 14px; padding: 24px; min-height: 800px; display: flex; justify-content: center; }
+  .preview-viewport { width: 100%; transition: max-width 0.3s ease; background: var(--bg-alt); border-radius: 12px; padding: 16px; position: relative; }
+  .preview-viewport[data-bp="sm"] { max-width: 390px; padding: 10px; }
+  .preview-viewport[data-bp="md"] { max-width: 820px; }
+  .preview-viewport[data-bp="lg"] { max-width: 1100px; }
+  .preview-viewport[data-bp="xl"] { max-width: 1380px; }
+
+  .app-layout { display: grid; gap: 16px; position: relative; }
+  .sidebar { background: var(--bg-surface); border: 1px solid var(--border-soft); border-radius: 12px; padding: 16px; width: 180px; height: fit-content; }
+  .sidebar-brand { font-size: 15px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; letter-spacing: -0.01em; }
+  .sidebar-brand-dot { width: 20px; height: 20px; border-radius: 6px; background: var(--accent); }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; font-size: 12px; color: var(--text-secondary); margin-bottom: 2px; font-weight: 500; cursor: pointer; }
+  .nav-item.active { background: var(--accent-soft); color: var(--accent); }
+  .nav-svg { width: 14px; height: 14px; opacity: 0.7; }
+  .nav-item.active .nav-svg { opacity: 1; }
+  .nav-new { font-size: 9px; padding: 1px 6px; background: var(--accent); color: #fff; border-radius: 4px; margin-left: auto; letter-spacing: 0.4px; font-weight: 600; }
+
+  .preview-viewport[data-bp="lg"] .app-layout, .preview-viewport[data-bp="xl"] .app-layout { grid-template-columns: 180px 1fr; }
+  .preview-viewport[data-bp="sm"] .sidebar, .preview-viewport[data-bp="md"] .sidebar { display: none; }
+
+  .main {
+    min-width: 0; background: var(--bg-page); border-radius: 12px; padding: 20px;
+    display: flex; flex-direction: column; gap: 18px; position: relative;
+    min-height: 740px; padding-bottom: 90px;
+  }
+  .preview-viewport[data-bp="sm"] .main { padding: 14px; padding-bottom: 86px; gap: 14px; }
+  .main.no-bar { padding-bottom: 20px; }
+
+  .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+  .page-head-left h1 { font-size: 28px; font-weight: 500; margin: 0 0 4px; letter-spacing: -0.015em; }
+  .preview-viewport[data-bp="sm"] .page-head-left h1 { font-size: 22px; }
+  .page-head-left p { font-size: 13px; color: var(--text-secondary); margin: 0; }
+  .page-head-left p .mono { font-family: var(--font-mono); color: var(--accent); font-weight: 500; }
+
+  .balance-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--bg-surface); border: 1px solid var(--border-soft);
+    padding: 7px 12px; border-radius: 999px;
+    font-size: 12px; color: var(--text-secondary); font-weight: 500;
+  }
+  .balance-pill strong { color: var(--accent); font-weight: 500; font-size: 13px; }
+  .balance-pill-icon {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .reaudit-link {
+    font-size: 11.5px; color: var(--text-tertiary);
+    margin-top: 4px;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .reaudit-link a { color: var(--accent); text-decoration: none; font-weight: 500; cursor: pointer; }
+  .reaudit-link a:hover { text-decoration: underline; }
+
+  /* PLATFORM TABS */
+  .platform-tabs {
+    display: flex; gap: 6px; padding: 4px;
+    background: var(--bg-surface); border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .platform-tab {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 9px;
+    background: transparent; border: none;
+    font-size: 12.5px; font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer; font-family: inherit;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+  .platform-tab:not(.active):hover { background: var(--bg-muted); color: var(--text-primary); }
+  .platform-tab.active { background: var(--bg-muted); color: var(--text-primary); box-shadow: var(--shadow-soft); }
+  .platform-tab.disconnected { opacity: 0.55; }
+  .platform-tab.disconnected:hover { opacity: 0.85; }
+  .platform-tab.disconnected.active { opacity: 1; }
+
+  .platform-tab-icon {
+    width: 22px; height: 22px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; flex-shrink: 0;
+  }
+  .platform-tab.active .platform-tab-icon {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  .platform-tab.disconnected .platform-tab-icon { filter: grayscale(0.5); }
+  .platform-tab.disconnected.active .platform-tab-icon { filter: none; }
+
+  .pti-ig { background: linear-gradient(135deg, #f58529, #dd2a7b 60%, #8134af); }
+  .pti-tt { background: #000; }
+  .pti-x  { background: #1da1f2; }
+  [data-theme="dark"] .pti-tt { background: #f0eee9; color: #080b14; }
+
+  .platform-tab-count {
+    font-size: 10px; padding: 2px 7px; border-radius: 999px;
+    background: var(--bg-page); color: var(--text-tertiary);
+    font-weight: 500;
+  }
+  .platform-tab.active .platform-tab-count {
+    background: var(--accent-soft); color: var(--accent);
+  }
+  .platform-tab-status {
+    font-size: 10px; padding: 2px 7px; border-radius: 999px;
+    background: var(--bg-muted); color: var(--text-tertiary);
+    font-weight: 500;
+    display: inline-flex; align-items: center; gap: 4px;
+    letter-spacing: 0.2px;
+  }
+  .platform-tab.active .platform-tab-status {
+    background: var(--accent-soft); color: var(--accent);
+  }
+  .status-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .status-dot.connected { background: var(--success-fg); }
+  .status-dot.disconnected { background: var(--text-tertiary); }
+
+  /* INLINE CONNECT PROMPT (for unconnected platform tabs) */
+  .inline-connect {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 18px;
+    padding: 36px;
+    display: flex;
+    gap: 28px;
+    align-items: center;
+    box-shadow: var(--shadow-soft);
+  }
+  .preview-viewport[data-bp="sm"] .inline-connect,
+  .preview-viewport[data-bp="md"] .inline-connect { flex-direction: column; padding: 26px 22px; gap: 20px; text-align: center; }
+
+  .inline-connect-art {
+    flex-shrink: 0; width: 110px; height: 110px;
+    border-radius: 22px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+  }
+  .inline-connect-art.ig { background: linear-gradient(135deg, #f58529, #dd2a7b 60%, #8134af); }
+  .inline-connect-art.tt { background: linear-gradient(135deg, #25f4ee 0%, #000 50%, #fe2c55 100%); }
+  .inline-connect-art.x { background: linear-gradient(135deg, #1da1f2 0%, #0d8bd9 100%); }
+  .inline-connect-art svg { width: 50px; height: 50px; }
+
+  .inline-connect-copy { flex: 1; min-width: 0; }
+  .inline-connect-copy h2 {
+    font-family: var(--font-serif); font-size: 26px; font-weight: 500;
+    margin: 0 0 8px; letter-spacing: -0.01em; line-height: 1.15;
+  }
+  .preview-viewport[data-bp="sm"] .inline-connect-copy h2 { font-size: 22px; }
+  .inline-connect-copy .lead {
+    font-size: 13.5px; color: var(--text-secondary); line-height: 1.55; margin: 0 0 16px;
+  }
+  .inline-connect-bullets {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    margin-bottom: 18px;
+    font-size: 11.5px; color: var(--text-secondary);
+  }
+  .preview-viewport[data-bp="sm"] .inline-connect-bullets { justify-content: center; }
+  .inline-connect-bullet { display: inline-flex; align-items: center; gap: 6px; }
+  .inline-connect-bullet-icon {
+    width: 16px; height: 16px; border-radius: 4px;
+    background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .inline-connect-bullet-icon svg { width: 10px; height: 10px; }
+  .inline-connect-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .preview-viewport[data-bp="sm"] .inline-connect-actions { justify-content: center; }
+
+  /* Analytics nudge */
+  .nudge-line {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: var(--accent-softer);
+    border: 1px solid var(--accent-soft);
+    border-radius: 10px;
+    font-size: 12px; color: var(--text-secondary);
+  }
+  .nudge-line strong { color: var(--accent); font-weight: 500; }
+  .nudge-icon-wrap {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* PRESETS */
+  .presets-section h3 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-tertiary); font-weight: 500; margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .presets-section h3::after { content: ''; flex: 1; height: 1px; background: var(--border-soft); }
+  .presets-grid { display: grid; gap: 10px; }
+  .preview-viewport[data-bp="md"] .presets-grid,
+  .preview-viewport[data-bp="lg"] .presets-grid,
+  .preview-viewport[data-bp="xl"] .presets-grid { grid-template-columns: repeat(4, 1fr); }
+  .preview-viewport[data-bp="sm"] .presets-grid { grid-template-columns: repeat(2, 1fr); }
+  .preset-card {
+    background: var(--bg-surface); border: 1px solid var(--border-soft);
+    border-radius: 12px; padding: 12px 14px;
+    cursor: pointer; transition: all 0.15s ease;
+    text-align: left; font-family: inherit;
+  }
+  .preset-card:hover {
+    border-color: rgba(196, 125, 142, 0.3);
+    box-shadow: var(--shadow-lift); transform: translateY(-1px);
+  }
+  .preset-card.active { border-color: var(--accent); background: var(--accent-softer); }
+  .preset-card-head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+  }
+  .preset-icon-wrap {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .preset-icon-wrap svg { width: 14px; height: 14px; }
+  .preset-card-name {
+    font-size: 13px; font-weight: 500; color: var(--text-primary); flex: 1;
+  }
+  .preset-card-pop {
+    font-size: 9.5px;
+    background: var(--accent-soft); color: var(--accent);
+    padding: 2px 6px; border-radius: 999px;
+    font-weight: 500; letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  .preset-card-desc {
+    font-size: 11px; color: var(--text-secondary); line-height: 1.45; margin-bottom: 8px;
+  }
+  .preset-card-foot {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10.5px; color: var(--text-tertiary);
+  }
+  .preset-card-count strong { color: var(--text-primary); font-weight: 500; }
+  .preset-card-price { color: var(--accent); font-weight: 500; }
+
+  /* AUDIT SUMMARY */
+  .audit-summary-grid { display: grid; gap: 10px; }
+  .preview-viewport[data-bp="md"] .audit-summary-grid,
+  .preview-viewport[data-bp="lg"] .audit-summary-grid,
+  .preview-viewport[data-bp="xl"] .audit-summary-grid { grid-template-columns: repeat(4, 1fr); }
+  .preview-viewport[data-bp="sm"] .audit-summary-grid { grid-template-columns: repeat(2, 1fr); }
+  .summary-card {
+    background: var(--bg-surface); border: 1px solid var(--border-soft);
+    border-radius: 12px; padding: 12px 14px;
+    cursor: pointer; transition: all 0.15s ease;
+    position: relative;
+    text-align: left; font-family: inherit;
+  }
+  .summary-card:hover { border-color: rgba(196, 125, 142, 0.3); box-shadow: var(--shadow-lift); transform: translateY(-1px); }
+  .summary-card.active { border-color: var(--accent); background: var(--accent-softer); }
+  .summary-card.active::before {
+    content: ''; position: absolute; top: 10px; right: 12px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--accent);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+    background-size: 11px;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  .summary-num { font-size: 22px; font-weight: 500; color: var(--text-primary); letter-spacing: -0.01em; line-height: 1; }
+  .summary-label { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+  .summary-tag {
+    display: inline-block; margin-top: 6px;
+    font-size: 9.5px; padding: 2px 7px; border-radius: 999px;
+    font-weight: 500; letter-spacing: 0.4px; text-transform: uppercase;
+  }
+  .summary-tag.inactive { background: var(--tag-inactive-bg); color: var(--tag-inactive-fg); }
+  .summary-tag.nonfollower { background: var(--tag-nonfollower-bg); color: var(--tag-nonfollower-fg); }
+  .summary-tag.ghost { background: var(--tag-ghost-bg); color: var(--tag-ghost-fg); }
+  .summary-tag.keep { background: var(--tag-keep-bg); color: var(--tag-keep-fg); }
+
+  /* List */
+  .list-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .list-search {
+    flex: 1; min-width: 180px;
+    background: var(--bg-surface); border: 1px solid var(--border-soft);
+    border-radius: 10px; padding: 8px 14px;
+    font-size: 12.5px; font-family: inherit; color: var(--text-primary);
+  }
+  .list-search:focus { outline: none; border-color: var(--accent); }
+  .sort-pill {
+    background: var(--bg-surface); border: 1px solid var(--border-soft);
+    padding: 8px 12px; border-radius: 10px;
+    font-size: 12px; color: var(--text-secondary); cursor: pointer; font-family: inherit;
+    font-weight: 500;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+
+  .filter-pills { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .filter-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; background: var(--bg-surface); border: 1px solid var(--border-soft);
+    border-radius: 999px; font-size: 11.5px; color: var(--text-secondary);
+    cursor: pointer; font-family: inherit; font-weight: 500;
+  }
+  .filter-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .filter-pill .pill-count {
+    background: rgba(255,255,255,0.3); padding: 1px 7px; border-radius: 999px;
+    font-size: 10px; font-weight: 600;
+  }
+  .filter-pill:not(.active) .pill-count { background: var(--bg-muted); color: var(--text-tertiary); }
+
+  .accounts-list { display: flex; flex-direction: column; gap: 8px; }
+  .account-row {
+    background: var(--bg-surface); border: 1px solid var(--border-soft);
+    border-radius: 12px; padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+    transition: all 0.15s ease;
+  }
+  .account-row.selected { border-color: var(--accent); background: var(--accent-softer); }
+  .account-row.persistent-whitelist {
+    border-color: var(--success-fg);
+    border-style: dashed;
+  }
+
+  .check-box {
+    width: 20px; height: 20px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border-strong);
+    background: var(--bg-surface);
+    cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .account-row.selected .check-box {
+    background: var(--accent); border-color: var(--accent);
+  }
+  .account-row.selected .check-box svg { color: #fff; }
+  .check-box svg { width: 12px; height: 12px; color: transparent; }
+
+  .account-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #d4a395);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 600; font-size: 14px;
+    flex-shrink: 0;
+  }
+  .account-meta { flex: 1; min-width: 0; }
+  .account-handle-row { display: flex; align-items: center; gap: 6px; }
+  .account-handle {
+    font-family: var(--font-mono); font-size: 12.5px; font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .persistent-badge {
+    font-size: 9.5px; padding: 1px 6px; border-radius: 4px;
+    background: var(--success-bg); color: var(--success-fg);
+    font-weight: 500; letter-spacing: 0.3px;
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .persistent-badge svg { width: 9px; height: 9px; }
+  .account-name { font-size: 11.5px; color: var(--text-secondary); margin-top: 1px; }
+  .preview-viewport[data-bp="sm"] .account-name { display: none; }
+
+  .account-stats {
+    font-size: 11px; color: var(--text-tertiary); flex-shrink: 0;
+  }
+  .preview-viewport[data-bp="sm"] .account-stats { display: none; }
+  .preview-viewport[data-bp="md"] .account-stats { font-size: 10.5px; }
+
+  .account-tags { display: flex; gap: 4px; flex-shrink: 0; flex-wrap: wrap; }
+  .account-tag {
+    font-size: 10px; padding: 2px 8px; border-radius: 999px;
+    font-weight: 500; letter-spacing: 0.3px;
+  }
+  .account-tag.inactive { background: var(--tag-inactive-bg); color: var(--tag-inactive-fg); }
+  .account-tag.nonfollower { background: var(--tag-nonfollower-bg); color: var(--tag-nonfollower-fg); }
+  .account-tag.ghost { background: var(--tag-ghost-bg); color: var(--tag-ghost-fg); }
+
+  .keep-btn {
+    background: transparent; border: 1px solid var(--border-soft);
+    color: var(--text-tertiary);
+    padding: 5px 10px; border-radius: 7px;
+    font-size: 10.5px; font-weight: 500; cursor: pointer;
+    font-family: inherit; flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .keep-btn:hover { color: var(--success-fg); border-color: var(--success-fg); }
+  .account-row.persistent-whitelist .keep-btn,
+  .account-row.whitelisted .keep-btn {
+    background: var(--success-fg); color: #fff; border-color: var(--success-fg);
+  }
+  .keep-btn svg { width: 10px; height: 10px; }
+  .preview-viewport[data-bp="sm"] .keep-btn { display: none; }
+
+  /* PROJECTED OUTCOME */
+  .projected-card {
+    background: linear-gradient(135deg, var(--accent-softer) 0%, var(--bg-surface) 100%);
+    border: 1px solid var(--accent-soft);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .projected-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .projected-icon svg { width: 18px; height: 18px; }
+  .projected-text { flex: 1; min-width: 200px; }
+  .projected-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-tertiary); font-weight: 500; margin-bottom: 2px;
+  }
+  .projected-summary {
+    font-size: 13px; color: var(--text-primary); line-height: 1.45;
+  }
+  .projected-summary strong { color: var(--accent); font-weight: 500; }
+  .projected-stats { display: flex; gap: 16px; flex-shrink: 0; }
+  .preview-viewport[data-bp="sm"] .projected-stats { width: 100%; justify-content: space-between; }
+  .projected-stat { text-align: right; }
+  .preview-viewport[data-bp="sm"] .projected-stat { text-align: left; }
+  .projected-stat-label {
+    font-size: 10px; color: var(--text-tertiary);
+    text-transform: uppercase; letter-spacing: 1px; font-weight: 500;
+  }
+  .projected-stat-val {
+    font-size: 14px; color: var(--text-primary); font-weight: 500; margin-top: 1px;
+  }
+
+  /* ACTION BAR */
+  .action-bar {
+    position: absolute;
+    bottom: 20px; left: 20px; right: 20px;
+    background: var(--bg-surface);
+    border: 1px solid rgba(196, 125, 142, 0.2);
+    border-radius: 14px;
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 16px;
+    box-shadow: var(--shadow-bar);
+    min-height: 62px;
+    z-index: 5;
+  }
+  .preview-viewport[data-bp="sm"] .action-bar { left: 14px; right: 14px; bottom: 14px; padding: 12px 14px; gap: 10px; }
+  .action-bar.empty { opacity: 0.85; border-color: var(--border-soft); }
+  .action-bar.insufficient { border-color: var(--danger); background: var(--danger-bg); }
+
+  .action-left { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .action-icon-wrap {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .action-icon-wrap svg { width: 18px; height: 18px; }
+  .action-bar.empty .action-icon-wrap { background: var(--bg-muted); color: var(--text-tertiary); }
+  .action-bar.insufficient .action-icon-wrap { background: rgba(194, 58, 58, 0.15); color: var(--danger); }
+  .action-id { display: flex; flex-direction: column; gap: 1px; }
+  .action-count { font-size: 13.5px; font-weight: 500; color: var(--text-primary); letter-spacing: -0.005em; }
+  .action-bar.empty .action-count { color: var(--text-secondary); }
+  .action-sub { font-size: 10.5px; color: var(--text-tertiary); letter-spacing: 0.1px; }
+
+  .action-middle {
+    flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0;
+  }
+  .preview-viewport[data-bp="sm"] .action-middle { display: none; }
+  .pace-display {
+    background: var(--bg-muted);
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .pace-display strong { color: var(--text-primary); font-weight: 500; }
+  .pace-icon { color: var(--accent); }
+  .pace-icon svg { width: 12px; height: 12px; }
+
+  .action-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .action-price-block { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+  .action-price-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-tertiary); font-weight: 500; }
+  .preview-viewport[data-bp="sm"] .action-price-label { display: none; }
+  .action-price-amt { font-size: 17px; font-weight: 500; color: var(--accent); letter-spacing: -0.01em; }
+  .action-bar.empty .action-price-amt { color: var(--text-tertiary); font-size: 12px; font-weight: 400; }
+  .action-balance-line {
+    font-size: 10px; color: var(--text-tertiary); margin-top: 2px;
+  }
+  .action-balance-line.insufficient { color: var(--danger); font-weight: 500; }
+
+  .action-cta-btn {
+    background: var(--accent); color: #fff;
+    border: none; padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 12.5px; font-weight: 500;
+    cursor: pointer; font-family: inherit;
+    letter-spacing: 0.3px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .action-cta-btn:hover { background: var(--accent-hover); }
+  .action-cta-btn.danger { background: var(--danger); }
+  .action-cta-btn svg { width: 12px; height: 12px; }
+
+  /* STATE 1: Connect hero */
+  .connect-hero {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 18px;
+    padding: 40px 36px;
+    display: flex;
+    gap: 32px;
+    align-items: center;
+    box-shadow: var(--shadow-soft);
+    position: relative;
+    overflow: hidden;
+  }
+  .preview-viewport[data-bp="sm"] .connect-hero,
+  .preview-viewport[data-bp="md"] .connect-hero { flex-direction: column; padding: 28px 22px; gap: 22px; text-align: center; }
+
+  .free-trial-banner {
+    position: absolute; top: 16px; right: 16px;
+    background: var(--accent); color: #fff;
+    padding: 6px 12px; border-radius: 999px;
+    font-size: 10.5px; font-weight: 500; letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 6px;
+    box-shadow: var(--shadow-lift);
+  }
+  .free-trial-banner svg { width: 11px; height: 11px; }
+  .preview-viewport[data-bp="sm"] .free-trial-banner { position: static; align-self: center; margin-bottom: 8px; }
+
+  .connect-art {
+    flex-shrink: 0;
+    width: 180px; height: 180px;
+    background: linear-gradient(135deg, #f5e6ea 0%, #ffd9c4 100%);
+    border-radius: 22px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent);
+  }
+  .connect-art svg { width: 80px; height: 80px; }
+  [data-theme="dark"] .connect-art {
+    background: linear-gradient(135deg, rgba(196, 125, 142, 0.25) 0%, rgba(231, 145, 100, 0.25) 100%);
+  }
+  .preview-viewport[data-bp="sm"] .connect-art { width: 140px; height: 140px; }
+  .preview-viewport[data-bp="sm"] .connect-art svg { width: 64px; height: 64px; }
+
+  .connect-copy { flex: 1; }
+  .connect-copy h2 {
+    font-family: var(--font-serif); font-size: 32px; font-weight: 500;
+    margin: 0 0 8px; letter-spacing: -0.01em; line-height: 1.15;
+  }
+  .preview-viewport[data-bp="sm"] .connect-copy h2 { font-size: 26px; }
+  .connect-copy .lead {
+    font-size: 14.5px; color: var(--text-secondary); line-height: 1.55;
+    margin: 0 0 18px;
+  }
+  .connect-copy .lead strong { color: var(--text-primary); font-weight: 500; }
+
+  .platforms-supported {
+    display: flex; gap: 8px; align-items: center;
+    margin-bottom: 18px;
+    font-size: 11.5px; color: var(--text-tertiary);
+    flex-wrap: wrap;
+  }
+  .preview-viewport[data-bp="sm"] .platforms-supported { justify-content: center; }
+  .platforms-supported-list { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .platform-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--bg-muted); padding: 4px 9px; border-radius: 999px;
+    font-size: 11px; color: var(--text-secondary); font-weight: 500;
+  }
+  .platform-pill .platform-tab-icon { width: 14px; height: 14px; border-radius: 4px; }
+
+  .connect-bullets {
+    display: grid; gap: 12px;
+    margin-bottom: 22px;
+  }
+  .preview-viewport[data-bp="lg"] .connect-bullets,
+  .preview-viewport[data-bp="xl"] .connect-bullets { grid-template-columns: 1fr 1fr; }
+  .connect-bullet {
+    display: flex; gap: 10px; align-items: flex-start;
+    font-size: 12.5px; color: var(--text-secondary); line-height: 1.5;
+  }
+  .connect-bullet-icon {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .connect-bullet-icon svg { width: 12px; height: 12px; }
+  .connect-bullet strong { color: var(--text-primary); font-weight: 500; }
+
+  .connect-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .preview-viewport[data-bp="sm"] .connect-actions { justify-content: center; }
+  .btn-primary {
+    background: var(--accent); color: #fff; border: none;
+    padding: 11px 22px; border-radius: 10px;
+    font-size: 13px; font-weight: 500; font-family: inherit;
+    letter-spacing: 0.3px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-primary svg { width: 14px; height: 14px; }
+  .btn-ghost {
+    background: transparent; color: var(--text-secondary); border: 1px solid var(--border-soft);
+    padding: 11px 18px; border-radius: 10px;
+    font-size: 13px; font-weight: 500; font-family: inherit;
+    cursor: pointer;
+  }
+  .free-trial-note {
+    font-size: 11.5px; color: var(--success-fg); font-weight: 500;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .free-trial-note svg { width: 11px; height: 11px; }
+
+  .trust-row {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    margin-top: 18px;
+    font-size: 11px; color: var(--text-tertiary);
+  }
+  .trust-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 999px;
+    background: var(--bg-muted); color: var(--text-secondary);
+    font-size: 10.5px; font-weight: 500;
+  }
+  .trust-pill-icon { width: 4px; height: 4px; border-radius: 50%; background: var(--success-fg); }
+
+  /* PROGRESS state */
+  .progress-card {
+    background: var(--bg-surface); border: 1px solid var(--border-soft);
+    border-radius: 18px; padding: 32px;
+  }
+  .progress-head { display: flex; align-items: flex-start; gap: 18px; margin-bottom: 24px; flex-wrap: wrap; }
+  .progress-handle-wrap { flex: 1; min-width: 0; }
+  .progress-handle {
+    font-family: var(--font-mono); font-size: 14px; color: var(--accent); font-weight: 500;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .progress-platform-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--bg-muted); padding: 3px 9px; border-radius: 999px;
+    font-size: 10.5px; color: var(--text-secondary); font-weight: 500;
+  }
+  .progress-platform-tag .platform-tab-icon { width: 16px; height: 16px; border-radius: 4px; }
+  .progress-card h2 { font-family: var(--font-serif); font-size: 26px; font-weight: 500; margin: 4px 0 0; letter-spacing: -0.01em; }
+  .preview-viewport[data-bp="sm"] .progress-card h2 { font-size: 22px; }
+
+  .live-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--success-bg); color: var(--success-fg);
+    padding: 6px 12px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 500;
+    border: 1px solid var(--success-fg);
+  }
+  .live-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--success-fg);
+    animation: pulse-dot 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  .big-progress-ring {
+    width: 140px; height: 140px;
+    margin: 0 auto 12px;
+    position: relative;
+  }
+  .ring-bg, .ring-fg { fill: none; stroke-width: 10; }
+  .ring-bg { stroke: var(--bg-muted); }
+  .ring-fg { stroke: var(--accent); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; }
+  .ring-pct {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+  }
+  .ring-pct-num { font-size: 28px; font-weight: 500; color: var(--text-primary); letter-spacing: -0.01em; }
+  .ring-pct-sub { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 500; }
+
+  .progress-grid {
+    display: grid; gap: 12px; margin-top: 18px;
+  }
+  .preview-viewport[data-bp="md"] .progress-grid,
+  .preview-viewport[data-bp="lg"] .progress-grid,
+  .preview-viewport[data-bp="xl"] .progress-grid { grid-template-columns: repeat(4, 1fr); }
+  .preview-viewport[data-bp="sm"] .progress-grid { grid-template-columns: repeat(2, 1fr); }
+
+  .progress-stat {
+    background: var(--bg-muted); border-radius: 10px; padding: 12px 14px;
+  }
+  .progress-stat-num { font-size: 18px; font-weight: 500; color: var(--text-primary); letter-spacing: -0.01em; }
+  .progress-stat-label { font-size: 10.5px; color: var(--text-tertiary); margin-top: 2px; text-transform: uppercase; letter-spacing: 1px; font-weight: 500; }
+
+  .activity-list {
+    background: var(--bg-surface); border: 1px solid var(--border-soft);
+    border-radius: 14px; padding: 18px;
+  }
+  .activity-list h3 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-tertiary); font-weight: 500; margin: 0 0 12px;
+  }
+  .activity-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border-soft);
+    font-size: 12px;
+  }
+  .activity-row:last-child { border-bottom: none; }
+  .activity-status {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  }
+  .activity-status.unfollowed { background: var(--success-fg); }
+  .activity-status.skipped { background: var(--tag-inactive-fg); }
+  .activity-handle { font-family: var(--font-mono); color: var(--text-primary); font-weight: 500; }
+  .activity-action { color: var(--text-tertiary); font-size: 11px; }
+  .activity-time { margin-left: auto; font-size: 10.5px; color: var(--text-tertiary); font-family: var(--font-mono); }
+
+  .promise-note {
+    background: var(--accent-softer); border: 1px solid var(--accent-soft);
+    border-radius: 10px; padding: 12px 14px;
+    font-size: 12px; color: var(--text-secondary); line-height: 1.55;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .promise-note strong { color: var(--accent); font-weight: 500; }
+  .promise-icon-wrap {
+    width: 22px; height: 22px; border-radius: 6px; background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .promise-icon-wrap svg { width: 12px; height: 12px; }
+
+  /* Footer description */
+  .footer-description { margin-top: 24px; padding: 22px 26px; background: var(--bg-surface); border: 1px solid var(--border-soft); border-radius: 14px; font-size: 13px; line-height: 1.7; color: var(--text-secondary); }
+  .footer-description strong { color: var(--text-primary); font-weight: 500; }
+  .footer-description h3 { font-size: 11px; letter-spacing: 1.5px; color: var(--text-tertiary); margin: 0 0 10px; font-weight: 500; text-transform: uppercase; }
+  .footer-description h3:not(:first-child) { margin-top: 18px; }
+  .footer-description ul { margin: 0 0 12px; padding: 0 0 0 18px; }
+  .footer-description li { margin-bottom: 6px; }
+</style>
+</head>
+<body data-theme="light">
+
+<!-- SVG ICON DEFINITIONS (sprite) -->
+<svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+  <defs>
+    <symbol id="i-overview" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 14 9 21 11 14 13 12 20 10 13 3 11 10 9 12 2"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v10a3 3 0 0 0 3 3h13a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2H6a3 3 0 0 1-3-3 0 0 0 1 1 0 0z"/><circle cx="17" cy="13" r="1.3"/></symbol>
+    <symbol id="i-people" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/><circle cx="17" cy="6.5" r="2.5"/><path d="M22 14.5v-.5a3.5 3.5 0 0 0-3.5-3.5h-.5"/></symbol>
+    <symbol id="i-broom" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3l7 7"/><path d="M16 5l-7 7"/><path d="M9 12l-3 3 6 6 3-3"/><path d="M3 21l5-5"/><path d="M5 18l3 3"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h4"/></symbol>
+    <symbol id="i-life" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5l8-3z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h2L9 4h6l1.5 2h2A2.5 2.5 0 0 1 21 8.5v9A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+    <symbol id="i-tiktok" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5.8 20.1a6.34 6.34 0 0 0 10.86-4.43V8.6a8.16 8.16 0 0 0 4.77 1.52V6.69h-1.84z"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817-5.967 6.817H1.677l7.73-8.835L1.254 2.25h6.83l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-trend" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+    <symbol id="i-tornado" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="4" x2="21" y2="4"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="7" y1="14" x2="17" y2="14"/><line x1="9" y1="19" x2="15" y2="19"/></symbol>
+    <symbol id="i-ghost" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8v11l3-2 3 2 2-2 2 2 3-2 3 2V10a8 8 0 0 0-8-8z"/><circle cx="9" cy="11" r="1"/><circle cx="15" cy="11" r="1"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+    <symbol id="i-sort" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M6 12h12"/><path d="M9 18h6"/></symbol>
+    <symbol id="i-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-naira" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16"/><path d="M18 4v16"/><path d="M6 4l12 16"/><path d="M3 9h18"/><path d="M3 15h18"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"/></symbol>
+  </defs>
+</svg>
+
+<div class="shell">
+
+  <div class="page-doc-header">
+    <h1>Nitro Cleanup â concept v3</h1>
+    <p>Per-platform connection states. Inline connect prompt when user taps a disconnected tab. Proper SVG icon system throughout â no emoji.</p>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <span class="control-label">Breakpoint</span>
+      <div class="seg" id="seg-bp">
+        <button class="seg-btn" data-bp="sm">sm Â· 375</button>
+        <button class="seg-btn" data-bp="md">md Â· 768</button>
+        <button class="seg-btn" data-bp="lg">lg Â· 1024</button>
+        <button class="seg-btn active" data-bp="xl">xl Â· 1280</button>
+      </div>
+    </div>
+    <div class="control-group">
+      <span class="control-label">State</span>
+      <div class="seg" id="seg-state">
+        <button class="seg-btn" data-state="connect">1 Â· First-time</button>
+        <button class="seg-btn active" data-state="audit">2 Â· IG audit (connected)</button>
+        <button class="seg-btn" data-state="connect-tt">3 Â· TikTok inline-connect</button>
+        <button class="seg-btn" data-state="insufficient">4 Â· Low balance</button>
+        <button class="seg-btn" data-state="progress">5 Â· Cleanup running</button>
+      </div>
+    </div>
+    <div class="control-group" style="margin-left: auto;">
+      <button class="theme-icon-btn" id="theme-toggle"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+    </div>
+  </div>
+
+  <div class="preview-frame">
+    <div class="preview-viewport" data-bp="xl" id="viewport">
+      <div class="app-layout">
+
+        <div class="sidebar">
+          <div class="sidebar-brand"><div class="sidebar-brand-dot"></div>Nitro</div>
+          <div class="nav-item">
+            <span class="icon"><svg class="nav-svg"><use href="#i-overview"/></svg></span>
+            Overview
+          </div>
+          <div class="nav-item">
+            <span class="icon"><svg class="nav-svg"><use href="#i-plus"/></svg></span>
+            New order
+          </div>
+          <div class="nav-item">
+            <span class="icon"><svg class="nav-svg"><use href="#i-clock"/></svg></span>
+            History
+          </div>
+          <div class="nav-item">
+            <span class="icon"><svg class="nav-svg"><use href="#i-trend"/></svg></span>
+            Audit
+          </div>
+          <div class="nav-item active">
+            <span class="icon"><svg class="nav-svg"><use href="#i-broom"/></svg></span>
+            Cleanup
+            <span class="nav-new">NEW</span>
+          </div>
+          <div class="nav-item">
+            <span class="icon"><svg class="nav-svg"><use href="#i-wallet"/></svg></span>
+            Wallet
+          </div>
+          <div class="nav-item">
+            <span class="icon"><svg class="nav-svg"><use href="#i-gift"/></svg></span>
+            Referrals
+          </div>
+          <div class="nav-item">
+            <span class="icon"><svg class="nav-svg"><use href="#i-life"/></svg></span>
+            Support
+          </div>
+        </div>
+
+        <div class="main" id="main-area"></div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-description">
+    <h3>Per-platform connection model</h3>
+    <ul>
+      <li><strong>Each platform connects independently.</strong> Connecting Instagram doesn't connect TikTok. The user manages each platform's session separately on their own device.</li>
+      <li><strong>Tabs always show all 3 platforms,</strong> even unconnected ones â surfaces capability, signals "this works on multiple platforms."</li>
+      <li><strong>Connected platforms</strong> show their suggested-cleanup count on the tab. Tapping switches the audit view to that platform.</li>
+      <li><strong>Disconnected platforms</strong> show "Connect" instead of a count, slightly muted. Tapping swaps the page body for an inline connect prompt scoped to that platform's branding.</li>
+      <li><strong>Inline connect</strong> stays on the same page â no modal, no full-page redirect. Single CTA, then the audit auto-runs after connection completes.</li>
+    </ul>
+    <h3>Re-audit affordance</h3>
+    <ul>
+      <li>Below the page subtitle on connected platforms: "Last audited 2d ago Â· <strong>Re-scan</strong>" â small accent link, runs a fresh audit. Important because the user's following list changes daily.</li>
+    </ul>
+    <h3>SVG icon system</h3>
+    <ul>
+      <li>Single SVG sprite at the top of the document with all icons defined as <code>&lt;symbol&gt;</code>. Used via <code>&lt;use href="#i-..."/&gt;</code> throughout. Stroke-based, 1.8 stroke-width default for harmony, all use <code>currentColor</code> so theme switching works automatically.</li>
+      <li>No emoji anywhere. Every icon is a proper SVG with consistent visual weight.</li>
+      <li>Platform tab icons (IG, TikTok, X) are inline SVG with brand-correct colors and gradients.</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+  const state = { bp: 'xl', stateName: 'audit', theme: 'light', platform: 'ig' };
+
+  const PLATFORMS = {
+    ig: { name: 'Instagram', shortLabel: 'IG', handle: '@temsbaby', following: 2847, connected: true, suggested: 847 },
+    tt: { name: 'TikTok', shortLabel: 'TT', handle: '@temsbaby_tt', following: 1240, connected: false, suggested: 0 },
+    x:  { name: 'X', shortLabel: 'X', handle: '@temsbabyx', following: 3120, connected: false, suggested: 0 }
+  };
+
+  const PLATFORM_TAB_ICON = {
+    ig: '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.7 3.7 0 0 1-1.38-.9 3.7 3.7 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41 1.27-.06 1.65-.07 4.85-.07M12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.33 4.14.63a5.86 5.86 0 0 0-2.13 1.38A5.86 5.86 0 0 0 .63 4.14C.33 4.9.13 5.78.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.26 2.15.56 2.91.31.79.73 1.46 1.38 2.13a5.86 5.86 0 0 0 2.13 1.38c.76.3 1.64.5 2.91.56 1.28.06 1.69.07 4.95.07s3.67-.01 4.95-.07c1.27-.06 2.15-.26 2.91-.56a5.86 5.86 0 0 0 2.13-1.38 5.86 5.86 0 0 0 1.38-2.13c.3-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.26-2.15-.56-2.91a5.86 5.86 0 0 0-1.38-2.13A5.86 5.86 0 0 0 19.86.63c-.76-.3-1.64-.5-2.91-.56C15.67.01 15.26 0 12 0zm0 5.84a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.41-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88z"/></svg>',
+    tt: '<svg width="12" height="12"><use href="#i-tiktok"/></svg>',
+    x:  '<svg width="11" height="11"><use href="#i-x"/></svg>'
+  };
+
+  function renderConnect() {
+    return `
+      <div class="page-head">
+        <div class="page-head-left">
+          <h1>Cleanup</h1>
+          <p>Clean up who you follow on Instagram, TikTok, and X. Bring your following list back to people who matter.</p>
+        </div>
+      </div>
+
+      <div class="connect-hero">
+        <span class="free-trial-banner">
+          <svg><use href="#i-bolt"/></svg>
+          First 50 unfollows free
+        </span>
+        <div class="connect-art">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 3l7 7"/><path d="M16 5l-7 7"/>
+            <path d="M9 12l-3 3 6 6 3-3"/>
+            <path d="M3 21l5-5"/><path d="M5 18l3 3"/>
+          </svg>
+        </div>
+        <div class="connect-copy">
+          <h2>Tidy up who you follow â without putting your account at risk.</h2>
+          <p class="lead">
+            Find <strong>inactive accounts</strong>, <strong>people who don't follow back</strong>, and <strong>ghost engagers</strong>.
+            Pick what to remove. Cleanup runs slowly in the background to keep your account safe.
+          </p>
+
+          <div class="platforms-supported">
+            <span>Works on:</span>
+            <div class="platforms-supported-list">
+              <span class="platform-pill"><span class="platform-tab-icon pti-ig">${PLATFORM_TAB_ICON.ig}</span>Instagram</span>
+              <span class="platform-pill"><span class="platform-tab-icon pti-tt">${PLATFORM_TAB_ICON.tt}</span>TikTok</span>
+              <span class="platform-pill"><span class="platform-tab-icon pti-x">${PLATFORM_TAB_ICON.x}</span>X</span>
+            </div>
+          </div>
+
+          <div class="connect-bullets">
+            <div class="connect-bullet">
+              <div class="connect-bullet-icon"><svg><use href="#i-shield"/></svg></div>
+              <div><strong>We never see your password.</strong> Cleanup runs on your device. Nitro never stores your social account credentials.</div>
+            </div>
+            <div class="connect-bullet">
+              <div class="connect-bullet-icon"><svg><use href="#i-clock"/></svg></div>
+              <div><strong>Slow and steady.</strong> Unfollows happen at human pace over hours or days â undetectable as automation.</div>
+            </div>
+            <div class="connect-bullet">
+              <div class="connect-bullet-icon"><svg><use href="#i-pause"/></svg></div>
+              <div><strong>Pause if flagged.</strong> If your platform gets suspicious, we automatically pause and resume only when it's safe.</div>
+            </div>
+            <div class="connect-bullet">
+              <div class="connect-bullet-icon"><svg><use href="#i-check"/></svg></div>
+              <div><strong>Persistent whitelist.</strong> Whitelisted accounts stay whitelisted across cleanups â never accidentally unfollow your favorites.</div>
+            </div>
+          </div>
+          <div class="connect-actions">
+            <button class="btn-primary"><svg><use href="#i-camera"/></svg>Connect Instagram</button>
+            <button class="btn-ghost">How it works</button>
+            <span class="free-trial-note"><svg><use href="#i-check"/></svg>First 50 unfollows on us</span>
+          </div>
+          <div class="trust-row">
+            <span class="trust-pill"><span class="trust-pill-icon"></span>Built in Lagos</span>
+            <span class="trust-pill"><span class="trust-pill-icon"></span>NDPR compliant</span>
+            <span class="trust-pill"><span class="trust-pill-icon"></span>Pays from your Nitro wallet</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderPlatformTabs(activePlatform) {
+    return `
+      <div class="platform-tabs">
+        ${Object.entries(PLATFORMS).map(([key, p]) => {
+          const isActive = key === activePlatform;
+          const cls = ['platform-tab'];
+          if (isActive) cls.push('active');
+          if (!p.connected) cls.push('disconnected');
+          return `
+            <button class="${cls.join(' ')}" data-platform="${key}">
+              <span class="platform-tab-icon pti-${key}">${PLATFORM_TAB_ICON[key]}</span>
+              ${p.name}
+              ${p.connected
+                ? `<span class="platform-tab-count">${p.suggested.toLocaleString()}</span>`
+                : `<span class="platform-tab-status"><span class="status-dot disconnected"></span>Connect</span>`
+              }
+            </button>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  function renderInlineConnectFor(platformKey) {
+    const p = PLATFORMS[platformKey];
+    return `
+      <div class="page-head">
+        <div class="page-head-left">
+          <h1>Cleanup</h1>
+          <p>Connect each platform separately. Each one runs independently on your device.</p>
+        </div>
+      </div>
+
+      ${renderPlatformTabs(platformKey)}
+
+      <div class="inline-connect">
+        <div class="inline-connect-art ${platformKey}">
+          <svg><use href="#${platformKey === 'ig' ? 'i-camera' : platformKey === 'tt' ? 'i-tiktok' : 'i-x'}"/></svg>
+        </div>
+        <div class="inline-connect-copy">
+          <h2>Connect ${p.name} to clean up here</h2>
+          <p class="lead">
+            Each platform connects separately. Nitro never sees your password â ${p.name} cleanup runs on your device.
+            Audit usually takes about 30 seconds.
+          </p>
+          <div class="inline-connect-bullets">
+            <span class="inline-connect-bullet">
+              <span class="inline-connect-bullet-icon"><svg><use href="#i-shield"/></svg></span>
+              We never see your password
+            </span>
+            <span class="inline-connect-bullet">
+              <span class="inline-connect-bullet-icon"><svg><use href="#i-clock"/></svg></span>
+              ~30 second audit
+            </span>
+            <span class="inline-connect-bullet">
+              <span class="inline-connect-bullet-icon"><svg><use href="#i-link"/></svg></span>
+              No effect on Instagram cleanup
+            </span>
+          </div>
+          <div class="inline-connect-actions">
+            <button class="btn-primary">
+              <svg><use href="#${platformKey === 'ig' ? 'i-camera' : platformKey === 'tt' ? 'i-tiktok' : 'i-x'}"/></svg>
+              Connect ${p.name}
+            </button>
+            <button class="btn-ghost">Learn more</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderAudit(insufficientBalance = false) {
+    const p = PLATFORMS.ig;
+    const balance = insufficientBalance ? 1500 : 18750;
+    const total = 4500;
+
+    return `
+      <div class="page-head">
+        <div class="page-head-left">
+          <h1>Cleanup</h1>
+          <p>Audited <span class="mono">${p.handle}</span> Â· ${p.following.toLocaleString()} accounts you follow</p>
+          <div class="reaudit-link">
+            Last audited 2d ago Â· <a>Re-scan</a>
+          </div>
+        </div>
+        <div class="balance-pill">
+          <span class="balance-pill-icon"><svg width="13" height="13"><use href="#i-naira"/></svg></span>
+          Balance: <strong>â¦${balance.toLocaleString()}</strong>
+        </div>
+      </div>
+
+      ${renderPlatformTabs('ig')}
+
+      <div class="nudge-line">
+        <span class="nudge-icon-wrap"><svg width="13" height="13"><use href="#i-trend"/></svg></span>
+        <span>Your following list is <strong>31% larger</strong> than typical for an account your size. A cleanup could measurably boost your engagement rate.</span>
+      </div>
+
+      <div class="presets-section">
+        <h3>Smart cleanup presets</h3>
+        <div class="presets-grid">
+          <button class="preset-card active">
+            <div class="preset-card-head">
+              <span class="preset-icon-wrap"><svg><use href="#i-bolt"/></svg></span>
+              <span class="preset-card-name">Quick cleanup</span>
+              <span class="preset-card-pop">Popular</span>
+            </div>
+            <div class="preset-card-desc">Non-followers + inactive accounts (1yr+). Safest option.</div>
+            <div class="preset-card-foot">
+              <span class="preset-card-count"><strong>247</strong> accounts</span>
+              <span class="preset-card-price">â¦4,500</span>
+            </div>
+          </button>
+          <button class="preset-card">
+            <div class="preset-card-head">
+              <span class="preset-icon-wrap"><svg><use href="#i-trash"/></svg></span>
+              <span class="preset-card-name">Deep clean</span>
+            </div>
+            <div class="preset-card-desc">Everything we suggest, except your whitelist.</div>
+            <div class="preset-card-foot">
+              <span class="preset-card-count"><strong>847</strong> accounts</span>
+              <span class="preset-card-price">â¦12,800</span>
+            </div>
+          </button>
+          <button class="preset-card">
+            <div class="preset-card-head">
+              <span class="preset-icon-wrap"><svg><use href="#i-ghost"/></svg></span>
+              <span class="preset-card-name">Just ghosts</span>
+            </div>
+            <div class="preset-card-desc">Accounts that follow you but never engage.</div>
+            <div class="preset-card-foot">
+              <span class="preset-card-count"><strong>203</strong> accounts</span>
+              <span class="preset-card-price">â¦3,800</span>
+            </div>
+          </button>
+          <button class="preset-card">
+            <div class="preset-card-head">
+              <span class="preset-icon-wrap"><svg><use href="#i-tornado"/></svg></span>
+              <span class="preset-card-name">Mass-follow recovery</span>
+            </div>
+            <div class="preset-card-desc">For when you went on a follow-for-follow spree.</div>
+            <div class="preset-card-foot">
+              <span class="preset-card-count"><strong>612</strong> accounts</span>
+              <span class="preset-card-price">â¦9,200</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="audit-summary-grid">
+        <div class="summary-card">
+          <div class="summary-num">312</div>
+          <div class="summary-label">Don't follow back</div>
+          <span class="summary-tag nonfollower">Asymmetric</span>
+        </div>
+        <div class="summary-card active">
+          <div class="summary-num">489</div>
+          <div class="summary-label">Inactive accounts</div>
+          <span class="summary-tag inactive">No posts 6mo+</span>
+        </div>
+        <div class="summary-card">
+          <div class="summary-num">203</div>
+          <div class="summary-label">Ghost engagers</div>
+          <span class="summary-tag ghost">Never interact</span>
+        </div>
+        <div class="summary-card">
+          <div class="summary-num">1,843</div>
+          <div class="summary-label">Worth keeping</div>
+          <span class="summary-tag keep">Active &amp; mutual</span>
+        </div>
+      </div>
+
+      <div class="filter-pills">
+        <span class="filter-pill active">Suggested <span class="pill-count">847</span></span>
+        <span class="filter-pill">Inactive <span class="pill-count">489</span></span>
+        <span class="filter-pill">Non-followers <span class="pill-count">312</span></span>
+        <span class="filter-pill">Ghosts <span class="pill-count">203</span></span>
+        <span class="filter-pill">Whitelisted <span class="pill-count">42</span></span>
+      </div>
+
+      <div class="list-toolbar">
+        <input class="list-search" placeholder="Search handles or names..." />
+        <button class="sort-pill"><svg width="12" height="12"><use href="#i-sort"/></svg>Most inactive</button>
+      </div>
+
+      <div class="accounts-list">
+        ${renderAccountRow({ avatar: 'T', handle: '@oldfriend_2018', name: 'Tunde Akinwale', stats: 'Last post 2y ago Â· 3:1 ratio', tags: ['nonfollower', 'inactive'], selected: true })}
+        ${renderAccountRow({ avatar: 'R', handle: '@randomdrop', name: 'Random Drop NG', stats: 'Last post 4mo ago Â· never liked your posts', tags: ['ghost'], selected: true })}
+        ${renderAccountRow({ avatar: 'A', handle: '@bestfriendforever', name: 'Ayo Olatunji Â· kept since last cleanup', stats: 'Last post 5h ago Â· mutual', tags: [], persistentWhitelist: true })}
+        ${renderAccountRow({ avatar: 'L', handle: '@influencer.lagos.123', name: 'Lagos Hot Takes', stats: 'Last post 1y ago Â· 12:1 ratio', tags: ['nonfollower', 'inactive'], selected: true })}
+        ${renderAccountRow({ avatar: 'M', handle: '@my.brother', name: 'Daniel Â· kept since last cleanup', stats: 'Last post 1d ago Â· family', tags: [], persistentWhitelist: true })}
+        ${renderAccountRow({ avatar: 'G', handle: '@ghostfollower22', name: 'Ghost Follower', stats: 'Last post 8mo ago Â· 0 stories viewed', tags: ['ghost', 'inactive'], selected: true })}
+        ${renderAccountRow({ avatar: 'P', handle: '@spam_promo_account', name: 'Promo Promo Promo', stats: 'Last post 1y ago Â· 10K:5 ratio', tags: ['nonfollower', 'inactive'], selected: true })}
+      </div>
+
+      <div class="projected-card">
+        <div class="projected-icon"><svg><use href="#i-trend"/></svg></div>
+        <div class="projected-text">
+          <div class="projected-title">After cleanup</div>
+          <div class="projected-summary">Your engagement rate could rise <strong>~1.4Ã</strong>. Follow:follower ratio improves to <strong>1 : 0.78</strong>.</div>
+        </div>
+        <div class="projected-stats">
+          <div class="projected-stat">
+            <div class="projected-stat-label">Current ratio</div>
+            <div class="projected-stat-val">1 : 1.42</div>
+          </div>
+          <div class="projected-stat">
+            <div class="projected-stat-label">After</div>
+            <div class="projected-stat-val">1 : 0.78</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-bar ${insufficientBalance ? 'insufficient' : ''}">
+        <div class="action-left">
+          <div class="action-icon-wrap">
+            <svg><use href="#${insufficientBalance ? 'i-warning' : 'i-broom'}"/></svg>
+          </div>
+          <div class="action-id">
+            <div class="action-count">247 selected</div>
+            <div class="action-sub">to unfollow Â· 1,843 kept</div>
+          </div>
+        </div>
+        <div class="action-middle">
+          <div class="pace-display">
+            <span class="pace-icon"><svg><use href="#i-clock"/></svg></span>
+            <strong>~3 days</strong> at safe pace Â· 80/day
+          </div>
+        </div>
+        <div class="action-right">
+          <div class="action-price-block">
+            <div class="action-price-label">Total</div>
+            <div class="action-price-amt">â¦${total.toLocaleString()}</div>
+            <div class="action-balance-line ${insufficientBalance ? 'insufficient' : ''}">
+              ${insufficientBalance ? `Need â¦${(total - balance).toLocaleString()} more` : `From wallet Â· â¦${(balance - total).toLocaleString()} left`}
+            </div>
+          </div>
+          <button class="action-cta-btn ${insufficientBalance ? 'danger' : ''}">
+            ${insufficientBalance ? 'Top up wallet' : 'Start cleanup'}
+            <svg><use href="#i-arrow"/></svg>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderAccountRow(opts) {
+    const cls = ['account-row'];
+    if (opts.selected) cls.push('selected');
+    if (opts.persistentWhitelist) cls.push('persistent-whitelist');
+
+    return `
+      <div class="${cls.join(' ')}">
+        <div class="check-box"><svg><use href="#i-check"/></svg></div>
+        <div class="account-avatar">${opts.avatar}</div>
+        <div class="account-meta">
+          <div class="account-handle-row">
+            <span class="account-handle">${opts.handle}</span>
+            ${opts.persistentWhitelist ? `
+              <span class="persistent-badge">
+                <svg><use href="#i-shield"/></svg>
+                Whitelisted
+              </span>` : ''}
+          </div>
+          <div class="account-name">${opts.name}</div>
+        </div>
+        <div class="account-stats">${opts.stats}</div>
+        <div class="account-tags">
+          ${opts.tags.map(t => `<span class="account-tag ${t}">${t === 'nonfollower' ? 'Non-follower' : t === 'inactive' ? 'Inactive' : 'Ghost'}</span>`).join('')}
+        </div>
+        <button class="keep-btn">
+          ${opts.persistentWhitelist
+            ? '<svg><use href="#i-check"/></svg>Kept'
+            : 'Keep'
+          }
+        </button>
+      </div>
+    `;
+  }
+
+  function renderProgress() {
+    return `
+      <div class="page-head">
+        <div class="page-head-left">
+          <h1>Cleanup running</h1>
+          <p>Slowly unfollowing your selected accounts in the background. You can close this page â it'll keep going.</p>
+        </div>
+        <span class="live-badge"><span class="live-dot"></span>Live Â· 2h 14m</span>
+      </div>
+
+      <div class="progress-card">
+        <div class="progress-head">
+          <div class="progress-handle-wrap">
+            <div class="progress-handle">
+              <span>@temsbaby</span>
+              <span class="progress-platform-tag">
+                <span class="platform-tab-icon pti-ig">${PLATFORM_TAB_ICON.ig}</span>
+                Instagram
+              </span>
+            </div>
+            <h2>247 accounts being unfollowed</h2>
+          </div>
+        </div>
+
+        <div class="big-progress-ring">
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle class="ring-bg" cx="70" cy="70" r="62"/>
+            <circle class="ring-fg" cx="70" cy="70" r="62"
+              stroke-dasharray="${Math.PI * 2 * 62}"
+              stroke-dashoffset="${Math.PI * 2 * 62 * (1 - 0.32)}"/>
+          </svg>
+          <div class="ring-pct">
+            <div class="ring-pct-num">32%</div>
+            <div class="ring-pct-sub">Complete</div>
+          </div>
+        </div>
+
+        <div class="progress-grid">
+          <div class="progress-stat"><div class="progress-stat-num">79</div><div class="progress-stat-label">Unfollowed</div></div>
+          <div class="progress-stat"><div class="progress-stat-num">5</div><div class="progress-stat-label">Skipped</div></div>
+          <div class="progress-stat"><div class="progress-stat-num">163</div><div class="progress-stat-label">Remaining</div></div>
+          <div class="progress-stat"><div class="progress-stat-num">~2d 4h</div><div class="progress-stat-label">ETA</div></div>
+        </div>
+      </div>
+
+      <div class="activity-list">
+        <h3>Live activity</h3>
+        <div class="activity-row">
+          <div class="activity-status unfollowed"></div>
+          <span class="activity-handle">@oldfriend_2018</span>
+          <span class="activity-action">unfollowed</span>
+          <span class="activity-time">2 min ago</span>
+        </div>
+        <div class="activity-row">
+          <div class="activity-status unfollowed"></div>
+          <span class="activity-handle">@spam_promo_account</span>
+          <span class="activity-action">unfollowed</span>
+          <span class="activity-time">5 min ago</span>
+        </div>
+        <div class="activity-row">
+          <div class="activity-status skipped"></div>
+          <span class="activity-handle">@protected_acct</span>
+          <span class="activity-action">skipped (private, can't verify)</span>
+          <span class="activity-time">8 min ago</span>
+        </div>
+        <div class="activity-row">
+          <div class="activity-status unfollowed"></div>
+          <span class="activity-handle">@influencer.lagos.123</span>
+          <span class="activity-action">unfollowed</span>
+          <span class="activity-time">12 min ago</span>
+        </div>
+        <div class="activity-row">
+          <div class="activity-status unfollowed"></div>
+          <span class="activity-handle">@randomdrop</span>
+          <span class="activity-action">unfollowed</span>
+          <span class="activity-time">18 min ago</span>
+        </div>
+      </div>
+
+      <div class="promise-note">
+        <div class="promise-icon-wrap"><svg><use href="#i-pause"/></svg></div>
+        <div>
+          <strong>We'll pause if Instagram flags your account.</strong>
+          If we detect any unusual response â verification prompts, action blocks, login challenges â cleanup auto-pauses and resumes only when it's safe. Remaining unfollows roll over.
+        </div>
+      </div>
+    `;
+  }
+
+  function render() {
+    const main = document.getElementById('main-area');
+    main.classList.remove('no-bar');
+
+    if (state.stateName === 'connect') {
+      main.innerHTML = renderConnect();
+      main.classList.add('no-bar');
+    } else if (state.stateName === 'audit') {
+      main.innerHTML = renderAudit(false);
+    } else if (state.stateName === 'connect-tt') {
+      main.innerHTML = renderInlineConnectFor('tt');
+      main.classList.add('no-bar');
+    } else if (state.stateName === 'insufficient') {
+      main.innerHTML = renderAudit(true);
+    } else if (state.stateName === 'progress') {
+      main.innerHTML = renderProgress();
+      main.classList.add('no-bar');
+    }
+
+    bindInteractions();
+  }
+
+  function bindInteractions() {
+    document.querySelectorAll('.account-row .check-box').forEach(cb => {
+      cb.addEventListener('click', e => {
+        e.stopPropagation();
+        const row = cb.closest('.account-row');
+        if (row.classList.contains('persistent-whitelist')) return;
+        row.classList.toggle('selected');
+      });
+    });
+    document.querySelectorAll('.account-row .keep-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const row = btn.closest('.account-row');
+        if (row.classList.contains('persistent-whitelist')) {
+          row.classList.remove('persistent-whitelist');
+          btn.innerHTML = 'Keep';
+          row.querySelector('.persistent-badge')?.remove();
+        } else {
+          row.classList.toggle('whitelisted');
+          if (row.classList.contains('whitelisted')) {
+            row.classList.remove('selected');
+            btn.innerHTML = '<svg><use href="#i-check"/></svg>Kept';
+          } else {
+            btn.innerHTML = 'Keep';
+          }
+        }
+      });
+    });
+    document.querySelectorAll('.summary-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.summary-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+      });
+    });
+    document.querySelectorAll('.preset-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+      });
+    });
+    document.querySelectorAll('.filter-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+      });
+    });
+    // Platform tabs â switch state when tapping unconnected platform
+    document.querySelectorAll('.platform-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const platformKey = tab.dataset.platform;
+        const p = PLATFORMS[platformKey];
+        if (!p.connected) {
+          state.stateName = 'connect-tt'; // Show inline connect for that platform
+          // Update which platform we're connecting
+          state.connectingPlatform = platformKey;
+          main.innerHTML = renderInlineConnectFor(platformKey);
+          main.classList.add('no-bar');
+          bindInteractions();
+        } else {
+          state.platform = platformKey;
+          render();
+        }
+      });
+    });
+  }
+
+  document.querySelectorAll('#seg-bp .seg-btn').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('#seg-bp .seg-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.bp = btn.dataset.bp;
+    document.getElementById('viewport').setAttribute('data-bp', state.bp);
+  }));
+
+  document.querySelectorAll('#seg-state .seg-btn').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('#seg-state .seg-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.stateName = btn.dataset.state;
+    render();
+  }));
+
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    state.theme = state.theme === 'light' ? 'dark' : 'light';
+    document.body.setAttribute('data-theme', state.theme);
+  });
+
+  render();
+</script>
+
+</body>
+</html>
