@@ -14,11 +14,11 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
+              `script-src 'self' 'unsafe-inline' https://plausible.io https://*.contentsquare.net${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://*.neon.tech https://*.ingest.us.sentry.io https://*.ingest.sentry.io",
+              "connect-src 'self' https://*.neon.tech https://*.ingest.us.sentry.io https://*.ingest.sentry.io https://plausible.io https://*.contentsquare.net",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
