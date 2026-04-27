@@ -16,29 +16,37 @@ export const metadata = {
 };
 
 export default async function BlogPage() {
-  const [posts, categories, total] = await Promise.all([
-    prisma.blogPost.findMany({
-      where: { published: true },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true, title: true, slug: true, excerpt: true, category: true,
-        thumbnail: true, showInHowTo: true, authorName: true, views: true,
-        createdAt: true,
-      },
-      skip: 0,
-      take: PER_PAGE,
-    }),
-    prisma.blogPost.findMany({
-      where: { published: true },
-      select: { category: true },
-      distinct: ['category'],
-    }),
-    prisma.blogPost.count({ where: { published: true } }),
-  ]);
+  let serializedPosts = [];
+  let categoryList = [];
+  let totalPages = 0;
 
-  const serializedPosts = posts.map(p => ({ ...p, createdAt: p.createdAt.toISOString() }));
-  const categoryList = categories.map(c => c.category);
-  const totalPages = Math.ceil(total / PER_PAGE);
+  try {
+    const [posts, categories, total] = await Promise.all([
+      prisma.blogPost.findMany({
+        where: { published: true },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true, title: true, slug: true, excerpt: true, category: true,
+          thumbnail: true, showInHowTo: true, authorName: true, views: true,
+          createdAt: true,
+        },
+        skip: 0,
+        take: PER_PAGE,
+      }),
+      prisma.blogPost.findMany({
+        where: { published: true },
+        select: { category: true },
+        distinct: ['category'],
+      }),
+      prisma.blogPost.count({ where: { published: true } }),
+    ]);
+
+    serializedPosts = posts.map(p => ({ ...p, createdAt: p.createdAt.toISOString() }));
+    categoryList = categories.map(c => c.category);
+    totalPages = Math.ceil(total / PER_PAGE);
+  } catch (err) {
+    console.error('[Blog] Failed to load posts:', err.message);
+  }
 
   const breadcrumb = {
     '@context': 'https://schema.org',
