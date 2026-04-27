@@ -55,7 +55,7 @@ const NAV_ITEMS = [
   { id: "add-funds", label: "Wallet" },
   { id: "audit", label: "Audit", soon: true },
   { id: "cleanup", label: "Cleanup", soon: true },
-  { id: "leaderboard", label: "Leaderboard" },
+  { id: "leaderboard", label: "Leaderboard", soon: true },
   { id: "how-to", label: "Guide" },
   { id: "referrals", label: "Referrals" },
   { id: "support", label: "Support" },
@@ -72,7 +72,7 @@ const BOTTOM_TABS = [
 const MORE_ITEMS = [
   { id: "audit", label: "Audit", soon: true },
   { id: "cleanup", label: "Cleanup", soon: true },
-  { id: "leaderboard", label: "Leaderboard" },
+  { id: "leaderboard", label: "Leaderboard", soon: true },
   { id: "referrals", label: "Referrals" },
   { id: "how-to", label: "Guide" },
   { id: "support", label: "Support" },
