@@ -2,6 +2,10 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@media screen and (max-width: 767px) {
+  input, select, textarea { font-size: 16px !important; }
+}
+
 @theme {
   --color-accent: #c47d8e;
   --color-accent-dark: #a3586b;
