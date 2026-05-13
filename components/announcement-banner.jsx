@@ -10,23 +10,27 @@ const ICONS = {
 
 const STYLES = {
   info: {
-    bgD: "rgba(196,125,142,.12)", bgL: "rgba(196,125,142,.06)",
-    brdD: "rgba(196,125,142,.3)", brdL: "rgba(196,125,142,.25)",
-    colD: "#c47d8e", colL: "#8b5e6b",
+    bgD: "rgba(196,125,142,.18)", bgL: "rgba(196,125,142,.1)",
+    solidD: "#2a1a22", solidL: "#fdf6f8",
+    brdD: "rgba(196,125,142,.45)", brdL: "rgba(196,125,142,.3)",
+    colD: "#e0a0b0", colL: "#8b5e6b",
   },
   warning: {
-    bgD: "rgba(251,191,36,.12)", bgL: "rgba(217,119,6,.06)",
-    brdD: "rgba(251,191,36,.35)", brdL: "rgba(217,119,6,.3)",
-    colD: "#fbbf24", colL: "#d97706",
+    bgD: "rgba(251,191,36,.18)", bgL: "rgba(217,119,6,.1)",
+    solidD: "#2a2210", solidL: "#fefbf0",
+    brdD: "rgba(251,191,36,.5)", brdL: "rgba(217,119,6,.35)",
+    colD: "#fcd34d", colL: "#d97706",
   },
   success: {
-    bgD: "rgba(110,231,183,.1)", bgL: "rgba(5,150,105,.05)",
-    brdD: "rgba(110,231,183,.3)", brdL: "rgba(5,150,105,.25)",
+    bgD: "rgba(110,231,183,.15)", bgL: "rgba(5,150,105,.08)",
+    solidD: "#122a1e", solidL: "#f3fff9",
+    brdD: "rgba(110,231,183,.45)", brdL: "rgba(5,150,105,.3)",
     colD: "#6ee7b7", colL: "#059669",
   },
   urgent: {
-    bgD: "rgba(252,165,165,.12)", bgL: "rgba(220,38,38,.06)",
-    brdD: "rgba(252,165,165,.35)", brdL: "rgba(220,38,38,.3)",
+    bgD: "rgba(252,165,165,.18)", bgL: "rgba(220,38,38,.1)",
+    solidD: "#2a1414", solidL: "#fff5f5",
+    brdD: "rgba(252,165,165,.5)", brdL: "rgba(220,38,38,.35)",
     colD: "#fca5a5", colL: "#dc2626",
   },
 };
@@ -79,14 +83,15 @@ export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", o
       className={isLeaving ? "animate-[announceOut_.25s_ease_forwards]" : "animate-[announceIn_.35s_cubic-bezier(.34,1.2,.64,1)_both]"}
       style={{
         ...(mode === "landing"
-          ? { position: "fixed", top: 57, left: 0, right: 0, zIndex: 90 }
+          ? { position: "fixed", top: 57, left: 0, right: 0, zIndex: 90, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }
           : { marginBottom: 16 }),
-        background: dark ? s.bgD : s.bgL,
+        background: mode === "landing" ? (dark ? s.solidD : s.solidL) : (dark ? s.bgD : s.bgL),
         borderTop: `1px solid ${dark ? s.brdD : s.brdL}`,
         borderRight: `1px solid ${dark ? s.brdD : s.brdL}`,
         borderBottom: `1px solid ${dark ? s.brdD : s.brdL}`,
         borderLeft: `3px solid ${dark ? s.colD : s.colL}`,
         borderRadius: mode !== "landing" ? 12 : 0,
+        boxShadow: mode === "landing" ? (dark ? "0 2px 12px rgba(0,0,0,.3)" : "0 2px 12px rgba(0,0,0,.06)") : "none",
       }}
     >
       <div className="flex items-center gap-2 md:gap-2.5 py-[9px] px-4 pr-9 md:py-2.5 md:pl-6 md:pr-11 justify-center relative">

@@ -57,7 +57,7 @@ function LandingInner(){
   const [scrolled,setScrolled]=useState(false);
   const [activeSection,setActiveSection]=useState(0);
   const scrollRef=useRef(null);
-  const [siteStats,setSiteStats]=useState({users:"12K+",orders:"2M+"});
+  const [siteStats,setSiteStats]=useState({users:"2K+",orders:"50K+"});
   const [siteAlerts,setSiteAlerts]=useState([]);
   const [socialLinks,setSocialLinks]=useState({});
 
