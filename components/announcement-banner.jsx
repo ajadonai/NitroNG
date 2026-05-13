@@ -94,7 +94,11 @@ export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", o
           {icon(dark ? s.colD : s.colL)}
         </div>
         <div className="text-[13px] md:text-sm font-medium" style={{ color: dark ? "#f5f3f0" : "#1a1917" }}>
-          {alert.message}
+          {alert.message.split(/(\*[^*]+\*)/).map((part, i) =>
+            part.startsWith('*') && part.endsWith('*')
+              ? <strong key={i}>{part.slice(1, -1)}</strong>
+              : part
+          )}
           {alert.action && (
             <a
               href={alert.action.href || "#"}

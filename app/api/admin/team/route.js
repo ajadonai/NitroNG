@@ -37,7 +37,10 @@ export async function POST(req) {
   if (error) return error;
 
   try {
-    const { action, adminId, name, email, password, role, status, pages, newPassword, actions } = await req.json();
+    const body = await req.json();
+    const titleCase = (s) => s ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : s;
+    const { action, adminId, email, password, role, status, pages, newPassword, actions } = body;
+    const name = titleCase(body.name);
 
     // Prevent creating owner or superadmin via API
     const ASSIGNABLE = ['admin', 'support', 'finance'];

@@ -68,8 +68,8 @@ export async function GET(req) {
         where: { createdAt: dateFilter, deletedAt: null, status: { notIn: ['Cancelled'] } },
         _count: true,
         _sum: { charge: true },
-        orderBy: { _count: { serviceId: 'desc' } },
-        take: 10,
+        orderBy: { _sum: { charge: 'desc' } },
+        take: 20,
       }),
       // For platform aggregation — get orders with service category
       prisma.order.findMany({
@@ -90,14 +90,14 @@ export async function GET(req) {
       }),
     ]);
 
-    // Resolve service names
+    // Resolve service → group names via tiers
     const serviceIds = topServices.map(s => s.serviceId);
-    const serviceNames = await prisma.service.findMany({
-      where: { id: { in: serviceIds } },
-      select: { id: true, name: true, category: true },
+    const tiers = await prisma.serviceTier.findMany({
+      where: { serviceId: { in: serviceIds } },
+      select: { serviceId: true, group: { select: { name: true, platform: true } } },
     });
-    const nameMap = {};
-    serviceNames.forEach(s => { nameMap[s.id] = s; });
+    const groupMap = {};
+    tiers.forEach(t2 => { if (t2.serviceId && !groupMap[t2.serviceId]) groupMap[t2.serviceId] = t2.group; });
 
     // Aggregate by platform
     const platformMap = {};
@@ -180,12 +180,17 @@ export async function GET(req) {
         revenue: (s._sum.charge || 0) / 100,
       })),
       topPlatforms,
-      topServices: topServices.map(s => ({
-        name: nameMap[s.serviceId]?.name || s.serviceId,
-        category: nameMap[s.serviceId]?.category || 'unknown',
-        orders: s._count,
-        revenue: (s._sum.charge || 0) / 100,
-      })),
+      topServices: (() => {
+        const grouped = {};
+        topServices.forEach(s => {
+          const g = groupMap[s.serviceId];
+          const key = g ? g.name : s.serviceId;
+          if (!grouped[key]) grouped[key] = { name: key, category: g?.platform || 'unknown', orders: 0, revenue: 0 };
+          grouped[key].orders += s._count;
+          grouped[key].revenue += (s._sum.charge || 0) / 100;
+        });
+        return Object.values(grouped).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
+      })(),
     });
   } catch (err) {
     log.error('Admin Analytics', err.message);

@@ -554,7 +554,8 @@ export function AdminCouponsPage({ dark, t }) {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ code: "", type: "percent", value: "", minOrder: "", maxUses: "", expires: "" });
+  const [copiedCode, setCopiedCode] = useState(null);
+  const [form, setForm] = useState({ code: "", type: "percent", value: "", minOrder: "", maxDeposit: "", maxUses: "", expires: "", newUsersOnly: false });
 
   // Referral settings
   const [refEnabled, setRefEnabled] = useState(true);
@@ -628,8 +629,8 @@ export function AdminCouponsPage({ dark, t }) {
   const createCoupon = async () => {
     if (!form.code.trim() || !form.value) return;
     try {
-      const res = await fetch("/api/admin/coupons", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", ...form, value: Number(form.value), minOrder: Number(form.minOrder) || 0, maxUses: Number(form.maxUses) || 0 }) });
-      if (res.ok) { setShowAdd(false); setForm({ code: "", type: "percent", value: "", minOrder: "", maxUses: "", expires: "" }); fetch("/api/admin/coupons").then(r => r.json()).then(d => setCoupons(d.coupons || [])); }
+      const res = await fetch("/api/admin/coupons", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", ...form, value: Number(form.value), minOrder: Number(form.minOrder) || 0, maxDeposit: Number(form.maxDeposit) || 0, maxUses: Number(form.maxUses) || 0, newUsersOnly: form.newUsersOnly }) });
+      if (res.ok) { setShowAdd(false); setForm({ code: "", type: "percent", value: "", minOrder: "", maxDeposit: "", maxUses: "", expires: "", newUsersOnly: false }); fetch("/api/admin/coupons").then(r => r.json()).then(d => setCoupons(d.coupons || [])); }
     } catch {}
   };
 
@@ -741,9 +742,16 @@ export function AdminCouponsPage({ dark, t }) {
               </div>
               <div><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Value</label><input type="number" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} placeholder={form.type === "percent" ? "20" : "500"} className={inputCls} style={inputStyle} /></div>
               <div><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Min Deposit (₦)</label><input type="number" value={form.minOrder} onChange={e => setForm({ ...form, minOrder: e.target.value })} placeholder="0" className={inputCls} style={inputStyle} /></div>
+              <div><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Max Deposit (₦)</label><input type="number" value={form.maxDeposit} onChange={e => setForm({ ...form, maxDeposit: e.target.value })} placeholder="0 = no limit" className={inputCls} style={inputStyle} /></div>
               <div><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Max Uses (0 = unlimited)</label><input type="number" value={form.maxUses} onChange={e => setForm({ ...form, maxUses: e.target.value })} placeholder="0" className={inputCls} style={inputStyle} /></div>
               <div><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Expires</label><input type="date" value={form.expires} onChange={e => setForm({ ...form, expires: e.target.value })} className={inputCls} style={inputStyle} /></div>
             </div>
+            <label className="flex items-center gap-2 mb-3 cursor-pointer select-none">
+              <div role="switch" aria-checked={form.newUsersOnly} tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setForm({ ...form, newUsersOnly: !form.newUsersOnly }); } }} onClick={() => setForm({ ...form, newUsersOnly: !form.newUsersOnly })} className="w-[36px] h-5 rounded-xl relative shrink-0" style={{ background: form.newUsersOnly ? "#c47d8e" : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)") }}>
+                <div className="w-[14px] h-[14px] rounded-full bg-white absolute top-[3px] transition-[left] duration-200" style={{ left: form.newUsersOnly ? 19 : 3 }} />
+              </div>
+              <span className="text-[13px]" style={{ color: t.textMuted }}>New users only (first deposit)</span>
+            </label>
             <button onClick={createCoupon} className="adm-btn-primary" style={{ opacity: form.code && form.value ? 1 : .4 }}>Create Coupon</button>
           </div>
         )}
@@ -756,12 +764,14 @@ export function AdminCouponsPage({ dark, t }) {
               <div className="flex items-center gap-2">
                 <span className="m text-base font-semibold" style={{ color: t.accent }}>{c.code}</span>
                 <span className="text-sm font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{c.type === "percent" ? `${c.value}%` : `₦${(c.value || 0).toLocaleString()}`} bonus</span>
+                {c.newUsersOnly && <span className="text-[11px] py-0.5 px-1.5 rounded" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(59,130,246,.08)", color: dark ? "#93c5fd" : "#2563eb" }}>New users</span>}
                 {!c.enabled && <span className="text-[11px] py-0.5 px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", color: t.textMuted }}>Disabled</span>}
               </div>
               <div className="text-[13px] mt-0.5" style={{ color: t.textMuted }}>
-                Min: {c.minOrder ? `₦${c.minOrder.toLocaleString()}` : "None"} · Uses: {c.used || 0}/{c.maxUses || "∞"} · {c.expires ? `Exp: ${c.expires}` : "No expiry"}
+                Min: {c.minOrder ? `₦${c.minOrder.toLocaleString()}` : "None"} · Max: {c.maxDeposit ? `₦${c.maxDeposit.toLocaleString()}` : "None"} · Uses: {c.used || 0}/{c.maxUses || "∞"} · {c.expires ? `Exp: ${c.expires}` : "No expiry"}
               </div>
             </div>
+            <button onClick={() => { navigator.clipboard.writeText(c.code); setCopiedCode(c.id); setTimeout(() => setCopiedCode(null), 1500); }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: copiedCode === c.id ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }}>{copiedCode === c.id ? "Copied!" : "Copy"}</button>
             <button onClick={async () => { const ok = await confirm({ title: "Delete Coupon", message: `Delete coupon "${c.code}"? This cannot be undone.`, confirmLabel: "Delete", danger: true }); if (ok) deleteCoupon(c.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
           </div>
         )) : (
