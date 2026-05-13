@@ -21,6 +21,8 @@ export function AdminActivityPage({ dark, t }) {
   const [loading, setLoading] = useState(true);
   const [sysLoading, setSysLoading] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [adminFilter, setAdminFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const [sysFilter, setSysFilter] = useState("all");
   const [expandedEvent, setExpandedEvent] = useState(null);
   const [page, setPage] = useState(0);
@@ -48,9 +50,15 @@ export function AdminActivityPage({ dark, t }) {
     return type.charAt(0).toUpperCase() + type.slice(1);
   };
   const groupedTypes = {};
-  logs.forEach(l => { const label = getTypeLabel(l.type); groupedTypes[label] = (groupedTypes[label] || 0) + 1; });
+  const adminNames = new Set();
+  logs.forEach(l => { const label = getTypeLabel(l.type); groupedTypes[label] = (groupedTypes[label] || 0) + 1; if (l.admin) adminNames.add(l.admin); });
   const typeEntries = Object.entries(groupedTypes).sort((a, b) => b[1] - a[1]);
-  const filtered = filter === "all" ? logs : logs.filter(l => getTypeLabel(l.type) === filter);
+  const filtered = logs.filter(l => {
+    if (filter !== "all" && getTypeLabel(l.type) !== filter) return false;
+    if (adminFilter !== "all" && l.admin !== adminFilter) return false;
+    if (search) { const q = search.toLowerCase(); return (l.action || "").toLowerCase().includes(q) || (l.admin || "").toLowerCase().includes(q); }
+    return true;
+  });
   const adminPages = Math.ceil(filtered.length / perPage);
   const adminPaged = filtered.slice(page * perPage, (page + 1) * perPage);
   const typeColor = (type) => {
@@ -87,11 +95,21 @@ export function AdminActivityPage({ dark, t }) {
 
       {/* ═══ ADMIN TAB ═══ */}
       {tab === "admin" && <>
-        <div className="adm-filters flex justify-end">
-          <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(0); }} options={[
-            { value: "all", label: "All" },
-            ...typeEntries.map(([label]) => ({ value: label, label })),
-          ]} />
+        <div className="adm-filters flex items-center gap-2 flex-wrap">
+          <div className="relative flex-1 min-w-[180px] max-w-[300px]">
+            <input value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} placeholder="Search logs..." className="w-full py-2 px-3 pr-8 rounded-lg text-[13px] outline-none font-[inherit] box-border" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.12)" : "#fff", color: t.text }} />
+            {search && <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
+          </div>
+          <div className="flex items-center gap-2 ml-auto">
+            {adminNames.size > 1 && <FilterDropdown dark={dark} t={t} value={adminFilter} onChange={(v) => { setAdminFilter(v); setPage(0); }} options={[
+              { value: "all", label: "All admins" },
+              ...[...adminNames].sort().map(name => ({ value: name, label: name })),
+            ]} />}
+            <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(0); }} options={[
+              { value: "all", label: "All types" },
+              ...typeEntries.map(([label]) => ({ value: label, label })),
+            ]} />
+          </div>
         </div>
 
         <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
