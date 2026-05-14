@@ -14,9 +14,10 @@ export async function POST(req) {
     if (limited) return tooManyRequests('Too many signup attempts. Try again in a minute.');
 
     const body = await req.json();
-    const name = sanitizeString(body.name, 100);
-    const firstName = sanitizeString(body.firstName, 50);
-    const lastName = sanitizeString(body.lastName, 50);
+    const titleCase = (s) => s ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : s;
+    const name = titleCase(sanitizeString(body.name, 100));
+    const firstName = titleCase(sanitizeString(body.firstName, 50));
+    const lastName = titleCase(sanitizeString(body.lastName, 50));
     const phone = sanitizeString(body.phone, 20);
     const email = sanitizeEmail(body.email);
     const password = body.password;

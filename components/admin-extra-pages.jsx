@@ -21,6 +21,8 @@ export function AdminActivityPage({ dark, t }) {
   const [loading, setLoading] = useState(true);
   const [sysLoading, setSysLoading] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [adminFilter, setAdminFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const [sysFilter, setSysFilter] = useState("all");
   const [expandedEvent, setExpandedEvent] = useState(null);
   const [page, setPage] = useState(0);
@@ -48,9 +50,15 @@ export function AdminActivityPage({ dark, t }) {
     return type.charAt(0).toUpperCase() + type.slice(1);
   };
   const groupedTypes = {};
-  logs.forEach(l => { const label = getTypeLabel(l.type); groupedTypes[label] = (groupedTypes[label] || 0) + 1; });
+  const adminNames = new Set();
+  logs.forEach(l => { const label = getTypeLabel(l.type); groupedTypes[label] = (groupedTypes[label] || 0) + 1; if (l.admin) adminNames.add(l.admin); });
   const typeEntries = Object.entries(groupedTypes).sort((a, b) => b[1] - a[1]);
-  const filtered = filter === "all" ? logs : logs.filter(l => getTypeLabel(l.type) === filter);
+  const filtered = logs.filter(l => {
+    if (filter !== "all" && getTypeLabel(l.type) !== filter) return false;
+    if (adminFilter !== "all" && l.admin !== adminFilter) return false;
+    if (search) { const q = search.toLowerCase(); return (l.action || "").toLowerCase().includes(q) || (l.admin || "").toLowerCase().includes(q); }
+    return true;
+  });
   const adminPages = Math.ceil(filtered.length / perPage);
   const adminPaged = filtered.slice(page * perPage, (page + 1) * perPage);
   const typeColor = (type) => {
@@ -87,11 +95,21 @@ export function AdminActivityPage({ dark, t }) {
 
       {/* ═══ ADMIN TAB ═══ */}
       {tab === "admin" && <>
-        <div className="adm-filters flex justify-end">
-          <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(0); }} options={[
-            { value: "all", label: "All" },
-            ...typeEntries.map(([label]) => ({ value: label, label })),
-          ]} />
+        <div className="adm-filters flex items-center gap-2 flex-wrap">
+          <div className="relative flex-1 min-w-[180px] max-w-[300px]">
+            <input value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} placeholder="Search logs..." className="w-full py-2 px-3 pr-8 rounded-lg text-[13px] outline-none font-[inherit] box-border" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.12)" : "#fff", color: t.text }} />
+            {search && <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
+          </div>
+          <div className="flex items-center gap-2 ml-auto">
+            <FilterDropdown dark={dark} t={t} value={adminFilter} onChange={(v) => { setAdminFilter(v); setPage(0); }} options={[
+              { value: "all", label: "All admins" },
+              ...[...adminNames].sort().map(name => ({ value: name, label: name })),
+            ]} />
+            <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(0); }} options={[
+              { value: "all", label: "All types" },
+              ...typeEntries.map(([label]) => ({ value: label, label })),
+            ]} />
+          </div>
         </div>
 
         <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
@@ -554,7 +572,8 @@ export function AdminCouponsPage({ dark, t }) {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ code: "", type: "percent", value: "", minOrder: "", maxUses: "", expires: "" });
+  const [copiedCode, setCopiedCode] = useState(null);
+  const [form, setForm] = useState({ code: "", type: "percent", value: "", minOrder: "", maxDeposit: "", maxUses: "", expires: "", newUsersOnly: false });
 
   // Referral settings
   const [refEnabled, setRefEnabled] = useState(true);
@@ -628,8 +647,8 @@ export function AdminCouponsPage({ dark, t }) {
   const createCoupon = async () => {
     if (!form.code.trim() || !form.value) return;
     try {
-      const res = await fetch("/api/admin/coupons", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", ...form, value: Number(form.value), minOrder: Number(form.minOrder) || 0, maxUses: Number(form.maxUses) || 0 }) });
-      if (res.ok) { setShowAdd(false); setForm({ code: "", type: "percent", value: "", minOrder: "", maxUses: "", expires: "" }); fetch("/api/admin/coupons").then(r => r.json()).then(d => setCoupons(d.coupons || [])); }
+      const res = await fetch("/api/admin/coupons", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", ...form, value: Number(form.value), minOrder: Number(form.minOrder) || 0, maxDeposit: Number(form.maxDeposit) || 0, maxUses: Number(form.maxUses) || 0, newUsersOnly: form.newUsersOnly }) });
+      if (res.ok) { setShowAdd(false); setForm({ code: "", type: "percent", value: "", minOrder: "", maxDeposit: "", maxUses: "", expires: "", newUsersOnly: false }); fetch("/api/admin/coupons").then(r => r.json()).then(d => setCoupons(d.coupons || [])); }
     } catch {}
   };
 
@@ -741,9 +760,16 @@ export function AdminCouponsPage({ dark, t }) {
               </div>
               <div><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Value</label><input type="number" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} placeholder={form.type === "percent" ? "20" : "500"} className={inputCls} style={inputStyle} /></div>
               <div><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Min Deposit (₦)</label><input type="number" value={form.minOrder} onChange={e => setForm({ ...form, minOrder: e.target.value })} placeholder="0" className={inputCls} style={inputStyle} /></div>
+              <div><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Max Deposit (₦)</label><input type="number" value={form.maxDeposit} onChange={e => setForm({ ...form, maxDeposit: e.target.value })} placeholder="0 = no limit" className={inputCls} style={inputStyle} /></div>
               <div><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Max Uses (0 = unlimited)</label><input type="number" value={form.maxUses} onChange={e => setForm({ ...form, maxUses: e.target.value })} placeholder="0" className={inputCls} style={inputStyle} /></div>
               <div><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Expires</label><input type="date" value={form.expires} onChange={e => setForm({ ...form, expires: e.target.value })} className={inputCls} style={inputStyle} /></div>
             </div>
+            <label className="flex items-center gap-2 mb-3 cursor-pointer select-none">
+              <div role="switch" aria-checked={form.newUsersOnly} tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setForm({ ...form, newUsersOnly: !form.newUsersOnly }); } }} onClick={() => setForm({ ...form, newUsersOnly: !form.newUsersOnly })} className="w-[36px] h-5 rounded-xl relative shrink-0" style={{ background: form.newUsersOnly ? "#c47d8e" : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)") }}>
+                <div className="w-[14px] h-[14px] rounded-full bg-white absolute top-[3px] transition-[left] duration-200" style={{ left: form.newUsersOnly ? 19 : 3 }} />
+              </div>
+              <span className="text-[13px]" style={{ color: t.textMuted }}>New users only (first deposit)</span>
+            </label>
             <button onClick={createCoupon} className="adm-btn-primary" style={{ opacity: form.code && form.value ? 1 : .4 }}>Create Coupon</button>
           </div>
         )}
@@ -756,12 +782,14 @@ export function AdminCouponsPage({ dark, t }) {
               <div className="flex items-center gap-2">
                 <span className="m text-base font-semibold" style={{ color: t.accent }}>{c.code}</span>
                 <span className="text-sm font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{c.type === "percent" ? `${c.value}%` : `₦${(c.value || 0).toLocaleString()}`} bonus</span>
+                {c.newUsersOnly && <span className="text-[11px] py-0.5 px-1.5 rounded" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(59,130,246,.08)", color: dark ? "#93c5fd" : "#2563eb" }}>New users</span>}
                 {!c.enabled && <span className="text-[11px] py-0.5 px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", color: t.textMuted }}>Disabled</span>}
               </div>
               <div className="text-[13px] mt-0.5" style={{ color: t.textMuted }}>
-                Min: {c.minOrder ? `₦${c.minOrder.toLocaleString()}` : "None"} · Uses: {c.used || 0}/{c.maxUses || "∞"} · {c.expires ? `Exp: ${c.expires}` : "No expiry"}
+                Min: {c.minOrder ? `₦${c.minOrder.toLocaleString()}` : "None"} · Max: {c.maxDeposit ? `₦${c.maxDeposit.toLocaleString()}` : "None"} · Uses: {c.used || 0}/{c.maxUses || "∞"} · {c.expires ? `Exp: ${c.expires}` : "No expiry"}
               </div>
             </div>
+            <button onClick={() => { navigator.clipboard.writeText(c.code); setCopiedCode(c.id); setTimeout(() => setCopiedCode(null), 1500); }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: copiedCode === c.id ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }}>{copiedCode === c.id ? "Copied!" : "Copy"}</button>
             <button onClick={async () => { const ok = await confirm({ title: "Delete Coupon", message: `Delete coupon "${c.code}"? This cannot be undone.`, confirmLabel: "Delete", danger: true }); if (ok) deleteCoupon(c.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
           </div>
         )) : (

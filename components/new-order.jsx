@@ -65,6 +65,65 @@ const TS = {
   Premium: { bg: "#f5eef5", border: "#d4b8d4", text: "#534AB7", bgD: "#221535", borderD: "#3d2060", label: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></svg> },
 };
 
+const PROV_COLORS = { mtp: "#ef4444", jap: "#3b82f6", dao: "#22c55e" };
+
+function TierChips({ svc, selTier, selSvc, onPickTier, dark }) {
+  return (
+    <div className="flex gap-1.5 flex-wrap mt-2.5" data-tour="no-tier-select">
+      {svc.tiers.map(tier => {
+        const s = TS[tier.tier];
+        const isSel = selTier?.tier === tier.tier && selSvc?.id === svc.id;
+        return (
+          <button key={tier.tier} onClick={e => onPickTier(tier, e)} className={`no-tier-chip relative py-1 px-2.5 desktop:py-[7px] desktop:px-3.5 rounded-[20px] text-[11px] desktop:text-[13px] font-semibold cursor-pointer border-[1.5px] border-solid font-[inherit] transition-all duration-150 ease-in-out flex items-center gap-1.5 hover:brightness-110 hover:-translate-y-px${isSel ? " !border-2 shadow-[0_2px_8px_rgba(0,0,0,.28)] -translate-y-px" : ""}`} style={{ background: dark ? s.bgD : s.bg, color: s.text, borderColor: isSel ? s.text : (dark ? s.borderD : s.border) }}>
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PROV_COLORS[tier.provider] || PROV_COLORS.mtp }} />
+            {s.label} {tier.tier} · ₦{tier.price.toLocaleString()}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t, orderMode }) {
+  const isSel = selSvc?.id === svc.id;
+  const lowestPrice = Math.min(...svc.tiers.map(ti => ti.price));
+  const lowestPer = svc.tiers.find(ti => ti.price === lowestPrice)?.per || "1K";
+  const activeTier = isSel && selTier ? selTier : null;
+  return (
+    <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => onPickService(svc)} className={`no-svc-card rounded-xl desktop:rounded-[14px] py-3 px-3.5 md:py-3.5 md:px-4 desktop:py-4 desktop:px-5 cursor-pointer border border-solid transition-all duration-150 ease-in-out hover:border-[rgba(196,125,142,.19)]${isSel ? " relative z-[1]" : ""}`} style={{ borderColor: isSel ? (svc.ng ? (dark ? "#4ade80" : "#16a34a") : t.accent) : t.cardBorder, borderLeftWidth: isSel ? 4 : svc.ng ? 3 : undefined, borderLeftColor: isSel ? (svc.ng ? (dark ? "#4ade80" : "#16a34a") : "#c47d8e") : svc.ng ? "#4ade80" : undefined, background: isSel ? (svc.ng ? (dark ? "#122a1c" : "#d0f0db") : (dark ? "#2a1828" : "#f5e4e8")) : svc.ng ? (dark ? "rgba(30,80,60,.24)" : "#e8f5ee") : t.cardBg, opacity: selSvc && !isSel ? (dark ? .3 : .45) : 1, transform: isSel ? "scale(1.01)" : "scale(1)", boxShadow: isSel ? (svc.ng ? "0 4px 20px rgba(22,163,74,.31), 0 0 0 1.5px rgba(22,163,74,.28)" : "0 4px 20px rgba(196,125,142,.38), 0 0 0 1.5px rgba(196,125,142,.31)") : undefined }}>
+      <div className="flex items-start justify-between gap-3 max-md:flex-wrap max-md:gap-1.5">
+        <div className="flex-1 min-w-0 max-md:basis-[60%]">
+          <div className="text-sm md:text-[15px] desktop:text-base font-semibold mb-1" style={{ color: svc.ng ? (dark ? "#5dcaa5" : "#0F6E56") : t.text }}>{svc.name}</div>
+          {!isSel && (
+            <div className="flex gap-[3px] flex-wrap">
+              {svc.tiers.map(tier => (
+                <span key={tier.tier} className="m text-[10px] py-0.5 px-[7px] rounded font-bold tracking-wide border border-solid" style={{ background: dark ? TS[tier.tier].bgD : TS[tier.tier].bg, color: TS[tier.tier].text, borderColor: dark ? TS[tier.tier].borderD : TS[tier.tier].border }}>{tier.tier}</span>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="text-right shrink-0">
+          <div className="text-[10px] desktop:text-[11px] mb-0.5" style={{ color: t.textMuted }}>{activeTier ? activeTier.tier : "from"}</div>
+          <div className="m text-[15px] md:text-base desktop:text-lg font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{(activeTier ? activeTier.price : lowestPrice).toLocaleString()}<span className="text-[11px] font-normal" style={{ color: t.textMuted }}>/{activeTier ? activeTier.per : lowestPer}</span></div>
+        </div>
+      </div>
+      {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={onPickTier} dark={dark} />}
+      {isSel && !activeTier && (
+        <div className="flex items-center gap-1.5 mt-2 text-xs font-medium py-2 px-3 rounded-lg bg-[rgba(196,125,142,.06)]" style={{ color: t.textMuted }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+          Select a tier to see details and order
+        </div>
+      )}
+      {isSel && activeTier && (
+        <div className="mt-2.5 py-2.5 px-3 desktop:py-3 desktop:px-3.5 rounded-[10px] flex items-center justify-between gap-3 border border-solid" style={{ background: dark ? `${TS[activeTier.tier].text}08` : `${TS[activeTier.tier].text}06`, borderColor: dark ? `${TS[activeTier.tier].text}18` : `${TS[activeTier.tier].text}12` }}>
+          <div className="text-xs" style={{ color: t.textMuted }}>{refillLabel(activeTier.tier)} · {activeTier.speed} · Min {(activeTier.min || 100).toLocaleString()}</div>
+          {orderMode === "bulk" && <div className="m text-[15px] font-bold" style={{ color: TS[activeTier.tier].text, fontFamily: "'JetBrains Mono', monospace" }}>₦{activeTier.price.toLocaleString()}<span className="text-[11px] font-normal" style={{ color: t.textMuted }}>/{activeTier.per}</span></div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function compactPrice(n) {
   if (n >= 1_000_000) return `₦${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
@@ -665,66 +724,6 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   const groupPlatforms = PLATFORM_GROUPS.find(g => g.label === platGroup)?.platforms || [];
   const visiblePlatforms = groupPlatforms.filter(p => (platformCounts[p.id] || 0) > 0);
 
-  const TierChips = ({ svc }) => (
-    <div className="flex gap-1.5 flex-wrap mt-2.5" data-tour="no-tier-select">
-      {svc.tiers.map(tier => {
-        const s = TS[tier.tier];
-        const isSel = selTier?.tier === tier.tier && selSvc?.id === svc.id;
-        const PROV_COLORS = { mtp: "#ef4444", jap: "#3b82f6", dao: "#22c55e" };
-        return (
-          <button key={tier.tier} onClick={e => pickTier(tier, e)} className={`no-tier-chip relative py-1 px-2.5 desktop:py-[7px] desktop:px-3.5 rounded-[20px] text-[11px] desktop:text-[13px] font-semibold cursor-pointer border-[1.5px] border-solid font-[inherit] transition-all duration-150 ease-in-out flex items-center gap-1.5 hover:brightness-110 hover:-translate-y-px${isSel ? " !border-2 shadow-[0_2px_8px_rgba(0,0,0,.28)] -translate-y-px" : ""}`} style={{ background: dark ? s.bgD : s.bg, color: s.text, borderColor: isSel ? s.text : (dark ? s.borderD : s.border) }}>
-            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PROV_COLORS[tier.provider] || PROV_COLORS.mtp }} />
-            {s.label} {tier.tier} · ₦{tier.price.toLocaleString()}
-          </button>
-        );
-      })}
-    </div>
-  );
-
-  const ServiceCard = ({ svc }) => {
-    const isSel = selSvc?.id === svc.id;
-    const lowestPrice = Math.min(...svc.tiers.map(ti => ti.price));
-    const lowestPer = svc.tiers.find(ti => ti.price === lowestPrice)?.per || "1K";
-    const activeTier = isSel && selTier ? selTier : null;
-    return (
-      <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => pickService(svc)} className={`no-svc-card rounded-xl desktop:rounded-[14px] py-3 px-3.5 md:py-3.5 md:px-4 desktop:py-4 desktop:px-5 cursor-pointer border border-solid transition-all duration-150 ease-in-out hover:border-[rgba(196,125,142,.19)]${isSel ? " relative z-[1]" : ""}`} style={{ borderColor: isSel ? (svc.ng ? (dark ? "#4ade80" : "#16a34a") : t.accent) : t.cardBorder, borderLeftWidth: isSel ? 4 : svc.ng ? 3 : undefined, borderLeftColor: isSel ? (svc.ng ? (dark ? "#4ade80" : "#16a34a") : "#c47d8e") : svc.ng ? "#4ade80" : undefined, background: isSel ? (svc.ng ? (dark ? "#122a1c" : "#d0f0db") : (dark ? "#2a1828" : "#f5e4e8")) : svc.ng ? (dark ? "rgba(30,80,60,.24)" : "#e8f5ee") : t.cardBg, opacity: selSvc && !isSel ? (dark ? .3 : .45) : 1, transform: isSel ? "scale(1.01)" : "scale(1)", boxShadow: isSel ? (svc.ng ? "0 4px 20px rgba(22,163,74,.31), 0 0 0 1.5px rgba(22,163,74,.28)" : "0 4px 20px rgba(196,125,142,.38), 0 0 0 1.5px rgba(196,125,142,.31)") : undefined }}>
-        <div className="flex items-start justify-between gap-3 max-md:flex-wrap max-md:gap-1.5">
-          <div className="flex-1 min-w-0 max-md:basis-[60%]">
-            <div className="text-sm md:text-[15px] desktop:text-base font-semibold mb-1" style={{ color: svc.ng ? (dark ? "#5dcaa5" : "#0F6E56") : t.text }}>{svc.name}</div>
-            {/* Only show badges when NOT expanded — chips replace them */}
-            {!isSel && (
-              <div className="flex gap-[3px] flex-wrap">
-                {svc.tiers.map(tier => (
-                  <span key={tier.tier} className="m text-[10px] py-0.5 px-[7px] rounded font-bold tracking-wide border border-solid" style={{ background: dark ? TS[tier.tier].bgD : TS[tier.tier].bg, color: TS[tier.tier].text, borderColor: dark ? TS[tier.tier].borderD : TS[tier.tier].border }}>{tier.tier}</span>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="text-right shrink-0">
-            <div className="text-[10px] desktop:text-[11px] mb-0.5" style={{ color: t.textMuted }}>{activeTier ? activeTier.tier : "from"}</div>
-            <div className="m text-[15px] md:text-base desktop:text-lg font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{(activeTier ? activeTier.price : lowestPrice).toLocaleString()}<span className="text-[11px] font-normal" style={{ color: t.textMuted }}>/{activeTier ? activeTier.per : lowestPer}</span></div>
-          </div>
-        </div>
-        {/* Tier selection chips — always shown when expanded (single or multi) */}
-        {isSel && <TierChips svc={svc} />}
-        {/* Prompt — shown when expanded but no tier selected yet */}
-        {isSel && !activeTier && (
-          <div className="flex items-center gap-1.5 mt-2 text-xs font-medium py-2 px-3 rounded-lg bg-[rgba(196,125,142,.06)]" style={{ color: t.textMuted }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-            Select a tier to see details and order
-          </div>
-        )}
-        {/* Tier detail — shown when a tier is picked */}
-        {isSel && activeTier && (
-          <div className="mt-2.5 py-2.5 px-3 desktop:py-3 desktop:px-3.5 rounded-[10px] flex items-center justify-between gap-3 border border-solid" style={{ background: dark ? `${TS[activeTier.tier].text}08` : `${TS[activeTier.tier].text}06`, borderColor: dark ? `${TS[activeTier.tier].text}18` : `${TS[activeTier.tier].text}12` }}>
-            <div className="text-xs" style={{ color: t.textMuted }}>{refillLabel(activeTier.tier)} · {activeTier.speed} · Min {(activeTier.min || 100).toLocaleString()}</div>
-            {orderMode === "bulk" && <div className="m text-[15px] font-bold" style={{ color: TS[activeTier.tier].text, fontFamily: "'JetBrains Mono', monospace" }}>₦{activeTier.price.toLocaleString()}<span className="text-[11px] font-normal" style={{ color: t.textMuted }}>/{activeTier.per}</span></div>}
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div ref={mainRef} style={{ paddingBottom: orderMode === "bulk" && cartRows.length > 0 ? 82 : 0 }}>
       <div className="pb-2 desktop:pb-3.5">
@@ -835,7 +834,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {/* ═══ SERVICE CARDS ═══ */}
       <div className="flex flex-col gap-2" data-tour="no-service-list" ref={listRef}>
-        {filtered.map(svc => <ServiceCard key={svc.id} svc={svc} />)}
+        {filtered.map(svc => <ServiceCard key={svc.id} svc={svc} selSvc={selSvc} selTier={selTier} onPickService={pickService} onPickTier={pickTier} dark={dark} t={t} orderMode={orderMode} />)}
         {filtered.length === 0 && <div className="py-10 text-center text-[15px]" style={{ color: t.textMuted }}>Coming soon.</div>}
       </div>
 

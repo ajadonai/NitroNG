@@ -54,12 +54,27 @@ export async function POST(req) {
       return Response.json({ error: `Minimum deposit of ₦${coupon.minOrder.toLocaleString()} required` }, { status: 400 });
     }
 
-    // Calculate discount
+    // Cap bonus calculation at maxDeposit
+    const bonusBase = coupon.maxDeposit && depositAmount > coupon.maxDeposit * 100
+      ? coupon.maxDeposit * 100
+      : depositAmount;
+
+    // Check new users only
+    if (coupon.newUsersOnly) {
+      const pastDeposit = await prisma.transaction.findFirst({
+        where: { userId: session.id, type: 'deposit', status: 'Completed' },
+      });
+      if (pastDeposit) {
+        return Response.json({ error: 'This coupon is for new users only' }, { status: 400 });
+      }
+    }
+
+    // Calculate discount (capped at maxDeposit if set)
     let discount = 0;
     if (coupon.type === 'percent') {
-      discount = Math.round(depositAmount * (coupon.value / 100));
+      discount = Math.round(bonusBase * (coupon.value / 100));
     } else {
-      discount = coupon.value * 100; // Fixed amount in kobo
+      discount = coupon.value * 100;
     }
 
     return Response.json({
