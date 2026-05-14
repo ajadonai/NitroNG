@@ -192,21 +192,6 @@ function LandingInner(){
               </div>
               <p className="fu fd2 text-base max-md:text-[13px] font-normal max-w-[460px] max-desktop:max-w-[480px] max-md:max-w-[300px] mb-6 max-desktop:mb-5 max-md:mb-4 leading-[1.65] max-md:leading-[1.55] max-desktop:text-center" style={{color:t.heroSoft}}>Instant delivery across 35+ platforms. Naira pricing. 24/7 support. Trusted by thousands of Nigerian creators.</p>
 
-              {/* Platform icons */}
-              <div className="fu fd3 hidden max-desktop:!flex items-center justify-center gap-[7px] mb-4">
-                {[
-                  [<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>,"rgba(225,48,108,.12)"],
-                  [<svg width="12" height="14" viewBox="0 0 448 512" fill="#ff0050"><path d="M448 209.91a210.06 210.06 0 01-122.77-39.25v178.72A162.55 162.55 0 11185 188.31v89.89a74.62 74.62 0 1052.23 71.18V0h88a121 121 0 00122.77 121.33z"/></svg>,"rgba(255,0,80,.1)"],
-                  [<svg width="14" height="10" viewBox="0 0 576 512" fill="#FF0000"><path d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"/></svg>,"rgba(255,0,0,.1)"],
-                  [<svg width="12" height="12" viewBox="0 0 24 24" fill={dark?"#eee":"#fff"}><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,dark?"rgba(255,255,255,.1)":"rgba(255,255,255,.2)"],
-                  [<svg width="8" height="14" viewBox="0 0 320 512" fill="#1877F2"><path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z"/></svg>,"rgba(24,119,242,.1)"],
-                  [<svg width="14" height="12" viewBox="0 0 496 512" fill="#0088cc"><path d="M248 8C111.033 8 0 119.033 0 256s111.033 248 248 248 248-111.033 248-248S384.967 8 248 8zm114.952 168.66c-3.732 39.215-19.881 134.378-28.1 178.3-3.476 18.584-10.322 24.816-16.948 25.425-14.4 1.326-25.338-9.517-39.287-18.661-21.827-14.308-34.158-23.215-55.346-37.177-24.485-16.135-8.612-25 5.342-39.5 3.652-3.793 67.107-61.51 68.335-66.746.154-.655.3-3.1-1.154-4.384s-3.59-.849-5.135-.5q-3.283.746-104.608 69.142-14.845 10.194-26.894 9.934c-8.855-.191-25.888-5.006-38.551-9.123-15.531-5.048-27.875-7.717-26.8-16.291q.84-6.7 18.45-13.7 108.446-47.248 144.628-62.3c68.872-28.647 83.183-33.623 92.511-33.789 2.052-.034 6.639.474 9.61 2.885a10.452 10.452 0 013.53 6.716 43.765 43.765 0 01.417 9.769z"/></svg>,"rgba(0,136,204,.1)"],
-                ].map(([icon,bg],i)=>
-                  <div key={i} className="w-[30px] h-[30px] rounded-[8px] flex items-center justify-center backdrop-blur-[8px]" style={{background:dark?"rgba(255,255,255,.12)":"rgba(255,255,255,.35)",border:`1.5px solid ${dark?"rgba(130,255,50,.55)":"rgba(80,180,0,.7)"}`}}>{icon}</div>
-                )}
-                <span className="text-[11px] font-medium ml-0.5" style={{color:dark?"rgba(255,255,255,.35)":"rgba(255,255,255,.55)"}}>+29 more</span>
-              </div>
-
               {/* Stats — desktop/tablet only (inside mobile card below) */}
               <div className="fu fd3 flex gap-2.5 max-md:!hidden mb-7 w-full max-w-[460px] max-desktop:max-w-[400px] max-desktop:justify-center">
                 {[[siteStats.orders||"0","Orders\ndelivered",false],[siteStats.users||"0","Active\ncreators",false],["98%","Delivery\nrate",true]].map(([num,label,accent],i)=>
