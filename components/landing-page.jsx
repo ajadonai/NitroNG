@@ -193,7 +193,7 @@ function LandingInner(){
               <p className="fu fd2 text-base max-md:text-[13px] font-normal max-w-[460px] max-desktop:max-w-[480px] max-md:max-w-[300px] mb-6 max-desktop:mb-5 max-md:mb-4 leading-[1.65] max-md:leading-[1.55] max-desktop:text-center" style={{color:t.heroSoft}}>Instant delivery across 35+ platforms. Naira pricing. 24/7 support. Trusted by thousands of Nigerian creators.</p>
 
               {/* Platform icons */}
-              <div className="fu fd3 flex items-center justify-center max-desktop:justify-center gap-[7px] mb-4 max-md:mb-4">
+              <div className="fu fd3 hidden max-desktop:!flex items-center justify-center gap-[7px] mb-4">
                 {[
                   [<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>,"rgba(225,48,108,.12)"],
                   [<svg width="12" height="14" viewBox="0 0 448 512" fill="#ff0050"><path d="M448 209.91a210.06 210.06 0 01-122.77-39.25v178.72A162.55 162.55 0 11185 188.31v89.89a74.62 74.62 0 1052.23 71.18V0h88a121 121 0 00122.77 121.33z"/></svg>,"rgba(255,0,80,.1)"],
