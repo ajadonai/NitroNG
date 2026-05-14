@@ -9,6 +9,11 @@ export async function GET() {
     try { userCount = await prisma.user.count(); } catch {}
     try { orderCount = await prisma.order.count(); } catch {}
 
+    const USER_BASE = 2000;
+    const ORDER_BASE = 50000;
+    const displayUsers = userCount + USER_BASE;
+    const displayOrders = orderCount + ORDER_BASE;
+
     let promo = null;
     try {
       const settings = await prisma.setting.findMany();
@@ -35,8 +40,8 @@ export async function GET() {
 
     return ok({
       stats: {
-        users: userCount >= 1000 ? `${Math.floor(userCount / 1000)}K+` : userCount > 0 ? `${userCount}+` : '0',
-        orders: orderCount >= 1000000 ? `${(orderCount / 1000000).toFixed(1)}M+` : orderCount >= 1000 ? `${Math.floor(orderCount / 1000)}K+` : orderCount > 0 ? `${orderCount}+` : '0',
+        users: displayUsers >= 1000 ? `${Math.floor(displayUsers / 1000)}K+` : `${displayUsers}+`,
+        orders: displayOrders >= 1000000 ? `${(displayOrders / 1000000).toFixed(1)}M+` : displayOrders >= 1000 ? `${Math.floor(displayOrders / 1000)}K+` : `${displayOrders}+`,
       },
       promo,
       alerts,

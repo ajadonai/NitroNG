@@ -273,11 +273,11 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         {/* ── API ACCESS ── */}
         <div id="set-api" className="set-card" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}`, opacity: .55 }}>
             <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-              <div className="set-card-title" style={{ color: t.textMuted }}>API Access</div>
+              <div className="set-card-title" style={{ color: t.text }}>API Access</div>
               <div className="set-card-desc" style={{ color: t.textMuted }}>Integrate Nitro services into your own platform.</div>
             </div>
-            <div className="set-card-body">
-              <div className="py-2.5 px-3.5 rounded-lg text-sm" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", color: t.textMuted }}>Coming soon</div>
+            <div className="set-card-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div className="text-sm" style={{ color: t.textMuted }}>Coming soon — reseller API with full documentation, key management, and usage dashboard.</div>
             </div>
         </div>
 

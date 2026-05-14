@@ -14,11 +14,11 @@ import CookieBanner from '@/components/cookie-banner';
 
 export const metadata = {
   title: {
-    default: 'The Nitro NG — Grow Your Socials | Nigeria',
+    default: "The Nitro NG — Grow Your Socials | Nigeria's Growth Hub",
     template: '%s | The Nitro NG',
   },
-  description: 'Grow your Instagram, TikTok, YouTube and 35+ platforms with real engagement. Instant delivery, Naira pricing, 24/7 support. Built for Nigerian creators and businesses.',
-  keywords: ['SMM panel', 'buy Instagram followers Nigeria', 'buy TikTok views', 'YouTube subscribers', 'social media marketing', 'SMM panel Nigeria', 'buy followers', 'buy likes', 'Nigerian SMM', 'social media growth Nigeria', 'instant delivery'],
+  description: "Real engagement across Instagram, TikTok, YouTube and 35+ platforms. Naira pricing, instant delivery, 24/7 support. Built for Nigerian creators and businesses.",
+  keywords: ['social media growth Nigeria', 'grow Instagram followers Nigeria', 'grow TikTok Nigeria', 'YouTube subscribers Nigeria', 'social media marketing Nigeria', 'Instagram growth service', 'TikTok growth Nigeria', 'Nigerian creators', 'Naira SMM', 'instant delivery', 'real engagement Nigeria'],
   authors: [{ name: 'The Nitro NG', url: 'https://nitro.ng' }],
   creator: 'The Nitro NG',
   publisher: 'The Nitro NG',
@@ -113,7 +113,7 @@ export default function RootLayout({ children }) {
     "@graph": [
       { "@type": "SiteNavigationElement", name: "Create Account", url: "https://nitro.ng/signup" },
       { "@type": "SiteNavigationElement", name: "Log In", url: "https://nitro.ng/login" },
-      { "@type": "SiteNavigationElement", name: "Free Instagram Audit", url: "https://nitro.ng/audit" },
+      { "@type": "SiteNavigationElement", name: "Sign Up", url: "https://nitro.ng/signup" },
       { "@type": "SiteNavigationElement", name: "Blog", url: "https://nitro.ng/blog" },
       { "@type": "SiteNavigationElement", name: "FAQ", url: "https://nitro.ng/faq" },
     ],

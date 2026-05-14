@@ -43,7 +43,7 @@ export async function POST(req) {
     let coupons = await getCoupons();
 
     if (action === 'create') {
-      const { code, type, value, minOrder, maxUses, expires } = body;
+      const { code, type, value, minOrder, maxDeposit, maxUses, expires, newUsersOnly } = body;
       if (!code?.trim()) return Response.json({ error: 'Code required' }, { status: 400 });
       const numValue = Number(value) || 0;
       if (numValue <= 0) return Response.json({ error: 'Value must be greater than 0' }, { status: 400 });
@@ -57,7 +57,9 @@ export async function POST(req) {
         type: type || 'percent',
         value: numValue,
         minOrder: Number(minOrder) || 0,
+        maxDeposit: Number(maxDeposit) || 0,
         maxUses: Number(maxUses) || 100,
+        newUsersOnly: !!newUsersOnly,
         used: 0,
         expires: expires || null,
         enabled: true,
