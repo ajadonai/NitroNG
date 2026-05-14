@@ -107,7 +107,7 @@ function LandingInner(){
   useEffect(()=>{
     const handleKey=(e)=>{
       if(modal)return;if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;
-      if(e.code==="Space"){e.preventDefault();const next=e.shiftKey?Math.max(0,currentSec.current-1):Math.min(sectionIds.length-1,currentSec.current+1);currentSec.current=next;document.getElementById(sectionIds[next])?.scrollIntoView({behavior:"smooth"});}
+      if(e.code==="Space"){e.preventDefault();const next=e.shiftKey?Math.max(0,currentSec.current-1):Math.min(sectionIds.length-1,currentSec.current+1);currentSec.current=next;document.getElementById(sectionIds[next])?.scrollIntoView({behavior:"smooth",block:"start"});}
     };
     window.addEventListener("keydown",handleKey);return()=>window.removeEventListener("keydown",handleKey);
   },[modal]);
@@ -141,7 +141,7 @@ function LandingInner(){
           </button>
           <div className="nav-right flex items-center gap-2.5">
             <div className="flex max-desktop:hidden gap-1 items-center mr-1.5">
-              {["Services","Pricing","Testimonials"].map(l=><button key={l} onClick={()=>document.getElementById(l.toLowerCase())?.scrollIntoView({behavior:"smooth"})} className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{color:dark?"rgba(255,255,255,.75)":"rgba(255,255,255,.75)"}}>{l}</button>)}
+              {["Services","Pricing","Testimonials"].map(l=><button key={l} onClick={()=>document.getElementById(l.toLowerCase())?.scrollIntoView({behavior:"smooth",block:"start"})} className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{color:dark?"rgba(255,255,255,.75)":"rgba(255,255,255,.75)"}}>{l}</button>)}
             </div>
             <button onClick={toggleTheme} aria-label={dark?"Switch to light":"Switch to dark"} className="theme-toggle w-[44px] h-[24px] rounded-xl relative shrink-0" style={{background:dark?"rgba(99,102,241,.28)":"rgba(255,255,255,.24)",transition:"background .8s ease",border:`0.5px solid ${dark?"rgba(99,102,241,.24)":"rgba(255,255,255,.28)"}`}}>
               <div className="w-[18px] h-[18px] rounded-full absolute flex items-center justify-center" style={{background:dark?"#1e1b4b":"#fff",top:2.5,left:dark?22.5:2.5,transition:"left .8s cubic-bezier(.4,0,.2,1), background .8s ease"}}>
@@ -205,7 +205,7 @@ function LandingInner(){
               {/* CTAs — desktop */}
               <div className="fu fd4 max-desktop:!hidden flex gap-3 items-center flex-wrap">
                 <button onClick={()=>setModal("signup")} className="hero-cta-btn py-3.5 px-9 rounded-xl text-[15px] font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{background:"#fff",color:"#1a1a1a",boxShadow:"0 8px 32px rgba(0,0,0,.24)"}}>Create free account <span className="text-lg">→</span></button>
-                <button onClick={()=>document.getElementById("pricing")?.scrollIntoView({behavior:"smooth"})} className="hero-secondary-btn py-3.5 px-7 rounded-xl text-[15px] font-medium bg-transparent cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{border:`0.5px solid ${dark?"rgba(255,255,255,.19)":"rgba(255,255,255,.38)"}`,color:dark?"rgba(244,241,237,.7)":"#fff"}}>View pricing</button>
+                <button onClick={()=>document.getElementById("pricing")?.scrollIntoView({behavior:"smooth",block:"start"})} className="hero-secondary-btn py-3.5 px-7 rounded-xl text-[15px] font-medium bg-transparent cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{border:`0.5px solid ${dark?"rgba(255,255,255,.19)":"rgba(255,255,255,.38)"}`,color:dark?"rgba(244,241,237,.7)":"#fff"}}>View pricing</button>
               </div>
 
               {/* Mobile CTA — auth card with stats */}
@@ -220,10 +220,8 @@ function LandingInner(){
                         </div>
                       )}
                     </div>
-                    <button onClick={()=>{window.location.href="/api/auth/google"}} className="w-full py-[11px] rounded-xl text-[14px] font-semibold flex items-center justify-center gap-2.5 cursor-pointer" style={{background:dark?"rgba(255,255,255,.1)":"#fff",border:`1px solid ${dark?"rgba(255,255,255,.14)":"rgba(0,0,0,.12)"}`,color:dark?"#eae7e2":"#333"}}><svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Sign up with Google</button>
-                    <div className="flex items-center gap-3 my-2.5"><div className="flex-1 h-px" style={{background:dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.08)"}}/><span className="text-[11px] font-medium" style={{color:dark?"rgba(255,255,255,.3)":"rgba(0,0,0,.3)"}}>or</span><div className="flex-1 h-px" style={{background:dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.08)"}}/></div>
                     <button onClick={()=>setModal("signup")} className="w-full py-[14px] rounded-xl text-[16px] font-bold border-none cursor-pointer hero-cta-pulse" style={{background:"linear-gradient(135deg,#c47d8e,#a3586b)",color:"#fff",boxShadow:"0 6px 24px rgba(196,125,142,.4)"}}>Create free account →</button>
-                    <div className="text-center mt-2.5 text-[12px]" style={{color:dark?"rgba(255,255,255,.4)":"rgba(0,0,0,.4)"}}>Already have an account? <button onClick={()=>setModal("login")} className="bg-transparent border-none text-[12px] font-semibold cursor-pointer" style={{color:t.accent}}>Log in</button></div>
+                    <button onClick={()=>setModal("login")} className="w-full py-[11px] rounded-xl text-[14px] font-semibold cursor-pointer mt-2" style={{background:"transparent",border:`1.5px solid ${dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.14)"}`,color:dark?"rgba(255,255,255,.7)":"rgba(0,0,0,.55)"}}>Sign in to your account</button>
                   </div>
                   <div className="flex items-center justify-center gap-3 px-5 py-2 max-md:px-4 text-[11px]" style={{background:dark?"rgba(255,255,255,.03)":"rgba(0,0,0,.02)",borderTop:`1px solid ${dark?"rgba(255,255,255,.06)":"rgba(0,0,0,.04)"}`,color:dark?"rgba(255,255,255,.35)":"rgba(0,0,0,.35)"}}>
                     <span className="inline-flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Refund guarantee</span>
@@ -281,7 +279,7 @@ function LandingInner(){
       {/* Side navigation indicator — desktop only */}
       <div className="side-nav">
         {sectionIds.map((id,i)=>(
-          <button key={id} className={`side-nav-dot${activeSection===i?" side-nav-active":""}`} style={{background:activeSection===i?t.accent:t.textMuted}} onClick={()=>document.getElementById(id)?.scrollIntoView({behavior:"smooth"})} title={id} aria-label={id}/>
+          <button key={id} className={`side-nav-dot${activeSection===i?" side-nav-active":""}`} style={{background:activeSection===i?t.accent:t.textMuted}} onClick={()=>document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"})} title={id} aria-label={id}/>
         ))}
       </div>
 

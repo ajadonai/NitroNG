@@ -117,6 +117,7 @@
 [data-reveal="5"] { transition-delay: .4s; }
 
 /* Snap scrolling + side nav — desktop only */
+.snap-section { scroll-margin-top: 4px; }
 @media (min-width: 1200px) {
   .snap-container { scroll-snap-type: y proximity; }
   .snap-section { scroll-snap-align: start; }
