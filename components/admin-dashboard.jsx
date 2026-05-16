@@ -434,15 +434,20 @@ function AdminDashboardInner() {
     } catch {}
   };
 
-  const startTitleFlash = (msg) => {
+  const titleCountRef = useRef(0);
+  const startTitleFlash = () => {
+    titleCountRef.current++;
+    const update = () => { document.title = `(${titleCountRef.current}) ${origTitleRef.current}`; };
+    update();
     if (titleFlashRef.current) return;
     let on = true;
     titleFlashRef.current = setInterval(() => {
-      document.title = on ? msg : origTitleRef.current;
+      document.title = on ? `(${titleCountRef.current}) ${origTitleRef.current}` : origTitleRef.current;
       on = !on;
     }, 1200);
   };
   const stopTitleFlash = () => {
+    titleCountRef.current = 0;
     if (titleFlashRef.current) { clearInterval(titleFlashRef.current); titleFlashRef.current = null; }
     if (typeof document !== 'undefined') document.title = origTitleRef.current;
   };
@@ -487,7 +492,7 @@ function AdminDashboardInner() {
 
     if (toast) toast[l.toast](l.title, l.body, { duration: event.type === 'stale_ticket' ? 10000 : 6000 });
 
-    if (!document.hasFocus()) startTitleFlash(`(!) ${l.title}`);
+    if (!document.hasFocus()) startTitleFlash();
 
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
       new Notification(l.title, { body: l.body, icon: '/icon-192.png', tag: key });
