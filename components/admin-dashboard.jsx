@@ -18,10 +18,12 @@ import { fN, fD } from "../lib/format";
 import { SITE } from "../lib/site";
 import { PlatformIcon } from "./platform-icon";
 import { Avatar } from "./avatar";
+import { useToast } from "./toast";
 
 /* ═══════════════════════════════════════════ */
 /* ═══ HELPERS                             ═══ */
 /* ═══════════════════════════════════════════ */
+function ToastBridge({ toastRef }) { toastRef.current = useToast(); return null; }
 
 /* ═══════════════════════════════════════════ */
 /* ═══ NAV CONFIG                          ═══ */
@@ -321,6 +323,7 @@ function AdminDashboardInner() {
   const [leftOpen, setLeftOpen] = useState(false);
   const [admin, setAdmin] = useState(null);
   const [data, setData] = useState({ stats: {}, recentOrders: [], recentUsers: [], openTickets: [], activity: [], unreadTicketCount: 0 });
+  const toastRef = useRef(null);
 
   /* Theme — provided by ThemeProvider */
   // Sync admin theme preference to server when it changes (skip initial mount)
@@ -367,36 +370,109 @@ function AdminDashboardInner() {
     load();
   }, [redirecting]);
 
-  /* ── Ticket notification sound + browser alerts ── */
-  const prevTicketCountRef = useRef(null);
-  const playNotificationSound = () => {
+  /* ── Admin notification system ── */
+  const notifLastPollRef = useRef(null);
+  const notifSeenRef = useRef(new Set());
+  const staleEscalatedRef = useRef(new Set());
+  const origTitleRef = useRef(typeof document !== 'undefined' ? document.title : '');
+  const titleFlashRef = useRef(null);
+  const [dnd, setDnd] = useState(() => { try { return localStorage.getItem('nitro-admin-dnd') === '1'; } catch { return false; } });
+  const [notifPrefs, setNotifPrefs] = useState(() => {
+    try {
+      const saved = localStorage.getItem('nitro-admin-notif-prefs');
+      return saved ? JSON.parse(saved) : { new_ticket: true, ticket_reply: true, deposit: true, large_deposit: true, stale_ticket: true };
+    } catch { return { new_ticket: true, ticket_reply: true, deposit: true, large_deposit: true, stale_ticket: true }; }
+  });
+
+  const toggleDnd = () => {
+    setDnd(prev => {
+      const next = !prev;
+      try { localStorage.setItem('nitro-admin-dnd', next ? '1' : '0'); } catch {}
+      if (next) stopTitleFlash();
+      return next;
+    });
+  };
+  const updateNotifPref = (key, val) => {
+    setNotifPrefs(prev => {
+      const next = { ...prev, [key]: val };
+      try { localStorage.setItem('nitro-admin-notif-prefs', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const playSound = (type) => {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const play = (freq, start, dur) => {
+      const play = (freq, start, dur, vol = 0.12) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
         osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.15, ctx.currentTime + start);
+        gain.gain.setValueAtTime(vol, ctx.currentTime + start);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
         osc.connect(gain).connect(ctx.destination);
         osc.start(ctx.currentTime + start);
         osc.stop(ctx.currentTime + start + dur);
       };
-      play(880, 0, 0.15);
-      play(1100, 0.12, 0.15);
-      play(1320, 0.24, 0.2);
+      if (type === 'new_ticket') { play(880, 0, 0.12); play(1100, 0.1, 0.12); play(1320, 0.2, 0.18); }
+      else if (type === 'ticket_reply') { play(660, 0, 0.12); play(880, 0.1, 0.15); }
+      else if (type === 'large_deposit') { play(523, 0, 0.1, 0.18); play(659, 0.08, 0.1, 0.18); play(784, 0.16, 0.1, 0.18); play(1047, 0.24, 0.25, 0.18); }
+      else if (type === 'deposit') { play(784, 0, 0.1); play(1047, 0.1, 0.15); }
+      else if (type === 'stale_ticket') { play(440, 0, 0.2, 0.18); play(440, 0.3, 0.2, 0.18); play(440, 0.6, 0.3, 0.2); }
     } catch {}
   };
-  const fireTicketNotification = (count, prev) => {
-    const newCount = count - prev;
-    playNotificationSound();
+
+  const startTitleFlash = (msg) => {
+    if (titleFlashRef.current) return;
+    let on = true;
+    titleFlashRef.current = setInterval(() => {
+      document.title = on ? msg : origTitleRef.current;
+      on = !on;
+    }, 1200);
+  };
+  const stopTitleFlash = () => {
+    if (titleFlashRef.current) { clearInterval(titleFlashRef.current); titleFlashRef.current = null; }
+    if (typeof document !== 'undefined') document.title = origTitleRef.current;
+  };
+
+  useEffect(() => {
+    const onFocus = () => stopTitleFlash();
+    window.addEventListener('focus', onFocus);
+    return () => { window.removeEventListener('focus', onFocus); stopTitleFlash(); };
+  }, []);
+
+  const fireNotification = (event, toast) => {
+    if (dnd) return;
+    if (!notifPrefs[event.type]) return;
+    if (active === 'tickets' && (event.type === 'new_ticket' || event.type === 'ticket_reply' || event.type === 'stale_ticket')) return;
+
+    const key = `${event.type}:${event.id}`;
+    if (event.type === 'stale_ticket') {
+      if (staleEscalatedRef.current.has(event.id)) return;
+      staleEscalatedRef.current.add(key);
+    } else {
+      if (notifSeenRef.current.has(key)) return;
+      notifSeenRef.current.add(key);
+      if (notifSeenRef.current.size > 200) notifSeenRef.current = new Set([...notifSeenRef.current].slice(-100));
+    }
+
+    playSound(event.type);
+
+    const labels = {
+      new_ticket: { title: 'New Support Ticket', toast: 'warning', body: `${event.user}: ${event.title}` },
+      ticket_reply: { title: 'Ticket Reply', toast: 'info', body: `${event.user} replied to: ${event.title}` },
+      deposit: { title: 'Payment Received', toast: 'success', body: `${event.user} deposited ₦${(event.amount / 100).toLocaleString()}` },
+      large_deposit: { title: 'Large Deposit', toast: 'success', body: `${event.user} deposited ₦${(event.amount / 100).toLocaleString()}` },
+      stale_ticket: { title: 'Ticket Needs Attention', toast: 'error', body: `${event.user}: "${event.title}" — unreplied for ${event.minutes}min` },
+    };
+    const l = labels[event.type] || { title: 'Notification', toast: 'info', body: '' };
+
+    if (toast) toast[l.toast](l.title, l.body, { duration: event.type === 'stale_ticket' ? 10000 : 6000 });
+
+    if (!document.hasFocus()) startTitleFlash(`(!) ${l.title}`);
+
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-      new Notification('New Support Ticket' + (newCount > 1 ? 's' : ''), {
-        body: `${newCount} new ticket${newCount > 1 ? 's' : ''} — ${count} total open`,
-        icon: '/icon-192.png',
-        tag: 'nitro-ticket',
-      });
+      new Notification(l.title, { body: l.body, icon: '/icon-192.png', tag: key });
     }
   };
 
@@ -417,21 +493,50 @@ function AdminDashboardInner() {
         if (res.ok) {
           const d = await res.json();
           setAdmin(prev => ({ ...prev, name: d.admin?.name || prev.name, role: d.admin?.role || prev.role, pages: d.admin?.pages || prev.pages }));
-          const newTicketCount = d.unreadTicketCount || 0;
-          if (prevTicketCountRef.current !== null && newTicketCount > prevTicketCountRef.current) {
-            fireTicketNotification(newTicketCount, prevTicketCountRef.current);
-          }
-          prevTicketCountRef.current = newTicketCount;
           setData({
             stats: d || {},
             recentOrders: d.recentOrders || [],
             recentUsers: d.recentUsers || [],
             openTickets: d.openTickets || [],
             activity: d.activity || [],
-            unreadTicketCount: newTicketCount,
+            unreadTicketCount: d.unreadTicketCount || 0,
           });
         }
       } catch {}
+
+      if (notifLastPollRef.current) {
+        try {
+          const nr = await fetch(`/api/admin/notifications/poll?since=${encodeURIComponent(notifLastPollRef.current)}`);
+          if (nr.ok) {
+            const { events } = await nr.json();
+            const grouped = {};
+            const singles = [];
+            for (const e of events) {
+              if (e.type === 'deposit') {
+                if (!grouped.deposit) grouped.deposit = { count: 0, total: 0, ids: [] };
+                grouped.deposit.count++;
+                grouped.deposit.total += e.amount;
+                grouped.deposit.ids.push(e.id);
+              } else {
+                singles.push(e);
+              }
+            }
+            for (const e of singles) fireNotification(e, toastRef.current);
+            if (grouped.deposit && grouped.deposit.count > 1) {
+              fireNotification({
+                type: 'deposit',
+                id: grouped.deposit.ids.join(','),
+                amount: grouped.deposit.total,
+                user: `${grouped.deposit.count} users`,
+              }, toastRef.current);
+            } else if (grouped.deposit && grouped.deposit.count === 1) {
+              const d = events.find(e => e.type === 'deposit');
+              if (d) fireNotification(d, toastRef.current);
+            }
+          }
+        } catch {}
+      }
+      notifLastPollRef.current = new Date().toISOString();
     };
     const start = () => { interval = setInterval(poll, 20000); };
     const stop = () => { clearInterval(interval); interval = null; };
@@ -439,7 +544,7 @@ function AdminDashboardInner() {
     start();
     document.addEventListener("visibilitychange", onVisibility);
     return () => { stop(); document.removeEventListener("visibilitychange", onVisibility); };
-  }, [redirecting]);
+  }, [redirecting, dnd, notifPrefs]);
 
   const handleLogout = async () => { try { await fetch("/api/auth/admin/logout", { method: "POST" }); } catch {} window.location.replace("/admin/login?logout=1"); };
 
@@ -521,15 +626,17 @@ function AdminDashboardInner() {
       case "team": return <AdminTeamPage admin={admin} dark={dark} t={t} />;
       case "maintenance": return <AdminMaintenancePage dark={dark} t={t} />;
       case "api": return <AdminAPIPage dark={dark} t={t} />;
-      case "settings": return <AdminSettingsPage admin={admin} dark={dark} t={t} themeMode={themeMode} setThemeMode={setThemeMode} setDark={setDark} onLogout={handleLogout} />;
+      case "settings": return <AdminSettingsPage admin={admin} dark={dark} t={t} themeMode={themeMode} setThemeMode={setThemeMode} setDark={setDark} onLogout={handleLogout} notifPrefs={notifPrefs} updateNotifPref={updateNotifPref} />;
       default: return <AdminOverview data={data} dark={dark} t={t} setActive={setActive} />;
     }
   };
 
   const ticketCount = data.unreadTicketCount || 0;
 
+
   return (
     <ToastProvider dark={dark}>
+    <ToastBridge toastRef={toastRef} />
     <ConfirmProvider dark={dark}>
     <div className="dash-root" style={{ background: t.bg }}>
 
@@ -557,6 +664,12 @@ function AdminDashboardInner() {
             <div className="dash-theme-thumb" style={{ background: dark ? "#1e1b4b" : "#fff", left: dark ? 23 : 3, boxShadow: dark ? "0 0 6px rgba(99,102,241,.3)" : "0 1px 4px rgba(0,0,0,.15)" }}>
               {dark ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>}
             </div>
+          </button>
+          {/* DND toggle */}
+          <button onClick={toggleDnd} className="dash-bell relative" aria-label={dnd ? 'Unmute notifications' : 'Mute notifications'} title={dnd ? 'Notifications muted' : 'Notifications on'} style={{ color: dnd ? t.red : t.textSoft }}>
+            {dnd
+              ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>}
           </button>
           {/* Open tickets */}
           <button onClick={() => { setActive("tickets"); setLeftOpen(false); }} className="dash-bell relative" aria-label="Open tickets" style={{ color: t.textSoft }}>
