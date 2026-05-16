@@ -367,6 +367,45 @@ function AdminDashboardInner() {
     load();
   }, [redirecting]);
 
+  /* ── Ticket notification sound + browser alerts ── */
+  const prevTicketCountRef = useRef(null);
+  const playNotificationSound = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const play = (freq, start, dur) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.15, ctx.currentTime + start);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + dur);
+      };
+      play(880, 0, 0.15);
+      play(1100, 0.12, 0.15);
+      play(1320, 0.24, 0.2);
+    } catch {}
+  };
+  const fireTicketNotification = (count, prev) => {
+    const newCount = count - prev;
+    playNotificationSound();
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      new Notification('New Support Ticket' + (newCount > 1 ? 's' : ''), {
+        body: `${newCount} new ticket${newCount > 1 ? 's' : ''} — ${count} total open`,
+        icon: '/icon-192.png',
+        tag: 'nitro-ticket',
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
   /* Smart polling — refresh data every 20s, pause when tab is hidden */
   useEffect(() => {
     if (redirecting) return;
@@ -378,13 +417,18 @@ function AdminDashboardInner() {
         if (res.ok) {
           const d = await res.json();
           setAdmin(prev => ({ ...prev, name: d.admin?.name || prev.name, role: d.admin?.role || prev.role, pages: d.admin?.pages || prev.pages }));
+          const newTicketCount = d.unreadTicketCount || 0;
+          if (prevTicketCountRef.current !== null && newTicketCount > prevTicketCountRef.current) {
+            fireTicketNotification(newTicketCount, prevTicketCountRef.current);
+          }
+          prevTicketCountRef.current = newTicketCount;
           setData({
             stats: d || {},
             recentOrders: d.recentOrders || [],
             recentUsers: d.recentUsers || [],
             openTickets: d.openTickets || [],
             activity: d.activity || [],
-            unreadTicketCount: d.unreadTicketCount || 0,
+            unreadTicketCount: newTicketCount,
           });
         }
       } catch {}
