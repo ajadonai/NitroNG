@@ -28,6 +28,7 @@ const GuideSidebar = dynamic(() => import("./guide-page").then(m => m.GuideSideb
 const LeaderboardPage = dynamic(() => import("./leaderboard-page").then(m => m.default), { ssr: false });
 const LeaderboardCard = dynamic(() => import("./leaderboard-page").then(m => m.LeaderboardCard), { ssr: false });
 const TierPerksCard = dynamic(() => import("./leaderboard-page").then(m => m.TierPerksCard), { ssr: false });
+const EarnPage = dynamic(() => import("./earn-page").then(m => m.default), { ssr: false });
 
 /* ═══════════════════════════════════════════ */
 /* ═══ SVG ICONS                          ═══ */
@@ -43,6 +44,7 @@ const I = {
   referrals: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>,
   support: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,
   settings: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
+  earn: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M15.5 9.5c0-1.38-1.57-2.5-3.5-2.5s-3.5 1.12-3.5 2.5S10.07 12 12 12s3.5 1.12 3.5 2.5-1.57 2.5-3.5 2.5-3.5-1.12-3.5-2.5"/></svg>,
   leaderboard: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg>,
   instagram: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>,
   x: <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,
@@ -56,6 +58,7 @@ const NAV_ITEMS = [
   { id: "add-funds", label: "Wallet" },
   { id: "audit", label: "Audit", soon: true },
   { id: "cleanup", label: "Cleanup", soon: true },
+  { id: "earn", label: "Earn", soon: true },
   { id: "leaderboard", label: "Leaderboard", soon: true },
   { id: "guide", label: "Guide" },
   { id: "referrals", label: "Referrals" },
@@ -73,6 +76,7 @@ const BOTTOM_TABS = [
 const MORE_ITEMS = [
   { id: "audit", label: "Audit", soon: true },
   { id: "cleanup", label: "Cleanup", soon: true },
+  { id: "earn", label: "Earn", soon: true },
   { id: "leaderboard", label: "Leaderboard", soon: true },
   { id: "referrals", label: "Referrals" },
   { id: "guide", label: "Guide" },
@@ -680,6 +684,7 @@ function DashboardInner({ initialData }) {
   const isLeaderboard = active === "leaderboard";
   const isAudit = active === "audit";
   const isCleanup = active === "cleanup";
+  const isEarn = active === "earn";
   const noHasOrder = noSelSvc && noSelTier;
 
   // Trigger order tour on first visit to services page
@@ -964,6 +969,8 @@ function DashboardInner({ initialData }) {
         return <AddFundsPage user={user} txs={enrichedTxs} walletSummary={walletSummary} dark={dark} t={t} paymentStatus={paymentStatus} setPaymentStatus={setPaymentStatus} onPlaceOrder={() => setActive("services")} onRefresh={refreshDashboard} />;
       case "guide":
         return <GuidePage dark={dark} t={t} />;
+      case "earn":
+        return <EarnPage dark={dark} t={t} />;
       case "leaderboard":
         return <LeaderboardPage dark={dark} t={t} />;
       case "audit":
@@ -1096,7 +1103,7 @@ function DashboardInner({ initialData }) {
         {/* ── MAIN ── */}
         <main className="dash-main" style={{ background: t.bg, ...(isSupport ? { overflow: "hidden" } : {}) }}>
           <AnnouncementBanner alerts={alerts} dark={dark} mode="dashboard" />
-          {!isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isGuide && !isLeaderboard && !isAudit && !isCleanup && <div className="pb-3.5 max-md:pb-2">
+          {!isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isGuide && !isLeaderboard && !isAudit && !isCleanup && !isEarn && <div className="pb-3.5 max-md:pb-2">
             <div className="text-xl max-md:text-lg font-semibold mb-0.5" style={{ color: t.text }}>What's good, {firstName}</div>
             <div className="text-sm" style={{ color: t.textMuted }}>Here's your empire at a glance</div>
             <div className="page-divider" style={{ background: t.cardBorder }} />
