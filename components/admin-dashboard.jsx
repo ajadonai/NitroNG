@@ -373,6 +373,7 @@ function AdminDashboardInner() {
   /* ── Admin notification system ── */
   const notifLastPollRef = useRef(null);
   const notifSeenRef = useRef(new Set());
+  const staleLastAlertRef = useRef(new Map());
   const origTitleRef = useRef(typeof document !== 'undefined' ? document.title : '');
   const titleFlashRef = useRef(null);
   const [dnd, setDnd] = useState(() => { try { return localStorage.getItem('nitro-admin-dnd') === '1'; } catch { return false; } });
@@ -472,7 +473,13 @@ function AdminDashboardInner() {
 
     const key = `${event.type}:${event.id}`;
     if (event.type === 'stale_ticket') {
-      // Stale tickets intentionally re-alert each poll cycle until handled.
+      const now = Date.now();
+      const lastAlert = staleLastAlertRef.current.get(event.id);
+      if (lastAlert) {
+        const interval = event.minutes >= 30 ? 5 * 60000 : 5 * 60000;
+        if (now - lastAlert < interval) return;
+      }
+      staleLastAlertRef.current.set(event.id, now);
     } else {
       if (notifSeenRef.current.has(key)) return;
       notifSeenRef.current.add(key);
