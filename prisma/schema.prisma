@@ -47,11 +47,15 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  orders       Order[]
-  transactions Transaction[]
-  tickets      Ticket[]
-  sessions     Session[]
-  waitlist     Waitlist[]
+  orders        Order[]
+  transactions  Transaction[]
+  tickets       Ticket[]
+  sessions      Session[]
+  waitlist      Waitlist[]
+  gameSessions  GameSession[]
+  gameScores    GameScore[]
+  gameRewards   GameReward[]
+  videoWatches  VideoWatch[]
 
   @@map("users")
 }
@@ -381,4 +385,82 @@ model Waitlist {
 
   @@unique([userId, feature])
   @@map("waitlist")
+}
+
+// ──────────────────────────────────────
+// EARN — GAME SESSIONS
+// ──────────────────────────────────────
+
+model GameSession {
+  id        String   @id @default(cuid())
+  userId    String
+  seed      String
+  status    String   @default("active") // active | completed | expired
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+  @@map("game_sessions")
+}
+
+// ──────────────────────────────────────
+// EARN — GAME SCORES
+// ──────────────────────────────────────
+
+model GameScore {
+  id        String   @id @default(cuid())
+  userId    String
+  sessionId String
+  score     Int
+  moves     Int
+  duration  Int      // seconds played
+  monthKey  String   // "2026-05"
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([monthKey, score(sort: Desc)])
+  @@index([userId, monthKey])
+  @@map("game_scores")
+}
+
+// ──────────────────────────────────────
+// EARN — GAME REWARDS
+// ──────────────────────────────────────
+
+model GameReward {
+  id        String   @id @default(cuid())
+  userId    String
+  monthKey  String   // "2026-05"
+  rank      Int      // 1-5
+  score     Int
+  amount    Int      // kobo
+  credited  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([monthKey, rank])
+  @@index([userId])
+  @@map("game_rewards")
+}
+
+// ──────────────────────────────────────
+// EARN — VIDEO WATCHES
+// ──────────────────────────────────────
+
+model VideoWatch {
+  id        String   @id @default(cuid())
+  userId    String
+  adUnitId  String?
+  earned    Int      // kobo credited to user
+  revenue   Int?     // kobo total ad revenue (for tracking split)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@map("video_watches")
 }
