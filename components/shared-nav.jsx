@@ -222,7 +222,7 @@ export function SharedFooter() {
 
         {/* Bottom bar */}
         <div className="pt-6 flex justify-between items-center flex-wrap gap-3" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)"}` }}>
-          <span className="text-[12px]" style={{ color: t.soft }}>© {new Date().getFullYear() > 2026 ? `2026–${new Date().getFullYear()}` : "2026"} The Nitro NG. All rights reserved.</span>
+          <span className="text-[12px]" style={{ color: t.soft }}>© {new Date().getFullYear() > 2026 ? `2026–${new Date().getFullYear()}` : "2026"} The Nitro NG. All rights reserved. RC 9514845</span>
           <span className="text-[12px]" style={{ color: t.muted }}>Made in Nigeria 🇳🇬</span>
         </div>
       </div>
