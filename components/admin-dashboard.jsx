@@ -400,9 +400,22 @@ function AdminDashboardInner() {
     });
   };
 
+  const audioCtxRef = useRef(null);
+  useEffect(() => {
+    const unlock = () => {
+      if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtxRef.current.state === 'suspended') audioCtxRef.current.resume();
+    };
+    window.addEventListener('click', unlock, { once: false });
+    window.addEventListener('keydown', unlock, { once: false });
+    return () => { window.removeEventListener('click', unlock); window.removeEventListener('keydown', unlock); };
+  }, []);
+
   const playSound = (type) => {
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') ctx.resume();
       const play = (freq, start, dur, vol = 0.12) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
