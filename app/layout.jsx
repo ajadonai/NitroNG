@@ -27,7 +27,7 @@ export const metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: 'The Nitro NG — Your Socials Deserve Better Numbers',
+    title: 'The Nitro NG | Your Socials Deserve Better Numbers',
     description: 'Grow your Instagram, TikTok, YouTube and 35+ platforms. Instant delivery, Naira pricing, built for Nigerian creators.',
     url: 'https://nitro.ng',
     siteName: 'The Nitro NG',
@@ -36,7 +36,7 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'The Nitro NG — Your Socials Deserve Better Numbers',
+    title: 'The Nitro NG | Your Socials Deserve Better Numbers',
     description: 'We handle the numbers so you can handle the content. 35+ platforms, Naira pricing, instant delivery.',
     creator: '@TheNitroNG',
     site: '@TheNitroNG',
