@@ -454,7 +454,8 @@ function AdminDashboardInner() {
     return () => { window.removeEventListener('focus', onFocus); stopTitleFlash(); };
   }, []);
 
-  const fireNotification = (event, toast) => {
+  const fireNotifRef = useRef(null);
+  fireNotifRef.current = (event, toast) => {
     if (dnd) return;
     if (!notifPrefs[event.type]) return;
 
@@ -540,9 +541,9 @@ function AdminDashboardInner() {
                 singles.push(e);
               }
             }
-            for (const e of singles) fireNotification(e, toastRef.current);
+            for (const e of singles) fireNotifRef.current?.(e, toastRef.current);
             if (grouped.deposit && grouped.deposit.count > 1) {
-              fireNotification({
+              fireNotifRef.current?.({
                 type: 'deposit',
                 id: grouped.deposit.ids.join(','),
                 amount: grouped.deposit.total,
@@ -550,7 +551,7 @@ function AdminDashboardInner() {
               }, toastRef.current);
             } else if (grouped.deposit && grouped.deposit.count === 1) {
               const d = events.find(e => e.type === 'deposit');
-              if (d) fireNotification(d, toastRef.current);
+              if (d) fireNotifRef.current?.(d, toastRef.current);
             }
           }
         } catch {}
@@ -563,7 +564,7 @@ function AdminDashboardInner() {
     start();
     document.addEventListener("visibilitychange", onVisibility);
     return () => { stop(); document.removeEventListener("visibilitychange", onVisibility); };
-  }, [redirecting, dnd, notifPrefs]);
+  }, [redirecting]);
 
   const handleLogout = async () => { try { await fetch("/api/auth/admin/logout", { method: "POST" }); } catch {} window.location.replace("/admin/login?logout=1"); };
 
