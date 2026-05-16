@@ -482,11 +482,11 @@ function AdminDashboardInner() {
     playSound(event.type);
 
     const labels = {
-      new_ticket: { title: 'New Support Ticket', toast: 'warning', body: `${event.user}: ${event.title}` },
-      ticket_reply: { title: 'Ticket Reply', toast: 'info', body: `${event.user} replied to: ${event.title}` },
-      deposit: { title: 'Payment Received', toast: 'success', body: `${event.user} deposited ₦${(event.amount / 100).toLocaleString()}` },
-      large_deposit: { title: 'Large Deposit', toast: 'success', body: `${event.user} deposited ₦${(event.amount / 100).toLocaleString()}` },
-      stale_ticket: { title: 'Ticket Needs Attention', toast: 'error', body: `${event.user}: "${event.title}" — unreplied for ${event.minutes}min` },
+      new_ticket: { title: 'New ticket dropped', toast: 'warning', body: `${event.user}: ${event.title}` },
+      ticket_reply: { title: `${event.user} dey wait o`, toast: 'info', body: event.title },
+      deposit: { title: `Money entered ₦${(event.amount / 100).toLocaleString()}`, toast: 'success', body: `${event.user} just funded` },
+      large_deposit: { title: `Whale alert ₦${(event.amount / 100).toLocaleString()}`, toast: 'success', body: `${event.user} came correct` },
+      stale_ticket: { title: `${event.user} still waiting (${event.minutes}m)`, toast: 'error', body: `${event.title} — reply now` },
     };
     const l = labels[event.type] || { title: 'Notification', toast: 'info', body: '' };
 
