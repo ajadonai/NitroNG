@@ -444,7 +444,13 @@ function AdminDashboardInner() {
   const fireNotification = (event, toast) => {
     if (dnd) return;
     if (!notifPrefs[event.type]) return;
-    if (active === 'tickets' && (event.type === 'new_ticket' || event.type === 'ticket_reply' || event.type === 'stale_ticket')) return;
+
+    const pages = admin?.pages || '';
+    const hasPage = (p) => pages === '*' || (Array.isArray(pages) ? pages.includes(p) : String(pages).includes(p));
+    if ((event.type === 'new_ticket' || event.type === 'ticket_reply' || event.type === 'stale_ticket') && !hasPage('tickets')) return;
+    if ((event.type === 'deposit' || event.type === 'large_deposit') && !hasPage('finance') && !hasPage('payments') && !hasPage('overview')) return;
+
+    if (active === 'tickets' && document.hasFocus() && (event.type === 'new_ticket' || event.type === 'ticket_reply' || event.type === 'stale_ticket')) return;
 
     const key = `${event.type}:${event.id}`;
     if (event.type === 'stale_ticket') {
