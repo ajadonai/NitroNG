@@ -373,7 +373,6 @@ function AdminDashboardInner() {
   /* ── Admin notification system ── */
   const notifLastPollRef = useRef(null);
   const notifSeenRef = useRef(new Set());
-  const staleEscalatedRef = useRef(new Set());
   const origTitleRef = useRef(typeof document !== 'undefined' ? document.title : '');
   const titleFlashRef = useRef(null);
   const [dnd, setDnd] = useState(() => { try { return localStorage.getItem('nitro-admin-dnd') === '1'; } catch { return false; } });
@@ -468,8 +467,7 @@ function AdminDashboardInner() {
 
     const key = `${event.type}:${event.id}`;
     if (event.type === 'stale_ticket') {
-      if (staleEscalatedRef.current.has(event.id)) return;
-      staleEscalatedRef.current.add(key);
+      // Stale tickets intentionally re-alert each poll cycle until handled.
     } else {
       if (notifSeenRef.current.has(key)) return;
       notifSeenRef.current.add(key);
@@ -502,7 +500,7 @@ function AdminDashboardInner() {
     }
   }, []);
 
-  /* Smart polling — refresh data every 20s, pause when tab is hidden */
+  /* Smart polling — refresh data and notifications every 20s */
   useEffect(() => {
     if (redirecting) return;
     let interval = null;
@@ -558,12 +556,10 @@ function AdminDashboardInner() {
       }
       notifLastPollRef.current = new Date().toISOString();
     };
-    const start = () => { interval = setInterval(poll, 20000); };
+    const start = () => { if (!interval) interval = setInterval(poll, 20000); };
     const stop = () => { clearInterval(interval); interval = null; };
-    const onVisibility = () => { document.hidden ? stop() : (poll(), start()); };
     start();
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => { stop(); document.removeEventListener("visibilitychange", onVisibility); };
+    return () => { stop(); };
   }, [redirecting]);
 
   const handleLogout = async () => { try { await fetch("/api/auth/admin/logout", { method: "POST" }); } catch {} window.location.replace("/admin/login?logout=1"); };
