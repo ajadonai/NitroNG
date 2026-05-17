@@ -66,7 +66,7 @@ function PricingInner({ platforms }) {
             <>
               {/* Popular services quick glance */}
               {!active && (() => {
-                const popular = ['Instagram', 'TikTok', 'YouTube', 'X', 'Facebook'];
+                const popular = ['Instagram', 'TikTok', 'YouTube', 'Twitter/X', 'Facebook'];
                 const items = popular.map(name => platforms.find(p => p.platform === name)).filter(Boolean);
                 return items.length > 0 && (
                   <div className="mb-8 py-4 px-6 max-md:px-4 rounded-2xl" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)"}` }}>
