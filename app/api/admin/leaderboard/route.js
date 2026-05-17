@@ -151,7 +151,7 @@ export async function POST(req) {
       await logActivity(admin.name, `Rewarded ${user.name || user.email} with ₦${amount.toLocaleString()}`, 'reward');
 
       // Email notification
-      if (user.email && user.notifEmail !== false) {
+      if (user.email && user.notifEmail !== false && user.notifOrders !== false) {
         leaderboardRewardEmail(user.name || 'there', amount).then(html => sendEmail(user.email, `You received ₦${amount.toLocaleString()} on Nitro!`, html)).catch(() => {});
       }
 

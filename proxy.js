@@ -18,7 +18,7 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3000', 'http://localhost:3001',
 ];
 
-export async function middleware(request) {
+export async function proxy(request) {
   const { pathname } = request.nextUrl;
 
   // ── CSRF: verify Origin on state-changing API requests ──

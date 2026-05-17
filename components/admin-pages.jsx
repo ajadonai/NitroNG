@@ -747,7 +747,7 @@ function CleanupButton({ dark, t }) {
   );
 }
 
-export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, setDark, onLogout }) {
+export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, setDark, onLogout, notifPrefs, updateNotifPref }) {
   const confirm = useConfirm();
   const [social, setSocial] = useState({ social_instagram: "", social_twitter: "", social_whatsapp_support: "", social_telegram_support: "" });
   const [emails, setEmails] = useState({ site_email_general: "", site_email_support: "" });
@@ -893,22 +893,40 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
       {/* ── SETTINGS GRID ── */}
       <div className="grid grid-cols-2 max-md:grid-cols-1 gap-4">
 
-        {/* ── THEME ── */}
+        {/* ── NOTIFICATIONS ── */}
         <div className="set-card" style={{ background: cardBg, border: cardBorder }}>
           <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-            <div className="set-card-title" style={{ color: t.textMuted }}>Theme</div>
-            <div className="set-card-desc" style={{ color: t.textMuted }}>Choose how Nitro looks for you.</div>
+            <div className="set-card-title" style={{ color: t.textMuted }}>Notifications</div>
+            <div className="set-card-desc" style={{ color: t.textMuted }}>Choose which events trigger alerts for you.</div>
           </div>
           <div className="set-card-body">
-          <div className="flex gap-2">
-            {[
-              ["day", "Light", <svg key="s" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>],
-              ["night", "Dark", <svg key="m" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>],
-              ["auto", "Auto", <svg key="a" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18z" fill="currentColor" opacity=".4"/></svg>],
-            ].map(([id, lb, icon]) => (
-              <button key={id} onClick={() => applyTheme(id)} className="flex-1 py-3 px-2.5 rounded-[10px] border text-[15px] flex items-center justify-center gap-1.5" style={{ borderColor: themeMode === id ? t.accent : t.cardBorder, background: themeMode === id ? (dark ? "#2a1a22" : "#fdf2f4") : (dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.8)"), color: themeMode === id ? t.accent : t.textSoft, fontWeight: themeMode === id ? 600 : 500 }}>{icon} {lb}</button>
-            ))}
-          </div>
+          {notifPrefs && updateNotifPref ? (
+            <div className="flex flex-col gap-3">
+              {[
+                ["new_ticket", "New tickets", "Alert when a user opens a new support ticket"],
+                ["ticket_reply", "Ticket replies", "Alert when a user sends a new message in a ticket"],
+                ["deposit", "Deposits", "Alert when a user completes a deposit"],
+                ["large_deposit", "Large deposits", "Alert for deposits above the large-deposit threshold"],
+                ["stale_ticket", "Stale tickets", "Escalation alert for unanswered tickets (15+ min)"],
+              ].map(([key, label, hint]) => (
+                <label key={key} className="flex items-center justify-between gap-3 cursor-pointer py-1.5">
+                  <div>
+                    <div className="text-[14px] font-medium" style={{ color: t.text }}>{label}</div>
+                    <div className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{hint}</div>
+                  </div>
+                  <button
+                    onClick={() => updateNotifPref(key, !notifPrefs[key])}
+                    className="relative shrink-0 w-[40px] h-[22px] rounded-full transition-colors duration-200"
+                    style={{ background: notifPrefs[key] ? t.accent : (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.12)") }}
+                  >
+                    <span className="absolute top-[2px] left-[2px] w-[18px] h-[18px] rounded-full bg-white shadow-sm transition-transform duration-200" style={{ transform: notifPrefs[key] ? "translateX(18px)" : "translateX(0)" }} />
+                  </button>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm" style={{ color: t.textMuted }}>Notification preferences unavailable.</div>
+          )}
           </div>
         </div>
 
@@ -982,8 +1000,27 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
           </div>
         </div>
 
+        {/* ── THEME ── */}
+        <div className="set-card" style={{ background: cardBg, border: cardBorder }}>
+          <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+            <div className="set-card-title" style={{ color: t.textMuted }}>Theme</div>
+            <div className="set-card-desc" style={{ color: t.textMuted }}>Choose how Nitro looks for you.</div>
+          </div>
+          <div className="set-card-body">
+          <div className="flex gap-2">
+            {[
+              ["day", "Light", <svg key="s" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>],
+              ["night", "Dark", <svg key="m" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>],
+              ["auto", "Auto", <svg key="a" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18z" fill="currentColor" opacity=".4"/></svg>],
+            ].map(([id, lb, icon]) => (
+              <button key={id} onClick={() => applyTheme(id)} className="flex-1 py-3 px-2.5 rounded-[10px] border text-[15px] flex items-center justify-center gap-1.5" style={{ borderColor: themeMode === id ? t.accent : t.cardBorder, background: themeMode === id ? (dark ? "#2a1a22" : "#fdf2f4") : (dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.8)"), color: themeMode === id ? t.accent : t.textSoft, fontWeight: themeMode === id ? 600 : 500 }}>{icon} {lb}</button>
+            ))}
+          </div>
+          </div>
+        </div>
+
         {/* ── CLEANUP ── */}
-        <div className="set-card col-span-2 max-md:col-span-1" style={{ background: cardBg, border: cardBorder }}>
+        <div className="set-card" style={{ background: cardBg, border: cardBorder }}>
           <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
             <div className="set-card-title" style={{ color: t.textMuted }}>Cleanup</div>
             <div className="set-card-desc" style={{ color: t.textMuted }}>Free up space by removing stale accounts.</div>
