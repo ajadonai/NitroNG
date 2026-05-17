@@ -34,7 +34,7 @@ const ADMIN_NAV = [
     { id: "orders", label: "Orders", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
     { id: "users", label: "Users", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> },
     { id: "leaderboard", label: "Leaderboard", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg> },
-    { id: "tickets", label: "Support", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>, badge: true },
+    { id: "tickets", label: "Support", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>, badge: 'tickets' },
   ]},
   { section: "Catalog", items: [
     { id: "menu-builder", label: "Menu Builder", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> },
@@ -48,7 +48,7 @@ const ADMIN_NAV = [
     { id: "rewards", label: "Rewards", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg> },
   ]},
   { section: "System", items: [
-    { id: "payments", label: "Payments", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },
+    { id: "payments", label: "Payments", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>, badge: 'payments' },
     { id: "finance", label: "Finance", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
     { id: "activity", label: "Logs", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
     { id: "team", label: "Team", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 00-3 3v1a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M19 8a2 2 0 00-2 2v1a2 2 0 004 0v-1a2 2 0 00-2-2z"/><path d="M5 8a2 2 0 00-2 2v1a2 2 0 004 0v-1a2 2 0 00-2-2z"/><path d="M3 21v-2a4 4 0 014-4h1"/><path d="M21 21v-2a4 4 0 00-4-4h-1"/><path d="M8 21v-2a4 4 0 014-4 4 4 0 014 4v2"/></svg> },
@@ -327,9 +327,9 @@ function AdminDashboardInner({ initialData }) {
     return { name: d.admin?.name || "Admin", role: d.admin?.role || "superadmin", email: d.admin?.email || "", pages: d.admin?.pages || "*" };
   });
   const [data, setData] = useState(() => {
-    if (!initialData) return { stats: {}, recentOrders: [], recentUsers: [], openTickets: [], activity: [], unreadTicketCount: 0 };
+    if (!initialData) return { stats: {}, recentOrders: [], recentUsers: [], openTickets: [], activity: [], unreadTicketCount: 0, pendingManualCount: 0 };
     const d = initialData;
-    return { stats: d, recentOrders: d.recentOrders || [], recentUsers: d.recentUsers || [], openTickets: d.openTickets || [], activity: d.activity || [], unreadTicketCount: d.unreadTicketCount || 0 };
+    return { stats: d, recentOrders: d.recentOrders || [], recentUsers: d.recentUsers || [], openTickets: d.openTickets || [], activity: d.activity || [], unreadTicketCount: d.unreadTicketCount || 0, pendingManualCount: d.pendingManualCount || 0 };
   });
   const toastRef = useRef(null);
 
@@ -364,6 +364,7 @@ function AdminDashboardInner({ initialData }) {
           openTickets: d.openTickets || [],
           activity: d.activity || [],
           unreadTicketCount: d.unreadTicketCount || 0,
+          pendingManualCount: d.pendingManualCount || 0,
         });
         if (d.admin?.themePreference && d.admin.themePreference !== "auto") {
           const saved = localStorage.getItem("nitro-admin-theme");
@@ -538,6 +539,7 @@ function AdminDashboardInner({ initialData }) {
             openTickets: d.openTickets || [],
             activity: d.activity || [],
             unreadTicketCount: d.unreadTicketCount || 0,
+            pendingManualCount: d.pendingManualCount || 0,
           });
         }
       } catch {}
@@ -668,6 +670,8 @@ function AdminDashboardInner({ initialData }) {
   };
 
   const ticketCount = data.unreadTicketCount || 0;
+  const paymentCount = data.pendingManualCount || 0;
+  const badgeCounts = { tickets: ticketCount, payments: paymentCount };
 
 
   return (
@@ -712,6 +716,10 @@ function AdminDashboardInner({ initialData }) {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
             {ticketCount > 0 && <div className="dash-bell-badge">{ticketCount > 10 ? "10+" : ticketCount}</div>}
           </button>
+          <button onClick={() => { setActive("payments"); setLeftOpen(false); }} className="dash-bell relative" aria-label="Pending payments" style={{ color: t.textSoft }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            {paymentCount > 0 && <div className="dash-bell-badge">{paymentCount > 10 ? "10+" : paymentCount}</div>}
+          </button>
           <button onClick={() => { setActive("settings"); setLeftOpen(false); }} className="dash-avatar-btn" aria-label="Profile">
             <Avatar size={30} rounded={10} />
           </button>
@@ -733,7 +741,7 @@ function AdminDashboardInner({ initialData }) {
                 <button key={item.id} onClick={() => { setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: active === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", color: active === item.id ? t.accent : t.textSoft, fontWeight: active === item.id ? 600 : 450 }}>
                   <span className="shrink-0" style={{ opacity: active === item.id ? 1 : .55, color: active === item.id ? t.accent : t.textMuted }}>{item.icon}</span>
                   {item.label}
-                  {item.badge && ticketCount > 0 && <span className="m dash-nav-badge">{ticketCount}</span>}
+                  {item.badge && badgeCounts[item.badge] > 0 && <span className="m dash-nav-badge">{badgeCounts[item.badge]}</span>}
                 </button>
               ))}
             </div>
