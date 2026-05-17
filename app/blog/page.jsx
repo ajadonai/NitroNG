@@ -2,6 +2,8 @@ import prisma from '@/lib/prisma';
 import BlogListing from '@/components/blog-listing';
 import { getLiveValues, injectLiveValues } from '@/lib/blog-values';
 
+export const revalidate = 300;
+
 const PER_PAGE = 9;
 
 export const metadata = {
