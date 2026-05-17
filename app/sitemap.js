@@ -6,6 +6,8 @@ export default async function sitemap() {
     { url: `${base}/signup`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.9 },
     { url: `${base}/login`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
     { url: `${base}/blog`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${base}/pricing`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${base}/services`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
     { url: `${base}/faq`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${base}/terms`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
     { url: `${base}/privacy`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
@@ -30,5 +32,14 @@ export default async function sitemap() {
     }));
   } catch {}
 
-  return [...staticPages, ...blogPages];
+  // Service platform pages
+  const servicePlatforms = ['instagram', 'tiktok', 'youtube', 'x', 'facebook', 'telegram', 'spotify', 'snapchat', 'linkedin', 'pinterest', 'twitch', 'discord'];
+  const servicePages = servicePlatforms.map(p => ({
+    url: `${base}/services/${p}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly',
+    priority: 0.7,
+  }));
+
+  return [...staticPages, ...blogPages, ...servicePages];
 }

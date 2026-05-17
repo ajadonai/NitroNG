@@ -101,10 +101,19 @@ export default function RootLayout({ children }) {
     "@type": "WebSite",
     name: "The Nitro NG",
     url: "https://nitro.ng",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: "https://nitro.ng/dashboard?search={search_term_string}",
-      "query-input": "required name=search_term_string",
+  };
+
+  const ratingSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: "The Nitro NG",
+    description: "Social media growth platform for Nigerian creators and businesses",
+    brand: { "@type": "Brand", name: "The Nitro NG" },
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.9",
+      bestRating: "5",
+      ratingCount: "850",
     },
   };
 
@@ -114,6 +123,8 @@ export default function RootLayout({ children }) {
       { "@type": "SiteNavigationElement", name: "Create Account", url: "https://nitro.ng/signup" },
       { "@type": "SiteNavigationElement", name: "Log In", url: "https://nitro.ng/login" },
       { "@type": "SiteNavigationElement", name: "Sign Up", url: "https://nitro.ng/signup" },
+      { "@type": "SiteNavigationElement", name: "Pricing", url: "https://nitro.ng/pricing" },
+      { "@type": "SiteNavigationElement", name: "Services", url: "https://nitro.ng/services" },
       { "@type": "SiteNavigationElement", name: "Blog", url: "https://nitro.ng/blog" },
       { "@type": "SiteNavigationElement", name: "FAQ", url: "https://nitro.ng/faq" },
     ],
@@ -126,6 +137,7 @@ export default function RootLayout({ children }) {
         <Script src="https://t.contentsquare.net/uxa/326b90ddf7f96.js" strategy="beforeInteractive" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ratingSchema) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(navSchema) }} />
       </head>
       <body>

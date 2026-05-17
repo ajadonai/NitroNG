@@ -825,6 +825,11 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill }) {
               <EyeBtn show={showPw} toggle={() => setShowPw(!showPw)} />
             </div>
             <PwStrength pw={pw} t={t} />
+            {pw && pw.length < 6 && (
+              <div className="text-[11px] mb-1 leading-[1.5]" style={{ color: t.textMuted }}>
+                Use 6+ characters with a mix of uppercase, numbers, and symbols for a strong password.
+              </div>
+            )}
 
             {/* Confirm password */}
             <Lbl t={t} htmlFor="signup-confirm">Confirm Password</Lbl>

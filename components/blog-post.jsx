@@ -88,7 +88,7 @@ function BlogPostInner({ post }) {
           <Avatar size={32} />
           <div>
             <div className="text-sm font-medium" style={{ color: t.text }}>{post.authorName || "Nitro Team"}</div>
-            <div className="text-xs" style={{ color: metaColor }}>{fD(post.createdAt)} {"\u00B7"} {rt} min read {"\u00B7"} {post.views || 0} views</div>
+            <div className="text-xs" style={{ color: metaColor }}>{fD(post.createdAt)} {"\u00B7"} {rt} min read{post.views >= 100 ? <> {"\u00B7"} {post.views.toLocaleString()} views</> : null}</div>
           </div>
         </div>
         <MobileShare post={post} dark={dark} />
