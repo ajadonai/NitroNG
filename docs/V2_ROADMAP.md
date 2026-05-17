@@ -405,6 +405,104 @@ These need answers before v2 build starts:
 
 ---
 
+## Product 3: Earn (Gamification & Rewards)
+
+*Added May 2026*
+
+### What it is
+
+Dashboard engagement feature with two revenue-sharing mechanics: a monthly 2048 game competition with progressive prize pool, and video ad rewards (watch-to-earn). Users earn wallet credit by playing and watching — lowers the barrier to placing orders since earned credit offsets costs.
+
+### 2048 Game
+
+- Playable 4x4 grid in dashboard (arrow keys + swipe)
+- Anti-cheat via seeded replay: server generates seed, client records moves, server replays to verify score
+- Monthly leaderboard with progressive prize pool (base ₦20,000, grows with player count, caps at ₦100,000)
+- Top 5 split: 40/25/17/11/7 — all configurable from admin
+- Past winners list visible to all users
+
+### Video Rewards
+
+- Watch 30-second rewarded video ads, earn ₦15/watch (50/50 revenue split with ad network)
+- Daily cap (default 5 watches/day), configurable from admin
+- Placeholder UI until AdMob/AdSense SDK integrated — backend routes functional
+
+### Key decisions
+
+- Anti-cheat is server-validated replay, not client-trust
+- Prize pool is progressive (more players = bigger pool) to incentivize participation
+- Video rewards deferred until ad network configured — UI shows "Coming soon"
+- Monthly payout is admin-triggered initially, automated later
+
+### Status
+
+Detailed implementation plan exists. Build order: schema → game engine → API → game UI → earn page → dashboard integration → admin section → video API.
+
+---
+
+## Product 4: AI-Powered Support
+
+*Added May 2026*
+
+### What it is
+
+AI chatbot integrated into the support ticket system. Handles common questions (order status, delivery times, refund policy, how-to) automatically. Escalates to human support when it can't resolve or when the user asks.
+
+### Why
+
+Support volume will grow with users. Most questions are repetitive (where's my order, how do I add funds, why is my order pending). AI can resolve 60-70% of tickets instantly, reducing response time and support load.
+
+### Key decisions (to be made at build time)
+
+- Which LLM provider (Claude API, OpenAI, or other)
+- Knowledge base: FAQ content + order data + service catalog
+- Escalation triggers: user frustration detection, account-specific issues, refund requests above threshold
+- Whether to surface AI responses inline in the existing chat widget or as a separate "Ask Nitro" interface
+
+---
+
+## Product 5: AI-Powered Blog Comments
+
+*Added May 2026*
+
+### What it is
+
+AI-generated contextual comments on blog posts to create social proof and engagement signals. Comments appear as real user discussions — questions, tips, experiences — seeded by AI but moderated by admin.
+
+### Why
+
+Blog posts with zero comments look dead. Genuine comment sections take months to build organically. AI-seeded comments bootstrap the appearance of an active community, which improves time-on-page, SEO signals, and visitor trust.
+
+### Key decisions (to be made at build time)
+
+- Comment generation approach: fully AI, AI-drafted + admin-approved, or hybrid
+- Persona variety: different usernames, writing styles, Nigerian English patterns
+- Whether to also allow real user comments alongside AI ones
+- Moderation workflow in admin panel
+
+---
+
+## Engineering: TypeScript Migration
+
+*Added May 2026*
+
+### What it is
+
+Migrate the entire codebase from JavaScript (.jsx/.js) to TypeScript (.tsx/.ts). Add proper types for Prisma models, API routes, component props, and shared utilities.
+
+### Why
+
+Codebase is growing. TypeScript catches bugs at compile time, improves IDE experience, and makes refactoring safer — especially important as V2 adds significant new surface area.
+
+### Approach (to be decided at build time)
+
+- Incremental migration (rename files one-by-one) vs. big-bang conversion
+- Start with API routes and lib/ (most value from types), then components
+- Add strict mode gradually — start with basic types, tighten over time
+- Prisma already generates types; leverage those as the foundation
+
+---
+
 ## Things we're explicitly NOT doing
 
 To save future-us from re-litigating bad ideas:
