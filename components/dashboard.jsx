@@ -724,10 +724,10 @@ function DashboardInner({ initialData }) {
     } catch {}
   };
 
-  /* Auto-poll when on orders page (every 30s) */
+  /* Auto-poll when on orders page (every 45s) */
   useEffect(() => {
     if (active !== "orders") return;
-    const interval = setInterval(refreshDashboard, 30000);
+    const interval = setInterval(refreshDashboard, 45000);
     return () => clearInterval(interval);
   }, [active]);
 
@@ -795,7 +795,7 @@ function DashboardInner({ initialData }) {
     if (user.orderTourCompleted) try { localStorage.setItem("nitro-order-tour-done", "1"); } catch {}
   }, [user]);
 
-  /* Smart polling — refresh data every 45s, pause when tab is hidden */
+  /* Smart polling — refresh data every 60s, pause when tab is hidden */
   useEffect(() => {
     let interval = null;
     const poll = async () => {
@@ -815,7 +815,7 @@ function DashboardInner({ initialData }) {
         }
       } catch {}
     };
-    const start = () => { interval = setInterval(poll, 45000); };
+    const start = () => { interval = setInterval(poll, 60000); };
     const stop = () => { clearInterval(interval); interval = null; };
     const onVisibility = () => { document.hidden ? stop() : (poll(), start()); };
     start();
