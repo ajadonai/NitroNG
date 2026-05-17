@@ -95,7 +95,7 @@ function AboutInner() {
                 ['Registered name', 'The Nitro NG'],
                 ['RC number', '9514845'],
                 ['Location', 'Lagos, Nigeria'],
-                ['Founded', '2026'],
+                ['Founded', '2025'],
                 ['Contact', 'support@nitro.ng'],
               ].map(([label, value], i, arr) => (
                 <div key={label} className="flex items-center justify-between py-3.5 px-5" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)"}` : undefined }}>

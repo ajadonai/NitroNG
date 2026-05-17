@@ -64,6 +64,28 @@ function PricingInner({ platforms }) {
             <div className="text-center py-16" style={{ color: t.textMuted }}>Loading pricing...</div>
           ) : (
             <>
+              {/* Popular services quick glance */}
+              {!active && (() => {
+                const popular = ['Instagram', 'TikTok', 'YouTube', 'X', 'Facebook'];
+                const items = popular.map(name => platforms.find(p => p.platform === name)).filter(Boolean);
+                return items.length > 0 && (
+                  <div className="mb-8 py-4 px-6 max-md:px-4 rounded-2xl" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)"}` }}>
+                    <div className="text-[11px] font-semibold tracking-[1.5px] uppercase mb-3" style={{ color: accent }}>Popular starting prices</div>
+                    <div className="flex flex-wrap gap-x-6 gap-y-2">
+                      {items.map(p => {
+                        const min = Math.min(...p.services.map(s => s.minPrice));
+                        return (
+                          <button key={p.platform} onClick={() => setActive(p.platform)} className="flex items-center gap-2 bg-transparent border-none cursor-pointer py-1 px-0 transition-opacity duration-200 hover:opacity-80">
+                            <span className="text-sm font-medium" style={{ color: t.text }}>{p.platform}</span>
+                            <span className="text-sm font-semibold" style={{ color: accent }}>{min >= 100000 ? `₦${(min / 1000).toLocaleString()}/unit` : `₦${min.toLocaleString()}/1K`}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Platform selector grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-md:gap-2.5">
                 {platforms.map(p => {

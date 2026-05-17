@@ -773,7 +773,7 @@ function AdminDashboardInner({ initialData }) {
           </div>
 
           <div className="dash-footer" style={{ borderTopColor: t.sidebarBorder, flexShrink: 0 }}>
-            <span style={{ color: t.textMuted }}>© {new Date().getFullYear() > 2026 ? `2026–${new Date().getFullYear()}` : "2026"} Nitro Admin</span>
+            <span style={{ color: t.textMuted }}>© {new Date().getFullYear() > 2025 ? `2025–${new Date().getFullYear()}` : "2025"} Nitro Admin</span>
             <span className="text-[13px]" style={{ color: t.textMuted }}>v1.0.0</span>
           </div>
         </main>
