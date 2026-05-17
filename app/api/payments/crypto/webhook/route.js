@@ -73,7 +73,8 @@ export async function POST(req) {
                 const notExpired = !coupon.expires || new Date(coupon.expires) >= new Date();
                 const notMaxed = !coupon.maxUses || coupon.maxUses === 0 || (coupon.used || 0) < coupon.maxUses;
                 if (notExpired && notMaxed) {
-                  bonus = coupon.type === 'percent' ? Math.round(tx.amount * (coupon.value / 100)) : coupon.value * 100;
+                  const cappedAmount = coupon.maxDeposit > 0 ? Math.min(tx.amount, coupon.maxDeposit * 100) : tx.amount;
+                  bonus = coupon.type === 'percent' ? Math.round(cappedAmount * (coupon.value / 100)) : coupon.value * 100;
                   await db.setting.update({ where: { key: 'coupons' }, data: { value: JSON.stringify(coupons.map(c => c.id === couponId ? { ...c, used: (c.used || 0) + 1 } : c)) } });
                 }
               }
