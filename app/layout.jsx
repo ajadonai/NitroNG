@@ -91,7 +91,7 @@ export default function RootLayout({ children }) {
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "customer support",
-      email: "TheNitroNG@gmail.com",
+      email: "support@nitro.ng",
       availableLanguage: "English",
     },
   };
@@ -125,6 +125,7 @@ export default function RootLayout({ children }) {
       { "@type": "SiteNavigationElement", name: "Sign Up", url: "https://nitro.ng/signup" },
       { "@type": "SiteNavigationElement", name: "Pricing", url: "https://nitro.ng/pricing" },
       { "@type": "SiteNavigationElement", name: "Services", url: "https://nitro.ng/services" },
+      { "@type": "SiteNavigationElement", name: "About", url: "https://nitro.ng/about" },
       { "@type": "SiteNavigationElement", name: "Blog", url: "https://nitro.ng/blog" },
       { "@type": "SiteNavigationElement", name: "FAQ", url: "https://nitro.ng/faq" },
     ],
