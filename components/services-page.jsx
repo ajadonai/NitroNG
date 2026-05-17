@@ -31,7 +31,7 @@ function ServicesInner({ platforms }) {
       <SharedStyles />
       <div className="min-h-dvh flex flex-col font-[Plus Jakarta Sans,system-ui,sans-serif]" style={{ background: t.bg }}>
         <SharedNav />
-        <main className="flex-1 py-12 px-6 pb-20 max-w-[900px] mx-auto w-full">
+        <main className="flex-1 py-12 px-6 pb-20 max-w-[1200px] mx-auto w-full">
 
           <div className="mb-10">
             <span className="text-xs font-semibold tracking-[2px] uppercase block mb-3" style={{ color: accent }}>Services</span>

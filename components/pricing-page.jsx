@@ -38,7 +38,7 @@ function PricingInner({ platforms }) {
       <SharedStyles />
       <div className="min-h-dvh flex flex-col font-[Plus Jakarta Sans,system-ui,sans-serif]" style={{ background: t.bg }}>
         <SharedNav />
-        <main className="flex-1 py-12 px-6 pb-20 max-w-[900px] mx-auto w-full">
+        <main className="flex-1 py-12 px-6 pb-20 max-w-[1200px] mx-auto w-full">
 
           <div className="mb-10">
             <span className="text-xs font-semibold tracking-[2px] uppercase block mb-3" style={{ color: accent }}>Pricing</span>
@@ -62,7 +62,7 @@ function PricingInner({ platforms }) {
               </div>
 
               {/* Platform cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {platforms.filter(p => !active || p.platform === active).map(p => (
                   <div key={p.platform} className="rounded-2xl overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.06)" : "#fff", border: `1px solid ${border}` }}>
                     <div className="flex items-center gap-3 py-4 px-5" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>
