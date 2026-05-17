@@ -91,7 +91,9 @@ function PricingInner({ platforms }) {
                           <div className="text-[12px] max-md:text-[11px]" style={{ color: t.textMuted }}>{p.services.length} service{p.services.length !== 1 ? 's' : ''}</div>
                         </div>
                       </div>
-                      <div className="text-[13px] max-md:text-[12px] font-semibold" style={{ color: accent }}>From ₦{minPrice.toLocaleString()}/1K</div>
+                      <div className="text-[13px] max-md:text-[12px] font-semibold" style={{ color: accent }}>
+                        {minPrice >= 100000 ? `From ₦${(minPrice / 1000).toLocaleString()}/unit` : `From ₦${minPrice.toLocaleString()}/1K`}
+                      </div>
                       {isActive && <div className="absolute -bottom-[9px] left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 rounded-[2px]" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.06)", borderRight: `1.5px solid ${accent}`, borderBottom: `1.5px solid ${accent}` }} />}
                     </button>
                   );
@@ -129,10 +131,21 @@ function PricingInner({ platforms }) {
                           </div>
                         </div>
                         <div className="text-right shrink-0 ml-4">
-                          <div className="text-[15px] max-md:text-[14px] font-bold" style={{ color: accent }}>
-                            {s.minPrice === s.maxPrice ? `₦${s.minPrice.toLocaleString()}` : `₦${s.minPrice.toLocaleString()} – ${s.maxPrice.toLocaleString()}`}
-                          </div>
-                          <div className="text-[11px]" style={{ color: t.textMuted }}>per 1,000</div>
+                          {s.minPrice >= 100000 ? (
+                            <>
+                              <div className="text-[15px] max-md:text-[14px] font-bold" style={{ color: accent }}>
+                                {s.minPrice === s.maxPrice ? `₦${(s.minPrice / 1000).toLocaleString()}` : `₦${(s.minPrice / 1000).toLocaleString()} – ${(s.maxPrice / 1000).toLocaleString()}`}
+                              </div>
+                              <div className="text-[11px]" style={{ color: t.textMuted }}>per unit</div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="text-[15px] max-md:text-[14px] font-bold" style={{ color: accent }}>
+                                {s.minPrice === s.maxPrice ? `₦${s.minPrice.toLocaleString()}` : `₦${s.minPrice.toLocaleString()} – ${s.maxPrice.toLocaleString()}`}
+                              </div>
+                              <div className="text-[11px]" style={{ color: t.textMuted }}>per 1,000</div>
+                            </>
+                          )}
                         </div>
                       </div>
                     ))}
