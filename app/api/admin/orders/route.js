@@ -106,8 +106,8 @@ export async function POST(req) {
 
       if (order.charge > 0) {
         try {
-          const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true, notifEmail: true } });
-          if (user?.email && user.notifEmail !== false) {
+          const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true, notifEmail: true, notifOrders: true } });
+          if (user?.email && user.notifEmail !== false && user.notifOrders !== false) {
             const amount = order.charge / 100;
             walletCreditEmail(user.name || 'there', amount, 'Order cancelled — refund processed').then(html => sendEmail(user.email, `₦${amount.toLocaleString()} refunded to your Nitro wallet`, html)).catch(() => {});
           }

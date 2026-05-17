@@ -310,19 +310,27 @@ function AdminRightSidebar({ data, dark, t, active }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ MAIN ADMIN SHELL                    ═══ */
 /* ═══════════════════════════════════════════ */
-export default function AdminDashboard() {
-  return <ThemeProvider storageKey="nitro-admin-theme"><AdminDashboardInner /></ThemeProvider>;
+export default function AdminDashboard({ initialData }) {
+  return <ThemeProvider storageKey="nitro-admin-theme"><AdminDashboardInner initialData={initialData} /></ThemeProvider>;
 }
 
-function AdminDashboardInner() {
+function AdminDashboardInner({ initialData }) {
   const { dark, setDark, toggleTheme, t: baseT, themeMode, setThemeMode } = useTheme();
   const [active, setActiveRaw] = useState("overview");
   const setActive = (page) => { setActiveRaw(page); try { localStorage.setItem("nitro-admin-page", page); } catch {} };
   useEffect(() => { try { const saved = localStorage.getItem("nitro-admin-page"); if (saved) setActiveRaw(saved); } catch {} }, []);
 
   const [leftOpen, setLeftOpen] = useState(false);
-  const [admin, setAdmin] = useState(null);
-  const [data, setData] = useState({ stats: {}, recentOrders: [], recentUsers: [], openTickets: [], activity: [], unreadTicketCount: 0 });
+  const [admin, setAdmin] = useState(() => {
+    if (!initialData) return null;
+    const d = initialData;
+    return { name: d.admin?.name || "Admin", role: d.admin?.role || "superadmin", email: d.admin?.email || "", pages: d.admin?.pages || "*" };
+  });
+  const [data, setData] = useState(() => {
+    if (!initialData) return { stats: {}, recentOrders: [], recentUsers: [], openTickets: [], activity: [], unreadTicketCount: 0 };
+    const d = initialData;
+    return { stats: d, recentOrders: d.recentOrders || [], recentUsers: d.recentUsers || [], openTickets: d.openTickets || [], activity: d.activity || [], unreadTicketCount: d.unreadTicketCount || 0 };
+  });
   const toastRef = useRef(null);
 
   /* Theme — provided by ThemeProvider */
