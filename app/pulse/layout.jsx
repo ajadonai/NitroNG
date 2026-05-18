@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Pulse | Nitro',
+  title: { absolute: 'Pulse' },
   robots: { index: false, follow: false },
 };
 
