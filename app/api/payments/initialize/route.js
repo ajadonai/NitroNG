@@ -84,10 +84,10 @@ export async function POST(req) {
           tx_ref: reference,
           amount: amountNum,
           currency: 'NGN',
-          payment_options: 'banktransfer,card,ussd',
+          payment_options: 'banktransfer',
           redirect_url: `${origin}/dashboard?verify=${reference}`,
           customer: { email: user.email, name: user.name },
-          customizations: { title: 'Nitro Deposit', logo: `${origin}/icon.png` },
+          customizations: { title: 'Nitro Deposit', logo: `${origin}/icon-192.png` },
           meta: { userId: user.id },
         }),
       });

@@ -69,7 +69,7 @@ export default function ReferralsPage({ user, dark, t }) {
             <div className="text-sm mb-1" style={{ color: t.textMuted }}>Share Link</div>
             <div className="flex items-center gap-2">
               <div className="m flex-1 py-2 px-3 rounded-lg border text-sm overflow-hidden text-ellipsis whitespace-nowrap" style={{ background: dark ? "#131728" : "#fff", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", color: t.textSoft }}>{refLink}</div>
-              <button onClick={() => copyText(`https://${refLink}`, "link")} className="py-2 px-3 desktop:px-3.5 rounded-lg text-[13px] desktop:text-sm font-semibold cursor-pointer whitespace-nowrap shrink-0 border-none text-white transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }}>
+              <button onClick={() => copyText(refLink, "link")} className="py-2 px-3 desktop:px-3.5 rounded-lg text-[13px] desktop:text-sm font-semibold cursor-pointer whitespace-nowrap shrink-0 border-none text-white transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }}>
                 {copied === "link" ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> Copied</> : "Copy Link"}
               </button>
             </div>

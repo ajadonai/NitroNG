@@ -250,7 +250,7 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
 
             {/* Bottom bar */}
             <div className="flex justify-between items-center max-md:!flex-col max-md:gap-2 max-md:text-center">
-              <span className="text-xs" style={{color:dark?"rgba(244,241,237,.35)":"rgba(28,27,25,.4)"}}>{"©"} {new Date().getFullYear()>2026?`2026–${new Date().getFullYear()}`:"2026"} The Nitro NG. All rights reserved. RC 9514845</span>
+              <span className="text-xs" style={{color:dark?"rgba(244,241,237,.35)":"rgba(28,27,25,.4)"}}>{"©"} {new Date().getFullYear()>2025?`2025–${new Date().getFullYear()}`:"2025"} The Nitro NG. All rights reserved. RC 9514845</span>
               <span className="text-xs" style={{color:dark?"rgba(244,241,237,.3)":"rgba(28,27,25,.35)"}}>Built in Lagos 🇳🇬</span>
             </div>
           </footer>

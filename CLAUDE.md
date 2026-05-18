@@ -68,7 +68,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## V2 Roadmap (parked — do not build)
 
-Two products are designed and documented for v2: **Audit** (account analytics) and **Cleanup** (bulk unfollow tool). A visitor acquisition flow with a public `/audit` page is also part of v2. None of this should be built until Adonai (Trip) gives explicit go-ahead.
+V2 includes: **Audit** (account analytics), **Cleanup** (bulk unfollow tool), **Earn** (2048 game + video rewards), **AI Support** (chatbot for tickets), **AI Comments** (blog social proof), a visitor acquisition flow, and a **TypeScript migration**. None of this should be built until Adonai (Trip) gives explicit go-ahead.
 
 ### Where v2 docs live
 
@@ -111,3 +111,19 @@ Nitro Pro = Audit features + ₦8,000/mo Cleanup credits included. Heavy Cleanup
 Both v2 products use the existing Nitro design system: Outfit + Cormorant + JetBrains fonts, `#c47d8e` accent, light/dark themes via `nitro-theme` localStorage. Mockups demonstrate the SVG icon vocabulary (single sprite, used via `<use href="#i-..."/>`). When v2 builds, extend the existing icon sprite — don't fragment.
 
 Cross-product consistency matters: Cleanup's "cart bar" pattern, Audit's "metric grid" pattern, the platform tabs (IG/TT/X) at the top of each product's main surface, the wallet integration, the Pro tier badge with popover — all chosen to make Audit and Cleanup feel like siblings, not separate products.
+
+## Launch day checklist
+
+Tasks to complete on or before launch day:
+
+### Infrastructure
+
+- [ ] Upgrade Vercel to Pro plan
+- [ ] Set `maxDuration = 60` on all cron routes (`app/api/cron/orders`, `app/api/cron/balance`, `app/api/cron/cleanup`, `app/api/cron/daily`, `app/api/cron/payments`)
+- [ ] Upgrade Neon to paid plan
+- [ ] Reactivate cron jobs (Vercel cron schedules)
+
+### Deferred fixes (completed)
+
+- [x] Wire user notification preferences to order/email paths — fixed: admin refund + leaderboard reward emails now check `notifOrders`
+- [x] LCP optimisation — admin dashboard now receives `initialData` from server (skips skeleton). User dashboard already had this.

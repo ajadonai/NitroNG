@@ -98,7 +98,7 @@ export default function BannedPage() {
 
       {/* Footer */}
       <footer className="py-3.5 px-6 flex justify-between items-center shrink-0 relative z-10" style={{ borderTop: `1px solid ${t.cbd}` }}>
-        <span className="text-sm" style={{ color: t.tm }}>© {new Date().getFullYear() > 2026 ? `2026–${new Date().getFullYear()}` : "2026"} Nitro</span>
+        <span className="text-sm" style={{ color: t.tm }}>© {new Date().getFullYear() > 2025 ? `2025–${new Date().getFullYear()}` : "2025"} Nitro</span>
         <div className="flex gap-4">
           <a href="/terms" className="text-sm no-underline" style={{ color: t.tm }}>Terms</a>
           <a href="/privacy" className="text-sm no-underline" style={{ color: t.tm }}>Privacy</a>

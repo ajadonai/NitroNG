@@ -408,7 +408,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill }) {
               onClick={() => {
                 setError('');
                 setAuthLoading(true);
-                window.location.href = '/api/auth/google';
+                window.location.href = refCode ? `/api/auth/google?ref=${encodeURIComponent(refCode)}` : '/api/auth/google';
               }}
               className="google-btn w-full py-[13px] rounded-xl flex items-center justify-center gap-2.5 text-[15px] font-semibold mb-0 transition-[color,transform] duration-200 hover:-translate-y-px"
               style={{
@@ -603,7 +603,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill }) {
             <button
               onClick={() => {
                 setError('');
-                window.location.href = '/api/auth/google';
+                window.location.href = refCode ? `/api/auth/google?ref=${encodeURIComponent(refCode)}` : '/api/auth/google';
               }}
               className="google-btn w-full py-[13px] rounded-xl flex items-center justify-center gap-2.5 text-[15px] font-semibold mb-0 transition-[color,transform] duration-200 hover:-translate-y-px"
               style={{
@@ -825,6 +825,11 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill }) {
               <EyeBtn show={showPw} toggle={() => setShowPw(!showPw)} />
             </div>
             <PwStrength pw={pw} t={t} />
+            {pw && pw.length < 6 && (
+              <div className="text-[11px] mb-1 leading-[1.5]" style={{ color: t.textMuted }}>
+                Use 6+ characters with a mix of uppercase, numbers, and symbols for a strong password.
+              </div>
+            )}
 
             {/* Confirm password */}
             <Lbl t={t} htmlFor="signup-confirm">Confirm Password</Lbl>
