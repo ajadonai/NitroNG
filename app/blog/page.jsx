@@ -1,5 +1,8 @@
 import prisma from '@/lib/prisma';
 import BlogListing from '@/components/blog-listing';
+import { getLiveValues, injectLiveValues } from '@/lib/blog-values';
+
+export const revalidate = 300;
 
 const PER_PAGE = 9;
 
@@ -41,7 +44,12 @@ export default async function BlogPage() {
       prisma.blogPost.count({ where: { published: true } }),
     ]);
 
-    serializedPosts = posts.map(p => ({ ...p, createdAt: p.createdAt.toISOString() }));
+    const liveValues = await getLiveValues();
+    serializedPosts = posts.map(p => ({
+      ...p,
+      excerpt: p.excerpt ? injectLiveValues(p.excerpt, liveValues) : p.excerpt,
+      createdAt: p.createdAt.toISOString(),
+    }));
     categoryList = categories.map(c => c.category);
     totalPages = Math.ceil(total / PER_PAGE);
   } catch (err) {

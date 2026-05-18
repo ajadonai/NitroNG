@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
+import { getLiveValues, injectLiveValues } from '@/lib/blog-values';
 
 const PER_PAGE = 9;
 
@@ -62,8 +63,9 @@ export async function GET(req) {
       distinct: ['category'],
     });
 
+    const liveValues = await getLiveValues();
     return Response.json({
-      posts: posts.map(p => ({ ...p, createdAt: p.createdAt.toISOString() })),
+      posts: posts.map(p => ({ ...p, excerpt: p.excerpt ? injectLiveValues(p.excerpt, liveValues) : p.excerpt, createdAt: p.createdAt.toISOString() })),
       categories: categories.map(c => c.category),
       page,
       totalPages: Math.ceil(total / PER_PAGE),
