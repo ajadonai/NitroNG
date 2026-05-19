@@ -373,6 +373,8 @@ function AdminDashboardInner({ initialData }) {
           const saved = localStorage.getItem("nitro-admin-theme");
           if (!saved || saved === "auto") {
             setThemeMode(d.admin.themePreference);
+            setDark(d.admin.themePreference === "night");
+            try { localStorage.setItem("nitro-admin-theme", d.admin.themePreference); } catch {}
           }
         }
       } catch {

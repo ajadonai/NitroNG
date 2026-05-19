@@ -18,7 +18,6 @@ enum CampaignStatus {
   ACTIVE
   PAUSED
   ENDED
-  KILLED
 }
 
 enum DayOfWeek {
@@ -125,7 +124,6 @@ model Admin {
 
   platformCampaignsCreated  PlatformCampaign[]  @relation("PlatformCampaignCreator")
   platformCampaignsUpdated  PlatformCampaign[]  @relation("PlatformCampaignUpdater")
-  platformCampaignsKilled   PlatformCampaign[]  @relation("PlatformCampaignKiller")
   recurringCampaignsCreated RecurringCampaign[] @relation("RecurringCampaignCreator")
   recurringCampaignsUpdated RecurringCampaign[] @relation("RecurringCampaignUpdater")
 
@@ -517,22 +515,20 @@ model PlatformCampaign {
   timezone            String         @default("Africa/Lagos")
   status              CampaignStatus @default(DRAFT)
   priority            Int            @default(10)
-  killedAt            DateTime?
-  killReason          String?
   maxDiscountPerOrder Int?
   bannerCopy          String
   bannerColor         String?        @db.VarChar(7)
   bannerCtaText       String?
   lineItemLabel       String
+  emailTheme          String?
+  emailedAt           DateTime?
   createdById         String
   updatedById         String?
-  killedById          String?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 
   createdBy Admin  @relation("PlatformCampaignCreator", fields: [createdById], references: [id])
   updatedBy Admin? @relation("PlatformCampaignUpdater", fields: [updatedById], references: [id])
-  killedBy  Admin? @relation("PlatformCampaignKiller", fields: [killedById], references: [id])
   orders    Order[]
 
   @@index([status, startAt, endAt])

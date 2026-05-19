@@ -112,7 +112,7 @@ export async function POST(req) {
       }
 
       // Platform (seasonal) promotion
-      const { name, description, discountPercent, startAt, endAt, priority, maxDiscountPerOrder, bannerCopy, bannerColor, bannerCtaText } = body;
+      const { name, description, discountPercent, startAt, endAt, priority, maxDiscountPerOrder, bannerCopy, bannerColor, bannerCtaText, emailTheme } = body;
       if (!name?.trim() || !bannerCopy?.trim()) {
         return Response.json({ error: 'Name and banner copy are required' }, { status: 400 });
       }
@@ -137,6 +137,7 @@ export async function POST(req) {
           bannerCopy: bannerCopy.trim(),
           bannerColor: bannerColor || null,
           bannerCtaText: bannerCtaText?.trim() || null,
+          emailTheme: emailTheme || null,
           lineItemLabel: `${name.trim()} (-${discountPercent}%)`,
           status: 'DRAFT',
           createdById: admin.id,
@@ -151,7 +152,7 @@ export async function POST(req) {
       const { id, promotionType: ct, ...fields } = body;
       if (!id) return Response.json({ error: 'Promotion ID required' }, { status: 400 });
 
-      const platformFields = ['name', 'description', 'discountPercent', 'startAt', 'endAt', 'priority', 'maxDiscountPerOrder', 'bannerCopy', 'bannerColor', 'bannerCtaText'];
+      const platformFields = ['name', 'description', 'discountPercent', 'startAt', 'endAt', 'priority', 'maxDiscountPerOrder', 'bannerCopy', 'bannerColor', 'bannerCtaText', 'emailTheme'];
       const recurringFields = ['name', 'description', 'discountPercent', 'maxDiscountPerOrder', 'bannerCopy', 'bannerColor', 'dayOfWeek', 'startTimeLocal', 'endTimeLocal', 'effectiveFrom', 'effectiveUntil'];
       const allowed = ct === 'recurring' ? recurringFields : platformFields;
       const data = { updatedBy: { connect: { id: admin.id } } };
@@ -189,18 +190,31 @@ export async function POST(req) {
       if (!id) return Response.json({ error: 'Promotion ID required' }, { status: 400 });
 
       if (ct === 'recurring') {
-        const rc = await prisma.recurringCampaign.update({ where: { id }, data: { active: true, updatedBy: { connect: { id: admin.id } } } });
+        await prisma.recurringCampaign.update({ where: { id }, data: { active: true, updatedBy: { connect: { id: admin.id } } } });
         await logActivity(admin.name, `Activated recurring promotion ${id}`, 'promotion');
-        sendPromotionBlast(rc.name, rc.discountPercent, rc.bannerCopy).catch(() => {});
       } else {
         const promo = await prisma.platformCampaign.findUnique({ where: { id } });
         if (!promo) return Response.json({ error: 'Promotion not found' }, { status: 404 });
-        if (promo.status === 'ENDED' || promo.status === 'KILLED') {
-          return Response.json({ error: `Cannot activate a ${promo.status.toLowerCase()} promotion` }, { status: 400 });
+        if (promo.status === 'ENDED' && new Date(promo.endAt) < new Date()) {
+          return Response.json({ error: 'Update the dates first — this promotion has expired' }, { status: 400 });
         }
-        await prisma.platformCampaign.update({ where: { id }, data: { status: 'ACTIVE', updatedBy: { connect: { id: admin.id } } } });
-        await logActivity(admin.name, `Activated seasonal promotion: ${promo.name}`, 'promotion');
-        sendPromotionBlast(promo.name, promo.discountPercent, promo.bannerCopy).catch(() => {});
+        const reactivating = promo.status === 'ENDED';
+        const startsInFuture = new Date(promo.startAt) > new Date();
+        if (reactivating) {
+          // Reset emailedAt so email fires when promo actually starts
+          await prisma.platformCampaign.update({ where: { id }, data: { emailedAt: null, updatedBy: { connect: { id: admin.id } } } });
+        }
+        if (startsInFuture) {
+          await prisma.platformCampaign.update({ where: { id }, data: { status: 'SCHEDULED', updatedBy: { connect: { id: admin.id } } } });
+          await logActivity(admin.name, `Scheduled seasonal promotion: ${promo.name}`, 'promotion');
+        } else {
+          const shouldEmail = !promo.emailedAt || reactivating;
+          const updateData = { status: 'ACTIVE', updatedBy: { connect: { id: admin.id } } };
+          if (shouldEmail) updateData.emailedAt = new Date();
+          await prisma.platformCampaign.update({ where: { id }, data: updateData });
+          await logActivity(admin.name, `${reactivating ? 'Reactivated' : 'Activated'} seasonal promotion: ${promo.name}`, 'promotion');
+          if (shouldEmail) sendPromotionBlast(promo).catch(() => {});
+        }
       }
       return Response.json({ success: true });
     }
@@ -232,26 +246,29 @@ export async function POST(req) {
       return Response.json({ success: true });
     }
 
-    // ── KILL ──
-    if (action === 'kill') {
-      const { id, promotionType: ct, killReason } = body;
+    // ── DELETE ──
+    if (action === 'delete') {
+      const { id, promotionType: ct } = body;
       if (!id) return Response.json({ error: 'Promotion ID required' }, { status: 400 });
-      if (!killReason?.trim()) return Response.json({ error: 'Kill reason is required' }, { status: 400 });
 
       if (ct === 'recurring') {
-        await prisma.recurringCampaign.update({ where: { id }, data: { active: false, updatedBy: { connect: { id: admin.id } } } });
-        await logActivity(admin.name, `Killed recurring promotion ${id}: ${killReason.trim()}`, 'promotion');
-      } else {
-        const promo = await prisma.platformCampaign.findUnique({ where: { id } });
-        if (!promo) return Response.json({ error: 'Promotion not found' }, { status: 404 });
-        if (promo.status === 'ENDED' || promo.status === 'KILLED') {
-          return Response.json({ error: `Promotion already ${promo.status.toLowerCase()}` }, { status: 400 });
+        const has = await prisma.order.count({ where: { recurringCampaignId: id }, take: 1 });
+        if (has) {
+          await prisma.recurringCampaign.update({ where: { id }, data: { active: false } });
+          await logActivity(admin.name, `Deactivated recurring promotion ${id} (has linked orders)`, 'promotion');
+          return Response.json({ success: true, soft: true });
         }
-        await prisma.platformCampaign.update({
-          where: { id },
-          data: { status: 'KILLED', killedAt: new Date(), killReason: killReason.trim(), killedBy: { connect: { id: admin.id } }, updatedBy: { connect: { id: admin.id } } },
-        });
-        await logActivity(admin.name, `Killed seasonal promotion: ${promo.name} — ${killReason.trim()}`, 'promotion');
+        await prisma.recurringCampaign.delete({ where: { id } });
+        await logActivity(admin.name, `Deleted recurring promotion ${id}`, 'promotion');
+      } else {
+        const has = await prisma.order.count({ where: { platformCampaignId: id }, take: 1 });
+        if (has) {
+          await prisma.platformCampaign.update({ where: { id }, data: { status: 'ENDED' } });
+          await logActivity(admin.name, `Ended seasonal promotion ${id} (has linked orders)`, 'promotion');
+          return Response.json({ success: true, soft: true });
+        }
+        await prisma.platformCampaign.delete({ where: { id } });
+        await logActivity(admin.name, `Deleted seasonal promotion ${id}`, 'promotion');
       }
       return Response.json({ success: true });
     }

@@ -772,6 +772,8 @@ function DashboardInner({ initialData }) {
               const saved = localStorage.getItem("nitro-theme");
               if (!saved || saved === "auto") {
                 setThemeMode(nd.themePreference);
+                setDark(nd.themePreference === "night");
+                try { localStorage.setItem("nitro-theme", nd.themePreference); } catch {}
               }
             }
             // Sync perPage from server

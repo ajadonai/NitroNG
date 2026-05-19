@@ -791,7 +791,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
     try { localStorage.setItem("nitro-admin-theme", mode); } catch {}
     if (mode === "day") setDark(false);
     else if (mode === "night") setDark(true);
-    else { const h = new Date().getHours(); setDark(h >= 19 || h < 7); }
+    else { const h = new Date().getHours(), m = new Date().getMinutes(); setDark(h >= 19 || h < 6 || (h === 6 && m < 30) || (h === 18 && m >= 30)); }
   };
 
   // Profile edit

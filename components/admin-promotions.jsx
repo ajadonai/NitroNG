@@ -27,7 +27,6 @@ function StatusBadge({ status, active, recurring }) {
     ACTIVE: { bg: 'rgba(16,185,129,.15)', text: '#10b981' },
     PAUSED: { bg: 'rgba(224,164,88,.15)', text: '#e0a458' },
     ENDED: { bg: 'rgba(138,133,128,.15)', text: '#8a8580' },
-    KILLED: { bg: 'rgba(252,165,165,.15)', text: '#fca5a5' },
   };
   const s = colors[status] || colors.DRAFT;
   return <span className="text-[11px] py-0.5 px-1.5 rounded" style={{ background: s.bg, color: s.text }}>{status}</span>;
@@ -40,7 +39,7 @@ function PromotionForm({ dark, t, type, initial, onSave, onCancel }) {
     return {
       name: '', description: '', discountPercent: '', maxDiscountPerOrder: '',
       bannerCopy: '', bannerColor: '',
-      ...(isRecurring ? { dayOfWeek: 'TUESDAY', startTimeLocal: '00:00', endTimeLocal: '23:59', effectiveFrom: '', effectiveUntil: '' } : { startDate: '', startTime: '00:00', endDate: '', endTime: '23:59', priority: '10' }),
+      ...(isRecurring ? { dayOfWeek: 'TUESDAY', startTimeLocal: '00:00', endTimeLocal: '23:59', effectiveFrom: '', effectiveUntil: '' } : { startDate: '', startTime: '00:00', endDate: '', endTime: '23:59', priority: '10', emailTheme: '' }),
     };
   });
   const [saving, setSaving] = useState(false);
@@ -80,6 +79,7 @@ function PromotionForm({ dark, t, type, initial, onSave, onCancel }) {
         built.startAt = startAt;
         built.endAt = endAt;
         built.priority = form.priority ? Number(form.priority) : 10;
+        built.emailTheme = form.emailTheme || null;
       }
       const res = await fetch('/api/admin/promotions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(built) });
       const data = await res.json();
@@ -134,6 +134,24 @@ function PromotionForm({ dark, t, type, initial, onSave, onCancel }) {
             </div>
           </div>
           <div className="mb-3"><label className={labelCls} style={{ color: t.textMuted }}>Priority</label><input type="number" value={form.priority} onChange={e => set('priority', e.target.value)} placeholder="Higher number wins when overlapping" className={inputCls} style={{ ...inputStyle, maxWidth: 200 }} /></div>
+          <div className="mb-3">
+            <label className={labelCls} style={{ color: t.textMuted }}>Email Theme</label>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[
+                ['', 'Default'],
+                ['christmas', '🎄 Christmas'],
+                ['newyear', '🎆 New Year'],
+                ['valentine', '💕 Valentine'],
+                ['independence', '🇳🇬 Independence'],
+                ['eid', '🌙 Eid'],
+                ['easter', '🐣 Easter'],
+                ['sallah', '🐏 Sallah'],
+                ['blackfriday', '🔥 Black Friday'],
+              ].map(([id, label]) => (
+                <button key={id} onClick={() => set('emailTheme', id)} className="py-1.5 px-3 rounded-lg text-xs font-medium cursor-pointer border transition-transform hover:-translate-y-px" style={{ borderColor: form.emailTheme === id ? t.accent : t.cardBorder, background: form.emailTheme === id ? (dark ? 'rgba(196,125,142,.14)' : 'rgba(196,125,142,.08)') : 'transparent', color: form.emailTheme === id ? t.accent : t.textSoft }}>{label}</button>
+              ))}
+            </div>
+          </div>
         </>
       )}
 
@@ -170,21 +188,16 @@ function PromotionForm({ dark, t, type, initial, onSave, onCancel }) {
   );
 }
 
-function KillModal({ dark, t, onKill, onCancel }) {
-  const [reason, setReason] = useState('');
-  const inputCls = "w-full py-2.5 px-3.5 rounded-lg border border-solid text-[15px] outline-none box-border font-[inherit]";
-  const inputStyle = { borderColor: t.cardBorder, background: dark ? "#131728" : "#fff", color: t.text };
+function DeleteModal({ dark, t, onDelete, onCancel }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,.5)', backdropFilter: 'blur(4px)' }} onClick={onCancel}>
       <div onClick={e => e.stopPropagation()} className="w-full max-w-md rounded-2xl overflow-hidden" style={{ background: dark ? '#111628' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.1)'}` }}>
         <div className="px-6 pt-5 pb-4">
-          <h3 className="text-lg font-semibold mb-1" style={{ color: t.text }}>Kill Promotion</h3>
-          <p className="text-sm mb-4" style={{ color: t.textMuted }}>This will permanently end this promotion. Past discounted orders will not be reversed.</p>
-          <label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Reason</label>
-          <input value={reason} onChange={e => setReason(e.target.value)} placeholder="Why are you killing this promotion?" className={inputCls} style={inputStyle} />
+          <h3 className="text-lg font-semibold mb-1" style={{ color: t.text }}>Delete Promotion</h3>
+          <p className="text-sm mb-4" style={{ color: t.textMuted }}>If this promotion has linked orders it will be ended instead. Otherwise it will be permanently deleted.</p>
         </div>
         <div className="flex gap-2 px-6 py-4" style={{ borderTop: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)'}` }}>
-          <button onClick={() => reason.trim() && onKill(reason.trim())} disabled={!reason.trim()} className="px-4 py-2 rounded-lg text-sm font-semibold text-white cursor-pointer border-none" style={{ background: reason.trim() ? '#dc2626' : '#999' }}>Kill Promotion</button>
+          <button onClick={onDelete} className="px-4 py-2 rounded-lg text-sm font-semibold text-white cursor-pointer border-none" style={{ background: '#dc2626' }}>Delete</button>
           <button onClick={onCancel} className="adm-btn-sm" style={{ borderColor: dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.1)', color: t.textMuted }}>Cancel</button>
         </div>
       </div>
@@ -200,7 +213,7 @@ export default function AdminPromotionsPage({ dark, t }) {
   const [tab, setTab] = useState('seasonal');
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [killing, setKilling] = useState(null);
+  const [deleting, setDeleting] = useState(null);
 
   const cardBg = dark ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.85)";
   const cardBd = `0.5px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}`;
@@ -264,7 +277,7 @@ export default function AdminPromotionsPage({ dark, t }) {
 
         {/* Promotion list */}
         {loading ? (
-          <div className="adm-empty" style={{ color: t.textMuted }}>Loading promotions...</div>
+          <div className="p-3">{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[56px] rounded-lg mb-1.5`} />)}</div>
         ) : promotions.length > 0 ? promotions.map((c, i) => (
           <div key={c.id} style={{ borderBottom: i < promotions.length - 1 ? `1px solid ${t.cardBorder}` : 'none' }}>
             {editing?.id === c.id ? (
@@ -291,14 +304,15 @@ export default function AdminPromotionsPage({ dark, t }) {
                   <button onClick={() => { setEditing(c); setShowAdd(false); }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Edit</button>
                   {tab === 'seasonal' ? (
                     <>
-                      {['DRAFT', 'SCHEDULED', 'PAUSED'].includes(c.status) && <button onClick={() => doAction('activate', c.id, 'platform')} className="adm-btn-sm" style={{ borderColor: 'rgba(16,185,129,.28)', color: '#10b981' }}>Activate</button>}
+                      {['DRAFT', 'SCHEDULED', 'PAUSED', 'ENDED'].includes(c.status) && <button onClick={() => doAction('activate', c.id, 'platform')} className="adm-btn-sm" style={{ borderColor: 'rgba(16,185,129,.28)', color: '#10b981' }}>Activate</button>}
                       {c.status === 'ACTIVE' && <button onClick={() => doAction('pause', c.id, 'platform')} className="adm-btn-sm" style={{ borderColor: 'rgba(224,164,88,.28)', color: '#e0a458' }}>Pause</button>}
-                      {!['ENDED', 'KILLED'].includes(c.status) && <button onClick={() => setKilling({ id: c.id, type: 'platform' })} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>Kill</button>}
+                      <button onClick={() => setDeleting({ id: c.id, type: 'platform' })} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
                     </>
                   ) : (
                     <>
                       {!c.active && <button onClick={() => doAction('activate', c.id, 'recurring')} className="adm-btn-sm" style={{ borderColor: 'rgba(16,185,129,.28)', color: '#10b981' }}>Activate</button>}
                       {c.active && <button onClick={() => doAction('pause', c.id, 'recurring')} className="adm-btn-sm" style={{ borderColor: 'rgba(224,164,88,.28)', color: '#e0a458' }}>Pause</button>}
+                      <button onClick={() => setDeleting({ id: c.id, type: 'recurring' })} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
                     </>
                   )}
                 </>}
@@ -313,7 +327,7 @@ export default function AdminPromotionsPage({ dark, t }) {
         ) : null}
       </div>
 
-      {killing && <KillModal dark={dark} t={t} onKill={(reason) => { doAction('kill', killing.id, killing.type, { killReason: reason }); setKilling(null); }} onCancel={() => setKilling(null)} />}
+      {deleting && <DeleteModal dark={dark} t={t} onDelete={() => { doAction('delete', deleting.id, deleting.type); setDeleting(null); }} onCancel={() => setDeleting(null)} />}
     </>
   );
 }
