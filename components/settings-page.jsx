@@ -95,7 +95,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
     try { localStorage.setItem("nitro-theme", mode); } catch {};
     if (mode === "day") setDark(false);
     else if (mode === "night") setDark(true);
-    else { const h = new Date().getHours(); setDark(h >= 19 || h < 7); }
+    else { const h = new Date().getHours(), m = new Date().getMinutes(); setDark(h >= 19 || h < 6 || (h === 6 && m < 30) || (h === 18 && m >= 30)); }
   };
 
   const changePassword = async () => {
@@ -173,7 +173,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
                   <button key={id} onClick={() => applyTheme(id)} className="flex-1 py-[11px] px-2.5 rounded-[10px] text-sm max-md:text-[13px] max-md:py-2.5 max-md:px-2 font-medium cursor-pointer bg-transparent flex items-center justify-center gap-1.5 transition-transform duration-200 hover:-translate-y-px" style={{ border: `0.5px solid ${themeMode === id ? t.accent : t.cardBorder}`, background: themeMode === id ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.12)") : "transparent", color: themeMode === id ? t.accent : t.textSoft }}>{icon} {lb}</button>
                 ))}
               </div>
-              {themeMode === "auto" && <div className="text-[13px] mt-2" style={{ color: t.textMuted }}>Switches automatically — light 7am–6pm, dark otherwise.</div>}
+              {themeMode === "auto" && <div className="text-[13px] mt-2" style={{ color: t.textMuted }}>Switches automatically — light 6:30am–6:30pm, dark otherwise.</div>}
             </div>
         </div>
 

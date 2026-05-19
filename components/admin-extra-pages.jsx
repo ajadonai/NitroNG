@@ -278,6 +278,7 @@ const GRANTABLE_ACTIONS = [
   { id: "leaderboard.reward", label: "Send Leaderboard Rewards", g: "Marketing" },
   { id: "leaderboard.announcement", label: "Set Reward Announcement", g: "Marketing" },
   { id: "notifications.send", label: "Send Email Blasts", g: "Marketing" },
+  { id: "promotions.manage", label: "Manage Promotions", g: "Marketing" },
 ];
 const DEFAULT_PAGES = {
   admin: ["overview","orders","users","leaderboard","services","menu-builder","pricing","tickets","activity","alerts","finance","rewards","blog"],

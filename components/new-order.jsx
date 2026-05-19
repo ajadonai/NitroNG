@@ -67,16 +67,18 @@ const TS = {
 
 const PROV_COLORS = { mtp: "#ef4444", jap: "#3b82f6", dao: "#22c55e" };
 
-function TierChips({ svc, selTier, selSvc, onPickTier, dark }) {
+function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion }) {
+  const promoOff = activePromotion?.active ? activePromotion.discountPercent / 100 : 0;
   return (
     <div className="flex gap-1.5 flex-wrap mt-2.5" data-tour="no-tier-select">
       {svc.tiers.map(tier => {
         const s = TS[tier.tier];
         const isSel = selTier?.tier === tier.tier && selSvc?.id === svc.id;
+        const displayPrice = promoOff > 0 ? Math.round(tier.price * (1 - promoOff)) : tier.price;
         return (
           <button key={tier.tier} onClick={e => onPickTier(tier, e)} className={`no-tier-chip relative py-1 px-2.5 desktop:py-[7px] desktop:px-3.5 rounded-[20px] text-[11px] desktop:text-[13px] font-semibold cursor-pointer border-[1.5px] border-solid font-[inherit] transition-all duration-150 ease-in-out flex items-center gap-1.5 hover:brightness-110 hover:-translate-y-px${isSel ? " !border-2 shadow-[0_2px_8px_rgba(0,0,0,.28)] -translate-y-px" : ""}`} style={{ background: dark ? s.bgD : s.bg, color: s.text, borderColor: isSel ? s.text : (dark ? s.borderD : s.border) }}>
             <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PROV_COLORS[tier.provider] || PROV_COLORS.mtp }} />
-            {s.label} {tier.tier} · ₦{tier.price.toLocaleString()}
+            {s.label} {tier.tier} · ₦{displayPrice.toLocaleString()}
           </button>
         );
       })}
@@ -84,7 +86,7 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark }) {
   );
 }
 
-function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t, orderMode }) {
+function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t, orderMode, activePromotion }) {
   const isSel = selSvc?.id === svc.id;
   const lowestPrice = Math.min(...svc.tiers.map(ti => ti.price));
   const lowestPer = svc.tiers.find(ti => ti.price === lowestPrice)?.per || "1K";
@@ -104,10 +106,11 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
         </div>
         <div className="text-right shrink-0">
           <div className="text-[10px] desktop:text-[11px] mb-0.5" style={{ color: t.textMuted }}>{activeTier ? activeTier.tier : "from"}</div>
-          <div className="m text-[15px] md:text-base desktop:text-lg font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{(activeTier ? activeTier.price : lowestPrice).toLocaleString()}<span className="text-[11px] font-normal" style={{ color: t.textMuted }}>/{activeTier ? activeTier.per : lowestPer}</span></div>
+          {activePromotion?.active && <div className="m text-[12px] font-normal line-through" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>₦{(activeTier ? activeTier.price : lowestPrice).toLocaleString()}</div>}
+          <div className="m text-[15px] md:text-base desktop:text-lg font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{Math.round((activeTier ? activeTier.price : lowestPrice) * (1 - (activePromotion?.active ? activePromotion.discountPercent / 100 : 0))).toLocaleString()}<span className="text-[11px] font-normal" style={{ color: t.textMuted }}>/{activeTier ? activeTier.per : lowestPer}</span></div>
         </div>
       </div>
-      {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={onPickTier} dark={dark} />}
+      {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={onPickTier} dark={dark} activePromotion={activePromotion} />}
       {isSel && !activeTier && (
         <div className="flex items-center gap-1.5 mt-2 text-xs font-medium py-2 px-3 rounded-lg bg-[rgba(196,125,142,.06)]" style={{ color: t.textMuted }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
@@ -201,14 +204,17 @@ function saveCart(rows) {
 const CONSERVATIVE = ['instagram','tiktok','facebook','twitter','snapchat','threads'];
 const showDripNote = (plat, qty) => { const p = (plat || '').toLowerCase(); return CONSERVATIVE.some(c => p.includes(c)) ? qty > 100 : qty > 500; };
 
-export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null }) {
+export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null }) {
   const minQty = selTier?.min || 100;
   const maxQty = selTier?.max || 50000;
   const qtyNum = Number(qty) || 0;
   const qtyOutOfRange = qty !== "" && qtyNum > 0 && (qtyNum < minQty || qtyNum > maxQty);
   const basePrice = selTier ? Math.round((qtyNum / 1000) * selTier.price) : 0;
   const discountAmount = loyaltyDiscount > 0 ? Math.round(basePrice * (loyaltyDiscount / 100)) : 0;
-  const price = Math.max(0, basePrice - discountAmount);
+  const afterLoyalty = Math.max(0, basePrice - discountAmount);
+  const promoDiscountAmt = activePromotion ? Math.round(afterLoyalty * (activePromotion.discountPercent / 100)) : 0;
+  const cappedPromoDiscount = activePromotion?.maxDiscountPerOrder ? Math.min(promoDiscountAmt, activePromotion.maxDiscountPerOrder / 100) : promoDiscountAmt;
+  const price = Math.max(0, afterLoyalty - cappedPromoDiscount);
   const s = selTier ? TS[selTier.tier] : null;
   const [linkError, setLinkError] = useState("");
   const [dripOpen, setDripOpen] = useState(false);
@@ -308,9 +314,10 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           <div className="flex justify-between mb-1 text-[13px]" style={{ color: t.textMuted }}><span>Rate</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>₦{selTier.price.toLocaleString()} / {selTier.per}</span></div>
           <div className="flex justify-between mb-1 text-[13px]" style={{ color: t.textMuted }}><span>Quantity</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>{qtyNum.toLocaleString()}</span></div>
           {discountAmount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}><span>{loyaltyTier} discount ({loyaltyDiscount}%)</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{discountAmount.toLocaleString()}</span></div>}
+          {cappedPromoDiscount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#f9a8d4" : "#be185d" }}><span>Discount ({activePromotion.discountPercent}%){cappedPromoDiscount < promoDiscountAmt ? ` · capped at ₦${cappedPromoDiscount.toLocaleString()}` : ''}</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{cappedPromoDiscount.toLocaleString()}</span></div>}
           <div className="border-t border-solid pt-2 mt-1 flex justify-between items-baseline" style={{ borderColor: t.cardBorder }}>
             <span className="text-[13px] font-semibold" style={{ color: t.textMuted }}>Total</span>
-            <span className="font-bold text-[20px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{price.toLocaleString()}</span>
+            <span className="font-bold text-[20px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>{(discountAmount > 0 || cappedPromoDiscount > 0) && <span className="text-[14px] font-normal line-through mr-1.5" style={{ color: t.textMuted }}>₦{basePrice.toLocaleString()}</span>}₦{price.toLocaleString()}</span>
           </div>
         </div>
         {showDripNote(platform, qtyNum) && (
@@ -335,7 +342,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
 /* ═══════════════════════════════════════════ */
 /* ═══ NEW ORDER PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
-export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrders, onTopUp, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, catModal, setCatModal, tourActive }) {
+export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrders, onTopUp, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, catModal, setCatModal, tourActive, activePromotion }) {
   const toast = useToast();
   const [filterType, setFilterType] = useState("all");
   const [search, setSearch] = useState("");
@@ -834,7 +841,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {/* ═══ SERVICE CARDS ═══ */}
       <div className="flex flex-col gap-2" data-tour="no-service-list" ref={listRef}>
-        {filtered.map(svc => <ServiceCard key={svc.id} svc={svc} selSvc={selSvc} selTier={selTier} onPickService={pickService} onPickTier={pickTier} dark={dark} t={t} orderMode={orderMode} />)}
+        {filtered.map(svc => <ServiceCard key={svc.id} svc={svc} selSvc={selSvc} selTier={selTier} onPickService={pickService} onPickTier={pickTier} dark={dark} t={t} orderMode={orderMode} activePromotion={activePromotion} />)}
         {filtered.length === 0 && <div className="py-10 text-center text-[15px]" style={{ color: t.textMuted }}>Coming soon.</div>}
       </div>
 
@@ -880,7 +887,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 </div>
               </div>
             ) : (
-              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => setOrderModal(false)} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} />
+              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => setOrderModal(false)} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} />
             )}
           </div>
         </div>

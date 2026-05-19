@@ -368,7 +368,7 @@ function FinanceOverviewTab({ dark, t }) {
           labels: cd.map(d => { const dt = new Date(d.date); return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }),
           datasets: [
             { label: "Orders", data: cd.map(d => d.orders), backgroundColor: dark ? "rgba(196,125,142,0.5)" : "rgba(196,125,142,0.6)", borderRadius: 4, barPercentage: 0.6, yAxisID: "y" },
-            { label: "Deposits", data: cd.map(d => d.deposits), type: "line", borderColor: "#059669", backgroundColor: "transparent", tension: 0.3, pointRadius: 2, pointBackgroundColor: "#059669", borderWidth: 2, yAxisID: "y1" },
+            { label: "Deposits", data: cd.map(d => d.deposits), backgroundColor: dark ? "rgba(5,150,105,0.45)" : "rgba(5,150,105,0.55)", borderRadius: 4, barPercentage: 0.6, yAxisID: "y1" },
           ],
         },
         options: {
@@ -791,7 +791,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
     try { localStorage.setItem("nitro-admin-theme", mode); } catch {}
     if (mode === "day") setDark(false);
     else if (mode === "night") setDark(true);
-    else { const h = new Date().getHours(); setDark(h >= 19 || h < 7); }
+    else { const h = new Date().getHours(), m = new Date().getMinutes(); setDark(h >= 19 || h < 6 || (h === 6 && m < 30) || (h === 18 && m >= 30)); }
   };
 
   // Profile edit
@@ -1135,12 +1135,12 @@ function FinanceBreakdownTab({ dark, t }) {
       {/* Profitability */}
       <div className={sectionHeading} style={{ color: subText }}>Profitability</div>
       <div className="adm-stats mb-5">
-        <MetricCard label="Gross Revenue" value={fN(p.grossRevenue || 0)} sub="Total order charges" />
-        <MetricCard label="Refunds" value={fN(p.totalRefunds || 0)} sub={`${p.refundRate || 0}% refund rate`} color={red} />
-        <MetricCard label="Net Revenue" value={fN(p.netRevenue || 0)} sub="Excl. cancelled" color={green} />
-        <MetricCard label="Provider Cost" value={fN(p.totalCost || 0)} sub="MTP + JAP + DAO" color={amber} />
+        <MetricCard label="Gross Revenue" value={fN(p.grossRevenue || 0)} sub="Before discounts" />
+        <MetricCard label="Discounts" value={fN(p.totalDiscounts || 0)} sub={`Promo ₦${(p.promoDiscounts || 0).toLocaleString()} | Loyalty ₦${(p.loyaltyDiscounts || 0).toLocaleString()}`} color={amber} />
+        <MetricCard label="Net Revenue" value={fN(p.netRevenue || 0)} sub="What users actually paid" color={green} />
+        <MetricCard label="Provider Cost" value={fN(p.totalCost || 0)} sub="MTP + JAP + DAO" color={red} />
         <MetricCard label="Gross Profit" value={fN(p.grossProfit || 0)} sub={`${p.margin || 0}% margin`} color={p.grossProfit >= 0 ? green : red} />
-        <MetricCard label="Per Order" value={fN(p.profitPerOrder || 0)} sub={`${p.orderCount || 0} orders`} />
+        <MetricCard label="Per Order" value={fN(p.profitPerOrder || 0)} sub={`${p.orderCount || 0} orders | ${p.refundRate || 0}% refund rate`} />
       </div>
 
       {/* Money In / Money Out */}

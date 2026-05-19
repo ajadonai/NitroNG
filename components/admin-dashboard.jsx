@@ -13,6 +13,7 @@ import AdminPricingPage from "./admin-pricing";
 import { AdminPaymentsPage, AdminFinancePage, AdminAlertsPage, AdminSettingsPage } from "./admin-pages";
 import { AdminActivityPage, AdminTeamPage, AdminCouponsPage, AdminNotificationsPage, AdminMaintenancePage, AdminAPIPage } from "./admin-extra-pages";
 import AdminBlogPage from "./admin-blog";
+import AdminPromotionsPage from "./admin-promotions";
 import AdminLeaderboardPage, { AdminLeaderboardSidebar } from "./admin-leaderboard";
 import { fN, fD } from "../lib/format";
 import { SITE } from "../lib/site";
@@ -42,6 +43,7 @@ const ADMIN_NAV = [
     { id: "pricing", label: "Pricing", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> },
   ]},
   { section: "Marketing", items: [
+    { id: "promotions", label: "Promotions", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
     { id: "blog", label: "Blog", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> },
     { id: "alerts", label: "Announcements", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> },
     { id: "notifications", label: "Email Blasts", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 17H2a3 3 0 003-3V9a7 7 0 0114 0v5a3 3 0 003 3zm-8.27 4a2 2 0 01-3.46 0"/></svg> },
@@ -241,6 +243,7 @@ function AdminRightSidebar({ data, dark, t, active }) {
     team: ["admin"],
     coupons: ["coupon"],
     alerts: ["alert"],
+    promotions: ["promotion"],
     settings: ["settings", "maintenance"],
     notifications: ["notification"],
     maintenance: ["maintenance"],
@@ -254,7 +257,7 @@ function AdminRightSidebar({ data, dark, t, active }) {
     orders: "Order Activity", finance: "Financial Activity", users: "User Activity",
     blog: "Blog Activity", tickets: "Ticket Activity", services: "Service Activity",
     "menu-builder": "Service Activity", pricing: "Pricing Activity", payments: "Payment Activity",
-    team: "Team Activity", coupons: "Coupon Activity", alerts: "Alert Activity",
+    team: "Team Activity", coupons: "Coupon Activity", alerts: "Alert Activity", promotions: "Promotion Activity",
     notifications: "Notification Activity", maintenance: "Maintenance Activity",
   }[active] || "Recent Activity";
 
@@ -370,6 +373,8 @@ function AdminDashboardInner({ initialData }) {
           const saved = localStorage.getItem("nitro-admin-theme");
           if (!saved || saved === "auto") {
             setThemeMode(d.admin.themePreference);
+            setDark(d.admin.themePreference === "night");
+            try { localStorage.setItem("nitro-admin-theme", d.admin.themePreference); } catch {}
           }
         }
       } catch {
@@ -654,6 +659,7 @@ function AdminDashboardInner({ initialData }) {
       case "services": return <AdminServicesPage dark={dark} t={t} />;
       case "menu-builder": return <AdminServiceGroupsPage dark={dark} t={t} />;
       case "pricing": return <AdminPricingPage dark={dark} t={t} />;
+      case "promotions": return <AdminPromotionsPage dark={dark} t={t} />;
       case "blog": return <AdminBlogPage dark={dark} t={t} />;
       case "payments": return <AdminPaymentsPage dark={dark} t={t} />;
       case "finance": return <AdminFinancePage dark={dark} t={t} admin={admin} />;

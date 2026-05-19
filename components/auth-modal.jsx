@@ -374,7 +374,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill }) {
           style={{ color: t.textSoft }}
         >
           {mode === 'login'
-            ? 'Sign in and start boosting'
+            ? 'Log in and start boosting'
             : mode === 'forgot'
               ? forgotSent
                 ? 'Check your email'
@@ -576,7 +576,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill }) {
               {authLoading && (
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-[spin_0.6s_linear_infinite]" />
               )}
-              {authLoading ? 'Signing in...' : 'Sign In'}
+              {authLoading ? 'Logging in...' : 'Log In'}
             </button>
 
             {/* Switch to signup */}

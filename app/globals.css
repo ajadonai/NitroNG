@@ -472,6 +472,7 @@
 .adm-subtitle { font-size: 14px; }
 .adm-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; margin-bottom: 24px; }
 .adm-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+.adm-grid-2 > * { min-width: 0; }
 .adm-section-link { font-size: 14px; font-weight: 600; background: none; }
 .adm-card { border-radius: 14px; overflow: hidden; }
 .adm-card-title { font-size: 14px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; }

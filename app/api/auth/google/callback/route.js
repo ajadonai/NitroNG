@@ -4,6 +4,7 @@ import { log } from '@/lib/logger';
 import { signUserToken, setUserCookie, detectDevice, hashToken } from '@/lib/auth';
 import { generateReferralCode } from '@/lib/utils';
 import { sendWelcomeEmail } from '@/lib/email';
+import { isDisposableEmail } from '@/lib/validate';
 import { cookies, headers } from 'next/headers';
 
 export async function GET(req) {
@@ -96,6 +97,11 @@ export async function GET(req) {
       }
 
     } else {
+      // New user — block disposable emails
+      if (isDisposableEmail(email)) {
+        return NextResponse.redirect(`${APP_URL}/?error=disposable_email`);
+      }
+
       // New user — create account
       let refCode = generateReferralCode();
       while (await prisma.user.findUnique({ where: { referralCode: refCode } })) {

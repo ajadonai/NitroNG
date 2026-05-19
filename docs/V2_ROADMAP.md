@@ -503,6 +503,103 @@ Codebase is growing. TypeScript catches bugs at compile time, improves IDE exper
 
 ---
 
+## Platform Campaigns | Seasonal & Recurring Discounts
+
+*Added May 2026*
+
+### The idea
+
+Create predictable, recurring discount events that train users to come back on a schedule — not because they got a promo code, but because they know Nitro has a rhythm. Inspired by ABC's "TGIT" (Thank God It's Thursday) campaign that turned a specific night into appointment television. Same psychology applied to a growth platform: make certain days or periods mean something.
+
+### Why this matters
+
+Right now, users only return to Nitro when they have a specific order to place. There's no reason to check in on a Tuesday vs. a Friday. Campaigns create a heartbeat — users learn that certain days are cheaper, certain seasons have bigger deals, and Nitro rewards consistency. This drives:
+
+- **Higher return frequency** — users check in on campaign days even if they weren't planning to order
+- **Wallet pre-loading** — users fund wallets in advance to be ready for discount windows
+- **Word of mouth** — "Nitro does 15% off every Tuesday" is a shareable fact, unlike a one-time promo code
+- **Seasonal spikes** — aligned with cultural moments (Detty December, back-to-school, election season, Ramadan, new year)
+
+### Two formats that work together
+
+**1. Weekly ritual — "Turbo Tuesday" (working name)**
+
+Every Tuesday, all services are 10-15% off. No code needed. The discount applies automatically at checkout if the order is placed on a Tuesday (WAT timezone). Users see a banner on the dashboard: "It's Turbo Tuesday — all services 10% off today."
+
+Why this works:
+- Low enough discount (10-15%) to be sustainable every week without destroying margins
+- Frequent enough to become a habit — users associate Tuesday with Nitro
+- Zero friction — no code to remember, no minimum spend, just order on Tuesday
+- Creates urgency without being aggressive — "if I wait till Tuesday I save 10%"
+
+**2. Seasonal campaigns — platform-wide events**
+
+Bigger discounts (20-25%) during cultural or calendar moments, running for a defined period (1 day to 2 weeks). These feel like events, not just discounts. Examples:
+
+| Campaign | Period | Discount | Rationale |
+|----------|--------|----------|-----------|
+| **New Year New Numbers** | Jan 1-7 | 20% | Everyone's setting goals, fresh start energy |
+| **Valentine's Boost** | Feb 13-14 | 15% | Brands running Valentine's campaigns need reach |
+| **Ramadan Growth** | During Ramadan | 15% | Content consumption spikes during Ramadan in Nigeria |
+| **Summer of Growth** | June 1-14 | 20% | Aligned with global "summer push" for creators |
+| **Independence Day** | Oct 1 | 25% (1 day) | National pride moment, Nigerian-first platform |
+| **Detty December** | Dec 20-31 | 20% | Biggest social media period in Nigeria, everyone is posting |
+| **Black Friday** | Last Friday of Nov | 25% (1 day) | Users already expect deals on this day |
+| **Anniversary Sale** | Nitro's launch date | 25% | Celebrates the platform's birthday with users |
+
+These campaigns are announced in advance via email blast, dashboard banner, WhatsApp, and social media. Users know they're coming and plan around them.
+
+### How it works (no codes)
+
+The key UX decision: **no promo codes for platform campaigns.** The discount applies automatically.
+
+Technical approach:
+- New `PlatformCampaign` model (or stored in Settings): name, discount percentage, start datetime, end datetime, active flag
+- At checkout, the system checks if an active campaign exists. If yes, the discount is applied to the order total and shown as a line item: "Turbo Tuesday: -10%" or "Detty December: -20%"
+- Admin can create, edit, activate, and deactivate campaigns from the admin panel
+- For recurring weekly events (Turbo Tuesday), a settings flag like `earn_turbo_tuesday_enabled` + `earn_turbo_tuesday_discount` controls it
+- Campaigns stack with existing coupon codes? **No.** One discount per order — campaign OR coupon, whichever is better for the user. This keeps margins predictable.
+
+### What users see
+
+**Dashboard banner** (when a campaign is active):
+A colored banner at the top of the dashboard: "It's Turbo Tuesday — all services 10% off today" or "Detty December Sale — 20% off everything until Dec 31."
+
+**Checkout line item:**
+```
+IG Followers (1,000)     ₦2,500
+Turbo Tuesday (-10%)      -₦250
+                         ───────
+Total                    ₦2,250
+```
+
+**Pre-campaign teaser** (1-2 days before a seasonal campaign):
+Dashboard card or notification: "Detty December starts in 2 days — fund your wallet now."
+
+### Admin controls
+
+- Create/edit/delete campaigns with name, discount %, start/end dates
+- Toggle recurring weekly events on/off
+- Set discount cap per order (optional — e.g. max ₦5,000 discount per order to protect margins on bulk orders)
+- View campaign performance: orders during campaign, total discount given, revenue comparison vs. non-campaign days
+- Kill switch: instantly deactivate any campaign if margins are getting hit
+
+### What to validate before building
+
+- **Margin math**: Run the numbers on 10% weekly + 20% seasonal. Does the increased volume offset the discount? Start with Turbo Tuesday only at 10% for one month and measure.
+- **User behavior**: Do users actually shift their ordering to Tuesdays, or do they just get a discount on orders they would have placed anyway? Track order distribution by day of week before and after.
+- **Stacking policy**: Confirm that campaign discounts don't stack with coupon codes. One or the other, whichever benefits the user more.
+- **Name**: "Turbo Tuesday" is a working name. Could also be "Nitro Nights" (evening discounts), "First Friday" (monthly instead of weekly), etc. Test what resonates.
+
+### What this is NOT
+
+- Not a loyalty/points program (that's separate if we ever build it)
+- Not a referral incentive (referral bonuses are separate)
+- Not personalized pricing (everyone gets the same campaign discount)
+- Not a loss leader strategy — discounts should be sustainable at scale
+
+---
+
 ## Things we're explicitly NOT doing
 
 To save future-us from re-litigating bad ideas:

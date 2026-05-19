@@ -3,6 +3,7 @@ import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { placeOrder, checkOrder, cancelOrder } from '@/lib/smm';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -161,6 +162,27 @@ export async function PATCH(req) {
         }
       } catch (err) { log.warn('Reorder loyalty discount', err.message); }
 
+      // Apply promotion discount to reorder
+      let reorderPromoDiscount = 0;
+      let reorderPromoPercent = null;
+      let reorderPromoId = null;
+      let reorderPromoType = null;
+      let reorderPromoLabel = null;
+      try {
+        const activePromo = await getActivePromotion();
+        if (activePromo) {
+          const { type, promotion: promo } = activePromo;
+          reorderPromoDiscount = applyPromotionDiscount(charge, promo, promo.maxDiscountPerOrder);
+          if (reorderPromoDiscount > 0) {
+            reorderPromoPercent = promo.discountPercent;
+            reorderPromoId = promo.id;
+            reorderPromoType = type;
+            reorderPromoLabel = promo.lineItemLabel;
+            charge = Math.max(1, charge - reorderPromoDiscount);
+          }
+        }
+      } catch (err) { log.warn('Reorder promotion discount', err.message); }
+
       const user = await prisma.user.findUnique({ where: { id: session.id } });
       if (user.balance < charge) {
         return Response.json({ error: 'Insufficient balance' }, { status: 400 });
@@ -179,14 +201,22 @@ export async function PATCH(req) {
             charge, cost,
             comments: order.comments,
             loyaltyDiscount: reorderLoyaltyDiscount,
+            campaignDiscount: reorderPromoDiscount,
+            campaignPercent: reorderPromoPercent,
+            platformCampaignId: reorderPromoType === 'platform' ? reorderPromoId : null,
+            recurringCampaignId: reorderPromoType === 'recurring' ? reorderPromoId : null,
             status: 'Pending', apiOrderId: null,
           },
         });
+        const reorderDiscountParts = [
+          reorderLoyaltyDiscount > 0 ? `${reorderLoyaltyTierName} -₦${(reorderLoyaltyDiscount/100).toLocaleString()}` : null,
+          reorderPromoDiscount > 0 ? `${reorderPromoLabel} -₦${(reorderPromoDiscount/100).toLocaleString()}` : null,
+        ].filter(Boolean);
         await tx.transaction.create({
           data: {
             userId: session.id, type: 'order', amount: -charge,
             method: 'wallet', status: 'Completed', reference: newOrderId,
-            note: `Reorder ${newOrderId} — ${order.tier?.group?.name ? `${order.tier.group.name} (${order.tier.tier})` : order.service.name} x${order.quantity.toLocaleString()}${reorderLoyaltyDiscount > 0 ? ` (${reorderLoyaltyTierName} -₦${(reorderLoyaltyDiscount/100).toLocaleString()})` : ''}`,
+            note: `Reorder ${newOrderId} — ${order.tier?.group?.name ? `${order.tier.group.name} (${order.tier.tier})` : order.service.name} x${order.quantity.toLocaleString()}${reorderDiscountParts.length > 0 ? ` (${reorderDiscountParts.join(', ')})` : ''}`,
           },
         });
         return created;
@@ -333,6 +363,27 @@ export async function POST(req) {
       }
     } catch (err) { log.warn('Loyalty discount', err.message); }
 
+    // Apply promotion discount (stacks with loyalty)
+    let promoDiscount = 0;
+    let promoPercent = null;
+    let activePromoId = null;
+    let activePromoType = null;
+    let promoLabel = null;
+    try {
+      const activePromo = await getActivePromotion();
+      if (activePromo) {
+        const { type, promotion: promo } = activePromo;
+        promoDiscount = applyPromotionDiscount(charge, promo, promo.maxDiscountPerOrder);
+        if (promoDiscount > 0) {
+          promoPercent = promo.discountPercent;
+          activePromoId = promo.id;
+          activePromoType = type;
+          promoLabel = promo.lineItemLabel;
+          charge = Math.max(1, charge - promoDiscount);
+        }
+      }
+    } catch (err) { log.warn('Promotion discount', err.message); }
+
     const qty = Math.floor(Number(quantity));
 
     // Generate order ID
@@ -356,10 +407,18 @@ export async function POST(req) {
           cost,
           comments: comments?.trim().slice(0, 5000) || null,
           loyaltyDiscount,
+          campaignDiscount: promoDiscount,
+          campaignPercent: promoPercent,
+          platformCampaignId: activePromoType === 'platform' ? activePromoId : null,
+          recurringCampaignId: activePromoType === 'recurring' ? activePromoId : null,
           status: 'Pending',
           apiOrderId: null,
         },
       });
+      const discountParts = [
+        loyaltyDiscount > 0 ? `${loyaltyTierName} -₦${(loyaltyDiscount/100).toLocaleString()}` : null,
+        promoDiscount > 0 ? `${promoLabel} -₦${(promoDiscount/100).toLocaleString()}` : null,
+      ].filter(Boolean);
       await tx.transaction.create({
         data: {
           userId: session.id,
@@ -368,7 +427,7 @@ export async function POST(req) {
           method: 'wallet',
           status: 'Completed',
           reference: orderId,
-          note: `Order ${orderId} — ${tierName} x${qty.toLocaleString()}${loyaltyDiscount > 0 ? ` (${loyaltyTierName} -₦${(loyaltyDiscount/100).toLocaleString()})` : ''}`,
+          note: `Order ${orderId} — ${tierName} x${qty.toLocaleString()}${discountParts.length > 0 ? ` (${discountParts.join(', ')})` : ''}`,
         },
       });
       return order;
@@ -415,6 +474,7 @@ export async function POST(req) {
         charge: charge / 100,
         status: apiOrderId ? 'Processing' : 'Pending',
         ...(loyaltyDiscount > 0 ? { loyaltyDiscount: loyaltyDiscount / 100, loyaltyTier: loyaltyTierName } : {}),
+        ...(promoDiscount > 0 ? { promoDiscount: promoDiscount / 100, promoPercent, promoLabel } : {}),
       },
     });
   } catch (err) {

@@ -16,6 +16,8 @@ async function verifyToken(token, secret) {
 const ALLOWED_ORIGINS = [
   'https://nitro.ng', 'https://www.nitro.ng',
   'http://localhost:3000', 'http://localhost:3001',
+  'http://192.168.1.11:3000',
+  'http://192.168.1.12:3000',
 ];
 
 export async function proxy(request) {
