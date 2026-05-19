@@ -29,7 +29,7 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
             <div>
               <div data-reveal className="text-xs font-medium tracking-[2px] uppercase mb-4" style={{color:t.accent}}>Why Nitro</div>
               <h2 data-reveal="1" className="text-[48px] max-desktop:!text-4xl max-md:!text-[28px] font-bold leading-[1.05] -tracking-[1.5px] mb-4" style={{color:t.text}}>Grow your brand.<br/>Keep your audience.<br/><span className="serif max-desktop:!text-[40px] max-md:!text-[32px] italic font-normal text-[54px] block" style={{color:t.accent}}>No bots. No drops.</span></h2>
-              <p data-reveal="2" className="text-base leading-[1.7] max-w-[400px] mb-7" style={{color:t.textSoft}}>We built Nitro for Nigerian creators who are tired of slow delivery, fake engagement, and platforms that disappear overnight.</p>
+              <p data-reveal="2" className="text-base leading-[1.7] max-w-[400px] mb-7" style={{color:t.textSoft}}>We built Nitro for Nigerian creators who want real growth — instant delivery, genuine engagement, and a platform that actually sticks around.</p>
               <div data-reveal="3" className="flex gap-8">
                 {[["25+","Platforms"],["98%","Delivery rate"],["<60s","Avg. start time"]].map(([num,label])=>(
                   <div key={label}><div className="text-[28px] font-semibold leading-none mb-1" style={{color:t.text}}>{num}</div><div className="text-[13px]" style={{color:t.textMuted}}>{label}</div></div>

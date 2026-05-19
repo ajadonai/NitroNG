@@ -14,10 +14,10 @@ import CookieBanner from '@/components/cookie-banner';
 
 export const metadata = {
   title: {
-    default: "The Nitro NG — Grow Your Socials | Nigeria's Growth Hub",
+    default: "The Nitro NG — Your Socials Deserve Better Numbers",
     template: '%s | The Nitro NG',
   },
-  description: "Real engagement across Instagram, TikTok, YouTube and 35+ platforms. Naira pricing, instant delivery, 24/7 support. Built for Nigerian creators and businesses.",
+  description: "Grow your Instagram, TikTok, YouTube and 25+ platforms with real engagement. Naira pricing, instant delivery, free auto-refills, and 24/7 support. Built for Nigerian creators and businesses.",
   keywords: ['social media growth Nigeria', 'grow Instagram followers Nigeria', 'grow TikTok Nigeria', 'YouTube subscribers Nigeria', 'social media marketing Nigeria', 'Instagram growth service', 'TikTok growth Nigeria', 'Nigerian creators', 'Naira SMM', 'instant delivery', 'real engagement Nigeria'],
   authors: [{ name: 'The Nitro NG', url: 'https://nitro.ng' }],
   creator: 'The Nitro NG',
