@@ -3,6 +3,7 @@ import { log } from '@/lib/logger';
 import { getCurrentUser } from '@/lib/auth';
 import { checkOrder, cancelOrder } from '@/lib/smm';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { sendEmail, batchPlacementEmail } from '@/lib/email';
 
@@ -451,11 +452,18 @@ export async function POST(req) {
         }
       } catch (err) { log.warn('Bulk loyalty discount', err.message); }
 
-      // Apply discount and compute total
+      // Check for active promotion
+      let activePromo = null;
+      let promoType = null;
+      try { const ap = await getActivePromotion(); if (ap) { activePromo = ap.promotion; promoType = ap.type; } } catch {}
+
+      // Apply loyalty + promotion discounts and compute total
       const orderData = resolved.map(r => {
         const discount = loyaltyPercent > 0 ? Math.round(r.charge * (loyaltyPercent / 100)) : 0;
-        const finalCharge = Math.max(1, r.charge - discount);
-        return { ...r, discount, finalCharge };
+        let afterLoyalty = Math.max(1, r.charge - discount);
+        const promoDiscount = activePromo ? applyPromotionDiscount(afterLoyalty, activePromo, activePromo.maxDiscountPerOrder) : 0;
+        const finalCharge = Math.max(1, afterLoyalty - promoDiscount);
+        return { ...r, discount, promoDiscount, finalCharge };
       });
 
       const totalCharge = orderData.reduce((sum, o) => sum + o.finalCharge, 0);
@@ -488,6 +496,10 @@ export async function POST(req) {
             cost: o.cost,
             comments: o.comments,
             loyaltyDiscount: o.discount,
+            campaignDiscount: o.promoDiscount,
+            campaignPercent: activePromo ? activePromo.discountPercent : null,
+            platformCampaignId: promoType === 'platform' ? activePromo.id : null,
+            recurringCampaignId: promoType === 'recurring' ? activePromo.id : null,
             status: 'Pending',
           },
         });
@@ -503,7 +515,7 @@ export async function POST(req) {
           method: 'wallet',
           status: 'Completed',
           reference: batchId,
-          note: `Bulk ${batchId} — ${orderData.length} orders${loyaltyPercent > 0 ? ` (${loyaltyTierName} -${loyaltyPercent}%)` : ''}${idempotencyKey ? ` [${idempotencyKey}]` : ''}`,
+          note: `Bulk ${batchId} — ${orderData.length} orders${loyaltyPercent > 0 ? ` (${loyaltyTierName} -${loyaltyPercent}%)` : ''}${activeCamp ? ` (${activeCamp.lineItemLabel})` : ''}${idempotencyKey ? ` [${idempotencyKey}]` : ''}`,
         },
       });
 

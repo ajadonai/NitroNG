@@ -9,6 +9,29 @@ datasource db {
 }
 
 // ──────────────────────────────────────
+// ENUMS
+// ──────────────────────────────────────
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  ENDED
+  KILLED
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+// ──────────────────────────────────────
 // USERS
 // ──────────────────────────────────────
 
@@ -99,6 +122,12 @@ model Admin {
   themePreference String @default("auto") // "auto" | "night" | "day"
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  platformCampaignsCreated  PlatformCampaign[]  @relation("PlatformCampaignCreator")
+  platformCampaignsUpdated  PlatformCampaign[]  @relation("PlatformCampaignUpdater")
+  platformCampaignsKilled   PlatformCampaign[]  @relation("PlatformCampaignKiller")
+  recurringCampaignsCreated RecurringCampaign[] @relation("RecurringCampaignCreator")
+  recurringCampaignsUpdated RecurringCampaign[] @relation("RecurringCampaignUpdater")
 
   @@map("admins")
 }
@@ -197,19 +226,27 @@ model Order {
   lastError       String?
   dispatchedAt    DateTime?
   refundedAt      DateTime?
-  loyaltyDiscount Int      @default(0)
+  loyaltyDiscount       Int      @default(0)
+  campaignDiscount      Int      @default(0)
+  campaignPercent       Int?
+  platformCampaignId    String?
+  recurringCampaignId   String?
   createdAt       DateTime @default(now())
   deletedAt       DateTime?
   updatedAt       DateTime @updatedAt
 
-  user    User         @relation(fields: [userId], references: [id])
-  service Service      @relation(fields: [serviceId], references: [id])
-  tier    ServiceTier? @relation(fields: [tierId], references: [id])
+  user              User               @relation(fields: [userId], references: [id])
+  service           Service            @relation(fields: [serviceId], references: [id])
+  tier              ServiceTier?       @relation(fields: [tierId], references: [id])
+  platformCampaign  PlatformCampaign?  @relation(fields: [platformCampaignId], references: [id])
+  recurringCampaign RecurringCampaign? @relation(fields: [recurringCampaignId], references: [id])
 
   @@index([userId])
   @@index([userId, batchId])
   @@index([status])
   @@index([createdAt])
+  @@index([platformCampaignId])
+  @@index([recurringCampaignId])
   @@map("orders")
 }
 
@@ -464,4 +501,74 @@ model VideoWatch {
 
   @@index([userId, createdAt])
   @@map("video_watches")
+}
+
+// ──────────────────────────────────────
+// PROMOTIONS — SEASONAL CAMPAIGNS
+// ──────────────────────────────────────
+
+model PlatformCampaign {
+  id                  String         @id @default(cuid())
+  name                String
+  description         String?
+  discountPercent     Int
+  startAt             DateTime
+  endAt               DateTime
+  timezone            String         @default("Africa/Lagos")
+  status              CampaignStatus @default(DRAFT)
+  priority            Int            @default(10)
+  killedAt            DateTime?
+  killReason          String?
+  maxDiscountPerOrder Int?
+  bannerCopy          String
+  bannerColor         String?        @db.VarChar(7)
+  bannerCtaText       String?
+  lineItemLabel       String
+  createdById         String
+  updatedById         String?
+  killedById          String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  createdBy Admin  @relation("PlatformCampaignCreator", fields: [createdById], references: [id])
+  updatedBy Admin? @relation("PlatformCampaignUpdater", fields: [updatedById], references: [id])
+  killedBy  Admin? @relation("PlatformCampaignKiller", fields: [killedById], references: [id])
+  orders    Order[]
+
+  @@index([status, startAt, endAt])
+  @@map("platform_campaigns")
+}
+
+// ──────────────────────────────────────
+// PROMOTIONS — RECURRING CAMPAIGNS
+// ──────────────────────────────────────
+
+model RecurringCampaign {
+  id                  String    @id @default(cuid())
+  name                String
+  description         String?
+  dayOfWeek           DayOfWeek
+  startTimeLocal      String    @default("00:00")
+  endTimeLocal        String    @default("23:59")
+  timezone            String    @default("Africa/Lagos")
+  discountPercent     Int
+  active              Boolean   @default(false)
+  priority            Int       @default(0)
+  effectiveFrom       DateTime?
+  effectiveUntil      DateTime?
+  maxDiscountPerOrder Int?
+  bannerCopy          String
+  bannerColor         String?   @db.VarChar(7)
+  lineItemLabel       String
+  createdById         String
+  updatedById         String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  createdBy Admin  @relation("RecurringCampaignCreator", fields: [createdById], references: [id])
+  updatedBy Admin? @relation("RecurringCampaignUpdater", fields: [updatedById], references: [id])
+  orders    Order[]
+
+  @@index([active, dayOfWeek])
+  @@map("recurring_campaigns")
 }
