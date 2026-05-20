@@ -230,7 +230,7 @@ export async function POST(req) {
 
       const services = await prisma.service.findMany({
         where: { enabled: true },
-        select: { id: true, name: true, apiId: true, costPer1k: true, sellPer1k: true, provider: true, category: true, nigerian: true, tiers: { where: { enabled: true }, select: { id: true, tier: true, sellPer1k: true } } },
+        select: { id: true, name: true, apiId: true, costPer1k: true, sellPer1k: true, provider: true, category: true, tiers: { where: { enabled: true }, select: { id: true, tier: true, sellPer1k: true, group: { select: { nigerian: true } } } } },
       });
 
       const ops = [];
@@ -247,7 +247,8 @@ export async function POST(req) {
 
         if (s.tiers.length > 0) {
           for (const t of s.tiers) {
-            const newSell = calculateTierPrice(liveCost, t.tier, ms, s.nigerian);
+            const ng = t.group?.nigerian || false;
+            const newSell = calculateTierPrice(liveCost, t.tier, ms, ng);
             if (costChanged || newSell !== t.sellPer1k) {
               ops.push(prisma.serviceTier.update({ where: { id: t.id }, data: { sellPer1k: newSell } }));
               stats.repriced++;
@@ -258,7 +259,7 @@ export async function POST(req) {
             }
           }
         } else {
-          const newSell = calculateTierPrice(liveCost, 'Standard', ms, s.nigerian);
+          const newSell = calculateTierPrice(liveCost, 'Standard', ms, false);
           if (costChanged || newSell !== s.sellPer1k) stats.repriced++;
           const costKobo = liveCost * usdRate;
           if (newSell > 0 && newSell < costKobo) {
@@ -266,7 +267,7 @@ export async function POST(req) {
           }
         }
 
-        const baseNewSell = s.tiers.length === 0 ? calculateTierPrice(liveCost, 'Standard', ms, s.nigerian) : s.sellPer1k;
+        const baseNewSell = s.tiers.length === 0 ? calculateTierPrice(liveCost, 'Standard', ms, false) : s.sellPer1k;
         if (costChanged || (s.tiers.length === 0 && baseNewSell !== s.sellPer1k)) {
           ops.push(prisma.service.update({ where: { id: s.id }, data: { costPer1k: liveCost, ...(s.tiers.length === 0 ? { sellPer1k: baseNewSell } : {}) } }));
         }
