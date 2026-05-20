@@ -54,6 +54,9 @@
     "prisma": "^6.19.2",
     "vitest": "^4.1.5"
   },
+  "overrides": {
+    "postcss": "^8.5.10"
+  },
   "browserslist": [
     "last 3 Chrome versions",
     "last 2 ChromeAndroid versions",
