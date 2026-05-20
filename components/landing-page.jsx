@@ -52,6 +52,7 @@ function LandingInner(){
   const [heroPw2,setHeroPw2]=useState("");
   const [heroPhone,setHeroPhone]=useState("");
   const [heroRefCode,setHeroRefCode]=useState("");
+  const [heroVia,setHeroVia]=useState("");
   const [heroAgree,setHeroAgree]=useState(false);
   const [heroShowPw,setHeroShowPw]=useState(false);
   const [scrolled,setScrolled]=useState(false);
@@ -65,7 +66,7 @@ function LandingInner(){
   const [logoutMsg,setLogoutMsg]=useState(false);
   const [googleError,setGoogleError]=useState(false);
   const [sessionExpired,setSessionExpired]=useState(false);
-  useEffect(()=>{const p=new URLSearchParams(window.location.search);if(p.get("login"))setModal("login");if(p.get("signup"))setModal("signup");if(p.get("ref")){setModal("signup");setHeroRefCode(p.get("ref"));};if(p.get("session_expired")){setSessionExpired(true);window.history.replaceState({},"","/");}if(p.get("logout")){setLogoutMsg(true);window.history.replaceState({},"","/");setTimeout(()=>setLogoutMsg(false),4000);}if(p.get("google_error")){setGoogleError(true);window.history.replaceState({},"","/");setTimeout(()=>setGoogleError(false),5000);setModal("login");}if(p.get("error")==="account_pending_deletion"){setHeroError("This account is scheduled for deletion. Contact support@nitro.ng to reinstate it.");window.history.replaceState({},"","/");}if(p.get("error")==="disposable_email"){setHeroError("Disposable email addresses aren't allowed. Please sign up with a permanent email.");setModal("signup");window.history.replaceState({},"","/");}if(["google_cancelled","google_state_mismatch","google_token_failed","google_no_email","google_failed","google_missing_params","google_not_configured","google_account_deleted"].includes(p.get("error"))){setGoogleError(true);window.history.replaceState({},"","/");setTimeout(()=>setGoogleError(false),5000);setModal("login");}},[]);
+  useEffect(()=>{const p=new URLSearchParams(window.location.search);if(p.get("login"))setModal("login");if(p.get("signup"))setModal("signup");if(p.get("ref")){setModal("signup");setHeroRefCode(p.get("ref"));};if(p.get("via"))setHeroVia(p.get("via"));if(p.get("session_expired")){setSessionExpired(true);window.history.replaceState({},"","/");}if(p.get("logout")){setLogoutMsg(true);window.history.replaceState({},"","/");setTimeout(()=>setLogoutMsg(false),4000);}if(p.get("google_error")){setGoogleError(true);window.history.replaceState({},"","/");setTimeout(()=>setGoogleError(false),5000);setModal("login");}if(p.get("error")==="account_pending_deletion"){setHeroError("This account is scheduled for deletion. Contact support@nitro.ng to reinstate it.");window.history.replaceState({},"","/");}if(p.get("error")==="disposable_email"){setHeroError("Disposable email addresses aren't allowed. Please sign up with a permanent email.");setModal("signup");window.history.replaceState({},"","/");}if(["google_cancelled","google_state_mismatch","google_token_failed","google_no_email","google_failed","google_missing_params","google_not_configured","google_account_deleted"].includes(p.get("error"))){setGoogleError(true);window.history.replaceState({},"","/");setTimeout(()=>setGoogleError(false),5000);setModal("login");}},[]);
   useEffect(()=>{(async()=>{try{const [maintRes,siRes,stRes]=await Promise.all([fetch("/api/maintenance-check"),fetch("/api/site-info"),fetch("/api/settings")]);if(maintRes.ok){const m=await maintRes.json();if(m.maintenance){window.location.replace("/maintenance");return;}}if(siRes.ok){const d=await siRes.json();if(d.stats)setSiteStats(d.stats);if(d.alerts?.length)setSiteAlerts(d.alerts);}if(stRes.ok){const d=await stRes.json();setSocialLinks(d.settings||{});}}catch{}})();},[]);
   const closeModal=useCallback(()=>setModal(null),[]);
 
@@ -90,7 +91,7 @@ function LandingInner(){
     if(!heroAgree){setHeroError("Please agree to the Terms of Service");return;}
     setHeroLoading(true);
     try{
-      const res=await fetch("/api/auth/signup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:`${heroFirstName} ${heroLastName}`,firstName:heroFirstName,lastName:heroLastName,email:heroEmail,password:heroPw,phone:heroPhone?`+234${heroPhone}`:undefined,referralCode:heroRefCode||undefined})});
+      const res=await fetch("/api/auth/signup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:`${heroFirstName} ${heroLastName}`,firstName:heroFirstName,lastName:heroLastName,email:heroEmail,password:heroPw,phone:heroPhone?`+234${heroPhone}`:undefined,referralCode:heroRefCode||undefined,via:heroVia||undefined})});
       const data=await res.json();
       if(!res.ok){setHeroError(data.error||"Signup failed");setHeroLoading(false);return;}
       window.location.replace("/dashboard");
@@ -283,7 +284,7 @@ function LandingInner(){
         ))}
       </div>
 
-      {modal&&<AuthModal key="auth-modal" dark={dark} t={t} mode={modal} setMode={setModal} onClose={closeModal} prefill={heroSignupData}/>}
+      {modal&&<AuthModal key="auth-modal" dark={dark} t={t} mode={modal} setMode={setModal} onClose={closeModal} prefill={heroSignupData} via={heroVia}/>}
 
       {/* Logout toast */}
       {logoutMsg&&<div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] py-3 px-5 rounded-[14px] max-w-[calc(100%-32px)] w-auto flex items-center gap-2.5" style={{background:dark?"rgba(17,22,40,.97)":"rgba(255,255,255,.97)",border:`1px solid ${dark?"rgba(110,231,183,.28)":"rgba(5,150,105,.24)"}`,backdropFilter:"blur(16px)",boxShadow:dark?"0 12px 40px rgba(0,0,0,.5)":"0 12px 40px rgba(0,0,0,.19)",animation:"fu .4s ease"}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span className="text-sm font-medium" style={{color:t.text}}>You've been logged out successfully</span></div>}

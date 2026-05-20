@@ -60,6 +60,7 @@ model User {
   perPagePreference Int @default(10) // Orders per page: 10, 25, 50
   tourCompleted     Boolean @default(false)
   orderTourCompleted Boolean @default(false)
+  signupSource    String?
   signupIp        String?
   tosAcceptedAt   DateTime?
   tosVersion      String?
@@ -567,4 +568,19 @@ model RecurringCampaign {
 
   @@index([active, dayOfWeek])
   @@map("recurring_campaigns")
+}
+
+// ──────────────────────────────────────
+// ACQUISITION LINKS
+// ──────────────────────────────────────
+
+model AcquisitionLink {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("acquisition_links")
 }

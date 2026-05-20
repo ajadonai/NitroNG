@@ -263,7 +263,7 @@ export function AdminPaymentsPage({ dark, t }) {
             })}
             <div className="flex gap-2 mt-2">
               <button onClick={saveConfig} disabled={saving} className="flex-1 py-[11px] rounded-lg text-sm font-semibold border-none cursor-pointer text-white transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}>{saving ? "Saving..." : "Save Keys"}</button>
-              <button onClick={() => setConfiguring(null)} className="py-[11px] px-5 rounded-lg bg-none text-sm cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}>Cancel</button>
+              <button onClick={() => setConfiguring(null)} className="py-[11px] px-5 rounded-lg bg-none text-sm cursor-pointer transition-transform duration-200 hover:-translate-y-px flex items-center justify-center" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
           </div>
         </div>
@@ -300,7 +300,7 @@ export function AdminPaymentsPage({ dark, t }) {
                 else { const d = await res.json(); toast.error("Failed", d.error || "Failed"); }
                 setSaving(false);
               }} disabled={saving || !newGw.id || !newGw.name} className="flex-1 py-[11px] rounded-lg text-sm font-semibold border-none" style={{ background: newGw.id && newGw.name ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"), color: newGw.id && newGw.name ? "#fff" : t.textMuted, cursor: newGw.id && newGw.name ? "pointer" : "default" }}>{saving ? "Adding..." : "Add Gateway"}</button>
-              <button onClick={() => setAddModal(false)} className="py-[11px] px-5 rounded-lg bg-none text-sm cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}>Cancel</button>
+              <button onClick={() => setAddModal(false)} className="py-[11px] px-5 rounded-lg bg-none text-sm cursor-pointer transition-transform duration-200 hover:-translate-y-px flex items-center justify-center" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
           </div>
         </div>
@@ -609,7 +609,7 @@ export function AdminAlertsPage({ dark, t }) {
               </div>
               <div className={`flex gap-1.5 flex-wrap ${history.length > 0 ? "mb-3" : ""}`}>
                 <button onClick={() => toggleAlert(active.id, true, target)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(251,191,36,.24)" : "rgba(217,119,6,.19)", color: dark ? "#fbbf24" : "#d97706" }}>Pause</button>
-                <button onClick={async () => { const ok = await confirm({ title: "Delete Alert", message: `Delete "${active.message?.slice(0, 50)}..."?`, confirmLabel: "Delete", danger: true }); if (ok) deleteAlert(active.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
+                <button onClick={async () => { const ok = await confirm({ title: "Delete Alert", message: `Delete "${active.message?.slice(0, 50)}..."?`, confirmLabel: "Delete", danger: true }); if (ok) deleteAlert(active.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
                 <button onClick={() => { setCreating(target); setNewMsg(""); setNewType("info"); }} className="adm-btn-sm ml-auto" style={{ borderColor: t.cardBorder, color: t.accent }}>+ New</button>
               </div>
             </>
@@ -641,7 +641,7 @@ export function AdminAlertsPage({ dark, t }) {
               </div>
               <div className="flex gap-2">
                 <button onClick={() => createAlert(target)} disabled={!newMsg.trim() || saving} className="adm-btn-primary flex-1 text-[13px]" style={{ opacity: newMsg.trim() && !saving ? 1 : .4 }}>{saving ? "Creating..." : isOverride ? "Create override" : "Create alert"}</button>
-                <button onClick={() => setCreating(null)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textSoft }}>Cancel</button>
+                <button onClick={() => setCreating(null)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textSoft }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
             </div>
           )}
@@ -664,7 +664,7 @@ export function AdminAlertsPage({ dark, t }) {
                   <div className="flex items-center gap-1 shrink-0">
                     <button onClick={() => toggleAlert(a.id, false, target)} className="adm-btn-sm py-[3px] px-2 text-[11px]" style={{ borderColor: t.cardBorder, color: dark ? "#6ee7b7" : "#059669" }}>Reactivate</button>
                     <button onClick={async () => { const ok = await confirm({ title: "Delete", message: `Delete this alert?`, confirmLabel: "Delete", danger: true }); if (ok) deleteAlert(a.id); }} className="adm-btn-sm py-[3px] px-2 text-[11px]" style={{ borderColor: dark ? "rgba(252,165,165,.24)" : "rgba(220,38,38,.18)", color: dark ? "#fca5a5" : "#dc2626" }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                     </button>
                   </div>
                 </div>
@@ -871,14 +871,14 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
               </div>
               <div className="flex gap-2 mt-3.5">
                 <button onClick={saveProfile} disabled={profileSaving} className="adm-btn-primary" style={{ opacity: profileSaving ? .5 : 1 }}>{profileSaving ? "Saving..." : "Save"}</button>
-                <button onClick={() => { setProfileEditing(false); setEditName(admin?.name || ""); setEditEmail(admin?.email || ""); setProfileMsg(null); }} className="py-2 px-4 rounded-lg bg-none text-sm cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.textSoft }}>Cancel</button>
+                <button onClick={() => { setProfileEditing(false); setEditName(admin?.name || ""); setEditEmail(admin?.email || ""); setProfileMsg(null); }} className="py-2 px-4 rounded-lg bg-none text-sm cursor-pointer transition-transform duration-200 hover:-translate-y-px flex items-center justify-center" style={{ border: `1px solid ${t.cardBorder}`, color: t.textSoft }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
             </>
           ) : (
             <>
               <div className="flex items-center justify-between mb-1">
                 <div className="text-lg font-semibold" style={{ color: t.text }}>{admin?.name || "Admin"}</div>
-                <button onClick={() => setProfileEditing(true)} className="text-[13px] bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ color: t.accent }}>Edit</button>
+                <button onClick={() => setProfileEditing(true)} className="text-[13px] bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px flex items-center gap-1" style={{ color: t.accent }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
               </div>
               <div className="grid grid-cols-3 max-md:grid-cols-1 gap-y-3 gap-x-6 mt-3">
                 {[["Email", admin?.email || ""], ["Role", admin?.role || "admin"]].map(([label, val]) => (
@@ -908,6 +908,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
                 ["deposit", "Deposits", "Alert when a user completes a deposit"],
                 ["large_deposit", "Large deposits", "Alert for deposits above the large-deposit threshold"],
                 ["stale_ticket", "Stale tickets", "Escalation alert for unanswered tickets (15+ min)"],
+                ["price_alert", "Price alerts", "Alert when services are selling below provider cost"],
               ].map(([key, label, hint]) => (
                 <label key={key} className="flex items-center justify-between gap-3 cursor-pointer py-1.5">
                   <div>

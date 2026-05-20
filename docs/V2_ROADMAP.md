@@ -3,7 +3,7 @@
 **Status:** Parked · do not implement until explicit go-ahead from Adonai (Trip)
 **Planning starts:** After Phase 1 ships and panel is generating revenue (estimated 60–90 days post-launch)
 **Owner:** Adonai (Trip)
-**Last updated:** April 2026
+**Last updated:** May 2026
 
 ---
 
@@ -597,6 +597,63 @@ Dashboard card or notification: "Detty December starts in 2 days — fund your w
 - Not a referral incentive (referral bonuses are separate)
 - Not personalized pricing (everyone gets the same campaign discount)
 - Not a loss leader strategy — discounts should be sustainable at scale
+
+---
+
+## Product 6: Milestone Rewards (Loyalty Cashback)
+
+*Added May 2026*
+
+### What it is
+
+After every N qualifying orders (each over a configurable minimum spend), users get a percentage of their total spend back as wallet credit. All parameters — on/off switch, minimum order threshold, orders per milestone, cashback percentage — are admin-configurable from the Rewards page.
+
+### Why
+
+Drives repeat ordering without giving away uncapped free orders. Users see a progress bar on their dashboard ("8/10 qualifying orders — 2 more to go") which creates a sunk-cost motivation to keep ordering on Nitro rather than switching platforms. The cashback is a percentage of spend, not a fixed amount, so Nitro's reward scales with user value.
+
+### How it works
+
+- **Hybrid counter + verification**: `milestoneCount` and `milestoneSpent` fields on User for instant dashboard display. Before paying out, the system verifies against actual completed orders since the last reward — if the counter drifted (due to race conditions or bugs), it self-heals instead of paying wrong amounts.
+- **Automatic checkout-line math**: When the Nth qualifying order completes, the cron calculates reward = sum of qualifying charges × cashback %, credits the wallet atomically, and resets the cycle. Leftover orders beyond the target carry forward.
+- **Refund-safe**: Cancelling a counted order decrements the counter. Already-credited rewards are never clawed back.
+- **New transaction type**: `milestone_reward` — appears in wallet history, finance dashboard (wallet obligations), and notification filters.
+
+### Admin controls
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| On/off switch | Off | Enables/disables the entire feature |
+| Minimum order | ₦5,000 | Orders below this don't count toward milestone |
+| Orders per milestone | 10 | How many qualifying orders per cycle |
+| Cashback % | 5% | Percentage of total qualifying spend returned |
+
+Permission-gated to owner/superadmin roles.
+
+### What users see
+
+**Dashboard progress card** (when enabled):
+```
+┌──────────────────────────────────────────┐
+│  Milestone Reward              5% cashback│
+│  ████████░░  8/10 qualifying orders       │
+│  2 more to go · ₦62,400 spent            │
+│  Orders over ₦5,000 qualify               │
+└──────────────────────────────────────────┘
+```
+
+**Email notification** on reward credit: "Congrats! You completed 10 qualifying orders and earned ₦X back. It's already in your wallet."
+
+### Edge cases handled
+
+- Two orders complete simultaneously → verification uses real DB count, takes exactly N orders
+- Counter drifts from reality → self-heal to actual count, no wrong payout
+- Feature toggled off → counters freeze, card hides, counters preserved for re-enable
+- Admin changes % mid-cycle → next payout uses current % (fair and transparent)
+
+### Status
+
+Detailed implementation plan exists (10 files identified, build order defined). Not yet built — awaiting go-ahead.
 
 ---
 

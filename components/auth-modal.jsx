@@ -55,7 +55,7 @@ function PwStrength({ pw, t }) {
   );
 }
 
-function AuthModal({ dark, t, mode, setMode, onClose, prefill }) {
+function AuthModal({ dark, t, mode, setMode, onClose, prefill, via }) {
   const [method, setMethod] = useState('email');
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
@@ -198,6 +198,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill }) {
           password: pw,
           phone: phone ? `+234${phone}` : undefined,
           referralCode: refCode || undefined,
+          via: via || undefined,
         }),
       });
       const data = await res.json();
@@ -408,7 +409,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill }) {
               onClick={() => {
                 setError('');
                 setAuthLoading(true);
-                window.location.href = refCode ? `/api/auth/google?ref=${encodeURIComponent(refCode)}` : '/api/auth/google';
+                { const gp = new URLSearchParams(); if (refCode) gp.set('ref', refCode); if (via) gp.set('via', via); window.location.href = `/api/auth/google${gp.size ? `?${gp}` : ''}`; }
               }}
               className="google-btn w-full py-[13px] rounded-xl flex items-center justify-center gap-2.5 text-[15px] font-semibold mb-0 transition-[color,transform] duration-200 hover:-translate-y-px"
               style={{
@@ -603,7 +604,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill }) {
             <button
               onClick={() => {
                 setError('');
-                window.location.href = refCode ? `/api/auth/google?ref=${encodeURIComponent(refCode)}` : '/api/auth/google';
+                { const gp = new URLSearchParams(); if (refCode) gp.set('ref', refCode); if (via) gp.set('via', via); window.location.href = `/api/auth/google${gp.size ? `?${gp}` : ''}`; }
               }}
               className="google-btn w-full py-[13px] rounded-xl flex items-center justify-center gap-2.5 text-[15px] font-semibold mb-0 transition-[color,transform] duration-200 hover:-translate-y-px"
               style={{
