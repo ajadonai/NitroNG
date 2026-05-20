@@ -154,9 +154,16 @@ export async function POST(req) {
             else if (['cancelled', 'canceled', 'refunded'].includes(providerStatus)) newStatus = 'Cancelled';
             else if (['in progress', 'inprogress', 'processing'].includes(providerStatus)) newStatus = 'Processing';
 
+            const liveRemains = result.remains != null ? Number(result.remains) : null;
+
+            if (!newStatus && liveRemains != null && liveRemains !== order.remains) {
+              await prisma.order.update({ where: { id: order.id }, data: { remains: liveRemains } });
+              continue;
+            }
+
             if (!newStatus || newStatus === order.status) continue;
 
-            await prisma.order.update({ where: { id: order.id }, data: { status: newStatus } });
+            await prisma.order.update({ where: { id: order.id }, data: { status: newStatus, ...(liveRemains != null ? { remains: liveRemains } : {}) } });
             stats.updated++;
 
             if (newStatus === 'Cancelled' && order.charge > 0) {
