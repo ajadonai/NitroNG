@@ -238,38 +238,37 @@ export async function POST(req) {
 
       for (const s of services) {
         const rateMap = rateMaps[s.provider || 'mtp'];
-        if (!rateMap) continue;
-        const liveCost = rateMap[String(s.apiId)];
-        if (liveCost === undefined) continue;
-
-        const costChanged = liveCost !== s.costPer1k;
+        const liveCost = rateMap?.[String(s.apiId)];
+        const cost = liveCost !== undefined ? liveCost : s.costPer1k;
+        const costChanged = liveCost !== undefined && liveCost !== s.costPer1k;
         if (costChanged) stats.updated++;
+
+        const costKobo = cost * usdRate;
 
         if (s.tiers.length > 0) {
           for (const t of s.tiers) {
             const ng = t.group?.nigerian || false;
-            const newSell = calculateTierPrice(liveCost, t.tier, ms, ng);
-            if (costChanged || newSell !== t.sellPer1k) {
+            const newSell = calculateTierPrice(cost, t.tier, ms, ng);
+            if (newSell !== t.sellPer1k) {
               ops.push(prisma.serviceTier.update({ where: { id: t.id }, data: { sellPer1k: newSell } }));
               stats.repriced++;
             }
-            const costKobo = liveCost * usdRate;
             if (newSell > 0 && newSell < costKobo) {
               losers.push({ service: s.name.slice(0, 50), category: s.category, tier: t.tier, costNaira: Math.round(costKobo / 100), sellNaira: Math.round(newSell / 100), lossPerK: Math.round(costKobo / 100) - Math.round(newSell / 100) });
             }
           }
-        } else {
-          const newSell = calculateTierPrice(liveCost, 'Standard', ms, false);
-          if (costChanged || newSell !== s.sellPer1k) stats.repriced++;
-          const costKobo = liveCost * usdRate;
-          if (newSell > 0 && newSell < costKobo) {
-            losers.push({ service: s.name.slice(0, 50), category: s.category, tier: null, costNaira: Math.round(costKobo / 100), sellNaira: Math.round(newSell / 100), lossPerK: Math.round(costKobo / 100) - Math.round(newSell / 100) });
-          }
         }
 
-        const baseNewSell = s.tiers.length === 0 ? calculateTierPrice(liveCost, 'Standard', ms, false) : s.sellPer1k;
+        const baseNewSell = s.tiers.length === 0 ? calculateTierPrice(cost, 'Standard', ms, false) : s.sellPer1k;
         if (costChanged || (s.tiers.length === 0 && baseNewSell !== s.sellPer1k)) {
-          ops.push(prisma.service.update({ where: { id: s.id }, data: { costPer1k: liveCost, ...(s.tiers.length === 0 ? { sellPer1k: baseNewSell } : {}) } }));
+          ops.push(prisma.service.update({ where: { id: s.id }, data: { ...(costChanged ? { costPer1k: liveCost } : {}), ...(s.tiers.length === 0 ? { sellPer1k: baseNewSell } : {}) } }));
+          if (s.tiers.length === 0 && baseNewSell !== s.sellPer1k) stats.repriced++;
+        } else if (costChanged) {
+          ops.push(prisma.service.update({ where: { id: s.id }, data: { costPer1k: liveCost } }));
+        }
+
+        if (s.tiers.length === 0 && baseNewSell > 0 && baseNewSell < costKobo) {
+          losers.push({ service: s.name.slice(0, 50), category: s.category, tier: null, costNaira: Math.round(costKobo / 100), sellNaira: Math.round(baseNewSell / 100), lossPerK: Math.round(costKobo / 100) - Math.round(baseNewSell / 100) });
         }
       }
 
