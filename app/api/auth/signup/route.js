@@ -20,6 +20,7 @@ export async function POST(req) {
     const lastName = titleCase(sanitizeString(body.lastName, 50));
     const phone = sanitizeString(body.phone, 20);
     const email = sanitizeEmail(body.email);
+    const via = sanitizeString(body.via, 60);
     const password = body.password;
     const referralCode = sanitizeString(body.referralCode, 20);
 
@@ -100,6 +101,7 @@ export async function POST(req) {
         referralCode: refCode,
         referredBy,
         emailVerified: true,
+        signupSource: via || null,
         signupIp: ip,
         tosAcceptedAt: new Date(),
         tosVersion,

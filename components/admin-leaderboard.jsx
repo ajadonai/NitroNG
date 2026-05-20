@@ -298,7 +298,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
             </div>
             {rewardMsg && <div className={msgBoxCls} style={msgBox(rewardMsg.type)}>{rewardMsg.text}</div>}
             <div className="flex max-md:flex-col gap-2">
-              <button onClick={() => setRewardModal(null)} className="flex-1 py-2.5 rounded-lg text-sm font-medium cursor-pointer font-[inherit] bg-transparent transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}>Cancel</button>
+              <button onClick={() => setRewardModal(null)} className="py-2.5 px-5 rounded-lg text-sm font-medium cursor-pointer font-[inherit] bg-transparent transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               <button onClick={doReward} disabled={!rewardAmount || Number(rewardAmount) <= 0 || rewardLoading} className="flex-1 py-2.5 rounded-lg border-none text-sm cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ ...gradBtn, opacity: !rewardAmount || Number(rewardAmount) <= 0 || rewardLoading ? .5 : 1 }}>{rewardLoading ? "Sending..." : `Send ${rewardAmount ? fN(Number(rewardAmount)) : "₦0"}`}</button>
             </div>
           </div>
@@ -337,7 +337,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
             )}
             {massMsg && <div className={msgBoxCls} style={msgBox(massMsg.type)}>{massMsg.text}</div>}
             <div className="flex max-md:flex-col gap-2">
-              <button onClick={() => setMassModal(false)} disabled={massLoading} className="flex-1 py-2.5 rounded-lg text-sm font-medium cursor-pointer font-[inherit] bg-transparent transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}>Cancel</button>
+              <button onClick={() => setMassModal(false)} disabled={massLoading} className="py-2.5 px-5 rounded-lg text-sm font-medium cursor-pointer font-[inherit] bg-transparent transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               <button onClick={doMassReward} disabled={!massAmount || Number(massAmount) <= 0 || massLoading} className="flex-1 py-2.5 rounded-lg border-none text-sm cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ ...gradBtn, opacity: !massAmount || Number(massAmount) <= 0 || massLoading ? .5 : 1 }}>{massLoading ? "Processing..." : `Send to ${selected.size} users`}</button>
             </div>
           </div>

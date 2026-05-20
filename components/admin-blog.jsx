@@ -172,7 +172,7 @@ export default function AdminBlogPage({ dark, t }) {
                 </div>
                 <div className="flex gap-2">
                   <button onClick={savePost} disabled={saving} className="adm-btn-primary flex-1 text-[13px]" style={{ opacity: title && content && !saving ? 1 : .4 }}>{saving ? "Saving..." : editing === "new" ? "Create Post" : "Save Changes"}</button>
-                  <button onClick={() => { setEditing(null); resetForm(); }} className="adm-btn-sm text-[13px]" style={{ borderColor: t.cardBorder, color: t.textSoft }}>Cancel</button>
+                  <button onClick={() => { setEditing(null); resetForm(); }} className="adm-btn-sm text-[13px]" style={{ borderColor: t.cardBorder, color: t.textSoft }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                 </div>
               </div>
             </div>
@@ -309,8 +309,7 @@ export default function AdminBlogPage({ dark, t }) {
             {/* Actions */}
             <div className="flex gap-1.5 items-center shrink-0 max-md:w-full">
               <button onClick={() => startEdit(p)} className="adm-btn-sm flex items-center gap-1" style={{ borderColor: t.cardBorder, color: t.accent }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Edit
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
               <button onClick={() => quickToggle(p, "published")} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: p.published ? (dark ? "#fcd34d" : "#d97706") : (dark ? "#6ee7b7" : "#059669") }}>{p.published ? "Unpublish" : "Publish"}</button>
               <button onClick={() => quickToggle(p, "showInHowTo")} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: p.showInHowTo ? t.textMuted : "#c47d8e" }}>{p.showInHowTo ? "- Guide" : "+ Guide"}</button>

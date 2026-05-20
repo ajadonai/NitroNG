@@ -364,7 +364,7 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
               {showGuide ? "Hide Guide" : "Role Guide"}
             </button>
             {canManage && <button onClick={() => { setShowAdd(!showAdd); if (!showAdd) setShowGuide(false); }} className="adm-btn-primary flex items-center gap-1.5">
-              {showAdd ? "Cancel" : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Admin</>}
+              {showAdd ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel</> : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Admin</>}
             </button>}
           </div>
         </div>
@@ -552,7 +552,7 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
                       </div>
                       <div className="flex gap-2">
                         <button onClick={async e => { e.stopPropagation(); const ok = await confirm({ title: a.status === "Active" ? "Deactivate Admin" : "Activate Admin", message: a.status === "Active" ? `Deactivate ${a.name}?` : `Reactivate ${a.name}?`, confirmLabel: a.status === "Active" ? "Deactivate" : "Activate", danger: a.status === "Active" }); if (ok) { const r = await act({ action: "toggleStatus", adminId: a.id }); if (r) toast.success("Status changed", `${a.name} ${r.status === "Active" ? "activated" : "deactivated"}`); } }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: a.status === "Active" ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{a.status === "Active" ? "Deactivate" : "Activate"}</button>
-                        <button onClick={async e => { e.stopPropagation(); const ok = await confirm({ title: "Delete Admin", message: `Permanently delete ${a.name}? This cannot be undone.`, confirmLabel: "Delete", danger: true }); if (ok) { const r = await act({ action: "delete", adminId: a.id }); if (r) toast.success("Admin deleted", a.name); } }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.18)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
+                        <button onClick={async e => { e.stopPropagation(); const ok = await confirm({ title: "Delete Admin", message: `Permanently delete ${a.name}? This cannot be undone.`, confirmLabel: "Delete", danger: true }); if (ok) { const r = await act({ action: "delete", adminId: a.id }); if (r) toast.success("Admin deleted", a.name); } }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.18)", color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
                       </div>
                     </div>
                   )}
@@ -741,7 +741,7 @@ export function AdminCouponsPage({ dark, t }) {
             <div className="set-card-title" style={{ color: t.textMuted }}>Coupons</div>
             <div className="set-card-desc" style={{ color: t.textSoft }}>Promo codes users can apply when funding their wallet</div>
           </div>
-          <button onClick={() => setShowAdd(!showAdd)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>{showAdd ? "Cancel" : "+ New"}</button>
+          <button onClick={() => setShowAdd(!showAdd)} className="adm-btn-sm flex items-center gap-1.5" style={{ borderColor: t.cardBorder, color: t.accent }}>{showAdd ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel</> : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New</>}</button>
         </div>
 
         {showAdd && (
@@ -791,7 +791,7 @@ export function AdminCouponsPage({ dark, t }) {
               </div>
             </div>
             <button onClick={() => { navigator.clipboard.writeText(c.code); setCopiedCode(c.id); setTimeout(() => setCopiedCode(null), 1500); }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: copiedCode === c.id ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }}>{copiedCode === c.id ? "Copied!" : "Copy"}</button>
-            <button onClick={async () => { const ok = await confirm({ title: "Delete Coupon", message: `Delete coupon "${c.code}"? This cannot be undone.`, confirmLabel: "Delete", danger: true }); if (ok) deleteCoupon(c.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
+            <button onClick={async () => { const ok = await confirm({ title: "Delete Coupon", message: `Delete coupon "${c.code}"? This cannot be undone.`, confirmLabel: "Delete", danger: true }); if (ok) deleteCoupon(c.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
           </div>
         )) : (
           <div className="py-[60px] px-5 text-center">
@@ -1195,6 +1195,197 @@ export function AdminAPIPage({ dark, t }) {
             </div>
           );
         })}
+      </div>
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════ */
+/* ═══ TRACKING LINKS                      ═══ */
+/* ═══════════════════════════════════════════ */
+export function AdminAcquisitionPage({ dark, t }) {
+  const toast = useToast();
+  const confirm = useConfirm();
+  const [links, setLinks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [canManage, setCanManage] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newSlug, setNewSlug] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(null);
+
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://nitro.ng";
+  const cardBg = dark ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.85)";
+  const cardBd = `0.5px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}`;
+  const inputCls = "w-full py-2.5 px-3.5 rounded-lg border border-solid text-[15px] outline-none box-border font-[inherit]";
+  const inputStyle = { borderColor: t.cardBorder, background: dark ? "#131728" : "#fff", color: t.text };
+  const rowBorder = { borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` };
+
+  const load = () => {
+    fetch("/api/admin/acquisition").then(r => r.json()).then(d => {
+      setLinks(d.links || []);
+      setCanManage(d.canManage);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+  useEffect(load, []);
+
+  const handleCreate = async () => {
+    if (!newName.trim() || !newSlug.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/acquisition", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "create", name: newName.trim(), slug: newSlug.trim() }),
+      });
+      const d = await res.json();
+      if (!res.ok) { toast.error(d.error); setSaving(false); return; }
+      toast.success("Link created");
+      setNewName(""); setNewSlug(""); setShowAdd(false); load();
+    } catch { toast.error("Failed"); }
+    setSaving(false);
+  };
+
+  const handleToggle = async (id, enabled) => {
+    await fetch("/api/admin/acquisition", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "toggle", id, enabled }),
+    });
+    load();
+  };
+
+  const handleDelete = async (link) => {
+    const ok = await confirm(`Delete "${link.name}"?`, link.signups > 0 ? "This link has signups — it will be disabled instead of deleted." : "This cannot be undone.");
+    if (!ok) return;
+    const res = await fetch("/api/admin/acquisition", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete", id: link.id }),
+    });
+    const d = await res.json();
+    if (d.soft) toast.info("Link disabled (has signups)");
+    else toast.success("Link deleted");
+    load();
+  };
+
+  const copyLink = (slug) => {
+    navigator.clipboard.writeText(`${baseUrl}?via=${slug}`);
+    setCopied(slug);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const totalSignups = links.reduce((s, l) => s + (l.signups || 0), 0);
+  const totalOrders = links.reduce((s, l) => s + (l.orders || 0), 0);
+  const totalRevenue = links.reduce((s, l) => s + (l.revenue || 0), 0);
+
+  if (loading) return <><div className="adm-header"><div className="adm-title" style={{ color: t.text }}>Tracking Links</div><div className="adm-subtitle" style={{ color: t.textMuted }}>Loading...</div><div className="page-divider" style={{ background: t.cardBorder }} /></div><div>{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[60px] rounded-[10px] mb-2`} />)}</div></>;
+
+  return (
+    <>
+      <div className="adm-header">
+        <div className="adm-title" style={{ color: t.text }}>Tracking Links</div>
+        <div className="adm-subtitle" style={{ color: t.textMuted }}>Create tracking links for marketing campaigns</div>
+        <div className="page-divider" style={{ background: t.cardBorder }} />
+      </div>
+
+      {/* ═══ Summary Stats ═══ */}
+      {links.length > 0 && (
+        <div className="adm-stats mb-5">
+          {[
+            ["Total Links", links.length, t.accent],
+            ["Signups", totalSignups.toLocaleString(), dark ? "#a5b4fc" : "#6366f1"],
+            ["Orders", totalOrders.toLocaleString(), dark ? "#6ee7b7" : "#059669"],
+            ["Revenue", fN(totalRevenue / 100), dark ? "#fcd34d" : "#d97706"],
+          ].map(([label, val, color]) => (
+            <div key={label} className="py-3.5 px-4 rounded-xl" style={{ background: cardBg, border: cardBd }}>
+              <div className="text-[10px] font-semibold uppercase tracking-[1px] mb-1.5" style={{ color: t.textMuted }}>{label}</div>
+              <div className="text-xl font-bold" style={{ color }}>{val}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ═══ Links Card ═══ */}
+      <div className="adm-card mb-5" style={{ background: cardBg, border: cardBd }}>
+        <div className="set-card-header flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+          <div>
+            <div className="set-card-title" style={{ color: t.textMuted }}>Tracking Links</div>
+            <div className="set-card-desc" style={{ color: t.textSoft }}>Share these URLs in ads, bios, or with influencers to track signups</div>
+          </div>
+          {canManage && <button onClick={() => setShowAdd(!showAdd)} className="adm-btn-sm flex items-center gap-1.5" style={{ borderColor: t.cardBorder, color: t.accent }}>{showAdd ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel</> : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New</>}</button>}
+        </div>
+
+        {/* ═══ Create Form ═══ */}
+        {showAdd && (
+          <div className="p-4" style={rowBorder}>
+            <div className="mb-3">
+              <label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Campaign Name</label>
+              <input value={newName} onChange={e => { setNewName(e.target.value); setNewSlug(e.target.value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/,'')); }} placeholder="e.g. Davido Promo" className={inputCls} style={inputStyle} />
+            </div>
+            {newName.trim() && (
+              <div className="py-2 px-3 rounded-lg mb-3 text-[13px] font-mono" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)", color: t.textMuted }}>
+                {baseUrl}?via={newSlug}
+              </div>
+            )}
+            <button onClick={handleCreate} disabled={saving || !newName.trim()} className="adm-btn-primary" style={{ opacity: (saving || !newName.trim()) ? .5 : 1 }}>
+              {saving ? "Creating..." : "Create Link"}
+            </button>
+          </div>
+        )}
+
+        {/* ═══ Info callout ═══ */}
+        <div className="set-card-body">
+          <div className="py-2.5 px-3.5 rounded-lg text-[13px] leading-relaxed mb-4 border-l-[3px] border-l-[#c47d8e]" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", color: t.textMuted }}>
+            Create a link for each campaign or influencer. When someone visits nitro.ng through your link and signs up, their account is tagged — you can see how many signed up, placed orders, and how much they spent.
+          </div>
+
+          {/* ═══ Links List ═══ */}
+          {links.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-sm font-medium mb-1" style={{ color: t.text }}>No links yet</div>
+              <div className="text-[13px]" style={{ color: t.textMuted }}>Click "+ New" above to create your first tracking link</div>
+            </div>
+          ) : links.map((link, i) => (
+            <div key={link.id} className="py-3.5" style={i < links.length - 1 ? rowBorder : {}}>
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-[15px] font-semibold" style={{ color: t.text }}>{link.name}</span>
+                    {!link.enabled && <span className="text-[10px] py-0.5 px-2 rounded-full font-semibold" style={{ background: dark ? "rgba(220,38,38,.1)" : "rgba(220,38,38,.05)", color: dark ? "#fca5a5" : "#dc2626" }}>Off</span>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] font-mono truncate" style={{ color: t.textSoft }}>{baseUrl}?via={link.slug}</span>
+                    <button onClick={() => copyLink(link.slug)} className="text-[11px] font-semibold bg-transparent border-none cursor-pointer shrink-0 transition-colors" style={{ color: copied === link.slug ? (dark ? "#6ee7b7" : "#059669") : t.accent }}>
+                      {copied === link.slug ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+                {canManage && (
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <div role="switch" aria-checked={link.enabled} aria-label={`Toggle ${link.name}`} tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(link.id, !link.enabled); } }} onClick={() => handleToggle(link.id, !link.enabled)} className="w-[36px] h-5 rounded-xl relative cursor-pointer shrink-0" style={{ background: link.enabled ? "#c47d8e" : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)") }}>
+                      <div className="w-[14px] h-[14px] rounded-full bg-white absolute top-[3px] transition-[left] duration-200" style={{ left: link.enabled ? 19 : 3 }} />
+                    </div>
+                    <button onClick={() => handleDelete(link)} className="bg-transparent border-none cursor-pointer p-1 transition-opacity hover:opacity-70" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  ["Signups", (link.signups || 0).toLocaleString(), dark ? "#a5b4fc" : "#6366f1"],
+                  ["Orders", (link.orders || 0).toLocaleString(), dark ? "#6ee7b7" : "#059669"],
+                  ["Revenue", fN((link.revenue || 0) / 100), dark ? "#fcd34d" : "#d97706"],
+                ].map(([label, val, color]) => (
+                  <div key={label} className="py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)" }}>
+                    <div className="text-[14px] font-bold" style={{ color }}>{val}</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[1px] mt-0.5" style={{ color: t.textMuted }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </>
   );

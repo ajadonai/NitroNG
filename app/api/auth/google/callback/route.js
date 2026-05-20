@@ -41,10 +41,11 @@ export async function GET(req) {
     }
     cookieStore.delete('google_oauth_state');
 
-    // Extract referral code from state if present
     let referralCode = null;
-    if (state.includes('|ref:')) {
-      referralCode = state.split('|ref:')[1];
+    let viaSlug = null;
+    for (const part of state.split('|').slice(1)) {
+      if (part.startsWith('ref:')) referralCode = part.slice(4);
+      if (part.startsWith('via:')) viaSlug = part.slice(4);
     }
 
     // Exchange code for tokens
@@ -130,7 +131,8 @@ export async function GET(req) {
           password: '', // No password for Google-only accounts
           referralCode: refCode,
           referredBy,
-          emailVerified: true, // Google already verified the email
+          emailVerified: true,
+          signupSource: viaSlug || null,
           signupIp,
           tosAcceptedAt: new Date(),
           tosVersion,
