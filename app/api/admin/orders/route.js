@@ -134,6 +134,10 @@ export async function POST(req) {
           const status = await checkOrder(provider, order.apiOrderId);
           const statusMap = { 'Completed': 'Completed', 'In progress': 'Processing', 'Processing': 'Processing', 'Pending': 'Pending', 'Partial': 'Partial', 'Canceled': 'Cancelled', 'Refunded': 'Cancelled' };
           const newStatus = statusMap[status.status] || order.status;
+          const liveRemains = status.remains != null ? Number(status.remains) : null;
+          if (liveRemains != null && liveRemains !== order.remains) {
+            await prisma.order.update({ where: { id: order.id }, data: { remains: liveRemains } });
+          }
           if (newStatus !== order.status) {
             if (newStatus === 'Cancelled' && order.status !== 'Cancelled' && order.charge > 0) {
               await prisma.$transaction(async (tx) => {

@@ -64,13 +64,18 @@ export async function GET(req) {
             newStatus = 'Processing';
           }
 
-          // Skip if no change or unknown status
+          const liveRemains = result.remains != null ? Number(result.remains) : null;
+
+          if (!newStatus && liveRemains != null && liveRemains !== order.remains) {
+            await prisma.order.update({ where: { id: order.id }, data: { remains: liveRemains } });
+            continue;
+          }
+
           if (!newStatus || newStatus === order.status) continue;
 
-          // Update order status
           await prisma.order.update({
             where: { id: order.id },
-            data: { status: newStatus },
+            data: { status: newStatus, ...(liveRemains != null ? { remains: liveRemains } : {}) },
           });
           stats.updated++;
 
