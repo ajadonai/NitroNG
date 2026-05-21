@@ -1203,6 +1203,65 @@ export function AdminAPIPage({ dark, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ TRACKING LINKS                      ═══ */
 /* ═══════════════════════════════════════════ */
+function LinkAccordion({ link, dark, t, baseUrl, copied, copyLink, canManage, handleToggle, handleDelete, last, rowBorder }) {
+  const [open, setOpen] = useState(false);
+  const hasStats = (link.signups || 0) + (link.orders || 0) + (link.revenue || 0) > 0;
+  return (
+    <div style={!last ? rowBorder : {}}>
+      <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(v => !v); } }} onClick={() => setOpen(v => !v)} className="flex items-center gap-3 py-3.5 px-1 cursor-pointer transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.04)]" style={{ userSelect: "none" }}>
+        <div className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)" }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-[15px] font-semibold" style={{ color: t.text }}>{link.name}</span>
+            {!link.enabled && <span className="text-[10px] py-0.5 px-1.5 rounded-full font-semibold" style={{ background: dark ? "rgba(220,38,38,.1)" : "rgba(220,38,38,.05)", color: dark ? "#fca5a5" : "#dc2626" }}>Off</span>}
+          </div>
+          <div className="flex items-center gap-2 text-[11px]" style={{ color: t.textMuted }}>
+            {hasStats ? <><span>{link.signups || 0} signups</span><span className="opacity-30">·</span><span>{link.orders || 0} orders</span><span className="opacity-30">·</span><span>{fN((link.revenue || 0) / 100)} rev</span></> : <span>No activity yet</span>}
+          </div>
+        </div>
+        {canManage && (
+          <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
+            <div role="switch" aria-checked={link.enabled} aria-label={`Toggle ${link.name}`} tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(link.id, !link.enabled); } }} onClick={() => handleToggle(link.id, !link.enabled)} className="w-[36px] h-5 rounded-xl relative cursor-pointer shrink-0" style={{ background: link.enabled ? "#c47d8e" : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)") }}>
+              <div className="w-[14px] h-[14px] rounded-full bg-white absolute top-[3px] transition-[left] duration-200" style={{ left: link.enabled ? 19 : 3 }} />
+            </div>
+            <button onClick={() => handleDelete(link)} className="bg-transparent border-none cursor-pointer p-1 transition-opacity hover:opacity-70" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            </button>
+          </div>
+        )}
+        <svg className="shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+
+      {open && (
+        <div className="pb-3.5 px-1" style={{ animation: "fadeIn .15s ease" }}>
+          <div className="flex items-center gap-2 mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)"}` }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            <span className="text-[12px] font-mono truncate flex-1" style={{ color: t.textSoft }}>{baseUrl}?via={link.slug}</span>
+            <button onClick={(e) => { e.stopPropagation(); copyLink(link.slug); }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: copied === link.slug ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }}>
+              {copied === link.slug ? "Copied!" : "Copy"}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              ["Signups", (link.signups || 0).toLocaleString(), dark ? "#a5b4fc" : "#6366f1"],
+              ["Orders", (link.orders || 0).toLocaleString(), dark ? "#6ee7b7" : "#059669"],
+              ["Revenue", fN((link.revenue || 0) / 100), dark ? "#fcd34d" : "#d97706"],
+            ].map(([label, val, color]) => (
+              <div key={label} className="py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}` }}>
+                <div className="text-[14px] font-bold" style={{ color }}>{val}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[1px] mt-0.5" style={{ color: t.textMuted }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AdminAcquisitionPage({ dark, t }) {
   const toast = useToast();
   const confirm = useConfirm();
@@ -1346,44 +1405,7 @@ export function AdminAcquisitionPage({ dark, t }) {
               <div className="text-[13px]" style={{ color: t.textMuted }}>Click "+ New" above to create your first tracking link</div>
             </div>
           ) : links.map((link, i) => (
-            <div key={link.id} className="py-3.5" style={i < links.length - 1 ? rowBorder : {}}>
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[15px] font-semibold" style={{ color: t.text }}>{link.name}</span>
-                    {!link.enabled && <span className="text-[10px] py-0.5 px-2 rounded-full font-semibold" style={{ background: dark ? "rgba(220,38,38,.1)" : "rgba(220,38,38,.05)", color: dark ? "#fca5a5" : "#dc2626" }}>Off</span>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[12px] font-mono truncate" style={{ color: t.textSoft }}>{baseUrl}?via={link.slug}</span>
-                    <button onClick={() => copyLink(link.slug)} className="text-[11px] font-semibold bg-transparent border-none cursor-pointer shrink-0 transition-colors" style={{ color: copied === link.slug ? (dark ? "#6ee7b7" : "#059669") : t.accent }}>
-                      {copied === link.slug ? "Copied!" : "Copy"}
-                    </button>
-                  </div>
-                </div>
-                {canManage && (
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <div role="switch" aria-checked={link.enabled} aria-label={`Toggle ${link.name}`} tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(link.id, !link.enabled); } }} onClick={() => handleToggle(link.id, !link.enabled)} className="w-[36px] h-5 rounded-xl relative cursor-pointer shrink-0" style={{ background: link.enabled ? "#c47d8e" : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)") }}>
-                      <div className="w-[14px] h-[14px] rounded-full bg-white absolute top-[3px] transition-[left] duration-200" style={{ left: link.enabled ? 19 : 3 }} />
-                    </div>
-                    <button onClick={() => handleDelete(link)} className="bg-transparent border-none cursor-pointer p-1 transition-opacity hover:opacity-70" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-                    </button>
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  ["Signups", (link.signups || 0).toLocaleString(), dark ? "#a5b4fc" : "#6366f1"],
-                  ["Orders", (link.orders || 0).toLocaleString(), dark ? "#6ee7b7" : "#059669"],
-                  ["Revenue", fN((link.revenue || 0) / 100), dark ? "#fcd34d" : "#d97706"],
-                ].map(([label, val, color]) => (
-                  <div key={label} className="py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)" }}>
-                    <div className="text-[14px] font-bold" style={{ color }}>{val}</div>
-                    <div className="text-[10px] font-semibold uppercase tracking-[1px] mt-0.5" style={{ color: t.textMuted }}>{label}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <LinkAccordion key={link.id} link={link} dark={dark} t={t} baseUrl={baseUrl} copied={copied} copyLink={copyLink} canManage={canManage} handleToggle={handleToggle} handleDelete={handleDelete} last={i === links.length - 1} rowBorder={rowBorder} />
           ))}
         </div>
       </div>

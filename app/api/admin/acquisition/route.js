@@ -38,7 +38,7 @@ export async function GET() {
     });
   } catch (err) {
     log.error('Admin Acquisition GET', err.message);
-    return Response.json({ error: 'Failed to load acquisition links' }, { status: 500 });
+    return Response.json({ error: 'Failed to load tracking links' }, { status: 500 });
   }
 }
 
@@ -69,15 +69,15 @@ export async function POST(req) {
       const link = await prisma.acquisitionLink.create({
         data: { name: name.trim(), slug: clean },
       });
-      await logActivity(admin.name, `Created acquisition link: ${clean}`, 'acquisition');
+      await logActivity(admin.name, `Created tracking link: ${clean}`, 'acquisition');
       return Response.json({ success: true, link });
     }
 
     if (action === 'toggle') {
       const { id, enabled } = body;
       if (!id) return Response.json({ error: 'Link ID required' }, { status: 400 });
-      await prisma.acquisitionLink.update({ where: { id }, data: { enabled: !!enabled } });
-      await logActivity(admin.name, `${enabled ? 'Enabled' : 'Disabled'} acquisition link ${id}`, 'acquisition');
+      const toggled = await prisma.acquisitionLink.update({ where: { id }, data: { enabled: !!enabled } });
+      await logActivity(admin.name, `${enabled ? 'Enabled' : 'Disabled'} tracking link: ${toggled.name}`, 'acquisition');
       return Response.json({ success: true });
     }
 
@@ -89,11 +89,11 @@ export async function POST(req) {
       const hasUsers = await prisma.user.count({ where: { signupSource: link.slug }, take: 1 });
       if (hasUsers) {
         await prisma.acquisitionLink.update({ where: { id }, data: { enabled: false } });
-        await logActivity(admin.name, `Disabled acquisition link ${link.slug} (has signups)`, 'acquisition');
+        await logActivity(admin.name, `Disabled tracking link ${link.slug} (has signups)`, 'acquisition');
         return Response.json({ success: true, soft: true });
       }
       await prisma.acquisitionLink.delete({ where: { id } });
-      await logActivity(admin.name, `Deleted acquisition link ${link.slug}`, 'acquisition');
+      await logActivity(admin.name, `Deleted tracking link ${link.slug}`, 'acquisition');
       return Response.json({ success: true });
     }
 
