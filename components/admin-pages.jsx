@@ -350,7 +350,6 @@ function FinanceOverviewTab({ dark, t }) {
     if (!dv) params.set("range", "30d");
     fetch(`/api/admin/analytics?${params}`).then(res => res.json()).then(d => { setStats(d); setLoading(false); }).catch(() => setLoading(false));
   };
-  useEffect(() => { load(dateValue); }, []);
 
   // Render chart when data is ready
   useEffect(() => {
@@ -388,16 +387,15 @@ function FinanceOverviewTab({ dark, t }) {
 
   const changeDateValue = (v) => { setDateValue(v); load(v); };
 
-  if (loading) return <div className="adm-stats">{[1,2,3,4].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[90px] rounded-xl`} />)}</div>;
-
   const s = stats || {};
   return (
     <>
       {/* Range filter */}
       <div className="flex justify-end mb-4">
-        <DateRangePicker dark={dark} t={t} value={dateValue} onChange={changeDateValue} />
+        <DateRangePicker dark={dark} t={t} value={dateValue} onChange={changeDateValue} defaultPreset="This month" />
       </div>
 
+      {loading ? <div className="adm-stats">{[1,2,3,4].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[90px] rounded-xl`} />)}</div> : <>
       <div className="adm-stats mt-0">
         {[
           ["Revenue", fN(s.totalRevenue || 0), t.green],
@@ -493,6 +491,7 @@ function FinanceOverviewTab({ dark, t }) {
           </div>
         </div>
       )}
+      </>}
     </>
   );
 }
@@ -1057,11 +1056,11 @@ function FinanceBreakdownTab({ dark, t }) {
   const [provider, setProvider] = useState("all");
 
   const load = () => {
+    if (!dateValue) return;
     setLoading(true);
     const params = new URLSearchParams();
-    if (dateValue?.start) params.set("from", localDate(dateValue.start));
-    if (dateValue?.end) params.set("to", localDate(dateValue.end));
-    if (!dateValue) params.set("range", "30d");
+    if (dateValue.start) params.set("from", localDate(dateValue.start));
+    if (dateValue.end) params.set("to", localDate(dateValue.end));
     if (platform !== "all") params.set("platform", platform);
     if (tier !== "all") params.set("tier", tier);
     if (provider !== "all") params.set("provider", provider);
@@ -1098,10 +1097,6 @@ function FinanceBreakdownTab({ dark, t }) {
     </div>
   );
 
-  if (loading) return (
-    <div className="adm-stats">{[1,2,3,4,5,6].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-20 rounded-xl`} />)}</div>
-  );
-
   const s = stats || {};
   const p = s.profitability || {};
   const mIn = s.moneyIn || {};
@@ -1116,7 +1111,7 @@ function FinanceBreakdownTab({ dark, t }) {
     <>
       {/* Filters */}
       <div className="flex gap-2 mb-5 flex-wrap justify-end">
-        <DateRangePicker dark={dark} t={t} value={dateValue} onChange={setDateValue} />
+        <DateRangePicker dark={dark} t={t} value={dateValue} onChange={setDateValue} defaultPreset="This month" />
         <DropdownFilter value={platform} onChange={setPlatform} options={[
           { value: "all", label: "All platforms" }, { value: "instagram", label: "Instagram" },
           { value: "tiktok", label: "TikTok" }, { value: "youtube", label: "YouTube" },
@@ -1132,6 +1127,8 @@ function FinanceBreakdownTab({ dark, t }) {
           { value: "jap", label: "JAP" }, { value: "dao", label: "DaoSMM" },
         ]} />
       </div>
+
+      {loading ? <div className="adm-stats">{[1,2,3,4,5,6].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-20 rounded-xl`} />)}</div> : <>
 
       {/* Profitability */}
       <div className={sectionHeading} style={{ color: subText }}>Profitability</div>
@@ -1281,6 +1278,7 @@ function FinanceBreakdownTab({ dark, t }) {
             </div>
           ))}
         </div>
+      </>}
       </>}
     </>
   );
