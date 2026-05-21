@@ -67,7 +67,7 @@ export async function POST(req) {
             where: { userId: tx.userId, type: 'bonus', note: { contains: `[cid:${couponId}]` } },
           });
           if (!alreadyUsed) {
-            const row = await db.setting.findUnique({ where: { key: 'coupons' } });
+            const [row] = await db.$queryRaw`SELECT value FROM settings WHERE key = 'coupons' FOR UPDATE`;
             if (row) {
               const coupons = JSON.parse(row.value);
               const coupon = coupons.find(c => c.id === couponId && c.enabled !== false);

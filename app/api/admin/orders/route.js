@@ -84,39 +84,51 @@ export async function POST(req) {
         } catch (e) { log.warn(`Admin Cancel ${providerLabel}`, e.message); }
       }
 
-      const cancelled = await prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async (tx) => {
         const claimed = await tx.order.updateMany({
           where: { id: order.id, status: { not: 'Cancelled' } },
           data: { status: 'Cancelled' },
         });
-        if (claimed.count === 0) return false;
-        if (order.charge > 0) {
-          await tx.user.update({ where: { id: order.userId }, data: { balance: { increment: order.charge } } });
-          await tx.transaction.create({
-            data: {
-              userId: order.userId, type: 'refund', amount: order.charge,
-              method: 'wallet', status: 'Completed',
-              reference: `ADM-REF-${order.orderId || order.id}`,
-              note: `Refund — order cancelled by admin`,
-            },
-          });
-        }
-        return true;
-      });
-      if (!cancelled) return Response.json({ error: 'Order already cancelled' }, { status: 409 });
+        if (claimed.count === 0) return { ok: false };
 
-      if (order.charge > 0) {
+        let refundAmount = 0;
+        if (order.charge > 0) {
+          const existing = await tx.transaction.aggregate({
+            where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
+            _sum: { amount: true },
+          });
+          const alreadyRefunded = existing._sum.amount || 0;
+          refundAmount = Math.max(0, order.charge - alreadyRefunded);
+
+          if (refundAmount > 0) {
+            await tx.user.update({ where: { id: order.userId }, data: { balance: { increment: refundAmount } } });
+            await tx.transaction.create({
+              data: {
+                userId: order.userId, type: 'refund', amount: refundAmount,
+                method: 'wallet', status: 'Completed',
+                reference: `ADM-REF-${order.orderId || order.id}`,
+                note: `Refund — order cancelled by admin${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} already refunded)` : ''}`,
+              },
+            });
+          }
+        }
+        return { ok: true, refundAmount };
+      });
+      if (!result.ok) return Response.json({ error: 'Order already cancelled' }, { status: 409 });
+
+      if (result.refundAmount > 0) {
         try {
           const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true, notifEmail: true, notifOrders: true } });
           if (user?.email && user.notifEmail !== false && user.notifOrders !== false) {
-            const amount = order.charge / 100;
+            const amount = result.refundAmount / 100;
             walletCreditEmail(user.name || 'there', amount, 'Order cancelled — refund processed').then(html => sendEmail(user.email, `₦${amount.toLocaleString()} refunded to your Nitro wallet`, html)).catch(() => {});
           }
         } catch {}
       }
 
-      await logActivity(admin.name, `Cancelled order ${orderId} (${providerLabel})${order.charge > 0 ? ` — ₦${(order.charge / 100).toLocaleString()} refunded` : ''}`, 'order');
-      return Response.json({ success: true, message: order.charge > 0 ? `Order cancelled — ₦${(order.charge / 100).toLocaleString()} refunded` : 'Order cancelled' });
+      const refundMsg = result.refundAmount > 0 ? ` — ₦${(result.refundAmount / 100).toLocaleString()} refunded` : '';
+      await logActivity(admin.name, `Cancelled order ${orderId} (${providerLabel})${refundMsg}`, 'order');
+      return Response.json({ success: true, message: result.refundAmount > 0 ? `Order cancelled${refundMsg}` : 'Order cancelled' });
     }
 
     if (action === 'refill') {
@@ -147,15 +159,20 @@ export async function POST(req) {
                   data: { status: 'Cancelled' },
                 });
                 if (claimed.count === 0) return;
-                await tx.$executeRaw`UPDATE users SET balance = balance + ${order.charge} WHERE id = ${order.userId}`;
-                const exists = await tx.transaction.findFirst({ where: { userId: order.userId, type: 'refund', reference: `REF-${order.orderId}` } });
-                if (!exists) {
+                const existing = await tx.transaction.aggregate({
+                  where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
+                  _sum: { amount: true },
+                });
+                const alreadyRefunded = existing._sum.amount || 0;
+                const refundAmount = Math.max(0, order.charge - alreadyRefunded);
+                if (refundAmount > 0) {
+                  await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${order.userId}`;
                   await tx.transaction.create({
                     data: {
-                      userId: order.userId, type: 'refund', amount: order.charge,
+                      userId: order.userId, type: 'refund', amount: refundAmount,
                       method: 'wallet', status: 'Completed',
                       reference: `REF-${order.orderId}`,
-                      note: `Refund — order cancelled by provider`,
+                      note: `Refund — order cancelled by provider${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} already refunded)` : ''}`,
                     },
                   });
                 }
@@ -167,18 +184,20 @@ export async function POST(req) {
                 if (refundAmount > 0) {
                   await prisma.$transaction(async (tx) => {
                     await tx.order.update({ where: { id: order.id }, data: { status: 'Partial' } });
-                    const exists = await tx.transaction.findFirst({ where: { userId: order.userId, type: 'refund', reference: `REF-${order.orderId}` } });
-                    if (!exists) {
-                      await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${order.userId}`;
-                      await tx.transaction.create({
-                        data: {
-                          userId: order.userId, type: 'refund', amount: refundAmount,
-                          method: 'wallet', status: 'Completed',
-                          reference: `REF-${order.orderId}`,
-                          note: `Partial refund for ${order.orderId} (${remains} undelivered)`,
-                        },
-                      });
-                    }
+                    const existing = await tx.transaction.aggregate({
+                      where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
+                      _sum: { amount: true },
+                    });
+                    if ((existing._sum.amount || 0) > 0) return;
+                    await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${order.userId}`;
+                    await tx.transaction.create({
+                      data: {
+                        userId: order.userId, type: 'refund', amount: refundAmount,
+                        method: 'wallet', status: 'Completed',
+                        reference: `REF-${order.orderId}`,
+                        note: `Partial refund for ${order.orderId} (${remains} undelivered)`,
+                      },
+                    });
                   });
                 }
               }
