@@ -87,12 +87,12 @@ export async function POST(req) {
     }
 
     if (action === 'updatePermissions') {
+      if (!canPerformAction(admin, 'team.changeRole')) return Response.json({ error: 'Only owner can modify permissions' }, { status: 403 });
       if (!adminId) return Response.json({ error: 'Admin ID required' }, { status: 400 });
       const target = await prisma.admin.findUnique({ where: { id: adminId } });
       if (!target) return Response.json({ error: 'Admin not found' }, { status: 404 });
       if (target.role === 'owner') return Response.json({ error: 'Cannot modify owner' }, { status: 403 });
 
-      // pages = null means reset to default, pages = [...] means custom
       const customPages = Array.isArray(pages) ? JSON.stringify(pages) : null;
       await prisma.admin.update({ where: { id: adminId }, data: { customPages } });
       await logActivity(admin.name, `Updated permissions for ${target.name}${customPages ? ' (custom)' : ' (reset to default)'}`, 'admin');
@@ -100,14 +100,19 @@ export async function POST(req) {
     }
 
     if (action === 'updateActions') {
+      if (!canPerformAction(admin, 'team.changeRole')) return Response.json({ error: 'Only owner can modify action permissions' }, { status: 403 });
       if (!adminId) return Response.json({ error: 'Admin ID required' }, { status: 400 });
       const target = await prisma.admin.findUnique({ where: { id: adminId } });
       if (!target) return Response.json({ error: 'Admin not found' }, { status: 404 });
       if (target.role === 'owner') return Response.json({ error: 'Cannot modify owner' }, { status: 403 });
 
-      const customActions = Array.isArray(actions) && actions.length > 0 ? JSON.stringify(actions) : null;
-      await prisma.admin.update({ where: { id: adminId }, data: { customActions } });
-      await logActivity(admin.name, `Updated action permissions for ${target.name}: ${actions?.join(', ') || 'cleared'}`, 'admin');
+      let safeActions = null;
+      if (Array.isArray(actions) && actions.length > 0) {
+        safeActions = JSON.stringify(actions.filter(a => canPerformAction(admin, a)));
+        if (safeActions === '[]') safeActions = null;
+      }
+      await prisma.admin.update({ where: { id: adminId }, data: { customActions: safeActions } });
+      await logActivity(admin.name, `Updated action permissions for ${target.name}: ${safeActions ? JSON.parse(safeActions).join(', ') : 'cleared'}`, 'admin');
       return Response.json({ success: true });
     }
 

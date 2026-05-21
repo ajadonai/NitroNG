@@ -48,6 +48,7 @@ async function dispatchBatch(createdOrders, userId, batchId, totalCharge) {
   for (const o of createdOrders) {
     if (consecutiveFails >= 5) break;
     try {
+      await prisma.order.update({ where: { id: o.dbId }, data: { dispatchedAt: new Date() } }).catch(() => {});
       const apiOrderId = await Promise.race([
         placeWithProvider({ id: o.dbId, service: o.service, tier: o.tier, link: o.link, quantity: o.qty, comments: o.comments }),
         new Promise((_, reject) => setTimeout(() => reject(new Error('dispatch_timeout')), 10000)),
@@ -55,7 +56,8 @@ async function dispatchBatch(createdOrders, userId, batchId, totalCharge) {
       if (apiOrderId) { placed++; consecutiveFails = 0; }
     } catch (err) {
       log.error('Bulk dispatch', `${o.orderId}: ${err.message}`);
-      await prisma.order.update({ where: { id: o.dbId }, data: { lastError: err.message.slice(0, 500), retryCount: { increment: 1 } } }).catch(() => {});
+      const isTimeout = /timed?\s?out|dispatch_timeout|ETIMEDOUT|ECONNABORTED|ECONNRESET|retries failed/i.test(err.message);
+      await prisma.order.update({ where: { id: o.dbId }, data: { lastError: (isTimeout ? '[TIMEOUT] ' : '') + err.message.slice(0, 500), retryCount: isTimeout ? 5 : { increment: 1 } } }).catch(() => {});
       consecutiveFails++;
     }
     await new Promise(r => setTimeout(r, 300));
@@ -247,12 +249,14 @@ export async function PATCH(req) {
       for (const order of retryable) {
         if (consecutiveFails >= 5) break;
         try {
+          await prisma.order.update({ where: { id: order.id }, data: { dispatchedAt: new Date() } }).catch(() => {});
           const apiOrderId = await placeWithProvider({ id: order.id, service: order.service, tier: order.tier, link: order.link, quantity: order.quantity, comments: order.comments });
           retried++;
           if (apiOrderId) { placed++; consecutiveFails = 0; }
         } catch (err) {
           log.error('Bulk reorder', `${order.orderId}: ${err.message}`);
-          await prisma.order.update({ where: { id: order.id }, data: { lastError: err.message.slice(0, 500), retryCount: { increment: 1 } } }).catch(() => {});
+          const isTimeout = /timed?\s?out|dispatch_timeout|ETIMEDOUT|ECONNABORTED|ECONNRESET|retries failed/i.test(err.message);
+          await prisma.order.update({ where: { id: order.id }, data: { lastError: (isTimeout ? '[TIMEOUT] ' : '') + err.message.slice(0, 500), retryCount: isTimeout ? 5 : { increment: 1 } } }).catch(() => {});
           consecutiveFails++;
         }
         await new Promise(r => setTimeout(r, 300));

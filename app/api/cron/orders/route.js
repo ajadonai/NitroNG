@@ -141,6 +141,10 @@ export async function GET(req) {
           status: 'Pending', apiOrderId: null, batchId: { not: null },
           retryCount: { lt: 5 },
           createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+          OR: [
+            { dispatchedAt: null },
+            { dispatchedAt: { lt: new Date(Date.now() - 15 * 60 * 1000) } },
+          ],
         },
         include: { service: true, tier: { include: { group: true } } },
         take: 50, orderBy: { createdAt: 'asc' },
@@ -149,7 +153,7 @@ export async function GET(req) {
       for (const order of retryable) {
         const claimed = await prisma.order.updateMany({
           where: { id: order.id, status: 'Pending', apiOrderId: null },
-          data: { status: 'Dispatching' },
+          data: { status: 'Dispatching', dispatchedAt: new Date() },
         });
         if (claimed.count === 0) continue;
 
@@ -162,8 +166,17 @@ export async function GET(req) {
             await prisma.order.update({ where: { id: order.id }, data: { status: 'Pending', retryCount: { increment: 1 } } });
           }
         } catch (err) {
-          await prisma.order.update({ where: { id: order.id }, data: { status: 'Pending', retryCount: { increment: 1 }, lastError: err.message.slice(0, 500) } });
-          log.warn(`Cron retry ${order.orderId}`, err.message);
+          const isTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(err.message);
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              status: 'Pending',
+              retryCount: isTimeout ? 5 : { increment: 1 },
+              lastError: (isTimeout ? '[TIMEOUT] ' : '') + err.message.slice(0, 500),
+            },
+          });
+          if (isTimeout) log.warn(`Cron retry ${order.orderId}`, `Timeout — halted auto-retry (provider may have processed)`);
+          else log.warn(`Cron retry ${order.orderId}`, err.message);
         }
         await new Promise(r => setTimeout(r, 300));
       }
@@ -230,20 +243,25 @@ async function refundOrder(order, amount = null, emailOnly = false) {
 
   if (!emailOnly) {
     await prisma.$transaction(async (tx) => {
-      const exists = await tx.transaction.findFirst({ where: { userId: order.userId, type: 'refund', reference: `REF-${order.orderId}` } });
-      if (exists) return;
-      await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${order.userId}`;
+      const existing = await tx.transaction.aggregate({
+        where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
+        _sum: { amount: true },
+      });
+      const alreadyRefunded = existing._sum.amount || 0;
+      const safeRefund = Math.max(0, (amount || order.charge) - alreadyRefunded);
+      if (safeRefund <= 0) return;
+      await tx.$executeRaw`UPDATE users SET balance = balance + ${safeRefund} WHERE id = ${order.userId}`;
       await tx.transaction.create({
         data: {
           userId: order.userId,
           type: 'refund',
-          amount: refundAmount,
+          amount: safeRefund,
           method: 'wallet',
           status: 'Completed',
           reference: `REF-${order.orderId}`,
           note: amount
-            ? `Partial refund for ${order.orderId} (${amount === order.charge ? 'full' : 'partial'})`
-            : `Auto-refund for cancelled order ${order.orderId}`,
+            ? `Partial refund for ${order.orderId}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} prior)` : ''}`
+            : `Auto-refund for cancelled order ${order.orderId}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} prior)` : ''}`,
         },
       });
     });

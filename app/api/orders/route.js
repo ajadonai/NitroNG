@@ -80,7 +80,6 @@ export async function PATCH(req) {
           const newStatus = statusMap[status.status] || order.status;
           const updateData = {
             ...(newStatus !== order.status && { status: newStatus }),
-            ...(status.start_count != null && { startCount: Number(status.start_count) }),
             ...(status.remains != null && { remains: Number(status.remains) }),
           };
           if (Object.keys(updateData).length > 0) {
@@ -227,6 +226,7 @@ export async function PATCH(req) {
       let apiOrderId = null;
       if (order.service.apiId) {
         try {
+          await prisma.order.update({ where: { id: newOrder.id }, data: { dispatchedAt: new Date() } });
           const provider = order.service.provider || 'mtp';
           const { calculateDripFeed } = await import('@/lib/drip-feed');
           const dripFeed = calculateDripFeed(order.service.category, order.quantity);
@@ -237,7 +237,10 @@ export async function PATCH(req) {
           if (apiOrderId) {
             await prisma.order.update({ where: { id: newOrder.id }, data: { apiOrderId, status: 'Processing' } });
           }
-        } catch (err) { log.error('Reorder', err.message); }
+        } catch (err) {
+          log.error('Reorder', err.message);
+          try { await prisma.order.update({ where: { id: newOrder.id }, data: { lastError: err.message.slice(0, 500) } }); } catch {}
+        }
       }
 
       return Response.json({
@@ -438,6 +441,7 @@ export async function POST(req) {
     let apiOrderId = null;
     if (service.apiId) {
       try {
+        await prisma.order.update({ where: { id: result.id }, data: { dispatchedAt: new Date() } });
         const provider = service.provider || 'mtp';
         const sType = (serviceType || tier?.group?.type || "").toLowerCase();
         const sName = (tier?.group?.name || service?.name || "").toLowerCase();
@@ -456,13 +460,12 @@ export async function POST(req) {
         }
         const provResult = await placeOrder(provider, service.apiId, trimmedLink, qty, extra);
         apiOrderId = provResult.order ? String(provResult.order) : null;
-        // Update order with provider ID and set to Processing
         if (apiOrderId) {
           await prisma.order.update({ where: { id: result.id }, data: { apiOrderId, status: 'Processing' } });
         }
       } catch (err) {
         log.error('Order Place', err.message);
-        // Order stays Pending — can be retried or refunded via admin
+        try { await prisma.order.update({ where: { id: result.id }, data: { lastError: err.message.slice(0, 500) } }); } catch {}
       }
     }
 

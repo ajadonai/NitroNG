@@ -29,42 +29,47 @@ export async function POST(req) {
 
     const deletionDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
-    // Cancel active orders and refund wallet
+    // Cancel active orders on providers (best-effort, before transaction)
     const activeOrders = await prisma.order.findMany({
-      where: { userId: user.id, status: { in: ['Pending', 'Processing'] } },
+      where: { userId: user.id, status: { in: ['Pending', 'Processing'] }, deletedAt: null },
       include: { service: { select: { provider: true } } },
     });
-
-    const refundOps = [];
-    let totalRefund = 0;
     for (const order of activeOrders) {
       const provider = order.service?.provider || 'mtp';
       if (order.apiOrderId && isProviderConfigured(provider)) {
         try { await cancelOrder(provider, order.apiOrderId); } catch (err) { log.warn('Cancel order on deletion', err.message); }
       }
-      refundOps.push(prisma.order.update({ where: { id: order.id }, data: { status: 'Cancelled' } }));
-      refundOps.push(prisma.transaction.create({
-        data: { userId: user.id, type: 'refund', amount: order.charge, status: 'Completed', note: `Refund — account deletion (order ${order.orderId})` },
-      }));
-      totalRefund += order.charge;
     }
 
-    // Mark account for pending deletion + refund active orders
-    await prisma.$transaction([
-      ...refundOps,
-      ...(totalRefund > 0 ? [prisma.user.update({ where: { id: user.id }, data: { balance: { increment: totalRefund } } })] : []),
-      prisma.user.update({
+    // Atomic: claim active orders, refund, mark deletion, clear sessions
+    const totalRefund = await prisma.$transaction(async (tx) => {
+      const claimable = await tx.order.findMany({
+        where: { userId: user.id, status: { in: ['Pending', 'Processing'] }, deletedAt: null },
+        select: { id: true, orderId: true, charge: true },
+      });
+      let refund = 0;
+      for (const order of claimable) {
+        const claimed = await tx.order.updateMany({
+          where: { id: order.id, status: { in: ['Pending', 'Processing'] } },
+          data: { status: 'Cancelled' },
+        });
+        if (claimed.count > 0) {
+          refund += order.charge;
+          await tx.transaction.create({
+            data: { userId: user.id, type: 'refund', amount: order.charge, status: 'Completed', reference: `REF-${order.orderId}`, note: `Refund — account deletion (order ${order.orderId})` },
+          });
+        }
+      }
+      if (refund > 0) {
+        await tx.user.update({ where: { id: user.id }, data: { balance: { increment: refund } } });
+      }
+      await tx.user.update({
         where: { id: user.id },
-        data: {
-          status: 'PendingDeletion',
-          deletedAt: deletionDate,
-          deletedName: user.name,
-          deletedEmail: user.email,
-        },
-      }),
-      // Invalidate all sessions
-      prisma.session.deleteMany({ where: { userId: user.id } }),
-    ]);
+        data: { status: 'PendingDeletion', deletedAt: deletionDate, deletedName: user.name, deletedEmail: user.email },
+      });
+      await tx.session.deleteMany({ where: { userId: user.id } });
+      return refund;
+    });
 
     // Count user stats for admin email
     const [orderCount, totalSpent, activeOrderCount] = await Promise.all([
