@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import { signUserToken, setUserCookie, detectDevice, hashToken } from '@/lib/auth';
 import { generateReferralCode, ok, error } from '@/lib/utils';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
-import { validateEmail, validatePassword, validateName, sanitizeEmail, sanitizeString } from '@/lib/validate';
+import { validateEmail, validatePassword, validateName, sanitizeEmail, sanitizeString, isDisposableEmail } from '@/lib/validate';
 import { headers } from 'next/headers';
 import { sendWelcomeEmail } from '@/lib/email';
 
@@ -20,6 +20,7 @@ export async function POST(req) {
     const lastName = titleCase(sanitizeString(body.lastName, 50));
     const phone = sanitizeString(body.phone, 20);
     const email = sanitizeEmail(body.email);
+    const via = sanitizeString(body.via, 60);
     const password = body.password;
     const referralCode = sanitizeString(body.referralCode, 20);
 
@@ -33,6 +34,7 @@ export async function POST(req) {
     if (lastName) { const lnCheck = checkName(lastName); if (lnCheck.blocked) return error(lnCheck.reason); }
 
     if (!validateEmail(email)) return error('Please enter a valid email address');
+    if (isDisposableEmail(email)) return error('Disposable email addresses aren\'t allowed. Please use a permanent email.');
 
     // Check for common email domain typos
     const domain = email.split('@')[1]?.toLowerCase();
@@ -99,6 +101,7 @@ export async function POST(req) {
         referralCode: refCode,
         referredBy,
         emailVerified: true,
+        signupSource: via || null,
         signupIp: ip,
         tosAcceptedAt: new Date(),
         tosVersion,

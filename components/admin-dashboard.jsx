@@ -11,8 +11,9 @@ import AdminServicesPage from "./admin-services";
 import AdminServiceGroupsPage from "./admin-service-groups";
 import AdminPricingPage from "./admin-pricing";
 import { AdminPaymentsPage, AdminFinancePage, AdminAlertsPage, AdminSettingsPage } from "./admin-pages";
-import { AdminActivityPage, AdminTeamPage, AdminCouponsPage, AdminNotificationsPage, AdminMaintenancePage, AdminAPIPage } from "./admin-extra-pages";
+import { AdminActivityPage, AdminTeamPage, AdminCouponsPage, AdminNotificationsPage, AdminMaintenancePage, AdminAPIPage, AdminAcquisitionPage } from "./admin-extra-pages";
 import AdminBlogPage from "./admin-blog";
+import AdminPromotionsPage from "./admin-promotions";
 import AdminLeaderboardPage, { AdminLeaderboardSidebar } from "./admin-leaderboard";
 import { fN, fD } from "../lib/format";
 import { SITE } from "../lib/site";
@@ -42,10 +43,12 @@ const ADMIN_NAV = [
     { id: "pricing", label: "Pricing", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> },
   ]},
   { section: "Marketing", items: [
+    { id: "promotions", label: "Promotions", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
     { id: "blog", label: "Blog", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> },
     { id: "alerts", label: "Announcements", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> },
     { id: "notifications", label: "Email Blasts", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 17H2a3 3 0 003-3V9a7 7 0 0114 0v5a3 3 0 003 3zm-8.27 4a2 2 0 01-3.46 0"/></svg> },
     { id: "rewards", label: "Rewards", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg> },
+    { id: "acquisition", label: "Tracking Links", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg> },
   ]},
   { section: "System", items: [
     { id: "payments", label: "Payments", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>, badge: 'payments' },
@@ -241,6 +244,7 @@ function AdminRightSidebar({ data, dark, t, active }) {
     team: ["admin"],
     coupons: ["coupon"],
     alerts: ["alert"],
+    promotions: ["promotion"],
     settings: ["settings", "maintenance"],
     notifications: ["notification"],
     maintenance: ["maintenance"],
@@ -254,7 +258,7 @@ function AdminRightSidebar({ data, dark, t, active }) {
     orders: "Order Activity", finance: "Financial Activity", users: "User Activity",
     blog: "Blog Activity", tickets: "Ticket Activity", services: "Service Activity",
     "menu-builder": "Service Activity", pricing: "Pricing Activity", payments: "Payment Activity",
-    team: "Team Activity", coupons: "Coupon Activity", alerts: "Alert Activity",
+    team: "Team Activity", coupons: "Coupon Activity", alerts: "Alert Activity", promotions: "Promotion Activity",
     notifications: "Notification Activity", maintenance: "Maintenance Activity",
   }[active] || "Recent Activity";
 
@@ -370,6 +374,8 @@ function AdminDashboardInner({ initialData }) {
           const saved = localStorage.getItem("nitro-admin-theme");
           if (!saved || saved === "auto") {
             setThemeMode(d.admin.themePreference);
+            setDark(d.admin.themePreference === "night");
+            try { localStorage.setItem("nitro-admin-theme", d.admin.themePreference); } catch {}
           }
         }
       } catch {
@@ -389,8 +395,8 @@ function AdminDashboardInner({ initialData }) {
   const [notifPrefs, setNotifPrefs] = useState(() => {
     try {
       const saved = localStorage.getItem('nitro-admin-notif-prefs');
-      return saved ? JSON.parse(saved) : { new_ticket: true, ticket_reply: true, deposit: true, large_deposit: true, stale_ticket: true };
-    } catch { return { new_ticket: true, ticket_reply: true, deposit: true, large_deposit: true, stale_ticket: true }; }
+      return saved ? JSON.parse(saved) : { new_ticket: true, ticket_reply: true, deposit: true, large_deposit: true, stale_ticket: true, price_alert: true };
+    } catch { return { new_ticket: true, ticket_reply: true, deposit: true, large_deposit: true, stale_ticket: true, price_alert: true }; }
   });
 
   const toggleDnd = () => {
@@ -440,7 +446,9 @@ function AdminDashboardInner({ initialData }) {
       else if (type === 'ticket_reply') { play(660, 0, 0.12); play(880, 0.1, 0.15); }
       else if (type === 'large_deposit') { play(523, 0, 0.1, 0.18); play(659, 0.08, 0.1, 0.18); play(784, 0.16, 0.1, 0.18); play(1047, 0.24, 0.25, 0.18); }
       else if (type === 'deposit') { play(784, 0, 0.1); play(1047, 0.1, 0.15); }
+      else if (type === 'pending_deposit') { play(587, 0, 0.1, 0.15); play(740, 0.1, 0.1, 0.15); play(587, 0.2, 0.15, 0.15); }
       else if (type === 'stale_ticket') { play(440, 0, 0.2, 0.18); play(440, 0.3, 0.2, 0.18); play(440, 0.6, 0.3, 0.2); }
+      else if (type === 'price_alert') { play(330, 0, 0.15, 0.2); play(262, 0.15, 0.15, 0.2); play(330, 0.3, 0.15, 0.2); play(262, 0.45, 0.25, 0.2); }
     } catch {}
   };
 
@@ -476,7 +484,8 @@ function AdminDashboardInner({ initialData }) {
     const pages = admin?.pages || '';
     const hasPage = (p) => pages === '*' || (Array.isArray(pages) ? pages.includes(p) : String(pages).includes(p));
     if ((event.type === 'new_ticket' || event.type === 'ticket_reply' || event.type === 'stale_ticket') && !hasPage('tickets')) return;
-    if ((event.type === 'deposit' || event.type === 'large_deposit') && !hasPage('finance') && !hasPage('payments') && !hasPage('overview')) return;
+    if ((event.type === 'deposit' || event.type === 'large_deposit' || event.type === 'pending_deposit') && !hasPage('finance') && !hasPage('payments') && !hasPage('overview')) return;
+    if (event.type === 'price_alert' && !hasPage('services') && !hasPage('pricing') && !hasPage('overview')) return;
 
     if (active === 'tickets' && document.hasFocus() && (event.type === 'new_ticket' || event.type === 'ticket_reply' || event.type === 'stale_ticket')) return;
 
@@ -502,7 +511,9 @@ function AdminDashboardInner({ initialData }) {
       ticket_reply: { title: `${event.user} dey wait o`, toast: 'info', body: event.title },
       deposit: { title: `Money entered ₦${(event.amount / 100).toLocaleString()}`, toast: 'success', body: `${event.user} just funded` },
       large_deposit: { title: `Whale alert ₦${(event.amount / 100).toLocaleString()}`, toast: 'success', body: `${event.user} came correct` },
+      pending_deposit: { title: `Approve ₦${(event.amount / 100).toLocaleString()}`, toast: 'warning', body: `${event.user} sent bank transfer` },
       stale_ticket: { title: `${event.user} still waiting (${event.minutes}m)`, toast: 'error', body: `${event.title} — reply now` },
+      price_alert: { title: `${event.count} service${event.count > 1 ? 's' : ''} selling below cost`, toast: 'error', body: 'Check Pricing page — you\'re losing money' },
     };
     const l = labels[event.type] || { title: 'Notification', toast: 'info', body: '' };
 
@@ -654,6 +665,7 @@ function AdminDashboardInner({ initialData }) {
       case "services": return <AdminServicesPage dark={dark} t={t} />;
       case "menu-builder": return <AdminServiceGroupsPage dark={dark} t={t} />;
       case "pricing": return <AdminPricingPage dark={dark} t={t} />;
+      case "promotions": return <AdminPromotionsPage dark={dark} t={t} />;
       case "blog": return <AdminBlogPage dark={dark} t={t} />;
       case "payments": return <AdminPaymentsPage dark={dark} t={t} />;
       case "finance": return <AdminFinancePage dark={dark} t={t} admin={admin} />;
@@ -664,6 +676,7 @@ function AdminDashboardInner({ initialData }) {
       case "team": return <AdminTeamPage admin={admin} dark={dark} t={t} />;
       case "maintenance": return <AdminMaintenancePage dark={dark} t={t} />;
       case "api": return <AdminAPIPage dark={dark} t={t} />;
+      case "acquisition": return <AdminAcquisitionPage dark={dark} t={t} />;
       case "settings": return <AdminSettingsPage admin={admin} dark={dark} t={t} themeMode={themeMode} setThemeMode={setThemeMode} setDark={setDark} onLogout={handleLogout} notifPrefs={notifPrefs} updateNotifPref={updateNotifPref} />;
       default: return <AdminOverview data={data} dark={dark} t={t} setActive={setActive} />;
     }

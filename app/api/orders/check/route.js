@@ -48,7 +48,6 @@ export async function POST(req) {
 
       // Always persist delivery progress from provider
       const progressData = {
-        ...(providerStatus.start_count != null && { startCount: Number(providerStatus.start_count) }),
         ...(providerStatus.remains != null && { remains: Number(providerStatus.remains) }),
       };
       if (newStatus === order.status && Object.keys(progressData).length > 0) {
@@ -64,15 +63,20 @@ export async function POST(req) {
               data: { status: 'Cancelled' },
             });
             if (claimed.count === 0) return;
-            await tx.$executeRaw`UPDATE users SET balance = balance + ${order.charge} WHERE id = ${session.id}`;
-            const exists = await tx.transaction.findFirst({ where: { userId: session.id, type: 'refund', reference: `REF-${order.orderId}` } });
-            if (!exists) {
+            const existing = await tx.transaction.aggregate({
+              where: { userId: session.id, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
+              _sum: { amount: true },
+            });
+            const alreadyRefunded = existing._sum.amount || 0;
+            const refundAmount = Math.max(0, order.charge - alreadyRefunded);
+            if (refundAmount > 0) {
+              await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${session.id}`;
               await tx.transaction.create({
                 data: {
-                  userId: session.id, type: 'refund', amount: order.charge,
+                  userId: session.id, type: 'refund', amount: refundAmount,
                   method: 'wallet', status: 'Completed',
                   reference: `REF-${order.orderId}`,
-                  note: `Refund for cancelled order ${order.orderId}`,
+                  note: `Refund for cancelled order ${order.orderId}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} already refunded)` : ''}`,
                 },
               });
             }
@@ -84,18 +88,20 @@ export async function POST(req) {
             if (refundAmount > 0) {
               await prisma.$transaction(async (tx) => {
                 await tx.order.update({ where: { id: order.id }, data: { status: 'Partial' } });
-                const exists = await tx.transaction.findFirst({ where: { userId: session.id, type: 'refund', reference: `REF-${order.orderId}` } });
-                if (!exists) {
-                  await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${session.id}`;
-                  await tx.transaction.create({
-                    data: {
-                      userId: session.id, type: 'refund', amount: refundAmount,
-                      method: 'wallet', status: 'Completed',
-                      reference: `REF-${order.orderId}`,
-                      note: `Partial refund for ${order.orderId} (${remains} undelivered)`,
-                    },
-                  });
-                }
+                const existing = await tx.transaction.aggregate({
+                  where: { userId: session.id, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
+                  _sum: { amount: true },
+                });
+                if ((existing._sum.amount || 0) > 0) return;
+                await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${session.id}`;
+                await tx.transaction.create({
+                  data: {
+                    userId: session.id, type: 'refund', amount: refundAmount,
+                    method: 'wallet', status: 'Completed',
+                    reference: `REF-${order.orderId}`,
+                    note: `Partial refund for ${order.orderId} (${remains} undelivered)`,
+                  },
+                });
               });
             }
           }
@@ -104,7 +110,6 @@ export async function POST(req) {
             where: { id: order.id },
             data: {
               status: newStatus,
-              ...(providerStatus.start_count != null && { startCount: Number(providerStatus.start_count) }),
               ...(providerStatus.remains != null && { remains: Number(providerStatus.remains) }),
             },
           });

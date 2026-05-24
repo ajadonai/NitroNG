@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
 import { getServices, getBalance, isProviderConfigured, getProviderName, checkOrder } from '@/lib/smm';
+import { calculateTierPrice } from '@/lib/markup';
 
 export async function GET() {
   const { admin, error } = await requireAdmin('services');
@@ -153,9 +154,16 @@ export async function POST(req) {
             else if (['cancelled', 'canceled', 'refunded'].includes(providerStatus)) newStatus = 'Cancelled';
             else if (['in progress', 'inprogress', 'processing'].includes(providerStatus)) newStatus = 'Processing';
 
+            const liveRemains = result.remains != null ? Number(result.remains) : null;
+
+            if (!newStatus && liveRemains != null && liveRemains !== order.remains) {
+              await prisma.order.update({ where: { id: order.id }, data: { remains: liveRemains } });
+              continue;
+            }
+
             if (!newStatus || newStatus === order.status) continue;
 
-            await prisma.order.update({ where: { id: order.id }, data: { status: newStatus } });
+            await prisma.order.update({ where: { id: order.id }, data: { status: newStatus, ...(liveRemains != null ? { remains: liveRemains } : {}) } });
             stats.updated++;
 
             if (newStatus === 'Cancelled' && order.charge > 0) {
@@ -195,6 +203,92 @@ export async function POST(req) {
 
       await logActivity(admin.name, `Synced orders: ${stats.checked} checked, ${stats.updated} updated, ${stats.refunded} refunded`, 'order');
       return Response.json({ success: true, ...stats });
+    }
+
+    if (action === 'sync-prices') {
+      const markupRows = await prisma.setting.findMany({ where: { key: { startsWith: 'markup_' } } });
+      const ms = {};
+      markupRows.forEach(s => { ms[s.key] = s.value; });
+      const usdRate = Number(ms.markup_usd_rate) || 1600;
+
+      const configuredProviders = ['mtp', 'jap', 'dao'].filter(isProviderConfigured);
+      const rateMaps = {};
+      const stats = { synced: 0, updated: 0, repriced: 0, losers: 0, errors: 0 };
+
+      for (const p of configuredProviders) {
+        try {
+          const svcs = await getServices(p);
+          if (!Array.isArray(svcs)) continue;
+          rateMaps[p] = {};
+          for (const s of svcs) rateMaps[p][String(s.service)] = Math.round(parseFloat(s.rate) * 100);
+          stats.synced += svcs.length;
+        } catch (err) {
+          stats.errors++;
+          log.warn('PriceSync', `Failed to fetch ${p}: ${err.message}`);
+        }
+      }
+
+      const services = await prisma.service.findMany({
+        where: { enabled: true },
+        select: { id: true, name: true, apiId: true, costPer1k: true, sellPer1k: true, provider: true, category: true, tiers: { where: { enabled: true }, select: { id: true, tier: true, sellPer1k: true, group: { select: { nigerian: true } } } } },
+      });
+
+      const ops = [];
+      const losers = [];
+
+      for (const s of services) {
+        const rateMap = rateMaps[s.provider || 'mtp'];
+        const liveCost = rateMap?.[String(s.apiId)];
+        const cost = liveCost !== undefined ? liveCost : s.costPer1k;
+        const costChanged = liveCost !== undefined && liveCost !== s.costPer1k;
+        if (costChanged) stats.updated++;
+
+        const costKobo = cost * usdRate;
+
+        if (s.tiers.length > 0) {
+          for (const t of s.tiers) {
+            const ng = t.group?.nigerian || false;
+            const newSell = calculateTierPrice(cost, t.tier, ms, ng);
+            if (newSell !== t.sellPer1k) {
+              ops.push(prisma.serviceTier.update({ where: { id: t.id }, data: { sellPer1k: newSell } }));
+              stats.repriced++;
+            }
+            if (newSell > 0 && newSell < costKobo) {
+              losers.push({ service: s.name.slice(0, 50), category: s.category, tier: t.tier, costNaira: Math.round(costKobo / 100), sellNaira: Math.round(newSell / 100), lossPerK: Math.round(costKobo / 100) - Math.round(newSell / 100) });
+            }
+          }
+        }
+
+        const baseNewSell = s.tiers.length === 0 ? calculateTierPrice(cost, 'Standard', ms, false) : s.sellPer1k;
+        if (costChanged || (s.tiers.length === 0 && baseNewSell !== s.sellPer1k)) {
+          ops.push(prisma.service.update({ where: { id: s.id }, data: { ...(costChanged ? { costPer1k: liveCost } : {}), ...(s.tiers.length === 0 ? { sellPer1k: baseNewSell } : {}) } }));
+          if (s.tiers.length === 0 && baseNewSell !== s.sellPer1k) stats.repriced++;
+        } else if (costChanged) {
+          ops.push(prisma.service.update({ where: { id: s.id }, data: { costPer1k: liveCost } }));
+        }
+
+        if (s.tiers.length === 0 && baseNewSell > 0 && baseNewSell < costKobo) {
+          losers.push({ service: s.name.slice(0, 50), category: s.category, tier: null, costNaira: Math.round(costKobo / 100), sellNaira: Math.round(baseNewSell / 100), lossPerK: Math.round(costKobo / 100) - Math.round(baseNewSell / 100) });
+        }
+      }
+
+      if (ops.length > 0) {
+        for (let i = 0; i < ops.length; i += 50) {
+          await prisma.$transaction(ops.slice(i, i + 50));
+        }
+      }
+
+      stats.losers = losers.length;
+
+      await prisma.setting.upsert({
+        where: { key: 'price_alerts' },
+        update: { value: JSON.stringify({ losers, checkedAt: new Date().toISOString(), usdRate }) },
+        create: { key: 'price_alerts', value: JSON.stringify({ losers, checkedAt: new Date().toISOString(), usdRate }) },
+      });
+
+      await logActivity(admin.name, `Price sync: ${stats.updated} costs updated, ${stats.repriced} repriced, ${stats.losers} below cost`, 'service');
+
+      return Response.json({ success: true, ...stats, losers: losers.slice(0, 20) });
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });

@@ -24,10 +24,12 @@ export async function GET(req) {
       path: '/',
     });
 
-    // Check if there's a referral code in the URL
     const url = new URL(req.url);
     const ref = url.searchParams.get('ref');
-    const stateParam = ref ? `${state}|ref:${ref}` : state;
+    const via = url.searchParams.get('via');
+    let stateParam = state;
+    if (ref) stateParam += `|ref:${ref}`;
+    if (via) stateParam += `|via:${via}`;
 
     const params = new URLSearchParams({
       client_id: GOOGLE_CLIENT_ID,

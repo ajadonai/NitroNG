@@ -5,5 +5,6 @@ Disallow: /admin/
 Disallow: /dashboard/
 Disallow: /banned/
 Disallow: /maintenance/
+Disallow: /pulse/
 
 Sitemap: https://nitro.ng/sitemap.xml

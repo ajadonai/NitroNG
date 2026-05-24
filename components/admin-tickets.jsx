@@ -23,7 +23,7 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
   const infoPanelRef = useRef(null);
 
   const refreshTickets = () => {
-    fetch("/api/admin/tickets").then(r => r.json()).then(d => {
+    fetch("/api/admin/tickets?limit=200").then(r => r.json()).then(d => {
       if (d.tickets) {
         setTickets(d.tickets);
         if (selected) {

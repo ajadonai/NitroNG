@@ -263,7 +263,7 @@ export function AdminPaymentsPage({ dark, t }) {
             })}
             <div className="flex gap-2 mt-2">
               <button onClick={saveConfig} disabled={saving} className="flex-1 py-[11px] rounded-lg text-sm font-semibold border-none cursor-pointer text-white transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}>{saving ? "Saving..." : "Save Keys"}</button>
-              <button onClick={() => setConfiguring(null)} className="py-[11px] px-5 rounded-lg bg-none text-sm cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}>Cancel</button>
+              <button onClick={() => setConfiguring(null)} className="py-[11px] px-5 rounded-lg bg-none text-sm cursor-pointer transition-transform duration-200 hover:-translate-y-px flex items-center justify-center" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
           </div>
         </div>
@@ -300,7 +300,7 @@ export function AdminPaymentsPage({ dark, t }) {
                 else { const d = await res.json(); toast.error("Failed", d.error || "Failed"); }
                 setSaving(false);
               }} disabled={saving || !newGw.id || !newGw.name} className="flex-1 py-[11px] rounded-lg text-sm font-semibold border-none" style={{ background: newGw.id && newGw.name ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"), color: newGw.id && newGw.name ? "#fff" : t.textMuted, cursor: newGw.id && newGw.name ? "pointer" : "default" }}>{saving ? "Adding..." : "Add Gateway"}</button>
-              <button onClick={() => setAddModal(false)} className="py-[11px] px-5 rounded-lg bg-none text-sm cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}>Cancel</button>
+              <button onClick={() => setAddModal(false)} className="py-[11px] px-5 rounded-lg bg-none text-sm cursor-pointer transition-transform duration-200 hover:-translate-y-px flex items-center justify-center" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
           </div>
         </div>
@@ -350,7 +350,6 @@ function FinanceOverviewTab({ dark, t }) {
     if (!dv) params.set("range", "30d");
     fetch(`/api/admin/analytics?${params}`).then(res => res.json()).then(d => { setStats(d); setLoading(false); }).catch(() => setLoading(false));
   };
-  useEffect(() => { load(dateValue); }, []);
 
   // Render chart when data is ready
   useEffect(() => {
@@ -368,7 +367,7 @@ function FinanceOverviewTab({ dark, t }) {
           labels: cd.map(d => { const dt = new Date(d.date); return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }),
           datasets: [
             { label: "Orders", data: cd.map(d => d.orders), backgroundColor: dark ? "rgba(196,125,142,0.5)" : "rgba(196,125,142,0.6)", borderRadius: 4, barPercentage: 0.6, yAxisID: "y" },
-            { label: "Deposits", data: cd.map(d => d.deposits), type: "line", borderColor: "#059669", backgroundColor: "transparent", tension: 0.3, pointRadius: 2, pointBackgroundColor: "#059669", borderWidth: 2, yAxisID: "y1" },
+            { label: "Deposits", data: cd.map(d => d.deposits), backgroundColor: dark ? "rgba(5,150,105,0.45)" : "rgba(5,150,105,0.55)", borderRadius: 4, barPercentage: 0.6, yAxisID: "y1" },
           ],
         },
         options: {
@@ -388,16 +387,15 @@ function FinanceOverviewTab({ dark, t }) {
 
   const changeDateValue = (v) => { setDateValue(v); load(v); };
 
-  if (loading) return <div className="adm-stats">{[1,2,3,4].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[90px] rounded-xl`} />)}</div>;
-
   const s = stats || {};
   return (
     <>
       {/* Range filter */}
       <div className="flex justify-end mb-4">
-        <DateRangePicker dark={dark} t={t} value={dateValue} onChange={changeDateValue} />
+        <DateRangePicker dark={dark} t={t} value={dateValue} onChange={changeDateValue} defaultPreset="This month" />
       </div>
 
+      {loading ? <div className="adm-stats">{[1,2,3,4].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[90px] rounded-xl`} />)}</div> : <>
       <div className="adm-stats mt-0">
         {[
           ["Revenue", fN(s.totalRevenue || 0), t.green],
@@ -493,6 +491,7 @@ function FinanceOverviewTab({ dark, t }) {
           </div>
         </div>
       )}
+      </>}
     </>
   );
 }
@@ -609,7 +608,7 @@ export function AdminAlertsPage({ dark, t }) {
               </div>
               <div className={`flex gap-1.5 flex-wrap ${history.length > 0 ? "mb-3" : ""}`}>
                 <button onClick={() => toggleAlert(active.id, true, target)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(251,191,36,.24)" : "rgba(217,119,6,.19)", color: dark ? "#fbbf24" : "#d97706" }}>Pause</button>
-                <button onClick={async () => { const ok = await confirm({ title: "Delete Alert", message: `Delete "${active.message?.slice(0, 50)}..."?`, confirmLabel: "Delete", danger: true }); if (ok) deleteAlert(active.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
+                <button onClick={async () => { const ok = await confirm({ title: "Delete Alert", message: `Delete "${active.message?.slice(0, 50)}..."?`, confirmLabel: "Delete", danger: true }); if (ok) deleteAlert(active.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
                 <button onClick={() => { setCreating(target); setNewMsg(""); setNewType("info"); }} className="adm-btn-sm ml-auto" style={{ borderColor: t.cardBorder, color: t.accent }}>+ New</button>
               </div>
             </>
@@ -641,7 +640,7 @@ export function AdminAlertsPage({ dark, t }) {
               </div>
               <div className="flex gap-2">
                 <button onClick={() => createAlert(target)} disabled={!newMsg.trim() || saving} className="adm-btn-primary flex-1 text-[13px]" style={{ opacity: newMsg.trim() && !saving ? 1 : .4 }}>{saving ? "Creating..." : isOverride ? "Create override" : "Create alert"}</button>
-                <button onClick={() => setCreating(null)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textSoft }}>Cancel</button>
+                <button onClick={() => setCreating(null)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textSoft }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
             </div>
           )}
@@ -664,7 +663,7 @@ export function AdminAlertsPage({ dark, t }) {
                   <div className="flex items-center gap-1 shrink-0">
                     <button onClick={() => toggleAlert(a.id, false, target)} className="adm-btn-sm py-[3px] px-2 text-[11px]" style={{ borderColor: t.cardBorder, color: dark ? "#6ee7b7" : "#059669" }}>Reactivate</button>
                     <button onClick={async () => { const ok = await confirm({ title: "Delete", message: `Delete this alert?`, confirmLabel: "Delete", danger: true }); if (ok) deleteAlert(a.id); }} className="adm-btn-sm py-[3px] px-2 text-[11px]" style={{ borderColor: dark ? "rgba(252,165,165,.24)" : "rgba(220,38,38,.18)", color: dark ? "#fca5a5" : "#dc2626" }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                     </button>
                   </div>
                 </div>
@@ -791,7 +790,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
     try { localStorage.setItem("nitro-admin-theme", mode); } catch {}
     if (mode === "day") setDark(false);
     else if (mode === "night") setDark(true);
-    else { const h = new Date().getHours(); setDark(h >= 19 || h < 7); }
+    else { const h = new Date().getHours(), m = new Date().getMinutes(); setDark(h >= 19 || h < 6 || (h === 6 && m < 30) || (h === 18 && m >= 30)); }
   };
 
   // Profile edit
@@ -871,14 +870,14 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
               </div>
               <div className="flex gap-2 mt-3.5">
                 <button onClick={saveProfile} disabled={profileSaving} className="adm-btn-primary" style={{ opacity: profileSaving ? .5 : 1 }}>{profileSaving ? "Saving..." : "Save"}</button>
-                <button onClick={() => { setProfileEditing(false); setEditName(admin?.name || ""); setEditEmail(admin?.email || ""); setProfileMsg(null); }} className="py-2 px-4 rounded-lg bg-none text-sm cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.textSoft }}>Cancel</button>
+                <button onClick={() => { setProfileEditing(false); setEditName(admin?.name || ""); setEditEmail(admin?.email || ""); setProfileMsg(null); }} className="py-2 px-4 rounded-lg bg-none text-sm cursor-pointer transition-transform duration-200 hover:-translate-y-px flex items-center justify-center" style={{ border: `1px solid ${t.cardBorder}`, color: t.textSoft }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
             </>
           ) : (
             <>
               <div className="flex items-center justify-between mb-1">
                 <div className="text-lg font-semibold" style={{ color: t.text }}>{admin?.name || "Admin"}</div>
-                <button onClick={() => setProfileEditing(true)} className="text-[13px] bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ color: t.accent }}>Edit</button>
+                <button onClick={() => setProfileEditing(true)} className="text-[13px] bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px flex items-center gap-1" style={{ color: t.accent }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
               </div>
               <div className="grid grid-cols-3 max-md:grid-cols-1 gap-y-3 gap-x-6 mt-3">
                 {[["Email", admin?.email || ""], ["Role", admin?.role || "admin"]].map(([label, val]) => (
@@ -908,6 +907,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
                 ["deposit", "Deposits", "Alert when a user completes a deposit"],
                 ["large_deposit", "Large deposits", "Alert for deposits above the large-deposit threshold"],
                 ["stale_ticket", "Stale tickets", "Escalation alert for unanswered tickets (15+ min)"],
+                ["price_alert", "Price alerts", "Alert when services are selling below provider cost"],
               ].map(([key, label, hint]) => (
                 <label key={key} className="flex items-center justify-between gap-3 cursor-pointer py-1.5">
                   <div>
@@ -958,13 +958,13 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         <div className="set-card" style={{ background: cardBg, border: cardBorder }}>
           <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
             <div className="set-card-title" style={{ color: t.textMuted }}>Contact emails</div>
-            <div className="set-card-desc" style={{ color: t.textMuted }}>Shown across the site — landing page, support, legal pages, banned page</div>
+            <div className="set-card-desc" style={{ color: t.textMuted }}>Shown across the site — landing page, support, legal pages, and account notices</div>
           </div>
           <div className="set-card-body">
           {emailMsg && <div className="py-2 px-3 rounded-lg mb-3 text-sm" style={msgStyle(emailMsg)}>{emailMsg.type === "success" ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} {emailMsg.text}</div>}
           {[
-            ["site_email_general", "General Email", "info@nitro.ng", "Main contact email shown on landing page, legal pages, banned page"],
-            ["site_email_support", "Support Email", "support@nitro.ng", "Support-specific email shown on support page and ticket responses"],
+            ["site_email_general", "General Email", "info@nitro.ng", "Main contact email shown on landing page and legal pages"],
+            ["site_email_support", "Support Email", "support@nitro.ng", "Support-specific email shown on support, tickets, and banned account pages"],
           ].map(([key, label, placeholder, hint]) => (
             <div key={key} className="mb-3">
               <label className="text-sm block mb-0.5" style={{ color: t.textMuted }}>{label}</label>
@@ -1056,11 +1056,11 @@ function FinanceBreakdownTab({ dark, t }) {
   const [provider, setProvider] = useState("all");
 
   const load = () => {
+    if (!dateValue) return;
     setLoading(true);
     const params = new URLSearchParams();
-    if (dateValue?.start) params.set("from", localDate(dateValue.start));
-    if (dateValue?.end) params.set("to", localDate(dateValue.end));
-    if (!dateValue) params.set("range", "30d");
+    if (dateValue.start) params.set("from", localDate(dateValue.start));
+    if (dateValue.end) params.set("to", localDate(dateValue.end));
     if (platform !== "all") params.set("platform", platform);
     if (tier !== "all") params.set("tier", tier);
     if (provider !== "all") params.set("provider", provider);
@@ -1097,10 +1097,6 @@ function FinanceBreakdownTab({ dark, t }) {
     </div>
   );
 
-  if (loading) return (
-    <div className="adm-stats">{[1,2,3,4,5,6].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-20 rounded-xl`} />)}</div>
-  );
-
   const s = stats || {};
   const p = s.profitability || {};
   const mIn = s.moneyIn || {};
@@ -1115,7 +1111,7 @@ function FinanceBreakdownTab({ dark, t }) {
     <>
       {/* Filters */}
       <div className="flex gap-2 mb-5 flex-wrap justify-end">
-        <DateRangePicker dark={dark} t={t} value={dateValue} onChange={setDateValue} />
+        <DateRangePicker dark={dark} t={t} value={dateValue} onChange={setDateValue} defaultPreset="This month" />
         <DropdownFilter value={platform} onChange={setPlatform} options={[
           { value: "all", label: "All platforms" }, { value: "instagram", label: "Instagram" },
           { value: "tiktok", label: "TikTok" }, { value: "youtube", label: "YouTube" },
@@ -1132,15 +1128,17 @@ function FinanceBreakdownTab({ dark, t }) {
         ]} />
       </div>
 
+      {loading ? <div className="adm-stats">{[1,2,3,4,5,6].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-20 rounded-xl`} />)}</div> : <>
+
       {/* Profitability */}
       <div className={sectionHeading} style={{ color: subText }}>Profitability</div>
       <div className="adm-stats mb-5">
-        <MetricCard label="Gross Revenue" value={fN(p.grossRevenue || 0)} sub="Total order charges" />
-        <MetricCard label="Refunds" value={fN(p.totalRefunds || 0)} sub={`${p.refundRate || 0}% refund rate`} color={red} />
-        <MetricCard label="Net Revenue" value={fN(p.netRevenue || 0)} sub="Excl. cancelled" color={green} />
-        <MetricCard label="Provider Cost" value={fN(p.totalCost || 0)} sub="MTP + JAP + DAO" color={amber} />
+        <MetricCard label="Gross Revenue" value={fN(p.grossRevenue || 0)} sub="Before discounts" />
+        <MetricCard label="Discounts" value={fN(p.totalDiscounts || 0)} sub={`Promo ₦${(p.promoDiscounts || 0).toLocaleString()} | Loyalty ₦${(p.loyaltyDiscounts || 0).toLocaleString()}`} color={amber} />
+        <MetricCard label="Net Revenue" value={fN(p.netRevenue || 0)} sub="What users actually paid" color={green} />
+        <MetricCard label="Provider Cost" value={fN(p.totalCost || 0)} sub="MTP + JAP + DAO" color={red} />
         <MetricCard label="Gross Profit" value={fN(p.grossProfit || 0)} sub={`${p.margin || 0}% margin`} color={p.grossProfit >= 0 ? green : red} />
-        <MetricCard label="Per Order" value={fN(p.profitPerOrder || 0)} sub={`${p.orderCount || 0} orders`} />
+        <MetricCard label="Per Order" value={fN(p.profitPerOrder || 0)} sub={`${p.orderCount || 0} orders | ${p.refundRate || 0}% refund rate`} />
       </div>
 
       {/* Money In / Money Out */}
@@ -1280,6 +1278,7 @@ function FinanceBreakdownTab({ dark, t }) {
             </div>
           ))}
         </div>
+      </>}
       </>}
     </>
   );

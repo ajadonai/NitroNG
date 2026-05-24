@@ -53,6 +53,23 @@ export default function AdminServicesPage({ dark, t }) {
   const [saving, setSaving] = useState(false);
   
   const [syncing, setSyncing] = useState(false);
+  const [syncingPrices, setSyncingPrices] = useState(false);
+
+  const syncPrices = async () => {
+    setSyncingPrices(true);
+    try {
+      const res = await fetch("/api/admin/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sync-prices" }) });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Price sync done", `${data.updated} costs updated · ${data.repriced} repriced · ${data.losers} below cost`);
+        const r = await fetch("/api/admin/services");
+        if (r.ok) { const d = await r.json(); setServices(d.services || []); }
+      } else {
+        toast.error("Sync failed", data.error || "Price sync failed");
+      }
+    } catch { toast.error("Request failed", "Check your connection"); }
+    setSyncingPrices(false);
+  };
 
   const toggleEnabled = async (id, enabled) => {
     try {
@@ -132,6 +149,7 @@ export default function AdminServicesPage({ dark, t }) {
             <div className="adm-subtitle" style={{ color: t.textMuted }}>{services.length} services · {activeCount} active · {inUseCount} in use by Menu Builder</div>
           </div>
           <div className="flex gap-2">
+            <button onClick={syncPrices} disabled={syncingPrices} className="py-2 px-4 rounded-lg text-[13px] font-semibold transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)"}`, background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", color: t.accent, cursor: syncingPrices ? "wait" : "pointer", opacity: syncingPrices ? .5 : 1 }}>{syncingPrices ? "Syncing..." : "Sync Prices"}</button>
             {inUseDisabledCount > 0 && <button onClick={syncEnable} disabled={syncing} className="py-2 px-4 rounded-lg text-[13px] font-semibold transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${dark ? "rgba(110,231,183,.28)" : "rgba(5,150,105,.24)"}`, background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)", color: dark ? "#6ee7b7" : "#059669", cursor: syncing ? "wait" : "pointer", opacity: syncing ? .5 : 1 }}>{syncing ? "Syncing..." : `Enable ${inUseDisabledCount} In-Use`}</button>}
           </div>
         </div>
@@ -200,7 +218,7 @@ export default function AdminServicesPage({ dark, t }) {
                     </div>
                     <div className="flex gap-1.5">
                       <button onClick={() => saveEdit(s.id)} disabled={saving} className="adm-btn-sm" style={{ borderColor: t.accent, color: t.accent, opacity: saving ? .5 : 1 }}>{saving ? "Saving..." : "Save"}</button>
-                      <button onClick={() => setEditMode(null)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Cancel</button>
+                      <button onClick={() => setEditMode(null)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                     </div>
                   </>
                 ) : (
@@ -218,8 +236,8 @@ export default function AdminServicesPage({ dark, t }) {
                     </div>
                     <div className="flex gap-1.5">
                       <button onClick={async () => { const ok = await confirm({ title: s.enabled ? "Disable Service" : "Enable Service", message: s.enabled ? `Disable "${s.name}"? Users won't be able to order it.` : `Re-enable "${s.name}"?`, confirmLabel: s.enabled ? "Disable" : "Enable", danger: s.enabled }); if (ok) toggleEnabled(s.id, s.enabled); }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: s.enabled ? t.red : t.green }}>{s.enabled ? "Disable" : "Enable"}</button>
-                      <button onClick={() => startEdit(s)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>Edit</button>
-                      <button onClick={() => deleteService(s)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: t.red }}>Delete</button>
+                      <button onClick={() => startEdit(s)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                      <button onClick={() => deleteService(s)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: t.red }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
                     </div>
                   </>
                 )}
