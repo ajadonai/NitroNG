@@ -2,29 +2,43 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
 
-export async function GET() {
+export async function GET(req) {
   const { admin, error } = await requireAdmin('tickets');
   if (error) return error;
 
   try {
+    const url = new URL(req.url);
+    const cursor = url.searchParams.get('cursor');
+    const limit = Math.min(Number(url.searchParams.get('limit')) || 50, 200);
+
     const tickets = await prisma.ticket.findMany({
       orderBy: { updatedAt: 'desc' },
-      take: 200,
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       include: {
         user: { select: { name: true, email: true } },
         replies: { orderBy: { createdAt: 'asc' } },
       },
     });
 
-    const ticketDisplayIds = tickets.map(tk => tk.ticketId || tk.id);
+    const hasMore = tickets.length > limit;
+    const items = hasMore ? tickets.slice(0, limit) : tickets;
+    const nextCursor = hasMore ? items[items.length - 1].id : null;
+
+    const ticketDisplayIds = items.map(tk => tk.ticketId || tk.id);
     const activities = await prisma.activityLog.findMany({
-      where: { type: 'ticket' },
+      where: { type: 'ticket', action: { contains: 'ticket' } },
       orderBy: { createdAt: 'desc' },
-      take: 500,
+      take: limit * 10,
     });
     const activityMap = {};
     for (const a of activities) {
-      const mid = ticketDisplayIds.find(id => a.action.includes(id));
+      const mid = ticketDisplayIds.find(id => {
+        const idx = a.action.indexOf(id);
+        if (idx === -1) return false;
+        const afterIdx = idx + id.length;
+        return afterIdx === a.action.length || a.action[afterIdx] === ' ';
+      });
       if (mid) {
         if (!activityMap[mid]) activityMap[mid] = [];
         activityMap[mid].push({ admin: a.adminName, action: a.action.split(' ')[0].toLowerCase(), time: a.createdAt.toISOString() });
@@ -32,7 +46,7 @@ export async function GET() {
     }
 
     return Response.json({
-      tickets: tickets.map(tk => ({
+      tickets: items.map(tk => ({
         id: tk.ticketId || tk.id,
         user: tk.user?.name || 'Unknown',
         email: tk.user?.email || '',
@@ -51,6 +65,8 @@ export async function GET() {
         }),
         activity: activityMap[tk.ticketId || tk.id] || [],
       })),
+      nextCursor,
+      hasMore,
     });
   } catch (err) {
     log.error('Admin Tickets', err.message);

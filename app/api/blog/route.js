@@ -14,9 +14,12 @@ export async function GET(req) {
 
     // Single post by slug
     if (slug) {
-      const post = await prisma.blogPost.findFirst({
-        where: { slug, published: true },
-      });
+      const [post, liveValues] = await Promise.all([
+        prisma.blogPost.findFirst({
+          where: { slug, published: true },
+        }),
+        getLiveValues(),
+      ]);
       if (!post) return Response.json({ error: 'Post not found' }, { status: 404 });
 
       await prisma.blogPost.update({ where: { id: post.id }, data: { views: { increment: 1 } } });
@@ -24,6 +27,8 @@ export async function GET(req) {
       return Response.json({
         post: {
           ...post,
+          excerpt: post.excerpt ? injectLiveValues(post.excerpt, liveValues) : post.excerpt,
+          content: injectLiveValues(post.content, liveValues),
           createdAt: post.createdAt.toISOString(),
           updatedAt: post.updatedAt.toISOString(),
         },

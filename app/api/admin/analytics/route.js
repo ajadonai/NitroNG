@@ -27,7 +27,7 @@ export async function GET(req) {
     const [ordersAgg, userCount, depositAgg, adminCreditAgg, adminGiftAgg, couponBonusAgg, referralBonusAgg, refundAgg, ordersByStatus, topServices, allOrders, chartOrders, chartDeposits] = await Promise.all([
       prisma.order.aggregate({
         where: { createdAt: dateFilter, deletedAt: null, status: { notIn: ['Cancelled'] } },
-        _sum: { charge: true, cost: true },
+        _sum: { charge: true, cost: true, campaignDiscount: true, loyaltyDiscount: true },
         _count: true,
       }),
       prisma.user.count({ where: { createdAt: dateFilter, emailVerified: true } }),
@@ -115,6 +115,8 @@ export async function GET(req) {
 
     const totalRevenue = (ordersAgg._sum.charge || 0) / 100;
     const totalCost = (ordersAgg._sum.cost || 0) / 100;
+    const totalCampaignDiscounts = (ordersAgg._sum.campaignDiscount || 0) / 100;
+    const totalLoyaltyDiscounts = (ordersAgg._sum.loyaltyDiscount || 0) / 100;
     const orderCount = ordersAgg._count || 0;
     const avgOrderValue = orderCount > 0 ? totalRevenue / orderCount : 0;
     const completedCount = ordersByStatus.find(s => s.status === 'Completed')?._count || 0;
@@ -172,6 +174,8 @@ export async function GET(req) {
       totalMoneyOut,
       totalWalletObligations,
       netCashFlow,
+      totalCampaignDiscounts,
+      totalLoyaltyDiscounts,
       depositCount: depositAgg._count || 0,
       chartData,
       byStatus: ordersByStatus.map(s => ({

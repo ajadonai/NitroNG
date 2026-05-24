@@ -50,5 +50,6 @@ export async function register() {
 
 // Separate Node.js-only hook — Next.js 16 calls this only in Node runtime
 export async function onRequestError(err, request, context) {
-  log.error('Request', err?.message, { url: request?.url });
+  const url = request?.url?.replace(/[?#].*/, '');
+  log.error('Request', err?.message, { url });
 }

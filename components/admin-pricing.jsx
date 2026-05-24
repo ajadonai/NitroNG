@@ -78,7 +78,9 @@ export default function AdminPricingPage({ dark, t }) {
   const [floorPct, setFloorPct] = useState(50);
   const [floorCeiling, setFloorCeiling] = useState(5000);
   const [ngBonus, setNgBonus] = useState(25);
-  const [usdRate, setUsdRate] = useState(1600);
+  const [usdMarket, setUsdMarket] = useState(0);
+  const [usdBuffer, setUsdBuffer] = useState(200);
+  const [fxThreshold, setFxThreshold] = useState(20);
   const [tierMults, setTierMults] = useState({ Budget: 1.0, Standard: 1.15, Premium: 1.35 });
   const [saving, setSaving] = useState(false);
   const [recalcing, setRecalcing] = useState(false);
@@ -96,12 +98,15 @@ export default function AdminPricingPage({ dark, t }) {
       if (s.markup_margin_floor) setFloorPct(Number(s.markup_margin_floor));
       if (s.markup_floor_ceiling) setFloorCeiling(Number(s.markup_floor_ceiling));
       if (s.markup_ng_bonus) setNgBonus(Number(s.markup_ng_bonus));
-      if (s.markup_usd_rate) setUsdRate(Number(s.markup_usd_rate));
+      if (s.markup_usd_market) setUsdMarket(Number(s.markup_usd_market));
+      if (s.markup_usd_buffer) setUsdBuffer(Number(s.markup_usd_buffer));
+      if (s.markup_fx_threshold) setFxThreshold(Number(s.markup_fx_threshold));
       try { if (s.markup_tier_multipliers) setTierMults(JSON.parse(s.markup_tier_multipliers)); } catch {}
     });
   }, []);
 
-  const pack = () => ({ markup_brackets: JSON.stringify(brackets), markup_margin_floor: String(floorPct), markup_floor_ceiling: String(floorCeiling), markup_ng_bonus: String(ngBonus), markup_usd_rate: String(usdRate), markup_tier_multipliers: JSON.stringify(tierMults) });
+  const usdRate = usdMarket + usdBuffer;
+  const pack = () => ({ markup_brackets: JSON.stringify(brackets), markup_margin_floor: String(floorPct), markup_floor_ceiling: String(floorCeiling), markup_ng_bonus: String(ngBonus), markup_usd_buffer: String(usdBuffer), markup_fx_threshold: String(fxThreshold), markup_usd_rate: String(usdRate), markup_tier_multipliers: JSON.stringify(tierMults) });
 
   const save = async () => {
     setSaving(true);
@@ -118,7 +123,7 @@ export default function AdminPricingPage({ dark, t }) {
     setRecalcing(false);
   };
 
-  const reset = () => { setBrackets(DEF_BRACKETS); setFloorPct(50); setFloorCeiling(5000); setNgBonus(25); setUsdRate(1600); toast.info("Reset to defaults", "Not saved yet"); };
+  const reset = () => { setBrackets(DEF_BRACKETS); setFloorPct(50); setFloorCeiling(5000); setNgBonus(25); setUsdBuffer(200); setFxThreshold(20); toast.info("Reset to defaults", "Not saved yet"); };
 
   // Simulator
   const simSell = calcSell(simCost, brackets, floorPct, floorCeiling);
@@ -217,11 +222,23 @@ export default function AdminPricingPage({ dark, t }) {
 
         <div className="adm-card p-5" style={cardS}>
           <div className="set-card-title" style={{ color: t.textMuted }}>Exchange rate</div>
-          <div className="set-card-desc" style={{ color: t.textMuted }}>MTP costs are in USD — this converts to Naira.</div>
+          <div className="set-card-desc" style={{ color: t.textMuted }}>Auto-updates daily — market rate + your buffer.</div>
           <div className="set-card-divider" style={divS} />
-          <Row dark={dark} label="USD → NGN" hint={`$1 = ₦${usdRate.toLocaleString()}`}>
+          <Row dark={dark} label="Market rate" hint="Updated automatically by FX cron">
+            <span className="text-base" style={{ color: t.text }}>{usdMarket ? `₦${usdMarket.toLocaleString()}` : '—'}</span>
+          </Row>
+          <Row dark={dark} label="Buffer" hint="Your markup on top of market rate">
             <span className="text-sm" style={{ color: t.textMuted }}>₦</span>
-            <NumInput dark={dark} value={usdRate} onChange={setUsdRate} min={1} max={999999} fallback={1600} width={80} />
+            <NumInput dark={dark} value={usdBuffer} onChange={setUsdBuffer} min={0} max={1000} fallback={200} width={80} />
+          </Row>
+          <Row dark={dark} label="Update threshold" hint="Only update if market moves this much">
+            <span className="text-sm" style={{ color: t.textMuted }}>₦</span>
+            <NumInput dark={dark} value={fxThreshold} onChange={setFxThreshold} min={1} max={500} fallback={20} width={80} />
+          </Row>
+          <div className="set-card-divider" style={divS} />
+          <Row dark={dark} label="Total" hint="Rate used for all pricing">
+            <span className="text-lg font-bold" style={{ color: t.accent }}>₦{usdRate.toLocaleString()}</span>
+            <span className="text-xs ml-1.5" style={{ color: t.textMuted }}>/ $1</span>
           </Row>
         </div>
       </div>

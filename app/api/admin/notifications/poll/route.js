@@ -18,7 +18,7 @@ export async function GET(req) {
   const staleMinutes = 15;
   const staleThreshold = new Date(Date.now() - staleMinutes * 60 * 1000);
 
-  const [newTickets, newReplies, newDeposits, staleTickets] = await Promise.all([
+  const [newTickets, newReplies, newDeposits, pendingManual, staleTickets, priceAlertSetting] = await Promise.all([
     prisma.ticket.findMany({
       where: { createdAt: { gt: sinceDate } },
       select: { ticketId: true, subject: true, createdAt: true, user: { select: { name: true } } },
@@ -37,6 +37,12 @@ export async function GET(req) {
       orderBy: { createdAt: 'desc' },
       take: 10,
     }),
+    prisma.transaction.findMany({
+      where: { type: 'deposit', status: 'Pending', method: 'manual', createdAt: { gt: sinceDate } },
+      select: { id: true, amount: true, createdAt: true, user: { select: { name: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    }),
     prisma.ticket.findMany({
       where: {
         unreadByAdmin: true,
@@ -47,6 +53,7 @@ export async function GET(req) {
       orderBy: { updatedAt: 'asc' },
       take: 5,
     }),
+    prisma.setting.findUnique({ where: { key: 'price_alerts' } }),
   ]);
 
   const events = [];
@@ -69,10 +76,23 @@ export async function GET(req) {
     events.push({ type, id: d.id, amount: d.amount, user: d.user?.name || 'User', at: d.createdAt.toISOString() });
   }
 
+  for (const d of pendingManual) {
+    events.push({ type: 'pending_deposit', id: d.id, amount: d.amount, user: d.user?.name || 'User', at: d.createdAt.toISOString() });
+  }
+
   for (const t of staleTickets) {
     if (t.lockedBy && t.lockedBy !== admin.name) continue;
     const mins = Math.round((Date.now() - new Date(t.updatedAt).getTime()) / 60000);
     events.push({ type: 'stale_ticket', id: t.ticketId, title: t.subject, user: t.user?.name || 'User', minutes: mins, at: t.updatedAt.toISOString() });
+  }
+
+  if (priceAlertSetting?.value) {
+    try {
+      const pa = JSON.parse(priceAlertSetting.value);
+      if (pa.losers?.length > 0 && pa.checkedAt && new Date(pa.checkedAt) > sinceDate) {
+        events.push({ type: 'price_alert', id: 'price_alert', count: pa.losers.length, at: pa.checkedAt });
+      }
+    } catch {}
   }
 
   events.sort((a, b) => new Date(b.at) - new Date(a.at));

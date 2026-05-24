@@ -4,6 +4,7 @@ import { log } from '@/lib/logger';
 import { signUserToken, setUserCookie, detectDevice, hashToken } from '@/lib/auth';
 import { generateReferralCode } from '@/lib/utils';
 import { sendWelcomeEmail } from '@/lib/email';
+import { isDisposableEmail } from '@/lib/validate';
 import { cookies, headers } from 'next/headers';
 
 export async function GET(req) {
@@ -40,10 +41,11 @@ export async function GET(req) {
     }
     cookieStore.delete('google_oauth_state');
 
-    // Extract referral code from state if present
     let referralCode = null;
-    if (state.includes('|ref:')) {
-      referralCode = state.split('|ref:')[1];
+    let viaSlug = null;
+    for (const part of state.split('|').slice(1)) {
+      if (part.startsWith('ref:')) referralCode = part.slice(4);
+      if (part.startsWith('via:')) viaSlug = part.slice(4);
     }
 
     // Exchange code for tokens
@@ -96,6 +98,11 @@ export async function GET(req) {
       }
 
     } else {
+      // New user — block disposable emails
+      if (isDisposableEmail(email)) {
+        return NextResponse.redirect(`${APP_URL}/?error=disposable_email`);
+      }
+
       // New user — create account
       let refCode = generateReferralCode();
       while (await prisma.user.findUnique({ where: { referralCode: refCode } })) {
@@ -124,7 +131,8 @@ export async function GET(req) {
           password: '', // No password for Google-only accounts
           referralCode: refCode,
           referredBy,
-          emailVerified: true, // Google already verified the email
+          emailVerified: true,
+          signupSource: viaSlug || null,
           signupIp,
           tosAcceptedAt: new Date(),
           tosVersion,

@@ -22,6 +22,7 @@ const DEFAULT_PRESETS = [
   { label: "All time", value: null },
   { label: "Today", value: () => { const d = startOfDay(new Date()); return { start: d, end: d }; } },
   { label: "7 days", value: () => { const e = startOfDay(new Date()), s = new Date(e); s.setDate(s.getDate() - 6); return { start: s, end: e }; } },
+  { label: "This month", value: () => { const now = new Date(); return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: startOfDay(now) }; } },
   { label: "30 days", value: () => { const e = startOfDay(new Date()), s = new Date(e); s.setDate(s.getDate() - 29); return { start: s, end: e }; } },
 ];
 
@@ -107,17 +108,29 @@ function MiniCalendar({ month, year, start, end, hovered, onSelect, onHover, dar
   );
 }
 
-export function DateRangePicker({ dark, t, value, onChange, presets }) {
+export function DateRangePicker({ dark, t, value, onChange, presets, defaultPreset }) {
   const [open, setOpen] = useState(false);
   const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
   const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
   const [picking, setPicking] = useState(null);
   const [hovered, setHovered] = useState(null);
-  const [presetLabel, setPresetLabel] = useState(null);
+  const items = presets || DEFAULT_PRESETS;
+  const [presetLabel, setPresetLabel] = useState(() => {
+    if (defaultPreset) {
+      const match = (presets || DEFAULT_PRESETS).find(p => p.label === defaultPreset);
+      if (match) return match.label;
+    }
+    return null;
+  });
   const [isMobile, setIsMobile] = useState(false);
   const ref = useRef(null);
   const dropRef = useRef(null);
-  const items = presets || DEFAULT_PRESETS;
+
+  useEffect(() => {
+    if (!defaultPreset || value) return;
+    const match = items.find(p => p.label === defaultPreset);
+    if (match?.value) onChange(match.value());
+  }, []);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 640);

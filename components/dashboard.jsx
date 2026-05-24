@@ -617,6 +617,7 @@ function DashboardInner({ initialData }) {
   const [tosChecked, setTosChecked] = useState(false);
   const [tosAccepting, setTosAccepting] = useState(false);
   const [socialLinks, setSocialLinks] = useState({});
+  const [activePromotion, setActivePromotion] = useState(null);
   const [paymentStatus, setPaymentStatusRaw] = useState(() => {
     if (typeof window === 'undefined') return null;
     try { const s = sessionStorage.getItem("nitro-payment-status"); return s ? JSON.parse(s) : null; } catch { return null; }
@@ -722,6 +723,7 @@ function DashboardInner({ initialData }) {
         if (data.currentTosVersion) setCurrentTosVersion(data.currentTosVersion);
       }
     } catch {}
+    try { const cr = await fetch("/api/promotion"); if (cr.ok) { const cd = await cr.json(); setActivePromotion(cd.active ? cd : null); } } catch {}
   };
 
   /* Auto-poll when on orders page (every 45s) */
@@ -753,8 +755,9 @@ function DashboardInner({ initialData }) {
             if (data.currentTosVersion) setCurrentTosVersion(data.currentTosVersion);
           } else setUser({ name: "User", email: "", balance: 0, refCode: "—", refs: 0, earnings: 0 });
         }
-        /* Fetch social links */
+        /* Fetch social links + active promotion */
         try { const sr = await fetch("/api/settings"); if (sr.ok) { const sd = await sr.json(); setSocialLinks(sd.settings || {}); } } catch {}
+        try { const cr = await fetch("/api/promotion"); if (cr.ok) { const cd = await cr.json(); if (cd.active) setActivePromotion(cd); } } catch {}
         /* Load notification state + preferences from server (merges with localStorage) */
         try {
           const nr = await fetch("/api/auth/notifications");
@@ -769,6 +772,8 @@ function DashboardInner({ initialData }) {
               const saved = localStorage.getItem("nitro-theme");
               if (!saved || saved === "auto") {
                 setThemeMode(nd.themePreference);
+                setDark(nd.themePreference === "night");
+                try { localStorage.setItem("nitro-theme", nd.themePreference); } catch {}
               }
             }
             // Sync perPage from server
@@ -956,7 +961,7 @@ function DashboardInner({ initialData }) {
       case "overview":
         return <OverviewPage user={user} orders={orders} alerts={alerts} dark={dark} t={t} setActive={setActive} a2hs={{ ready: a2hsReady, isIos, dismissed: a2hsDismissed, onInstall: handleA2hsInstall, onDismiss: dismissA2hs }} />;
       case "services":
-        return <NewOrderPage dark={dark} t={t} user={user} onOrderSuccess={refreshDashboard} onViewOrders={() => setActive("orders")} onTopUp={() => setActive("add-funds")} platform={noPlatform} setPlatform={setNoPlatform} selSvc={noSelSvc} setSelSvc={setNoSelSvc} selTier={noSelTier} setSelTier={setNoSelTier} qty={noQty} setQty={setNoQty} link={noLink} setLink={setNoLink} comments={noComments} setComments={setNoComments} catModal={noCatModal} setCatModal={setNoCatModal} tourActive={showOrderTour} />;
+        return <NewOrderPage dark={dark} t={t} user={user} onOrderSuccess={refreshDashboard} onViewOrders={() => setActive("orders")} onTopUp={() => setActive("add-funds")} platform={noPlatform} setPlatform={setNoPlatform} selSvc={noSelSvc} setSelSvc={setNoSelSvc} selTier={noSelTier} setSelTier={setNoSelTier} qty={noQty} setQty={setNoQty} link={noLink} setLink={setNoLink} comments={noComments} setComments={setNoComments} catModal={noCatModal} setCatModal={setNoCatModal} tourActive={showOrderTour} activePromotion={activePromotion} />;
       case "orders":
         return <OrdersPage orders={orders} txs={enrichedTxs} dark={dark} t={t} />;
       case "referrals":
@@ -1103,6 +1108,13 @@ function DashboardInner({ initialData }) {
         {/* ── MAIN ── */}
         <main className="dash-main" style={{ background: t.bg, ...(isSupport ? { overflow: "hidden" } : {}) }}>
           <AnnouncementBanner alerts={alerts} dark={dark} mode="dashboard" />
+          {activePromotion && (
+            <div className="mb-3 rounded-xl px-4 py-2.5 flex items-center gap-2.5" style={{ background: activePromotion.bannerColor ? `${activePromotion.bannerColor}22` : (dark ? 'rgba(16,185,129,.12)' : 'rgba(16,185,129,.08)'), border: `1px solid ${activePromotion.bannerColor || '#10b981'}44` }}>
+              <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: activePromotion.bannerColor || '#10b981' }} />
+              <span className="text-sm font-medium flex-1" style={{ color: t.text }}>{activePromotion.bannerCopy}</span>
+              <span className="px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 m text-center" style={{ background: activePromotion.bannerColor || '#10b981', color: '#fff' }}>{activePromotion.discountPercent}% OFF{activePromotion.maxDiscountPerOrder ? <><br /><span className="font-medium opacity-90" style={{ fontSize: 10 }}>up to ₦{(activePromotion.maxDiscountPerOrder / 100).toLocaleString()}</span></> : ''}</span>
+            </div>
+          )}
           {!isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isGuide && !isLeaderboard && !isAudit && !isCleanup && !isEarn && <div className="pb-3.5 max-md:pb-2">
             <div className="text-xl max-md:text-lg font-semibold mb-0.5" style={{ color: t.text }}>What's good, {firstName}</div>
             <div className="text-sm" style={{ color: t.textMuted }}>Here's your empire at a glance</div>

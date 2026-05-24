@@ -103,6 +103,17 @@ export async function GET(req) {
     results.tickets = { error: err.message };
   }
 
+  // ═══ LOG RETENTION: prune activity logs older than 90 days ═══
+  try {
+    const logCutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const { count } = await prisma.activityLog.deleteMany({ where: { createdAt: { lt: logCutoff } } });
+    results.logRetention = { pruned: count };
+    if (count > 0) log.info('Log retention', `Pruned ${count} activity logs older than 90 days`);
+  } catch (err) {
+    log.error('Log retention', err.message);
+    results.logRetention = { error: err.message };
+  }
+
   // ═══ BALANCE: check provider balances + alert if low ═══
   try {
     const LOW_BALANCE_USD = 10;

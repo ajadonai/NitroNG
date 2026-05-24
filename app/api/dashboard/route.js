@@ -185,6 +185,7 @@ export async function GET() {
         tier: o.tier?.tier || null,
         link: o.link, quantity: o.quantity,
         charge: o.charge / 100,
+        remains: o.remains,
         status: o.status,
         batchId: o.batchId || null,
         apiOrderId: o.apiOrderId || null,

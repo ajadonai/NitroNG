@@ -48,7 +48,7 @@ export async function GET(req) {
       topSpenders,
     ] = await Promise.all([
       // Revenue & cost (excluding cancelled)
-      prisma.order.aggregate({ where: orderWhere, _sum: { charge: true, cost: true }, _count: true }),
+      prisma.order.aggregate({ where: orderWhere, _sum: { charge: true, cost: true, campaignDiscount: true, loyaltyDiscount: true }, _count: true }),
       // Cancelled orders
       prisma.order.aggregate({ where: { ...orderWhere, status: 'Cancelled' }, _sum: { charge: true }, _count: true }),
       // Money in/out
@@ -117,10 +117,14 @@ export async function GET(req) {
       .map(t => ({ ...t, profit: t.revenue - t.cost, margin: t.revenue > 0 ? Math.round(((t.revenue - t.cost) / t.revenue) * 100) : 0 }))
       .sort((a, b) => b.profit - a.profit);
 
-    const grossRevenue = ordersAgg._sum.charge || 0;
+    const chargeTotal = ordersAgg._sum.charge || 0;
     const totalCost = ordersAgg._sum.cost || 0;
     const totalRefunds = refundsAgg._sum.amount || 0;
-    const netRevenue = grossRevenue;
+    const totalCampaignDiscounts = ordersAgg._sum.campaignDiscount || 0;
+    const totalLoyaltyDiscounts = ordersAgg._sum.loyaltyDiscount || 0;
+    const totalDiscounts = totalCampaignDiscounts + totalLoyaltyDiscounts;
+    const grossRevenue = chargeTotal + totalDiscounts;
+    const netRevenue = chargeTotal;
     const grossProfit = netRevenue - totalCost;
     const orderCount = ordersAgg._count || 0;
     const refundRate = orderCount > 0 ? Math.round(((cancelledAgg._count || 0) / (orderCount + (cancelledAgg._count || 0))) * 1000) / 10 : 0;
@@ -131,7 +135,14 @@ export async function GET(req) {
       range,
       filters: { platform, tier, provider },
       profitability: {
-        grossRevenue: k(grossRevenue), totalRefunds: k(totalRefunds), netRevenue: k(netRevenue), totalCost: k(totalCost), grossProfit: k(grossProfit),
+        grossRevenue: k(grossRevenue),
+        promoDiscounts: k(totalCampaignDiscounts),
+        loyaltyDiscounts: k(totalLoyaltyDiscounts),
+        totalDiscounts: k(totalDiscounts),
+        netRevenue: k(netRevenue),
+        totalRefunds: k(totalRefunds),
+        totalCost: k(totalCost),
+        grossProfit: k(grossProfit),
         margin: netRevenue > 0 ? Math.round((grossProfit / netRevenue) * 1000) / 10 : 0,
         profitPerOrder: orderCount > 0 ? k(Math.round(grossProfit / orderCount)) : 0,
         orderCount, refundRate,

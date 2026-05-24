@@ -23,6 +23,7 @@ export default function BannedPage() {
     redSoft: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.03)",
     redBorder: dark ? "rgba(252,165,165,.19)" : "rgba(220,38,38,.14)",
   };
+  const supportEmail = SITE.email.support;
 
   return (
     <div className="min-h-dvh flex flex-col relative overflow-hidden" style={{ background: t.bg, fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif" }}>
@@ -81,7 +82,7 @@ export default function BannedPage() {
 
           {/* Actions */}
           <div className="flex gap-3 justify-center flex-wrap">
-            <a href={`mailto:${SITE.email.general}`} className="py-3.5 px-8 rounded-xl text-[15px] font-semibold no-underline flex items-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", boxShadow: "0 4px 20px rgba(196,125,142,.3)" }}>
+            <a href={`mailto:${supportEmail}`} className="py-3.5 px-8 rounded-xl text-[15px] font-semibold no-underline flex items-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", boxShadow: "0 4px 20px rgba(196,125,142,.3)" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
               Contact Support
             </a>
@@ -91,7 +92,7 @@ export default function BannedPage() {
           </div>
 
           <p className="text-[13px] mt-6 leading-[1.5]" style={{ color: t.tm }}>
-            Think this is an error? Email us at <a href={`mailto:${SITE.email.general}`} className="no-underline" style={{ color: t.ac }}>{SITE.email.general}</a> with your account email and we'll review it within 24 hours.
+            Think this is an error? Email us at <a href={`mailto:${supportEmail}`} className="no-underline" style={{ color: t.ac }}>{supportEmail}</a> with your account email and we'll review it within 24 hours.
           </p>
         </div>
       </div>
