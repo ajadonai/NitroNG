@@ -3,7 +3,10 @@ import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
 
 const ALLOWED_KEYS = new Set([
-  'markup_usd_rate', 'markup_usd_buffer', 'markup_usd_market', 'markup_fx_threshold', 'min_deposit', 'min_order',
+  'markup_brackets', 'markup_margin_floor', 'markup_floor_ceiling', 'markup_ng_bonus',
+  'markup_usd_rate', 'markup_usd_buffer', 'markup_usd_market', 'markup_fx_threshold',
+  'markup_tier_multipliers',
+  'min_deposit', 'min_order',
   'ref_enabled', 'ref_referrer_bonus', 'ref_invitee_bonus', 'ref_min_deposit',
   'loyalty_enabled', 'loyalty_tiers',
   'leaderboard_auto_reward', 'leaderboard_reward_announcement',
