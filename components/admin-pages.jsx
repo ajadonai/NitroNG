@@ -958,13 +958,13 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         <div className="set-card" style={{ background: cardBg, border: cardBorder }}>
           <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
             <div className="set-card-title" style={{ color: t.textMuted }}>Contact emails</div>
-            <div className="set-card-desc" style={{ color: t.textMuted }}>Shown across the site — landing page, support, legal pages, banned page</div>
+            <div className="set-card-desc" style={{ color: t.textMuted }}>Shown across the site — landing page, support, legal pages, and account notices</div>
           </div>
           <div className="set-card-body">
           {emailMsg && <div className="py-2 px-3 rounded-lg mb-3 text-sm" style={msgStyle(emailMsg)}>{emailMsg.type === "success" ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} {emailMsg.text}</div>}
           {[
-            ["site_email_general", "General Email", "info@nitro.ng", "Main contact email shown on landing page, legal pages, banned page"],
-            ["site_email_support", "Support Email", "support@nitro.ng", "Support-specific email shown on support page and ticket responses"],
+            ["site_email_general", "General Email", "info@nitro.ng", "Main contact email shown on landing page and legal pages"],
+            ["site_email_support", "Support Email", "support@nitro.ng", "Support-specific email shown on support, tickets, and banned account pages"],
           ].map(([key, label, placeholder, hint]) => (
             <div key={key} className="mb-3">
               <label className="text-sm block mb-0.5" style={{ color: t.textMuted }}>{label}</label>
