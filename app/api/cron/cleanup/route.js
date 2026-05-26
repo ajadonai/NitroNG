@@ -13,6 +13,13 @@ export async function GET(req) {
   }
 
   try {
+    // Auto-expire stale pending manual deposits older than 10 minutes
+    const manualCutoff = new Date(Date.now() - 10 * 60 * 1000);
+    const { count: expiredManual } = await prisma.transaction.deleteMany({
+      where: { type: 'deposit', method: 'manual', status: 'Pending', createdAt: { lt: manualCutoff } },
+    });
+    if (expiredManual > 0) log.info('Cleanup', `Deleted ${expiredManual} stale pending manual deposits`);
+
     const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
 
     // Find inactive users older than 30 days with no orders and zero balance
@@ -86,6 +93,7 @@ export async function GET(req) {
     return Response.json({
       deleted: toDelete.length,
       permanentlyDeleted: permDeleted,
+      expiredManualDeposits: expiredManual,
       emails: toDelete.map(u => u.email),
     });
   } catch (err) {
