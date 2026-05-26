@@ -1133,7 +1133,7 @@ export function AdminAPIPage({ dark, t }) {
       const res = await fetch("/api/admin/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sync", provider: provider.id }) });
       const data = await res.json();
       if (res.ok) {
-        setResult({ id: provider.id, type: "success", message: `Synced! ${data.created} new, ${data.updated} updated, ${data.skipped} skipped (${data.total} total)` });
+        setResult({ id: provider.id, type: "success", message: `Synced! ${data.created} new, ${data.updated} updated${data.disabled ? `, ${data.disabled} disabled` : ''}, ${data.skipped} skipped (${data.total} total)` });
         loadData(); // Refresh counts
       } else setResult({ id: provider.id, type: "error", message: data.error || "Sync failed" });
     } catch (e) { setResult({ id: provider.id, type: "error", message: e.message || "Network error" }); }
