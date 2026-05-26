@@ -60,7 +60,7 @@ export async function GET(req) {
             newStatus = 'Partial';
           } else if (['cancelled', 'canceled', 'refunded'].includes(providerStatus)) {
             newStatus = 'Cancelled';
-          } else if (['in progress', 'inprogress', 'processing'].includes(providerStatus)) {
+          } else if (['in progress', 'inprogress', 'processing', 'pending'].includes(providerStatus)) {
             newStatus = 'Processing';
           }
 

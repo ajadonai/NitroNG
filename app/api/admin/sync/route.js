@@ -161,7 +161,7 @@ export async function POST(req) {
             if (['completed', 'complete'].includes(providerStatus)) newStatus = 'Completed';
             else if (['partial', 'partially completed'].includes(providerStatus)) newStatus = 'Partial';
             else if (['cancelled', 'canceled', 'refunded'].includes(providerStatus)) newStatus = 'Cancelled';
-            else if (['in progress', 'inprogress', 'processing'].includes(providerStatus)) newStatus = 'Processing';
+            else if (['in progress', 'inprogress', 'processing', 'pending'].includes(providerStatus)) newStatus = 'Processing';
 
             const liveRemains = result.remains != null ? Number(result.remains) : null;
 
