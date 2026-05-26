@@ -1131,10 +1131,15 @@ export function AdminAPIPage({ dark, t }) {
     setSyncing(provider.id); setResult(null);
     try {
       const res = await fetch("/api/admin/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sync", provider: provider.id }) });
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch {
+        setResult({ id: provider.id, type: "error", message: res.status === 504 ? "Sync timed out — try again or upgrade Vercel to Pro" : `Server error (${res.status})` });
+        setSyncing(null); return;
+      }
       if (res.ok) {
         setResult({ id: provider.id, type: "success", message: `Synced! ${data.created} new, ${data.updated} updated${data.disabled ? `, ${data.disabled} disabled` : ''}, ${data.skipped} skipped (${data.total} total)` });
-        loadData(); // Refresh counts
+        loadData();
       } else setResult({ id: provider.id, type: "error", message: data.error || "Sync failed" });
     } catch (e) { setResult({ id: provider.id, type: "error", message: e.message || "Network error" }); }
     setSyncing(null);

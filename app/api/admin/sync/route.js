@@ -55,15 +55,14 @@ export async function POST(req) {
       const ms = {};
       markupRows.forEach(s => { ms[s.key] = s.value; });
 
-      // Scope by provider — different providers can have same apiId numbers
       const existing = await prisma.service.findMany({
         where: { provider: providerId },
-        select: { id: true, apiId: true, markup: true },
+        select: { id: true, apiId: true, markup: true, name: true, category: true, costPer1k: true, min: true, max: true, refill: true, avgTime: true },
       });
       const existingMap = {};
       existing.forEach(s => { existingMap[s.apiId] = s; });
 
-      let created = 0, updated = 0, skipped = 0;
+      let created = 0, updated = 0, unchanged = 0, skipped = 0;
       const toCreate = [];
       const toUpdate = [];
 
@@ -75,24 +74,23 @@ export async function POST(req) {
         if (rawCost > 2000000000 || rawCost < 0 || isNaN(rawCost)) { skipped++; continue; }
         const costPer1k = rawCost;
         const category = categorize(svc.category);
-        const data = {
-          name: svc.name,
-          category,
-          costPer1k,
-          min: Number(svc.min) || 10,
-          max: Number(svc.max) || 100000,
-          refill: svc.refill === true || svc.refill === 'true',
-          avgTime: svc.average_time || '0-2 hrs',
-        };
+        const min = Number(svc.min) || 10;
+        const max = Number(svc.max) || 100000;
+        const refill = svc.refill === true || svc.refill === 'true';
+        const avgTime = svc.average_time || '0-2 hrs';
 
         const ex = existingMap[apiId];
         if (ex) {
-          toUpdate.push(prisma.service.update({ where: { id: ex.id }, data }));
+          if (ex.name === svc.name && ex.category === category && ex.costPer1k === costPer1k && ex.min === min && ex.max === max && ex.refill === refill && ex.avgTime === avgTime) {
+            unchanged++;
+            continue;
+          }
+          toUpdate.push(prisma.service.update({ where: { id: ex.id }, data: { name: svc.name, category, costPer1k, min, max, refill, avgTime } }));
           updated++;
         } else {
           const initialSell = calculateTierPrice(costPer1k, 'Standard', ms, false) || Math.round(costPer1k * 2);
           toCreate.push({
-            apiId, ...data, provider: providerId, sellPer1k: initialSell, markup: defaultMarkup, enabled: false,
+            apiId, name: svc.name, category, costPer1k, min, max, refill, avgTime, provider: providerId, sellPer1k: initialSell, markup: defaultMarkup, enabled: false,
           });
           created++;
         }
