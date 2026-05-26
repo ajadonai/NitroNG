@@ -279,12 +279,24 @@ export default function AdminPricingPage({ dark, t }) {
           ))}
         </div>
 
-        <div className="text-[13px] leading-[1.6]" style={{ color: t.textMuted }}>
-          ₦{simCost.toLocaleString()} → <strong style={{ color: t.text }}>{simB?.label}</strong> ({simB?.multiplier}×) → ₦{Math.round(simCost * (simB?.multiplier || 1)).toLocaleString()}
-          {simCost < floorCeiling && simMargin >= floorPct && `. Floor: ${simMargin}% ≥ ${floorPct}% pass`}
-          {simCost < floorCeiling && simMargin < floorPct && `. Floor raised price to ₦${simSell.toLocaleString()}`}
-          {simCost >= floorCeiling && ". Floor skipped (above ceiling)"}
-          {`. 🇳🇬 +${ngBonus}% = ₦${simNG.toLocaleString()}`}
+        <div className="rounded-lg py-3 px-3.5" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>
+          <div className="text-[11px] uppercase tracking-[1px] font-semibold mb-2" style={{ color: t.textMuted }}>How this price was calculated</div>
+          <div className="flex flex-col gap-1.5 text-[13px] leading-[1.5]" style={{ color: t.textMuted }}>
+            <div><span style={{ color: t.textSoft }}>1.</span> Provider cost: <strong style={{ color: t.text }}>₦{simCost.toLocaleString()}</strong> per 1K</div>
+            <div><span style={{ color: t.textSoft }}>2.</span> Falls in <strong style={{ color: t.text }}>{simB?.label}</strong> bracket (₦{simB?.min?.toLocaleString()}–{!simB?.max || simB?.max >= 999999999 ? "∞" : `₦${simB?.max?.toLocaleString()}`}) → multiply by <strong style={{ color: t.text }}>{simB?.multiplier}×</strong> = ₦{Math.round(simCost * (simB?.multiplier || 1)).toLocaleString()}</div>
+            <div>
+              <span style={{ color: t.textSoft }}>3.</span> Margin floor check:{" "}
+              {simCost >= floorCeiling
+                ? <span>skipped <span style={{ color: t.textSoft }}>(cost above ₦{floorCeiling.toLocaleString()} ceiling)</span></span>
+                : simMargin >= floorPct
+                  ? <span style={{ color: dark ? "#6ee7b7" : "#059669" }}>passed</span>
+                  : <span style={{ color: dark ? "#fca5a5" : "#dc2626" }}>margin too low — price raised to ₦{simSell.toLocaleString()}</span>
+              }
+              {simCost < floorCeiling && <span> — current margin is <strong style={{ color: simMargin >= floorPct ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{simMargin}%</strong> (min {floorPct}%)</span>}
+            </div>
+            <div><span style={{ color: t.textSoft }}>4.</span> Base sell price: <strong style={{ color: t.text }}>₦{simSell.toLocaleString()}</strong></div>
+            <div><span style={{ color: t.textSoft }}>5.</span> 🇳🇬 Nigerian bonus: +{ngBonus}% → Standard becomes <strong style={{ color: dark ? "#4ade80" : "#16a34a" }}>₦{simNG.toLocaleString()}</strong></div>
+          </div>
         </div>
       </div>
 
