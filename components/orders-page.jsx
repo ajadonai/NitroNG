@@ -352,7 +352,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
         setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, status: "Cancelled" } : o)));
         toast.success("Order cancelled", data.refunded ? `₦${data.refunded.toLocaleString()} refunded to wallet` : "Cancelled successfully");
       } else if (action === "reorder") {
-        toast.success("Reorder placed", data.order?.id || "");
+        toast.success(data.queued ? "Reorder queued" : "Reorder placed", data.queued ? "Will start when your current order for this link completes." : (data.order?.id || ""));
       }
     } catch { toast.error("Request failed", "Check your connection and try again"); }
     setActionLoading(null);

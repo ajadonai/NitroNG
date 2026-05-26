@@ -588,7 +588,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       });
       const data = await res.json();
       if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong"); setOrderLoading(false); return; }
-      setOrderSuccess({ ...data.order, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service" });
+      setOrderSuccess({ ...data.order, queued: data.queued, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service" });
       setLink("");
       if (onOrderSuccess) onOrderSuccess();
     } catch (err) {
@@ -868,11 +868,13 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           <div role="dialog" aria-modal="true" aria-label="Order summary" className="w-full rounded-[14px] overflow-y-auto shadow-[0_20px_60px_rgba(0,0,0,.38)] border border-solid max-h-[calc(100dvh-84px)] desktop:max-w-[420px] desktop:max-h-[90vh] desktop:rounded-2xl" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#ffffff", borderColor: t.cardBorder }}>
             {orderSuccess ? (
               <div className="p-6 max-md:p-5 text-center">
-                <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)" }}>
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: orderSuccess.queued ? (dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.08)") : (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)") }}>
+                  {orderSuccess.queued
+                    ? <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    : <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>}
                 </div>
-                <div className="text-lg font-semibold mb-1" style={{ color: t.text }}>Order placed</div>
-                <div className="text-sm mb-5" style={{ color: t.textMuted }}>Your order starts processing in 10–15 minutes. You can track progress from your order history.</div>
+                <div className="text-lg font-semibold mb-1" style={{ color: t.text }}>{orderSuccess.queued ? "Order queued" : "Order placed"}</div>
+                <div className="text-sm mb-5" style={{ color: t.textMuted }}>{orderSuccess.queued ? "You have an active order for this link. This order will start automatically once it completes." : "Your order starts processing in 10–15 minutes. You can track progress from your order history."}</div>
                 <div className="flex flex-col gap-3 rounded-xl p-4 mb-5 text-left" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `1px solid ${t.cardBorder}` }}>
                   {[["Service", orderSuccess.service], ["Quantity", (orderSuccess.quantity || 0).toLocaleString()], ["Charged", `₦${(orderSuccess.charge || 0).toLocaleString()}`]].map(([label, val]) => (
                     <div key={label} className="flex justify-between text-sm">

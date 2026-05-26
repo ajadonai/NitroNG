@@ -132,13 +132,13 @@ export async function GET(req) {
       } catch (e) { log.warn('Batch completion check', e.message); }
     }
 
-    // Retry pending batch orders that failed to dispatch
+    // Retry pending orders that failed to dispatch or are queued behind duplicates
     stats.retried = 0;
     stats.retryPlaced = 0;
     try {
       const retryable = await prisma.order.findMany({
         where: {
-          status: 'Pending', apiOrderId: null, batchId: { not: null },
+          status: 'Pending', apiOrderId: null,
           retryCount: { lt: 5 },
           createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
           OR: [
@@ -151,6 +151,14 @@ export async function GET(req) {
       });
 
       for (const order of retryable) {
+        // Skip if same service + link has an active order on the provider (queued duplicate)
+        if (order.link && order.serviceId) {
+          const blocking = await prisma.order.findFirst({
+            where: { serviceId: order.serviceId, link: order.link, status: { in: ['Pending', 'Processing', 'In progress'] }, apiOrderId: { not: null }, id: { not: order.id }, deletedAt: null },
+          });
+          if (blocking) continue;
+        }
+
         const claimed = await prisma.order.updateMany({
           where: { id: order.id, status: 'Pending', apiOrderId: null },
           data: { status: 'Dispatching', dispatchedAt: new Date() },
