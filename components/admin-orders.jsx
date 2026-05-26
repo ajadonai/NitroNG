@@ -287,8 +287,8 @@ export default function AdminOrdersPage({ dark, t }) {
                               </div>
                             )}
 
-                            {/* Info grid — 3 cols */}
-                            <div className="grid grid-cols-3 gap-1.5 mb-2.5">
+                            {/* Info grid */}
+                            <div className="grid grid-cols-2 desktop:grid-cols-4 gap-1.5 mb-2.5">
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Qty</div>
                                 <div className="m text-[13px] font-semibold" style={{ color: t.text }}>{o.quantity?.toLocaleString() || 0}</div>
@@ -298,14 +298,6 @@ export default function AdminOrdersPage({ dark, t }) {
                                 <div className="m text-[13px] font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
                               </div>
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                                <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Status</div>
-                                <Badge status={o.status} dark={dark} />
-                              </div>
-                            </div>
-
-                            {/* Admin details — cost/profit/provider */}
-                            <div className="grid grid-cols-3 gap-1.5 mb-2.5">
-                              <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Cost</div>
                                 <div className="m text-[13px] font-semibold" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{fN(o.cost || 0)}</div>
                               </div>
@@ -314,24 +306,22 @@ export default function AdminOrdersPage({ dark, t }) {
                                 <div className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN((o.charge || 0) - (o.cost || 0))}</div>
                               </div>
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                                <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Status</div>
+                                <Badge status={o.status} dark={dark} />
+                              </div>
+                              <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Provider</div>
                                 <div className="m text-[13px] font-bold" style={{ color: t.text }}>{(o.provider || "mtp").toUpperCase()}</div>
                               </div>
+                              {o.serviceApiId && <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                                <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Service ID</div>
+                                <div className="m text-[13px] font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.serviceApiId}</div>
+                              </div>}
+                              {o.apiOrderId && <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                                <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Provider Order</div>
+                                <div className="m text-[13px] font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.apiOrderId}</div>
+                              </div>}
                             </div>
-
-                            {/* Provider IDs */}
-                            {(o.serviceApiId || o.apiOrderId) && (
-                              <div className="grid grid-cols-2 gap-1.5 mb-2.5">
-                                {o.serviceApiId && <div className="py-1.5 px-2 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                                  <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Service ID</div>
-                                  <div className="text-[13px] font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.serviceApiId}</div>
-                                </div>}
-                                {o.apiOrderId && <div className="py-1.5 px-2 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                                  <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Provider Order</div>
-                                  <div className="text-[13px] font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.apiOrderId}</div>
-                                </div>}
-                              </div>
-                            )}
 
                             {/* User + date */}
                             <div className="text-[12px] mb-2.5" style={{ color: t.textMuted }}>
@@ -397,7 +387,7 @@ export default function AdminOrdersPage({ dark, t }) {
                   )}
 
                   {/* Info grid */}
-                  <div className="grid grid-cols-3 gap-2 mb-3">
+                  <div className="grid grid-cols-2 desktop:grid-cols-4 gap-2 mb-3">
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Quantity</div>
                       <div className="m text-sm font-semibold" style={{ color: t.text }}>{o.quantity?.toLocaleString() || 0}</div>
@@ -407,14 +397,6 @@ export default function AdminOrdersPage({ dark, t }) {
                       <div className="m text-sm font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
                     </div>
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                      <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Status</div>
-                      <Badge status={o.status} dark={dark} />
-                    </div>
-                  </div>
-
-                  {/* Admin details — cost/profit/provider */}
-                  <div className="grid grid-cols-3 gap-2 mb-3">
-                    <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Cost</div>
                       <div className="m text-sm font-semibold" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{fN(o.cost || 0)}</div>
                     </div>
@@ -423,24 +405,22 @@ export default function AdminOrdersPage({ dark, t }) {
                       <div className="m text-sm font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN((o.charge || 0) - (o.cost || 0))}</div>
                     </div>
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                      <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Status</div>
+                      <Badge status={o.status} dark={dark} />
+                    </div>
+                    <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Provider</div>
                       <div className="m text-sm font-bold" style={{ color: t.text }}>{(o.provider || "mtp").toUpperCase()}</div>
                     </div>
+                    {o.serviceApiId && <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                      <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Service ID</div>
+                      <div className="m text-sm font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.serviceApiId}</div>
+                    </div>}
+                    {o.apiOrderId && <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                      <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Provider Order</div>
+                      <div className="m text-sm font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.apiOrderId}</div>
+                    </div>}
                   </div>
-
-                  {/* Provider IDs */}
-                  {(o.serviceApiId || o.apiOrderId) && (
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      {o.serviceApiId && <div className="py-2 px-2.5 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                        <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Service ID</div>
-                        <div className="text-sm font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.serviceApiId}</div>
-                      </div>}
-                      {o.apiOrderId && <div className="py-2 px-2.5 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                        <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Provider Order</div>
-                        <div className="text-sm font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.apiOrderId}</div>
-                      </div>}
-                    </div>
-                  )}
 
                   {/* User info */}
                   <div className="text-[13px] mb-3" style={{ color: t.textMuted }}>

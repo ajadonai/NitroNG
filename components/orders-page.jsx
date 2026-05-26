@@ -7,6 +7,37 @@ import { fN, fD } from "../lib/format";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 
 
+/* ── Estimate delivery time from speed string + quantity ── */
+function estimateTime(speed, qty) {
+  if (!speed || !qty) return null;
+  const s = speed.trim();
+  // Already a time string — return as-is
+  if (/^\d+[-–]\d+\s*hrs?$/i.test(s) || /^\d+\s*hrs?$/i.test(s) || /^\d+[-–]\d+\s*hours?$/i.test(s)) return s;
+  if (/^\d+\s*min(ute)?s?$/i.test(s) || /^\d+[-–]\d+\s*min/i.test(s)) return s;
+  if (/^\d+[-–]\d+\s*days?$/i.test(s) || /^\d+\s*days?$/i.test(s)) return s;
+  if (/^\d+\s*months?$/i.test(s) || /^\d+[-–]\d+\s*months?$/i.test(s)) return s;
+  if (/^(instant|fast|natural|custom)$/i.test(s)) return s;
+  if (/^\d+[-–]\d+\s*hr/i.test(s) || /^0-\d+\s*hr/i.test(s)) return s;
+  if (/^\d+hr/i.test(s)) return s;
+  // Rate-based: parse "X-YK/day" or "XK/day" patterns
+  const rateMatch = s.match(/^(\d+(?:\.\d+)?)\s*[-–]?\s*(\d+(?:\.\d+)?)?\s*(K|M)?\s*\/\s*day$/i);
+  if (!rateMatch) return s;
+  const mult = (rateMatch[3] || '').toUpperCase() === 'M' ? 1000000 : (rateMatch[3] || '').toUpperCase() === 'K' ? 1000 : 1;
+  const lo = parseFloat(rateMatch[1]) * mult;
+  const hi = rateMatch[2] ? parseFloat(rateMatch[2]) * mult : lo;
+  if (lo <= 0 && hi <= 0) return s;
+  const fastHrs = hi > 0 ? (qty / hi) * 24 : 0;
+  const slowHrs = lo > 0 ? (qty / lo) * 24 : fastHrs;
+  const fmt = (h) => {
+    if (h < 1) return `${Math.max(1, Math.round(h * 60))} min`;
+    if (h < 48) return `${Math.round(h)} hr${Math.round(h) !== 1 ? 's' : ''}`;
+    const d = Math.round(h / 24);
+    return `${d} day${d !== 1 ? 's' : ''}`;
+  };
+  if (Math.abs(fastHrs - slowHrs) < 0.5) return `~${fmt(fastHrs)}`;
+  return `${fmt(fastHrs)} – ${fmt(slowHrs)}`;
+}
+
 /* ── Status helpers ── */
 function sClr(s, dk) { return s === "Completed" ? (dk ? "#6ee7b7" : "#059669") : s === "Processing" ? (dk ? "#a5b4fc" : "#4f46e5") : s === "Pending" ? (dk ? "#fcd34d" : "#d97706") : s === "Partial" ? (dk ? "#fca5a5" : "#dc2626") : s === "Cancelled" ? (dk ? "#888" : "#666") : (dk ? "#555" : "#888"); }
 function sBg(s, dk) { return s === "Completed" ? (dk ? "#0a2416" : "#ecfdf5") : s === "Processing" ? (dk ? "#0f1629" : "#eef2ff") : s === "Pending" ? (dk ? "#1c1608" : "#fffbeb") : s === "Partial" ? (dk ? "#1f0a0a" : "#fef2f2") : s === "Cancelled" ? (dk ? "#1a1a1a" : "#f5f5f5") : (dk ? "#1a1a1a" : "#f5f5f5"); }
@@ -238,7 +269,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                     )}
 
                     {/* Info grid */}
-                    <div className="grid grid-cols-3 gap-1.5 mb-2.5">
+                    <div className={`grid gap-1.5 mb-2.5 ${o.speed && !["Completed", "Cancelled"].includes(o.status) ? "grid-cols-2 desktop:grid-cols-4" : "grid-cols-3"}`}>
                       <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                         <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Qty</div>
                         <div className="m text-[13px] font-semibold" style={{ color: t.text }}>{o.quantity?.toLocaleString() || 0}</div>
@@ -251,8 +282,13 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                         <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Status</div>
                         <Badge status={o.status} dark={dark} />
                       </div>
+                      {o.speed && !["Completed", "Cancelled"].includes(o.status) && (
+                        <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                          <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Est. Time</div>
+                          <div className="m text-[13px] font-semibold" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{estimateTime(o.speed, o.quantity)}</div>
+                        </div>
+                      )}
                     </div>
-
                     {/* Progress */}
                     {o.status !== "Cancelled" && <div className="mb-2"><ProgressBar order={o} dark={dark} detailed /></div>}
                 </div>
@@ -470,7 +506,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                     )}
 
                     {/* Info grid */}
-                    <div className="grid grid-cols-3 gap-2 mb-3">
+                    <div className={`grid gap-2 mb-3 ${o.speed && !["Completed", "Cancelled"].includes(o.status) ? "grid-cols-2 desktop:grid-cols-4" : "grid-cols-3"}`}>
                       <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                         <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Quantity</div>
                         <div className="m text-sm font-semibold" style={{ color: t.text }}>{o.quantity?.toLocaleString() || 0}</div>
@@ -483,6 +519,12 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                         <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Status</div>
                         <Badge status={o.status} dark={dark} />
                       </div>
+                      {o.speed && !["Completed", "Cancelled"].includes(o.status) && (
+                        <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                          <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Est. Time</div>
+                          <div className="m text-sm font-semibold" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{estimateTime(o.speed, o.quantity)}</div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Progress */}

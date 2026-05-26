@@ -5,9 +5,17 @@ export const revalidate = 300;
 
 export async function GET() {
   try {
-    let userCount = 0, orderCount = 0;
+    let userCount = 0, orderCount = 0, platformCount = 0, serviceCount = 0;
     try { userCount = await prisma.user.count(); } catch {}
     try { orderCount = await prisma.order.count(); } catch {}
+    try {
+      const [platforms, services] = await Promise.all([
+        prisma.serviceGroup.count({ where: { enabled: true, tiers: { some: { enabled: true } } } }),
+        prisma.serviceTier.count({ where: { enabled: true, group: { enabled: true } } }),
+      ]);
+      platformCount = platforms;
+      serviceCount = services;
+    } catch {}
 
     const USER_BASE = 2000;
     const ORDER_BASE = 50000;
@@ -42,6 +50,8 @@ export async function GET() {
       stats: {
         users: displayUsers >= 1000 ? `${Math.floor(displayUsers / 1000)}K+` : `${displayUsers}+`,
         orders: displayOrders >= 1000000 ? `${(displayOrders / 1000000).toFixed(1)}M+` : displayOrders >= 1000 ? `${Math.floor(displayOrders / 1000)}K+` : `${displayOrders}+`,
+        platforms: platformCount || 0,
+        services: serviceCount || 0,
       },
       promo,
       alerts,
