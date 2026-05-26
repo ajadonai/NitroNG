@@ -757,7 +757,7 @@ function AdminDashboardInner({ initialData }) {
                 <button key={item.id} onClick={() => { setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: active === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", color: active === item.id ? t.accent : t.textSoft, fontWeight: active === item.id ? 600 : 450 }}>
                   <span className="shrink-0" style={{ opacity: active === item.id ? 1 : .55, color: active === item.id ? t.accent : t.textMuted }}>{item.icon}</span>
                   {item.label}
-                  {item.badge && badgeCounts[item.badge] > 0 && <span className="m dash-nav-badge">{badgeCounts[item.badge]}</span>}
+                  {item.badge && badgeCounts[item.badge] > 0 && <span className="m dash-nav-badge">{badgeCounts[item.badge] > 99 ? "99+" : badgeCounts[item.badge]}</span>}
                 </button>
               ))}
             </div>

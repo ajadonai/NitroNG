@@ -429,17 +429,19 @@ const NOTIF_ICONS = {
   gift: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/></svg>,
 };
 
-function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedIds, setClearedIds, setClearedAt }) {
+function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedIds, setClearedIds, setClearedAt, readAllAt, setReadAllAt }) {
   const [filter, setFilter] = useState("all");
 
   const filtered = filter === "all" ? items : items.filter(n => n.type === filter);
   const display = filtered.slice(0, 10);
   const hasMore = filtered.length > 10;
-  const unreadCount = items.filter(n => !readIds.has(n.id)).length;
+  const unreadCount = items.filter(n => !readIds.has(n.id) && !(readAllAt && n.ts && n.ts <= readAllAt)).length;
   const markAllRead = () => {
     const allIds = items.map(n => n.id);
+    const now = new Date();
     setReadIds(new Set([...readIds, ...allIds]));
-    fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ readIds: allIds }) }).catch(() => {});
+    setReadAllAt(now);
+    fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ readIds: allIds, readAllAt: now.toISOString() }) }).catch(() => {});
   };
   const markRead = (id) => {
     setReadIds(prev => new Set([...prev, id]));
@@ -477,7 +479,7 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
       {/* List */}
       <div className="max-h-[280px] overflow-y-auto">
         {display.length > 0 ? display.map((n, i) => {
-          const isRead = readIds.has(n.id);
+          const isRead = readIds.has(n.id) || (readAllAt && n.ts && n.ts <= readAllAt);
           return (
             <div key={n.id} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => markRead(n.id)} className="flex items-start gap-2.5 py-3 px-4 transition-colors duration-150 hover:bg-[rgba(196,125,142,.1)]" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: !isRead ? (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)") : "transparent", cursor: "pointer" }}>
               <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${n.color}15`, color: n.color }}>{NOTIF_ICONS[n.icon]}</div>
@@ -567,11 +569,16 @@ function DashboardInner({ initialData }) {
     if (typeof window === 'undefined') return null;
     try { const s = localStorage.getItem("nitro-notif-cleared-at"); return s ? new Date(s) : null; } catch { return null; }
   });
+  const [notifReadAllAt, setNotifReadAllAt] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    try { const s = localStorage.getItem("nitro-notif-readall-at"); return s ? new Date(s) : null; } catch { return null; }
+  });
 
   // Persist to localStorage on change
   useEffect(() => { try { localStorage.setItem("nitro-notif-read", JSON.stringify([...readNotifIds])); } catch {} }, [readNotifIds]);
   useEffect(() => { try { localStorage.setItem("nitro-notif-cleared", JSON.stringify([...clearedNotifIds])); } catch {} }, [clearedNotifIds]);
   useEffect(() => { if (notifClearedAt) { try { localStorage.setItem("nitro-notif-cleared-at", notifClearedAt.toISOString()); } catch {} } }, [notifClearedAt]);
+  useEffect(() => { if (notifReadAllAt) { try { localStorage.setItem("nitro-notif-readall-at", notifReadAllAt.toISOString()); } catch {} } }, [notifReadAllAt]);
 
   // Scroll lock when sidebar or notification panel is open (mobile/tablet)
   useEffect(() => { document.body.style.overflow = leftOpen || notifOpen ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [leftOpen, notifOpen]);
@@ -587,7 +594,7 @@ function DashboardInner({ initialData }) {
     if (typeof window !== 'undefined' && u) {
       const prev = localStorage.getItem("nitro-uid");
       if (prev && prev !== u.id) {
-        ["nitro_bulk_cart_v1", "nitro-page", "nitro-notif-read", "nitro-notif-cleared", "nitro-notif-cleared-at"].forEach(k => localStorage.removeItem(k));
+        ["nitro_bulk_cart_v1", "nitro-page", "nitro-notif-read", "nitro-notif-cleared", "nitro-notif-cleared-at", "nitro-notif-readall-at"].forEach(k => localStorage.removeItem(k));
         ["nitro_order_mode", "nitro_bulk_pending_key", "nitro-payment-status"].forEach(k => sessionStorage.removeItem(k));
       }
       localStorage.setItem("nitro-uid", u.id);
@@ -665,7 +672,11 @@ function DashboardInner({ initialData }) {
       return true;
     }).sort((a, b) => (b.ts || 0) - (a.ts || 0));
   }, [orders, txs, notifClearedAt, clearedNotifIds]);
-  const bellUnread = notifItems.filter(n => !readNotifIds.has(n.id)).length;
+  const bellUnread = notifItems.filter(n => {
+    if (readNotifIds.has(n.id)) return false;
+    if (notifReadAllAt && n.ts && n.ts <= notifReadAllAt) return false;
+    return true;
+  }).length;
 
   /* Services/Order state (lifted so sidebars can access) */
   const [noPlatform, setNoPlatform] = useState("instagram");
@@ -764,6 +775,7 @@ function DashboardInner({ initialData }) {
           if (nr.ok) {
             const nd = await nr.json();
             if (nd.notifClearedAt) setNotifClearedAt(new Date(nd.notifClearedAt));
+            if (nd.notifReadAllAt) setNotifReadAllAt(new Date(nd.notifReadAllAt));
             if (Array.isArray(nd.notifReadIds) && nd.notifReadIds.length > 0) {
               setReadNotifIds(prev => new Set([...prev, ...nd.notifReadIds]));
             }
@@ -1044,7 +1056,7 @@ function DashboardInner({ initialData }) {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
               {bellUnread > 0 && <div className="dash-bell-badge">{bellUnread > 10 ? "10+" : bellUnread}</div>}
             </button>
-            {notifOpen && <NotifDropdown items={notifItems} dark={dark} t={t} onClose={() => setNotifOpen(false)} readIds={readNotifIds} setReadIds={setReadNotifIds} clearedIds={clearedNotifIds} setClearedIds={setClearedNotifIds} setClearedAt={setNotifClearedAt} />}
+            {notifOpen && <NotifDropdown items={notifItems} dark={dark} t={t} onClose={() => setNotifOpen(false)} readIds={readNotifIds} setReadIds={setReadNotifIds} clearedIds={clearedNotifIds} setClearedIds={setClearedNotifIds} setClearedAt={setNotifClearedAt} readAllAt={notifReadAllAt} setReadAllAt={setNotifReadAllAt} />}
           </div>
           {/* Avatar → Settings */}
           <button onClick={() => { setActive("settings"); setLeftOpen(false); }} className="dash-avatar-btn" aria-label="Profile">
@@ -1070,7 +1082,7 @@ function DashboardInner({ initialData }) {
                       <span className="shrink-0" style={{ opacity: active === item.id ? 1 : .55, color: active === item.id ? t.accent : t.textMuted }}>{I[item.id]}</span>
                       {item.label}
                       {item.soon && <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent, opacity: 1 }}>Soon</span>}
-                      {processingCount > 0 && <span className="m dash-nav-badge">{processingCount > 9 ? "9+" : processingCount}</span>}
+                      {processingCount > 0 && <span className="m dash-nav-badge">{processingCount > 99 ? "99+" : processingCount}</span>}
                     </button>
                   </Fragment>
                 );

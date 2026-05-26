@@ -55,6 +55,7 @@ model User {
   notifPromo    Boolean  @default(true)
   notifEmail    Boolean  @default(true)
   notifClearedAt DateTime?
+  notifReadAllAt DateTime?
   notifReadIds  String?  // JSON array of read notification IDs
   themePreference String @default("auto") // "auto" | "night" | "day"
   perPagePreference Int @default(10) // Orders per page: 10, 25, 50
