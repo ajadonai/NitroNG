@@ -11,7 +11,7 @@ import { placeWithProvider } from '@/lib/bulk-dispatch';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
-  const secret = req.headers.get('authorization')?.replace('Bearer ', '');
+  const secret = req.headers.get('authorization')?.replace('Bearer ', '') || new URL(req.url).searchParams.get('secret');
   if (secret !== process.env.CRON_SECRET) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
