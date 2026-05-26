@@ -26,7 +26,7 @@ export async function GET() {
       orders = await prisma.order.findMany({
         where: { userId: user.id },
         orderBy: { createdAt: 'desc' },
-        include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, group: { select: { name: true, platform: true } } } } },
+        include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, speed: true, group: { select: { name: true, platform: true } } } } },
       });
     } catch (e) { log.error('Dashboard', 'Orders query failed', { error: e.message }); }
 
@@ -183,6 +183,7 @@ export async function GET() {
         service: o.tier?.group?.name || o.service?.name || o.serviceId,
         platform: o.tier?.group?.platform || o.service?.category || 'unknown',
         tier: o.tier?.tier || null,
+        speed: o.tier?.speed || null,
         link: o.link, quantity: o.quantity,
         charge: o.charge / 100,
         remains: o.remains,

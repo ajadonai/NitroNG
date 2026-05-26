@@ -29,7 +29,7 @@ export async function GET(req) {
       where: { userId: session.id, deletedAt: null },
       orderBy: { createdAt: 'desc' },
       take: 200,
-      include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, group: { select: { name: true } } } } },
+      include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, speed: true, group: { select: { name: true } } } } },
     });
 
     return Response.json({
@@ -38,6 +38,7 @@ export async function GET(req) {
         internalId: o.id,
         service: o.tier?.group?.name || o.service?.name || o.serviceId,
         tier: o.tier?.group?.name && o.tier?.tier ? o.tier.tier : null,
+        speed: o.tier?.speed || null,
         platform: o.service?.category || 'unknown',
         link: o.link,
         quantity: o.quantity,
