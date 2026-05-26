@@ -101,15 +101,27 @@ export async function POST(req) {
         ops.push(prisma.service.createMany({ data: toCreate, skipDuplicates: true }));
       }
 
+      const liveApiIds = new Set(providerServices.map(s => Number(s.service)).filter(Boolean));
+      const staleServices = existing.filter(s => s.apiId && !liveApiIds.has(s.apiId));
+      let disabled = 0;
+      if (staleServices.length > 0) {
+        const staleIds = staleServices.map(s => s.id);
+        const result = await prisma.service.updateMany({
+          where: { id: { in: staleIds }, enabled: true },
+          data: { enabled: false },
+        });
+        disabled = result.count;
+      }
+
       if (ops.length > 0) {
         for (let i = 0; i < ops.length; i += 50) {
           await prisma.$transaction(ops.slice(i, i + 50));
         }
       }
 
-      await logActivity(admin.name, `Synced from ${getProviderName(providerId)}: ${created} new, ${updated} updated, ${skipped} skipped`, 'service');
+      await logActivity(admin.name, `Synced from ${getProviderName(providerId)}: ${created} new, ${updated} updated, ${skipped} skipped, ${disabled} disabled (removed by provider)`, 'service');
 
-      return Response.json({ success: true, provider: providerId, total: providerServices.length, created, updated, skipped });
+      return Response.json({ success: true, provider: providerId, total: providerServices.length, created, updated, skipped, disabled });
     }
 
     if (action === 'sync-orders') {
