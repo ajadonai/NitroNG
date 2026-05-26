@@ -263,7 +263,7 @@ export default function AdminOrdersPage({ dark, t }) {
                           <div className="min-w-0 flex-1">
                             <div className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}{o.tier ? <span className="font-normal" style={{ color: t.textMuted }}> · {o.tier}</span> : ""}</div>
                             <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>
-                              <span className="m">{o.id}</span>
+                              <span className="m" style={o.status === "Cancelled" ? { color: dark ? "#fca5a5" : "#dc2626" } : o.status === "Partial" ? { color: dark ? "#fbbf24" : "#d97706" } : undefined}>{o.id}</span>
                               <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
                               <span>{o.quantity?.toLocaleString() || 0} qty</span>
                             </div>
@@ -319,6 +319,20 @@ export default function AdminOrdersPage({ dark, t }) {
                               </div>
                             </div>
 
+                            {/* Provider IDs */}
+                            {(o.serviceApiId || o.apiOrderId) && (
+                              <div className="grid grid-cols-2 gap-1.5 mb-2.5">
+                                {o.serviceApiId && <div className="py-1.5 px-2 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                                  <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Service ID</div>
+                                  <div className="text-[13px] font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.serviceApiId}</div>
+                                </div>}
+                                {o.apiOrderId && <div className="py-1.5 px-2 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                                  <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Provider Order</div>
+                                  <div className="text-[13px] font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.apiOrderId}</div>
+                                </div>}
+                              </div>
+                            )}
+
                             {/* User + date */}
                             <div className="text-[12px] mb-2.5" style={{ color: t.textMuted }}>
                               <span style={{ color: t.text }}>{o.user}</span> · {o.email} · {o.created ? fD(o.created) : ""}
@@ -354,7 +368,7 @@ export default function AdminOrdersPage({ dark, t }) {
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical] mb-0.5" style={{ color: t.text }}>{o.service}{o.tier ? <span className="font-normal" style={{ color: t.textMuted }}> · {o.tier}</span> : ""}</div>
                   <div className="flex items-center gap-1.5 text-[11px] desktop:text-xs" style={{ color: t.textMuted }}>
-                    <span className="m">{o.id}</span>
+                    <span className="m" style={o.status === "Cancelled" ? { color: dark ? "#fca5a5" : "#dc2626" } : o.status === "Partial" ? { color: dark ? "#fbbf24" : "#d97706" } : undefined}>{o.id}</span>
                     <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
                     <span>{o.user}</span>
                     <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
@@ -413,6 +427,20 @@ export default function AdminOrdersPage({ dark, t }) {
                       <div className="m text-sm font-bold" style={{ color: t.text }}>{(o.provider || "mtp").toUpperCase()}</div>
                     </div>
                   </div>
+
+                  {/* Provider IDs */}
+                  {(o.serviceApiId || o.apiOrderId) && (
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      {o.serviceApiId && <div className="py-2 px-2.5 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                        <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Service ID</div>
+                        <div className="text-sm font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.serviceApiId}</div>
+                      </div>}
+                      {o.apiOrderId && <div className="py-2 px-2.5 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                        <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Provider Order</div>
+                        <div className="text-sm font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.apiOrderId}</div>
+                      </div>}
+                    </div>
+                  )}
 
                   {/* User info */}
                   <div className="text-[13px] mb-3" style={{ color: t.textMuted }}>
