@@ -4,6 +4,8 @@ import { requireAdmin, logActivity } from '@/lib/admin';
 import { getServices, getBalance, isProviderConfigured, getProviderName, checkOrder } from '@/lib/smm';
 import { calculateTierPrice } from '@/lib/markup';
 
+export const maxDuration = 60;
+
 export async function GET() {
   const { admin, error } = await requireAdmin('services');
   if (error) return error;
@@ -96,9 +98,12 @@ export async function POST(req) {
         }
       }
 
-      const ops = [...toUpdate];
       if (toCreate.length > 0) {
-        ops.push(prisma.service.createMany({ data: toCreate, skipDuplicates: true }));
+        await prisma.service.createMany({ data: toCreate, skipDuplicates: true });
+      }
+
+      for (let i = 0; i < toUpdate.length; i += 200) {
+        await Promise.all(toUpdate.slice(i, i + 200));
       }
 
       const liveApiIds = new Set(providerServices.map(s => Number(s.service)).filter(Boolean));
@@ -111,12 +116,6 @@ export async function POST(req) {
           data: { enabled: false },
         });
         disabled = result.count;
-      }
-
-      if (ops.length > 0) {
-        for (let i = 0; i < ops.length; i += 50) {
-          await prisma.$transaction(ops.slice(i, i + 50));
-        }
       }
 
       await logActivity(admin.name, `Synced from ${getProviderName(providerId)}: ${created} new, ${updated} updated, ${skipped} skipped, ${disabled} disabled (removed by provider)`, 'service');
