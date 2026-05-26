@@ -42,7 +42,7 @@ export async function GET(req) {
     // Most active
     const active = await prisma.order.groupBy({
       by: ['userId'],
-      where: { ...dateFilter, deletedAt: null },
+      where: { ...dateFilter, deletedAt: null, status: { not: 'Cancelled' } },
       _count: { id: true },
       _sum: { charge: true, cost: true },
       orderBy: { _count: { id: 'desc' } },

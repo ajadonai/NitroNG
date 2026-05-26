@@ -213,7 +213,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}{o.tier ? <span className="font-normal" style={{ color: t.textMuted }}> · {o.tier}</span> : ""}</div>
                   <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>
-                    <span className="m">{o.id}</span>
+                    <span className="m" style={o.status === "Cancelled" ? { color: dark ? "#fca5a5" : "#dc2626" } : o.status === "Partial" ? { color: dark ? "#fbbf24" : "#d97706" } : undefined}>{o.id}</span>
                     <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
                     <span>{o.quantity?.toLocaleString() || 0} qty</span>
                   </div>
@@ -441,7 +441,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                   <div className="min-w-0 flex-1">
                     <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap desktop:whitespace-nowrap mb-0.5 max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}{o.tier ? <span className="font-normal" style={{ color: t.textMuted }}> · {o.tier}</span> : ""}</div>
                     <div className="flex items-center gap-1.5 text-[11px] desktop:text-xs" style={{ color: t.textMuted }}>
-                      <span className="m">{o.id}</span>
+                      <span className="m" style={o.status === "Cancelled" ? { color: dark ? "#fca5a5" : "#dc2626" } : o.status === "Partial" ? { color: dark ? "#fbbf24" : "#d97706" } : undefined}>{o.id}</span>
                       <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
                       <span>{o.quantity?.toLocaleString() || 0} qty</span>
                       <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />

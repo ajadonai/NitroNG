@@ -20,7 +20,7 @@ export async function GET(req) {
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       include: {
         user: { select: { name: true, email: true } },
-        service: { select: { name: true, category: true, provider: true } },
+        service: { select: { name: true, category: true, provider: true, apiId: true } },
         tier: { select: { tier: true, group: { select: { name: true, platform: true } } } },
       },
     });
@@ -40,6 +40,7 @@ export async function GET(req) {
         platform: o.tier?.group?.platform || o.service?.category || 'unknown',
         category: o.service?.category || 'unknown',
         provider: o.service?.provider || 'mtp',
+        serviceApiId: o.service?.apiId || null,
         link: o.link,
         quantity: o.quantity,
         charge: o.charge / 100,

@@ -26,6 +26,7 @@ export default function AdminUsersPage({ dark, t }) {
   const confirm = useConfirm();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(null);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [creditId, setCreditId] = useState(null);
@@ -39,7 +40,7 @@ export default function AdminUsersPage({ dark, t }) {
   const perPage = 15;
 
   useEffect(() => {
-    fetch("/api/admin/users").then(r => r.json()).then(d => { setUsers(d.users || []); setLoading(false); }).catch(() => setLoading(false));
+    fetch("/api/admin/users?limit=200").then(r => r.json()).then(d => { setUsers(d.users || []); if (d.totalCount != null) setTotalCount(d.totalCount); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
   const filtered = users.filter(u => {
@@ -129,14 +130,14 @@ export default function AdminUsersPage({ dark, t }) {
       {/* Header */}
       <div className="adm-header">
         <div className="adm-title" style={{ color: t.text }}>Users</div>
-        <div className="adm-subtitle" style={{ color: t.textMuted }}>{users.length} registered · {activeCount} active</div>
+        <div className="adm-subtitle" style={{ color: t.textMuted }}>{totalCount ?? users.length} registered · {activeCount} active</div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-4 max-md:grid-cols-2 gap-3 mb-5">
         {[
-          { label: "Total Users", value: loading ? "—" : users.length, icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> },
+          { label: "Total Users", value: loading ? "—" : (totalCount ?? users.length), icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> },
           { label: "Active", value: loading ? "—" : activeCount, icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
           { label: "Total Balance", value: loading ? "—" : fN(totalBal), icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12V8H6a2 2 0 010-4h12v4"/><path d="M4 6v12a2 2 0 002 2h14v-4"/><path d="M18 12a2 2 0 000 4h4v-4h-4z"/></svg> },
           { label: "Total Orders", value: loading ? "—" : totalOrd.toLocaleString(), icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg> },
