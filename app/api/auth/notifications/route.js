@@ -10,7 +10,7 @@ export async function GET() {
 
     const user = await prisma.user.findUnique({
       where: { id: session.id },
-      select: { notifOrders: true, notifPromo: true, notifEmail: true, notifClearedAt: true, notifReadIds: true, themePreference: true, perPagePreference: true },
+      select: { notifOrders: true, notifPromo: true, notifEmail: true, notifClearedAt: true, notifReadAllAt: true, notifReadIds: true, themePreference: true, perPagePreference: true },
     });
 
     if (!user) return error('User not found', 404);
@@ -23,6 +23,7 @@ export async function GET() {
       notifPromo: user.notifPromo,
       notifEmail: user.notifEmail,
       notifClearedAt: user.notifClearedAt,
+      notifReadAllAt: user.notifReadAllAt,
       notifReadIds: readIds,
       themePreference: user.themePreference || 'auto',
       perPagePreference: user.perPagePreference || 10,
@@ -54,6 +55,11 @@ export async function POST(req) {
     // Per-page preference
     if (body.perPagePreference && [10, 25, 50].includes(Number(body.perPagePreference))) {
       data.perPagePreference = Number(body.perPagePreference);
+    }
+
+    // Mark all read timestamp
+    if (body.readAllAt) {
+      data.notifReadAllAt = new Date(body.readAllAt);
     }
 
     // Mark all as read — store the IDs
