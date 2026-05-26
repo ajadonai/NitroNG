@@ -71,6 +71,7 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
   const [manualRef, setManualRef] = useState("");
   const [manualSubmitting, setManualSubmitting] = useState(false);
   const [manualDone, setManualDone] = useState(false);
+  const [narrationCopied, setNarrationCopied] = useState(false);
 
   // Fetch enabled gateways from API
   useEffect(() => {
@@ -192,8 +193,10 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
           setManualModal(data);
           setManualDone(false);
           setManualRef("");
+          setNarrationCopied(false);
         } else {
-          toast.error("Transfer failed", data.error || "Failed to create request");
+          if (res.status === 400) toast.warning("Pending transfer", data.error);
+          else toast.error("Transfer failed", data.error || "Failed to create request");
         }
       } catch { toast.error("Network error", "Check your connection"); }
       setLoading(false); payingRef.current = false;
@@ -532,38 +535,46 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
                 <div className="text-base font-semibold mb-1" style={{ color: t.text }}>Bank Transfer</div>
                 <div className="text-[13px] mb-2.5" style={{ color: t.textMuted }}>Transfer exactly {fN(manualModal.amount)} to the account below</div>
 
-                <div className="py-2 px-3 rounded-lg mb-3.5 text-xs leading-normal" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.06)", border: `1px solid ${dark ? "rgba(251,191,36,.18)" : "rgba(217,119,6,.14)"}`, color: dark ? "#fbbf24" : "#d97706" }}>
-                  Manual transfers are verified by our team. This may take 15-60 minutes during business hours.
-                </div>
-
-                <div className="p-3.5 rounded-[10px] mb-3.5" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.04)", border: `1px solid ${t.cardBorder}` }}>
-                  <div className="mb-2.5">
-                    <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Bank</div>
-                    <div className="text-[15px] font-semibold" style={{ color: t.text }}>{manualModal.bankName}</div>
+                {/* Step 1: Bank details */}
+                <div className="rounded-xl mb-3 overflow-hidden" style={{ border: `1px solid ${t.cardBorder}` }}>
+                  <div className="py-2 px-3.5 flex items-center gap-2" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.03)" }}>
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold" style={{ background: t.accent, color: "#fff" }}>1</div>
+                    <span className="text-[12px] font-semibold" style={{ color: t.text }}>Transfer {fN(manualModal.amount)} to this account</span>
                   </div>
-                  <div className="mb-2.5">
-                    <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Account Number</div>
-                    <div className="flex items-center gap-2">
-                      <span className="m text-lg font-bold tracking-[1px]" style={{ color: t.text }}>{manualModal.accountNumber}</span>
-                      <button onClick={() => navigator.clipboard.writeText(manualModal.accountNumber)} className="py-[3px] px-2.5 rounded-md bg-transparent text-[11px] font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.accent}`, color: t.accent, fontFamily: "inherit" }}>Copy</button>
+                  <div className="p-3.5" style={{ background: dark ? "rgba(255,255,255,.04)" : "transparent" }}>
+                    <div className="mb-2.5">
+                      <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Bank</div>
+                      <div className="text-[15px] font-semibold" style={{ color: t.text }}>{manualModal.bankName}</div>
+                    </div>
+                    <div className="mb-2.5">
+                      <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Account Number</div>
+                      <div className="flex items-center gap-2">
+                        <span className="m text-lg font-bold tracking-[1px]" style={{ color: t.text }}>{manualModal.accountNumber}</span>
+                        <button onClick={() => navigator.clipboard.writeText(manualModal.accountNumber)} className="py-[3px] px-2.5 rounded-md bg-transparent text-[11px] font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.accent}`, color: t.accent, fontFamily: "inherit" }}>Copy</button>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Account Name</div>
+                      <div className="text-[15px] font-semibold" style={{ color: t.text }}>{manualModal.accountName}</div>
                     </div>
                   </div>
-                  <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Account Name</div>
-                    <div className="text-[15px] font-semibold" style={{ color: t.text }}>{manualModal.accountName}</div>
-                  </div>
                 </div>
 
-                <div className="py-2.5 px-3.5 rounded-lg mb-3.5" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)", border: `1px solid ${dark ? "rgba(196,125,142,.19)" : "rgba(196,125,142,.14)"}` }}>
-                  <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1" style={{ color: t.accent }}>Use this as your transfer narration</div>
-                  <div className="flex items-center gap-2">
+                {/* Step 2: Copy narration */}
+                <div className="rounded-xl mb-3 overflow-hidden" style={{ border: `1.5px solid ${narrationCopied ? (dark ? "rgba(110,231,183,.4)" : "rgba(5,150,105,.35)") : t.accent}` }}>
+                  <div className="py-2 px-3.5 flex items-center gap-2" style={{ background: narrationCopied ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") }}>
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold" style={{ background: narrationCopied ? (dark ? "#6ee7b7" : "#059669") : t.accent, color: "#fff" }}>{narrationCopied ? "✓" : "2"}</div>
+                    <span className="text-[12px] font-semibold" style={{ color: narrationCopied ? (dark ? "#6ee7b7" : "#059669") : t.accent }}>{narrationCopied ? "Copied! Paste this in your bank app" : "Use this as your transfer narration"}</span>
+                  </div>
+                  <div className="py-3 px-3.5 flex items-center justify-between gap-2" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.02)" }}>
                     <span className="m text-base font-bold tracking-[1px]" style={{ color: t.text }}>{manualModal.reference}</span>
-                    <button onClick={() => navigator.clipboard.writeText(manualModal.reference)} className="py-[3px] px-2.5 rounded-md bg-transparent text-[11px] font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.accent}`, color: t.accent, fontFamily: "inherit" }}>Copy</button>
+                    <button onClick={() => { navigator.clipboard.writeText(manualModal.reference); setNarrationCopied(true); }} className="py-1.5 px-4 rounded-lg text-[12px] font-semibold cursor-pointer transition-all duration-200 hover:-translate-y-px shrink-0" style={{ background: narrationCopied ? (dark ? "rgba(110,231,183,.14)" : "rgba(5,150,105,.08)") : "linear-gradient(135deg,#c47d8e,#8b5e6b)", border: narrationCopied ? `1px solid ${dark ? "rgba(110,231,183,.3)" : "rgba(5,150,105,.2)"}` : "none", color: narrationCopied ? (dark ? "#6ee7b7" : "#059669") : "#fff", fontFamily: "inherit" }}>{narrationCopied ? "Copied" : "Copy code"}</button>
                   </div>
+                  {!narrationCopied && <div className="py-1.5 px-3.5 text-[11px]" style={{ background: dark ? "rgba(251,191,36,.06)" : "rgba(217,119,6,.04)", color: dark ? "#fbbf24" : "#d97706" }}>Paste this as the narration/remark in your bank app so we can credit you faster</div>}
                 </div>
 
-                <div className="py-2.5 px-3.5 rounded-lg mb-3.5 text-center" style={{ background: dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.06)", border: `1px solid ${dark ? "rgba(110,231,183,.18)" : "rgba(5,150,105,.14)"}` }}>
-                  <span className="text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>Send exactly {fN(manualModal.amount)}</span>
+                <div className="py-2 px-3 rounded-lg mb-3.5 text-xs leading-normal" style={{ background: dark ? "rgba(251,191,36,.06)" : "rgba(217,119,6,.04)", border: `1px solid ${dark ? "rgba(251,191,36,.14)" : "rgba(217,119,6,.1)"}`, color: dark ? "#fbbf24" : "#d97706" }}>
+                  Verification takes 15-60 minutes during business hours.
                 </div>
 
                 <div className="flex gap-2">
@@ -585,7 +596,7 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
       )}
 
       {/* ═══ WALLET HISTORY ═══ */}
-      <WalletHistory txs={txs} walletSummary={walletSummary} dark={dark} t={t} />
+      <WalletHistory txs={txs} walletSummary={walletSummary} dark={dark} t={t} onRefresh={onRefresh} />
     </>
   );
 }
@@ -594,7 +605,7 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
 /* ═══════════════════════════════════════════ */
 /* ═══ WALLET HISTORY                      ═══ */
 /* ═══════════════════════════════════════════ */
-function WalletHistory({ txs, walletSummary, dark, t }) {
+function WalletHistory({ txs, walletSummary, dark, t, onRefresh }) {
   const [filter, setFilter] = useState("all");
   const [dateRange, setDateRange] = useState(null);
   const [page, setPage] = useState(1);
@@ -667,6 +678,7 @@ function WalletHistory({ txs, walletSummary, dark, t }) {
               </div>
               <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{tx.date ? fD(tx.date, true) : ""}</div>
             </div>
+            {tx.status === "Pending" && tx.method === "manual" && tx.reference && <button onClick={async () => { try { await fetch("/api/payments/manual", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: tx.reference }) }); } catch {} onRefresh?.(); }} className="py-1 px-2.5 rounded-md bg-transparent text-[11px] font-semibold cursor-pointer shrink-0 transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${dark ? "rgba(252,165,165,.25)" : "rgba(220,38,38,.2)"}`, color: dark ? "#fca5a5" : "#dc2626", fontFamily: "inherit" }}>Cancel</button>}
           </div>
         )) : (
           <div className="p-10 text-center text-[15px]" style={{ color: t.textMuted }}>

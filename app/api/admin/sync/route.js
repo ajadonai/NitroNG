@@ -4,6 +4,8 @@ import { requireAdmin, logActivity } from '@/lib/admin';
 import { getServices, getBalance, isProviderConfigured, getProviderName, checkOrder } from '@/lib/smm';
 import { calculateTierPrice } from '@/lib/markup';
 
+export const maxDuration = 60;
+
 export async function GET() {
   const { admin, error } = await requireAdmin('services');
   if (error) return error;
@@ -53,15 +55,14 @@ export async function POST(req) {
       const ms = {};
       markupRows.forEach(s => { ms[s.key] = s.value; });
 
-      // Scope by provider — different providers can have same apiId numbers
       const existing = await prisma.service.findMany({
         where: { provider: providerId },
-        select: { id: true, apiId: true, markup: true },
+        select: { id: true, apiId: true, markup: true, name: true, category: true, costPer1k: true, min: true, max: true, refill: true, avgTime: true },
       });
       const existingMap = {};
       existing.forEach(s => { existingMap[s.apiId] = s; });
 
-      let created = 0, updated = 0, skipped = 0;
+      let created = 0, updated = 0, unchanged = 0, skipped = 0;
       const toCreate = [];
       const toUpdate = [];
 
@@ -73,43 +74,51 @@ export async function POST(req) {
         if (rawCost > 2000000000 || rawCost < 0 || isNaN(rawCost)) { skipped++; continue; }
         const costPer1k = rawCost;
         const category = categorize(svc.category);
-        const data = {
-          name: svc.name,
-          category,
-          costPer1k,
-          min: Number(svc.min) || 10,
-          max: Number(svc.max) || 100000,
-          refill: svc.refill === true || svc.refill === 'true',
-          avgTime: svc.average_time || '0-2 hrs',
-        };
+        const min = Number(svc.min) || 10;
+        const max = Number(svc.max) || 100000;
+        const refill = svc.refill === true || svc.refill === 'true';
+        const avgTime = svc.average_time || '0-2 hrs';
 
         const ex = existingMap[apiId];
         if (ex) {
-          toUpdate.push(prisma.service.update({ where: { id: ex.id }, data }));
+          if (ex.name === svc.name && ex.category === category && ex.costPer1k === costPer1k && ex.min === min && ex.max === max && ex.refill === refill && ex.avgTime === avgTime) {
+            unchanged++;
+            continue;
+          }
+          toUpdate.push(prisma.service.update({ where: { id: ex.id }, data: { name: svc.name, category, costPer1k, min, max, refill, avgTime } }));
           updated++;
         } else {
           const initialSell = calculateTierPrice(costPer1k, 'Standard', ms, false) || Math.round(costPer1k * 2);
           toCreate.push({
-            apiId, ...data, provider: providerId, sellPer1k: initialSell, markup: defaultMarkup, enabled: false,
+            apiId, name: svc.name, category, costPer1k, min, max, refill, avgTime, provider: providerId, sellPer1k: initialSell, markup: defaultMarkup, enabled: false,
           });
           created++;
         }
       }
 
-      const ops = [...toUpdate];
       if (toCreate.length > 0) {
-        ops.push(prisma.service.createMany({ data: toCreate, skipDuplicates: true }));
+        await prisma.service.createMany({ data: toCreate, skipDuplicates: true });
       }
 
-      if (ops.length > 0) {
-        for (let i = 0; i < ops.length; i += 50) {
-          await prisma.$transaction(ops.slice(i, i + 50));
-        }
+      for (let i = 0; i < toUpdate.length; i += 200) {
+        await Promise.all(toUpdate.slice(i, i + 200));
       }
 
-      await logActivity(admin.name, `Synced from ${getProviderName(providerId)}: ${created} new, ${updated} updated, ${skipped} skipped`, 'service');
+      const liveApiIds = new Set(providerServices.map(s => Number(s.service)).filter(Boolean));
+      const staleServices = existing.filter(s => s.apiId && !liveApiIds.has(s.apiId));
+      let disabled = 0;
+      if (staleServices.length > 0) {
+        const staleIds = staleServices.map(s => s.id);
+        const result = await prisma.service.updateMany({
+          where: { id: { in: staleIds }, enabled: true },
+          data: { enabled: false },
+        });
+        disabled = result.count;
+      }
 
-      return Response.json({ success: true, provider: providerId, total: providerServices.length, created, updated, skipped });
+      await logActivity(admin.name, `Synced from ${getProviderName(providerId)}: ${created} new, ${updated} updated, ${skipped} skipped, ${disabled} disabled (removed by provider)`, 'service');
+
+      return Response.json({ success: true, provider: providerId, total: providerServices.length, created, updated, skipped, disabled });
     }
 
     if (action === 'sync-orders') {
@@ -152,7 +161,7 @@ export async function POST(req) {
             if (['completed', 'complete'].includes(providerStatus)) newStatus = 'Completed';
             else if (['partial', 'partially completed'].includes(providerStatus)) newStatus = 'Partial';
             else if (['cancelled', 'canceled', 'refunded'].includes(providerStatus)) newStatus = 'Cancelled';
-            else if (['in progress', 'inprogress', 'processing'].includes(providerStatus)) newStatus = 'Processing';
+            else if (['in progress', 'inprogress', 'processing', 'pending'].includes(providerStatus)) newStatus = 'Processing';
 
             const liveRemains = result.remains != null ? Number(result.remains) : null;
 

@@ -11,7 +11,7 @@ export async function GET() {
       prisma.service.findMany({
         orderBy: { category: 'asc' },
         include: {
-          _count: { select: { orders: true, tiers: true } },
+          _count: { select: { orders: { where: { status: { not: 'Cancelled' }, deletedAt: null } }, tiers: true } },
         },
       }),
       prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } }),

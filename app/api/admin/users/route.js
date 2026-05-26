@@ -12,6 +12,7 @@ export async function GET(req) {
     const cursor = url.searchParams.get('cursor');
     const limit = Math.min(Number(url.searchParams.get('limit')) || 50, 200);
 
+    const totalCount = await prisma.user.count();
     const users = await prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       take: limit + 1,
@@ -21,7 +22,7 @@ export async function GET(req) {
         email: true, balance: true, status: true,
         emailVerified: true, referralCode: true, createdAt: true,
         deletedAt: true, deletedName: true, deletedEmail: true,
-        _count: { select: { orders: true } },
+        _count: { select: { orders: { where: { status: { not: 'Cancelled' }, deletedAt: null } } } },
       },
     });
 
@@ -47,6 +48,7 @@ export async function GET(req) {
         deletedName: u.deletedName || null,
         deletedEmail: u.deletedEmail || null,
       })),
+      totalCount,
       nextCursor,
       hasMore,
     });
