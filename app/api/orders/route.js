@@ -128,6 +128,11 @@ export async function PATCH(req) {
         return Response.json({ error: 'Service no longer available' }, { status: 400 });
       }
 
+      const reorderActiveForLink = await prisma.order.findFirst({
+        where: { serviceId: order.serviceId, link: order.link, status: { in: ['Pending', 'Processing', 'In progress'] }, apiOrderId: { not: null }, deletedAt: null },
+        select: { orderId: true },
+      });
+
       const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
       const usdRate = Number(usdRateSetting?.value || 1600);
 
@@ -222,9 +227,10 @@ export async function PATCH(req) {
         return created;
       });
 
-      // Step 2: Place on provider AFTER balance secured
+      // Step 2: Place on provider AFTER balance secured (skip if queued behind active duplicate)
       let apiOrderId = null;
-      if (order.service.apiId) {
+      const reorderQueued = !!reorderActiveForLink;
+      if (order.service.apiId && !reorderQueued) {
         try {
           await prisma.order.update({ where: { id: newOrder.id }, data: { dispatchedAt: new Date() } });
           const provider = order.service.provider || 'mtp';
@@ -245,6 +251,7 @@ export async function PATCH(req) {
 
       return Response.json({
         success: true,
+        ...(reorderQueued ? { queued: true, message: 'Order queued — will start when your current order for this link completes.' } : {}),
         order: { id: newOrderId, service: order.service.name, quantity: order.quantity, charge: charge / 100, status: apiOrderId ? 'Processing' : 'Pending' },
       });
     }
@@ -390,6 +397,12 @@ export async function POST(req) {
 
     const qty = Math.floor(Number(quantity));
 
+    // Check for active order on same service + link (MTP rejects duplicates)
+    const activeForLink = await prisma.order.findFirst({
+      where: { serviceId: service.id, link: trimmedLink, status: { in: ['Pending', 'Processing', 'In progress'] }, apiOrderId: { not: null }, deletedAt: null },
+      select: { orderId: true },
+    });
+
     // Generate order ID
     const orderId = await nextOrderId();
 
@@ -437,9 +450,10 @@ export async function POST(req) {
       return order;
     });
 
-    // Step 2: Place on provider AFTER balance is secured
+    // Step 2: Place on provider AFTER balance is secured (skip if queued behind active duplicate)
     let apiOrderId = null;
-    if (service.apiId) {
+    const queued = !!activeForLink;
+    if (service.apiId && !queued) {
       try {
         await prisma.order.update({ where: { id: result.id }, data: { dispatchedAt: new Date() } });
         const provider = service.provider || 'mtp';
@@ -465,12 +479,25 @@ export async function POST(req) {
         }
       } catch (err) {
         log.error('Order Place', err.message);
-        try { await prisma.order.update({ where: { id: result.id }, data: { lastError: err.message.slice(0, 500) } }); } catch {}
+        const msg = err.message || '';
+        const permanent = /incorrect service|invalid service/i.test(msg);
+        if (permanent) {
+          try {
+            await prisma.$transaction(async (tx) => {
+              await tx.$executeRaw`UPDATE users SET balance = balance + ${charge} WHERE id = ${session.id}`;
+              await tx.order.update({ where: { id: result.id }, data: { status: 'Cancelled', lastError: msg.slice(0, 500) } });
+              await tx.transaction.create({ data: { userId: session.id, type: 'refund', amount: charge, method: 'wallet', status: 'Completed', reference: `REF-${orderId}`, note: `Auto-refund: ${msg.slice(0, 100)}` } });
+            });
+            return Response.json({ error: 'This service is temporarily unavailable. You have been refunded.' }, { status: 409 });
+          } catch (refundErr) { log.error('Order auto-refund', refundErr.message); }
+        }
+        try { await prisma.order.update({ where: { id: result.id }, data: { lastError: msg.slice(0, 500) } }); } catch {}
       }
     }
 
     return Response.json({
       success: true,
+      ...(queued ? { queued: true, message: `Order queued — will start automatically when your current order for this link completes.` } : {}),
       order: {
         id: orderId,
         service: tierName,
