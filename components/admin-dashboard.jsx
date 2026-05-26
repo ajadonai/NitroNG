@@ -331,9 +331,9 @@ function AdminDashboardInner({ initialData }) {
     return { name: d.admin?.name || "Admin", role: d.admin?.role || "superadmin", email: d.admin?.email || "", pages: d.admin?.pages || "*" };
   });
   const [data, setData] = useState(() => {
-    if (!initialData) return { stats: {}, recentOrders: [], recentUsers: [], openTickets: [], activity: [], unreadTicketCount: 0, pendingManualCount: 0 };
+    if (!initialData) return { stats: {}, recentOrders: [], recentUsers: [], openTickets: [], activity: [], unreadTicketCount: 0, pendingManualCount: 0, pendingOrderCount: 0 };
     const d = initialData;
-    return { stats: d, recentOrders: d.recentOrders || [], recentUsers: d.recentUsers || [], openTickets: d.openTickets || [], activity: d.activity || [], unreadTicketCount: d.unreadTicketCount || 0, pendingManualCount: d.pendingManualCount || 0 };
+    return { stats: d, recentOrders: d.recentOrders || [], recentUsers: d.recentUsers || [], openTickets: d.openTickets || [], activity: d.activity || [], unreadTicketCount: d.unreadTicketCount || 0, pendingManualCount: d.pendingManualCount || 0, pendingOrderCount: d.pendingOrderCount || 0 };
   });
   const toastRef = useRef(null);
 
@@ -369,6 +369,7 @@ function AdminDashboardInner({ initialData }) {
           activity: d.activity || [],
           unreadTicketCount: d.unreadTicketCount || 0,
           pendingManualCount: d.pendingManualCount || 0,
+          pendingOrderCount: d.pendingOrderCount || 0,
         });
         if (d.admin?.themePreference && d.admin.themePreference !== "auto") {
           const saved = localStorage.getItem("nitro-admin-theme");
@@ -551,6 +552,7 @@ function AdminDashboardInner({ initialData }) {
             activity: d.activity || [],
             unreadTicketCount: d.unreadTicketCount || 0,
             pendingManualCount: d.pendingManualCount || 0,
+            pendingOrderCount: d.pendingOrderCount || 0,
           });
         }
       } catch {}
