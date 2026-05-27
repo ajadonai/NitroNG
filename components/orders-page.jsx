@@ -288,6 +288,12 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                           <div className="m text-[13px] font-semibold" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{estimateTime(o.speed, o.quantity)}</div>
                         </div>
                       )}
+                      {o.remains != null && o.status !== "Cancelled" && (
+                        <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                          <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Delivered</div>
+                          <div className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{Math.max(0, (o.quantity || 0) - o.remains).toLocaleString()}</div>
+                        </div>
+                      )}
                       {o.startCount != null && (
                         <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                           <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Start Count</div>
@@ -529,6 +535,12 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                         <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                           <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Est. Time</div>
                           <div className="m text-sm font-semibold" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{estimateTime(o.speed, o.quantity)}</div>
+                        </div>
+                      )}
+                      {o.remains != null && o.status !== "Cancelled" && (
+                        <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                          <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Delivered</div>
+                          <div className="m text-sm font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{Math.max(0, (o.quantity || 0) - o.remains).toLocaleString()}</div>
                         </div>
                       )}
                       {o.startCount != null && (
