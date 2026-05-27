@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
 import { getServices, getBalance, isProviderConfigured, getProviderName, checkOrder } from '@/lib/smm';
+import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { calculateTierPrice } from '@/lib/markup';
 
 export const maxDuration = 60;
@@ -122,8 +123,9 @@ export async function POST(req) {
     }
 
     if (action === 'sync-orders') {
-      const stats = { checked: 0, updated: 0, refunded: 0, errors: 0 };
+      const stats = { checked: 0, updated: 0, refunded: 0, dispatched: 0, errors: 0 };
 
+      // 1. Check status of orders already placed with providers
       const activeOrders = await prisma.order.findMany({
         where: {
           status: { in: ['Processing', 'Pending', 'In progress'] },
@@ -134,10 +136,6 @@ export async function POST(req) {
         take: 200,
         orderBy: { createdAt: 'asc' },
       });
-
-      if (activeOrders.length === 0) {
-        return Response.json({ success: true, message: 'No active orders to check', ...stats });
-      }
 
       const byProvider = {};
       for (const order of activeOrders) {
@@ -210,7 +208,42 @@ export async function POST(req) {
         }
       }
 
-      await logActivity(admin.name, `Synced orders: ${stats.checked} checked, ${stats.updated} updated, ${stats.refunded} refunded`, 'order');
+      // 2. Dispatch pending orders that haven't been placed with a provider yet
+      const undispatched = await prisma.order.findMany({
+        where: {
+          status: 'Pending', apiOrderId: null, deletedAt: null,
+          retryCount: { lt: 5 },
+          createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        },
+        include: { service: true, tier: { include: { group: true } } },
+        take: 50, orderBy: { createdAt: 'asc' },
+      });
+
+      for (const order of undispatched) {
+        if (order.link && order.serviceId) {
+          const blocking = await prisma.order.findFirst({
+            where: { serviceId: order.serviceId, link: order.link, status: { in: ['Pending', 'Processing', 'In progress'] }, apiOrderId: { not: null }, id: { not: order.id }, deletedAt: null },
+          });
+          if (blocking) continue;
+        }
+        const claimed = await prisma.order.updateMany({
+          where: { id: order.id, status: 'Pending', apiOrderId: null },
+          data: { status: 'Dispatching', dispatchedAt: new Date() },
+        });
+        if (claimed.count === 0) continue;
+        try {
+          const apiOrderId = await placeWithProvider({ id: order.id, service: order.service, tier: order.tier, link: order.link, quantity: order.quantity, comments: order.comments });
+          if (apiOrderId) { stats.dispatched++; }
+          else { await prisma.order.update({ where: { id: order.id }, data: { status: 'Pending', retryCount: { increment: 1 } } }); }
+        } catch (err) {
+          await prisma.order.update({ where: { id: order.id }, data: { status: 'Pending', retryCount: { increment: 1 }, lastError: err.message.slice(0, 500) } });
+          stats.errors++;
+          log.warn(`Dispatch ${order.orderId}`, err.message);
+        }
+        await new Promise(r => setTimeout(r, 300));
+      }
+
+      await logActivity(admin.name, `Synced orders: ${stats.checked} checked, ${stats.updated} updated, ${stats.refunded} refunded, ${stats.dispatched} dispatched`, 'order');
       return Response.json({ success: true, ...stats });
     }
 
