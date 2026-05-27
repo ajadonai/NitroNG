@@ -166,15 +166,16 @@ model Service {
 // ──────────────────────────────────────
 
 model ServiceGroup {
-  id       String  @id @default(cuid())
-  name     String
-  platform String
-  type     String  @default("Standard")
-  nigerian Boolean @default(false)
-  enabled  Boolean @default(true)
-  sortOrder Int    @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String  @id @default(cuid())
+  name        String
+  platform    String
+  type        String  @default("Standard")
+  nigerian    Boolean @default(false)
+  enabled     Boolean @default(true)
+  sortOrder   Int     @default(0)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   tiers ServiceTier[]
 
@@ -221,6 +222,7 @@ model Order {
   tierId          String?
   batchId         String?
   remains         Int?
+  startCount      Int?
   comments        String?  @db.Text
   retryCount      Int      @default(0)
   lastError       String?

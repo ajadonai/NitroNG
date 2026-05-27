@@ -3,21 +3,34 @@ import { useState, useRef, useEffect } from 'react';
 import { SITE } from '@/lib/site';
 import Waves from '@/components/wave-background';
 
-export default function LandingBelowFold({ t, dark, setModal, siteStats, socialLinks, scrollRoot }) {
+const PLATFORM_ICONS = {
+  Instagram: (dark) => ({ icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>, bg: "rgba(225,48,108,.08)" }),
+  TikTok: (dark) => ({ icon: <svg width="16" height="18" viewBox="0 0 448 512" fill="#ff0050"><path d="M448 209.91a210.06 210.06 0 01-122.77-39.25v178.72A162.55 162.55 0 11185 188.31v89.89a74.62 74.62 0 1052.23 71.18V0h88a121 121 0 00122.77 121.33z"/></svg>, bg: "rgba(255,0,80,.06)" }),
+  YouTube: (dark) => ({ icon: <svg width="20" height="14" viewBox="0 0 576 512" fill="#FF0000"><path d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"/></svg>, bg: "rgba(255,0,0,.06)" }),
+  "Twitter/X": (dark) => ({ icon: <svg width="16" height="16" viewBox="0 0 24 24" fill={dark?"#eee":"#222"}><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>, bg: dark?"rgba(255,255,255,.07)":"rgba(0,0,0,.04)" }),
+  Facebook: (dark) => ({ icon: <svg width="10" height="18" viewBox="0 0 320 512" fill="#1877F2"><path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z"/></svg>, bg: "rgba(24,119,242,.06)" }),
+  Telegram: (dark) => ({ icon: <svg width="18" height="16" viewBox="0 0 496 512" fill="#0088cc"><path d="M248 8C111.033 8 0 119.033 0 256s111.033 248 248 248 248-111.033 248-248S384.967 8 248 8zm114.952 168.66c-3.732 39.215-19.881 134.378-28.1 178.3-3.476 18.584-10.322 24.816-16.948 25.425-14.4 1.326-25.338-9.517-39.287-18.661-21.827-14.308-34.158-23.215-55.346-37.177-24.485-16.135-8.612-25 5.342-39.5 3.652-3.793 67.107-61.51 68.335-66.746.154-.655.3-3.1-1.154-4.384s-3.59-.849-5.135-.5q-3.283.746-104.608 69.142-14.845 10.194-26.894 9.934c-8.855-.191-25.888-5.006-38.551-9.123-15.531-5.048-27.875-7.717-26.8-16.291q.84-6.7 18.45-13.7 108.446-47.248 144.628-62.3c68.872-28.647 83.183-33.623 92.511-33.789 2.052-.034 6.639.474 9.61 2.885a10.452 10.452 0 013.53 6.716 43.765 43.765 0 01.417 9.769z"/></svg>, bg: "rgba(0,136,204,.06)" }),
+  Spotify: (dark) => ({ icon: <svg width="18" height="18" viewBox="0 0 496 512" fill="#1DB954"><path d="M248 8C111.1 8 0 119.1 0 256s111.1 248 248 248 248-111.1 248-248S384.9 8 248 8zm100.7 364.9c-4.2 0-6.8-1.3-10.7-3.6-62.4-37.6-135-39.2-206.7-24.5-3.9 1-9 2.6-11.9 2.6-9.7 0-15.8-7.7-15.8-15.8 0-10.3 6.1-15.2 13.6-16.8 81.9-18.1 165.6-16.5 237 26.2 6.1 3.9 9.7 7.4 9.7 16.5s-7.1 15.4-15.2 15.4zm26.9-65.6c-5.2 0-8.7-2.3-12.3-4.2-62.5-37-155.7-51.9-238.6-29.4-4.8 1.3-7.4 2.6-11.9 2.6-10.7 0-19.4-8.7-19.4-19.4s5.2-17.8 15.5-20.7c27.8-7.8 56.2-13.6 97.8-13.6 64.9 0 127.6 16.1 177 45.5 8.1 4.8 11.3 11 11.3 19.7-.1 10.8-8.5 19.5-19.4 19.5zm31-76.2c-5.2 0-8.4-1.3-12.9-3.9-71.2-42.5-198.5-52.7-280.9-29.7-3.6 1-8.1 2.6-12.9 2.6-13.2 0-23.3-10.3-23.3-23.6 0-13.6 8.4-21.3 17.4-23.9 35.2-10.3 74.6-15.2 117.5-15.2 73 0 149.5 15.2 205.4 47.8 7.8 4.5 12.9 10.7 12.9 22.6 0 13.6-11 23.3-23.2 23.3z"/></svg>, bg: "rgba(29,185,84,.06)" }),
+  Snapchat: (dark) => ({ icon: <svg width="18" height="18" viewBox="0 0 512 512" fill="#FFFC00"><path d="M496.926 366.6c-3.373-9.176-9.8-14.086-17.112-18.153-1.376-.806-2.641-1.451-3.72-1.947-2.182-1.128-4.414-2.22-6.634-3.373-22.8-12.09-40.609-27.341-52.753-45.541a117.22 117.22 0 01-8.8-14.974c-2.49-5.236-2.4-8.41-.2-11.344a22.537 22.537 0 015.4-4.848c3.249-2.182 6.5-4.5 9.752-6.634 5.91-3.87 11.2-7.55 14.673-10.468C449.78 240.138 456.588 228 456.588 213.4c0-19.468-14.337-33.967-33.4-33.967a43.82 43.82 0 00-12.453 1.827l-.3.1a1.478 1.478 0 01-.4.1c-.623.2-.747.1-.747-.5V162.68c0-39.665-9.427-71.907-28.07-95.779C359.622 38.157 321.27 22 273.466 22c-47.732 0-86.144 16.157-107.879 44.9C146.944 90.752 137.553 123 137.553 162.68v18.28c0 .6-.124.7-.747.5a1.478 1.478 0 01-.4-.1l-.3-.1a43.82 43.82 0 00-12.453-1.827c-19.06 0-33.4 14.5-33.4 33.967 0 14.6 6.808 26.742 19.054 35.986 3.461 2.6 8.472 6.434 14.673 10.468 3.249 2.132 6.5 4.452 9.752 6.634a22.537 22.537 0 015.4 4.848c2.2 2.934 2.29 6.108-.2 11.344a117.22 117.22 0 01-8.8 14.974c-12.144 18.2-29.95 33.451-52.753 45.541a82.98 82.98 0 01-6.634 3.373c-1.079.5-2.344 1.141-3.72 1.947-7.31 4.067-13.739 8.977-17.112 18.153-3.174 8.6-1.578 18.5 4.689 29.064a26.817 26.817 0 003.9 5.286c.71.684 1.5 1.327 2.3 1.971 10.4 7.93 23.442 12.64 32.3 15.283 2.38.72 4.5 1.327 6.071 1.826.5.15 1.008.361 1.54.597a4.19 4.19 0 012.267 2.466c.536 1.652.535 3.456 1.3 5.608 1.614 4.5 5.174 9.353 14.573 9.353a37.57 37.57 0 009.577-1.428c11.269-3.049 18.6-4.5 24.171-4.5a20.1 20.1 0 016.31.958c7.886 2.714 14.873 8.063 22.759 13.8 11.919 8.65 25.411 18.5 45.4 24.97A104.91 104.91 0 00267.266 490c3.562 0 7.2-.312 10.782-.884 20.689-4.625 35.6-15.283 48.2-24.17 7.886-5.74 14.873-11.089 22.759-13.8a20.1 20.1 0 016.31-.958c5.574 0 12.9 1.451 24.171 4.5a37.57 37.57 0 009.577 1.428c9.4 0 12.959-4.848 14.573-9.353.76-2.152.76-3.956 1.3-5.608a4.19 4.19 0 012.267-2.466c.536-.236 1.044-.447 1.54-.597 1.577-.5 3.7-1.106 6.071-1.826 8.851-2.643 21.907-7.353 32.3-15.283.8-.647 1.587-1.29 2.3-1.971a26.817 26.817 0 003.9-5.286c6.266-10.566 7.862-20.472 4.688-29.069z"/></svg>, bg: "rgba(255,252,0,.06)" }),
+  LinkedIn: (dark) => ({ icon: <svg width="16" height="16" viewBox="0 0 448 512" fill="#0A66C2"><path d="M100.28 448H7.4V148.9h92.88zM53.79 108.1C24.09 108.1 0 83.5 0 53.8a53.79 53.79 0 01107.58 0c0 29.7-24.1 54.3-53.79 54.3zM447.9 448h-92.68V302.4c0-34.7-.7-79.2-48.29-79.2-48.29 0-55.69 37.7-55.69 76.7V448h-92.78V148.9h89.08v40.8h1.3c12.4-23.5 42.69-48.3 87.83-48.3 94 0 111.28 61.9 111.28 142.3V448z"/></svg>, bg: "rgba(10,102,194,.06)" }),
+};
+const POPULAR_PLATFORM = "Instagram";
+
+export default function LandingBelowFold({ t, dark, setModal, siteStats, socialLinks, scrollRoot, pricingData }) {
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const testimonialScrollRef = useRef(null);
   const wrapRef = useRef(null);
 
   useEffect(() => {
     const root = scrollRoot?.current;
-    const els = wrapRef.current?.querySelectorAll("[data-reveal]");
+    const els = wrapRef.current?.querySelectorAll("[data-reveal]:not(.revealed)");
     if (!els?.length) return;
     const io = new IntersectionObserver((entries) => {
       entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("revealed"); io.unobserve(e.target); } });
     }, { root: root || null, threshold: 0.15 });
     els.forEach(el => io.observe(el));
     return () => io.disconnect();
-  }, [scrollRoot]);
+  }, [scrollRoot, pricingData]);
 
   return (
     <div ref={wrapRef}>
@@ -77,21 +90,25 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
             <div data-reveal className="mb-3 max-md:mb-2.5"><span className="m text-[13px] max-md:text-xs font-semibold tracking-[3px] uppercase" style={{color:t.accent}}>Pricing</span></div>
             <div className="w-full">
               <h2 data-reveal="1" className="text-4xl max-desktop:text-[32px] max-md:text-[26px] font-semibold mb-2 max-md:mb-1" style={{color:t.text}}>Pay per service, <span className="serif italic font-normal text-[40px] max-desktop:text-4xl max-md:text-[30px]" style={{color:t.accent}}>no subscriptions.</span></h2>
-              <p data-reveal="2" className="text-base max-md:text-[15px] mb-10 max-desktop:mb-8 max-md:mb-6 max-w-[520px] max-desktop:max-w-[440px] max-md:max-w-[300px] max-md:mx-auto leading-[1.6] max-md:leading-[1.5]" style={{color:t.textSoft}}>No hidden fees. No monthly plans. Just fund your wallet and order. Prices start from <strong style={{color:dark?"#34d399":"#059669"}}>{"₦"}150 per 1,000</strong>.</p>
+              <p data-reveal="2" className="text-base max-md:text-[15px] mb-10 max-desktop:mb-8 max-md:mb-6 max-w-[520px] max-desktop:max-w-[440px] max-md:max-w-[300px] max-md:mx-auto leading-[1.6] max-md:leading-[1.5]" style={{color:t.textSoft}}>No hidden fees. No monthly plans. Just fund your wallet and order.</p>
 
-              <div data-reveal="3" className="grid grid-cols-3 max-desktop:grid-cols-2 max-md:grid-cols-1 gap-4 max-desktop:gap-3 max-md:gap-3 mb-10 max-desktop:mb-8 max-md:mb-6 items-stretch [&>div]:flex [&>div]:flex-col">
-                {[["Instagram",<svg key="ig" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>,"rgba(225,48,108,.08)",[["Followers","₦850/1K"],["Likes","₦400/1K"],["Views","₦200/1K"]],"₦200",true],["TikTok",<svg key="tt" width="16" height="18" viewBox="0 0 448 512" fill="#ff0050"><path d="M448 209.91a210.06 210.06 0 01-122.77-39.25v178.72A162.55 162.55 0 11185 188.31v89.89a74.62 74.62 0 1052.23 71.18V0h88a121 121 0 00122.77 121.33z"/></svg>,"rgba(255,0,80,.06)",[["Followers","₦1,200/1K"],["Likes","₦500/1K"],["Views","₦150/1K"]],"₦150",false],["YouTube",<svg key="yt" width="20" height="14" viewBox="0 0 576 512" fill="#FF0000"><path d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"/></svg>,"rgba(255,0,0,.06)",[["Subscribers","₦2,500/1K"],["Views","₦350/1K"],["Likes","₦600/1K"]],"₦350",false],["Twitter/X",<svg key="x" width="16" height="16" viewBox="0 0 24 24" fill={dark?"#eee":"#222"}><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,dark?"rgba(255,255,255,.07)":"rgba(0,0,0,.04)",[["Followers","₦1,000/1K"],["Likes","₦450/1K"],["Retweets","₦700/1K"]],"₦450",false],["Facebook",<svg key="fb" width="10" height="18" viewBox="0 0 320 512" fill="#1877F2"><path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z"/></svg>,"rgba(24,119,242,.06)",[["Page Likes","₦900/1K"],["Followers","₦1,100/1K"],["Post Likes","₦350/1K"]],"₦350",false],["Telegram",<svg key="tg" width="18" height="16" viewBox="0 0 496 512" fill="#0088cc"><path d="M248 8C111.033 8 0 119.033 0 256s111.033 248 248 248 248-111.033 248-248S384.967 8 248 8zm114.952 168.66c-3.732 39.215-19.881 134.378-28.1 178.3-3.476 18.584-10.322 24.816-16.948 25.425-14.4 1.326-25.338-9.517-39.287-18.661-21.827-14.308-34.158-23.215-55.346-37.177-24.485-16.135-8.612-25 5.342-39.5 3.652-3.793 67.107-61.51 68.335-66.746.154-.655.3-3.1-1.154-4.384s-3.59-.849-5.135-.5q-3.283.746-104.608 69.142-14.845 10.194-26.894 9.934c-8.855-.191-25.888-5.006-38.551-9.123-15.531-5.048-27.875-7.717-26.8-16.291q.84-6.7 18.45-13.7 108.446-47.248 144.628-62.3c68.872-28.647 83.183-33.623 92.511-33.789 2.052-.034 6.639.474 9.61 2.885a10.452 10.452 0 013.53 6.716 43.765 43.765 0 01.417 9.769z"/></svg>,"rgba(0,136,204,.06)",[["Members","₦1,500/1K"],["Post Views","₦250/1K"],["Reactions","₦500/1K"]],"₦250",false]].map(([platform,icon,iconBg,services,fromPrice,isPopular])=>(
-                  <div key={platform} className="s3-card relative rounded-2xl overflow-hidden flex flex-col" style={{background:dark?"rgba(255,255,255,.09)":"rgba(255,255,255,.85)",border:`${isPopular?"1.5":"1"}px solid ${isPopular?t.accent:(dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.18)")}`}}>
+              {pricingData?.length > 0 && <div data-reveal="3" className="grid grid-cols-3 max-desktop:grid-cols-2 max-md:grid-cols-1 gap-4 max-desktop:gap-3 max-md:gap-3 mb-10 max-desktop:mb-8 max-md:mb-6 items-stretch [&>div]:flex [&>div]:flex-col">
+                {pricingData.filter(p => PLATFORM_ICONS[p.platform]).slice(0, 6).map(p => {
+                  const pi = PLATFORM_ICONS[p.platform](dark);
+                  const isPopular = p.platform === POPULAR_PLATFORM;
+                  const fromPrice = `₦${(p.minPrice / 100).toLocaleString()}`;
+                  return (
+                  <div key={p.platform} className="s3-card relative rounded-2xl overflow-hidden flex flex-col" style={{background:dark?"rgba(255,255,255,.09)":"rgba(255,255,255,.85)",border:`${isPopular?"1.5":"1"}px solid ${isPopular?t.accent:(dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.18)")}`}}>
                     {isPopular&&<div className="absolute top-3 right-3 py-[3px] px-2.5 rounded-md text-[10px] font-semibold tracking-[0.5px] uppercase" style={{background:dark?"rgba(196,125,142,.19)":"rgba(196,125,142,.14)",color:t.accent,border:`0.5px solid ${dark?"rgba(196,125,142,.28)":"rgba(196,125,142,.24)"}`}}>Most popular</div>}
                     <div className="pt-5 px-5 pb-4 flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{background:iconBg}}>{icon}</div>
-                      <span className="text-base font-semibold" style={{color:t.text}}>{platform}</span>
+                      <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{background:pi.bg}}>{pi.icon}</div>
+                      <span className="text-base font-semibold" style={{color:t.text}}>{p.platform}</span>
                     </div>
                     <div className="flex-1">
-                      {services.map(([svc,price])=>(
-                        <div key={svc} className="flex justify-between items-center py-3 px-5" style={{borderTop:`1px solid ${dark?"rgba(255,255,255,.16)":"rgba(0,0,0,.12)"}`}}>
-                          <span className="text-sm" style={{color:dark?"rgba(244,241,237,.5)":"rgba(28,27,25,.55)"}}>{svc}</span>
-                          <span className="text-sm font-semibold" style={{color:dark?"#34d399":"#059669"}}>{price}</span>
+                      {p.services.slice(0, 3).map(s=>(
+                        <div key={s.type} className="flex justify-between items-center py-3 px-5" style={{borderTop:`1px solid ${dark?"rgba(255,255,255,.16)":"rgba(0,0,0,.12)"}`}}>
+                          <span className="text-sm" style={{color:dark?"rgba(244,241,237,.5)":"rgba(28,27,25,.55)"}}>{s.type}</span>
+                          <span className="text-sm font-semibold" style={{color:dark?"#34d399":"#059669"}}>{s.price}</span>
                         </div>
                       ))}
                     </div>
@@ -100,8 +117,9 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
                       <button onClick={()=>setModal("signup")} className="py-2 px-[22px] rounded-lg text-[13px] font-semibold cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{border:`1.5px solid ${t.accent}`,background:dark?"rgba(196,125,142,.24)":"rgba(196,125,142,.18)",color:t.accent,transition:"all .2s"}}>Order now</button>
                     </div>
                   </div>
-                ))}
-              </div>
+                  );
+                })}
+              </div>}
 
               <div data-reveal="4" className="s3-deposit flex items-center gap-4 py-5 px-6 rounded-[14px]" style={{background:dark?"rgba(52,211,153,.08)":"rgba(5,150,105,.06)",border:`1px solid ${dark?"rgba(52,211,153,.24)":"rgba(5,150,105,.19)"}`}}>
                 <div className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0" style={{background:dark?"rgba(52,211,153,.08)":"rgba(5,150,105,.06)"}}>

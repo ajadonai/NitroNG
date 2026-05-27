@@ -58,16 +58,17 @@ function LandingInner(){
   const [scrolled,setScrolled]=useState(false);
   const [activeSection,setActiveSection]=useState(0);
   const scrollRef=useRef(null);
-  const [siteStats,setSiteStats]=useState({users:"2K+",orders:"50K+"});
+  const [siteStats,setSiteStats]=useState({users:"1.2K+",orders:"20K+"});
   const [siteAlerts,setSiteAlerts]=useState([]);
   const [socialLinks,setSocialLinks]=useState({});
+  const [pricingData,setPricingData]=useState(null);
 
   useEffect(()=>{const el=scrollRef.current;if(!el)return;const onScroll=()=>setScrolled(el.scrollTop>20);el.addEventListener("scroll",onScroll);return()=>el.removeEventListener("scroll",onScroll);},[]);
   const [logoutMsg,setLogoutMsg]=useState(false);
   const [googleError,setGoogleError]=useState(false);
   const [sessionExpired,setSessionExpired]=useState(false);
   useEffect(()=>{const p=new URLSearchParams(window.location.search);if(p.get("login"))setModal("login");if(p.get("signup"))setModal("signup");if(p.get("ref")){setModal("signup");setHeroRefCode(p.get("ref"));};if(p.get("via"))setHeroVia(p.get("via"));if(p.get("session_expired")){setSessionExpired(true);window.history.replaceState({},"","/");}if(p.get("logout")){setLogoutMsg(true);window.history.replaceState({},"","/");setTimeout(()=>setLogoutMsg(false),4000);}if(p.get("google_error")){setGoogleError(true);window.history.replaceState({},"","/");setTimeout(()=>setGoogleError(false),5000);setModal("login");}if(p.get("error")==="account_pending_deletion"){setHeroError("This account is scheduled for deletion. Contact support@nitro.ng to reinstate it.");window.history.replaceState({},"","/");}if(p.get("error")==="disposable_email"){setHeroError("Disposable email addresses aren't allowed. Please sign up with a permanent email.");setModal("signup");window.history.replaceState({},"","/");}if(["google_cancelled","google_state_mismatch","google_token_failed","google_no_email","google_failed","google_missing_params","google_not_configured","google_account_deleted"].includes(p.get("error"))){setGoogleError(true);window.history.replaceState({},"","/");setTimeout(()=>setGoogleError(false),5000);setModal("login");}},[]);
-  useEffect(()=>{(async()=>{try{const [maintRes,siRes,stRes]=await Promise.all([fetch("/api/maintenance-check"),fetch("/api/site-info"),fetch("/api/settings")]);if(maintRes.ok){const m=await maintRes.json();if(m.maintenance){window.location.replace("/maintenance");return;}}if(siRes.ok){const d=await siRes.json();if(d.stats)setSiteStats(d.stats);if(d.alerts?.length)setSiteAlerts(d.alerts);}if(stRes.ok){const d=await stRes.json();setSocialLinks(d.settings||{});}}catch{}})();},[]);
+  useEffect(()=>{(async()=>{try{const [maintRes,siRes,stRes,prRes]=await Promise.all([fetch("/api/maintenance-check"),fetch("/api/site-info"),fetch("/api/settings"),fetch("/api/pricing")]);if(maintRes.ok){const m=await maintRes.json();if(m.maintenance){window.location.replace("/maintenance");return;}}if(siRes.ok){const d=await siRes.json();if(d.stats)setSiteStats(d.stats);if(d.alerts?.length)setSiteAlerts(d.alerts);}if(stRes.ok){const d=await stRes.json();setSocialLinks(d.settings||{});}if(prRes.ok){const d=await prRes.json();if(d.platforms?.length)setPricingData(d.platforms);}}catch{}})();},[]);
   const closeModal=useCallback(()=>setModal(null),[]);
 
   // Scroll lock when modal is open
@@ -272,7 +273,7 @@ function LandingInner(){
         </section>
 
 
-        <BelowFold t={t} dark={dark} setModal={setModal} siteStats={siteStats} socialLinks={socialLinks} scrollRoot={scrollRef} />
+        <BelowFold t={t} dark={dark} setModal={setModal} siteStats={siteStats} socialLinks={socialLinks} scrollRoot={scrollRef} pricingData={pricingData} />
 
 
       </div>

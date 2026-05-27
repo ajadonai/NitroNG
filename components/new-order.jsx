@@ -96,6 +96,7 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
       <div className="flex items-start justify-between gap-3 max-md:flex-wrap max-md:gap-1.5">
         <div className="flex-1 min-w-0 max-md:basis-[60%]">
           <div className="text-sm md:text-[15px] desktop:text-base font-semibold mb-1" style={{ color: svc.ng ? (dark ? "#5dcaa5" : "#0F6E56") : t.text }}>{svc.name}</div>
+          {svc.description && <div className="text-[11px] mb-1.5 leading-snug" style={{ color: t.textMuted }}>{svc.description}</div>}
           {!isSel && (
             <div className="flex gap-[3px] flex-wrap">
               {svc.tiers.map(tier => (
@@ -460,6 +461,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
         name: g.name,
         type: g.type?.toLowerCase() || "standard",
         ng: g.nigerian,
+        description: g.description || null,
         tiers: g.tiers.map(tier => ({
           id: tier.id,
           tier: tier.tier,

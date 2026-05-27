@@ -44,6 +44,7 @@ export async function GET(req) {
         quantity: o.quantity,
         charge: o.charge / 100,
         remains: o.remains,
+        startCount: o.startCount,
         status: o.status,
         apiOrderId: o.apiOrderId,
         batchId: o.batchId || null,
@@ -79,9 +80,11 @@ export async function PATCH(req) {
           const status = await checkOrder(provider, order.apiOrderId);
           const statusMap = { 'Completed': 'Completed', 'In progress': 'Processing', 'Processing': 'Processing', 'Pending': 'Pending', 'Partial': 'Partial', 'Canceled': 'Cancelled', 'Refunded': 'Cancelled' };
           const newStatus = statusMap[status.status] || order.status;
+          const liveStartCount = status.start_count != null ? Number(status.start_count) : null;
           const updateData = {
             ...(newStatus !== order.status && { status: newStatus }),
             ...(status.remains != null && { remains: Number(status.remains) }),
+            ...(liveStartCount != null && !order.startCount && { startCount: liveStartCount }),
           };
           if (Object.keys(updateData).length > 0) {
             await prisma.order.update({ where: { id: order.id }, data: updateData });
@@ -139,8 +142,8 @@ export async function PATCH(req) {
 
       // Recalculate charge from current tier/service price (not the old order's charge)
       const currentSellPer1k = order.tier?.sellPer1k || order.service.sellPer1k;
-      let charge = Math.round((currentSellPer1k / 1000) * order.quantity);
-      const cost = Math.round((order.service.costPer1k * usdRate / 1000) * order.quantity);
+      let charge = Math.round((currentSellPer1k / 1000) * order.quantity / 100) * 100;
+      const cost = Math.round((order.service.costPer1k * usdRate / 1000) * order.quantity / 100) * 100;
 
       if (!charge || charge <= 0) {
         return Response.json({ error: 'Service pricing not configured' }, { status: 400 });
@@ -328,8 +331,8 @@ export async function POST(req) {
       if (qty < effectiveMin || qty > service.max) {
         return Response.json({ error: `Quantity must be between ${effectiveMin.toLocaleString()} and ${service.max.toLocaleString()}` }, { status: 400 });
       }
-      charge = Math.round((tier.sellPer1k / 1000) * qty);
-      cost = Math.round((service.costPer1k * usdRate / 1000) * qty);
+      charge = Math.round((tier.sellPer1k / 1000) * qty / 100) * 100;
+      cost = Math.round((service.costPer1k * usdRate / 1000) * qty / 100) * 100;
     } else {
       // Legacy flow: direct serviceId
       service = await prisma.service.findUnique({ where: { id: serviceId } });
@@ -343,8 +346,8 @@ export async function POST(req) {
       if (qty < service.min || qty > service.max) {
         return Response.json({ error: `Quantity must be between ${service.min.toLocaleString()} and ${service.max.toLocaleString()}` }, { status: 400 });
       }
-      charge = Math.round((service.sellPer1k / 1000) * qty);
-      cost = Math.round((service.costPer1k * usdRate / 1000) * qty);
+      charge = Math.round((service.sellPer1k / 1000) * qty / 100) * 100;
+      cost = Math.round((service.costPer1k * usdRate / 1000) * qty / 100) * 100;
       tierName = service.name;
     }
 
@@ -369,7 +372,7 @@ export async function POST(req) {
           if (userTier.discount > 0) {
             loyaltyDiscount = Math.round(charge * (userTier.discount / 100));
             loyaltyTierName = userTier.name;
-            charge = Math.max(1, charge - loyaltyDiscount); // floor at 1 kobo
+            charge = Math.max(100, Math.round((charge - loyaltyDiscount) / 100) * 100);
           }
         }
       }
@@ -391,7 +394,7 @@ export async function POST(req) {
           activePromoId = promo.id;
           activePromoType = type;
           promoLabel = promo.lineItemLabel;
-          charge = Math.max(1, charge - promoDiscount);
+          charge = Math.max(100, Math.round((charge - promoDiscount) / 100) * 100);
         }
       }
     } catch (err) { log.warn('Promotion discount', err.message); }
