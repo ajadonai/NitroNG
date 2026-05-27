@@ -1,3 +1,5 @@
+export const maxDuration = 60;
+
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { checkOrder } from '@/lib/smm';
@@ -31,10 +33,6 @@ export async function GET(req) {
       orderBy: { createdAt: 'asc' }, // oldest first
     });
 
-    if (activeOrders.length === 0) {
-      return Response.json({ success: true, message: 'No active orders to check', ...stats });
-    }
-
     // Group orders by provider for efficient batch checking
     const byProvider = {};
     for (const order of activeOrders) {
@@ -44,6 +42,7 @@ export async function GET(req) {
     }
 
     for (const [provider, orders] of Object.entries(byProvider)) {
+      if (!orders.length) continue;
       // Check orders one by one (most providers don't support reliable bulk status)
       for (const order of orders) {
         try {
@@ -65,9 +64,10 @@ export async function GET(req) {
           }
 
           const liveRemains = result.remains != null ? Number(result.remains) : null;
+          const liveStartCount = result.start_count != null ? Number(result.start_count) : null;
 
           if (!newStatus && liveRemains != null && liveRemains !== order.remains) {
-            await prisma.order.update({ where: { id: order.id }, data: { remains: liveRemains } });
+            await prisma.order.update({ where: { id: order.id }, data: { remains: liveRemains, ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}) } });
             continue;
           }
 
@@ -75,7 +75,7 @@ export async function GET(req) {
 
           await prisma.order.update({
             where: { id: order.id },
-            data: { status: newStatus, ...(liveRemains != null ? { remains: liveRemains } : {}) },
+            data: { status: newStatus, ...(liveRemains != null ? { remains: liveRemains } : {}), ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}) },
           });
           stats.updated++;
 
@@ -89,7 +89,7 @@ export async function GET(req) {
           if (newStatus === 'Partial' && result.remains) {
             const remains = Number(result.remains) || 0;
             if (remains > 0 && order.charge > 0 && order.quantity > 0) {
-              const refundAmount = Math.round((remains / order.quantity) * order.charge);
+              const refundAmount = Math.round((remains / order.quantity) * order.charge / 100) * 100;
               if (refundAmount > 0) {
                 await refundOrder(order, refundAmount);
                 stats.refunded++;

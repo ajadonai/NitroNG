@@ -1,3 +1,5 @@
+export const maxDuration = 60;
+
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 

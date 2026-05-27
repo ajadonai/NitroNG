@@ -17,8 +17,8 @@ export async function GET() {
       serviceCount = services;
     } catch {}
 
-    const USER_BASE = 2000;
-    const ORDER_BASE = 50000;
+    const USER_BASE = 1145;
+    const ORDER_BASE = 19961;
     const displayUsers = userCount + USER_BASE;
     const displayOrders = orderCount + ORDER_BASE;
 

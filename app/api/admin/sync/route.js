@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
 import { getServices, getBalance, isProviderConfigured, getProviderName, checkOrder } from '@/lib/smm';
+import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { calculateTierPrice } from '@/lib/markup';
 
 export const maxDuration = 60;
@@ -24,7 +25,8 @@ export async function POST(req) {
   if (error) return error;
 
   try {
-    const { action, provider: pid } = await req.json();
+    const body = await req.json();
+    const { action, provider: pid } = body;
     const VALID_PROVIDERS = ['mtp', 'jap', 'dao'];
 
     if (action === 'test') {
@@ -122,8 +124,9 @@ export async function POST(req) {
     }
 
     if (action === 'sync-orders') {
-      const stats = { checked: 0, updated: 0, refunded: 0, errors: 0 };
+      const stats = { checked: 0, updated: 0, refunded: 0, dispatched: 0, errors: 0 };
 
+      // 1. Check status of orders already placed with providers
       const activeOrders = await prisma.order.findMany({
         where: {
           status: { in: ['Processing', 'Pending', 'In progress'] },
@@ -134,10 +137,6 @@ export async function POST(req) {
         take: 200,
         orderBy: { createdAt: 'asc' },
       });
-
-      if (activeOrders.length === 0) {
-        return Response.json({ success: true, message: 'No active orders to check', ...stats });
-      }
 
       const byProvider = {};
       for (const order of activeOrders) {
@@ -164,15 +163,16 @@ export async function POST(req) {
             else if (['in progress', 'inprogress', 'processing', 'pending'].includes(providerStatus)) newStatus = 'Processing';
 
             const liveRemains = result.remains != null ? Number(result.remains) : null;
+            const liveStartCount = result.start_count != null ? Number(result.start_count) : null;
 
             if (!newStatus && liveRemains != null && liveRemains !== order.remains) {
-              await prisma.order.update({ where: { id: order.id }, data: { remains: liveRemains } });
+              await prisma.order.update({ where: { id: order.id }, data: { remains: liveRemains, ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}) } });
               continue;
             }
 
             if (!newStatus || newStatus === order.status) continue;
 
-            await prisma.order.update({ where: { id: order.id }, data: { status: newStatus, ...(liveRemains != null ? { remains: liveRemains } : {}) } });
+            await prisma.order.update({ where: { id: order.id }, data: { status: newStatus, ...(liveRemains != null ? { remains: liveRemains } : {}), ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}) } });
             stats.updated++;
 
             if (newStatus === 'Cancelled' && order.charge > 0) {
@@ -210,7 +210,42 @@ export async function POST(req) {
         }
       }
 
-      await logActivity(admin.name, `Synced orders: ${stats.checked} checked, ${stats.updated} updated, ${stats.refunded} refunded`, 'order');
+      // 2. Dispatch pending orders that haven't been placed with a provider yet
+      const undispatched = await prisma.order.findMany({
+        where: {
+          status: 'Pending', apiOrderId: null, deletedAt: null,
+          retryCount: { lt: 5 },
+          createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        },
+        include: { service: true, tier: { include: { group: true } } },
+        take: 50, orderBy: { createdAt: 'asc' },
+      });
+
+      for (const order of undispatched) {
+        if (order.link && order.serviceId) {
+          const blocking = await prisma.order.findFirst({
+            where: { serviceId: order.serviceId, link: order.link, status: { in: ['Pending', 'Processing', 'In progress'] }, apiOrderId: { not: null }, id: { not: order.id }, deletedAt: null },
+          });
+          if (blocking) continue;
+        }
+        const claimed = await prisma.order.updateMany({
+          where: { id: order.id, status: 'Pending', apiOrderId: null },
+          data: { status: 'Dispatching', dispatchedAt: new Date() },
+        });
+        if (claimed.count === 0) continue;
+        try {
+          const apiOrderId = await placeWithProvider({ id: order.id, service: order.service, tier: order.tier, link: order.link, quantity: order.quantity, comments: order.comments });
+          if (apiOrderId) { stats.dispatched++; }
+          else { await prisma.order.update({ where: { id: order.id }, data: { status: 'Pending', retryCount: { increment: 1 } } }); }
+        } catch (err) {
+          await prisma.order.update({ where: { id: order.id }, data: { status: 'Pending', retryCount: { increment: 1 }, lastError: err.message.slice(0, 500) } });
+          stats.errors++;
+          log.warn(`Dispatch ${order.orderId}`, err.message);
+        }
+        await new Promise(r => setTimeout(r, 300));
+      }
+
+      await logActivity(admin.name, `Synced orders: ${stats.checked} checked, ${stats.updated} updated, ${stats.refunded} refunded, ${stats.dispatched} dispatched`, 'order');
       return Response.json({ success: true, ...stats });
     }
 
@@ -298,6 +333,51 @@ export async function POST(req) {
       await logActivity(admin.name, `Price sync: ${stats.updated} costs updated, ${stats.repriced} repriced, ${stats.losers} below cost`, 'service');
 
       return Response.json({ success: true, ...stats, losers: losers.slice(0, 20) });
+    }
+
+    if (action === 'test-order') {
+      const { serviceId, provider: testProvider, link, quantity } = body;
+      if (!serviceId || !link || !quantity) return Response.json({ error: 'Need serviceId, link, quantity' }, { status: 400 });
+      const providerId = testProvider || 'jap';
+      if (!isProviderConfigured(providerId)) return Response.json({ error: `${getProviderName(providerId)} not configured` }, { status: 400 });
+
+      const { placeOrder, getBalance: getBal } = await import('@/lib/smm');
+      const balBefore = await getBal(providerId).catch(e => ({ error: e.message }));
+      try {
+        const result = await placeOrder(providerId, serviceId, link, quantity);
+        const balAfter = await getBal(providerId).catch(e => ({ error: e.message }));
+        return Response.json({ success: true, result, balanceBefore: balBefore, balanceAfter: balAfter });
+      } catch (err) {
+        const balAfter = await getBal(providerId).catch(e => ({ error: e.message }));
+        return Response.json({ success: false, error: err.message, balanceBefore: balBefore, balanceAfter: balAfter, request: { provider: providerId, serviceId, link, quantity } });
+      }
+    }
+
+    if (action === 'check-provider-order') {
+      const { orderId: checkId, provider: checkProvider } = body;
+      if (!checkId) return Response.json({ error: 'Need orderId' }, { status: 400 });
+      const providerId = checkProvider || 'jap';
+      if (!isProviderConfigured(providerId)) return Response.json({ error: `${getProviderName(providerId)} not configured` }, { status: 400 });
+      try {
+        const result = await checkOrder(providerId, checkId);
+        return Response.json({ success: true, result });
+      } catch (err) {
+        return Response.json({ success: false, error: err.message });
+      }
+    }
+
+    if (action === 'cancel-provider-order') {
+      const { orderId: cancelId, provider: cancelProvider } = body;
+      if (!cancelId) return Response.json({ error: 'Need orderId' }, { status: 400 });
+      const providerId = cancelProvider || 'jap';
+      if (!isProviderConfigured(providerId)) return Response.json({ error: `${getProviderName(providerId)} not configured` }, { status: 400 });
+      const { cancelOrder } = await import('@/lib/smm');
+      try {
+        const result = await cancelOrder(providerId, cancelId);
+        return Response.json({ success: true, result });
+      } catch (err) {
+        return Response.json({ success: false, error: err.message });
+      }
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });

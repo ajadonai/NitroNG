@@ -273,9 +273,9 @@ export async function PATCH(req) {
       const usdRate = Number(usdRateSetting?.value || 1600);
 
       const orderData = completed.map(o => {
-        const charge = Math.round((o.tier.sellPer1k / 1000) * o.quantity);
-        const cost = Math.round((o.service.costPer1k * usdRate / 1000) * o.quantity);
-        return { original: o, charge: Math.max(1, charge), cost };
+        const charge = Math.round((o.tier.sellPer1k / 1000) * o.quantity / 100) * 100;
+        const cost = Math.round((o.service.costPer1k * usdRate / 1000) * o.quantity / 100) * 100;
+        return { original: o, charge: Math.max(100, charge), cost };
       });
       const totalCharge = orderData.reduce((s, d) => s + d.charge, 0);
 
@@ -415,8 +415,8 @@ export async function POST(req) {
         driftRows.push({ row: i + 1, clientPrice, serverPrice: tier.sellPer1k });
       }
 
-      const charge = Math.round((tier.sellPer1k / 1000) * qty);
-      const cost = Math.round((service.costPer1k * usdRate / 1000) * qty);
+      const charge = Math.round((tier.sellPer1k / 1000) * qty / 100) * 100;
+      const cost = Math.round((service.costPer1k * usdRate / 1000) * qty / 100) * 100;
       if (!charge || charge <= 0) {
         return Response.json({ error: `Row ${i + 1}: service pricing not configured` }, { status: 400 });
       }
@@ -464,9 +464,9 @@ export async function POST(req) {
       // Apply loyalty + promotion discounts and compute total
       const orderData = resolved.map(r => {
         const discount = loyaltyPercent > 0 ? Math.round(r.charge * (loyaltyPercent / 100)) : 0;
-        let afterLoyalty = Math.max(1, r.charge - discount);
+        let afterLoyalty = Math.max(100, Math.round((r.charge - discount) / 100) * 100);
         const promoDiscount = activePromo ? applyPromotionDiscount(afterLoyalty, activePromo, activePromo.maxDiscountPerOrder) : 0;
-        const finalCharge = Math.max(1, afterLoyalty - promoDiscount);
+        const finalCharge = Math.max(100, Math.round((afterLoyalty - promoDiscount) / 100) * 100);
         return { ...r, discount, promoDiscount, finalCharge };
       });
 
