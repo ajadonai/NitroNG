@@ -333,6 +333,24 @@ export async function POST(req) {
       return Response.json({ success: true, ...stats, losers: losers.slice(0, 20) });
     }
 
+    if (action === 'test-order') {
+      const { serviceId, provider: testProvider, link, quantity } = await req.json().catch(() => ({}));
+      if (!serviceId || !link || !quantity) return Response.json({ error: 'Need serviceId, link, quantity' }, { status: 400 });
+      const providerId = testProvider || 'jap';
+      if (!isProviderConfigured(providerId)) return Response.json({ error: `${getProviderName(providerId)} not configured` }, { status: 400 });
+
+      const { placeOrder, getBalance: getBal } = await import('@/lib/smm');
+      const balBefore = await getBal(providerId).catch(e => ({ error: e.message }));
+      try {
+        const result = await placeOrder(providerId, serviceId, link, quantity);
+        const balAfter = await getBal(providerId).catch(e => ({ error: e.message }));
+        return Response.json({ success: true, result, balanceBefore: balBefore, balanceAfter: balAfter });
+      } catch (err) {
+        const balAfter = await getBal(providerId).catch(e => ({ error: e.message }));
+        return Response.json({ success: false, error: err.message, balanceBefore: balBefore, balanceAfter: balAfter, request: { provider: providerId, serviceId, link, quantity } });
+      }
+    }
+
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
     log.error('Sync', err.stack || err.message);
