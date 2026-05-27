@@ -221,6 +221,7 @@ model Order {
   tierId          String?
   batchId         String?
   remains         Int?
+  startCount      Int?
   comments        String?  @db.Text
   retryCount      Int      @default(0)
   lastError       String?

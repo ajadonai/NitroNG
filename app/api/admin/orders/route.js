@@ -46,6 +46,7 @@ export async function GET(req) {
         charge: o.charge / 100,
         cost: o.cost / 100,
         remains: o.remains,
+        startCount: o.startCount,
         status: o.status,
         apiOrderId: o.apiOrderId,
         batchId: o.batchId || null,
@@ -149,8 +150,12 @@ export async function POST(req) {
           const statusMap = { 'Completed': 'Completed', 'In progress': 'Processing', 'Processing': 'Processing', 'Pending': 'Pending', 'Partial': 'Partial', 'Canceled': 'Cancelled', 'Refunded': 'Cancelled' };
           const newStatus = statusMap[status.status] || order.status;
           const liveRemains = status.remains != null ? Number(status.remains) : null;
-          if (liveRemains != null && liveRemains !== order.remains) {
-            await prisma.order.update({ where: { id: order.id }, data: { remains: liveRemains } });
+          const liveStartCount = status.start_count != null ? Number(status.start_count) : null;
+          const remainsUpdate = {};
+          if (liveRemains != null && liveRemains !== order.remains) remainsUpdate.remains = liveRemains;
+          if (liveStartCount != null && !order.startCount) remainsUpdate.startCount = liveStartCount;
+          if (Object.keys(remainsUpdate).length > 0) {
+            await prisma.order.update({ where: { id: order.id }, data: remainsUpdate });
           }
           if (newStatus !== order.status) {
             if (newStatus === 'Cancelled' && order.status !== 'Cancelled' && order.charge > 0) {
@@ -207,7 +212,7 @@ export async function POST(req) {
             }
           }
           await logActivity(admin.name, `Checked order ${orderId} via ${providerLabel}: ${newStatus}`, 'order');
-          return Response.json({ success: true, status: newStatus, remains: status.remains });
+          return Response.json({ success: true, status: newStatus, remains: status.remains, startCount: status.start_count });
         } catch (e) {
           return Response.json({ success: true, status: order.status, message: e.message });
         }

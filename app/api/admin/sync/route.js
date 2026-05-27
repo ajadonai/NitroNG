@@ -163,15 +163,16 @@ export async function POST(req) {
             else if (['in progress', 'inprogress', 'processing', 'pending'].includes(providerStatus)) newStatus = 'Processing';
 
             const liveRemains = result.remains != null ? Number(result.remains) : null;
+            const liveStartCount = result.start_count != null ? Number(result.start_count) : null;
 
             if (!newStatus && liveRemains != null && liveRemains !== order.remains) {
-              await prisma.order.update({ where: { id: order.id }, data: { remains: liveRemains } });
+              await prisma.order.update({ where: { id: order.id }, data: { remains: liveRemains, ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}) } });
               continue;
             }
 
             if (!newStatus || newStatus === order.status) continue;
 
-            await prisma.order.update({ where: { id: order.id }, data: { status: newStatus, ...(liveRemains != null ? { remains: liveRemains } : {}) } });
+            await prisma.order.update({ where: { id: order.id }, data: { status: newStatus, ...(liveRemains != null ? { remains: liveRemains } : {}), ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}) } });
             stats.updated++;
 
             if (newStatus === 'Cancelled' && order.charge > 0) {
