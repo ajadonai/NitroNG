@@ -79,6 +79,7 @@ export async function GET(req) {
           platform: g.platform,
           type: g.type,
           nigerian: g.nigerian,
+          ...(g.description ? { description: g.description } : {}),
           tiers: g.tiers.filter(t => t.service || t.serviceId).map(t => ({
             id: t.id,
             tier: t.tier,

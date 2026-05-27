@@ -186,7 +186,7 @@ export async function POST(req) {
             } else if (newStatus === 'Partial' && status.remains) {
               const remains = Number(status.remains) || 0;
               if (remains > 0 && order.charge > 0 && order.quantity > 0) {
-                const refundAmount = Math.round((remains / order.quantity) * order.charge);
+                const refundAmount = Math.round((remains / order.quantity) * order.charge / 100) * 100;
                 if (refundAmount > 0) {
                   await prisma.$transaction(async (tx) => {
                     await tx.order.update({ where: { id: order.id }, data: { status: 'Partial' } });
