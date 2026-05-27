@@ -2,8 +2,8 @@ import prisma from '@/lib/prisma';
 import PricingView from '@/components/pricing-page';
 
 export const metadata = {
-  title: 'Pricing',
-  description: 'Transparent Naira pricing for Instagram, TikTok, YouTube, X, and 35+ platforms. No hidden fees. See exactly what you pay per 1,000 followers, likes, views, and more.',
+  title: 'SMM Pricing | Cheapest Naira SMM Prices in Nigeria',
+  description: 'Nigeria\'s most affordable SMM panel. Transparent Naira pricing for Instagram, TikTok, YouTube, X, and 35+ platforms. No hidden fees, no USD conversion. Starting from ₦20 per 1,000.',
   alternates: { canonical: 'https://nitro.ng/pricing' },
   openGraph: {
     title: 'Pricing | The Nitro NG',

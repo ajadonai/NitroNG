@@ -26,6 +26,7 @@ export async function GET() {
       orders = await prisma.order.findMany({
         where: { userId: user.id },
         orderBy: { createdAt: 'desc' },
+        take: 200,
         include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, speed: true, group: { select: { name: true, platform: true } } } } },
       });
     } catch (e) { log.error('Dashboard', 'Orders query failed', { error: e.message }); }

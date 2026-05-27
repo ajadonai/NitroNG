@@ -19,7 +19,7 @@ export async function GET() {
       revenueAgg, costAgg, depositsAgg,
       todayOrders, todayRevenueAgg, todayUsers, todayDepositsAgg,
       yesterdayRevenueAgg, yesterdayDepositsAgg,
-      recentOrders, recentUsers, openTickets, unreadTicketCount, pendingManualCount, activityLogs,
+      recentOrders, recentUsers, openTickets, unreadTicketCount, pendingManualCount, pendingOrderCount, activityLogs,
     ] = await Promise.all([
       prisma.user.count({ where: { emailVerified: true } }),
       prisma.order.count({ where: { deletedAt: null } }),
@@ -63,6 +63,10 @@ export async function GET() {
       prisma.transaction.count({
         where: { method: 'manual', status: 'Pending' },
       }).catch(() => 0),
+      // Pending + Processing order count for badge
+      prisma.order.count({
+        where: { status: { in: ['Pending', 'Processing'] }, deletedAt: null },
+      }).catch(() => 0),
       // Recent activity (last 8)
       prisma.activityLog.findMany({
         orderBy: { createdAt: 'desc' },
@@ -97,6 +101,7 @@ export async function GET() {
       totalDeposits: (depositsAgg._sum.amount || 0) / 100,
       unreadTicketCount,
       pendingManualCount,
+      pendingOrderCount,
       openTickets: openTickets.map(tk => ({
         id: tk.ticketId || tk.id,
         subject: tk.subject,
