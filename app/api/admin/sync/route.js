@@ -25,7 +25,8 @@ export async function POST(req) {
   if (error) return error;
 
   try {
-    const { action, provider: pid } = await req.json();
+    const body = await req.json();
+    const { action, provider: pid } = body;
     const VALID_PROVIDERS = ['mtp', 'jap', 'dao'];
 
     if (action === 'test') {
@@ -334,7 +335,7 @@ export async function POST(req) {
     }
 
     if (action === 'test-order') {
-      const { serviceId, provider: testProvider, link, quantity } = await req.json().catch(() => ({}));
+      const { serviceId, provider: testProvider, link, quantity } = body;
       if (!serviceId || !link || !quantity) return Response.json({ error: 'Need serviceId, link, quantity' }, { status: 400 });
       const providerId = testProvider || 'jap';
       if (!isProviderConfigured(providerId)) return Response.json({ error: `${getProviderName(providerId)} not configured` }, { status: 400 });
