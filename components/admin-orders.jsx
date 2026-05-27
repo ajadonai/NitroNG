@@ -322,6 +322,10 @@ export default function AdminOrdersPage({ dark, t }) {
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Provider Order</div>
                                 <div className="m text-[13px] font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.apiOrderId}</div>
                               </div>}
+                              {o.startCount != null && <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                                <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Start Count</div>
+                                <div className="m text-[13px] font-semibold" style={{ color: t.text }}>{o.startCount.toLocaleString()}</div>
+                              </div>}
                             </div>
                             ); })()}
 
@@ -422,6 +426,10 @@ export default function AdminOrdersPage({ dark, t }) {
                     {o.apiOrderId && <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Provider Order</div>
                       <div className="m text-sm font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.apiOrderId}</div>
+                    </div>}
+                    {o.startCount != null && <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                      <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Start Count</div>
+                      <div className="m text-sm font-semibold" style={{ color: t.text }}>{o.startCount.toLocaleString()}</div>
                     </div>}
                   </div>
                   ); })()}

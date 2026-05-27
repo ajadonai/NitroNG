@@ -46,6 +46,7 @@ export async function GET(req) {
         charge: o.charge / 100,
         cost: o.cost / 100,
         remains: o.remains,
+        startCount: o.startCount,
         status: o.status,
         apiOrderId: o.apiOrderId,
         batchId: o.batchId || null,

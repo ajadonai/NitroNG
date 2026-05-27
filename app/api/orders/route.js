@@ -44,6 +44,7 @@ export async function GET(req) {
         quantity: o.quantity,
         charge: o.charge / 100,
         remains: o.remains,
+        startCount: o.startCount,
         status: o.status,
         apiOrderId: o.apiOrderId,
         batchId: o.batchId || null,

@@ -62,9 +62,10 @@ export async function GET(req) {
           }
 
           const liveRemains = result.remains != null ? Number(result.remains) : null;
+          const liveStartCount = result.start_count != null ? Number(result.start_count) : null;
 
           if (!newStatus && liveRemains != null && liveRemains !== order.remains) {
-            await prisma.order.update({ where: { id: order.id }, data: { remains: liveRemains } });
+            await prisma.order.update({ where: { id: order.id }, data: { remains: liveRemains, ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}) } });
             continue;
           }
 
@@ -72,7 +73,7 @@ export async function GET(req) {
 
           await prisma.order.update({
             where: { id: order.id },
-            data: { status: newStatus, ...(liveRemains != null ? { remains: liveRemains } : {}) },
+            data: { status: newStatus, ...(liveRemains != null ? { remains: liveRemains } : {}), ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}) },
           });
           stats.updated++;
 
