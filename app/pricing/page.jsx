@@ -32,7 +32,7 @@ async function getPricingData() {
     if (!g.tiers.length) continue;
     const p = g.platform;
     if (!platformMap[p]) platformMap[p] = { platform: p, services: [] };
-    const type = g.name.replace(new RegExp(`^${p}\\s*`, 'i'), '').trim() || g.type || g.name;
+    const type = g.name.replace(new RegExp(`^(${p}|X/Twitter|Twitter/X)\\s*`, 'i'), '').trim() || g.type || g.name;
     if (!platformMap[p].services.find(s => s.type === type)) {
       platformMap[p].services.push({
         type,
