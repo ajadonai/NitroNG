@@ -32,7 +32,7 @@ function ToastBridge({ toastRef }) { toastRef.current = useToast(); return null;
 const ADMIN_NAV = [
   { section: "Operations", items: [
     { id: "overview", label: "Overview", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> },
-    { id: "orders", label: "Orders", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
+    { id: "orders", label: "Orders", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>, badge: 'orders' },
     { id: "users", label: "Users", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> },
     { id: "leaderboard", label: "Leaderboard", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg> },
     { id: "tickets", label: "Support", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>, badge: 'tickets' },
@@ -128,8 +128,8 @@ function AdminOverview({ data, dark, t, setActive }) {
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        {item.orders.some(o => ["Pending","Processing","Partial"].includes(o.status)) && <span className="inline-block w-[5px] h-[5px] rounded-full" style={{ background: item.orders.some(o => o.status === "Processing") ? (dark ? "#a5b4fc" : "#6366f1") : item.orders.some(o => o.status === "Partial") ? (dark ? "#fdba74" : "#ea580c") : (dark ? "#fcd34d" : "#d97706") }} />}
-                        <span className="text-[14px] font-semibold" style={{ color: item.orders.every(o => o.status === "Cancelled") ? (dark ? "#fca5a5" : "#dc2626") : t.green }}>{fN(totalCharge)}</span>
+                        {item.orders.some(o => ["Pending","Processing"].includes(o.status)) && <span className="inline-block w-[5px] h-[5px] rounded-full" style={{ background: item.orders.some(o => o.status === "Processing") ? (dark ? "#a5b4fc" : "#6366f1") : (dark ? "#fcd34d" : "#d97706") }} />}
+                        <span className="text-[14px] font-semibold" style={{ color: item.orders.every(o => o.status === "Cancelled") ? (dark ? "#fca5a5" : "#dc2626") : item.orders.some(o => o.status === "Partial") ? (dark ? "#fbbf24" : "#d97706") : t.green }}>{fN(totalCharge)}</span>
                       </div>
                     </div>
                   );
@@ -147,7 +147,7 @@ function AdminOverview({ data, dark, t, setActive }) {
                       </div>
                     </div>
                     <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                      <div className="text-[14px] font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : t.green }}>{fN(o.charge || 0)}</div>
+                      <div className="text-[14px] font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : o.status === "Partial" ? (dark ? "#fbbf24" : "#d97706") : t.green }}>{fN(o.charge || 0)}</div>
                       <span className="text-[11px] font-semibold py-0.5 px-2 rounded-[5px] whitespace-nowrap" style={{ background: o.status === "Completed" ? (dark ? "rgba(110,231,183,.1)" : "#ecfdf5") : o.status === "Processing" ? (dark ? "rgba(165,180,252,.1)" : "#eef2ff") : (o.status === "Failed" || o.status === "Cancelled" || o.status === "Rejected" || o.status === "Partial") ? (dark ? "rgba(252,165,165,.1)" : "#fef2f2") : (dark ? "rgba(252,211,77,.1)" : "#fffbeb"), color: o.status === "Completed" ? t.green : o.status === "Processing" ? t.blue : (o.status === "Failed" || o.status === "Cancelled" || o.status === "Rejected" || o.status === "Partial") ? t.red : t.amber }}>{o.status}</span>
                     </div>
                   </div>
@@ -331,9 +331,9 @@ function AdminDashboardInner({ initialData }) {
     return { name: d.admin?.name || "Admin", role: d.admin?.role || "superadmin", email: d.admin?.email || "", pages: d.admin?.pages || "*" };
   });
   const [data, setData] = useState(() => {
-    if (!initialData) return { stats: {}, recentOrders: [], recentUsers: [], openTickets: [], activity: [], unreadTicketCount: 0, pendingManualCount: 0 };
+    if (!initialData) return { stats: {}, recentOrders: [], recentUsers: [], openTickets: [], activity: [], unreadTicketCount: 0, pendingManualCount: 0, pendingOrderCount: 0 };
     const d = initialData;
-    return { stats: d, recentOrders: d.recentOrders || [], recentUsers: d.recentUsers || [], openTickets: d.openTickets || [], activity: d.activity || [], unreadTicketCount: d.unreadTicketCount || 0, pendingManualCount: d.pendingManualCount || 0 };
+    return { stats: d, recentOrders: d.recentOrders || [], recentUsers: d.recentUsers || [], openTickets: d.openTickets || [], activity: d.activity || [], unreadTicketCount: d.unreadTicketCount || 0, pendingManualCount: d.pendingManualCount || 0, pendingOrderCount: d.pendingOrderCount || 0 };
   });
   const toastRef = useRef(null);
 
@@ -369,6 +369,7 @@ function AdminDashboardInner({ initialData }) {
           activity: d.activity || [],
           unreadTicketCount: d.unreadTicketCount || 0,
           pendingManualCount: d.pendingManualCount || 0,
+          pendingOrderCount: d.pendingOrderCount || 0,
         });
         if (d.admin?.themePreference && d.admin.themePreference !== "auto") {
           const saved = localStorage.getItem("nitro-admin-theme");
@@ -551,6 +552,7 @@ function AdminDashboardInner({ initialData }) {
             activity: d.activity || [],
             unreadTicketCount: d.unreadTicketCount || 0,
             pendingManualCount: d.pendingManualCount || 0,
+            pendingOrderCount: d.pendingOrderCount || 0,
           });
         }
       } catch {}
@@ -684,7 +686,8 @@ function AdminDashboardInner({ initialData }) {
 
   const ticketCount = data.unreadTicketCount || 0;
   const paymentCount = data.pendingManualCount || 0;
-  const badgeCounts = { tickets: ticketCount, payments: paymentCount };
+  const orderCount = data.pendingOrderCount || 0;
+  const badgeCounts = { tickets: ticketCount, payments: paymentCount, orders: orderCount };
 
 
   return (
@@ -754,7 +757,7 @@ function AdminDashboardInner({ initialData }) {
                 <button key={item.id} onClick={() => { setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: active === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", color: active === item.id ? t.accent : t.textSoft, fontWeight: active === item.id ? 600 : 450 }}>
                   <span className="shrink-0" style={{ opacity: active === item.id ? 1 : .55, color: active === item.id ? t.accent : t.textMuted }}>{item.icon}</span>
                   {item.label}
-                  {item.badge && badgeCounts[item.badge] > 0 && <span className="m dash-nav-badge">{badgeCounts[item.badge]}</span>}
+                  {item.badge && badgeCounts[item.badge] > 0 && <span className="m dash-nav-badge">{badgeCounts[item.badge] > 99 ? "99+" : badgeCounts[item.badge]}</span>}
                 </button>
               ))}
             </div>

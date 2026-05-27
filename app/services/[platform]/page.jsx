@@ -25,12 +25,12 @@ export async function generateMetadata({ params }) {
   if (!meta) return {};
 
   return {
-    title: `${meta.name} Growth Services`,
-    description: `Grow your ${meta.name} with ${meta.desc}. Naira pricing, instant delivery, refill guarantees. Trusted by Nigerian creators and businesses.`,
+    title: `${meta.name} Growth Services | Fastest Delivery in Nigeria`,
+    description: `Grow your ${meta.name} with ${meta.desc}. Nigeria's fastest SMM panel with instant delivery, Naira pricing, and refill guarantees. Order in seconds.`,
     alternates: { canonical: `https://nitro.ng/services/${platform}` },
     openGraph: {
       title: `${meta.name} Growth Services | The Nitro NG`,
-      description: `${meta.kw}. ${meta.desc}. Naira pricing, instant delivery.`,
+      description: `${meta.kw}. ${meta.desc}. Fastest delivery, Naira pricing, cleanest dashboard.`,
       url: `https://nitro.ng/services/${platform}`,
       type: 'website',
     },

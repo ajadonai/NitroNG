@@ -46,6 +46,7 @@ export async function GET(req) {
       walletLiability,
       ordersByPlatform, ordersByTier,
       topSpenders,
+      partialOrders,
     ] = await Promise.all([
       // Revenue & cost (excluding cancelled)
       prisma.order.aggregate({ where: orderWhere, _sum: { charge: true, cost: true, campaignDiscount: true, loyaltyDiscount: true }, _count: true }),
@@ -63,12 +64,12 @@ export async function GET(req) {
       // By platform
       prisma.order.findMany({
         where: orderWhere,
-        select: { charge: true, cost: true, service: { select: { category: true } } },
+        select: { charge: true, cost: true, quantity: true, remains: true, status: true, service: { select: { category: true } } },
       }),
       // By tier (can't groupBy relation field, so fetch and aggregate in JS)
       prisma.order.findMany({
         where: orderWhere,
-        select: { charge: true, cost: true, tier: { select: { tier: true } } },
+        select: { charge: true, cost: true, quantity: true, remains: true, status: true, tier: { select: { tier: true } } },
       }),
       // Top spenders
       prisma.order.groupBy({
@@ -79,7 +80,24 @@ export async function GET(req) {
         orderBy: { _sum: { charge: 'desc' } },
         take: 10,
       }),
+      // Partial orders for adjustment
+      prisma.order.findMany({
+        where: { ...orderWhere, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } },
+        select: { charge: true, cost: true, quantity: true, remains: true, userId: true },
+      }),
     ]);
+
+    // Compute partial order adjustments — subtract the undelivered portion
+    let partialChargeAdj = 0, partialCostAdj = 0;
+    const partialSpenderAdj = {};
+    for (const p of partialOrders) {
+      const undeliveredRatio = p.remains / p.quantity;
+      const chargeAdj = Math.round(p.charge * undeliveredRatio);
+      const costAdj = Math.round((p.cost || 0) * undeliveredRatio);
+      partialChargeAdj += chargeAdj;
+      partialCostAdj += costAdj;
+      if (p.userId) partialSpenderAdj[p.userId] = (partialSpenderAdj[p.userId] || 0) + chargeAdj;
+    }
 
     // Resolve top spender names
     const spenderIds = topSpenders.map(s => s.userId);
@@ -90,15 +108,25 @@ export async function GET(req) {
     const userMap = {};
     spenderUsers.forEach(u => { userMap[u.id] = u; });
 
+    // Helper: get effective charge/cost for an order (adjusts for partial delivery)
+    function effectiveAmounts(o) {
+      if (o.status === 'Partial' && o.remains > 0 && o.quantity > 0) {
+        const ratio = (o.quantity - o.remains) / o.quantity;
+        return { charge: Math.round((o.charge || 0) * ratio), cost: Math.round((o.cost || 0) * ratio) };
+      }
+      return { charge: o.charge || 0, cost: o.cost || 0 };
+    }
+
     // Aggregate by platform
     const platformMap = {};
     ordersByPlatform.forEach(o => {
       const cat = o.service?.category || 'unknown';
       const name = cat.charAt(0).toUpperCase() + cat.slice(1);
       if (!platformMap[name]) platformMap[name] = { name, revenue: 0, cost: 0, orders: 0 };
+      const eff = effectiveAmounts(o);
       platformMap[name].orders++;
-      platformMap[name].revenue += o.charge || 0;
-      platformMap[name].cost += o.cost || 0;
+      platformMap[name].revenue += eff.charge;
+      platformMap[name].cost += eff.cost;
     });
     const byPlatform = Object.values(platformMap)
       .map(p => ({ ...p, profit: p.revenue - p.cost, margin: p.revenue > 0 ? Math.round(((p.revenue - p.cost) / p.revenue) * 100) : 0 }))
@@ -109,16 +137,17 @@ export async function GET(req) {
     ordersByTier.forEach(o => {
       const name = o.tier?.tier || "Unknown";
       if (!tierMap[name]) tierMap[name] = { name, revenue: 0, cost: 0, orders: 0 };
+      const eff = effectiveAmounts(o);
       tierMap[name].orders++;
-      tierMap[name].revenue += o.charge || 0;
-      tierMap[name].cost += o.cost || 0;
+      tierMap[name].revenue += eff.charge;
+      tierMap[name].cost += eff.cost;
     });
     const byTier = Object.values(tierMap)
       .map(t => ({ ...t, profit: t.revenue - t.cost, margin: t.revenue > 0 ? Math.round(((t.revenue - t.cost) / t.revenue) * 100) : 0 }))
       .sort((a, b) => b.profit - a.profit);
 
-    const chargeTotal = ordersAgg._sum.charge || 0;
-    const totalCost = ordersAgg._sum.cost || 0;
+    const chargeTotal = (ordersAgg._sum.charge || 0) - partialChargeAdj;
+    const totalCost = (ordersAgg._sum.cost || 0) - partialCostAdj;
     const totalRefunds = refundsAgg._sum.amount || 0;
     const totalCampaignDiscounts = ordersAgg._sum.campaignDiscount || 0;
     const totalLoyaltyDiscounts = ordersAgg._sum.loyaltyDiscount || 0;
@@ -169,7 +198,7 @@ export async function GET(req) {
       topSpenders: topSpenders.map(s => ({
         name: userMap[s.userId]?.name || 'Unknown',
         email: userMap[s.userId]?.email || '',
-        spent: k(s._sum.charge),
+        spent: k((s._sum.charge || 0) - (partialSpenderAdj[s.userId] || 0)),
         orders: s._count,
       })),
     });

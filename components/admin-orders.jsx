@@ -204,7 +204,7 @@ export default function AdminOrdersPage({ dark, t }) {
             const statusCounts = {};
             batch.orders.forEach(o => { statusCounts[o.status] = (statusCounts[o.status] || 0) + 1; });
             const totalCharge = batch.orders.reduce((s, o) => s + (o.charge || 0), 0);
-            const hasAttention = batch.orders.some(o => o.status === "Partial");
+            const hasAttention = batch.orders.some(o => o.status === "Pending" || o.status === "Processing");
             const activeOrders = batch.orders.filter(o => !["Completed", "Cancelled"].includes(o.status));
             const checkable = batch.orders.filter(o => o.apiOrderId && !["Completed", "Cancelled"].includes(o.status));
             const isBatchLoading = batchActionLoading === batch.batchId;
@@ -240,7 +240,7 @@ export default function AdminOrdersPage({ dark, t }) {
                   </div>
                   <div className="text-right shrink-0 flex items-center gap-2.5">
                     <div className="flex flex-col items-end gap-1.5">
-                      <div className="m text-[13px] desktop:text-[15px] font-bold" style={{ color: allCancelled ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{allCancelled ? "+" : "-"}{fN(totalCharge)}</div>
+                      <div className="m text-[13px] desktop:text-[15px] font-bold" style={{ color: allCancelled ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{allCancelled ? "-" : "+"}{fN(totalCharge)}</div>
                       <PlatformStack platforms={platforms} dark={dark} />
                     </div>
                     <div className="flex gap-1">
@@ -263,14 +263,14 @@ export default function AdminOrdersPage({ dark, t }) {
                           <div className="min-w-0 flex-1">
                             <div className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}{o.tier ? <span className="font-normal" style={{ color: t.textMuted }}> · {o.tier}</span> : ""}</div>
                             <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>
-                              <span className="m" style={o.status === "Cancelled" ? { color: dark ? "#fca5a5" : "#dc2626" } : o.status === "Partial" ? { color: dark ? "#fbbf24" : "#d97706" } : undefined}>{o.id}</span>
+                              <span className="m" style={o.status === "Cancelled" ? { color: dark ? "#fca5a5" : "#dc2626" } : o.status === "Completed" ? { color: dark ? "#6ee7b7" : "#059669" } : o.status === "Partial" ? { color: dark ? "#fbbf24" : "#d97706" } : undefined}>{o.id}</span>
                               <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
                               <span>{o.quantity?.toLocaleString() || 0} qty</span>
                             </div>
                           </div>
                           <div className="text-right shrink-0 flex items-center gap-1.5">
-                            {!["Completed", "Cancelled"].includes(o.status) && <span className="inline-block w-[5px] h-[5px] rounded-full shrink-0" style={{ background: sClr(o.status, dark) }} />}
-                            <div className="m text-[13px] desktop:text-sm font-bold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
+                            {!["Completed", "Cancelled", "Partial"].includes(o.status) && <span className="inline-block w-[5px] h-[5px] rounded-full shrink-0" style={{ background: sClr(o.status, dark) }} />}
+                            <div className="m text-[13px] desktop:text-sm font-bold" style={{ color: o.status === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : o.status === "Partial" ? (dark ? "#fbbf24" : "#d97706") : (dark ? "#6ee7b7" : "#059669") }}>{o.status === "Cancelled" ? "-" : "+"}{fN(o.charge)}</div>
                           </div>
                           <svg className="shrink-0 ml-0.5" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expandedBatchOrder === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
                         </div>
@@ -288,22 +288,23 @@ export default function AdminOrdersPage({ dark, t }) {
                             )}
 
                             {/* Info grid */}
+                            {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); return (
                             <div className="grid grid-cols-2 desktop:grid-cols-4 gap-1.5 mb-2.5">
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                                <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Qty</div>
-                                <div className="m text-[13px] font-semibold" style={{ color: t.text }}>{o.quantity?.toLocaleString() || 0}</div>
+                                <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>{isPartial ? "Delivered" : "Qty"}</div>
+                                <div className="m text-[13px] font-semibold" style={{ color: t.text }}>{isPartial ? `${delivered.toLocaleString()}/${o.quantity.toLocaleString()}` : (o.quantity?.toLocaleString() || 0)}</div>
                               </div>
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                                <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : "Charge"}</div>
-                                <div className="m text-[13px] font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
+                                <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : isPartial ? "Net Charge" : "Charge"}</div>
+                                <div className="m text-[13px] font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : o.status === "Partial" ? (dark ? "#fbbf24" : "#d97706") : (dark ? "#6ee7b7" : "#059669") }}>{o.status === "Cancelled" ? "-" : "+"}{fN(netCharge)}</div>
                               </div>
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Cost</div>
-                                <div className="m text-[13px] font-semibold" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{fN(o.cost || 0)}</div>
+                                <div className="m text-[13px] font-semibold" style={{ color: o.status === "Cancelled" ? t.textMuted : (dark ? "#fca5a5" : "#dc2626") }}>{fN(o.status === "Cancelled" ? 0 : netCost)}</div>
                               </div>
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Profit</div>
-                                <div className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN((o.charge || 0) - (o.cost || 0))}</div>
+                                <div className="m text-[13px] font-semibold" style={{ color: o.status === "Cancelled" ? t.textMuted : (dark ? "#6ee7b7" : "#059669") }}>{fN(o.status === "Cancelled" ? 0 : netCharge - netCost)}</div>
                               </div>
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Status</div>
@@ -322,6 +323,7 @@ export default function AdminOrdersPage({ dark, t }) {
                                 <div className="m text-[13px] font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.apiOrderId}</div>
                               </div>}
                             </div>
+                            ); })()}
 
                             {/* User + date */}
                             <div className="text-[12px] mb-2.5" style={{ color: t.textMuted }}>
@@ -358,7 +360,7 @@ export default function AdminOrdersPage({ dark, t }) {
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical] mb-0.5" style={{ color: t.text }}>{o.service}{o.tier ? <span className="font-normal" style={{ color: t.textMuted }}> · {o.tier}</span> : ""}</div>
                   <div className="flex items-center gap-1.5 text-[11px] desktop:text-xs" style={{ color: t.textMuted }}>
-                    <span className="m" style={o.status === "Cancelled" ? { color: dark ? "#fca5a5" : "#dc2626" } : o.status === "Partial" ? { color: dark ? "#fbbf24" : "#d97706" } : undefined}>{o.id}</span>
+                    <span className="m" style={o.status === "Cancelled" ? { color: dark ? "#fca5a5" : "#dc2626" } : o.status === "Completed" ? { color: dark ? "#6ee7b7" : "#059669" } : o.status === "Partial" ? { color: dark ? "#fbbf24" : "#d97706" } : undefined}>{o.id}</span>
                     <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
                     <span>{o.user}</span>
                     <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
@@ -368,8 +370,8 @@ export default function AdminOrdersPage({ dark, t }) {
                   </div>
                 </div>
                 <div className="text-right shrink-0 flex items-center gap-1.5">
-                  {!["Completed", "Cancelled"].includes(o.status) && <span className="inline-block w-[6px] h-[6px] rounded-full shrink-0" style={{ background: sClr(o.status, dark) }} />}
-                  <div className="m text-[13px] desktop:text-[15px] font-bold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
+                  {!["Completed", "Cancelled", "Partial"].includes(o.status) && <span className="inline-block w-[6px] h-[6px] rounded-full shrink-0" style={{ background: sClr(o.status, dark) }} />}
+                  <div className="m text-[13px] desktop:text-[15px] font-bold" style={{ color: o.status === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : o.status === "Partial" ? (dark ? "#fbbf24" : "#d97706") : (dark ? "#6ee7b7" : "#059669") }}>{o.status === "Cancelled" ? "-" : "+"}{fN(o.charge)}</div>
                 </div>
                 <svg className="shrink-0 ml-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expanded === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
               </div>
@@ -387,22 +389,23 @@ export default function AdminOrdersPage({ dark, t }) {
                   )}
 
                   {/* Info grid */}
+                  {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); return (
                   <div className="grid grid-cols-2 desktop:grid-cols-4 gap-2 mb-3">
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                      <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Quantity</div>
-                      <div className="m text-sm font-semibold" style={{ color: t.text }}>{o.quantity?.toLocaleString() || 0}</div>
+                      <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>{isPartial ? "Delivered" : "Quantity"}</div>
+                      <div className="m text-sm font-semibold" style={{ color: t.text }}>{isPartial ? `${delivered.toLocaleString()}/${o.quantity.toLocaleString()}` : (o.quantity?.toLocaleString() || 0)}</div>
                     </div>
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                      <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : "Charge"}</div>
-                      <div className="m text-sm font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
+                      <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : isPartial ? "Net Charge" : "Charge"}</div>
+                      <div className="m text-sm font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : o.status === "Partial" ? (dark ? "#fbbf24" : "#d97706") : (dark ? "#6ee7b7" : "#059669") }}>{o.status === "Cancelled" ? "-" : "+"}{fN(netCharge)}</div>
                     </div>
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Cost</div>
-                      <div className="m text-sm font-semibold" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{fN(o.cost || 0)}</div>
+                      <div className="m text-sm font-semibold" style={{ color: o.status === "Cancelled" ? t.textMuted : (dark ? "#fca5a5" : "#dc2626") }}>{fN(o.status === "Cancelled" ? 0 : netCost)}</div>
                     </div>
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Profit</div>
-                      <div className="m text-sm font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN((o.charge || 0) - (o.cost || 0))}</div>
+                      <div className="m text-sm font-semibold" style={{ color: o.status === "Cancelled" ? t.textMuted : (dark ? "#6ee7b7" : "#059669") }}>{fN(o.status === "Cancelled" ? 0 : netCharge - netCost)}</div>
                     </div>
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Status</div>
@@ -421,6 +424,7 @@ export default function AdminOrdersPage({ dark, t }) {
                       <div className="m text-sm font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.apiOrderId}</div>
                     </div>}
                   </div>
+                  ); })()}
 
                   {/* User info */}
                   <div className="text-[13px] mb-3" style={{ color: t.textMuted }}>
