@@ -80,9 +80,11 @@ export async function PATCH(req) {
           const status = await checkOrder(provider, order.apiOrderId);
           const statusMap = { 'Completed': 'Completed', 'In progress': 'Processing', 'Processing': 'Processing', 'Pending': 'Pending', 'Partial': 'Partial', 'Canceled': 'Cancelled', 'Refunded': 'Cancelled' };
           const newStatus = statusMap[status.status] || order.status;
+          const liveStartCount = status.start_count != null ? Number(status.start_count) : null;
           const updateData = {
             ...(newStatus !== order.status && { status: newStatus }),
             ...(status.remains != null && { remains: Number(status.remains) }),
+            ...(liveStartCount != null && !order.startCount && { startCount: liveStartCount }),
           };
           if (Object.keys(updateData).length > 0) {
             await prisma.order.update({ where: { id: order.id }, data: updateData });

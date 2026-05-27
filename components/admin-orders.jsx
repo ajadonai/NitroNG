@@ -130,7 +130,7 @@ export default function AdminOrdersPage({ dark, t }) {
       const data = await res.json();
       if (!res.ok) { toast.error("Action failed", data.error || "Something went wrong"); return; }
       if (data.status) {
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: data.status } : o));
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: data.status, ...(data.remains != null && { remains: data.remains }), ...(data.startCount != null && { startCount: Number(data.startCount) }) } : o));
       }
       const label = action === "check" ? `Status: ${data.status || "unknown"}${data.remains != null ? ` · ${data.remains} remaining` : ""}` : action === "cancel" ? "Order cancelled" : "Refill requested";
       toast.success(orderId, label);
@@ -148,7 +148,7 @@ export default function AdminOrdersPage({ dark, t }) {
           try {
             const res = await fetch("/api/admin/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "check", orderId: o.id }) });
             const data = await res.json();
-            if (res.ok) { checked++; if (data.status && data.status !== o.status) { updated++; setOrders(prev => prev.map(p => p.id === o.id ? { ...p, status: data.status } : p)); } }
+            if (res.ok) { checked++; if (data.status) { if (data.status !== o.status) updated++; setOrders(prev => prev.map(p => p.id === o.id ? { ...p, status: data.status, ...(data.remains != null && { remains: data.remains }), ...(data.startCount != null && { startCount: Number(data.startCount) }) } : p)); } }
           } catch {}
         }
         if (action === "cancel" && !["Completed", "Cancelled"].includes(o.status)) {
