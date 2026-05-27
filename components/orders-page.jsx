@@ -288,14 +288,13 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                           <div className="m text-[13px] font-semibold" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{estimateTime(o.speed, o.quantity)}</div>
                         </div>
                       )}
+                      {o.startCount != null && (
+                        <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                          <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Start Count</div>
+                          <div className="m text-[13px] font-semibold" style={{ color: t.text }}>{o.startCount.toLocaleString()}</div>
+                        </div>
+                      )}
                     </div>
-                    {/* Start count */}
-                    {o.startCount != null && (
-                      <div className="flex items-center gap-2 mb-2 py-1.5 px-2.5 rounded-lg text-[12px]" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
-                        <span style={{ color: t.textMuted }}>Start count</span>
-                        <span className="m font-semibold" style={{ color: t.text }}>{o.startCount.toLocaleString()}</span>
-                      </div>
-                    )}
                     {/* Progress */}
                     {o.status !== "Cancelled" && <div className="mb-2"><ProgressBar order={o} dark={dark} detailed /></div>}
                 </div>
@@ -532,15 +531,13 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                           <div className="m text-sm font-semibold" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{estimateTime(o.speed, o.quantity)}</div>
                         </div>
                       )}
+                      {o.startCount != null && (
+                        <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                          <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Start Count</div>
+                          <div className="m text-sm font-semibold" style={{ color: t.text }}>{o.startCount.toLocaleString()}</div>
+                        </div>
+                      )}
                     </div>
-
-                    {/* Start count */}
-                    {o.startCount != null && (
-                      <div className="flex items-center gap-2 mb-3 py-1.5 px-2.5 rounded-lg text-[13px]" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
-                        <span style={{ color: t.textMuted }}>Start count</span>
-                        <span className="m font-semibold" style={{ color: t.text }}>{o.startCount.toLocaleString()}</span>
-                      </div>
-                    )}
 
                     {/* Progress */}
                     {o.status !== "Cancelled" && <div className="mb-3"><ProgressBar order={o} dark={dark} detailed /></div>}
