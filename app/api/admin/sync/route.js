@@ -352,6 +352,19 @@ export async function POST(req) {
       }
     }
 
+    if (action === 'check-provider-order') {
+      const { orderId: checkId, provider: checkProvider } = body;
+      if (!checkId) return Response.json({ error: 'Need orderId' }, { status: 400 });
+      const providerId = checkProvider || 'jap';
+      if (!isProviderConfigured(providerId)) return Response.json({ error: `${getProviderName(providerId)} not configured` }, { status: 400 });
+      try {
+        const result = await checkOrder(providerId, checkId);
+        return Response.json({ success: true, result });
+      } catch (err) {
+        return Response.json({ success: false, error: err.message });
+      }
+    }
+
     if (action === 'cancel-provider-order') {
       const { orderId: cancelId, provider: cancelProvider } = body;
       if (!cancelId) return Response.json({ error: 'Need orderId' }, { status: 400 });
