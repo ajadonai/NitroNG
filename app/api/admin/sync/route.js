@@ -352,6 +352,20 @@ export async function POST(req) {
       }
     }
 
+    if (action === 'cancel-provider-order') {
+      const { orderId: cancelId, provider: cancelProvider } = body;
+      if (!cancelId) return Response.json({ error: 'Need orderId' }, { status: 400 });
+      const providerId = cancelProvider || 'jap';
+      if (!isProviderConfigured(providerId)) return Response.json({ error: `${getProviderName(providerId)} not configured` }, { status: 400 });
+      const { cancelOrder } = await import('@/lib/smm');
+      try {
+        const result = await cancelOrder(providerId, cancelId);
+        return Response.json({ success: true, result });
+      } catch (err) {
+        return Response.json({ success: false, error: err.message });
+      }
+    }
+
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
     log.error('Sync', err.stack || err.message);
