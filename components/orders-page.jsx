@@ -6,6 +6,9 @@ import { PlatformIcon } from "./platform-icon";
 import { fN, fD } from "../lib/format";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 
+function Spinner({ size = 14, color = "currentColor" }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="animate-spin"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="3" strokeLinecap="round" opacity=".25" /><path d="M12 2a10 10 0 0 1 10 10" stroke={color} strokeWidth="3" strokeLinecap="round" /></svg>;
+}
 
 /* ── Estimate delivery time from speed string + quantity ── */
 function estimateTime(speed, qty) {
@@ -268,12 +271,33 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                       </div>
                     )}
 
+                    {/* Delivery progress */}
+                    {(() => {
+                      const qty = o.quantity || 0;
+                      const isCancelled = o.status === "Cancelled";
+                      const hasData = o.remains != null;
+                      const isComplete = o.status === "Completed";
+                      const delivered = isCancelled ? 0 : isComplete ? qty : hasData ? Math.max(0, qty - Math.max(0, o.remains)) : 0;
+                      const pct = isCancelled ? 0 : isComplete ? 100 : hasData ? Math.min(100, Math.round((delivered / qty) * 100)) : 0;
+                      const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : "#c47d8e";
+                      const waiting = !isCancelled && !hasData && !isComplete && (o.status === "Pending" || o.status === "Processing");
+                      return (
+                        <div className="mb-2.5 py-1.5 px-2.5 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
+                          <div className="flex items-center justify-between text-[11px] mb-1.5">
+                            <span style={{ color: t.textMuted }}>{isCancelled ? "Cancelled" : waiting ? "Waiting to start" : "Delivered"}</span>
+                            {!waiting && <span className="m font-semibold" style={{ color: barColor }}>{delivered.toLocaleString()} / {qty.toLocaleString()}{!isCancelled && ` · ${pct}%`}</span>}
+                          </div>
+                          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
+                            {waiting
+                              ? <div className="h-full w-1/3 rounded-full" style={{ background: `${barColor}40`, animation: "progress-pulse 1.8s ease-in-out infinite" }} />
+                              : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor }} />}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Info grid */}
-                    <div className={`grid gap-1.5 mb-2.5 ${o.speed && !["Completed", "Cancelled"].includes(o.status) ? "grid-cols-2 desktop:grid-cols-4" : "grid-cols-3"}`}>
-                      <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                        <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Qty</div>
-                        <div className="m text-[13px] font-semibold" style={{ color: t.text }}>{o.quantity?.toLocaleString() || 0}</div>
-                      </div>
+                    <div className={`grid gap-1.5 mb-2.5 ${o.speed && !["Completed", "Cancelled"].includes(o.status) ? "grid-cols-2 desktop:grid-cols-3" : "grid-cols-2"}`}>
                       <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                         <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : "Charge"}</div>
                         <div className="m text-[13px] font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
@@ -288,12 +312,6 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                           <div className="m text-[13px] font-semibold" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{estimateTime(o.speed, o.quantity)}</div>
                         </div>
                       )}
-                      {o.remains != null && o.status !== "Cancelled" && (
-                        <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                          <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Delivered</div>
-                          <div className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{Math.max(0, (o.quantity || 0) - o.remains).toLocaleString()}</div>
-                        </div>
-                      )}
                       {o.startCount != null && (
                         <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                           <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Start Count</div>
@@ -301,8 +319,6 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                         </div>
                       )}
                     </div>
-                    {/* Progress */}
-                    {o.status !== "Cancelled" && <div className="mb-2"><ProgressBar order={o} dark={dark} detailed /></div>}
                 </div>
               )}
             </div>
@@ -446,6 +462,20 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
   const counts = { all: orders.length };
   ["Completed", "Processing", "Pending", "Partial", "Cancelled"].forEach(s => { counts[s] = orders.filter(o => o.status === s).length; });
 
+  const autoChecked = useRef(new Set());
+  const autoCheck = useCallback((o) => {
+    if (!o || !o.apiOrderId || ["Completed", "Cancelled"].includes(o.status) || autoChecked.current.has(o.id) || actionLoading) return;
+    autoChecked.current.add(o.id);
+    doAction(o.id, "check");
+  }, [actionLoading]);
+
+  useEffect(() => {
+    if (expanded) { const o = orders.find(x => x.id === expanded); autoCheck(o); }
+  }, [expanded]);
+  useEffect(() => {
+    if (expandedBatchOrder) { const o = orders.find(x => x.id === expandedBatchOrder); autoCheck(o); }
+  }, [expandedBatchOrder]);
+
   return (
     <>
       {/* Header */}
@@ -517,12 +547,33 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                       </div>
                     )}
 
+                    {/* Delivery progress */}
+                    {(() => {
+                      const qty = o.quantity || 0;
+                      const isCancelled = o.status === "Cancelled";
+                      const hasData = o.remains != null;
+                      const isComplete = o.status === "Completed";
+                      const delivered = isCancelled ? 0 : isComplete ? qty : hasData ? Math.max(0, qty - Math.max(0, o.remains)) : 0;
+                      const pct = isCancelled ? 0 : isComplete ? 100 : hasData ? Math.min(100, Math.round((delivered / qty) * 100)) : 0;
+                      const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : "#c47d8e";
+                      const waiting = !isCancelled && !hasData && !isComplete && (o.status === "Pending" || o.status === "Processing");
+                      return (
+                        <div className="mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
+                          <div className="flex items-center justify-between text-[12px] mb-1.5">
+                            <span style={{ color: t.textMuted }}>{isCancelled ? "Cancelled" : waiting ? "Waiting to start" : "Delivered"}</span>
+                            {!waiting && <span className="m font-semibold" style={{ color: barColor }}>{delivered.toLocaleString()} / {qty.toLocaleString()}{!isCancelled && ` · ${pct}%`}</span>}
+                          </div>
+                          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
+                            {waiting
+                              ? <div className="h-full w-1/3 rounded-full" style={{ background: `${barColor}40`, animation: "progress-pulse 1.8s ease-in-out infinite" }} />
+                              : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor }} />}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Info grid */}
-                    <div className={`grid gap-2 mb-3 ${o.speed && !["Completed", "Cancelled"].includes(o.status) ? "grid-cols-2 desktop:grid-cols-4" : "grid-cols-3"}`}>
-                      <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                        <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Quantity</div>
-                        <div className="m text-sm font-semibold" style={{ color: t.text }}>{o.quantity?.toLocaleString() || 0}</div>
-                      </div>
+                    <div className={`grid gap-2 mb-3 ${o.speed && !["Completed", "Cancelled"].includes(o.status) ? "grid-cols-2 desktop:grid-cols-3" : "grid-cols-2"}`}>
                       <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                         <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : "Charge"}</div>
                         <div className="m text-sm font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
@@ -537,12 +588,6 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                           <div className="m text-sm font-semibold" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{estimateTime(o.speed, o.quantity)}</div>
                         </div>
                       )}
-                      {o.remains != null && o.status !== "Cancelled" && (
-                        <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                          <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Delivered</div>
-                          <div className="m text-sm font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{Math.max(0, (o.quantity || 0) - o.remains).toLocaleString()}</div>
-                        </div>
-                      )}
                       {o.startCount != null && (
                         <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                           <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Start Count</div>
@@ -551,13 +596,10 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                       )}
                     </div>
 
-                    {/* Progress */}
-                    {o.status !== "Cancelled" && <div className="mb-3"><ProgressBar order={o} dark={dark} detailed /></div>}
-
                     {/* Actions */}
                     {(o.status === "Processing" || o.status === "Pending") && (
                       <div className="flex gap-2">
-                        <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>{actionLoading === o.id ? "..." : "Check Status"}</button>
+                        <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[72px] py-2 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
                         <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>
                       </div>
                     )}

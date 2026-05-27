@@ -87,7 +87,7 @@ export async function GET(req) {
           if (newStatus === 'Partial' && result.remains) {
             const remains = Number(result.remains) || 0;
             if (remains > 0 && order.charge > 0 && order.quantity > 0) {
-              const refundAmount = Math.round((remains / order.quantity) * order.charge);
+              const refundAmount = Math.round((remains / order.quantity) * order.charge / 100) * 100;
               if (refundAmount > 0) {
                 await refundOrder(order, refundAmount);
                 stats.refunded++;

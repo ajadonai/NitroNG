@@ -105,6 +105,7 @@ export async function POST(req) {
       if (updates.nigerian !== undefined) data.nigerian = !!updates.nigerian;
       if (updates.enabled !== undefined) data.enabled = !!updates.enabled;
       if (updates.sortOrder !== undefined) data.sortOrder = Number(updates.sortOrder);
+      if (updates.description !== undefined) data.description = updates.description?.trim() || null;
 
       const group = await prisma.serviceGroup.update({ where: { id: groupId }, data });
       await logActivity(admin.name, `Updated service group "${group.name}"`, 'service');
