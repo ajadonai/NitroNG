@@ -31,10 +31,6 @@ export async function GET(req) {
       orderBy: { createdAt: 'asc' }, // oldest first
     });
 
-    if (activeOrders.length === 0) {
-      return Response.json({ success: true, message: 'No active orders to check', ...stats });
-    }
-
     // Group orders by provider for efficient batch checking
     const byProvider = {};
     for (const order of activeOrders) {
@@ -44,6 +40,7 @@ export async function GET(req) {
     }
 
     for (const [provider, orders] of Object.entries(byProvider)) {
+      if (!orders.length) continue;
       // Check orders one by one (most providers don't support reliable bulk status)
       for (const order of orders) {
         try {
