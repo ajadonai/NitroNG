@@ -1452,6 +1452,8 @@ export function AdminIssuesPage({ dark, t }) {
   const [firingCrons, setFiringCrons] = useState(false);
   const [cronResults, setCronResults] = useState(null);
   const [expandedIssue, setExpandedIssue] = useState(null);
+  const [resolvedPage, setResolvedPage] = useState(1);
+  const resolvedPerPage = 10;
   const toast = useToast();
 
   const load = () => {
@@ -1659,17 +1661,35 @@ export function AdminIssuesPage({ dark, t }) {
       </IssueSection>
 
       {/* ═══ RESOLVED ═══ */}
-      {resolvedIssues.length > 0 && (
-        <IssueSection title="Resolved" dark={dark} t={t}
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-          count={resolvedIssues.length}
-          countColor={greenBadge}
-        >
-          {resolvedIssues.map((issue, i) => (
-            <IssueRow key={issue.id} issue={issue} i={i} total={resolvedIssues.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} />
-          ))}
-        </IssueSection>
-      )}
+      {resolvedIssues.length > 0 && (() => {
+        const totalResolvedPages = Math.ceil(resolvedIssues.length / resolvedPerPage);
+        const pagedResolved = resolvedIssues.slice((resolvedPage - 1) * resolvedPerPage, resolvedPage * resolvedPerPage);
+        return (
+          <IssueSection title="Resolved" dark={dark} t={t}
+            icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+            count={resolvedIssues.length}
+            countColor={greenBadge}
+          >
+            {pagedResolved.map((issue, i) => (
+              <IssueRow key={issue.id} issue={issue} i={i} total={pagedResolved.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} />
+            ))}
+            {totalResolvedPages > 1 && (
+              <div className="flex items-center justify-between py-2.5 px-4" style={{ borderTop: `1px solid ${rowBorder}` }}>
+                <span className="text-[12px]" style={{ color: t.textMuted }}>{resolvedIssues.length} resolved</span>
+                <div className="flex gap-1">
+                  <button onClick={() => setResolvedPage(p => Math.max(1, p - 1))} disabled={resolvedPage <= 1} className="w-[26px] h-[26px] rounded-md flex items-center justify-center border cursor-pointer bg-transparent" style={{ borderColor: t.cardBorder, color: t.textSoft, opacity: resolvedPage <= 1 ? .3 : 1 }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <span className="text-[12px] flex items-center px-1.5" style={{ color: t.textMuted }}>{resolvedPage}/{totalResolvedPages}</span>
+                  <button onClick={() => setResolvedPage(p => Math.min(totalResolvedPages, p + 1))} disabled={resolvedPage >= totalResolvedPages} className="w-[26px] h-[26px] rounded-md flex items-center justify-center border cursor-pointer bg-transparent" style={{ borderColor: t.cardBorder, color: t.textSoft, opacity: resolvedPage >= totalResolvedPages ? .3 : 1 }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              </div>
+            )}
+          </IssueSection>
+        );
+      })()}
     </>
   );
 }

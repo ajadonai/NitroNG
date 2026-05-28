@@ -53,14 +53,16 @@ export async function GET(req) {
           const providerStatus = (result.status || '').toLowerCase();
           let newStatus = null;
 
-          if (['completed', 'complete'].includes(providerStatus)) {
+          if (['completed', 'complete', 'done', 'finished', 'success'].includes(providerStatus)) {
             newStatus = 'Completed';
-          } else if (['partial', 'partially completed'].includes(providerStatus)) {
+          } else if (['partial', 'partially completed', 'partially_completed'].includes(providerStatus)) {
             newStatus = 'Partial';
-          } else if (['cancelled', 'canceled', 'refunded'].includes(providerStatus)) {
+          } else if (['cancelled', 'canceled', 'refunded', 'cancelled/refunded', 'fail', 'failed', 'error'].includes(providerStatus)) {
             newStatus = 'Cancelled';
-          } else if (['in progress', 'inprogress', 'processing', 'pending'].includes(providerStatus)) {
+          } else if (['in progress', 'inprogress', 'in_progress', 'processing', 'pending', 'queued', 'running', 'active'].includes(providerStatus)) {
             newStatus = 'Processing';
+          } else if (providerStatus) {
+            log.warn(`Unknown provider status`, `Order ${order.orderId}: "${result.status}" from ${provider}`);
           }
 
           const liveRemains = result.remains != null ? Number(result.remains) : null;
