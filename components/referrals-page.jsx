@@ -77,28 +77,27 @@ export default function ReferralsPage({ user, dark, t }) {
 
       {/* Share card */}
       <div className="rounded-xl desktop:rounded-2xl p-3.5 desktop:p-5 mb-3 desktop:mb-4" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-        <div className="flex flex-col desktop:flex-row gap-2.5 desktop:gap-3">
-          {/* Code */}
-          <div className="flex-1">
-            <div className="text-sm mb-1" style={{ color: t.textMuted }}>Referral Code</div>
-            <div className="flex items-center gap-2">
-              <div className="m text-base desktop:text-[22px] font-semibold tracking-[2px]" style={{ color: t.accent }}>{refCode}</div>
-              <button onClick={() => copyText(refCode, "code")} className="py-1.5 px-3 rounded-md border text-[13px] font-semibold cursor-pointer bg-transparent transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: t.cardBorder, color: copied === "code" ? t.green : t.textSoft }}>
-                {copied === "code" ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> Copied</> : "Copy"}
-              </button>
-            </div>
-          </div>
-          {/* Link */}
-          <div className="flex-1 desktop:flex-[1.5]">
-            <div className="text-sm mb-1" style={{ color: t.textMuted }}>Share Link</div>
-            <div className="flex items-center gap-2">
-              <div className="m flex-1 py-2 px-3 rounded-lg border text-sm overflow-hidden text-ellipsis whitespace-nowrap" style={{ background: dark ? "#131728" : "#fff", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", color: t.textSoft }}>{refLink}</div>
-              <button onClick={() => copyText(refLink, "link")} className="py-2 px-3 desktop:px-3.5 rounded-lg text-[13px] desktop:text-sm font-semibold cursor-pointer whitespace-nowrap shrink-0 border-none text-white transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }}>
-                {copied === "link" ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> Copied</> : "Copy Link"}
-              </button>
-            </div>
-          </div>
+        <div className="text-sm mb-1.5" style={{ color: t.textMuted }}>Your Referral Link</div>
+        <div className="flex items-center gap-2">
+          <div className="m flex-1 py-2 px-3 rounded-lg border text-sm overflow-hidden text-ellipsis whitespace-nowrap" style={{ background: dark ? "#131728" : "#fff", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", color: t.textSoft }}>{refLink}</div>
+          <button onClick={() => copyText(refLink, "link")} className="py-2 px-3 desktop:px-3.5 rounded-lg text-[13px] desktop:text-sm font-semibold cursor-pointer whitespace-nowrap shrink-0 border-none text-white transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }}>
+            {copied === "link" ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> Copied</> : "Copy Link"}
+          </button>
         </div>
+      </div>
+
+      {/* Mobile how-it-works — above stats so it's visible without scrolling */}
+      <div className="hidden max-desktop:block mb-3">
+        <div className="grid grid-cols-3 gap-2">
+          {steps.map(([num, title, desc]) => (
+            <div key={num} className="p-2.5 rounded-[10px] text-center" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", border: `0.5px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
+              <div className="m w-6 h-6 rounded-md flex items-center justify-center text-xs font-semibold mx-auto mb-1.5" style={{ background: t.navActive, color: t.accent }}>{num}</div>
+              <div className="text-[12px] font-semibold leading-tight mb-0.5" style={{ color: t.text }}>{title}</div>
+              <div className="text-[11px] leading-tight" style={{ color: t.textMuted }}>{desc}</div>
+            </div>
+          ))}
+        </div>
+        <RewardBreakdown rs={ref} dark={dark} t={t} />
       </div>
 
       {/* Stats */}
@@ -179,11 +178,6 @@ export default function ReferralsPage({ user, dark, t }) {
         </div>
       )}
 
-      {/* Mobile how-it-works (sidebar hidden on mobile) */}
-      <div className="hidden max-desktop:block mt-4">
-        <HowItWorks steps={steps} dark={dark} t={t} />
-        <RewardBreakdown rs={ref} dark={dark} t={t} />
-      </div>
     </>
   );
 }
