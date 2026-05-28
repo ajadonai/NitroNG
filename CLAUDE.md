@@ -118,10 +118,10 @@ Tasks to complete on or before launch day:
 
 ### Infrastructure
 
-- [ ] Upgrade Vercel to Pro plan
-- [ ] Set `maxDuration = 60` on all cron routes (`app/api/cron/orders`, `app/api/cron/balance`, `app/api/cron/cleanup`, `app/api/cron/daily`, `app/api/cron/payments`, `app/api/cron/promotions`)
+- [x] Upgrade Vercel to Pro plan
+- [x] Set `maxDuration = 60` on all cron routes
 - [x] Upgrade Neon to paid plan
-- [ ] Reactivate cron jobs (Vercel cron schedules — include `promotions` every 5 min)
+- [x] Reactivate cron jobs (Vercel cron schedules — include `promotions` every 5 min)
 
 ### Deferred fixes (completed)
 
