@@ -1699,7 +1699,7 @@ function IssueRow({ issue, i, total, dark, t, rowBorder, expanded, setExpanded, 
           <div className="mb-2 whitespace-pre-line">{issue.message}</div>
           {meta && (
             <div className="font-mono text-[12px] p-2.5 rounded-lg mt-2" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)" }}>
-              {Object.entries(meta).filter(([k]) => k !== 'losers').map(([k, v]) => (
+              {Object.entries(meta).filter(([k]) => !['losers', 'services', 'providers'].includes(k)).map(([k, v]) => (
                 <div key={k}><span style={{ color: t.accent }}>{k}:</span> {typeof v === 'object' ? JSON.stringify(v) : String(v)}</div>
               ))}
             </div>
