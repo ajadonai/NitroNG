@@ -1472,7 +1472,7 @@ export function AdminIssuesPage({ dark, t }) {
       const d = await res.json();
       if (res.ok) {
         setIssues(prev => prev.map(i => i.id === id ? { ...i, status: "resolved", resolvedAt: new Date().toISOString() } : i));
-        toast.success(d.detail ? `Resolved — ${d.detail}` : "Issue resolved");
+        toast.success(d.detail || "Issue resolved");
       } else { toast.error(d.error || "Failed"); }
     } catch { toast.error("Network error"); }
     setResolving(null);
