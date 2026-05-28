@@ -3,6 +3,23 @@ import { useState, useEffect } from "react";
 import { fN, fD } from "../lib/format";
 import { Avatar } from "./avatar";
 
+function useRefSettings() {
+  const [s, setS] = useState({ referrer: 50000, invitee: 50000, minDeposit: 0 });
+  useEffect(() => {
+    fetch("/api/settings").then(r => r.json()).then(d => {
+      const v = d.settings || {};
+      setS({
+        referrer: Number(v.ref_referrer_bonus) || 50000,
+        invitee: Number(v.ref_invitee_bonus) || 50000,
+        minDeposit: Number(v.ref_min_deposit) || 0,
+      });
+    }).catch(() => {});
+  }, []);
+  return s;
+}
+
+function fK(kobo) { return fN(kobo / 100); }
+
 
 /* ═══════════════════════════════════════════ */
 /* ═══ REFERRALS PAGE                      ═══ */
@@ -10,6 +27,7 @@ import { Avatar } from "./avatar";
 export default function ReferralsPage({ user, dark, t }) {
   const [copied, setCopied] = useState(null);
   const [page, setPage] = useState(1);
+  const ref = useRefSettings();
 
   /* Per-page from shared localStorage */
   const [perPage, setPerPage] = useState(10);
@@ -31,6 +49,12 @@ export default function ReferralsPage({ user, dark, t }) {
     setTimeout(() => setCopied(null), 2000);
   };
 
+  const steps = [
+    ["1", "Share your link", "Send your referral link to friends"],
+    ["2", "They deposit", ref.minDeposit > 0 ? `Your friend deposits ${fK(ref.minDeposit)} or more` : "Your friend makes their first deposit"],
+    ["3", "You both earn", `You get ${fK(ref.referrer)} and they get ${fK(ref.invitee)}`],
+  ];
+
   return (
     <>
       {/* Header */}
@@ -46,7 +70,7 @@ export default function ReferralsPage({ user, dark, t }) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round"><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6"/><path d="M2 8h20v4H2z"/><path d="M12 20V8"/></svg>
           <div>
             <div className="text-sm font-medium" style={{ color: t.text }}>Your referral bonus is waiting</div>
-            <div className="text-[13px] mt-0.5" style={{ color: t.textMuted }}>Deposit {fN(user.refMinDeposit)} or more to unlock your welcome bonus</div>
+            <div className="text-[13px] mt-0.5" style={{ color: t.textMuted }}>Deposit {fN(user.refMinDeposit)} or more to unlock your {fK(ref.invitee)} welcome bonus</div>
           </div>
         </div>
       )}
@@ -124,8 +148,8 @@ export default function ReferralsPage({ user, dark, t }) {
               <path d="M24 36c-8 0-14 4-14 10v2h28v-2c0-6-6-10-14-10z" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
               <path d="M26 16l6-4 6 4" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No referrals yet — share the love</div>
-            <div className="text-[15px] leading-normal" style={{ color: t.textMuted }}>Invite friends, earn ₦500 each time they sign up and order</div>
+            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No referrals yet</div>
+            <div className="text-[15px] leading-normal" style={{ color: t.textMuted }}>Invite friends and you both earn when they deposit</div>
           </div>
         )}
       </div>
@@ -155,47 +179,20 @@ export default function ReferralsPage({ user, dark, t }) {
         </div>
       )}
 
-      {/* Mobile referral card (shows how-it-works on tablet/mobile since sidebar hidden) */}
+      {/* Mobile how-it-works (sidebar hidden on mobile) */}
       <div className="hidden max-desktop:block mt-4">
-        <div className="text-sm font-semibold tracking-[0.3px] uppercase" style={{ color: t.textMuted }}>How it works</div>
-        <div className="flex flex-col gap-3 mt-3">
-          {[
-            ["1", "Share your link", "Send your referral link to friends"],
-            ["2", "They sign up", "Your friend creates a Nitro account"],
-            ["3", "You earn", "Bonus is credited to your wallet"],
-          ].map(([num, title, desc]) => (
-            <div key={num} className="flex gap-3">
-              <div className="m w-7 h-7 rounded-lg flex items-center justify-center text-sm font-semibold shrink-0" style={{ background: t.navActive, color: t.accent }}>{num}</div>
-              <div>
-                <div className="text-sm font-semibold" style={{ color: t.text }}>{title}</div>
-                <div className="text-sm" style={{ color: t.textMuted }}>{desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <HowItWorks steps={steps} dark={dark} t={t} />
+        <RewardBreakdown rs={ref} dark={dark} t={t} />
       </div>
     </>
   );
 }
 
-/* ═══════════════════════════════════════════ */
-/* ═══ REFERRALS RIGHT SIDEBAR             ═══ */
-/* ═══════════════════════════════════════════ */
-export function ReferralsSidebar({ user, dark, t }) {
-  const referrals = user?.referralList || [];
-  const totalEarnings = user?.earnings || 0;
-  const activeRefs = referrals.filter(r => r.status === "Active").length;
-  const totalRefs = user?.refs || referrals.length;
-
+function HowItWorks({ steps, dark, t }) {
   return (
     <>
-      {/* How it works */}
       <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-3 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>How It Works</div>
-      {[
-        ["1", "Share your link", "Send your referral link to friends"],
-        ["2", "They sign up", "Your friend creates a Nitro account"],
-        ["3", "You earn", "Bonus is credited to your wallet"],
-      ].map(([num, title, desc]) => (
+      {steps.map(([num, title, desc]) => (
         <div key={num} className="flex gap-3 mb-3 px-1">
           <div className="m w-7 h-7 rounded-lg flex items-center justify-center text-sm font-semibold shrink-0" style={{ background: t.navActive, color: t.accent }}>{num}</div>
           <div>
@@ -204,17 +201,59 @@ export function ReferralsSidebar({ user, dark, t }) {
           </div>
         </div>
       ))}
+    </>
+  );
+}
 
-      <div className="h-px my-2 mb-4" style={{ background: t.sidebarBorder }} />
-
-      {/* Current reward */}
-      <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-3 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Current Reward</div>
-      <div className="p-4 rounded-xl text-center mb-4" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-        <div className="m text-[28px] font-semibold" style={{ color: t.accent }}>₦500</div>
-        <div className="text-sm mt-1" style={{ color: t.textMuted }}>per successful referral</div>
+function RewardBreakdown({ rs, dark, t }) {
+  return (
+    <div className="p-4 rounded-xl mt-3" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+      <div className="flex justify-between py-2" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
+        <span className="text-sm" style={{ color: t.textMuted }}>You earn</span>
+        <span className="text-sm font-semibold" style={{ color: t.accent }}>{fK(rs.referrer)}</span>
       </div>
+      <div className="flex justify-between py-2" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
+        <span className="text-sm" style={{ color: t.textMuted }}>They earn</span>
+        <span className="text-sm font-semibold" style={{ color: t.green }}>{fK(rs.invitee)}</span>
+      </div>
+      {rs.minDeposit > 0 && (
+        <div className="flex justify-between py-2">
+          <span className="text-sm" style={{ color: t.textMuted }}>Min. deposit to activate</span>
+          <span className="text-sm font-semibold" style={{ color: t.text }}>{fK(rs.minDeposit)}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+/* ═══════════════════════════════════════════ */
+/* ═══ REFERRALS RIGHT SIDEBAR             ═══ */
+/* ═══════════════════════════════════════════ */
+export function ReferralsSidebar({ user, dark, t }) {
+  const ref = useRefSettings();
+  const referrals = user?.referralList || [];
+  const totalEarnings = user?.earnings || 0;
+  const activeRefs = referrals.filter(r => r.status === "Active").length;
+  const totalRefs = user?.refs || referrals.length;
+
+  const steps = [
+    ["1", "Share your link", "Send your referral link to friends"],
+    ["2", "They deposit", ref.minDeposit > 0 ? `Your friend deposits ${fK(ref.minDeposit)} or more` : "Your friend makes their first deposit"],
+    ["3", "You both earn", `You get ${fK(ref.referrer)} and they get ${fK(ref.invitee)}`],
+  ];
+
+  return (
+    <>
+      <HowItWorks steps={steps} dark={dark} t={t} />
 
       <div className="h-px my-2 mb-4" style={{ background: t.sidebarBorder }} />
+
+      {/* Rewards */}
+      <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-3 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Rewards</div>
+      <RewardBreakdown rs={ref} dark={dark} t={t} />
+
+      <div className="h-px my-2 mb-4 mt-4" style={{ background: t.sidebarBorder }} />
 
       {/* Performance */}
       <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-3 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Your Performance</div>
