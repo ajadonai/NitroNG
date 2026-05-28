@@ -235,14 +235,13 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   /* Detect service type from name + type field */
   const svcName = (selSvc?.name || "").toLowerCase();
   const svcType = (selSvc?.type || "").toLowerCase();
-  // "Custom Comments" or "Comments" but NOT "Comment Likes"
   const isComment = (svcType.includes("comment") || svcName.includes("comment")) && !svcName.includes("comment like");
+  const isCustomComment = isComment && (svcName.includes("custom") || svcType.includes("custom"));
   const isMention = svcName.includes("mention");
-  // "Poll Votes" but NOT "Upvotes"
   const isPoll = svcName.includes("poll vote") || svcName.includes("poll") && !svcName.includes("upvote");
-  // "Reviews (5 Stars)" but NOT "Review Likes"
   const isReview = svcName.includes("review") && !svcName.includes("review like");
-  const needsComments = isComment || isReview;
+  const needsComments = isCustomComment || isReview;
+  const showComments = isComment || isReview;
   const needsUsernames = isMention;
   const needsAnswer = isPoll;
 
@@ -281,11 +280,11 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           </div>
           {linkError && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626" }}>{linkError}</div>}
         </div>
-        {needsComments && (
+        {showComments && (
           <div className="mb-3.5">
-            <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{isReview ? "Reviews" : "Comments"} <span className="font-normal normal-case tracking-normal text-[11px]">(one per line)</span></label>
+            <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{isReview ? "Reviews" : "Comments"} <span className="font-normal normal-case tracking-normal text-[11px]">({needsComments ? "required, one per line" : "optional, one per line"})</span></label>
             <textarea disabled={orderLoading} placeholder={isReview ? "Great service, highly recommend!\nFast delivery and excellent quality\nBest experience I've had, 5 stars" : "Great content!\nLove this post!\nAmazing work, keep it up\nThis is fire"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={4} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
-            <div className="text-[11px] mt-1" style={{ color: commentShort ? (dark ? "#fca5a5" : "#dc2626") : t.textMuted }}>{commentShort ? `Need at least ${qtyNum} ${isReview ? "reviews" : "comments"} — you have ${commentLines}` : `${commentLines} ${isReview ? "reviews" : "comments"} entered · we'll cycle through them`}</div>
+            <div className="text-[11px] mt-1" style={{ color: commentShort ? (dark ? "#fca5a5" : "#dc2626") : t.textMuted }}>{commentShort ? `Need at least ${qtyNum} ${isReview ? "reviews" : "comments"} — you have ${commentLines}` : commentLines > 0 ? `${commentLines} ${isReview ? "reviews" : "comments"} entered · we'll cycle through them` : needsComments ? `Enter at least one per line` : `Leave empty to use provider's comments`}</div>
           </div>
         )}
         {needsUsernames && (
