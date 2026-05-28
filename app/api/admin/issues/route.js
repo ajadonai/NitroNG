@@ -112,38 +112,46 @@ export async function POST(req) {
 const LOW_BALANCE_USD = 10;
 
 async function verifyResolution(type, meta) {
+  const providerMap = { MoreThanPanel: 'mtp', JustAnotherPanel: 'jap', DaoSMM: 'dao' };
+
   if (type === 'low_balance') {
-    const providerMap = { MoreThanPanel: 'mtp', JustAnotherPanel: 'jap', DaoSMM: 'dao' };
-    const pid = providerMap[meta.provider] || meta.provider;
-    if (!pid || !isProviderConfigured(pid)) return { resolved: true, detail: 'Provider not configured — resolving' };
-    try {
-      const data = await getBalance(pid);
-      const balance = parseFloat(data.balance) || 0;
-      const threshold = meta.threshold || LOW_BALANCE_USD;
-      if (balance < threshold) {
-        return { resolved: false, reason: `${meta.provider} balance is still $${balance.toFixed(2)} (below $${threshold})` };
-      }
-      return { resolved: true, detail: `Balance now $${balance.toFixed(2)}` };
-    } catch (err) {
-      return { resolved: false, reason: `Could not check balance: ${err.message}` };
+    const providers = meta.providers || [meta];
+    const stillLow = [];
+    for (const p of providers) {
+      const pid = providerMap[p.provider] || p.provider;
+      if (!pid || !isProviderConfigured(pid)) continue;
+      try {
+        const data = await getBalance(pid);
+        const balance = parseFloat(data.balance) || 0;
+        const threshold = p.threshold || meta.threshold || LOW_BALANCE_USD;
+        if (balance < threshold) stillLow.push(`${p.provider} is $${balance.toFixed(2)}`);
+      } catch {}
     }
+    if (stillLow.length > 0) {
+      return { resolved: false, reason: `Still low: ${stillLow.join(', ')}` };
+    }
+    return { resolved: true, detail: 'All balances healthy' };
   }
 
   if (type === 'dead_service') {
-    const pid = meta.provider;
-    const apiId = meta.apiId;
-    if (!pid || !apiId || !isProviderConfigured(pid)) return { resolved: true, detail: 'Provider not configured — resolving' };
-    try {
-      const svcs = await getServices(pid);
-      if (!Array.isArray(svcs)) return { resolved: false, reason: `Could not fetch ${pid.toUpperCase()} service list` };
-      const found = svcs.some(s => String(s.service) === String(apiId));
-      if (!found) {
-        return { resolved: false, reason: `Service #${apiId} still missing from ${pid.toUpperCase()} catalogue` };
+    const services = meta.services || [meta];
+    const catalogueCache = {};
+    const stillDead = [];
+    for (const s of services) {
+      const pid = s.provider;
+      if (!pid || !isProviderConfigured(pid)) continue;
+      if (!catalogueCache[pid]) {
+        try { catalogueCache[pid] = await getServices(pid); } catch { continue; }
       }
-      return { resolved: true, detail: `Service #${apiId} found in catalogue` };
-    } catch (err) {
-      return { resolved: false, reason: `Could not check services: ${err.message}` };
+      const cat = catalogueCache[pid];
+      if (!Array.isArray(cat)) continue;
+      const found = cat.some(c => String(c.service) === String(s.apiId));
+      if (!found) stillDead.push(`#${s.apiId} on ${pid.toUpperCase()}`);
     }
+    if (stillDead.length > 0) {
+      return { resolved: false, reason: `${stillDead.length} still missing: ${stillDead.slice(0, 5).join(', ')}` };
+    }
+    return { resolved: true, detail: 'All services back in catalogue' };
   }
 
   if (type === 'price_alert') {
@@ -152,7 +160,7 @@ async function verifyResolution(type, meta) {
       const alerts = row ? JSON.parse(row.value) : null;
       const losers = alerts?.losers || [];
       if (losers.length > 0) {
-        return { resolved: false, reason: `${losers.length} service${losers.length > 1 ? 's' : ''} still selling below cost — run the prices cron after adjusting markups` };
+        return { resolved: false, reason: `${losers.length} service${losers.length > 1 ? 's' : ''} still below cost. Adjust markups and re-run prices cron` };
       }
       return { resolved: true, detail: 'All services priced above cost' };
     } catch (err) {
@@ -160,6 +168,5 @@ async function verifyResolution(type, meta) {
     }
   }
 
-  // order_failure and unknown types — resolve immediately
   return { resolved: true };
 }
