@@ -1417,3 +1417,296 @@ export function AdminAcquisitionPage({ dark, t }) {
     </>
   );
 }
+
+
+/* ═══════════════════════════════════════════ */
+/* ═══ ADMIN ISSUES PAGE                   ═══ */
+/* ═══════════════════════════════════════════ */
+
+function IssueSection({ title, icon, count, countColor, dark, t, defaultOpen, children }) {
+  const [open, setOpen] = useState(defaultOpen ?? false);
+  const rowBorder = dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)";
+  return (
+    <div className="rounded-xl mb-3 overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+      <button onClick={() => setOpen(!open)} className="flex items-center gap-2.5 w-full py-3 px-4 border-none cursor-pointer font-[inherit] text-left" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)" }}>
+        <span style={{ color: t.accent, opacity: .7 }}>{icon}</span>
+        <span className="text-sm font-semibold flex-1" style={{ color: t.text }}>{title}</span>
+        {count != null && <span className="text-[11px] font-semibold py-0.5 px-2 rounded-full" style={{ background: countColor?.bg || (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"), color: countColor?.color || t.textMuted }}>{count}</span>}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s", shrinkFlex: 0 }}><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      {open && <div style={{ borderTop: `1px solid ${rowBorder}` }}>{children}</div>}
+    </div>
+  );
+}
+
+const PROVIDER_COLORS = { mtp: "#ef4444", jap: "#3b82f6", dao: "#22c55e" };
+const PROVIDER_NAMES = { mtp: "MoreThanPanel", jap: "JustAnotherPanel", dao: "DaoSMM" };
+const LOW_BALANCE_USD = 10;
+
+export function AdminIssuesPage({ dark, t }) {
+  const [issues, setIssues] = useState([]);
+  const [balances, setBalances] = useState(null);
+  const [priceAlerts, setPriceAlerts] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [resolving, setResolving] = useState(null);
+  const [firingCrons, setFiringCrons] = useState(false);
+  const [cronResults, setCronResults] = useState(null);
+  const [expandedIssue, setExpandedIssue] = useState(null);
+  const toast = useToast();
+
+  const load = () => {
+    fetch("/api/admin/issues").then(r => r.json()).then(d => {
+      setIssues(d.issues || []);
+      setBalances(d.balances || null);
+      setPriceAlerts(d.priceAlerts || null);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleResolve = async (id) => {
+    setResolving(id);
+    try {
+      const res = await fetch("/api/admin/issues", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "resolve", issueId: id }) });
+      const d = await res.json();
+      if (res.ok) {
+        setIssues(prev => prev.map(i => i.id === id ? { ...i, status: "resolved", resolvedAt: new Date().toISOString() } : i));
+        toast.success(d.detail ? `Resolved — ${d.detail}` : "Issue resolved");
+      } else { toast.error(d.error || "Failed"); }
+    } catch { toast.error("Network error"); }
+    setResolving(null);
+  };
+
+  const handleFireCrons = async () => {
+    setFiringCrons(true);
+    setCronResults(null);
+    try {
+      const res = await fetch("/api/admin/issues", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "fire_crons" }) });
+      const d = await res.json();
+      if (res.ok) {
+        setCronResults(d.results || []);
+        toast.success("All crons fired");
+        setTimeout(() => load(), 2000);
+      } else { toast.error(d.error || "Failed to fire crons"); }
+    } catch { toast.error("Network error"); }
+    setFiringCrons(false);
+  };
+
+  const rowBorder = dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)";
+  const skBone = `skel-bone ${dark ? "skel-dark" : "skel-light"}`;
+
+  const deadServices = issues.filter(i => i.type === "dead_service" && i.status === "open");
+  const orderFailures = issues.filter(i => i.type === "order_failure" && i.status === "open");
+  const lowBalanceIssues = issues.filter(i => i.type === "low_balance" && i.status === "open");
+  const priceIssues = issues.filter(i => i.type === "price_alert" && i.status === "open");
+  const resolvedIssues = issues.filter(i => i.status === "resolved");
+
+  const balanceEntries = balances ? Object.entries(balances).filter(([k]) => k !== "checkedAt") : [];
+  const losers = priceAlerts?.losers || [];
+
+  const redBadge = { bg: dark ? "rgba(252,165,165,.15)" : "#fef2f2", color: dark ? "#fca5a5" : "#dc2626" };
+  const amberBadge = { bg: dark ? "rgba(252,211,77,.15)" : "#fffbeb", color: dark ? "#fcd34d" : "#d97706" };
+  const greenBadge = { bg: dark ? "rgba(110,231,183,.15)" : "#ecfdf5", color: dark ? "#6ee7b7" : "#059669" };
+  const blueBadge = { bg: dark ? "rgba(165,180,252,.15)" : "#eef2ff", color: dark ? "#a5b4fc" : "#4f46e5" };
+
+  if (loading) return <><div className="adm-header"><div className="adm-title" style={{ color: t.text }}>Platform Issues</div><div className="adm-subtitle" style={{ color: t.textMuted }}>Loading...</div><div className="page-divider" style={{ background: t.cardBorder }} /></div><div>{[1,2,3,4,5].map(i => <div key={i} className={`${skBone} h-[48px] rounded-xl mb-3`} />)}</div></>;
+
+  return (
+    <>
+      <div className="adm-header">
+        <div className="adm-header-row">
+          <div>
+            <div className="adm-title" style={{ color: t.text }}>Platform Issues</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>Provider health, service status, and cron management</div>
+          </div>
+          <button onClick={handleFireCrons} disabled={firingCrons} className="flex items-center gap-2 py-2 px-4 rounded-xl border-none text-sm font-semibold cursor-pointer font-[inherit] transition-all duration-200 shrink-0" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent, opacity: firingCrons ? .6 : 1 }}>
+            {firingCrons ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin"><circle cx="12" cy="12" r="10" strokeDasharray="40 60" /></svg>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            )}
+            {firingCrons ? "Firing..." : "Fire All Crons"}
+          </button>
+        </div>
+        <div className="page-divider" style={{ background: t.cardBorder }} />
+      </div>
+
+      {/* ═══ CRON RESULTS ═══ */}
+      <IssueSection title="Cron Results" defaultOpen={!!cronResults} dark={dark} t={t}
+        icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
+        count={cronResults ? `${cronResults.filter(r => r.ok).length}/${cronResults.length}` : null}
+        countColor={cronResults?.every(r => r.ok) ? greenBadge : amberBadge}
+      >
+        {cronResults ? cronResults.map((r, i) => (
+          <div key={i} className="flex items-center gap-2.5 py-2 px-4" style={{ borderBottom: i < cronResults.length - 1 ? `1px solid ${rowBorder}` : "none" }}>
+            <span className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: r.ok ? t.green : t.red }} />
+            <span className="text-[13px] font-mono flex-1 min-w-0" style={{ color: t.text }}>{r.cron.replace('/api/cron/', '')}</span>
+            <span className="text-[12px] font-medium shrink-0" style={{ color: r.ok ? t.green : t.red }}>{r.ok ? "OK" : r.error || "Failed"}</span>
+          </div>
+        )) : (
+          <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>Click "Fire All Crons" to run all cron jobs and see results here</div>
+        )}
+      </IssueSection>
+
+      {/* ═══ PROVIDER BALANCES ═══ */}
+      <IssueSection title="Provider Balances" defaultOpen={true} dark={dark} t={t}
+        icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>}
+        count={balanceEntries.filter(([, v]) => typeof v === 'object' && v.balance < LOW_BALANCE_USD).length > 0 ? `${balanceEntries.filter(([, v]) => typeof v === 'object' && v.balance < LOW_BALANCE_USD).length} low` : null}
+        countColor={redBadge}
+      >
+        {balanceEntries.length > 0 ? (
+          <div className="p-4">
+            <div className="grid gap-2.5" style={{ gridTemplateColumns: `repeat(${Math.min(balanceEntries.length, 3)}, 1fr)` }}>
+              {balanceEntries.map(([pid, data]) => {
+                const isLow = typeof data === 'object' && data.balance < LOW_BALANCE_USD;
+                const color = PROVIDER_COLORS[pid] || t.accent;
+                return (
+                  <div key={pid} className="py-3 px-4 rounded-xl" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.02)", border: isLow ? `1px solid ${dark ? "rgba(252,165,165,.3)" : "rgba(220,38,38,.2)"}` : `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}` }}>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="w-[7px] h-[7px] rounded-full" style={{ background: color }} />
+                      <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: t.textMuted }}>{PROVIDER_NAMES[pid] || pid}</span>
+                    </div>
+                    {typeof data === 'object' && data.balance != null ? (
+                      <div className="text-lg font-semibold" style={{ color: isLow ? t.red : t.green }}>${data.balance.toFixed(2)}</div>
+                    ) : (
+                      <div className="text-sm" style={{ color: t.textMuted }}>{data?.status || "—"}</div>
+                    )}
+                    {isLow && <div className="text-[11px] mt-1 font-medium" style={{ color: t.red }}>Below ${LOW_BALANCE_USD} threshold</div>}
+                  </div>
+                );
+              })}
+            </div>
+            {balances?.checkedAt && <div className="text-[11px] mt-2.5" style={{ color: t.textMuted }}>Last checked {fD(balances.checkedAt)}</div>}
+          </div>
+        ) : (
+          <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>Balance data not available yet — run the balance cron</div>
+        )}
+        {lowBalanceIssues.length > 0 && (
+          <div style={{ borderTop: `1px solid ${rowBorder}` }}>
+            <div className="text-[11px] font-semibold uppercase tracking-wide py-2 px-4" style={{ color: t.red }}>Open Issues</div>
+            {lowBalanceIssues.map((issue, i) => (
+              <IssueRow key={issue.id} issue={issue} i={i} total={lowBalanceIssues.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} />
+            ))}
+          </div>
+        )}
+      </IssueSection>
+
+      {/* ═══ PRICE ALERTS ═══ */}
+      <IssueSection title="Price Alerts" dark={dark} t={t}
+        icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
+        count={losers.length > 0 ? `${losers.length} below cost` : null}
+        countColor={redBadge}
+        defaultOpen={losers.length > 0}
+      >
+        {losers.length > 0 ? (
+          <>
+            {losers.map((l, i) => (
+              <div key={i} className="flex items-center gap-3 py-2.5 px-4" style={{ borderBottom: i < losers.length - 1 ? `1px solid ${rowBorder}` : "none" }}>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-medium" style={{ color: t.text }}>{l.service}</div>
+                  <div className="text-[11px]" style={{ color: t.textMuted }}>{l.category}{l.tier ? ` · ${l.tier}` : ""}</div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-[12px]" style={{ color: t.textMuted }}>Cost <span className="font-semibold" style={{ color: t.text }}>₦{(l.costNaira || 0).toLocaleString()}</span></div>
+                  <div className="text-[12px]" style={{ color: t.red }}>Sell <span className="font-semibold">₦{(l.sellNaira || 0).toLocaleString()}</span> <span className="text-[11px]">(−₦{(l.lossPerK || 0).toLocaleString()}/1K)</span></div>
+                </div>
+              </div>
+            ))}
+            {priceAlerts?.checkedAt && <div className="text-[11px] py-2 px-4" style={{ color: t.textMuted }}>Last synced {fD(priceAlerts.checkedAt)} · Rate ₦{priceAlerts.usdRate || "?"}/USD</div>}
+          </>
+        ) : (
+          <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>
+            {priceAlerts?.checkedAt ? <>All services priced above cost <span style={{ color: t.textMuted }}>· checked {fD(priceAlerts.checkedAt)}</span></> : "Price data not available yet — run the prices cron"}
+          </div>
+        )}
+        {priceIssues.length > 0 && (
+          <div style={{ borderTop: `1px solid ${rowBorder}` }}>
+            <div className="text-[11px] font-semibold uppercase tracking-wide py-2 px-4" style={{ color: t.red }}>Open Issues</div>
+            {priceIssues.map((issue, i) => (
+              <IssueRow key={issue.id} issue={issue} i={i} total={priceIssues.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} />
+            ))}
+          </div>
+        )}
+      </IssueSection>
+
+      {/* ═══ DEAD SERVICES ═══ */}
+      <IssueSection title="Dead Services" dark={dark} t={t}
+        icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>}
+        count={deadServices.length > 0 ? deadServices.length : null}
+        countColor={redBadge}
+        defaultOpen={deadServices.length > 0}
+      >
+        {deadServices.length > 0 ? deadServices.map((issue, i) => (
+          <IssueRow key={issue.id} issue={issue} i={i} total={deadServices.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} />
+        )) : (
+          <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>No dead services detected</div>
+        )}
+      </IssueSection>
+
+      {/* ═══ ORDER FAILURES ═══ */}
+      <IssueSection title="Order Failures" dark={dark} t={t}
+        icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>}
+        count={orderFailures.length > 0 ? orderFailures.length : null}
+        countColor={amberBadge}
+        defaultOpen={orderFailures.length > 0}
+      >
+        {orderFailures.length > 0 ? orderFailures.map((issue, i) => (
+          <IssueRow key={issue.id} issue={issue} i={i} total={orderFailures.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} />
+        )) : (
+          <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>No order failures</div>
+        )}
+      </IssueSection>
+
+      {/* ═══ RESOLVED ═══ */}
+      {resolvedIssues.length > 0 && (
+        <IssueSection title="Resolved" dark={dark} t={t}
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+          count={resolvedIssues.length}
+          countColor={greenBadge}
+        >
+          {resolvedIssues.map((issue, i) => (
+            <IssueRow key={issue.id} issue={issue} i={i} total={resolvedIssues.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} />
+          ))}
+        </IssueSection>
+      )}
+    </>
+  );
+}
+
+function IssueRow({ issue, i, total, dark, t, rowBorder, expanded, setExpanded, resolving, onResolve }) {
+  const isExpanded = expanded === issue.id;
+  let meta = null;
+  try { meta = issue.metadata ? JSON.parse(issue.metadata) : null; } catch {}
+  return (
+    <div style={{ borderBottom: i < total - 1 ? `1px solid ${rowBorder}` : "none" }}>
+      <div className="flex items-center gap-3 py-2.5 px-4 cursor-pointer" onClick={() => setExpanded(isExpanded ? null : issue.id)}>
+        <div className="min-w-0 flex-1">
+          <div className="text-[13px] font-medium" style={{ color: t.text }}>{issue.title}</div>
+          <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(issue.createdAt)}</div>
+        </div>
+        {issue.status === "open" ? (
+          <button onClick={(e) => { e.stopPropagation(); onResolve(issue.id); }} disabled={resolving === issue.id} className="text-[11px] font-semibold py-1 px-2.5 rounded-lg border-none cursor-pointer font-[inherit] shrink-0" style={{ background: dark ? "rgba(110,231,183,.12)" : "#ecfdf5", color: t.green, opacity: resolving === issue.id ? .5 : 1 }}>
+            {resolving === issue.id ? "..." : "Resolve"}
+          </button>
+        ) : (
+          <span className="text-[11px] font-semibold py-0.5 px-2 rounded-[5px] shrink-0" style={{ background: dark ? "rgba(110,231,183,.08)" : "#ecfdf5", color: t.green }}>Resolved</span>
+        )}
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s", flexShrink: 0 }}><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      {isExpanded && (
+        <div className="py-2.5 px-4 text-[13px] leading-relaxed" style={{ background: dark ? "rgba(0,0,0,.15)" : "rgba(0,0,0,.02)", color: t.textMuted, borderTop: `1px solid ${rowBorder}` }}>
+          <div className="mb-2 whitespace-pre-line">{issue.message}</div>
+          {meta && (
+            <div className="font-mono text-[12px] p-2.5 rounded-lg mt-2" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)" }}>
+              {Object.entries(meta).filter(([k]) => k !== 'losers').map(([k, v]) => (
+                <div key={k}><span style={{ color: t.accent }}>{k}:</span> {typeof v === 'object' ? JSON.stringify(v) : String(v)}</div>
+              ))}
+            </div>
+          )}
+          {issue.resolvedBy && <div className="mt-2 text-[12px]">Resolved by <strong style={{ color: t.text }}>{issue.resolvedBy}</strong> on {fD(issue.resolvedAt)}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
