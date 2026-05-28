@@ -205,7 +205,7 @@ function saveCart(rows) {
 const CONSERVATIVE = ['instagram','tiktok','facebook','twitter','snapchat','threads'];
 const showDripNote = (plat, qty) => { const p = (plat || '').toLowerCase(); return CONSERVATIVE.some(c => p.includes(c)) ? qty > 100 : qty > 500; };
 
-export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null }) {
+export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp }) {
   const minQty = selTier?.min || 100;
   const maxQty = selTier?.max || 50000;
   const qtyNum = Number(qty) || 0;
@@ -333,7 +333,17 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             </div>
           </div>
         )}
-        <button onClick={onSubmit} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer) || (comments || "").trim()) && !orderLoading ? 1 : .5 }}>{orderLoading ? "Placing..." : "Place Order"}</button>
+        {balance != null && qtyNum > 0 && price > balance && (
+          <div className="flex items-center gap-2.5 py-2.5 px-3 rounded-lg mb-3" style={{ background: dark ? "rgba(250,204,21,.1)" : "rgba(250,204,21,.12)", border: `1px solid ${dark ? "rgba(250,204,21,.2)" : "rgba(250,204,21,.3)"}` }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fcd34d" : "#b45309"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-medium" style={{ color: dark ? "#fcd34d" : "#b45309" }}>Insufficient balance</div>
+              <div className="text-[11.5px]" style={{ color: t.textMuted }}>You need ₦{(price - balance).toLocaleString()} more to place this order.</div>
+            </div>
+            {onTopUp && <button onClick={onTopUp} className="text-[12px] font-semibold py-1.5 px-3 rounded-lg border-none cursor-pointer whitespace-nowrap shrink-0" style={{ background: dark ? "rgba(250,204,21,.15)" : "rgba(250,204,21,.18)", color: dark ? "#fcd34d" : "#b45309" }}>Top up</button>}
+          </div>
+        )}
+        <button onClick={onSubmit} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || orderLoading || (balance != null && qtyNum > 0 && price > balance)} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer) || (comments || "").trim()) && !orderLoading && !(balance != null && qtyNum > 0 && price > balance) ? 1 : .5 }}>{orderLoading ? "Placing..." : "Place Order"}</button>
       </>}
       </div>
     </div>
@@ -894,7 +904,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 </div>
               </div>
             ) : (
-              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => setOrderModal(false)} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} />
+              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => setOrderModal(false)} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} />
             )}
           </div>
         </div>
