@@ -246,6 +246,9 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const needsUsernames = isMention;
   const needsAnswer = isPoll;
 
+  const commentLines = (comments || "").split("\n").filter(l => l.trim()).length;
+  const commentShort = needsComments && qtyNum > 0 && commentLines > 0 && commentLines < qtyNum;
+
   const linkPlaceholder = LINK_HINTS[platform] || `${platform}.com/...`;
   const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
 
@@ -282,7 +285,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           <div className="mb-3.5">
             <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{isReview ? "Reviews" : "Comments"} <span className="font-normal normal-case tracking-normal text-[11px]">(one per line)</span></label>
             <textarea disabled={orderLoading} placeholder={isReview ? "Great service, highly recommend!\nFast delivery and excellent quality\nBest experience I've had, 5 stars" : "Great content!\nLove this post!\nAmazing work, keep it up\nThis is fire"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={4} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
-            <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>{(comments || "").split("\n").filter(l => l.trim()).length} {isReview ? "reviews" : "comments"} entered · we'll cycle through them</div>
+            <div className="text-[11px] mt-1" style={{ color: commentShort ? (dark ? "#fca5a5" : "#dc2626") : t.textMuted }}>{commentShort ? `Need at least ${qtyNum} ${isReview ? "reviews" : "comments"} — you have ${commentLines}` : `${commentLines} ${isReview ? "reviews" : "comments"} entered · we'll cycle through them`}</div>
           </div>
         )}
         {needsUsernames && (
@@ -341,7 +344,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             Insufficient balance · Top up
           </button>
         ) : (
-          <button onClick={onSubmit} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer) || (comments || "").trim()) && !orderLoading ? 1 : .5 }}>{orderLoading ? "Placing..." : "Place Order"}</button>
+          <button onClick={onSubmit} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer) || (comments || "").trim()) && !commentShort && !orderLoading ? 1 : .5 }}>{orderLoading ? "Placing..." : "Place Order"}</button>
         )}
       </>}
       </div>
