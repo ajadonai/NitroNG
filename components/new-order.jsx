@@ -135,6 +135,8 @@ function compactPrice(n) {
   return `₦${n.toLocaleString()}`;
 }
 
+function fQty(n) { return n >= 1000000 ? `${n / 1000000}M` : n >= 1000 ? `${n / 1000}K` : n; }
+
 function getPresets(min, max) {
   const nice = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
   const pool = nice.filter(v => v >= min && v <= max);
@@ -307,7 +309,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           {qtyOutOfRange && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{qtyNum < minQty ? `Minimum: ${minQty.toLocaleString()}` : `Maximum: ${maxQty.toLocaleString()}`}</div>}
           <div className="flex gap-1 mt-1.5">
             {getPresets(minQty, maxQty).map(q => (
-              <button key={q} onClick={() => setQty(q)} disabled={orderLoading} className="m flex-1 py-[5px] rounded-md text-[13px] border border-solid cursor-pointer bg-transparent font-[inherit] disabled:opacity-40 transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: qty === q ? t.accent : t.cardBorder, background: qty === q ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: qty === q ? t.accent : t.textMuted }}>{q >= 1000 ? `${q / 1000}K` : q}</button>
+              <button key={q} onClick={() => setQty(q)} disabled={orderLoading} className="m flex-1 py-[5px] rounded-md text-[13px] border border-solid cursor-pointer bg-transparent font-[inherit] disabled:opacity-40 transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: qty === q ? t.accent : t.cardBorder, background: qty === q ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: qty === q ? t.accent : t.textMuted }}>{fQty(q)}</button>
             ))}
           </div>
         </div>
@@ -333,17 +335,14 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             </div>
           </div>
         )}
-        {balance != null && qtyNum > 0 && price > balance && (
-          <div className="flex items-center gap-2.5 py-2.5 px-3 rounded-lg mb-3" style={{ background: dark ? "rgba(250,204,21,.1)" : "rgba(250,204,21,.12)", border: `1px solid ${dark ? "rgba(250,204,21,.2)" : "rgba(250,204,21,.3)"}` }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fcd34d" : "#b45309"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-medium" style={{ color: dark ? "#fcd34d" : "#b45309" }}>Insufficient balance</div>
-              <div className="text-[11.5px]" style={{ color: t.textMuted }}>You need ₦{(price - balance).toLocaleString()} more to place this order.</div>
-            </div>
-            {onTopUp && <button onClick={onTopUp} className="text-[12px] font-semibold py-1.5 px-3 rounded-lg border-none cursor-pointer whitespace-nowrap shrink-0" style={{ background: dark ? "rgba(250,204,21,.15)" : "rgba(250,204,21,.18)", color: dark ? "#fcd34d" : "#b45309" }}>Top up</button>}
-          </div>
+        {balance != null && qtyNum > 0 && price > balance ? (
+          <button onClick={onTopUp} data-tour="no-submit-btn" className="w-full py-2.5 rounded-lg border border-solid text-[15px] font-semibold cursor-pointer flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(250,204,21,.08)" : "rgba(250,204,21,.1)", borderColor: dark ? "rgba(250,204,21,.25)" : "rgba(250,204,21,.35)", color: dark ? "#fcd34d" : "#b45309" }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Insufficient balance · Top up
+          </button>
+        ) : (
+          <button onClick={onSubmit} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer) || (comments || "").trim()) && !orderLoading ? 1 : .5 }}>{orderLoading ? "Placing..." : "Place Order"}</button>
         )}
-        <button onClick={onSubmit} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || orderLoading || (balance != null && qtyNum > 0 && price > balance)} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer) || (comments || "").trim()) && !orderLoading && !(balance != null && qtyNum > 0 && price > balance) ? 1 : .5 }}>{orderLoading ? "Placing..." : "Place Order"}</button>
       </>}
       </div>
     </div>
@@ -1254,7 +1253,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
               <div className="flex justify-between items-center gap-3">
                 <div className="flex gap-1 flex-wrap">
                   {getPresets(row.min, row.max).map(v => (
-                    <button key={v} onClick={() => updateRow(idx, { qty: v })} disabled={loading} className="py-[3px] px-2 rounded-full border border-solid text-[10.5px] font-medium cursor-pointer bg-transparent font-[inherit] disabled:opacity-40 transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: row.qty === v ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"), color: row.qty === v ? t.accent : t.textMuted }}>{v >= 1000 ? `${v / 1000}K` : v}</button>
+                    <button key={v} onClick={() => updateRow(idx, { qty: v })} disabled={loading} className="py-[3px] px-2 rounded-full border border-solid text-[10.5px] font-medium cursor-pointer bg-transparent font-[inherit] disabled:opacity-40 transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: row.qty === v ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"), color: row.qty === v ? t.accent : t.textMuted }}>{fQty(v)}</button>
                   ))}
                 </div>
                 <span className="text-[12.5px] font-medium shrink-0" style={{ color: t.textMuted }}>₦{rowPrice.toLocaleString()}</span>
