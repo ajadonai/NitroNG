@@ -95,6 +95,28 @@ export async function GET(req) {
 
         log.warn('Low balance alert', alertText);
       }
+
+      // Create/update single admin issue for low balances
+      try {
+        const existingIssue = await prisma.adminIssue.findFirst({
+          where: { type: 'low_balance', status: 'open' },
+        });
+        const title = `${alerts.length} provider${alerts.length > 1 ? 's' : ''} below $${LOW_BALANCE_USD} — ${alerts.map(a => `${a.provider} $${a.balance.toFixed(2)}`).join(', ')}`;
+        const message = alerts.map(a => `${a.provider}: $${a.balance.toFixed(2)} (threshold $${a.threshold})`).join('\n') + '\nTop up to avoid order failures.';
+        const metadata = JSON.stringify({ providers: alerts, threshold: LOW_BALANCE_USD });
+        if (existingIssue) {
+          await prisma.adminIssue.update({
+            where: { id: existingIssue.id },
+            data: { title, message, metadata, createdAt: new Date() },
+          });
+        } else {
+          await prisma.adminIssue.create({
+            data: { type: 'low_balance', title, message, metadata },
+          });
+        }
+      } catch (issueErr) {
+        log.warn('Balance issue create', issueErr.message);
+      }
     } catch (err) {
       log.warn('Balance alert save', err.message);
     }

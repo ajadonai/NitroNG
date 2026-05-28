@@ -60,8 +60,21 @@ export async function GET(req) {
       data: { adminName: 'System', action: `FX rate updated: ₦${currentRate} → ₦${newRate} (market ₦${Math.round(marketRate)} + ₦${buffer} buffer)`, type: 'system' },
     });
 
+    // Trigger reprice now that the rate changed
+    let repriceResult = null;
+    try {
+      const origin = new URL(req.url).origin;
+      const priceRes = await fetch(`${origin}/api/cron/prices`, {
+        headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
+      });
+      repriceResult = await priceRes.json().catch(() => ({}));
+      log.info('FX', `Reprice triggered: ${repriceResult.repriced || 0} repriced`);
+    } catch (err) {
+      log.warn('FX', `Reprice trigger failed: ${err.message}`);
+    }
+
     log.info('FX', `Rate updated: ${currentRate} → ${newRate} (market ${Math.round(marketRate)} + ${buffer})`);
-    return Response.json({ success: true, previous: currentRate, rate: newRate, market: Math.round(marketRate), buffer });
+    return Response.json({ success: true, previous: currentRate, rate: newRate, market: Math.round(marketRate), buffer, repriceResult });
   } catch (err) {
     log.error('FX', err.message);
     return Response.json({ error: err.message }, { status: 500 });

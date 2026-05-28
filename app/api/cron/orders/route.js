@@ -184,7 +184,40 @@ export async function GET(req) {
             },
           });
           if (isTimeout) log.warn(`Cron retry ${order.orderId}`, `Timeout — halted auto-retry (provider may have processed)`);
-          else log.warn(`Cron retry ${order.orderId}`, err.message);
+          else {
+            log.warn(`Cron retry ${order.orderId}`, err.message);
+            if (/incorrect service|invalid service/i.test(err.message)) {
+              const svc = order.service;
+              prisma.adminIssue.findFirst({
+                where: { type: 'order_failure', status: 'open' },
+              }).then(existing => {
+                const pid = svc.provider || 'mtp';
+                const entry = { serviceId: svc.id, name: svc.name, apiId: svc.apiId, provider: pid, orderId: order.orderId };
+                if (existing) {
+                  let prev = [];
+                  try { const m = JSON.parse(existing.metadata); prev = m.services || []; } catch {}
+                  if (!prev.some(s => s.serviceId === svc.id)) prev.push(entry);
+                  return prisma.adminIssue.update({
+                    where: { id: existing.id },
+                    data: {
+                      title: `${prev.length} service${prev.length > 1 ? 's' : ''} rejected by provider`,
+                      message: prev.map(s => `${s.name} (${(s.provider || 'mtp').toUpperCase()} #${s.apiId})`).join('\n'),
+                      metadata: JSON.stringify({ count: prev.length, services: prev }),
+                      createdAt: new Date(),
+                    },
+                  });
+                }
+                return prisma.adminIssue.create({
+                  data: {
+                    type: 'order_failure',
+                    title: `1 service rejected by provider`,
+                    message: `${svc.name} (${pid.toUpperCase()} #${svc.apiId})`,
+                    metadata: JSON.stringify({ count: 1, services: [entry] }),
+                  },
+                });
+              }).catch(() => {});
+            }
+          }
         }
         await new Promise(r => setTimeout(r, 300));
       }

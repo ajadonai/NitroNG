@@ -355,6 +355,26 @@ model ActivityLog {
 }
 
 // ──────────────────────────────────────
+// ADMIN ISSUES
+// ──────────────────────────────────────
+
+model AdminIssue {
+  id         String    @id @default(cuid())
+  type       String    // 'dead_service' | 'low_balance' | 'order_failure' etc.
+  title      String
+  message    String
+  metadata   String?   @db.Text // JSON with tier/service/provider details
+  status     String    @default("open") // 'open' | 'resolved'
+  resolvedAt DateTime?
+  resolvedBy String?
+  createdAt  DateTime  @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("admin_issues")
+}
+
+// ──────────────────────────────────────
 // SITE SETTINGS
 // ──────────────────────────────────────
 

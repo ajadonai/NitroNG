@@ -19,7 +19,7 @@ export async function GET() {
       revenueAgg, costAgg, depositsAgg,
       todayOrders, todayRevenueAgg, todayUsers, todayDepositsAgg,
       yesterdayRevenueAgg, yesterdayDepositsAgg,
-      recentOrders, recentUsers, openTickets, unreadTicketCount, pendingManualCount, pendingOrderCount, activityLogs,
+      recentOrders, recentUsers, openTickets, unreadTicketCount, pendingManualCount, pendingOrderCount, openIssueCount, activityLogs,
     ] = await Promise.all([
       prisma.user.count({ where: { emailVerified: true } }),
       prisma.order.count({ where: { deletedAt: null } }),
@@ -67,6 +67,12 @@ export async function GET() {
       prisma.order.count({
         where: { status: { in: ['Pending', 'Processing'] }, deletedAt: null },
       }).catch(() => 0),
+      // Open issue categories count for badge (not individual issues)
+      prisma.adminIssue?.findMany({
+        where: { status: 'open' },
+        select: { type: true },
+        distinct: ['type'],
+      }).then(r => r.length).catch(() => 0) ?? Promise.resolve(0),
       // Recent activity (last 8)
       prisma.activityLog.findMany({
         orderBy: { createdAt: 'desc' },
@@ -102,6 +108,7 @@ export async function GET() {
       unreadTicketCount,
       pendingManualCount,
       pendingOrderCount,
+      openIssueCount,
       openTickets: openTickets.map(tk => ({
         id: tk.ticketId || tk.id,
         subject: tk.subject,
