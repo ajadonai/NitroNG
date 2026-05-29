@@ -187,15 +187,16 @@ export default function AdminUsersPage({ dark, t }) {
 
             return (
               <div key={u.id}>
-                <div className="flex items-center gap-3 py-3 px-4 flex-wrap" style={{ borderBottom: (i < paged.length - 1 && creditId !== u.id && txUser?.id !== u.id) ? `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}` : "none" }}>
+                <div className="flex items-center gap-3 max-md:gap-2.5 py-3 px-4 max-md:px-3 max-md:flex-wrap" style={{ borderBottom: (i < paged.length - 1 && creditId !== u.id && txUser?.id !== u.id) ? `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}` : "none" }}>
                   {/* Avatar */}
-                  <Avatar size={36} />
+                  <Avatar size={36} className="max-md:hidden" />
+                  <Avatar size={30} className="md:hidden shrink-0" />
 
                   {/* Info */}
-                  <div className="flex-1 min-w-[160px]">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[14px] font-semibold" style={{ color: isDeleted ? t.textMuted : t.text }}>{displayName}</span>
-                      {u.status !== "Active" && <span className="text-[11px] py-[1px] px-1.5 rounded font-semibold" style={{
+                      <span className="text-[14px] max-md:text-[13px] font-semibold truncate" style={{ color: isDeleted ? t.textMuted : t.text }}>{displayName}</span>
+                      {u.status !== "Active" && <span className="text-[11px] max-md:text-[10px] py-[1px] px-1.5 rounded font-semibold shrink-0" style={{
                         background: u.status === "PendingDeletion" ? (dark ? "rgba(249,115,22,.1)" : "rgba(249,115,22,.06)")
                           : u.status === "Deleted" ? (dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)")
                           : (dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)"),
@@ -204,25 +205,25 @@ export default function AdminUsersPage({ dark, t }) {
                           : (dark ? "#fca5a5" : "#dc2626"),
                       }}>{u.status === "PendingDeletion" ? "Pending Deletion" : u.status}</span>}
                     </div>
-                    <div className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{displayEmail}</div>
+                    <div className="text-[12px] max-md:text-[11px] mt-0.5 truncate" style={{ color: t.textMuted }}>{displayEmail}</div>
                     {u.status === "PendingDeletion" && u.deletedAt && <div className="text-[11px] mt-0.5" style={{ color: dark ? "#fdba74" : "#ea580c" }}>Deletes {fD(u.deletedAt, true)}</div>}
                     {u.status === "Deleted" && u.deletedAt && <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>Deleted {fD(u.deletedAt, true)}</div>}
                   </div>
 
                   {/* Metrics */}
-                  <div className="flex items-center gap-4 max-sm:gap-3">
-                    <div className="text-center min-w-[60px]">
-                      <div className="text-[14px] font-bold" style={{ color: t.green }}>{fN(u.balance || 0)}</div>
+                  <div className="flex items-center gap-4 max-md:gap-3 shrink-0">
+                    <div className="text-center">
+                      <div className="text-[14px] max-md:text-[13px] font-bold" style={{ color: t.green }}>{fN(u.balance || 0)}</div>
                       <div className="text-[10px] uppercase tracking-[0.5px] font-medium" style={{ color: t.textMuted }}>Balance</div>
                     </div>
-                    <div className="text-center min-w-[40px]">
-                      <div className="text-[14px] font-bold" style={{ color: t.text }}>{u.orders || 0}</div>
+                    <div className="text-center">
+                      <div className="text-[14px] max-md:text-[13px] font-bold" style={{ color: t.text }}>{u.orders || 0}</div>
                       <div className="text-[10px] uppercase tracking-[0.5px] font-medium" style={{ color: t.textMuted }}>Orders</div>
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex gap-1.5 shrink-0">
+                  {/* Actions — full width row on mobile */}
+                  <div className="flex gap-1.5 shrink-0 max-md:w-full max-md:mt-1 max-md:pl-[38px]">
                     <button onClick={() => viewTransactions(u)} className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${txUser?.id === u.id ? t.accent : t.cardBorder}`, background: txUser?.id === u.id ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.06)") : "none", color: txUser?.id === u.id ? t.accent : t.textSoft }}>Txns</button>
                     {!isDeleted && <button onClick={() => setCreditId(creditId === u.id ? null : u.id)} className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${creditId === u.id ? t.accent : t.cardBorder}`, background: creditId === u.id ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.06)") : "none", color: t.accent }}>Credit</button>}
                     {!isDeleted && <button onClick={() => handleBan(u)} className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${u.status === "PendingDeletion" ? (dark ? "rgba(110,231,183,.28)" : "rgba(5,150,105,.24)") : (dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)")}`, background: "none", color: u.status === "PendingDeletion" ? t.green : (u.status === "Active" ? (dark ? "#fca5a5" : "#dc2626") : t.green) }}>{u.status === "PendingDeletion" ? "Reinstate" : (u.status === "Active" ? "Ban" : "Activate")}</button>}
@@ -268,11 +269,11 @@ export default function AdminUsersPage({ dark, t }) {
                       return (
                         <>
                           {txPaged.map((tx, j) => (
-                            <div key={tx.id} className="flex items-center gap-2.5 py-2.5 px-4 text-[13px] flex-wrap" style={{ borderBottom: j < txPaged.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)"}` : "none" }}>
-                              <span className="w-[70px] text-[11px] shrink-0" style={{ color: t.textSoft }}>{fD(tx.createdAt, true)}</span>
-                              {(() => { const walletIn = tx.type === "deposit" || tx.type === "refund" || tx.type === "admin_credit" || tx.type === "admin_gift" || tx.type === "referral" || tx.type === "bonus"; const walletOut = tx.type === "order"; const failed = tx.status !== "Completed"; const badgeClr = failed ? t.textMuted : walletOut ? (dark ? "#fca5a5" : "#dc2626") : walletIn ? (dark ? "#6ee7b7" : "#059669") : t.textMuted; const badgeBg = failed ? (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)") : walletOut ? (dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)") : walletIn ? (dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.04)") : (dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.02)"); const amtClr = failed ? t.textMuted : walletOut ? (dark ? "#fca5a5" : "#dc2626") : walletIn ? (dark ? "#6ee7b7" : "#059669") : t.textMuted; return <><span className="w-[60px] text-[10px] py-[2px] px-1.5 rounded text-center shrink-0 uppercase font-semibold tracking-[0.3px]" style={{ background: badgeBg, color: badgeClr }}>{tx.type === "admin_credit" ? "credit" : tx.type === "admin_gift" ? "gift" : tx.type}</span><span className="w-20 text-right font-bold text-[13px] shrink-0" style={{ color: amtClr }}>{failed ? "" : walletOut ? "-" : "+"}{fN(tx.amount / 100)}</span></>; })()}
-                              <span className="text-[11px] font-medium" style={{ color: tx.status === "Completed" ? t.textMuted : tx.status === "Pending" ? "#e0a458" : (dark ? "#fca5a5" : "#dc2626") }}>{tx.status}</span>
-                              <span className="flex-1 text-[11px] overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.textSoft }}>{tx.note || tx.reference || ""}</span>
+                            <div key={tx.id} className="flex items-center gap-2.5 max-md:gap-2 py-2.5 px-4 max-md:px-3 text-[13px] flex-wrap" style={{ borderBottom: j < txPaged.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)"}` : "none" }}>
+                              <span className="w-[70px] max-md:w-[58px] text-[11px] max-md:text-[10px] shrink-0" style={{ color: t.textSoft }}>{fD(tx.createdAt, true)}</span>
+                              {(() => { const walletIn = tx.type === "deposit" || tx.type === "refund" || tx.type === "admin_credit" || tx.type === "admin_gift" || tx.type === "referral" || tx.type === "bonus"; const walletOut = tx.type === "order"; const failed = tx.status !== "Completed"; const badgeClr = failed ? t.textMuted : walletOut ? (dark ? "#fca5a5" : "#dc2626") : walletIn ? (dark ? "#6ee7b7" : "#059669") : t.textMuted; const badgeBg = failed ? (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)") : walletOut ? (dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)") : walletIn ? (dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.04)") : (dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.02)"); const amtClr = failed ? t.textMuted : walletOut ? (dark ? "#fca5a5" : "#dc2626") : walletIn ? (dark ? "#6ee7b7" : "#059669") : t.textMuted; return <><span className="w-[60px] max-md:w-[50px] text-[10px] py-[2px] px-1.5 rounded text-center shrink-0 uppercase font-semibold tracking-[0.3px]" style={{ background: badgeBg, color: badgeClr }}>{tx.type === "admin_credit" ? "credit" : tx.type === "admin_gift" ? "gift" : tx.type}</span><span className="w-20 max-md:w-[62px] text-right font-bold text-[13px] max-md:text-[12px] shrink-0" style={{ color: amtClr }}>{failed ? "" : walletOut ? "-" : "+"}{fN(tx.amount / 100)}</span></>; })()}
+                              <span className="text-[11px] max-md:text-[10px] font-medium max-md:hidden" style={{ color: tx.status === "Completed" ? t.textMuted : tx.status === "Pending" ? "#e0a458" : (dark ? "#fca5a5" : "#dc2626") }}>{tx.status}</span>
+                              <span className="flex-1 text-[11px] max-md:text-[10px] overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.textSoft }}>{tx.note || tx.reference || ""}</span>
                             </div>
                           ))}
                           {txTotalPages > 1 && (
