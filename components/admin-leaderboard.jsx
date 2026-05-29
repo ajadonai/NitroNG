@@ -248,28 +248,28 @@ export default function AdminLeaderboardPage({ dark, t }) {
           </div>
         ) : (
           <div className="rounded-xl overflow-hidden border" style={{ borderColor: t.cardBorder }}>
-            <div className="flex py-2.5 px-4 text-[11px] font-semibold uppercase tracking-[1px] gap-3 items-center" style={{ color: t.accent, ...accentHdr }}>
-              <span className="w-6"></span><span className="w-[30px]">#</span><span className="flex-1">User</span>
-              {tab === "spenders" && <><span className="w-[90px] text-right">Spend</span><span className="w-[70px] text-right">Profit</span><span className="w-[50px] text-right">Orders</span></>}
-              {tab === "referrers" && <span className="w-[70px] text-right">Refs</span>}
-              {tab === "active" && <><span className="w-[60px] text-right">Orders</span><span className="w-[90px] text-right">Spend</span></>}
-              <span className="w-[70px]"></span>
+            <div className="flex py-2.5 px-4 max-md:px-2.5 text-[11px] font-semibold uppercase tracking-[1px] gap-3 max-md:gap-2 items-center" style={{ color: t.accent, ...accentHdr }}>
+              <span className="w-6 max-md:w-4"></span><span className="w-[30px] max-md:w-5">#</span><span className="flex-1">User</span>
+              {tab === "spenders" && <><span className="w-[90px] max-md:w-[70px] text-right">Spend</span><span className="w-[70px] text-right max-md:hidden">Profit</span><span className="w-[50px] max-md:w-[36px] text-right">Orders</span></>}
+              {tab === "referrers" && <span className="w-[70px] max-md:w-[50px] text-right">Refs</span>}
+              {tab === "active" && <><span className="w-[60px] max-md:w-[44px] text-right">Orders</span><span className="w-[90px] max-md:w-[70px] text-right">Spend</span></>}
+              <span className="w-[70px] max-md:w-[54px]"></span>
             </div>
             {list.map((e, i) => {
               const sel = selected.has(e.userId);
               return (
-                <div key={e.userId} className="flex items-center py-2.5 px-4 gap-3 transition-colors duration-150" style={{ borderBottom: i < list.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: sel ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : i < 3 ? (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)") : "transparent", ...cardBg }}>
-                  <input type="checkbox" checked={sel} onChange={() => toggleSelect(e.userId)} className="w-4 h-4 cursor-pointer" style={{ accentColor: "#c47d8e" }} />
-                  <span className="w-[30px] text-sm font-bold text-center" style={{ color: i === 0 ? "#ffd700" : i === 1 ? "#c0c0c0" : i === 2 ? "#cd7f32" : t.textMuted }}>{i < 3 ? ["🥇","🥈","🥉"][i] : e.rank}</span>
+                <div key={e.userId} className="flex items-center py-2.5 px-4 max-md:px-2.5 gap-3 max-md:gap-2 transition-colors duration-150" style={{ borderBottom: i < list.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: sel ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : i < 3 ? (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)") : "transparent", ...cardBg }}>
+                  <input type="checkbox" checked={sel} onChange={() => toggleSelect(e.userId)} className="w-4 h-4 cursor-pointer shrink-0" style={{ accentColor: "#c47d8e" }} />
+                  <span className="w-[30px] max-md:w-5 text-sm max-md:text-xs font-bold text-center shrink-0" style={{ color: i === 0 ? "#ffd700" : i === 1 ? "#c0c0c0" : i === 2 ? "#cd7f32" : t.textMuted }}>{i < 3 ? ["🥇","🥈","🥉"][i] : e.rank}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium" style={{ color: t.text }}>{e.name || `${e.firstName} ${e.lastName}`}</div>
-                    <div className="text-xs" style={{ color: t.textMuted }}>{e.email}</div>
+                    <div className="text-sm max-md:text-[13px] font-medium truncate" style={{ color: t.text }}>{e.name || `${e.firstName} ${e.lastName}`}</div>
+                    <div className="text-xs max-md:text-[10px] truncate" style={{ color: t.textMuted }}>{e.email}</div>
                   </div>
-                  {tab === "spenders" && <><span className="w-[90px] text-right text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN(e.spend)}</span><span className="w-[70px] text-right text-xs" style={{ color: t.textMuted }}>{fN(e.profit)}</span><span className="w-[50px] text-right text-[13px]" style={{ color: t.textMuted }}>{e.orders}</span></>}
-                  {tab === "referrers" && <span className="w-[70px] text-right text-sm font-semibold" style={{ color: dark ? "#e0a458" : "#d97706" }}>{e.referrals}</span>}
-                  {tab === "active" && <><span className="w-[60px] text-right text-sm font-semibold" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{e.orders}</span><span className="w-[90px] text-right text-xs" style={{ color: t.textMuted }}>{fN(e.spend)}</span></>}
-                  <div className="w-[70px] text-right">
-                    <button onClick={() => { setRewardModal({ userId: e.userId, name: e.name || `${e.firstName} ${e.lastName}`, email: e.email }); setRewardMsg(null); }} className="py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] bg-transparent transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.accent}`, color: t.accent }}>Reward</button>
+                  {tab === "spenders" && <><span className="w-[90px] max-md:w-[70px] text-right text-[13px] max-md:text-xs font-semibold shrink-0" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN(e.spend)}</span><span className="w-[70px] text-right text-xs max-md:hidden shrink-0" style={{ color: t.textMuted }}>{fN(e.profit)}</span><span className="w-[50px] max-md:w-[36px] text-right text-[13px] max-md:text-xs shrink-0" style={{ color: t.textMuted }}>{e.orders}</span></>}
+                  {tab === "referrers" && <span className="w-[70px] max-md:w-[50px] text-right text-sm max-md:text-xs font-semibold shrink-0" style={{ color: dark ? "#e0a458" : "#d97706" }}>{e.referrals}</span>}
+                  {tab === "active" && <><span className="w-[60px] max-md:w-[44px] text-right text-sm max-md:text-xs font-semibold shrink-0" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{e.orders}</span><span className="w-[90px] max-md:w-[70px] text-right text-xs shrink-0" style={{ color: t.textMuted }}>{fN(e.spend)}</span></>}
+                  <div className="w-[70px] max-md:w-[54px] text-right shrink-0">
+                    <button onClick={() => { setRewardModal({ userId: e.userId, name: e.name || `${e.firstName} ${e.lastName}`, email: e.email }); setRewardMsg(null); }} className="py-1.5 px-3 max-md:py-1 max-md:px-2 rounded-lg text-[11px] max-md:text-[10px] font-semibold cursor-pointer font-[inherit] bg-transparent transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.accent}`, color: t.accent }}>Reward</button>
                   </div>
                 </div>
               );
