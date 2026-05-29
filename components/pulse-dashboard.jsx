@@ -363,6 +363,22 @@ export default function PulseDashboard({ secretKey }) {
   const [data, setData] = useState(null);
   const [secondsAgo, setSecondsAgo] = useState(0);
   const [error, setError] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef(null);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+    } else {
+      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -407,7 +423,7 @@ export default function PulseDashboard({ secretKey }) {
   };
 
   return (
-    <div style={{
+    <div ref={containerRef} style={{
       minHeight: '100dvh',
       background: '#080b14',
       color: '#f5f3f0',
@@ -441,6 +457,13 @@ export default function PulseDashboard({ secretKey }) {
             <span style={{ color: error ? '#fca5a5' : '#10b981', fontWeight: 600, letterSpacing: 1, fontSize: 11 }}>LIVE</span>
           </div>
           <span className="m" style={{ color: '#555', fontSize: 11 }}>{secondsAgo}s</span>
+          <button onClick={toggleFullscreen} style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 6, padding: '4px 6px', cursor: 'pointer', display: 'flex', alignItems: 'center' }} title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
+            {isFullscreen ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a8580" strokeWidth="2" strokeLinecap="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a8580" strokeWidth="2" strokeLinecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            )}
+          </button>
         </div>
       </div>
 

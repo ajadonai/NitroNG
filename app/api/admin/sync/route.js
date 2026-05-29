@@ -59,7 +59,7 @@ export async function POST(req) {
 
       const existing = await prisma.service.findMany({
         where: { provider: providerId },
-        select: { id: true, apiId: true, markup: true, name: true, category: true, costPer1k: true, min: true, max: true, refill: true, avgTime: true },
+        select: { id: true, apiId: true, markup: true, name: true, category: true, costPer1k: true, min: true, max: true, refill: true, dripfeed: true, avgTime: true },
       });
       const existingMap = {};
       existing.forEach(s => { existingMap[s.apiId] = s; });
@@ -79,20 +79,21 @@ export async function POST(req) {
         const min = Number(svc.min) || 10;
         const max = Number(svc.max) || 100000;
         const refill = svc.refill === true || svc.refill === 'true';
+        const dripfeed = svc.dripfeed === true || svc.dripfeed === 'true';
         const avgTime = svc.average_time || '0-2 hrs';
 
         const ex = existingMap[apiId];
         if (ex) {
-          if (ex.name === svc.name && ex.category === category && ex.costPer1k === costPer1k && ex.min === min && ex.max === max && ex.refill === refill && ex.avgTime === avgTime) {
+          if (ex.name === svc.name && ex.category === category && ex.costPer1k === costPer1k && ex.min === min && ex.max === max && ex.refill === refill && ex.dripfeed === dripfeed && ex.avgTime === avgTime) {
             unchanged++;
             continue;
           }
-          toUpdate.push(prisma.service.update({ where: { id: ex.id }, data: { name: svc.name, category, costPer1k, min, max, refill, avgTime } }));
+          toUpdate.push(prisma.service.update({ where: { id: ex.id }, data: { name: svc.name, category, costPer1k, min, max, refill, dripfeed, avgTime } }));
           updated++;
         } else {
           const initialSell = calculateTierPrice(costPer1k, 'Standard', ms, false) || Math.round(costPer1k * 2);
           toCreate.push({
-            apiId, name: svc.name, category, costPer1k, min, max, refill, avgTime, provider: providerId, sellPer1k: initialSell, markup: defaultMarkup, enabled: false,
+            apiId, name: svc.name, category, costPer1k, min, max, refill, dripfeed, avgTime, provider: providerId, sellPer1k: initialSell, markup: defaultMarkup, enabled: false,
           });
           created++;
         }

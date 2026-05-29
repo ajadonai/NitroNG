@@ -238,11 +238,18 @@ export async function PATCH(req) {
         try {
           await prisma.order.update({ where: { id: newOrder.id }, data: { dispatchedAt: new Date() } });
           const provider = order.service.provider || 'mtp';
-          const { calculateDripFeed } = await import('@/lib/drip-feed');
-          const dripFeed = calculateDripFeed(order.service.category, order.quantity);
           const extra = {};
-          if (dripFeed) { extra.runs = dripFeed.runs; extra.interval = dripFeed.interval; }
-          const result = await placeOrder(provider, order.service.apiId, order.link, order.quantity, extra);
+          let reorderQty = order.quantity;
+          if (order.service.dripfeed) {
+            const { calculateDripFeed } = await import('@/lib/drip-feed');
+            const dripFeed = calculateDripFeed(order.service.category, order.quantity);
+            if (dripFeed) {
+              reorderQty = Math.ceil(order.quantity / dripFeed.runs);
+              extra.runs = dripFeed.runs;
+              extra.interval = dripFeed.interval;
+            }
+          }
+          const result = await placeOrder(provider, order.service.apiId, order.link, reorderQty, extra);
           apiOrderId = result.order ? String(result.order) : null;
           if (apiOrderId) {
             await prisma.order.update({ where: { id: newOrder.id }, data: { apiOrderId, status: 'Processing' } });
@@ -470,13 +477,17 @@ export async function POST(req) {
           else if (sName.includes("poll") || sName.includes("vote")) extra.answer_number = safeComments;
           else extra.comments = safeComments;
         }
-        const { calculateDripFeed } = await import('@/lib/drip-feed');
-        const dripFeed = calculateDripFeed(service.category, qty);
-        if (dripFeed) {
-          extra.runs = dripFeed.runs;
-          extra.interval = dripFeed.interval;
+        let orderQty = qty;
+        if (service.dripfeed) {
+          const { calculateDripFeed } = await import('@/lib/drip-feed');
+          const dripFeed = calculateDripFeed(service.category, qty);
+          if (dripFeed) {
+            orderQty = Math.ceil(qty / dripFeed.runs);
+            extra.runs = dripFeed.runs;
+            extra.interval = dripFeed.interval;
+          }
         }
-        const provResult = await placeOrder(provider, service.apiId, trimmedLink, qty, extra);
+        const provResult = await placeOrder(provider, service.apiId, trimmedLink, orderQty, extra);
         apiOrderId = provResult.order ? String(provResult.order) : null;
         if (apiOrderId) {
           await prisma.order.update({ where: { id: result.id }, data: { apiOrderId, status: 'Processing' } });
@@ -492,6 +503,34 @@ export async function POST(req) {
               await tx.order.update({ where: { id: result.id }, data: { status: 'Cancelled', lastError: msg.slice(0, 500) } });
               await tx.transaction.create({ data: { userId: session.id, type: 'refund', amount: charge, method: 'wallet', status: 'Completed', reference: `REF-${orderId}`, note: `Auto-refund: ${msg.slice(0, 100)}` } });
             });
+            const provider = service.provider || 'mtp';
+            prisma.adminIssue.findFirst({
+              where: { type: 'order_failure', status: 'open' },
+            }).then(existing => {
+              const entry = { serviceId: service.id, name: tierName, apiId: service.apiId, provider, orderId };
+              if (existing) {
+                let prev = [];
+                try { const m = JSON.parse(existing.metadata); prev = m.services || []; } catch {}
+                if (!prev.some(s => s.serviceId === service.id)) prev.push(entry);
+                return prisma.adminIssue.update({
+                  where: { id: existing.id },
+                  data: {
+                    title: `${prev.length} service${prev.length > 1 ? 's' : ''} rejected by provider`,
+                    message: prev.map(s => `${s.name} (${(s.provider || 'mtp').toUpperCase()} #${s.apiId})`).join('\n'),
+                    metadata: JSON.stringify({ count: prev.length, services: prev }),
+                    createdAt: new Date(),
+                  },
+                });
+              }
+              return prisma.adminIssue.create({
+                data: {
+                  type: 'order_failure',
+                  title: `1 service rejected by provider`,
+                  message: `${tierName} (${provider.toUpperCase()} #${service.apiId})`,
+                  metadata: JSON.stringify({ count: 1, services: [entry] }),
+                },
+              });
+            }).catch(() => {});
             return Response.json({ error: 'This service is temporarily unavailable. You have been refunded.' }, { status: 409 });
           } catch (refundErr) { log.error('Order auto-refund', refundErr.message); }
         }
