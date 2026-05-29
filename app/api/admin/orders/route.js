@@ -50,6 +50,8 @@ export async function GET(req) {
         status: o.status,
         apiOrderId: o.apiOrderId,
         batchId: o.batchId || null,
+        lastError: o.lastError || null,
+        retryCount: o.retryCount || 0,
         created: o.createdAt.toISOString(),
       })),
       nextCursor,
