@@ -189,8 +189,9 @@ export default function AdminUsersPage({ dark, t }) {
               <div key={u.id}>
                 <div className="flex items-center gap-3 max-md:gap-2.5 py-3 px-4 max-md:px-3 max-md:flex-wrap" style={{ borderBottom: (i < paged.length - 1 && creditId !== u.id && txUser?.id !== u.id) ? `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}` : "none" }}>
                   {/* Avatar */}
-                  <Avatar size={36} className="max-md:hidden" />
-                  <Avatar size={30} className="md:hidden shrink-0" />
+                  <div className="shrink-0 max-md:w-[30px] max-md:h-[30px]">
+                    <Avatar size={36} />
+                  </div>
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
