@@ -148,6 +148,7 @@ model Service {
   min       Int     @default(100)
   max       Int     @default(50000)
   refill    Boolean @default(false)
+  dripfeed  Boolean @default(false)
   avgTime   String  @default("0-2 hrs")
   enabled   Boolean @default(true)
   createdAt DateTime @default(now())

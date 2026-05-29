@@ -238,11 +238,18 @@ export async function PATCH(req) {
         try {
           await prisma.order.update({ where: { id: newOrder.id }, data: { dispatchedAt: new Date() } });
           const provider = order.service.provider || 'mtp';
-          const { calculateDripFeed } = await import('@/lib/drip-feed');
-          const dripFeed = calculateDripFeed(order.service.category, order.quantity);
           const extra = {};
-          if (dripFeed) { extra.runs = dripFeed.runs; extra.interval = dripFeed.interval; }
-          const result = await placeOrder(provider, order.service.apiId, order.link, order.quantity, extra);
+          let reorderQty = order.quantity;
+          if (order.service.dripfeed) {
+            const { calculateDripFeed } = await import('@/lib/drip-feed');
+            const dripFeed = calculateDripFeed(order.service.category, order.quantity);
+            if (dripFeed) {
+              reorderQty = Math.ceil(order.quantity / dripFeed.runs);
+              extra.runs = dripFeed.runs;
+              extra.interval = dripFeed.interval;
+            }
+          }
+          const result = await placeOrder(provider, order.service.apiId, order.link, reorderQty, extra);
           apiOrderId = result.order ? String(result.order) : null;
           if (apiOrderId) {
             await prisma.order.update({ where: { id: newOrder.id }, data: { apiOrderId, status: 'Processing' } });
@@ -470,13 +477,17 @@ export async function POST(req) {
           else if (sName.includes("poll") || sName.includes("vote")) extra.answer_number = safeComments;
           else extra.comments = safeComments;
         }
-        const { calculateDripFeed } = await import('@/lib/drip-feed');
-        const dripFeed = calculateDripFeed(service.category, qty);
-        if (dripFeed) {
-          extra.runs = dripFeed.runs;
-          extra.interval = dripFeed.interval;
+        let orderQty = qty;
+        if (service.dripfeed) {
+          const { calculateDripFeed } = await import('@/lib/drip-feed');
+          const dripFeed = calculateDripFeed(service.category, qty);
+          if (dripFeed) {
+            orderQty = Math.ceil(qty / dripFeed.runs);
+            extra.runs = dripFeed.runs;
+            extra.interval = dripFeed.interval;
+          }
         }
-        const provResult = await placeOrder(provider, service.apiId, trimmedLink, qty, extra);
+        const provResult = await placeOrder(provider, service.apiId, trimmedLink, orderQty, extra);
         apiOrderId = provResult.order ? String(provResult.order) : null;
         if (apiOrderId) {
           await prisma.order.update({ where: { id: result.id }, data: { apiOrderId, status: 'Processing' } });
