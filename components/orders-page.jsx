@@ -297,7 +297,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                     })()}
 
                     {/* Info grid */}
-                    <div className={`grid gap-1.5 mb-2.5 ${o.speed && !["Completed", "Cancelled"].includes(o.status) ? "grid-cols-2 desktop:grid-cols-3" : "grid-cols-2"}`}>
+                    <div className="grid grid-cols-3 gap-1.5 mb-2.5">
                       <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                         <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : "Charge"}</div>
                         <div className="m text-[13px] font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
@@ -306,16 +306,20 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                         <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Status</div>
                         <Badge status={o.status} dark={dark} />
                       </div>
-                      {o.speed && !["Completed", "Cancelled"].includes(o.status) && (
+                      {o.startCount != null ? (
+                        <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                          <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Start Count</div>
+                          <div className="m text-[13px] font-semibold" style={{ color: t.text }}>{o.startCount.toLocaleString()}</div>
+                        </div>
+                      ) : o.speed && !["Completed", "Cancelled"].includes(o.status) ? (
                         <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                           <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Est. Time</div>
                           <div className="m text-[13px] font-semibold" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{estimateTime(o.speed, o.quantity)}</div>
                         </div>
-                      )}
-                      {o.startCount != null && (
+                      ) : (
                         <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                          <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Start Count</div>
-                          <div className="m text-[13px] font-semibold" style={{ color: t.text }}>{o.startCount.toLocaleString()}</div>
+                          <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Quantity</div>
+                          <div className="m text-[13px] font-semibold" style={{ color: t.text }}>{o.quantity?.toLocaleString()}</div>
                         </div>
                       )}
                     </div>
@@ -573,7 +577,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                     })()}
 
                     {/* Info grid */}
-                    <div className={`grid gap-2 mb-3 ${o.speed && !["Completed", "Cancelled"].includes(o.status) ? "grid-cols-2 desktop:grid-cols-3" : "grid-cols-2"}`}>
+                    <div className="grid grid-cols-3 gap-2 mb-3">
                       <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                         <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : "Charge"}</div>
                         <div className="m text-sm font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
@@ -582,16 +586,20 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                         <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Status</div>
                         <Badge status={o.status} dark={dark} />
                       </div>
-                      {o.speed && !["Completed", "Cancelled"].includes(o.status) && (
+                      {o.startCount != null ? (
+                        <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                          <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Start Count</div>
+                          <div className="m text-sm font-semibold" style={{ color: t.text }}>{o.startCount.toLocaleString()}</div>
+                        </div>
+                      ) : o.speed && !["Completed", "Cancelled"].includes(o.status) ? (
                         <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                           <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Est. Time</div>
                           <div className="m text-sm font-semibold" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{estimateTime(o.speed, o.quantity)}</div>
                         </div>
-                      )}
-                      {o.startCount != null && (
+                      ) : (
                         <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                          <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Start Count</div>
-                          <div className="m text-sm font-semibold" style={{ color: t.text }}>{o.startCount.toLocaleString()}</div>
+                          <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Quantity</div>
+                          <div className="m text-sm font-semibold" style={{ color: t.text }}>{o.quantity?.toLocaleString()}</div>
                         </div>
                       )}
                     </div>

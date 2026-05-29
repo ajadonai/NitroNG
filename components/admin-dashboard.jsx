@@ -11,7 +11,7 @@ import AdminServicesPage from "./admin-services";
 import AdminServiceGroupsPage from "./admin-service-groups";
 import AdminPricingPage from "./admin-pricing";
 import { AdminPaymentsPage, AdminFinancePage, AdminAlertsPage, AdminSettingsPage } from "./admin-pages";
-import { AdminActivityPage, AdminTeamPage, AdminCouponsPage, AdminNotificationsPage, AdminMaintenancePage, AdminAPIPage, AdminAcquisitionPage } from "./admin-extra-pages";
+import { AdminActivityPage, AdminTeamPage, AdminCouponsPage, AdminNotificationsPage, AdminMaintenancePage, AdminAPIPage, AdminAcquisitionPage, AdminIssuesPage } from "./admin-extra-pages";
 import AdminBlogPage from "./admin-blog";
 import AdminPromotionsPage from "./admin-promotions";
 import AdminLeaderboardPage, { AdminLeaderboardSidebar } from "./admin-leaderboard";
@@ -55,6 +55,7 @@ const ADMIN_NAV = [
     { id: "finance", label: "Finance", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
     { id: "activity", label: "Logs", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
     { id: "team", label: "Team", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 00-3 3v1a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M19 8a2 2 0 00-2 2v1a2 2 0 004 0v-1a2 2 0 00-2-2z"/><path d="M5 8a2 2 0 00-2 2v1a2 2 0 004 0v-1a2 2 0 00-2-2z"/><path d="M3 21v-2a4 4 0 014-4h1"/><path d="M21 21v-2a4 4 0 00-4-4h-1"/><path d="M8 21v-2a4 4 0 014-4 4 4 0 014 4v2"/></svg> },
+    { id: "issues", label: "Issues", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>, badge: 'issues' },
     { id: "api", label: "API", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> },
     { id: "maintenance", label: "Maintenance", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg> },
     { id: "settings", label: "Settings", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg> },
@@ -248,6 +249,7 @@ function AdminRightSidebar({ data, dark, t, active }) {
     settings: ["settings", "maintenance"],
     notifications: ["notification"],
     maintenance: ["maintenance"],
+    issues: ["system", "alert"],
     api: ["settings"],
   };
   const allowedTypes = activityTypeMap[active] || null;
@@ -331,7 +333,7 @@ function AdminDashboardInner({ initialData }) {
     return { name: d.admin?.name || "Admin", role: d.admin?.role || "superadmin", email: d.admin?.email || "", pages: d.admin?.pages || "*" };
   });
   const [data, setData] = useState(() => {
-    if (!initialData) return { stats: {}, recentOrders: [], recentUsers: [], openTickets: [], activity: [], unreadTicketCount: 0, pendingManualCount: 0, pendingOrderCount: 0 };
+    if (!initialData) return { stats: {}, recentOrders: [], recentUsers: [], openTickets: [], activity: [], unreadTicketCount: 0, pendingManualCount: 0, pendingOrderCount: 0, openIssueCount: 0 };
     const d = initialData;
     return { stats: d, recentOrders: d.recentOrders || [], recentUsers: d.recentUsers || [], openTickets: d.openTickets || [], activity: d.activity || [], unreadTicketCount: d.unreadTicketCount || 0, pendingManualCount: d.pendingManualCount || 0, pendingOrderCount: d.pendingOrderCount || 0 };
   });
@@ -370,6 +372,7 @@ function AdminDashboardInner({ initialData }) {
           unreadTicketCount: d.unreadTicketCount || 0,
           pendingManualCount: d.pendingManualCount || 0,
           pendingOrderCount: d.pendingOrderCount || 0,
+          openIssueCount: d.openIssueCount || 0,
         });
         if (d.admin?.themePreference && d.admin.themePreference !== "auto") {
           const saved = localStorage.getItem("nitro-admin-theme");
@@ -553,6 +556,7 @@ function AdminDashboardInner({ initialData }) {
             unreadTicketCount: d.unreadTicketCount || 0,
             pendingManualCount: d.pendingManualCount || 0,
             pendingOrderCount: d.pendingOrderCount || 0,
+          openIssueCount: d.openIssueCount || 0,
           });
         }
       } catch {}
@@ -679,6 +683,7 @@ function AdminDashboardInner({ initialData }) {
       case "maintenance": return <AdminMaintenancePage dark={dark} t={t} />;
       case "api": return <AdminAPIPage dark={dark} t={t} />;
       case "acquisition": return <AdminAcquisitionPage dark={dark} t={t} />;
+      case "issues": return <AdminIssuesPage dark={dark} t={t} />;
       case "settings": return <AdminSettingsPage admin={admin} dark={dark} t={t} themeMode={themeMode} setThemeMode={setThemeMode} setDark={setDark} onLogout={handleLogout} notifPrefs={notifPrefs} updateNotifPref={updateNotifPref} />;
       default: return <AdminOverview data={data} dark={dark} t={t} setActive={setActive} />;
     }
@@ -687,7 +692,8 @@ function AdminDashboardInner({ initialData }) {
   const ticketCount = data.unreadTicketCount || 0;
   const paymentCount = data.pendingManualCount || 0;
   const orderCount = data.pendingOrderCount || 0;
-  const badgeCounts = { tickets: ticketCount, payments: paymentCount, orders: orderCount };
+  const issueCount = data.openIssueCount || 0;
+  const badgeCounts = { tickets: ticketCount, payments: paymentCount, orders: orderCount, issues: issueCount };
 
 
   return (

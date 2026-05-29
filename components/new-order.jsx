@@ -135,6 +135,8 @@ function compactPrice(n) {
   return `₦${n.toLocaleString()}`;
 }
 
+function fQty(n) { return n >= 1000000 ? `${n / 1000000}M` : n >= 1000 ? `${n / 1000}K` : n; }
+
 function getPresets(min, max) {
   const nice = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
   const pool = nice.filter(v => v >= min && v <= max);
@@ -205,7 +207,7 @@ function saveCart(rows) {
 const CONSERVATIVE = ['instagram','tiktok','facebook','twitter','snapchat','threads'];
 const showDripNote = (plat, qty) => { const p = (plat || '').toLowerCase(); return CONSERVATIVE.some(c => p.includes(c)) ? qty > 100 : qty > 500; };
 
-export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null }) {
+export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp }) {
   const minQty = selTier?.min || 100;
   const maxQty = selTier?.max || 50000;
   const qtyNum = Number(qty) || 0;
@@ -233,16 +235,18 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   /* Detect service type from name + type field */
   const svcName = (selSvc?.name || "").toLowerCase();
   const svcType = (selSvc?.type || "").toLowerCase();
-  // "Custom Comments" or "Comments" but NOT "Comment Likes"
   const isComment = (svcType.includes("comment") || svcName.includes("comment")) && !svcName.includes("comment like");
+  const isCustomComment = isComment && (svcName.includes("custom") || svcType.includes("custom"));
   const isMention = svcName.includes("mention");
-  // "Poll Votes" but NOT "Upvotes"
   const isPoll = svcName.includes("poll vote") || svcName.includes("poll") && !svcName.includes("upvote");
-  // "Reviews (5 Stars)" but NOT "Review Likes"
   const isReview = svcName.includes("review") && !svcName.includes("review like");
-  const needsComments = isComment || isReview;
+  const needsComments = isCustomComment || isReview;
+  const showComments = isComment || isReview;
   const needsUsernames = isMention;
   const needsAnswer = isPoll;
+
+  const commentLines = (comments || "").split("\n").filter(l => l.trim()).length;
+  const commentShort = needsComments && qtyNum > 0 && commentLines > 0 && commentLines < qtyNum;
 
   const linkPlaceholder = LINK_HINTS[platform] || `${platform}.com/...`;
   const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
@@ -276,11 +280,11 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           </div>
           {linkError && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626" }}>{linkError}</div>}
         </div>
-        {needsComments && (
+        {showComments && (
           <div className="mb-3.5">
-            <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{isReview ? "Reviews" : "Comments"} <span className="font-normal normal-case tracking-normal text-[11px]">(one per line)</span></label>
+            <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{isReview ? "Reviews" : "Comments"} <span className="font-normal normal-case tracking-normal text-[11px]">({needsComments ? "required, one per line" : "optional, one per line"})</span></label>
             <textarea disabled={orderLoading} placeholder={isReview ? "Great service, highly recommend!\nFast delivery and excellent quality\nBest experience I've had, 5 stars" : "Great content!\nLove this post!\nAmazing work, keep it up\nThis is fire"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={4} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
-            <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>{(comments || "").split("\n").filter(l => l.trim()).length} {isReview ? "reviews" : "comments"} entered · we'll cycle through them</div>
+            <div className="text-[11px] mt-1" style={{ color: commentShort ? (dark ? "#fca5a5" : "#dc2626") : t.textMuted }}>{commentShort ? `Need at least ${qtyNum} ${isReview ? "reviews" : "comments"} — you have ${commentLines}` : commentLines > 0 ? `${commentLines} ${isReview ? "reviews" : "comments"} entered · we'll cycle through them` : needsComments ? `Enter at least one per line` : `Leave empty to use provider's comments`}</div>
           </div>
         )}
         {needsUsernames && (
@@ -307,7 +311,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           {qtyOutOfRange && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{qtyNum < minQty ? `Minimum: ${minQty.toLocaleString()}` : `Maximum: ${maxQty.toLocaleString()}`}</div>}
           <div className="flex gap-1 mt-1.5">
             {getPresets(minQty, maxQty).map(q => (
-              <button key={q} onClick={() => setQty(q)} disabled={orderLoading} className="m flex-1 py-[5px] rounded-md text-[13px] border border-solid cursor-pointer bg-transparent font-[inherit] disabled:opacity-40 transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: qty === q ? t.accent : t.cardBorder, background: qty === q ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: qty === q ? t.accent : t.textMuted }}>{q >= 1000 ? `${q / 1000}K` : q}</button>
+              <button key={q} onClick={() => setQty(q)} disabled={orderLoading} className="m flex-1 py-[5px] rounded-md text-[13px] border border-solid cursor-pointer bg-transparent font-[inherit] disabled:opacity-40 transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: qty === q ? t.accent : t.cardBorder, background: qty === q ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: qty === q ? t.accent : t.textMuted }}>{fQty(q)}</button>
             ))}
           </div>
         </div>
@@ -333,7 +337,14 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             </div>
           </div>
         )}
-        <button onClick={onSubmit} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer) || (comments || "").trim()) && !orderLoading ? 1 : .5 }}>{orderLoading ? "Placing..." : "Place Order"}</button>
+        {balance != null && qtyNum > 0 && price > balance ? (
+          <button onClick={onTopUp} data-tour="no-submit-btn" className="w-full py-2.5 rounded-lg border border-solid text-[15px] font-semibold cursor-pointer flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(250,204,21,.08)" : "rgba(250,204,21,.1)", borderColor: dark ? "rgba(250,204,21,.25)" : "rgba(250,204,21,.35)", color: dark ? "#fcd34d" : "#b45309" }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Insufficient balance · Top up
+          </button>
+        ) : (
+          <button onClick={onSubmit} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer) || (comments || "").trim()) && !commentShort && !orderLoading ? 1 : .5 }}>{orderLoading ? "Placing..." : "Place Order"}</button>
+        )}
       </>}
       </div>
     </div>
@@ -894,7 +905,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 </div>
               </div>
             ) : (
-              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => setOrderModal(false)} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} />
+              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => setOrderModal(false)} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} />
             )}
           </div>
         </div>
@@ -1244,7 +1255,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
               <div className="flex justify-between items-center gap-3">
                 <div className="flex gap-1 flex-wrap">
                   {getPresets(row.min, row.max).map(v => (
-                    <button key={v} onClick={() => updateRow(idx, { qty: v })} disabled={loading} className="py-[3px] px-2 rounded-full border border-solid text-[10.5px] font-medium cursor-pointer bg-transparent font-[inherit] disabled:opacity-40 transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: row.qty === v ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"), color: row.qty === v ? t.accent : t.textMuted }}>{v >= 1000 ? `${v / 1000}K` : v}</button>
+                    <button key={v} onClick={() => updateRow(idx, { qty: v })} disabled={loading} className="py-[3px] px-2 rounded-full border border-solid text-[10.5px] font-medium cursor-pointer bg-transparent font-[inherit] disabled:opacity-40 transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: row.qty === v ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"), color: row.qty === v ? t.accent : t.textMuted }}>{fQty(v)}</button>
                   ))}
                 </div>
                 <span className="text-[12.5px] font-medium shrink-0" style={{ color: t.textMuted }}>₦{rowPrice.toLocaleString()}</span>

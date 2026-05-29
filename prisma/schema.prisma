@@ -148,6 +148,7 @@ model Service {
   min       Int     @default(100)
   max       Int     @default(50000)
   refill    Boolean @default(false)
+  dripfeed  Boolean @default(false)
   avgTime   String  @default("0-2 hrs")
   enabled   Boolean @default(true)
   createdAt DateTime @default(now())
@@ -352,6 +353,26 @@ model ActivityLog {
   @@index([adminName])
   @@index([createdAt])
   @@map("activity_log")
+}
+
+// ──────────────────────────────────────
+// ADMIN ISSUES
+// ──────────────────────────────────────
+
+model AdminIssue {
+  id         String    @id @default(cuid())
+  type       String    // 'dead_service' | 'low_balance' | 'order_failure' etc.
+  title      String
+  message    String
+  metadata   String?   @db.Text // JSON with tier/service/provider details
+  status     String    @default("open") // 'open' | 'resolved'
+  resolvedAt DateTime?
+  resolvedBy String?
+  createdAt  DateTime  @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("admin_issues")
 }
 
 // ──────────────────────────────────────

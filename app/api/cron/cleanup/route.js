@@ -3,9 +3,8 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 
-// Auto-delete unverified users older than 7 days
-// Call via Vercel Cron or external scheduler: GET /api/cron/cleanup
-// Protect with CRON_SECRET env var
+// Cleanup cron: expires stale deposits, processes scheduled user deletions
+// GET /api/cron/cleanup
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -15,41 +14,17 @@ export async function GET(req) {
   }
 
   try {
-    // Auto-expire stale pending manual deposits older than 10 minutes
-    const manualCutoff = new Date(Date.now() - 10 * 60 * 1000);
-    const { count: expiredManual } = await prisma.transaction.deleteMany({
-      where: { type: 'deposit', method: 'manual', status: 'Pending', createdAt: { lt: manualCutoff } },
+    // Auto-expire manual deposits: 10 min if user never confirmed, 24 hrs if unprocessed by admin
+    const abandonedCutoff = new Date(Date.now() - 10 * 60 * 1000);
+    const unprocessedCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const { count: expiredAbandoned } = await prisma.transaction.deleteMany({
+      where: { type: 'deposit', method: 'manual', status: 'Pending', note: { contains: '[awaiting_confirmation]' }, createdAt: { lt: abandonedCutoff } },
     });
-    if (expiredManual > 0) log.info('Cleanup', `Deleted ${expiredManual} stale pending manual deposits`);
-
-    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
-
-    // Find inactive users older than 30 days with no orders and zero balance
-    const stale = await prisma.user.findMany({
-      where: {
-        createdAt: { lt: cutoff },
-        balance: 0,
-      },
-      select: { id: true, email: true, createdAt: true, _count: { select: { orders: true } } },
+    const { count: expiredUnprocessed } = await prisma.transaction.deleteMany({
+      where: { type: 'deposit', method: 'manual', status: 'Pending', note: { contains: '[user_confirmed' }, createdAt: { lt: unprocessedCutoff } },
     });
-
-    const toDelete = stale.filter(u => u._count.orders === 0);
-
-    if (toDelete.length === 0) {
-      log.info('Cleanup', 'No stale users to delete');
-      return Response.json({ deleted: 0 });
-    }
-
-    const ids = toDelete.map(u => u.id);
-
-    // Delete related records first, then users
-    await prisma.$transaction([
-      prisma.transaction.deleteMany({ where: { userId: { in: ids } } }),
-      prisma.session.deleteMany({ where: { userId: { in: ids } } }),
-      prisma.user.deleteMany({ where: { id: { in: ids } } }),
-    ]);
-
-    log.info('Cleanup', `Deleted ${toDelete.length} unverified users older than 7 days`);
+    const expiredManual = expiredAbandoned + expiredUnprocessed;
+    if (expiredManual > 0) log.info('Cleanup', `Deleted ${expiredAbandoned} abandoned + ${expiredUnprocessed} unprocessed manual deposits`);
 
     // ═══ PERMANENT DELETION — users past their 30-day deletion window ═══
     const pendingUsers = await prisma.user.findMany({
@@ -69,6 +44,12 @@ export async function GET(req) {
         await prisma.$transaction([
           prisma.ticketReply.deleteMany({ where: { ticket: { userId: uid } } }),
           prisma.ticket.deleteMany({ where: { userId: uid } }),
+          prisma.idempotencyKey.deleteMany({ where: { userId: uid } }),
+          prisma.videoWatch.deleteMany({ where: { userId: uid } }),
+          prisma.gameReward.deleteMany({ where: { userId: uid } }),
+          prisma.gameScore.deleteMany({ where: { userId: uid } }),
+          prisma.gameSession.deleteMany({ where: { userId: uid } }),
+          prisma.waitlist.deleteMany({ where: { userId: uid } }),
           prisma.session.deleteMany({ where: { userId: uid } }),
           // Soft-delete orders — preserve for financial audit trail
           prisma.order.updateMany({ where: { userId: uid }, data: { deletedAt: new Date() } }),
@@ -93,10 +74,8 @@ export async function GET(req) {
     }
 
     return Response.json({
-      deleted: toDelete.length,
       permanentlyDeleted: permDeleted,
       expiredManualDeposits: expiredManual,
-      emails: toDelete.map(u => u.email),
     });
   } catch (err) {
     log.error('Cleanup', err.message);

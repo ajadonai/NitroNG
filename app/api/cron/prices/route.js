@@ -20,14 +20,17 @@ export async function GET(req) {
 
     const providers = ['mtp', 'jap', 'dao'].filter(isProviderConfigured);
     const rateMaps = {};
+    const dripMaps = {};
 
     for (const pid of providers) {
       try {
         const svcs = await getServices(pid);
         if (!Array.isArray(svcs)) continue;
         rateMaps[pid] = {};
+        dripMaps[pid] = new Set();
         for (const s of svcs) {
           rateMaps[pid][String(s.service)] = Math.round(parseFloat(s.rate) * 100);
+          if (s.dripfeed === true || s.dripfeed === 'true') dripMaps[pid].add(String(s.service));
         }
         stats.synced += svcs.length;
       } catch (err) {
@@ -38,15 +41,24 @@ export async function GET(req) {
 
     const services = await prisma.service.findMany({
       where: { enabled: true },
-      select: { id: true, name: true, apiId: true, costPer1k: true, sellPer1k: true, provider: true, category: true, tiers: { where: { enabled: true }, select: { id: true, tier: true, sellPer1k: true, group: { select: { nigerian: true } } } } },
+      select: { id: true, name: true, apiId: true, costPer1k: true, sellPer1k: true, provider: true, category: true, dripfeed: true, tiers: { where: { enabled: true }, select: { id: true, tier: true, sellPer1k: true, group: { select: { nigerian: true } } } } },
     });
 
     const ops = [];
     const losers = [];
+    const deadServices = [];
 
     for (const s of services) {
-      const rateMap = rateMaps[s.provider || 'mtp'];
+      const pid = s.provider || 'mtp';
+      const rateMap = rateMaps[pid];
       const liveCost = rateMap?.[String(s.apiId)];
+      const liveDrip = dripMaps[pid]?.has(String(s.apiId)) || false;
+      if (liveDrip !== s.dripfeed) {
+        ops.push(prisma.service.update({ where: { id: s.id }, data: { dripfeed: liveDrip } }));
+      }
+      if (rateMap && s.apiId && liveCost === undefined) {
+        deadServices.push({ serviceId: s.id, name: s.name, apiId: s.apiId, provider: pid, category: s.category });
+      }
       const cost = liveCost !== undefined ? liveCost : s.costPer1k;
       const costChanged = liveCost !== undefined && liveCost !== s.costPer1k;
       if (costChanged) stats.updated++;
@@ -87,6 +99,30 @@ export async function GET(req) {
     }
 
     stats.losers = losers.length;
+    stats.dead = deadServices.length;
+
+    if (deadServices.length > 0) {
+      try {
+        const existingIssue = await prisma.adminIssue.findFirst({
+          where: { type: 'dead_service', status: 'open' },
+        });
+        const title = `${deadServices.length} service${deadServices.length > 1 ? 's' : ''} removed by provider`;
+        const message = deadServices.map(d => `${d.name} (${d.provider.toUpperCase()} #${d.apiId})`).join('\n');
+        const metadata = JSON.stringify({ count: deadServices.length, services: deadServices });
+        if (existingIssue) {
+          await prisma.adminIssue.update({
+            where: { id: existingIssue.id },
+            data: { title, message, metadata, createdAt: new Date() },
+          });
+        } else {
+          await prisma.adminIssue.create({
+            data: { type: 'dead_service', title, message, metadata },
+          });
+        }
+      } catch (err) {
+        log.warn('PriceSync', `Failed to create dead service issues: ${err.message}`);
+      }
+    }
 
     await prisma.setting.upsert({
       where: { key: 'price_alerts' },
@@ -98,9 +134,36 @@ export async function GET(req) {
       await prisma.activityLog.create({
         data: { adminName: 'System', action: `Price sync: ${losers.length} services still below cost after reprice`, type: 'alert' },
       });
+      try {
+        const existingAlert = await prisma.adminIssue.findFirst({
+          where: { type: 'price_alert', status: 'open' },
+        });
+        if (existingAlert) {
+          await prisma.adminIssue.update({
+            where: { id: existingAlert.id },
+            data: {
+              title: `${losers.length} service${losers.length > 1 ? 's' : ''} selling below cost`,
+              message: losers.slice(0, 10).map(l => `${l.service} (${l.tier || 'base'}) — sell ₦${l.sellNaira.toLocaleString()} vs cost ₦${l.costNaira.toLocaleString()}, losing ₦${l.lossPerK.toLocaleString()}/1K`).join('\n'),
+              metadata: JSON.stringify({ count: losers.length, usdRate, losers: losers.slice(0, 20) }),
+              createdAt: new Date(),
+            },
+          });
+        } else {
+          await prisma.adminIssue.create({
+            data: {
+              type: 'price_alert',
+              title: `${losers.length} service${losers.length > 1 ? 's' : ''} selling below cost`,
+              message: losers.slice(0, 10).map(l => `${l.service} (${l.tier || 'base'}) — sell ₦${l.sellNaira.toLocaleString()} vs cost ₦${l.costNaira.toLocaleString()}, losing ₦${l.lossPerK.toLocaleString()}/1K`).join('\n'),
+              metadata: JSON.stringify({ count: losers.length, usdRate, losers: losers.slice(0, 20) }),
+            },
+          });
+        }
+      } catch (err) {
+        log.warn('PriceSync', `Failed to create price alert issue: ${err.message}`);
+      }
     }
 
-    log.info('PriceSync', `Synced ${stats.synced}, updated ${stats.updated} costs, repriced ${stats.repriced}, ${stats.losers} losers`);
+    log.info('PriceSync', `Synced ${stats.synced}, updated ${stats.updated} costs, repriced ${stats.repriced}, ${stats.losers} losers, ${stats.dead} dead`);
     return Response.json({ success: true, ...stats, losers: losers.slice(0, 20) });
   } catch (err) {
     log.error('PriceSync', err.stack || err.message);

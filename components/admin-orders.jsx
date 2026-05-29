@@ -89,9 +89,18 @@ export default function AdminOrdersPage({ dark, t }) {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(() => { try { const s = localStorage.getItem("adm-per-page"); return s ? Number(s) : 25; } catch { return 25; } });
 
-  useEffect(() => {
+  const fetchOrders = useCallback(() => {
     fetch("/api/admin/orders").then(r => r.json()).then(d => { setOrders(d.orders || []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
+
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+
+  useEffect(() => {
+    const id = setInterval(fetchOrders, 30000);
+    const onVis = () => { if (document.visibilityState === 'visible') fetchOrders(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); };
+  }, [fetchOrders]);
 
   const filtered = orders.filter(o => {
     if (filter !== "all" && o.status !== filter) return false;
