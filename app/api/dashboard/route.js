@@ -202,7 +202,7 @@ export async function GET() {
         status: tx.status,
         method: tx.method || tx.type,
         date: tx.createdAt.toISOString(),
-        description: tx.note,
+        description: tx.note?.replace(/\[(rejected_by|approved_by|user_confirmed|awaiting_confirmation):?[^\]]*\]\s*/g, '').trim() || null,
       })),
       walletSummary,
       alerts: alerts.map(a => ({
