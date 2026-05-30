@@ -109,7 +109,7 @@ export default function AdminUsersPage({ dark, t }) {
       tx.status,
       tx.method || "",
       tx.reference || "",
-      `"${(tx.note || "").replace(/"/g, '""')}"`,
+      `"${(tx.note || "").replace(/\[rejected_by:([^\]]+)\]/g, "Rejected by $1").replace(/\[approved_by:([^\]]+)\]/g, "Approved by $1").replace(/\[user_confirmed[^\]]*\]/g, "").replace(/\[awaiting_confirmation\]/g, "").trim().replace(/"/g, '""')}"`,
     ].join(","));
     const csv = [header, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -274,7 +274,7 @@ export default function AdminUsersPage({ dark, t }) {
                               <span className="w-[70px] max-md:w-[58px] text-[11px] max-md:text-[10px] shrink-0" style={{ color: t.textSoft }}>{fD(tx.createdAt, true)}</span>
                               {(() => { const walletIn = tx.type === "deposit" || tx.type === "refund" || tx.type === "admin_credit" || tx.type === "admin_gift" || tx.type === "referral" || tx.type === "bonus"; const walletOut = tx.type === "order"; const failed = tx.status !== "Completed"; const badgeClr = failed ? t.textMuted : walletOut ? (dark ? "#fca5a5" : "#dc2626") : walletIn ? (dark ? "#6ee7b7" : "#059669") : t.textMuted; const badgeBg = failed ? (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)") : walletOut ? (dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)") : walletIn ? (dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.04)") : (dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.02)"); const amtClr = failed ? t.textMuted : walletOut ? (dark ? "#fca5a5" : "#dc2626") : walletIn ? (dark ? "#6ee7b7" : "#059669") : t.textMuted; return <><span className="w-[60px] max-md:w-[50px] text-[10px] py-[2px] px-1.5 rounded text-center shrink-0 uppercase font-semibold tracking-[0.3px]" style={{ background: badgeBg, color: badgeClr }}>{tx.type === "admin_credit" ? "credit" : tx.type === "admin_gift" ? "gift" : tx.type}</span><span className="w-20 max-md:w-[62px] text-right font-bold text-[13px] max-md:text-[12px] shrink-0" style={{ color: amtClr }}>{failed ? "" : walletOut ? "-" : "+"}{fN(tx.amount / 100)}</span></>; })()}
                               <span className="text-[11px] max-md:text-[10px] font-medium max-md:hidden" style={{ color: tx.status === "Completed" ? t.textMuted : tx.status === "Pending" ? "#e0a458" : (dark ? "#fca5a5" : "#dc2626") }}>{tx.status}</span>
-                              <span className="flex-1 text-[11px] max-md:text-[10px] overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.textSoft }}>{tx.note || tx.reference || ""}</span>
+                              <span className="flex-1 text-[11px] max-md:text-[10px] overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.textSoft }}>{(tx.note || "").replace(/\[rejected_by:([^\]]+)\]/g, "Rejected by $1").replace(/\[approved_by:([^\]]+)\]/g, "Approved by $1").replace(/\[user_confirmed[^\]]*\]/g, "").replace(/\[awaiting_confirmation\]/g, "").trim() || tx.reference || ""}</span>
                             </div>
                           ))}
                           {txTotalPages > 1 && (
