@@ -137,6 +137,7 @@ model AdminSession {
   id         String   @id @default(cuid())
   adminId    String
   tokenHash  String   @unique
+  deviceType String   @default("web")
   deviceInfo String?
   ip         String?
   lastActive DateTime @default(now())

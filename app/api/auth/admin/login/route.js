@@ -48,8 +48,8 @@ export async function POST(req) {
     const tHash = hashToken(token);
 
     await prisma.$transaction([
-      prisma.adminSession.deleteMany({ where: { adminId: admin.id } }),
-      prisma.adminSession.create({ data: { adminId: admin.id, tokenHash: tHash, deviceInfo: device.info, ip } }),
+      prisma.adminSession.deleteMany({ where: { adminId: admin.id, deviceType: device.type } }),
+      prisma.adminSession.create({ data: { adminId: admin.id, tokenHash: tHash, deviceType: device.type, deviceInfo: device.info, ip } }),
       prisma.admin.update({ where: { id: admin.id }, data: { lastActive: new Date() } }),
     ]);
 

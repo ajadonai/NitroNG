@@ -77,17 +77,6 @@ export async function proxy(request) {
     }
   }
 
-  // ── Redirect logged-in users away from /admin/login ──
-  if (pathname === '/admin/login') {
-    const token = request.cookies.get('nitro_admin_token')?.value;
-    if (token) {
-      const payload = await verifyToken(token, ADMIN_SECRET);
-      if (payload?.type === 'admin') {
-        return NextResponse.redirect(new URL('/admin', request.url));
-      }
-    }
-  }
-
   return NextResponse.next();
 }
 
