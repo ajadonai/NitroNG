@@ -140,6 +140,8 @@ async function verifyResolution(type, meta) {
     for (const s of services) {
       const pid = s.provider;
       if (!pid || !isProviderConfigured(pid)) continue;
+      const dbService = await prisma.service.findFirst({ where: { apiId: Number(s.apiId), provider: pid } });
+      if (dbService && !dbService.enabled) continue;
       if (!catalogueCache[pid]) {
         try { catalogueCache[pid] = await getServices(pid); } catch { continue; }
       }
@@ -149,9 +151,9 @@ async function verifyResolution(type, meta) {
       if (!found) stillDead.push(`#${s.apiId} on ${pid.toUpperCase()}`);
     }
     if (stillDead.length > 0) {
-      return { resolved: false, reason: `${stillDead.length} still missing: ${stillDead.slice(0, 5).join(', ')}` };
+      return { resolved: false, reason: `${stillDead.length} still missing: ${stillDead.slice(0, 5).join(', ')}. Disable them to resolve.` };
     }
-    return { resolved: true, detail: 'All services back in catalogue' };
+    return { resolved: true, detail: 'All services resolved (back in catalogue or disabled)' };
   }
 
   if (type === 'price_alert') {
