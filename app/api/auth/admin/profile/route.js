@@ -1,6 +1,8 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
+import { hashToken } from '@/lib/auth';
+import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
 
 export async function POST(req) {
@@ -53,6 +55,12 @@ export async function POST(req) {
 
       const hash = await bcrypt.hash(newPassword, 12);
       await prisma.admin.update({ where: { id: admin.id }, data: { password: hash } });
+      const cookieStore = await cookies();
+      const currentToken = cookieStore.get('nitro_admin_token')?.value;
+      const currentHash = currentToken ? hashToken(currentToken) : null;
+      if (currentHash) {
+        await prisma.adminSession.deleteMany({ where: { adminId: admin.id, tokenHash: { not: currentHash } } });
+      }
       await logActivity(admin.name, 'Changed password', 'settings');
       return Response.json({ success: true, message: 'Password updated' });
     }

@@ -1,10 +1,11 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import bcrypt from 'bcryptjs';
-import { signAdminToken, setAdminCookie } from '@/lib/auth';
+import { signAdminToken, setAdminCookie, hashToken, detectDevice } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { sanitizeEmail } from '@/lib/validate';
+import { headers } from 'next/headers';
 
 export async function POST(req) {
   try {
@@ -36,15 +37,21 @@ export async function POST(req) {
       return error('Invalid credentials. Contact the super admin if you need access.', 401);
     }
 
-    // Update last active
-    await prisma.admin.update({
-      where: { id: admin.id },
-      data: { lastActive: new Date() },
-    });
-
     // Sign JWT and set cookie
     const token = signAdminToken(admin);
     await setAdminCookie(token, admin.role);
+
+    // Create admin session
+    const hdrs = await headers();
+    const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown';
+    const device = detectDevice(hdrs.get('user-agent'));
+    const tHash = hashToken(token);
+
+    await prisma.$transaction([
+      prisma.adminSession.deleteMany({ where: { adminId: admin.id } }),
+      prisma.adminSession.create({ data: { adminId: admin.id, tokenHash: tHash, deviceInfo: device.info, ip } }),
+      prisma.admin.update({ where: { id: admin.id }, data: { lastActive: new Date() } }),
+    ]);
 
     return ok({
       admin: {

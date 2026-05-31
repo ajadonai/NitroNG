@@ -1,7 +1,17 @@
-import { clearAdminCookie } from '@/lib/auth';
+import { clearAdminCookie, hashToken } from '@/lib/auth';
 import { ok } from '@/lib/utils';
+import { cookies } from 'next/headers';
+import prisma from '@/lib/prisma';
 
 export async function POST() {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('nitro_admin_token')?.value;
+    if (token) {
+      const tHash = hashToken(token);
+      await prisma.adminSession.deleteMany({ where: { tokenHash: tHash } });
+    }
+  } catch {}
   await clearAdminCookie();
   return ok({ message: 'Logged out' });
 }
