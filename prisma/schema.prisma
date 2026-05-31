@@ -124,12 +124,28 @@ model Admin {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  sessions    AdminSession[]
   platformCampaignsCreated  PlatformCampaign[]  @relation("PlatformCampaignCreator")
   platformCampaignsUpdated  PlatformCampaign[]  @relation("PlatformCampaignUpdater")
   recurringCampaignsCreated RecurringCampaign[] @relation("RecurringCampaignCreator")
   recurringCampaignsUpdated RecurringCampaign[] @relation("RecurringCampaignUpdater")
 
   @@map("admins")
+}
+
+model AdminSession {
+  id         String   @id @default(cuid())
+  adminId    String
+  tokenHash  String   @unique
+  deviceInfo String?
+  ip         String?
+  lastActive DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@map("admin_sessions")
 }
 
 // ──────────────────────────────────────
