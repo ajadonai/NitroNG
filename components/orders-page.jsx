@@ -296,6 +296,21 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                       );
                     })()}
 
+                    {/* Order issue notice */}
+                    {o.lastError && o.status === "Pending" && !o.apiOrderId && (
+                      <div className="mb-2.5 py-1.5 px-2.5 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.05)", border: `1px solid ${dark ? "rgba(251,191,36,.18)" : "rgba(217,119,6,.14)"}` }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <div className="text-[11px]" style={{ color: dark ? "#fbbf24" : "#d97706" }}>
+                          {/duplicate/i.test(o.lastError) ? "A similar order is already active for this link. Will start once the other completes."
+                            : /balance|fund/i.test(o.lastError) ? "Temporarily delayed — our team has been notified."
+                            : /incorrect service|invalid service/i.test(o.lastError) ? "This service is temporarily unavailable. You'll be refunded if it can't be fulfilled."
+                            : /quantity.*less|minimum/i.test(o.lastError) ? "The quantity couldn't be processed. Contact support if this persists."
+                            : /timeout|timed.?out/i.test(o.lastError) ? "Temporary connection issue. Your order will be retried automatically."
+                            : "Temporary issue — your order will be retried automatically."}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Info grid */}
                     <div className="grid grid-cols-3 gap-1.5 mb-2.5">
                       <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
@@ -575,6 +590,21 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                         </div>
                       );
                     })()}
+
+                    {/* Order issue notice */}
+                    {o.lastError && o.status === "Pending" && !o.apiOrderId && (
+                      <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.05)", border: `1px solid ${dark ? "rgba(251,191,36,.18)" : "rgba(217,119,6,.14)"}` }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <div className="text-[12px]" style={{ color: dark ? "#fbbf24" : "#d97706" }}>
+                          {/duplicate/i.test(o.lastError) ? "A similar order is already active for this link. This order will start automatically once the other completes."
+                            : /balance|fund/i.test(o.lastError) ? "Temporarily delayed — our team has been notified and this will be resolved shortly."
+                            : /incorrect service|invalid service/i.test(o.lastError) ? "This service is temporarily unavailable. You'll be refunded if it can't be fulfilled."
+                            : /quantity.*less|minimum/i.test(o.lastError) ? "The quantity couldn't be processed. Please contact support if this persists."
+                            : /timeout|timed.?out/i.test(o.lastError) ? "There was a temporary connection issue. Your order will be retried automatically."
+                            : "Your order hit a temporary issue and will be retried automatically. Contact support if it stays pending."}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Info grid */}
                     <div className="grid grid-cols-3 gap-2 mb-3">

@@ -90,14 +90,22 @@ export async function GET(req) {
       }),
     ]);
 
-    // Resolve service → group names via tiers
+    // Resolve service → group names via tiers, fall back to service name
     const serviceIds = topServices.map(s => s.serviceId);
-    const tiers = await prisma.serviceTier.findMany({
-      where: { serviceId: { in: serviceIds } },
-      select: { serviceId: true, group: { select: { name: true, platform: true } } },
-    });
+    const [tiers, services] = await Promise.all([
+      prisma.serviceTier.findMany({
+        where: { serviceId: { in: serviceIds } },
+        select: { serviceId: true, group: { select: { name: true, platform: true } } },
+      }),
+      prisma.service.findMany({
+        where: { id: { in: serviceIds } },
+        select: { id: true, name: true, category: true },
+      }),
+    ]);
     const groupMap = {};
     tiers.forEach(t2 => { if (t2.serviceId && !groupMap[t2.serviceId]) groupMap[t2.serviceId] = t2.group; });
+    const serviceMap = {};
+    services.forEach(s => { serviceMap[s.id] = s; });
 
     // Aggregate by platform
     const platformMap = {};
@@ -188,8 +196,9 @@ export async function GET(req) {
         const grouped = {};
         topServices.forEach(s => {
           const g = groupMap[s.serviceId];
-          const key = g ? g.name : s.serviceId;
-          if (!grouped[key]) grouped[key] = { name: key, category: g?.platform || 'unknown', orders: 0, revenue: 0 };
+          const svc = serviceMap[s.serviceId];
+          const key = g ? g.name : (svc?.name || s.serviceId);
+          if (!grouped[key]) grouped[key] = { name: key, category: g?.platform || svc?.category || 'unknown', orders: 0, revenue: 0 };
           grouped[key].orders += s._count;
           grouped[key].revenue += (s._sum.charge || 0) / 100;
         });

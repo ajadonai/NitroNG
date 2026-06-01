@@ -1499,6 +1499,7 @@ export function AdminIssuesPage({ dark, t }) {
   const skBone = `skel-bone ${dark ? "skel-dark" : "skel-light"}`;
 
   const deadServices = issues.filter(i => i.type === "dead_service" && i.status === "open");
+  const revivedServices = issues.filter(i => i.type === "revived_service" && i.status === "open");
   const orderFailures = issues.filter(i => i.type === "order_failure" && i.status === "open");
   const lowBalanceIssues = issues.filter(i => i.type === "low_balance" && i.status === "open");
   const priceIssues = issues.filter(i => i.type === "price_alert" && i.status === "open");
@@ -1643,6 +1644,20 @@ export function AdminIssuesPage({ dark, t }) {
           <IssueRow key={issue.id} issue={issue} i={i} total={deadServices.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} />
         )) : (
           <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>No dead services detected</div>
+        )}
+      </IssueSection>
+
+      {/* ═══ REVIVED SERVICES ═══ */}
+      <IssueSection title="Revived Services" dark={dark} t={t}
+        icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>}
+        count={revivedServices.length > 0 ? revivedServices.length : null}
+        countColor={blueBadge}
+        defaultOpen={revivedServices.length > 0}
+      >
+        {revivedServices.length > 0 ? revivedServices.map((issue, i) => (
+          <IssueRow key={issue.id} issue={issue} i={i} total={revivedServices.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} />
+        )) : (
+          <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>No revived services</div>
         )}
       </IssueSection>
 
