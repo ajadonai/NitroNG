@@ -349,6 +349,17 @@ export default function AdminOrdersPage({ dark, t }) {
                               );
                             })()}
 
+                            {/* Provider error */}
+                            {o.lastError && (
+                              <div className="mb-2.5 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)", border: `1px solid ${dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.12)"}` }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                <div className="min-w-0">
+                                  <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-0.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Provider Error{o.retryCount > 0 ? ` · ${o.retryCount} retries` : ""}</div>
+                                  <div className="text-[12px] break-all" style={{ color: dark ? "rgba(252,165,165,.8)" : "rgba(220,38,38,.7)", fontFamily: "var(--font-mono, monospace)" }}>{o.lastError}</div>
+                                </div>
+                              </div>
+                            )}
+
                             {/* Info grid */}
                             {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); return (
                             <div className="grid grid-cols-3 desktop:grid-cols-4 gap-1.5 mb-2.5">
@@ -476,6 +487,17 @@ export default function AdminOrdersPage({ dark, t }) {
                       </div>
                     );
                   })()}
+
+                  {/* Provider error */}
+                  {o.lastError && (
+                    <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)", border: `1px solid ${dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.12)"}` }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-0.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Provider Error{o.retryCount > 0 ? ` · ${o.retryCount} retries` : ""}</div>
+                        <div className="text-[12px] break-all" style={{ color: dark ? "rgba(252,165,165,.8)" : "rgba(220,38,38,.7)", fontFamily: "var(--font-mono, monospace)" }}>{o.lastError}</div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Info grid */}
                   {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); return (

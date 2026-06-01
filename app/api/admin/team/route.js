@@ -82,6 +82,9 @@ export async function POST(req) {
 
       const newStatus = target.status === 'Active' ? 'Inactive' : 'Active';
       await prisma.admin.update({ where: { id: adminId }, data: { status: newStatus } });
+      if (newStatus === 'Inactive') {
+        await prisma.adminSession.deleteMany({ where: { adminId } });
+      }
       await logActivity(admin.name, `${newStatus === 'Active' ? 'Activated' : 'Deactivated'} admin: ${target.name}`, 'admin');
       return Response.json({ success: true, status: newStatus });
     }
@@ -138,6 +141,7 @@ export async function POST(req) {
       if (target.role === 'owner') return Response.json({ error: 'Cannot delete owner' }, { status: 403 });
       if (target.id === admin.id) return Response.json({ error: 'Cannot delete yourself' }, { status: 400 });
 
+      await prisma.adminSession.deleteMany({ where: { adminId } });
       await prisma.admin.delete({ where: { id: adminId } });
       await logActivity(admin.name, `Deleted admin: ${target.name} (${target.email})`, 'admin');
       return Response.json({ success: true });
