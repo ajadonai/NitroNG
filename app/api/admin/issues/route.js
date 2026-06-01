@@ -170,5 +170,9 @@ async function verifyResolution(type, meta) {
     }
   }
 
+  if (type === 'revived_service') {
+    return { resolved: true, detail: 'Acknowledged — re-enable services from the catalogue if needed' };
+  }
+
   return { resolved: true };
 }

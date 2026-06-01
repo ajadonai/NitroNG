@@ -92,6 +92,42 @@ export async function GET(req) {
       }
     }
 
+    // Check for revived services (disabled services that are back in the catalogue)
+    const revivedServices = [];
+    const disabledServices = await prisma.service.findMany({
+      where: { enabled: false, provider: { in: providers } },
+      select: { id: true, name: true, apiId: true, provider: true, category: true },
+    });
+    for (const s of disabledServices) {
+      const rateMap = rateMaps[s.provider];
+      if (rateMap && s.apiId && rateMap[String(s.apiId)] !== undefined) {
+        revivedServices.push({ serviceId: s.id, name: s.name, apiId: s.apiId, provider: s.provider, category: s.category });
+      }
+    }
+    if (revivedServices.length > 0) {
+      try {
+        const existingIssue = await prisma.adminIssue.findFirst({
+          where: { type: 'revived_service', status: 'open' },
+        });
+        const title = `${revivedServices.length} disabled service${revivedServices.length > 1 ? 's' : ''} back in provider catalogue`;
+        const message = revivedServices.map(d => `${d.name} (${d.provider.toUpperCase()} #${d.apiId})`).join('\n');
+        const metadata = JSON.stringify({ count: revivedServices.length, services: revivedServices });
+        if (existingIssue) {
+          await prisma.adminIssue.update({
+            where: { id: existingIssue.id },
+            data: { title, message, metadata, createdAt: new Date() },
+          });
+        } else {
+          await prisma.adminIssue.create({
+            data: { type: 'revived_service', title, message, metadata },
+          });
+        }
+      } catch (err) {
+        log.warn('PriceSync', `Failed to create revived service issue: ${err.message}`);
+      }
+    }
+    stats.revived = revivedServices.length;
+
     if (ops.length > 0) {
       for (let i = 0; i < ops.length; i += 50) {
         await prisma.$transaction(ops.slice(i, i + 50));
