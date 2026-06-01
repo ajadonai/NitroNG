@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import DOMPurify from 'isomorphic-dompurify';
+import DOMPurifyLib from 'dompurify';
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter } from './shared-nav';
 import { md, fD, readTime } from '@/lib/markdown';
@@ -94,7 +94,7 @@ function BlogPostInner({ post }) {
         </div>
         <MobileShare post={post} dark={dark} />
         {post.thumbnail && <div className="rounded-xl bg-cover bg-center mb-8" style={{ height: "clamp(180px,25vw,300px)", backgroundImage: "url(" + post.thumbnail + ")", backgroundColor: thumbBg }} />}
-        <div className="blog-article-body" data-theme={dark ? 'dark' : 'light'} style={{ color: bodyColor }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md(post.content)) }} />
+        <div className="blog-article-body" data-theme={dark ? 'dark' : 'light'} style={{ color: bodyColor }} dangerouslySetInnerHTML={{ __html: typeof window !== 'undefined' ? DOMPurifyLib.sanitize(md(post.content)) : md(post.content) }} />
         <div className="h-px my-8" style={{ background: t.surfaceBrd }} />
         <a href="/blog" className="inline-block py-2.5 px-5 rounded-lg text-sm no-underline" style={{ border: "1px solid " + t.surfaceBrd, color: t.muted }}>{"\u2190"} Back to all posts</a>
       </article>
