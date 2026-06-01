@@ -95,7 +95,7 @@ export async function GET(req) {
     // Check for revived services (disabled services that are back in the catalogue)
     const revivedServices = [];
     const disabledServices = await prisma.service.findMany({
-      where: { enabled: false, provider: { in: providers } },
+      where: { enabled: false, provider: { in: providers }, tiers: { some: {} } },
       select: { id: true, name: true, apiId: true, provider: true, category: true },
     });
     for (const s of disabledServices) {
