@@ -367,7 +367,7 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
                   {gateways.length > 0 ? gateways.map(g => <option key={g.id} value={g.id}>{g.name}{g.id === "manual" ? " (Slower)" : ""}</option>) : <option value="">Select payment method</option>}
                 </select>
               )}
-              {gateways.length > 1 && <div className="text-[11px] mt-1.5" style={{ color: t.textMuted }}>Having trouble? Try a different payment method.</div>}
+              {gateways.length > 1 && <div className="text-[11px] mt-1.5" style={{ color: t.textMuted }}>If Flutterwave doesn't work, try bank transfer or crypto instead.</div>}
 
               <div className="flex-1 min-h-4" />
 
@@ -441,7 +441,7 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
                   <option>Select payment method</option>
                 </select>
               )}
-              {gateways.length > 1 && <div className="text-[11px] mt-1.5" style={{ color: t.textMuted }}>Having trouble? Try a different payment method.</div>}
+              {gateways.length > 1 && <div className="text-[11px] mt-1.5" style={{ color: t.textMuted }}>If Flutterwave doesn't work, try bank transfer or crypto instead.</div>}
               <PayButton onClick={handlePay} disabled={loading} text={loading ? "Processing..." : `Pay ${fN(numAmount)} Now`} className="mt-3" />
             </div>
 
