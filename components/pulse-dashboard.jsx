@@ -240,7 +240,7 @@ function DonutChart({ items, label }) {
 
   const statusColors = {
     Completed: '#6ee7b7', Processing: '#a5b4fc', Pending: '#fcd34d',
-    Failed: '#fca5a5', Cancelled: '#fca5a5', Partial: '#fca5a5', Rejected: '#fca5a5',
+    Partial: '#fdba74', Failed: '#fca5a5', Cancelled: '#a1a1aa', Rejected: '#fca5a5',
   };
 
   return (
@@ -298,7 +298,7 @@ function LiveFeed({ orders }) {
   if (!orders || orders.length === 0) return null;
   const statusColors = {
     Completed: '#6ee7b7', Processing: '#a5b4fc', Pending: '#fcd34d',
-    Failed: '#fca5a5', Cancelled: '#fca5a5', Partial: '#fca5a5',
+    Partial: '#fdba74', Failed: '#fca5a5', Cancelled: '#a1a1aa',
   };
 
   return (
