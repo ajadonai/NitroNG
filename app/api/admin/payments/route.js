@@ -70,8 +70,8 @@ export async function GET(req) {
       });
     } catch {}
 
-    // Build deposit query
-    const where = { method: { in: ['manual', 'crypto'] }, type: 'deposit' };
+    // Build deposit query — exclude unconfirmed manual deposits (user hasn't sent money yet)
+    const where = { method: { in: ['manual', 'crypto'] }, type: 'deposit', NOT: { note: { contains: '[awaiting_confirmation]' } } };
     if (status !== 'all') where.status = status;
     if (from) where.createdAt = { ...(where.createdAt || {}), gte: new Date(from) };
     if (to) where.createdAt = { ...(where.createdAt || {}), lte: new Date(to + 'T23:59:59') };
@@ -118,7 +118,7 @@ export async function GET(req) {
     return Response.json({
       gateways: masked,
       deposits: deposits.map(formatTx),
-      pendingCount: deposits.filter(d => d.status === 'Pending').length,
+      pendingCount: deposits.filter(d => d.status === 'Pending' && !d.note?.includes('[awaiting_confirmation]')).length,
       canApprove: canPerformAction(admin, 'payments.approve'),
       canConfigure: canPerformAction(admin, 'payments.configure'),
     });
