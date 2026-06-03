@@ -80,7 +80,7 @@ export async function POST(req) {
       const result = await prisma.$transaction(async (tx) => {
         const claimed = await tx.order.updateMany({
           where: { id: order.id, status: { not: 'Cancelled' } },
-          data: { status: 'Cancelled' },
+          data: { status: 'Cancelled', refundedAt: new Date() },
         });
         if (claimed.count === 0) return { ok: false };
 
@@ -153,7 +153,7 @@ export async function POST(req) {
               await prisma.$transaction(async (tx) => {
                 const claimed = await tx.order.updateMany({
                   where: { id: order.id, status: { not: 'Cancelled' } },
-                  data: { status: 'Cancelled' },
+                  data: { status: 'Cancelled', refundedAt: new Date() },
                 });
                 if (claimed.count === 0) return;
                 const existing = await tx.transaction.aggregate({
@@ -180,7 +180,7 @@ export async function POST(req) {
                 const refundAmount = Math.round((remains / order.quantity) * order.charge / 100) * 100;
                 if (refundAmount > 0) {
                   await prisma.$transaction(async (tx) => {
-                    await tx.order.update({ where: { id: order.id }, data: { status: 'Partial' } });
+                    await tx.order.update({ where: { id: order.id }, data: { status: 'Partial', refundedAt: new Date() } });
                     const existing = await tx.transaction.aggregate({
                       where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
                       _sum: { amount: true },
