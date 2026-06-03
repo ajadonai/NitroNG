@@ -513,14 +513,14 @@ export default function SupportPage({ dark, t }) {
           <>
             <div className="flex-1 overflow-y-auto min-h-0 py-3 px-[18px] flex flex-col gap-1.5">
               <div className="flex-1" />
-              {chatMsgs.map((m, i) => {
+              {(() => {
+                const lastIdx = {};
+                chatMsgs.forEach((m, i) => { if (m.from) lastIdx[m.from] = i; });
+                return chatMsgs.map((m, i) => {
                 const prevDay = i > 0 ? dayLabel(chatMsgs[i - 1]?.time) : null;
                 const curDay = dayLabel(m.time);
                 const showDate = (i === 0 && curDay) ? curDay : (curDay && curDay !== prevDay ? curDay : null);
-                const next = chatMsgs[i + 1];
-                const isLast = !next;
-                const gap = next?.time && m.time ? (new Date(next.time) - new Date(m.time)) / 60000 : Infinity;
-                const showTime = isLast || gap >= 5;
+                const showTime = lastIdx[m.from] === i;
                 return (
                 <div key={i}>
                   <Bubble m={m} dark={dark} t={t} prevFrom={chatMsgs[i - 1]?.from} showDate={showDate} showTime={showTime} />
@@ -530,7 +530,7 @@ export default function SupportPage({ dark, t }) {
                     <button onClick={() => setShowQuick(true)} className="py-1.5 px-3 rounded-lg text-xs cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, color: t.textMuted, fontFamily: "inherit" }}>Ask something else</button>
                   </div>}
                 </div>
-              );})}
+              );});})()}
               {typing && <div className="self-start py-2.5 px-[18px] rounded-[14px] rounded-bl" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.06)", border: `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}><div className="flex gap-1">{[0,1,2].map(j=><div key={j} className="sup-typing-dot" style={{ width:6,height:6,borderRadius:3,background:t.textMuted,animationDelay:`${j*.15}s` }}/>)}</div></div>}
               <div ref={msgsEnd} />
             </div>
