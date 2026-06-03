@@ -8,6 +8,7 @@ import '@fontsource/jetbrains-mono/latin-600.css';
 import '@fontsource/cormorant-garamond/latin-400.css';
 import '@fontsource/cormorant-garamond/latin-400-italic.css';
 import '@fontsource/cormorant-garamond/latin-500-italic.css';
+import '@fontsource/cormorant-garamond/latin-700.css';
 import Script from 'next/script';
 import SentryInit from '@/components/sentry-init';
 import CookieBanner from '@/components/cookie-banner';

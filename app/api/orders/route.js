@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { placeOrder, checkOrder, cancelOrder } from '@/lib/smm';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
+import { cleanLink } from '@/lib/clean-link';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -298,8 +299,8 @@ export async function POST(req) {
       return Response.json({ error: 'Service or tier required' }, { status: 400 });
     }
 
-    // Validate link
-    const trimmedLink = link.trim();
+    // Validate link — strip tracking params from social media URLs
+    const trimmedLink = cleanLink(link);
     if (trimmedLink.length < 5 || trimmedLink.length > 500) {
       return Response.json({ error: 'Invalid link' }, { status: 400 });
     }

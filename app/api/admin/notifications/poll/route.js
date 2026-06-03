@@ -38,7 +38,7 @@ export async function GET(req) {
       take: 10,
     }),
     prisma.transaction.findMany({
-      where: { type: 'deposit', status: 'Pending', method: 'manual', createdAt: { gt: sinceDate } },
+      where: { type: 'deposit', status: 'Pending', method: 'manual', createdAt: { gt: sinceDate }, NOT: { note: { contains: '[awaiting_confirmation]' } } },
       select: { id: true, amount: true, createdAt: true, user: { select: { name: true } } },
       orderBy: { createdAt: 'desc' },
       take: 10,
