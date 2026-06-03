@@ -177,6 +177,32 @@ const LINK_HINTS = {
   playstore: "play.google.com/store/apps/...",
 };
 
+const LINK_TIPS = {
+  instagram: { profile: "instagram.com/username", post: "instagram.com/p/ABC123 or /reel/ABC123" },
+  tiktok: { profile: "tiktok.com/@username", post: "tiktok.com/@username/video/123..." },
+  twitter: { profile: "x.com/username", post: "x.com/username/status/123..." },
+  youtube: { profile: "youtube.com/@channel", post: "youtube.com/watch?v=ABC123" },
+  facebook: { profile: "facebook.com/pagename", post: "facebook.com/username/posts/123..." },
+  threads: { profile: "threads.net/@username", post: "threads.net/@username/post/ABC123" },
+  telegram: { profile: "t.me/channelname", post: "t.me/channelname/123" },
+  linkedin: { profile: "linkedin.com/in/username", post: "linkedin.com/posts/..." },
+  snapchat: { profile: "snapchat.com/add/username", post: "snapchat.com/spotlight/..." },
+  pinterest: { profile: "pinterest.com/username", post: "pinterest.com/pin/123..." },
+  reddit: { profile: "reddit.com/r/community", post: "reddit.com/r/community/comments/..." },
+  twitch: { profile: "twitch.tv/username", post: "twitch.tv/videos/123..." },
+  kick: { profile: "kick.com/username", post: "kick.com/username/clips/..." },
+  spotify: { profile: "open.spotify.com/artist/...", post: "open.spotify.com/track/..." },
+  soundcloud: { profile: "soundcloud.com/artist", post: "soundcloud.com/artist/track-name" },
+};
+
+function getLinkTip(platform, isProfile, isPost) {
+  const tips = LINK_TIPS[platform];
+  if (!tips) return null;
+  if (isProfile) return "Profile link — e.g. " + tips.profile;
+  if (isPost) return "Post link — e.g. " + tips.post;
+  return null;
+}
+
 function isValidLink(link) {
   const v = link.trim();
   if (v.length < 3 || v.length > 500) return false;
@@ -248,6 +274,10 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const commentLines = (comments || "").split("\n").filter(l => l.trim()).length;
   const commentShort = needsComments && qtyNum > 0 && commentLines > 0 && commentLines < qtyNum;
 
+  const isProfileSvc = /follow|subscri/i.test(svcName);
+  const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays/i.test(svcName) && !isProfileSvc;
+  const linkTip = getLinkTip(platform, isProfileSvc, isPostSvc);
+
   const linkPlaceholder = LINK_HINTS[platform] || `${platform}.com/...`;
   const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
 
@@ -278,7 +308,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             <span className="inline-flex items-center px-3 text-sm font-semibold shrink-0 select-none" style={{ borderRight: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>https://</span>
             <input type="url" inputMode="url" aria-label={linkLabel} disabled={orderLoading} placeholder={linkPlaceholder} value={link} onChange={e => validateLink(e.target.value)} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
           </div>
-          {linkError && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626" }}>{linkError}</div>}
+          {linkError ? <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626" }}>{linkError}</div>
+            : linkTip && <div className="text-[11px] mt-[3px]" style={{ color: t.textMuted }}>{linkTip}</div>}
         </div>
         {showComments && (
           <div className="mb-3.5">
@@ -601,7 +632,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       });
       const data = await res.json();
       if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong"); setOrderLoading(false); return; }
-      setOrderSuccess({ ...data.order, queued: data.queued, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service" });
+      setOrderSuccess({ ...data.order, queued: data.queued, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", speed: selTier?.speed || null });
       setLink("");
       if (onOrderSuccess) onOrderSuccess();
     } catch (err) {
@@ -884,18 +915,35 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           <div role="dialog" aria-modal="true" aria-label="Order summary" className="w-full rounded-[14px] overflow-y-auto shadow-[0_20px_60px_rgba(0,0,0,.38)] border border-solid max-h-[calc(100dvh-84px)] desktop:max-w-[420px] desktop:max-h-[90vh] desktop:rounded-2xl" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#ffffff", borderColor: t.cardBorder }}>
             {orderSuccess ? (
               <div className="p-6 max-md:p-5 text-center">
-                <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: orderSuccess.queued ? (dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.08)") : (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)") }}>
-                  {orderSuccess.queued
-                    ? <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    : <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>}
+                <div className="relative w-16 h-16 mx-auto mb-4">
+                  <div className="absolute inset-0 rounded-full animate-ping opacity-20" style={{ background: orderSuccess.queued ? (dark ? "#fbbf24" : "#d97706") : (dark ? "#6ee7b7" : "#059669"), animationDuration: "1.5s", animationIterationCount: 1 }} />
+                  <div className="relative w-16 h-16 rounded-full flex items-center justify-center" style={{ background: orderSuccess.queued ? (dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.08)") : (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)") }}>
+                    {orderSuccess.queued
+                      ? <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      : <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>}
+                  </div>
                 </div>
-                <div className="text-lg font-semibold mb-1" style={{ color: t.text }}>{orderSuccess.queued ? "Order queued" : "Order placed"}</div>
-                <div className="text-sm mb-5" style={{ color: t.textMuted }}>{orderSuccess.queued ? "You have an active order for this link. This order will start automatically once it completes." : "Your order starts processing in 10–15 minutes. You can track progress from your order history."}</div>
-                <div className="flex flex-col gap-3 rounded-xl p-4 mb-5 text-left" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `1px solid ${t.cardBorder}` }}>
-                  {[["Service", orderSuccess.service], ["Quantity", (orderSuccess.quantity || 0).toLocaleString()], ["Charged", `₦${(orderSuccess.charge || 0).toLocaleString()}`]].map(([label, val]) => (
-                    <div key={label} className="flex justify-between text-sm">
+                <div className="text-xl max-md:text-lg font-semibold mb-1" style={{ color: t.text }}>{orderSuccess.queued ? "Order queued" : "Order placed!"}</div>
+                <div className="text-sm mb-5 max-w-[320px] mx-auto" style={{ color: t.textMuted }}>
+                  {orderSuccess.queued
+                    ? "You have an active order for this link. This order will start automatically once it completes."
+                    : orderSuccess.speed
+                      ? `Your order is being processed. Estimated delivery: ${orderSuccess.speed}.`
+                      : "Your order is being processed. Track progress from your order history."}
+                </div>
+                <div className="rounded-xl overflow-hidden mb-5 text-left" style={{ border: `1px solid ${t.cardBorder}` }}>
+                  <div className="py-2 px-4 text-[11px] font-semibold uppercase tracking-[1.5px]" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}` }}>Order summary</div>
+                  {[
+                    ["Order ID", orderSuccess.id],
+                    ["Platform", orderSuccess.platform],
+                    ["Service", orderSuccess.service],
+                    ["Quantity", (orderSuccess.quantity || 0).toLocaleString()],
+                    ...(orderSuccess.speed ? [["Est. delivery", orderSuccess.speed]] : []),
+                    ["Charged", `₦${(orderSuccess.charge || 0).toLocaleString()}`],
+                  ].map(([label, val], i, arr) => (
+                    <div key={label} className="flex justify-between py-2.5 px-4 text-sm" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                       <span style={{ color: t.textMuted }}>{label}</span>
-                      <span className="font-medium" style={{ color: t.text }}>{val}</span>
+                      <span className="font-medium text-right max-w-[60%] truncate" style={{ color: label === "Charged" ? t.green : t.text }}>{val}</span>
                     </div>
                   ))}
                 </div>

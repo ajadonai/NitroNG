@@ -3,7 +3,7 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getBalance } from '@/lib/smm';
-import { sendEmail, emailWrap, emailRow, emailDataBox } from '@/lib/email';
+import { sendEmail, emailWrap, emailRow, emailDataBox, sendWinbackEmail } from '@/lib/email';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -12,6 +12,7 @@ export async function GET(req) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const isScheduled = req.headers.get('x-vercel-cron') === '1';
   const results = { cleanup: {}, balance: {} };
 
   // ═══ CLEANUP: stale users + permanent deletions ═══
@@ -114,6 +115,43 @@ export async function GET(req) {
   } catch (err) {
     log.error('Log retention', err.message);
     results.logRetention = { error: err.message };
+  }
+
+  // ═══ WIN-BACK: email inactive new users after 7 days ═══
+  try {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    let winbackSent = 0;
+    let winbackFailed = 0;
+    const batch = await prisma.user.findMany({
+      where: {
+        status: 'Active',
+        emailVerified: true,
+        notifPromo: true,
+        winbackSentAt: null,
+        createdAt: { gte: thirtyDaysAgo, lte: sevenDaysAgo },
+        orders: { none: {} },
+      },
+      select: { id: true, name: true, email: true },
+      take: 50,
+    });
+    for (const user of batch) {
+      try {
+        await sendWinbackEmail(user.name || 'there', user.email);
+        await prisma.user.update({ where: { id: user.id }, data: { winbackSentAt: new Date() } });
+        winbackSent++;
+      } catch (e) {
+        log.warn('Winback', `Failed to send to ${user.email}: ${e.message}`);
+        await prisma.user.update({ where: { id: user.id }, data: { winbackSentAt: new Date(0) } }).catch(() => {});
+        winbackFailed++;
+      }
+    }
+    if (winbackSent > 0 || winbackFailed > 0) log.info('Winback', `Sent ${winbackSent}, failed ${winbackFailed} of ${batch.length}`);
+    results.winback = { sent: winbackSent, failed: winbackFailed, total: batch.length };
+  } catch (err) {
+    log.error('Winback', err.message);
+    results.winback = { error: err.message };
   }
 
   // ═══ BALANCE: check provider balances + alert if low ═══

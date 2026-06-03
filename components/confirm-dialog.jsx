@@ -7,10 +7,10 @@ export function ConfirmProvider({ children, dark }) {
   const [dialog, setDialog] = useState(null);
   const [input, setInput] = useState("");
 
-  const confirm = useCallback(({ title, message, confirmLabel = "Confirm", confirmColor, danger = false, requireType = null }) => {
+  const confirm = useCallback(({ title, message, body, confirmLabel = "Confirm", confirmColor, danger = false, requireType = null }) => {
     return new Promise((resolve) => {
       setInput("");
-      setDialog({ title, message, confirmLabel, confirmColor, danger, requireType, resolve });
+      setDialog({ title, message, body, confirmLabel, confirmColor, danger, requireType, resolve });
     });
   }, []);
 
@@ -76,7 +76,7 @@ export function ConfirmProvider({ children, dark }) {
 
             {/* Title + Message */}
             <div className="text-[17px] font-semibold mb-1.5" style={{ color: dark ? "#f5f3f0" : "#1a1917" }}>{dialog.title}</div>
-            <div className="text-sm leading-[1.65] mb-5" style={{ color: dark ? "#a09b95" : "#555250" }}>{dialog.message}</div>
+            {dialog.body || <div className="text-sm leading-[1.65] mb-5" style={{ color: dark ? "#a09b95" : "#555250" }}>{dialog.message}</div>}
 
             {/* Type to confirm */}
             {dialog.requireType && (

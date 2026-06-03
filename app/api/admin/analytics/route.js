@@ -107,11 +107,13 @@ export async function GET(req) {
     const serviceMap = {};
     services.forEach(s => { serviceMap[s.id] = s; });
 
-    // Aggregate by platform
+    // Aggregate by platform (only real social platforms)
+    const PLATFORMS = new Set(['instagram', 'youtube', 'tiktok', 'facebook', 'twitter/x', 'telegram', 'spotify', 'twitch', 'snapchat', 'linkedin', 'threads', 'whatsapp', 'discord', 'pinterest', 'reddit']);
     const platformMap = {};
     allOrders.forEach(o => {
-      const cat = o.service?.category || 'unknown';
-      const name = cat.charAt(0).toUpperCase() + cat.slice(1);
+      const cat = (o.service?.category || '').toLowerCase();
+      if (!PLATFORMS.has(cat)) return;
+      const name = cat === 'twitter/x' ? 'Twitter/X' : cat.charAt(0).toUpperCase() + cat.slice(1);
       if (!platformMap[name]) platformMap[name] = { name, orders: 0, revenue: 0 };
       platformMap[name].orders++;
       platformMap[name].revenue += (o.charge || 0) / 100;
