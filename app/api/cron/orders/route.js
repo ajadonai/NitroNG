@@ -76,33 +76,80 @@ export async function GET(req) {
           if (!newStatus || newStatus === order.status) continue;
 
           const providerError = result.error || result.reason || null;
-          await prisma.order.update({
-            where: { id: order.id },
-            data: {
-              status: newStatus,
-              ...(liveRemains != null ? { remains: liveRemains } : {}),
-              ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}),
-              ...(newStatus === 'Cancelled' && providerError ? { lastError: String(providerError).slice(0, 500) } : {}),
-            },
-          });
-          stats.updated++;
 
-          // Auto-refund cancelled orders
           if (newStatus === 'Cancelled') {
-            await refundOrder(order);
-            stats.refunded++;
-          }
-
-          // Partial refund for partial orders
-          if (newStatus === 'Partial' && result.remains) {
-            const remains = Number(result.remains) || 0;
-            if (remains > 0 && order.charge > 0 && order.quantity > 0) {
-              const refundAmount = Math.round((remains / order.quantity) * order.charge / 100) * 100;
-              if (refundAmount > 0) {
-                await refundOrder(order, refundAmount);
-                stats.refunded++;
+            // Atomic: status update + refund in one transaction so neither can succeed alone
+            await prisma.$transaction(async (tx) => {
+              await tx.order.update({
+                where: { id: order.id },
+                data: {
+                  status: 'Cancelled',
+                  ...(liveRemains != null ? { remains: liveRemains } : {}),
+                  ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}),
+                  ...(providerError ? { lastError: String(providerError).slice(0, 500) } : {}),
+                  refundedAt: new Date(),
+                },
+              });
+              const existing = await tx.transaction.aggregate({
+                where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
+                _sum: { amount: true },
+              });
+              const safeRefund = Math.max(0, order.charge - (existing._sum.amount || 0));
+              if (safeRefund > 0) {
+                await tx.$executeRaw`UPDATE users SET balance = balance + ${safeRefund} WHERE id = ${order.userId}`;
+                await tx.transaction.create({
+                  data: { userId: order.userId, type: 'refund', amount: safeRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund for cancelled order ${order.orderId}` },
+                });
               }
+            });
+            stats.updated++;
+            stats.refunded++;
+            // Fire-and-forget email (non-critical)
+            refundOrder(order, null, true).catch(() => {});
+          } else if (newStatus === 'Partial' && result.remains) {
+            const remains = Number(result.remains) || 0;
+            const refundAmount = remains > 0 && order.charge > 0 && order.quantity > 0
+              ? Math.round((remains / order.quantity) * order.charge / 100) * 100 : 0;
+            // Atomic: status update + partial refund
+            await prisma.$transaction(async (tx) => {
+              await tx.order.update({
+                where: { id: order.id },
+                data: {
+                  status: 'Partial',
+                  remains: liveRemains,
+                  ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}),
+                  ...(refundAmount > 0 ? { refundedAt: new Date() } : {}),
+                },
+              });
+              if (refundAmount > 0) {
+                const existing = await tx.transaction.aggregate({
+                  where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
+                  _sum: { amount: true },
+                });
+                const safeRefund = Math.max(0, refundAmount - (existing._sum.amount || 0));
+                if (safeRefund > 0) {
+                  await tx.$executeRaw`UPDATE users SET balance = balance + ${safeRefund} WHERE id = ${order.userId}`;
+                  await tx.transaction.create({
+                    data: { userId: order.userId, type: 'refund', amount: safeRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Partial refund for ${order.orderId}` },
+                  });
+                }
+              }
+            });
+            stats.updated++;
+            if (refundAmount > 0) {
+              stats.refunded++;
+              refundOrder(order, refundAmount, true).catch(() => {});
             }
+          } else {
+            await prisma.order.update({
+              where: { id: order.id },
+              data: {
+                status: newStatus,
+                ...(liveRemains != null ? { remains: liveRemains } : {}),
+                ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}),
+              },
+            });
+            stats.updated++;
           }
 
         } catch (err) {
@@ -266,13 +313,57 @@ export async function GET(req) {
       }
     } catch (e) { log.warn('Auto-refund loop', e.message); }
 
+    // Safety net: catch any cancelled/partial orders that slipped through without a refund
+    stats.recovered = 0;
+    try {
+      const unrefunded = await prisma.order.findMany({
+        where: {
+          status: { in: ['Cancelled', 'Partial'] },
+          deletedAt: null,
+          refundedAt: null,
+          charge: { gt: 0 },
+          createdAt: { gt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+        },
+        take: 50,
+      });
+      for (const order of unrefunded) {
+        try {
+          const refundAmount = order.status === 'Partial' && order.remains && order.quantity > 0
+            ? Math.round((order.remains / order.quantity) * order.charge / 100) * 100
+            : order.charge;
+          if (refundAmount <= 0) continue;
+          await prisma.$transaction(async (tx) => {
+            const existing = await tx.transaction.aggregate({
+              where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
+              _sum: { amount: true },
+            });
+            const safeRefund = Math.max(0, refundAmount - (existing._sum.amount || 0));
+            if (safeRefund <= 0) {
+              await tx.order.update({ where: { id: order.id }, data: { refundedAt: new Date() } });
+              return;
+            }
+            await tx.$executeRaw`UPDATE users SET balance = balance + ${safeRefund} WHERE id = ${order.userId}`;
+            await tx.transaction.create({
+              data: { userId: order.userId, type: 'refund', amount: safeRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Recovered refund for ${order.orderId}` },
+            });
+            await tx.order.update({ where: { id: order.id }, data: { refundedAt: new Date() } });
+          });
+          stats.recovered++;
+          log.warn(`Recovered refund ${order.orderId}`, `₦${(refundAmount / 100).toLocaleString()} credited`);
+          refundOrder(order, order.status === 'Partial' ? refundAmount : null, true).catch(() => {});
+        } catch (err) {
+          log.warn(`Recovery refund ${order.orderId}`, err.message);
+        }
+      }
+    } catch (e) { log.warn('Refund recovery sweep', e.message); }
+
     // Clean up expired idempotency keys
     try {
       const { count } = await prisma.idempotencyKey.deleteMany({ where: { expiresAt: { lt: new Date() } } });
       if (count > 0) stats.expiredKeys = count;
     } catch (e) { log.warn('Idempotency cleanup', e.message); }
 
-    log.info('Cron orders', `Checked ${stats.checked}, updated ${stats.updated}, refunded ${stats.refunded}, retried ${stats.retried}, autoRefunded ${stats.autoRefunded}`);
+    log.info('Cron orders', `Checked ${stats.checked}, updated ${stats.updated}, refunded ${stats.refunded}, retried ${stats.retried}, autoRefunded ${stats.autoRefunded}, recovered ${stats.recovered}`);
     return Response.json({ success: true, ...stats });
 
   } catch (err) {
