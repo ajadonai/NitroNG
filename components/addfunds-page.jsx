@@ -40,6 +40,12 @@ const ACCEPTED_TYPES = [
   { label: "Mobile Money", short: "Mobile", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> },
 ];
 
+const GW_META = {
+  flutterwave: { desc: "Card, bank transfer", speed: "Instant" },
+  crypto: { desc: "USDT via TRC-20", speed: "5–30 min" },
+  manual: { desc: "Direct bank transfer", speed: "15–60 min" },
+};
+
 /* ═══════════════════════════════════════════ */
 /* ═══ ADD FUNDS PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
@@ -112,6 +118,10 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
   const numAmount = Number(amount) || 0;
   const valid = numAmount >= 500;
   const balance = user?.balance || 0;
+
+  const lastFunded = txs?.find(tx => tx.type === 'deposit' && tx.status === 'Completed');
+  const pendingDeposits = txs?.filter(tx => tx.type === 'deposit' && tx.status === 'Pending') || [];
+  const pendingTotal = pendingDeposits.reduce((s, tx) => s + (tx.amount || 0), 0);
 
   // Coupon state
   const [showCoupon, setShowCoupon] = useState(false);
@@ -240,11 +250,13 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
         ))}
       </div>
       <div className="min-h-6 mt-2.5 flex items-center">
-        {numAmount > 0 && numAmount < 500 && (
+        {numAmount > 0 && numAmount < 500 ? (
           <div className="text-sm font-medium flex items-center gap-1.5" style={{ color: dark ? "#fcd34d" : "#d97706" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             Minimum deposit is ₦500
           </div>
+        ) : !valid && (
+          <div className="text-[12px]" style={{ color: t.textMuted }}>Minimum deposit is ₦500</div>
         )}
       </div>
     </>
@@ -256,7 +268,7 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
         {!showCoupon ? (
           <button onClick={() => setShowCoupon(true)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer p-0 flex items-center gap-1.5 transition-transform duration-200 hover:-translate-y-px" style={{ color: t.accent }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
-            Have a coupon code? Tap to apply
+            Apply coupon
           </button>
         ) : (
           <div>
@@ -271,7 +283,7 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
     ) : (
       <div className="flex items-center gap-2 mt-2 py-2 px-3 rounded-lg text-[13px]" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)", border: `1px solid ${dark ? "rgba(110,231,183,.19)" : "rgba(5,150,105,.14)"}`, color: dark ? "#6ee7b7" : "#059669" }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        <span><strong className="m">{couponApplied.code}</strong> — {couponApplied.type === "percent" ? `${couponApplied.value}% bonus` : `₦${couponApplied.value.toLocaleString()} bonus`}</span>
+        <span>Coupon applied: <strong className="m">{couponApplied.code}</strong> · Wallet bonus: {couponApplied.type === "percent" ? `${couponApplied.value}%` : `+₦${couponApplied.value.toLocaleString()}`}</span>
         <button onClick={removeCoupon} className="bg-transparent border-none text-xs cursor-pointer ml-auto transition-transform duration-200 hover:-translate-y-px" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Remove</button>
       </div>
     )
@@ -326,8 +338,18 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
             <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-lg border-[3px] mb-2.5" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)", borderColor: dark ? "#0e1225" : "#f3f0ec" }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
             </div>
-            <div className="text-[11px] uppercase tracking-[1.5px] mb-0.5" style={{ color: t.textMuted }}>Current Balance</div>
-            <div className="text-[28px] font-bold" style={{ color: t.green }}>{fN(balance)}</div>
+            <div className="flex items-baseline gap-2">
+              <div className="text-[11px] uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>Current Balance</div>
+              <div className="text-[10px] font-medium" style={{ color: dark ? "#6ee7b7" : "#059669" }}>Available now</div>
+            </div>
+            <div className="text-[28px] font-bold mt-0.5" style={{ color: t.green }}>{fN(balance)}</div>
+            {lastFunded && <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>Last funded {fD(lastFunded.date, true)}</div>}
+            {pendingDeposits.length > 0 && (
+              <div className="flex items-center gap-1.5 mt-2 py-1.5 px-2.5 rounded-lg text-[11px]" style={{ background: dark ? "rgba(252,211,77,.06)" : "rgba(217,119,6,.04)", border: `1px solid ${dark ? "rgba(252,211,77,.14)" : "rgba(217,119,6,.1)"}`, color: dark ? "#fcd34d" : "#d97706" }}>
+                <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: dark ? "#fcd34d" : "#d97706" }} />
+                {pendingDeposits.length} pending deposit{pendingDeposits.length > 1 ? "s" : ""}{pendingTotal > 0 ? ` · ${fN(pendingTotal)}` : ""} awaiting confirmation
+              </div>
+            )}
           </div>
         </div>
 
@@ -355,7 +377,7 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
               )}
               <div className="h-px my-1 mb-3.5" style={{ background: t.cardBorder }} />
               <div className="flex justify-between items-baseline mb-7">
-                <span className="text-[11px] font-semibold uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>{couponApplied && discount > 0 ? "You get" : "Total"}</span>
+                <span className="text-[11px] font-semibold uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>{couponApplied && discount > 0 ? "Wallet credit" : "Total"}</span>
                 <span className="text-[28px] font-bold" style={{ color: valid ? t.accent : t.textMuted }}>{valid ? fN(numAmount + (discount > 0 ? discount / 100 : 0)) : "—"}</span>
               </div>
 
@@ -363,15 +385,25 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
               {gatewaysLoading ? (
                 <div className={`skel-bone h-[42px] rounded-[10px] ${dark ? "skel-dark" : "skel-light"}`} />
               ) : (
-                <select value={method} onChange={e => setMethod(e.target.value)} className="w-full py-2.5 px-3.5 rounded-[10px] text-sm font-medium outline-none appearance-none cursor-pointer pr-8" style={{ backgroundColor: dark ? "rgba(255,255,255,.12)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)"}`, color: t.text, fontFamily: "'Plus Jakarta Sans',sans-serif", backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${dark ? "%23666" : "%23999"}' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
-                  {gateways.length > 0 ? gateways.map(g => <option key={g.id} value={g.id}>{g.name}{g.id === "manual" ? " (Slower)" : ""}</option>) : <option value="">Select payment method</option>}
-                </select>
+                <div className="flex flex-col gap-1">
+                  {gateways.map(g => { const sel = method === g.id; const meta = GW_META[g.id] || {}; return (
+                    <button key={g.id} onClick={() => setMethod(g.id)} className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-left cursor-pointer transition-all duration-150" style={{ background: sel ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", border: `1.5px solid ${sel ? t.accent : t.cardBorder}`, fontFamily: "inherit" }}>
+                      <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)" }}>
+                        {g.id === "flutterwave" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? t.accent : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> : g.id === "crypto" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? t.accent : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.767 19.089c4.924.868 6.14-6.025 1.216-6.894m-1.216 6.894L5.86 18.047m5.908 1.042-.347 1.97m1.563-8.864c4.924.869 6.14-6.025 1.215-6.893m-1.215 6.893-6.083-1.072m6.083 1.072.347-1.969M7.116 16.676l-2.576-.454M9.21 4.835l-.347 1.97m0 0-2.576-.455"/></svg> : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? t.accent : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[12px] font-semibold leading-tight" style={{ color: sel ? t.accent : t.text }}>{g.name}</div>
+                        {meta.desc && <div className="text-[10px] leading-tight" style={{ color: t.textMuted }}>{meta.desc}</div>}
+                      </div>
+                      {meta.speed && <span className="text-[9px] font-medium py-px px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>{meta.speed}</span>}
+                    </button>
+                  ); })}
+                </div>
               )}
-              {gateways.length > 1 && <div className="text-[11px] mt-1.5" style={{ color: t.textMuted }}>If Flutterwave doesn't work, try bank transfer or crypto instead.</div>}
 
               <div className="flex-1 min-h-4" />
 
-              <PayButton onClick={handlePay} disabled={!valid || loading} text={loading ? "Processing..." : valid ? `Pay ${fN(numAmount)} Now` : "Amount to deposit"} />
+              <PayButton onClick={handlePay} disabled={!valid || loading} text={loading ? "Processing..." : valid ? `Pay ${fN(numAmount)} Now` : "Enter an amount"} />
               <div className="flex items-center justify-center gap-1.5 mt-2.5 text-xs" style={{ color: t.textMuted }}>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                 Encrypted & secure
@@ -385,6 +417,12 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
       <div className="hidden max-md:!block">
         {mobileStep === 1 && (
           <>
+            {/* Step indicator */}
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: t.accent, color: "#fff" }}>1</div>
+              <div className="w-8 h-px" style={{ background: t.cardBorder }} />
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)", color: t.textMuted }}>2</div>
+            </div>
             {/* Balance hero */}
             <div className="mb-3 overflow-hidden rounded-xl" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
               <div className="h-11" style={{ background: "linear-gradient(135deg, #c47d8e 0%, #a3586b 50%, #8b5e6b 100%)" }} />
@@ -392,8 +430,17 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
                 <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 shadow-md border-[2.5px] mb-2" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)", borderColor: dark ? "#0e1225" : "#f3f0ec" }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                 </div>
-                <div className="text-[11px] uppercase tracking-[1.5px] mb-0.5" style={{ color: t.textMuted }}>Current Balance</div>
+                <div className="flex items-baseline gap-1.5">
+                  <div className="text-[11px] uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>Current Balance</div>
+                  <div className="text-[10px] font-medium" style={{ color: dark ? "#6ee7b7" : "#059669" }}>Available</div>
+                </div>
                 <div className="m text-[22px] font-semibold" style={{ color: t.green }}>{fN(balance)}</div>
+                {pendingDeposits.length > 0 && (
+                  <div className="flex items-center gap-1.5 mt-1.5 text-[11px]" style={{ color: dark ? "#fcd34d" : "#d97706" }}>
+                    <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: dark ? "#fcd34d" : "#d97706" }} />
+                    {pendingDeposits.length} pending{pendingTotal > 0 ? ` · ${fN(pendingTotal)}` : ""}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -409,45 +456,54 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
 
         {mobileStep === 2 && (
           <>
+            {/* Step indicator */}
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)", color: t.textMuted }}>1</div>
+              <div className="w-8 h-px" style={{ background: t.cardBorder }} />
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: t.accent, color: "#fff" }}>2</div>
+            </div>
             {/* Back button */}
             <button onClick={() => setMobileStep(1)} className="flex items-center gap-1.5 bg-transparent border-none text-sm font-medium cursor-pointer pb-3 transition-transform duration-200 hover:-translate-y-px" style={{ color: t.textMuted, fontFamily: "inherit" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
               Back
             </button>
 
-            {/* Summary card */}
-            <div className="rounded-xl py-3.5 px-4 mb-3" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-              <div className="flex justify-between mb-3.5 text-[15px] max-md:text-sm max-md:mb-3"><span style={{ color: t.textMuted }}>Deposit</span><span style={{ color: t.text, fontWeight: 600 }}>{fN(numAmount)}</span></div>
-              <div className="flex justify-between mb-3.5 text-[15px] max-md:text-sm max-md:mb-3"><span style={{ color: t.textMuted }}>Fee</span><span style={{ color: t.green, fontWeight: 600 }}>Free</span></div>
+            {/* Summary + Payment method — single card */}
+            <div className="rounded-xl py-3.5 px-4 mb-2.5" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+              <div className="flex justify-between mb-2.5 text-sm"><span style={{ color: t.textMuted }}>Deposit</span><span style={{ color: t.text, fontWeight: 600 }}>{fN(numAmount)}</span></div>
+              <div className="flex justify-between mb-2.5 text-sm"><span style={{ color: t.textMuted }}>Fee</span><span style={{ color: t.green, fontWeight: 600 }}>Free</span></div>
               {couponApplied && discount > 0 && (
-                <div className="flex justify-between mb-3.5 text-[15px] max-md:text-sm max-md:mb-3"><span style={{ color: t.textMuted }}>Coupon ({couponApplied.code})</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+{fN(discount / 100)} bonus</span></div>
+                <div className="flex justify-between mb-2.5 text-sm"><span style={{ color: t.textMuted }}>Coupon ({couponApplied.code})</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+{fN(discount / 100)} bonus</span></div>
               )}
-              <div className="h-px my-2" style={{ background: t.cardBorder }} />
-              <div className="flex justify-between items-center">
-                <span className="text-[13px] font-semibold uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>{couponApplied && discount > 0 ? "You get" : "Total"}</span>
-                <span className="text-xl font-semibold" style={{ color: t.accent }}>{fN(numAmount + (discount > 0 ? discount / 100 : 0))}</span>
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-[11px] font-semibold uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>{couponApplied && discount > 0 ? "Wallet credit" : "Total"}</span>
+                <span className="text-lg font-semibold" style={{ color: t.accent }}>{fN(numAmount + (discount > 0 ? discount / 100 : 0))}</span>
               </div>
-            </div>
-
-            {/* Payment method card */}
-            <div className="rounded-xl p-4 mb-2.5" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-              <div className="text-xs font-semibold uppercase tracking-[1px] mb-1.5" style={{ color: t.textMuted }}>Payment method</div>
+              <div className="h-px mb-3" style={{ background: t.cardBorder }} />
+              <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1.5" style={{ color: t.textMuted }}>Payment method</div>
               {gateways.length > 0 ? (
-                <select value={method} onChange={e => setMethod(e.target.value)} className="w-full py-2.5 px-3.5 rounded-[10px] text-sm font-medium outline-none appearance-none cursor-pointer pr-8" style={{ backgroundColor: dark ? "rgba(255,255,255,.12)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)"}`, color: t.text, fontFamily: "'Plus Jakarta Sans',sans-serif", backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${dark ? "%23666" : "%23999"}' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
-                  {gateways.map(g => <option key={g.id} value={g.id}>{g.name}{g.id === "manual" ? " (Slower)" : ""}</option>)}
-                </select>
+                <div className="flex flex-col gap-1">
+                  {gateways.map(g => { const sel = method === g.id; const meta = GW_META[g.id] || {}; return (
+                    <button key={g.id} onClick={() => setMethod(g.id)} className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-left cursor-pointer transition-all duration-150" style={{ background: sel ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", border: `1.5px solid ${sel ? t.accent : t.cardBorder}`, fontFamily: "inherit" }}>
+                      <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)" }}>
+                        {g.id === "flutterwave" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? t.accent : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> : g.id === "crypto" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? t.accent : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.767 19.089c4.924.868 6.14-6.025 1.216-6.894m-1.216 6.894L5.86 18.047m5.908 1.042-.347 1.97m1.563-8.864c4.924.869 6.14-6.025 1.215-6.893m-1.215 6.893-6.083-1.072m6.083 1.072.347-1.969M7.116 16.676l-2.576-.454M9.21 4.835l-.347 1.97m0 0-2.576-.455"/></svg> : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? t.accent : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[12px] font-semibold leading-tight" style={{ color: sel ? t.accent : t.text }}>{g.name}</div>
+                        {meta.desc && <div className="text-[10px] leading-tight" style={{ color: t.textMuted }}>{meta.desc}</div>}
+                      </div>
+                      {meta.speed && <span className="text-[9px] font-medium py-px px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>{meta.speed}</span>}
+                    </button>
+                  ); })}
+                </div>
               ) : (
-                <select disabled className="w-full py-2.5 px-3.5 rounded-[10px] text-sm outline-none appearance-none" style={{ background: dark ? "rgba(255,255,255,.12)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)"}`, color: t.textMuted, fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-                  <option>Select payment method</option>
-                </select>
+                <div className="py-3 text-center text-sm" style={{ color: t.textMuted }}>No payment methods available</div>
               )}
-              {gateways.length > 1 && <div className="text-[11px] mt-1.5" style={{ color: t.textMuted }}>If Flutterwave doesn't work, try bank transfer or crypto instead.</div>}
               <PayButton onClick={handlePay} disabled={loading} text={loading ? "Processing..." : `Pay ${fN(numAmount)} Now`} className="mt-3" />
-            </div>
-
-            <div className="flex items-center justify-center gap-1.5 mt-2.5 text-[13px]" style={{ color: t.textMuted }}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: t.textMuted }}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-              Encrypted and secure
+              <div className="flex items-center justify-center gap-1.5 mt-2.5 text-xs" style={{ color: t.textMuted }}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                Encrypted & secure
+              </div>
             </div>
           </>
         )}
@@ -474,9 +530,9 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
                 <div className="text-center py-5">
                   <div className="mb-3 flex justify-center"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
                   <div className="text-lg font-semibold mb-1.5" style={{ color: t.text }}>Payment Expired</div>
-                  <div className="text-sm" style={{ color: t.textMuted }}>This payment has expired or was canceled. Try again.</div>
+                  <div className="text-sm" style={{ color: t.textMuted }}>This payment has expired or was cancelled. You can try another method.</div>
                 </div>
-                <button onClick={() => { setCryptoModal(null); onRefresh?.(); }} className="w-full py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.text, fontFamily: "inherit" }}>Close</button>
+                <button onClick={() => { setCryptoModal(null); onRefresh?.(); }} className="w-full py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.text, fontFamily: "inherit" }}>Try another method</button>
               </>
             ) : (
               <>
@@ -533,7 +589,11 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
             ) : (
               <>
                 <div className="text-base font-semibold mb-1" style={{ color: t.text }}>Bank Transfer</div>
-                <div className="text-[13px] mb-2.5" style={{ color: t.textMuted }}>Transfer exactly {fN(manualModal.amount)} to the account below</div>
+                <div className="text-[13px] mb-2" style={{ color: t.textMuted }}>Transfer this exact amount to the account below</div>
+                <div className="flex items-center justify-between py-2 px-3 rounded-lg mb-2.5" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.1)"}` }}>
+                  <span className="m text-lg font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN(manualModal.amount)}</span>
+                  <button onClick={() => navigator.clipboard.writeText(String(manualModal.amount))} className="py-[3px] px-2.5 rounded-md bg-transparent text-[11px] font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${dark ? "rgba(110,231,183,.3)" : "rgba(5,150,105,.2)"}`, color: dark ? "#6ee7b7" : "#059669", fontFamily: "inherit" }}>Copy</button>
+                </div>
 
                 {/* Step 1: Bank details */}
                 <div className="rounded-xl mb-3 overflow-hidden" style={{ border: `1px solid ${t.cardBorder}` }}>

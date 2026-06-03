@@ -6,6 +6,7 @@ import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { sendEmail, batchPlacementEmail } from '@/lib/email';
+import { cleanLink } from '@/lib/clean-link';
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -377,7 +378,7 @@ export async function POST(req) {
         return Response.json({ error: `Row ${i + 1}: tier, link, and quantity required` }, { status: 400 });
       }
 
-      const trimmedLink = row.link.trim();
+      const trimmedLink = cleanLink(row.link);
       if (!validateLink(trimmedLink)) {
         return Response.json({ error: `Row ${i + 1}: invalid link` }, { status: 400 });
       }
