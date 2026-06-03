@@ -55,8 +55,8 @@ function HeroCounter({ total, today }) {
     <div style={{
       background: 'linear-gradient(135deg, rgba(165,180,252,.06), rgba(196,125,142,.06))',
       border: '1px solid rgba(165,180,252,.12)',
-      borderRadius: 20,
-      padding: '24px 32px',
+      borderRadius: 16,
+      padding: '14px 20px',
       textAlign: 'center',
       position: 'relative',
       overflow: 'hidden',
@@ -68,18 +68,18 @@ function HeroCounter({ total, today }) {
         animation: 'pulse-glow 4s ease-in-out infinite',
         pointerEvents: 'none',
       }} />
-      <div style={{ fontSize: 11, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 600, marginBottom: 12, position: 'relative' }}>
+      <div style={{ fontSize: 10, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 600, marginBottom: 6, position: 'relative' }}>
         Total Users
       </div>
       <div className="m" style={{ display: 'flex', justifyContent: 'center', gap: 2, position: 'relative' }}>
         {digits.map((d, i) => (
           <span key={i} style={{
             display: 'inline-block',
-            fontSize: 56,
+            fontSize: 36,
             fontWeight: 800,
             lineHeight: 1,
             color: d === ',' ? 'rgba(165,180,252,.3)' : '#f5f3f0',
-            minWidth: d === ',' ? 12 : 34,
+            minWidth: d === ',' ? 10 : 22,
             textAlign: 'center',
             textShadow: d !== ',' ? '0 0 30px rgba(165,180,252,.2)' : 'none',
           }}>
@@ -87,7 +87,7 @@ function HeroCounter({ total, today }) {
           </span>
         ))}
       </div>
-      <div style={{ fontSize: 13, color: '#a5b4fc', marginTop: 10, position: 'relative', fontWeight: 500 }}>
+      <div style={{ fontSize: 11, color: '#a5b4fc', marginTop: 6, position: 'relative', fontWeight: 500 }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
           +{today} today
@@ -117,19 +117,19 @@ function MetricCard({ label, value, formatter, sub, color, icon }) {
     <div style={{
       background: flash ? `linear-gradient(135deg, ${color}0a, ${color}05)` : 'rgba(255,255,255,.03)',
       border: `1px solid ${flash ? color + '22' : 'rgba(255,255,255,.07)'}`,
-      borderRadius: 16,
-      padding: '18px 20px',
+      borderRadius: 12,
+      padding: '12px 14px',
       position: 'relative',
       overflow: 'hidden',
       transition: 'background .6s ease, border-color .6s ease, box-shadow .6s ease',
       boxShadow: flash ? `0 0 30px ${color}15, inset 0 0 30px ${color}08` : 'none',
     }}>
-      <div style={{ fontSize: 10, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+      <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
         {icon}
         {label}
       </div>
       <div className="m" style={{
-        fontSize: 28,
+        fontSize: 22,
         fontWeight: 700,
         color: flash ? color : '#f5f3f0',
         transition: 'color .6s ease',
@@ -137,13 +137,13 @@ function MetricCard({ label, value, formatter, sub, color, icon }) {
       }}>
         {formatter ? formatter(animated) : animated.toLocaleString()}
       </div>
-      {sub && <div style={{ fontSize: 11, color: '#8a8580', marginTop: 5 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 10, color: '#8a8580', marginTop: 3 }}>{sub}</div>}
     </div>
   );
 }
 
 // ─── Sparkline SVG ──────────────────────────────────────────────
-function Sparkline({ data, color, area, height = 56, label }) {
+function Sparkline({ data, color, area, height = 40, label }) {
   if (!data || data.length === 0) return null;
   const w = 200;
   const pad = 4;
@@ -161,12 +161,12 @@ function Sparkline({ data, color, area, height = 56, label }) {
     <div style={{
       background: 'rgba(255,255,255,.03)',
       border: '1px solid rgba(255,255,255,.07)',
-      borderRadius: 16,
-      padding: '14px 16px',
+      borderRadius: 12,
+      padding: '8px 12px',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-        <span style={{ fontSize: 10, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600 }}>{label}</span>
-        <span className="m" style={{ fontSize: 12, color, fontWeight: 600 }}>{data[data.length - 1]?.toLocaleString()}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <span style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600 }}>{label}</span>
+        <span className="m" style={{ fontSize: 11, color, fontWeight: 600 }}>{data[data.length - 1]?.toLocaleString()}</span>
       </div>
       <svg viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="none" style={{ width: '100%', height, display: 'block' }}>
         <defs>
@@ -181,7 +181,7 @@ function Sparkline({ data, color, area, height = 56, label }) {
           <animate attributeName="opacity" values="1;.4;1" dur="2s" repeatCount="indefinite" />
         </circle>
       </svg>
-      <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>30d total: {total.toLocaleString()}</div>
+      <div style={{ fontSize: 9, color: '#555', marginTop: 2 }}>30d: {total.toLocaleString()}</div>
     </div>
   );
 }
@@ -231,10 +231,11 @@ function HBarChart({ items, label }) {
 }
 
 // ─── Donut chart ────────────────────────────────────────────────
-function DonutChart({ items, label }) {
+function DonutChart({ items, label, inline, compact }) {
   if (!items || items.length === 0) return null;
   const total = items.reduce((s, i) => s + i.count, 0) || 1;
-  const r = 40;
+  const r = compact ? 24 : inline ? 30 : 40;
+  const svgSize = compact ? 56 : inline ? 72 : 100;
   const circ = 2 * Math.PI * r;
   let offset = 0;
 
@@ -242,6 +243,50 @@ function DonutChart({ items, label }) {
     Completed: '#6ee7b7', Processing: '#a5b4fc', Pending: '#fcd34d',
     Partial: '#fdba74', Failed: '#fca5a5', Cancelled: '#a1a1aa', Rejected: '#fca5a5',
   };
+
+  const content = (
+    <>
+      <div style={{ fontSize: 10, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: compact ? 8 : inline ? 10 : 16 }}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 12 : inline ? 16 : 24, justifyContent: 'center' }}>
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <svg width={svgSize} height={svgSize} viewBox={`0 0 ${svgSize} ${svgSize}`}>
+            {items.map((item) => {
+              const pct = item.count / total;
+              const dash = circ * pct;
+              const gap = items.length > 1 ? 2 : 0;
+              const seg = (
+                <circle key={item.status} cx={svgSize/2} cy={svgSize/2} r={r} fill="none"
+                  stroke={statusColors[item.status] || '#555'}
+                  strokeWidth={compact ? 5 : inline ? 6 : 8}
+                  strokeDasharray={`${Math.max(dash - gap, 0)} ${circ - dash + gap}`}
+                  strokeDashoffset={-offset}
+                  style={{ transition: 'stroke-dasharray .8s ease, stroke-dashoffset .8s ease', filter: `drop-shadow(0 0 4px ${statusColors[item.status] || '#555'}44)` }}
+                  transform={`rotate(-90 ${svgSize/2} ${svgSize/2})`}
+                />
+              );
+              offset += dash;
+              return seg;
+            })}
+          </svg>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <span className="m" style={{ fontSize: compact ? 11 : inline ? 14 : 18, fontWeight: 700, color: '#f5f3f0' }}>{total.toLocaleString()}</span>
+            {!compact && <span style={{ fontSize: inline ? 8 : 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1 }}>orders</span>}
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 3 : inline ? 5 : 8 }}>
+          {items.slice(0, 6).map(item => (
+            <div key={item.status} style={{ display: 'flex', alignItems: 'center', gap: compact ? 6 : 8, fontSize: compact ? 10 : inline ? 11 : 12 }}>
+              <div style={{ width: compact ? 5 : inline ? 6 : 8, height: compact ? 5 : inline ? 6 : 8, borderRadius: '50%', background: statusColors[item.status] || '#555', flexShrink: 0, boxShadow: `0 0 6px ${statusColors[item.status] || '#555'}44` }} />
+              <span style={{ color: '#ccc', minWidth: compact ? 52 : inline ? 60 : 72 }}>{item.status}</span>
+              <span className="m" style={{ color: '#8a8580', fontSize: compact ? 9 : inline ? 10 : 11 }}>{Math.round((item.count / total) * 100)}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+
+  if (inline) return content;
 
   return (
     <div style={{
@@ -252,42 +297,54 @@ function DonutChart({ items, label }) {
       height: '100%',
       display: 'flex', flexDirection: 'column',
     }}>
-      <div style={{ fontSize: 10, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 16 }}>{label}</div>
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 24, justifyContent: 'center' }}>
-        <div style={{ position: 'relative' }}>
-          <svg width="100" height="100" viewBox="0 0 100 100">
-            {items.map((item) => {
-              const pct = item.count / total;
-              const dash = circ * pct;
-              const gap = items.length > 1 ? 2 : 0;
-              const seg = (
-                <circle key={item.status} cx="50" cy="50" r={r} fill="none"
-                  stroke={statusColors[item.status] || '#555'}
-                  strokeWidth="8"
-                  strokeDasharray={`${Math.max(dash - gap, 0)} ${circ - dash + gap}`}
-                  strokeDashoffset={-offset}
-                  style={{ transition: 'stroke-dasharray .8s ease, stroke-dashoffset .8s ease', filter: `drop-shadow(0 0 4px ${statusColors[item.status] || '#555'}44)` }}
-                  transform="rotate(-90 50 50)"
-                />
-              );
-              offset += dash;
-              return seg;
-            })}
-          </svg>
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <span className="m" style={{ fontSize: 18, fontWeight: 700, color: '#f5f3f0' }}>{total.toLocaleString()}</span>
-            <span style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1 }}>orders</span>
-          </div>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {items.slice(0, 6).map(item => (
-            <div key={item.status} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: statusColors[item.status] || '#555', flexShrink: 0, boxShadow: `0 0 6px ${statusColors[item.status] || '#555'}44` }} />
-              <span style={{ color: '#ccc', minWidth: 72 }}>{item.status}</span>
-              <span className="m" style={{ color: '#8a8580', fontSize: 11 }}>{Math.round((item.count / total) * 100)}%</span>
+      {content}
+    </div>
+  );
+}
+
+function DepositFeed({ deposits }) {
+  if (!deposits || deposits.length === 0) return (
+    <div style={{
+      background: 'rgba(255,255,255,.03)',
+      border: '1px solid rgba(255,255,255,.07)',
+      borderRadius: 12,
+      padding: '10px 14px',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600 }}>Recent Deposits</div>
+      <div style={{ fontSize: 11, color: '#444', marginTop: 6 }}>No deposits yet</div>
+    </div>
+  );
+
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,.03)',
+      border: '1px solid rgba(255,255,255,.07)',
+      borderRadius: 12,
+      padding: '10px 14px',
+      height: '100%',
+      overflow: 'hidden',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 6, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#e0a458', animation: 'pulse-dot 2s ease-in-out infinite' }} />
+        Recent Deposits
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        {deposits.map((tx, i) => (
+          <div key={tx.id} style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '0 4px',
+            borderTop: i > 0 ? '1px solid rgba(255,255,255,.04)' : 'none',
+            animation: `pulse-feed-in .5s ease ${i * 40}ms both`,
+          }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: '#e0a458', boxShadow: '0 0 6px rgba(224,164,88,.4)' }} />
+            <div style={{ flex: 1, fontSize: 12, color: '#f5f3f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
+              {tx.user?.split('@')[0]}
             </div>
-          ))}
-        </div>
+            <div className="m" style={{ fontSize: 11, color: '#e0a458', whiteSpace: 'nowrap', fontWeight: 600 }}>{fmtNaira(tx.amount)}</div>
+            <div style={{ fontSize: 10, color: '#555', whiteSpace: 'nowrap', minWidth: 40, textAlign: 'right' }}>{timeAgo(tx.created)}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -305,27 +362,25 @@ function LiveFeed({ orders }) {
     <div style={{
       background: 'rgba(255,255,255,.03)',
       border: '1px solid rgba(255,255,255,.07)',
-      borderRadius: 16,
-      padding: '16px 20px',
+      borderRadius: 12,
+      padding: '10px 14px',
       height: '100%',
       overflow: 'hidden',
       display: 'flex', flexDirection: 'column',
     }}>
-      <div style={{ fontSize: 10, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 6, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', animation: 'pulse-dot 2s ease-in-out infinite' }} />
         Live Feed
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         {orders.map((o, i) => (
           <div key={o.id + o.created} style={{
-            display: 'flex', alignItems: 'center', gap: 10, padding: '6px 8px',
-            borderRadius: 8,
-            background: i === 0 ? 'rgba(255,255,255,.03)' : 'transparent',
-            borderTop: i > 0 ? '1px solid rgba(255,255,255,.04)' : 'none',
+            display: 'flex', alignItems: 'center', gap: 10, padding: '0 4px',
             animation: `pulse-feed-in .5s ease ${i * 40}ms both`,
+            borderTop: i > 0 ? '1px solid rgba(255,255,255,.04)' : 'none',
           }}>
             <div style={{
-              width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+              width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
               background: statusColors[o.status] || '#555',
               boxShadow: `0 0 6px ${statusColors[o.status] || '#555'}66`,
             }} />
@@ -334,7 +389,7 @@ function LiveFeed({ orders }) {
             </div>
             <div style={{ fontSize: 11, color: '#666', whiteSpace: 'nowrap' }}>{o.user?.split('@')[0]}</div>
             <div className="m" style={{ fontSize: 11, color: '#c47d8e', whiteSpace: 'nowrap', fontWeight: 600 }}>{fmtNaira(o.charge)}</div>
-            <div style={{ fontSize: 10, color: '#444', whiteSpace: 'nowrap', minWidth: 44, textAlign: 'right' }}>{timeAgo(o.created)}</div>
+            <div style={{ fontSize: 10, color: '#555', whiteSpace: 'nowrap', minWidth: 40, textAlign: 'right' }}>{timeAgo(o.created)}</div>
           </div>
         ))}
       </div>
@@ -406,11 +461,35 @@ export default function PulseDashboard({ secretKey }) {
 
   if (!data) {
     return (
-      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#080b14' }}>
+      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#080b14', fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif" }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 40, height: 40, border: '3px solid rgba(196,125,142,.2)', borderTopColor: '#c47d8e', borderRadius: '50%', animation: 'pulse-spin .8s linear infinite', margin: '0 auto 16px' }} />
-          <div style={{ color: '#8a8580', fontSize: 13, fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif" }}>Loading Pulse...</div>
+          <div style={{ position: 'relative', width: 64, height: 64, margin: '0 auto 20px' }}>
+            <svg width="64" height="64" viewBox="0 0 1601 1785" style={{ animation: 'pulse-logo-in 1.2s ease both', opacity: 0 }}>
+              <path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"
+                fill="url(#pulse-load-grad)" />
+              <defs>
+                <linearGradient id="pulse-load-grad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#c47d8e" />
+                  <stop offset="100%" stopColor="#a5b4fc" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div style={{
+              position: 'absolute', inset: -8,
+              border: '2px solid transparent',
+              borderTopColor: '#c47d8e',
+              borderRightColor: '#a5b4fc',
+              borderRadius: '50%',
+              animation: 'pulse-spin 1.2s linear infinite',
+            }} />
+          </div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 700, color: '#f5f3f0', marginBottom: 6, animation: 'pulse-logo-in 1.2s ease .2s both', opacity: 0 }}>Pulse</div>
+          <div style={{ color: '#555', fontSize: 12, animation: 'pulse-logo-in 1.2s ease .4s both', opacity: 0 }}>Connecting to live data...</div>
         </div>
+        <style>{`
+          @keyframes pulse-spin { to { transform: rotate(360deg); } }
+          @keyframes pulse-logo-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        `}</style>
       </div>
     );
   }
@@ -424,14 +503,15 @@ export default function PulseDashboard({ secretKey }) {
 
   return (
     <div ref={containerRef} style={{
-      minHeight: '100dvh',
+      height: '100dvh',
       background: '#080b14',
       color: '#f5f3f0',
       fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif",
-      padding: '16px 20px',
+      padding: '12px 16px',
       display: 'flex',
       flexDirection: 'column',
-      gap: 12,
+      gap: 8,
+      overflow: 'hidden',
       animation: 'pulse-bg 20s ease infinite',
     }}>
       <RefreshBar secondsAgo={secondsAgo} />
@@ -468,11 +548,15 @@ export default function PulseDashboard({ secretKey }) {
       </div>
 
       {/* Row 1: Hero counter + metrics */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr repeat(4, 1fr)', gap: 12, flexShrink: 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr repeat(5, 1fr)', gap: 12, flexShrink: 0 }}>
         <HeroCounter total={data.totalUsers} today={data.newUsersToday} />
         <MetricCard label="Revenue" value={Math.round(data.revenueToday)} formatter={fmtNaira} color="#10b981"
           sub={<>{changeBadge(data.revenueChange)} vs yesterday</>}
           icon={<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>}
+        />
+        <MetricCard label="Profit" value={Math.round(data.profitToday)} formatter={fmtNaira} color="#34d399"
+          sub={<>{changeBadge(data.profitChange)} vs yesterday</>}
+          icon={<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>}
         />
         <MetricCard label="Orders" value={data.ordersToday} color="#c47d8e"
           sub={<>{changeBadge(data.ordersChange)} vs yesterday</>}
@@ -489,39 +573,149 @@ export default function PulseDashboard({ secretKey }) {
       </div>
 
       {/* Row 2: Sparklines */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, flexShrink: 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, flexShrink: 0 }}>
         <Sparkline label="New Users" data={data.chartData.map(d => d.newUsers)} color="#a5b4fc" area />
         <Sparkline label="Revenue" data={data.chartData.map(d => d.revenue)} color="#10b981" area />
+        <Sparkline label="Profit" data={data.chartData.map(d => d.profit)} color="#34d399" area />
         <Sparkline label="Orders" data={data.chartData.map(d => d.orders)} color="#c47d8e" area />
         <Sparkline label="Deposits" data={data.chartData.map(d => d.deposits)} color="#e0a458" area />
       </div>
 
-      {/* Row 3: Breakdowns */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.5fr', gap: 12, flex: 1, minHeight: 0 }}>
-        <HBarChart items={data.topPlatforms} label="Top Platforms" />
-        <DonutChart items={data.byStatus} label="Order Status" />
-        <LiveFeed orders={data.recentOrders} />
+      {/* Row 2.5: Month-to-date + User Activity */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, flexShrink: 0 }}>
+        <div style={{
+          background: 'rgba(255,255,255,.03)',
+          border: '1px solid rgba(255,255,255,.07)',
+          borderRadius: 12,
+          padding: '10px 16px',
+        }}>
+          <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 8 }}>Month to Date</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+            {[
+              { label: 'Revenue', value: fmtNaira(Math.round(data.monthRevenue)), color: '#10b981' },
+              { label: 'Cost', value: fmtNaira(Math.round(data.monthCost)), color: '#fca5a5' },
+              { label: 'Profit', value: fmtNaira(Math.round(data.monthProfit)), color: '#34d399' },
+              { label: 'Orders', value: fmtNum(data.monthOrders), color: '#c47d8e' },
+              { label: 'Deposits', value: fmtNaira(Math.round(data.monthDeposits)), color: '#e0a458' },
+            ].map(s => (
+              <div key={s.label} style={{ textAlign: 'center' }}>
+                <div className="m" style={{ fontSize: 15, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
+                <div style={{ fontSize: 9, color: '#8a8580', marginTop: 2 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+          {data.monthRevenue > 0 && (
+            <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 2,
+                  background: 'linear-gradient(90deg, #34d399, #10b981)',
+                  width: `${Math.max(0, Math.min(100, (data.monthProfit / data.monthRevenue) * 100))}%`,
+                  transition: 'width 1s ease',
+                }} />
+              </div>
+              <span className="m" style={{ fontSize: 10, color: '#34d399', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                {Math.round((data.monthProfit / data.monthRevenue) * 100)}% margin
+              </span>
+            </div>
+          )}
+        </div>
+        <div style={{
+          background: 'rgba(255,255,255,.03)',
+          border: '1px solid rgba(255,255,255,.07)',
+          borderRadius: 12,
+          padding: '10px 16px',
+        }}>
+          <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 8 }}>User Activity</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+            {[
+              { label: 'Total Users', value: fmtNum(data.totalUsers), color: '#a5b4fc' },
+              { label: 'New This Month', value: fmtNum(data.monthNewUsers), color: '#6ee7b7' },
+              { label: 'Active Orderers', value: fmtNum(data.monthActiveUsers), color: '#c47d8e' },
+              { label: 'Idle w/ Balance', value: fmtNum(data.idleUsersWithBalance), color: '#fcd34d' },
+            ].map(s => (
+              <div key={s.label} style={{ textAlign: 'center' }}>
+                <div className="m" style={{ fontSize: 15, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
+                <div style={{ fontSize: 9, color: '#8a8580', marginTop: 2 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+          {data.totalUsers > 0 && (() => {
+            const repeatUsers = Math.max(0, data.monthActiveUsers - data.monthNewUsers);
+            const repeatPct = data.monthActiveUsers > 0 ? Math.round((repeatUsers / data.monthActiveUsers) * 100) : 0;
+            return (
+              <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.05)', overflow: 'hidden', display: 'flex' }}>
+                  <div style={{ height: '100%', background: '#c47d8e', width: `${repeatPct}%`, transition: 'width 1s ease' }} />
+                  <div style={{ height: '100%', background: '#6ee7b7', width: `${100 - repeatPct}%`, transition: 'width 1s ease' }} />
+                </div>
+                <span className="m" style={{ fontSize: 10, color: '#c47d8e', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  {repeatPct}% repeat
+                </span>
+              </div>
+            );
+          })()}
+        </div>
       </div>
 
-      {/* Footer */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '8px 16px',
-        background: 'rgba(255,255,255,.02)',
-        border: '1px solid rgba(255,255,255,.05)',
-        borderRadius: 10,
-        fontSize: 11,
-        flexShrink: 0,
-      }}>
-        <span style={{ color: '#444' }}>
-          {new Date().toLocaleDateString('en-NG', { month: 'long', year: 'numeric' })}
-        </span>
-        <div className="m" style={{ color: '#666', display: 'flex', gap: 20 }}>
-          <span><span style={{ color: '#10b981' }}>{fmtNaira(Math.round(data.monthRevenue))}</span> rev</span>
-          <span><span style={{ color: '#c47d8e' }}>{fmtNum(data.monthOrders)}</span> orders</span>
-          <span><span style={{ color: '#a5b4fc' }}>{data.monthNewUsers}</span> users</span>
-          <span><span style={{ color: '#e0a458' }}>{fmtNaira(Math.round(data.monthDeposits))}</span> deposits</span>
+      {/* Row 3: Breakdowns */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr', gap: 8, flex: 1, minHeight: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{
+            background: 'rgba(255,255,255,.03)',
+            border: '1px solid rgba(255,255,255,.07)',
+            borderRadius: 12,
+            padding: '12px 16px',
+            flex: 7,
+            display: 'flex', flexDirection: 'column',
+          }}>
+            <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 10 }}>Top Platforms</div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8 }}>
+              {(data.topPlatforms || []).map((item, i) => {
+                const maxVal = Math.max(...data.topPlatforms.map(p => p.orders), 1);
+                const totalOrders = data.topPlatforms.reduce((s, p) => s + p.orders, 0);
+                const pct = totalOrders > 0 ? Math.round((item.orders / totalOrders) * 100) : 0;
+                const colors = ['#c47d8e', '#a5b4fc', '#e0a458', '#6ee7b7', '#fca5a5'];
+                return (
+                  <div key={item.name}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 3 }}>
+                      <span style={{ color: '#f5f3f0', fontWeight: 500 }}>{item.name}</span>
+                      <span className="m" style={{ color: colors[i % colors.length], fontSize: 10 }}>{pct}%</span>
+                    </div>
+                    <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', borderRadius: 3, background: `linear-gradient(90deg, ${colors[i % colors.length]}, ${colors[i % colors.length]}88)`, width: `${(item.orders / maxVal) * 100}%`, transition: 'width 1s ease', boxShadow: `0 0 12px ${colors[i % colors.length]}33` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          {(() => {
+            const totalOrd = (data.byStatus || []).reduce((s, i) => s + i.count, 0) || 1;
+            const failedCount = (data.byStatus || []).filter(s => ['Failed', 'Cancelled', 'Rejected'].includes(s.status)).reduce((s, i) => s + i.count, 0);
+            const failRate = Math.round((failedCount / totalOrd) * 100);
+            return (
+              <div style={{
+                background: 'rgba(255,255,255,.03)',
+                border: '1px solid rgba(255,255,255,.07)',
+                borderRadius: 12,
+                padding: '10px 14px',
+                flex: 3,
+              }}>
+                <DonutChart items={data.byStatus} label="Order Status" inline />
+                <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 6, background: failRate > 15 ? 'rgba(252,165,165,.08)' : 'rgba(110,231,183,.06)' }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: failRate > 15 ? '#fca5a5' : '#6ee7b7' }} />
+                  <span style={{ fontSize: 11, color: failRate > 15 ? '#fca5a5' : '#6ee7b7', fontWeight: 500 }}>
+                    <span className="m" style={{ fontWeight: 700 }}>{failRate}%</span> failure rate
+                  </span>
+                  <span style={{ fontSize: 10, color: '#555', marginLeft: 'auto' }}>{failedCount} of {totalOrd}</span>
+                </div>
+              </div>
+            );
+          })()}
         </div>
+        <LiveFeed orders={data.recentOrders} />
+        <DepositFeed deposits={data.recentDeposits} />
       </div>
 
       <style>{`
