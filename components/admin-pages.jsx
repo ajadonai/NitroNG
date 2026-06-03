@@ -112,7 +112,7 @@ export function AdminPaymentsPage({ dark, t }) {
           {tx.senderRef && (
             <div className="py-2 px-3 rounded-lg mb-2" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", border: `1px solid ${dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.15)"}` }}>
               <div className="text-[10px] uppercase tracking-[1px] font-semibold mb-0.5" style={{ color: dark ? "#c47d8e" : "#9b5a6a" }}>Sender Name</div>
-              <div className="text-[15px] font-bold" style={{ color: dark ? "#f5f3f0" : "#1a1917" }}>{tx.senderRef}</div>
+              <div className="text-[15px] font-bold" style={{ color: dark ? "#f5f3f0" : "#1a1917", textTransform: "capitalize" }}>{tx.senderRef.toLowerCase()}</div>
             </div>
           )}
           <div className="text-xs" style={{ color: dark ? "#666" : "#999" }}>Ref: {tx.reference}</div>
@@ -192,16 +192,17 @@ export function AdminPaymentsPage({ dark, t }) {
                 <div key={tx.id} className="adm-deposit-row" style={{ borderBottom: i < deposits.length - 1 ? `1px solid ${t.cardBorder}` : "none", padding: "12px 16px" }}>
                   <div className="adm-deposit-main">
                     <div className="adm-deposit-info">
-                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                        <span className="text-base font-bold" style={{ color: sc.color }}>{fN(tx.amount)}</span>
-                        {statusFilter === "all" && <span className="text-[11px] py-0.5 px-2 rounded font-semibold" style={{ background: sc.bg, color: sc.color }}>{tx.status}</span>}
-                        {statusFilter === "all" && <span className="text-[11px] py-0.5 px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", color: t.textMuted }}>{tx.method}</span>}
-                      </div>
+                      {statusFilter === "all" && (
+                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                          <span className="text-[11px] py-0.5 px-2 rounded font-semibold" style={{ background: sc.bg, color: sc.color }}>{tx.status}</span>
+                          <span className="text-[11px] py-0.5 px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", color: t.textMuted }}>{tx.method}</span>
+                        </div>
+                      )}
                       <div className="text-sm" style={{ color: t.text }}>{tx.user} · <span style={{ color: t.textMuted }}>{tx.email}</span></div>
                       {tx.senderRef && (
                         <div className="flex items-center gap-1.5 mt-1">
                           <span className="text-[11px] py-0.5 px-2 rounded font-semibold" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", color: t.accent }}>Sender</span>
-                          <span className="text-[13px] font-semibold" style={{ color: t.text }}>{tx.senderRef}</span>
+                          <span className="text-[13px] font-semibold" style={{ color: t.text, textTransform: "capitalize" }}>{tx.senderRef.toLowerCase()}</span>
                         </div>
                       )}
                       <div className="text-xs mt-1" style={{ color: t.textMuted }}>
@@ -210,15 +211,24 @@ export function AdminPaymentsPage({ dark, t }) {
                         {" · "}{fD(tx.date)}
                       </div>
                     </div>
-                    {tx.status === "Pending" && canApprove && (
-                      <div className="adm-deposit-actions">
-                        <button onClick={() => approveManual(tx)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(110,231,183,.28)" : "rgba(5,150,105,.24)", color: dark ? "#6ee7b7" : "#059669" }}>Approve</button>
-                        <button onClick={() => rejectManual(tx)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(220,38,38,.28)" : "rgba(220,38,38,.18)", color: dark ? "#fca5a5" : "#dc2626" }}>Reject</button>
-                      </div>
-                    )}
-                    {tx.status === "Pending" && !canApprove && (
-                      <span className="text-[11px] py-[3px] px-2.5 rounded" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", color: t.textMuted }}>View only</span>
-                    )}
+                    <div className="adm-deposit-actions">
+                      <span className="text-base font-bold" style={{ color: sc.color }}>{fN(tx.amount)}</span>
+                      {tx.status === "Pending" && canApprove && (
+                        <div className="flex gap-1.5 mt-1">
+                          <button onClick={() => approveManual(tx)} className="adm-btn-sm max-md:!px-2" style={{ borderColor: dark ? "rgba(110,231,183,.28)" : "rgba(5,150,105,.24)", color: dark ? "#6ee7b7" : "#059669" }}>
+                            <span className="max-md:hidden">Approve</span>
+                            <svg className="hidden max-md:block" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          </button>
+                          <button onClick={() => rejectManual(tx)} className="adm-btn-sm max-md:!px-2" style={{ borderColor: dark ? "rgba(220,38,38,.28)" : "rgba(220,38,38,.18)", color: dark ? "#fca5a5" : "#dc2626" }}>
+                            <span className="max-md:hidden">Reject</span>
+                            <svg className="hidden max-md:block" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                          </button>
+                        </div>
+                      )}
+                      {tx.status === "Pending" && !canApprove && (
+                        <span className="text-[11px] py-[3px] px-2.5 rounded mt-1" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", color: t.textMuted }}>View only</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
