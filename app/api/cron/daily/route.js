@@ -117,42 +117,38 @@ export async function GET(req) {
     results.logRetention = { error: err.message };
   }
 
-  // ═══ WIN-BACK: email inactive new users after 7 days (scheduled runs only) ═══
-  if (isScheduled) try {
+  // ═══ WIN-BACK: email inactive new users after 7 days ═══
+  try {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
     let winbackSent = 0;
-    let winbackTotal = 0;
-    const BATCH = 200;
-    let skip = 0;
-    while (true) {
-      const batch = await prisma.user.findMany({
-        where: {
-          status: 'Active',
-          emailVerified: true,
-          notifPromo: true,
-          winbackSentAt: null,
-          createdAt: { gte: thirtyDaysAgo, lte: sevenDaysAgo },
-          orders: { none: {} },
-        },
-        select: { id: true, name: true, email: true },
-        take: BATCH,
-      });
-      if (batch.length === 0) break;
-      winbackTotal += batch.length;
-      for (const user of batch) {
-        try {
-          await sendWinbackEmail(user.name || 'there', user.email);
-          await prisma.user.update({ where: { id: user.id }, data: { winbackSentAt: new Date() } });
-          winbackSent++;
-        } catch (e) {
-          log.warn('Winback', `Failed to send to ${user.email}: ${e.message}`);
-        }
+    let winbackFailed = 0;
+    const batch = await prisma.user.findMany({
+      where: {
+        status: 'Active',
+        emailVerified: true,
+        notifPromo: true,
+        winbackSentAt: null,
+        createdAt: { gte: thirtyDaysAgo, lte: sevenDaysAgo },
+        orders: { none: {} },
+      },
+      select: { id: true, name: true, email: true },
+      take: 50,
+    });
+    for (const user of batch) {
+      try {
+        await sendWinbackEmail(user.name || 'there', user.email);
+        await prisma.user.update({ where: { id: user.id }, data: { winbackSentAt: new Date() } });
+        winbackSent++;
+      } catch (e) {
+        log.warn('Winback', `Failed to send to ${user.email}: ${e.message}`);
+        await prisma.user.update({ where: { id: user.id }, data: { winbackSentAt: new Date(0) } }).catch(() => {});
+        winbackFailed++;
       }
     }
-    if (winbackSent > 0) log.info('Winback', `Sent ${winbackSent} win-back emails`);
-    results.winback = { sent: winbackSent, total: winbackTotal };
+    if (winbackSent > 0 || winbackFailed > 0) log.info('Winback', `Sent ${winbackSent}, failed ${winbackFailed} of ${batch.length}`);
+    results.winback = { sent: winbackSent, failed: winbackFailed, total: batch.length };
   } catch (err) {
     log.error('Winback', err.message);
     results.winback = { error: err.message };
