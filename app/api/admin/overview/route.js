@@ -136,7 +136,7 @@ export async function GET() {
       }).catch(() => 0),
       // Pending manual payment count for badge
       prisma.transaction.count({
-        where: { method: 'manual', status: 'Pending' },
+        where: { method: 'manual', status: 'Pending', NOT: { note: { contains: '[awaiting_confirmation]' } } },
       }).catch(() => 0),
       // Pending + Processing order count for badge
       prisma.order.count({
