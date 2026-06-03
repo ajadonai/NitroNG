@@ -88,7 +88,7 @@ function dayLabel(dateStr) {
   return d.toLocaleDateString("en-NG", { day: "numeric", month: "short", year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined });
 }
 
-function Bubble({ m, dark, t, prevFrom, nextFrom, showDate }) {
+function Bubble({ m, dark, t, prevFrom, showDate, showTime }) {
   if (!m || typeof m !== "object" || !m.from) return null;
   if (m.from === "system") return (
     <div className="text-center py-1.5">
@@ -98,8 +98,7 @@ function Bubble({ m, dark, t, prevFrom, nextFrom, showDate }) {
   const isUser = m.from === "user";
   const isBot = m.from === "bot";
   const showName = m.from !== prevFrom;
-  const isLastInGroup = m.from !== nextFrom;
-  const timeEl = m.time && isLastInGroup ? <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{typeof m.time === "string" && m.time.includes("T") ? fD(m.time) : String(m.time || "")}</div> : null;
+  const timeEl = m.time && showTime ? <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{typeof m.time === "string" && m.time.includes("T") ? fD(m.time) : String(m.time || "")}</div> : null;
   const dateEl = showDate ? <div className="text-center py-2"><span className="text-[11px] py-1 px-3 rounded-full font-medium" style={{ color: t.textMuted, background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)" }}>{showDate}</span></div> : null;
   if (isUser) return (
     <>{dateEl}<div className="flex flex-col items-end">
@@ -518,9 +517,13 @@ export default function SupportPage({ dark, t }) {
                 const prevDay = i > 0 ? dayLabel(chatMsgs[i - 1]?.time) : null;
                 const curDay = dayLabel(m.time);
                 const showDate = (i === 0 && curDay) ? curDay : (curDay && curDay !== prevDay ? curDay : null);
+                const next = chatMsgs[i + 1];
+                const isLast = !next;
+                const gap = next?.time && m.time ? (new Date(next.time) - new Date(m.time)) / 60000 : Infinity;
+                const showTime = isLast || gap >= 5;
                 return (
                 <div key={i}>
-                  <Bubble m={m} dark={dark} t={t} prevFrom={chatMsgs[i - 1]?.from} nextFrom={chatMsgs[i + 1]?.from} showDate={showDate} />
+                  <Bubble m={m} dark={dark} t={t} prevFrom={chatMsgs[i - 1]?.from} showDate={showDate} showTime={showTime} />
                   {m.followUp && <div className="mt-1.5 pl-1 transition-transform duration-200 hover:-translate-y-px"><button onClick={() => handleFollowUp(m.followUp)} className="py-1.5 px-3 rounded-lg text-xs cursor-pointer" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, color: t.textSoft || t.textMuted, fontFamily: "inherit" }}>{m.followUp}</button></div>}
                   {m.escalatePrompt && <div className="flex gap-1.5 mt-1.5 pl-1">
                     <button onClick={() => handleQuick("human")} className="py-1.5 px-3 rounded-lg text-xs font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)", border: `1px solid ${dark ? "rgba(196,125,142,.24)" : "rgba(196,125,142,.18)"}`, color: t.accent, fontFamily: "inherit" }}>Yes, connect me</button>

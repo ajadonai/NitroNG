@@ -240,9 +240,10 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
             {/* Original message */}
             {(() => {
               const replies = selected.replies || [];
-              const firstReplyFrom = replies[0]?.from;
-              const isLastInGroup = firstReplyFrom !== "user";
               const origDay = dayLabel(selected.created);
+              const nextTime = replies[0]?.time;
+              const gap = nextTime && selected.created ? (new Date(nextTime) - new Date(selected.created)) / 60000 : Infinity;
+              const showTime = replies.length === 0 || gap >= 5;
               return (
                 <>
                   {origDay && <div className="text-center py-2"><span className="text-[11px] py-1 px-3 rounded-full font-medium" style={{ color: t.textMuted, background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)" }}>{origDay}</span></div>}
@@ -250,7 +251,7 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
                     <div className="py-2.5 px-3.5 rounded-[14px] rounded-bl-[4px]" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.06)", border: `1px solid ${t.cardBorder}` }}>
                       <div className="text-sm leading-[1.55] whitespace-pre-wrap" style={{ color: t.text }}>{selected.message}</div>
                     </div>
-                    {isLastInGroup && <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{selected.created ? fD(selected.created) : ""}</div>}
+                    {showTime && <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{selected.created ? fD(selected.created) : ""}</div>}
                   </div>
                 </>
               );
@@ -259,9 +260,11 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
             {(selected.replies || []).map((r, i, arr) => {
               const isAdm = r.from === "admin";
               const prevFrom = i === 0 ? "user" : arr[i - 1].from;
-              const nextFrom = arr[i + 1]?.from;
               const showName = r.from !== prevFrom;
-              const isLastInGroup = r.from !== nextFrom;
+              const isLast = i === arr.length - 1;
+              const nextTime = arr[i + 1]?.time;
+              const gap = nextTime && r.time ? (new Date(nextTime) - new Date(r.time)) / 60000 : Infinity;
+              const showTime = isLast || gap >= 5;
               const prevTime = i === 0 ? selected.created : arr[i - 1].time;
               const prevDay = dayLabel(prevTime);
               const curDay = dayLabel(r.time);
@@ -275,7 +278,7 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
                       {showName && r.name && <div className="text-[10px] font-semibold mb-1" style={{ color: t.accent }}>{r.name}</div>}
                       <div className="text-sm leading-[1.55] whitespace-pre-wrap" style={{ color: t.text }}>{r.msg}</div>
                     </div>
-                    {isLastInGroup && <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{r.time ? fD(r.time) : ""}</div>}
+                    {showTime && <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{r.time ? fD(r.time) : ""}</div>}
                   </div>
                 </React.Fragment>
               );
@@ -286,7 +289,7 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
                     <div className="py-2.5 px-3.5 rounded-[14px] rounded-bl-[4px]" style={{ background: dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)", border: `1px solid ${t.cardBorder}` }}>
                       <div className="text-sm leading-[1.55] whitespace-pre-wrap" style={{ color: t.text }}>{r.msg}</div>
                     </div>
-                    {isLastInGroup && <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{r.time ? fD(r.time) : ""}</div>}
+                    {showTime && <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{r.time ? fD(r.time) : ""}</div>}
                   </div>
                 </React.Fragment>
               );
