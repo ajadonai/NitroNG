@@ -59,7 +59,7 @@ export function AdminPaymentsPage({ dark, t }) {
   const changeDateValue = (v) => { setDateValue(v); refresh(search, statusFilter, v); };
 
   const downloadCSV = () => {
-    const rows = [["Date", "Reference", "User", "Email", "Amount", "Method", "Status", "Approved/Rejected By", "Bank Ref"]];
+    const rows = [["Date", "Reference", "User", "Email", "Amount", "Method", "Status", "Approved/Rejected By", "Sender Name"]];
     deposits.forEach(tx => rows.push([tx.date, tx.reference, tx.user, tx.email, tx.amount, tx.method, tx.status, tx.actionBy || "", tx.senderRef || ""]));
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -104,7 +104,24 @@ export function AdminPaymentsPage({ dark, t }) {
   };
 
   const approveManual = async (tx) => {
-    const ok = await confirm({ title: "Approve deposit?", message: `Credit ₦${tx.amount.toLocaleString()} to ${tx.user} (${tx.email})?\nRef: ${tx.reference}${tx.senderRef ? `\nBank ref: ${tx.senderRef}` : ""}`, confirmText: "Approve", danger: false });
+    const ok = await confirm({
+      title: "Approve deposit?",
+      body: (
+        <div className="text-left mb-5 text-sm leading-[1.65]" style={{ color: dark ? "#a09b95" : "#555250" }}>
+          <div className="mb-2">Credit <strong style={{ color: dark ? "#6ee7b7" : "#059669" }}>₦{tx.amount.toLocaleString()}</strong> to <strong style={{ color: dark ? "#f5f3f0" : "#1a1917" }}>{tx.user}</strong></div>
+          {tx.senderRef && (
+            <div className="py-2 px-3 rounded-lg mb-2" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", border: `1px solid ${dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.15)"}` }}>
+              <div className="text-[10px] uppercase tracking-[1px] font-semibold mb-0.5" style={{ color: dark ? "#c47d8e" : "#9b5a6a" }}>Sender Name</div>
+              <div className="text-[15px] font-bold" style={{ color: dark ? "#f5f3f0" : "#1a1917" }}>{tx.senderRef}</div>
+            </div>
+          )}
+          <div className="text-xs" style={{ color: dark ? "#666" : "#999" }}>Ref: {tx.reference}</div>
+          {tx.senderRef && <div className="text-[11px] mt-1.5" style={{ color: dark ? "#fbbf24" : "#d97706" }}>Verify this matches the sender on your bank statement</div>}
+        </div>
+      ),
+      confirmLabel: "Approve",
+      danger: false,
+    });
     if (!ok) return;
     const res = await fetch("/api/admin/payments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "approve_manual", gatewayId: tx.id }) });
     if (res.ok) { toast.success("Approved", `₦${tx.amount.toLocaleString()} approved for ${tx.user}`); refresh(); }
@@ -172,31 +189,38 @@ export function AdminPaymentsPage({ dark, t }) {
             {deposits.map((tx, i) => {
               const sc = statusColors[tx.status] || statusColors.Pending;
               return (
-                <div key={tx.id} className="adm-list-row gap-2.5 flex-wrap" style={{ borderBottom: i < deposits.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-                  <div className="flex-1 min-w-[160px]">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-base font-bold" style={{ color: sc.color }}>{fN(tx.amount)}</span>
-                      <span className="text-[11px] py-0.5 px-2 rounded font-semibold" style={{ background: sc.bg, color: sc.color }}>{tx.status}</span>
-                      <span className="text-[11px] py-0.5 px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", color: t.textMuted }}>{tx.method}</span>
-                      {tx.confirmed && tx.status === "Pending" && <span className="text-[11px] py-0.5 px-1.5 rounded" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.03)", color: dark ? "#6ee7b7" : "#059669" }}>Sent</span>}
+                <div key={tx.id} className="adm-deposit-row" style={{ borderBottom: i < deposits.length - 1 ? `1px solid ${t.cardBorder}` : "none", padding: "12px 16px" }}>
+                  <div className="adm-deposit-main">
+                    <div className="adm-deposit-info">
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                        <span className="text-base font-bold" style={{ color: sc.color }}>{fN(tx.amount)}</span>
+                        <span className="text-[11px] py-0.5 px-2 rounded font-semibold" style={{ background: sc.bg, color: sc.color }}>{tx.status}</span>
+                        <span className="text-[11px] py-0.5 px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", color: t.textMuted }}>{tx.method}</span>
+                        {tx.confirmed && tx.status === "Pending" && <span className="text-[11px] py-0.5 px-1.5 rounded" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.03)", color: dark ? "#6ee7b7" : "#059669" }}>Sent</span>}
+                      </div>
+                      <div className="text-sm" style={{ color: t.text }}>{tx.user} · <span style={{ color: t.textMuted }}>{tx.email}</span></div>
+                      {tx.senderRef && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span className="text-[11px] py-0.5 px-2 rounded font-semibold" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", color: t.accent }}>Sender</span>
+                          <span className="text-[13px] font-semibold" style={{ color: t.text }}>{tx.senderRef}</span>
+                        </div>
+                      )}
+                      <div className="text-xs mt-1" style={{ color: t.textMuted }}>
+                        Ref: <span className="m" style={{ color: t.text }}>{tx.reference}</span>
+                        {tx.actionBy && <> · <span style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{tx.status === "Completed" ? "Approved" : "Rejected"} by {tx.actionBy}</span></>}
+                        {" · "}{fD(tx.date)}
+                      </div>
                     </div>
-                    <div className="text-sm" style={{ color: t.text }}>{tx.user} · <span style={{ color: t.textMuted }}>{tx.email}</span></div>
-                    <div className="text-xs mt-0.5" style={{ color: t.textMuted }}>
-                      Ref: <span className="m" style={{ color: t.text }}>{tx.reference}</span>
-                      {tx.senderRef && <> · Bank ref: <span style={{ color: t.accent }}>{tx.senderRef}</span></>}
-                      {tx.actionBy && <> · <span style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{tx.status === "Completed" ? "Approved" : "Rejected"} by {tx.actionBy}</span></>}
-                      {" · "}{fD(tx.date)}
-                    </div>
+                    {tx.status === "Pending" && canApprove && (
+                      <div className="adm-deposit-actions">
+                        <button onClick={() => approveManual(tx)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(110,231,183,.28)" : "rgba(5,150,105,.24)", color: dark ? "#6ee7b7" : "#059669" }}>Approve</button>
+                        <button onClick={() => rejectManual(tx)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(220,38,38,.28)" : "rgba(220,38,38,.18)", color: dark ? "#fca5a5" : "#dc2626" }}>Reject</button>
+                      </div>
+                    )}
+                    {tx.status === "Pending" && !canApprove && (
+                      <span className="text-[11px] py-[3px] px-2.5 rounded" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", color: t.textMuted }}>View only</span>
+                    )}
                   </div>
-                  {tx.status === "Pending" && canApprove && (
-                    <div className="flex items-center gap-1.5">
-                      <button onClick={() => approveManual(tx)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(110,231,183,.28)" : "rgba(5,150,105,.24)", color: dark ? "#6ee7b7" : "#059669" }}>Approve</button>
-                      <button onClick={() => rejectManual(tx)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(220,38,38,.28)" : "rgba(220,38,38,.18)", color: dark ? "#fca5a5" : "#dc2626" }}>Reject</button>
-                    </div>
-                  )}
-                  {tx.status === "Pending" && !canApprove && (
-                    <span className="text-[11px] py-[3px] px-2.5 rounded" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", color: t.textMuted }}>View only</span>
-                  )}
                 </div>
               );
             })}

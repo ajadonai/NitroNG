@@ -153,11 +153,6 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
         ))}
       </div>
 
-      {/* ── Next action ── */}
-      <div className="mb-3">
-        <button onClick={() => setActive(primaryAction.target)} className="w-full py-2.5 max-md:py-2 rounded-[10px] text-sm max-md:text-[13px] font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>{primaryAction.label}</button>
-      </div>
-
       {/* Add to Home Screen — mobile/tablet only */}
       {!a2hs.dismissed && (a2hs.ready || a2hs.isIos) && (
         <div className="hidden max-desktop:flex items-center gap-3 rounded-[14px] max-md:rounded-xl py-3.5 px-5 max-md:py-3 max-md:px-4 mb-3" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", border: `1px solid ${dark ? "rgba(196,125,142,.24)" : "rgba(196,125,142,.18)"}` }}>
@@ -183,10 +178,15 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
         </div>
       )}
 
+      {/* ── Next action ── */}
+      <div className="mb-3">
+        <button onClick={() => setActive(primaryAction.target)} className="w-full py-2.5 max-md:py-2 rounded-[10px] text-sm max-md:text-[13px] font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>{primaryAction.label}</button>
+      </div>
+
       {/* ── Active orders (mobile/tablet only — desktop uses RightSidebar) ── */}
       {sortedActive.length > 0 && (
         <div className="hidden max-desktop:!block rounded-[14px] max-md:rounded-xl overflow-hidden mb-3" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
-          <div className="py-3 px-[18px] flex justify-between items-center" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+          <div className="py-3 px-[18px] flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
             <div className="flex items-center gap-2">
               <div className="text-sm font-semibold tracking-wide uppercase" style={{ color: t.textMuted }}>Active Orders</div>
               {attentionOrders.length > 0 && <span className="text-[11px] font-semibold py-0.5 px-2 rounded-full" style={{ background: dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)", color: dark ? "#fcd34d" : "#d97706" }}>Needs attention</span>}
