@@ -235,9 +235,26 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
             {/duplicate/i.test(o.lastError) ? "A similar order is already active for this link. This order will start automatically once the other completes."
               : /balance|fund/i.test(o.lastError) ? "Temporarily delayed — our team has been notified and this will be resolved shortly."
               : /incorrect service|invalid service/i.test(o.lastError) ? "This service is temporarily unavailable. You'll be refunded if it can't be fulfilled."
+              : /link|url/i.test(o.lastError) ? "The link provided appears to be invalid or unsupported. Please double-check and try again."
               : /quantity.*less|minimum/i.test(o.lastError) ? "The quantity couldn't be processed. Please contact support if this persists."
               : /timeout|timed.?out/i.test(o.lastError) ? "There was a temporary connection issue. Your order will be retried automatically."
               : "Your order hit a temporary issue and will be retried automatically. Contact support if it stays pending."}
+          </div>
+        </div>
+      )}
+
+      {/* Cancellation reason */}
+      {o.lastError && (o.status === "Cancelled" || o.status === "Failed" || o.status === "Rejected") && (
+        <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(252,165,165,.06)" : "rgba(220,38,38,.04)", border: `1px solid ${dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.1)"}` }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <div className="text-[12px]" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>
+            {/duplicate/i.test(o.lastError) ? "Cancelled — a similar order was already active for this link."
+              : /balance|fund/i.test(o.lastError) ? "Cancelled due to a temporary provider issue. You've been refunded."
+              : /incorrect service|invalid service/i.test(o.lastError) ? "This service was unavailable and the order couldn't be fulfilled."
+              : /link|url/i.test(o.lastError) ? "Cancelled — the link provided was invalid or not supported for this service."
+              : /quantity.*less|minimum/i.test(o.lastError) ? "The quantity couldn't be processed by the provider."
+              : /timeout|timed.?out/i.test(o.lastError) ? "Cancelled after repeated connection failures."
+              : "This order was cancelled. Your wallet has been refunded."}
           </div>
         </div>
       )}

@@ -75,9 +75,15 @@ export async function GET(req) {
 
           if (!newStatus || newStatus === order.status) continue;
 
+          const providerError = result.error || result.reason || null;
           await prisma.order.update({
             where: { id: order.id },
-            data: { status: newStatus, ...(liveRemains != null ? { remains: liveRemains } : {}), ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}) },
+            data: {
+              status: newStatus,
+              ...(liveRemains != null ? { remains: liveRemains } : {}),
+              ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}),
+              ...(newStatus === 'Cancelled' && providerError ? { lastError: String(providerError).slice(0, 500) } : {}),
+            },
           });
           stats.updated++;
 

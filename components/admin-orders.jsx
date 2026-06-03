@@ -105,7 +105,7 @@ export default function AdminOrdersPage({ dark, t }) {
     if (filter !== "all" && o.status !== filter) return false;
     if (search) {
       const q = search.toLowerCase();
-      return (o.id || "").toLowerCase().includes(q) || (o.service || "").toLowerCase().includes(q) || (o.user || "").toLowerCase().includes(q) || (o.batchId || "").toLowerCase().includes(q);
+      return (o.id || "").toLowerCase().includes(q) || (o.service || "").toLowerCase().includes(q) || (o.user || "").toLowerCase().includes(q) || (o.batchId || "").toLowerCase().includes(q) || (o.platform || "").toLowerCase().includes(q) || (o.link || "").toLowerCase().includes(q);
     }
     return true;
   });
@@ -213,7 +213,7 @@ export default function AdminOrdersPage({ dark, t }) {
           {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
         </div>
         <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(1); }} options={
-          ["all", "Completed", "Processing", "Pending", "Partial", "Cancelled"].map(f => ({
+          ["all", "Completed", "Processing", "Pending", "Partial", "Cancelled", "Failed", "Rejected"].map(f => ({
             value: f, label: f === "all" ? "All" : f,
           }))
         } />
@@ -555,8 +555,14 @@ export default function AdminOrdersPage({ dark, t }) {
               <circle cx="32" cy="38" r="8" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
               <path d="M29 38l2 2 4-4" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity=".4" />
             </svg>
-            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No orders found</div>
-            <div className="text-sm" style={{ color: t.textMuted }}>Orders will appear here once placed</div>
+            {search || filter !== "all" ? (<>
+              <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No matching orders</div>
+              <div className="text-sm mb-3" style={{ color: t.textMuted }}>Try adjusting your search or filter</div>
+              <button onClick={() => { setSearch(""); setFilter("all"); setPage(1); }} className="text-xs font-semibold px-4 py-1.5 rounded-full cursor-pointer border-none" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>Clear filters</button>
+            </>) : (<>
+              <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No orders yet</div>
+              <div className="text-sm" style={{ color: t.textMuted }}>Orders will appear here once placed</div>
+            </>)}
           </div>
         )}
 

@@ -417,12 +417,6 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
       <div className="hidden max-md:!block">
         {mobileStep === 1 && (
           <>
-            {/* Step indicator */}
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: t.accent, color: "#fff" }}>1</div>
-              <div className="w-8 h-px" style={{ background: t.cardBorder }} />
-              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)", color: t.textMuted }}>2</div>
-            </div>
             {/* Balance hero */}
             <div className="mb-3 overflow-hidden rounded-xl" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
               <div className="h-11" style={{ background: "linear-gradient(135deg, #c47d8e 0%, #a3586b 50%, #8b5e6b 100%)" }} />
@@ -456,12 +450,6 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
 
         {mobileStep === 2 && (
           <>
-            {/* Step indicator */}
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)", color: t.textMuted }}>1</div>
-              <div className="w-8 h-px" style={{ background: t.cardBorder }} />
-              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: t.accent, color: "#fff" }}>2</div>
-            </div>
             {/* Back button */}
             <button onClick={() => setMobileStep(1)} className="flex items-center gap-1.5 bg-transparent border-none text-sm font-medium cursor-pointer pb-3 transition-transform duration-200 hover:-translate-y-px" style={{ color: t.textMuted, fontFamily: "inherit" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
