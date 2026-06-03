@@ -118,25 +118,31 @@ function MobileMenuHint({ dark, t }) {
 /* ═══ OVERVIEW PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
 function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
-  const balance = user ? fN(user.balance) : "₦0";
-  const total = orders.length;
-  const processing = orders.filter(o => o.status === "Processing" || o.status === "Pending").length;
+  const balance = user?.balance || 0;
+  const activeOrders = orders.filter(o => o.status === "Processing" || o.status === "Pending" || o.status === "Partial");
   const completed = orders.filter(o => o.status === "Completed").length;
-  const resolved = orders.filter(o => o.status === "Completed" || o.status === "Partial" || o.status === "Failed").length;
-  const rate = resolved > 0 ? Math.round(completed / resolved * 100) : 0;
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const weekOrders = orders.filter(o => o.created && new Date(o.created) > weekAgo).length;
-  const weekSpent = orders.filter(o => o.status !== "Cancelled" && o.created && new Date(o.created) > weekAgo).reduce((s, o) => s + (o.charge || 0), 0);
+  const isNew = orders.length === 0;
+  const lowBal = balance < 500;
+  const firstName = user?.name?.split(" ")[0] || "there";
+  const isAttn = (o) => o.status === "Partial" || (o.status === "Pending" && o.lastError && !o.apiOrderId);
+  const attentionOrders = activeOrders.filter(isAttn);
+  const sortedActive = [...attentionOrders, ...activeOrders.filter(o => !isAttn(o))];
+
+  const primaryAction = isNew ? { label: "Place first order", target: "services" }
+    : lowBal ? { label: "Add funds", target: "add-funds" }
+    : activeOrders.length > 0 ? { label: "Track orders", target: "orders" }
+    : { label: "New order", target: "services" };
 
   return (
     <>
-      {/* Stat cards */}
+      {/* ── Stat cards ── */}
       <div className="dash-stats">
         {[
-          ["Balance", balance, t.green, weekSpent > 0 ? `-₦${Math.round(weekSpent).toLocaleString()} this week` : "No spend this week"],
-          ["Orders", String(total), dark ? "#a5b4fc" : "#4f46e5", weekOrders > 0 ? `${weekOrders} this week` : "None this week"],
-          ["In Progress", String(processing), dark ? "#e0a458" : "#d97706", processing > 0 ? "Est. 1-2 hrs" : "All clear"],
-          ["Delivered", String(completed), dark ? "#6ee7b7" : "#059669", rate + "% success"],
+          ["Active", String(activeOrders.length), dark ? "#e0a458" : "#d97706", activeOrders.length > 0 ? "In progress" : "All clear"],
+          ["Delivered", String(completed), dark ? "#6ee7b7" : "#059669", completed > 0 ? `of ${orders.length} total` : "No orders yet"],
+          ["This Week", String(weekOrders), dark ? "#a5b4fc" : "#4f46e5", weekOrders > 0 ? `${weekOrders} order${weekOrders > 1 ? "s" : ""}` : "None yet"],
         ].map(([label, val, color, sub]) => (
           <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
             <div className="dash-stat-dot" style={{ background: color }} />
@@ -145,6 +151,11 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
             <div className="dash-stat-sub" style={{ color: t.textMuted }}>{sub}</div>
           </div>
         ))}
+      </div>
+
+      {/* ── Next action ── */}
+      <div className="mb-3">
+        <button onClick={() => setActive(primaryAction.target)} className="w-full py-2.5 max-md:py-2 rounded-[10px] text-sm max-md:text-[13px] font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>{primaryAction.label}</button>
       </div>
 
       {/* Add to Home Screen — mobile/tablet only */}
@@ -172,19 +183,42 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
         </div>
       )}
 
-      {/* Quick reorder CTA — returning users only */}
-      {orders.length > 0 && (
-        <div className="flex items-center justify-between rounded-[14px] max-md:rounded-xl py-3.5 px-5 max-md:py-3 max-md:px-4 mb-3" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.14)"}` }}>
-          <div>
-            <div className="text-[15px] max-md:text-sm font-semibold" style={{ color: t.text }}>Ready for another boost?</div>
-            <div className="text-sm max-md:text-[13px] mt-0.5" style={{ color: t.textMuted }}>Pick up where you left off</div>
+      {/* ── Active orders (mobile/tablet only — desktop uses RightSidebar) ── */}
+      {sortedActive.length > 0 && (
+        <div className="hidden max-desktop:!block rounded-[14px] max-md:rounded-xl overflow-hidden mb-3" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+          <div className="py-3 px-[18px] flex justify-between items-center" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+            <div className="flex items-center gap-2">
+              <div className="text-sm font-semibold tracking-wide uppercase" style={{ color: t.textMuted }}>Active Orders</div>
+              {attentionOrders.length > 0 && <span className="text-[11px] font-semibold py-0.5 px-2 rounded-full" style={{ background: dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)", color: dark ? "#fcd34d" : "#d97706" }}>Needs attention</span>}
+            </div>
+            {activeOrders.length > 3 && <button onClick={() => setActive("orders")} className="text-xs font-medium bg-transparent border-none cursor-pointer font-[inherit]" style={{ color: t.accent }}>View all {activeOrders.length} →</button>}
           </div>
-          <button onClick={() => setActive("services")} className="cursor-pointer shrink-0 py-2 px-5 max-md:py-1.5 max-md:px-3.5 rounded-[10px] text-sm max-md:text-[13px] font-semibold border-none transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>New order</button>
+          {sortedActive.slice(0, 3).map((o, i) => {
+            const pct = o.remains != null && o.quantity > 0 ? Math.max(0, Math.min(100, Math.round((o.quantity - o.remains) / o.quantity * 100))) : null;
+            return (
+              <div key={o.id} onClick={() => setActive("orders")} className="flex items-center py-3 px-[18px] max-md:px-3.5 gap-3 cursor-pointer transition-colors duration-150 hover:bg-[rgba(196,125,142,.08)]" style={{ borderBottom: i < Math.min(sortedActive.length, 3) - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
+                <PlatformIcon platform={o.platform} dark={dark} />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap mb-1" style={{ color: t.text }}>{o.service}{o.tier ? ` · ${o.tier}` : ""}</div>
+                  {pct != null ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
+                        <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: sClr(o.status, dark) }} />
+                      </div>
+                      <span className="text-[11px] font-medium shrink-0" style={{ color: t.textMuted }}>{pct}%</span>
+                    </div>
+                  ) : (
+                    <div className="text-[12px]" style={{ color: t.textMuted }}>{o.quantity?.toLocaleString()} qty</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {/* Recent orders */}
-      <div className="rounded-[14px] max-md:rounded-xl overflow-hidden mb-2" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+      {/* ── Recent orders ── */}
+      <div className="rounded-[14px] max-md:rounded-xl overflow-hidden mb-3" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
         <div className="py-3 px-[18px] flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
           <div className="text-sm font-semibold tracking-wide uppercase" style={{ color: t.textMuted }}>Recent orders</div>
           {orders.length > 0 && <button onClick={() => setActive("orders")} className="text-xs font-medium bg-transparent border-none cursor-pointer font-[inherit]" style={{ color: t.accent }}>View all →</button>}
@@ -203,18 +237,21 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
           return display.length > 0 ? display.map((item, i) => {
             if (item.type === "batch") {
               const totalCharge = item.orders.reduce((s, o) => s + (o.charge || 0), 0);
+              const statusCounts = {};
+              item.orders.forEach(o => { statusCounts[o.status] = (statusCounts[o.status] || 0) + 1; });
+              const summary = Object.entries(statusCounts).map(([s, c]) => `${c} ${s.toLowerCase()}`).join(" · ");
+              const batchAttn = item.orders.some(isAttn);
               return (
                 <div key={item.batchId} onClick={() => setActive("orders")} className="flex items-center py-3.5 px-[18px] max-md:py-3 max-md:px-3.5 gap-3.5 max-md:gap-2.5 cursor-pointer transition-colors duration-150 hover:bg-[rgba(196,125,142,.08)]" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                   <div className="shrink-0 flex items-center justify-center" style={{ width: 36, height: 36, borderRadius: 10, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.08)" }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[15px] max-md:text-sm font-medium mb-[3px]" style={{ color: t.text }}>{item.batchId} · {item.orders.length} orders</div>
-                    <div className="flex items-center gap-1.5 max-md:gap-[5px] text-[13px] max-md:text-xs">
-                      <span style={{ color: t.textMuted }}>{item.orders.reduce((s, o) => s + (o.quantity || 0), 0).toLocaleString()} total qty</span>
-                      <span className="w-[3px] h-[3px] rounded-full bg-current opacity-35 shrink-0" />
-                      <span style={{ color: t.textMuted }}>{item.created ? fD(item.created) : ""}</span>
+                    <div className="flex items-center gap-1.5 mb-[3px]">
+                      <span className="text-[15px] max-md:text-sm font-medium" style={{ color: t.text }}>{item.batchId} · {item.orders.length} orders</span>
+                      {batchAttn && <span className="text-[10px] font-semibold py-px px-1.5 rounded-full" style={{ background: dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)", color: dark ? "#fcd34d" : "#d97706" }}>!</span>}
                     </div>
+                    <div className="text-[13px] max-md:text-xs" style={{ color: t.textMuted }}>{summary}</div>
                   </div>
                   <div className="m text-[15px] max-md:text-sm font-semibold shrink-0" style={{ color: item.orders.every(o => o.status === "Cancelled") ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{fN(totalCharge)}</div>
                 </div>
@@ -222,11 +259,13 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
             }
             const o = item.order;
             return (
-              <div key={o.id} className="flex items-center py-3.5 px-[18px] max-md:py-3 max-md:px-3.5 gap-3.5 max-md:gap-2.5 cursor-pointer transition-colors duration-150 hover:bg-[rgba(196,125,142,.08)]" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
+              <div key={o.id} onClick={() => setActive("orders")} className="flex items-center py-3.5 px-[18px] max-md:py-3 max-md:px-3.5 gap-3.5 max-md:gap-2.5 cursor-pointer transition-colors duration-150 hover:bg-[rgba(196,125,142,.08)]" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                 <PlatformIcon platform={o.platform} dark={dark} />
                 <div className="min-w-0 flex-1">
                   <div className="text-[15px] max-md:text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 mb-[3px]" style={{ color: t.text }}>{o.service}{o.tier ? ` · ${o.tier}` : ""}</div>
                   <div className="flex items-center gap-1.5 max-md:gap-[5px] text-[13px] max-md:text-xs">
+                    <span style={{ color: t.textMuted }}>{o.id}</span>
+                    <span className="w-[3px] h-[3px] rounded-full bg-current opacity-35 shrink-0" />
                     <span style={{ color: t.textMuted }}>{o.quantity?.toLocaleString() || 0} qty</span>
                     <span className="w-[3px] h-[3px] rounded-full bg-current opacity-35 shrink-0" />
                     <span style={{ color: t.textMuted }}>{o.created ? fD(o.created) : ""}</span>
@@ -234,34 +273,59 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
                 </div>
                 <div className="text-right shrink-0 flex flex-col items-end gap-1">
                   <div className="m text-[15px] max-md:text-sm font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{fN(o.charge)}</div>
-                  <div className="mt-1"><Badge status={o.status} dark={dark} /></div>
+                  <Badge status={o.status} dark={dark} />
                 </div>
               </div>
             );
           }) : null;
         })() || (
-          <div className="py-10 px-[18px] text-center text-base font-medium flex flex-col items-center">
-            <svg width="56" height="56" viewBox="0 0 64 64" fill="none" className="mb-4 opacity-60">
+          <div className="py-10 px-[18px] text-center flex flex-col items-center">
+            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" className="mb-3 opacity-60">
               <rect x="12" y="8" width="40" height="48" rx="6" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
               <line x1="20" y1="22" x2="44" y2="22" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
               <line x1="20" y1="30" x2="38" y2="30" stroke={t.accent} strokeWidth="1.5" opacity=".15" strokeLinecap="round" />
-              <line x1="20" y1="38" x2="34" y2="38" stroke={t.accent} strokeWidth="1.5" opacity=".1" strokeLinecap="round" />
-              <circle cx="32" cy="32" r="12" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
-              <line x1="28" y1="32" x2="36" y2="32" stroke={t.accent} strokeWidth="2" strokeLinecap="round" opacity=".4" />
-              <line x1="32" y1="28" x2="32" y2="36" stroke={t.accent} strokeWidth="2" strokeLinecap="round" opacity=".4" />
+              <circle cx="32" cy="38" r="8" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
+              <path d="M29 38l2 2 4-4" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity=".4" />
             </svg>
-            <div className="text-[17px] font-semibold mb-1.5" style={{ color: t.textSoft }}>No orders yet</div>
-            <div className="text-[15px] mb-4 leading-[1.5]" style={{ color: t.textMuted }}>Pick a platform, choose a service, and you're live in under 60 seconds</div>
-            <button onClick={() => setActive("services")} className="cursor-pointer transition-all duration-150 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)] active:scale-[.97] py-3 px-7 rounded-[10px] text-[15px] font-semibold border-none" style={{ background: `linear-gradient(135deg,${t.accent},#8b5e6b)`, color: "#fff", boxShadow: "0 4px 16px rgba(196,125,142,.31)" }}>Place your first order →</button>
+            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No orders yet</div>
+            <div className="text-sm mb-4 leading-[1.5] max-w-[320px]" style={{ color: t.textMuted }}>Choose a platform, pick a service, and place your first order.</div>
+            <button onClick={() => setActive("services")} className="cursor-pointer py-2.5 px-6 rounded-[10px] text-sm font-semibold border-none transition-transform duration-200 hover:-translate-y-px mb-2" style={{ background: t.accent, color: "#fff" }}>Place first order</button>
+            <button onClick={() => setActive("guide")} className="cursor-pointer py-2 px-4 rounded-[10px] text-[13px] font-medium border-none transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", color: t.textMuted }}>View guide</button>
           </div>
         )}
       </div>
 
-      {/* Referral card — tablet/mobile only */}
-      <div className="hidden max-desktop:block mt-4 mb-2 rounded-[14px] max-md:rounded-xl p-4 max-md:p-3.5 text-center" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-        <div className="text-[13px] uppercase tracking-[1.5px] mb-1" style={{ color: t.textMuted }}>Your referral code</div>
-        <div className="m text-lg max-md:text-base font-semibold tracking-[2px]" style={{ color: t.accent }}>{user?.refCode || "—"}</div>
-        <div className="text-sm mt-1" style={{ color: t.textMuted }}>{user?.refs || 0} referrals · {fN(user?.earnings || 0)} earned</div>
+      {/* ── Quick links ── */}
+      <div className="flex gap-2 mb-3">
+        {[
+          { id: "support", label: "Support", icon: I.support },
+          { id: "guide", label: "Guide", icon: I.guide },
+          { id: "referrals", label: "Referrals", icon: I.referrals },
+        ].map(a => (
+          <button key={a.id} onClick={() => setActive(a.id)} className="flex-1 flex items-center justify-center gap-2 py-2.5 max-md:py-2 rounded-xl border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, color: t.text }}>
+            <span className="shrink-0" style={{ color: t.accent }}>{a.icon}</span>
+            <span className="text-sm max-md:text-[13px] font-medium">{a.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Referral card — tablet/mobile only ── */}
+      <div className="hidden max-desktop:block mb-2 rounded-[14px] max-md:rounded-xl overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+        <div className="flex items-center gap-3 p-4 max-md:p-3.5">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", color: t.accent }}>
+            {I.referrals}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold" style={{ color: t.text }}>Invite friends</div>
+            <div className="text-[13px] mt-0.5" style={{ color: t.textMuted }}>{user?.refs || 0} referrals · {fN(user?.earnings || 0)} earned</div>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="m text-base font-semibold tracking-[1.5px]" style={{ color: t.accent }}>{user?.refCode || "—"}</div>
+          </div>
+        </div>
+        <div className="px-4 max-md:px-3.5 pb-3.5">
+          <button onClick={() => setActive("referrals")} className="w-full py-2 rounded-lg text-[13px] font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>Open referrals</button>
+        </div>
       </div>
     </>
   );
@@ -387,10 +451,7 @@ function RightSidebar({ orders, user, dark, t, setActive }) {
                 <PlatformIcon platform={o.platform} dark={dark} size={28} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium mb-[3px] overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{o.service}{o.tier ? ` · ${o.tier}` : ""}</div>
-                  <div className="flex justify-between items-center text-[13px]">
-                    <span style={{ fontWeight: 600, color: sClr(o.status, dark) }}>{o.status}</span>
-                    <span style={{ color: t.textMuted }}>{o.quantity?.toLocaleString() || 0} qty</span>
-                  </div>
+                  <div className="text-[13px]" style={{ color: t.textMuted }}>{o.quantity?.toLocaleString() || 0} qty</div>
                 </div>
               </div>
             </div>
@@ -1126,8 +1187,16 @@ function DashboardInner({ initialData }) {
             </div>
           )}
           {!isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isGuide && !isLeaderboard && !isAudit && !isCleanup && !isEarn && <div className="pb-3.5 max-md:pb-2">
-            <div className="text-xl max-md:text-lg font-semibold mb-0.5" style={{ color: t.text }}>What's good, {firstName}</div>
-            <div className="text-sm" style={{ color: t.textMuted }}>Here's your empire at a glance</div>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xl max-md:text-lg font-semibold mb-0.5" style={{ color: t.text }}>Welcome back, {firstName}</div>
+                <div className="text-sm" style={{ color: t.textMuted }}>{orders.length === 0 ? "Place your first order in under a minute." : "Here's your dashboard at a glance."}</div>
+              </div>
+              <div className="shrink-0 ml-4 py-1.5 px-3 max-md:py-1 max-md:px-2.5 rounded-xl text-right" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+                <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Balance</div>
+                <div className="m text-lg max-md:text-base font-semibold" style={{ color: t.green }}>{fN(user?.balance || 0)}</div>
+              </div>
+            </div>
             <div className="page-divider" style={{ background: t.cardBorder }} />
           </div>}
           {isAudit && <div className="pb-3.5 max-md:pb-2">
