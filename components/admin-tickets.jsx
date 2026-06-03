@@ -237,13 +237,14 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
 
           <div className="flex-1 overflow-y-auto min-h-0 py-4 px-[18px] flex flex-col gap-2" onClick={() => showInfo && setShowInfo(false)}>
             <div className="flex-1" />
-            {/* Original message */}
+            {/* Original message + Replies */}
             {(() => {
               const replies = selected.replies || [];
+              const allMsgs = [{ from: "user", time: selected.created }, ...replies];
+              const lastIdx = {};
+              allMsgs.forEach((m, i) => { if (m.from) lastIdx[m.from] = i; });
               const origDay = dayLabel(selected.created);
-              const nextTime = replies[0]?.time;
-              const gap = nextTime && selected.created ? (new Date(nextTime) - new Date(selected.created)) / 60000 : Infinity;
-              const showTime = replies.length === 0 || gap >= 5;
+              const showOrigTime = lastIdx["user"] === 0;
               return (
                 <>
                   {origDay && <div className="text-center py-2"><span className="text-[11px] py-1 px-3 rounded-full font-medium" style={{ color: t.textMuted, background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)" }}>{origDay}</span></div>}
@@ -251,20 +252,20 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
                     <div className="py-2.5 px-3.5 rounded-[14px] rounded-bl-[4px]" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.06)", border: `1px solid ${t.cardBorder}` }}>
                       <div className="text-sm leading-[1.55] whitespace-pre-wrap" style={{ color: t.text }}>{selected.message}</div>
                     </div>
-                    {showTime && <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{selected.created ? fD(selected.created) : ""}</div>}
+                    {showOrigTime && <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{selected.created ? fD(selected.created) : ""}</div>}
                   </div>
                 </>
               );
             })()}
-            {/* Replies */}
             {(selected.replies || []).map((r, i, arr) => {
               const isAdm = r.from === "admin";
+              const allMsgs = [{ from: "user", time: selected.created }, ...arr];
+              const lastIdx = {};
+              allMsgs.forEach((m, j) => { if (m.from) lastIdx[m.from] = j; });
+              const replyIdx = i + 1;
               const prevFrom = i === 0 ? "user" : arr[i - 1].from;
               const showName = r.from !== prevFrom;
-              const isLast = i === arr.length - 1;
-              const nextTime = arr[i + 1]?.time;
-              const gap = nextTime && r.time ? (new Date(nextTime) - new Date(r.time)) / 60000 : Infinity;
-              const showTime = isLast || gap >= 5;
+              const showTime = lastIdx[r.from] === replyIdx;
               const prevTime = i === 0 ? selected.created : arr[i - 1].time;
               const prevDay = dayLabel(prevTime);
               const curDay = dayLabel(r.time);
