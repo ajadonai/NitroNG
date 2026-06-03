@@ -21,13 +21,13 @@ export async function GET(req) {
 
   try {
     const now = new Date();
-    const todayStart = new Date(now);
-    todayStart.setHours(0, 0, 0, 0);
+    // WAT (UTC+1) — midnight in Lagos = 23:00 previous day UTC
+    const watNow = new Date(now.getTime() + 60 * 60 * 1000);
+    const todayStart = new Date(Date.UTC(watNow.getUTCFullYear(), watNow.getUTCMonth(), watNow.getUTCDate()) - 60 * 60 * 1000);
 
-    const yesterdayStart = new Date(todayStart);
-    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
 
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthStart = new Date(Date.UTC(watNow.getUTCFullYear(), watNow.getUTCMonth(), 1) - 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
 
     const [
@@ -36,10 +36,14 @@ export async function GET(req) {
       yesterdayRevenueAgg, yesterdayDepositsAgg, yesterdayOrderCount,
       processingCount,
       monthRevenueAgg, monthOrderCount, monthDepositsAgg, monthNewUsers,
+      monthCostAgg,
+      todayCostAgg, yesterdayCostAgg,
       ordersByStatus,
       allOrdersForPlatforms,
       chartOrders, chartDeposits, chartUsers,
-      recentOrders,
+      recentOrders, recentDeposits,
+      monthOrdererIds,
+      idleUsers,
     ] = await Promise.all([
       prisma.user.count({ where: { emailVerified: true } }),
       prisma.user.count({ where: { createdAt: { gte: todayStart }, emailVerified: true } }),
@@ -54,6 +58,9 @@ export async function GET(req) {
       prisma.order.count({ where: { createdAt: { gte: monthStart }, deletedAt: null } }),
       prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
       prisma.user.count({ where: { createdAt: { gte: monthStart }, emailVerified: true } }),
+      prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
+      prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
+      prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
       prisma.order.groupBy({ by: ['status'], where: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null }, _count: true }),
       prisma.order.findMany({
         where: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null, status: { notIn: ['Cancelled'] } },
@@ -61,7 +68,7 @@ export async function GET(req) {
       }),
       prisma.order.findMany({
         where: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null },
-        select: { createdAt: true, charge: true, status: true },
+        select: { createdAt: true, charge: true, cost: true, status: true },
         orderBy: { createdAt: 'asc' },
       }),
       prisma.transaction.findMany({
@@ -77,12 +84,26 @@ export async function GET(req) {
       prisma.order.findMany({
         where: { deletedAt: null },
         orderBy: { createdAt: 'desc' },
-        take: 12,
+        take: 15,
         include: {
           user: { select: { name: true, email: true } },
           service: { select: { name: true, category: true } },
           tier: { select: { tier: true, group: { select: { name: true } } } },
         },
+      }),
+      prisma.transaction.findMany({
+        where: { type: 'deposit', status: 'Completed' },
+        orderBy: { createdAt: 'desc' },
+        take: 15,
+        include: { user: { select: { name: true, email: true } } },
+      }),
+      prisma.order.findMany({
+        where: { createdAt: { gte: monthStart }, deletedAt: null },
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
+      prisma.user.count({
+        where: { emailVerified: true, balance: { gt: 0 }, orders: { none: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null } } },
       }),
     ]);
 
@@ -117,18 +138,21 @@ export async function GET(req) {
     const dayMap = {};
     chartOrders.forEach(o => {
       const day = toDay(o.createdAt);
-      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, deposits: 0, newUsers: 0 };
+      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, profit: 0, deposits: 0, newUsers: 0 };
       dayMap[day].orders++;
-      if (o.status !== 'Cancelled') dayMap[day].revenue += (o.charge || 0) / 100;
+      if (o.status !== 'Cancelled') {
+        dayMap[day].revenue += (o.charge || 0) / 100;
+        dayMap[day].profit += ((o.charge || 0) - (o.cost || 0)) / 100;
+      }
     });
     chartDeposits.forEach(tx => {
       const day = toDay(tx.createdAt);
-      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, deposits: 0, newUsers: 0 };
+      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, profit: 0, deposits: 0, newUsers: 0 };
       dayMap[day].deposits += (tx.amount || 0) / 100;
     });
     chartUsers.forEach(u => {
       const day = toDay(u.createdAt);
-      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, deposits: 0, newUsers: 0 };
+      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, profit: 0, deposits: 0, newUsers: 0 };
       dayMap[day].newUsers++;
     });
 
@@ -140,6 +164,7 @@ export async function GET(req) {
         date: key,
         orders: dayMap[key]?.orders || 0,
         revenue: Math.round(dayMap[key]?.revenue || 0),
+        profit: Math.round(dayMap[key]?.profit || 0),
         deposits: Math.round(dayMap[key]?.deposits || 0),
         newUsers: dayMap[key]?.newUsers || 0,
       });
@@ -156,10 +181,19 @@ export async function GET(req) {
       revenueChange: pctChange(todayRevenue, yesterdayRevenue),
       depositsChange: pctChange(todayDeposits, yesterdayDeposits),
       ordersChange: pctChange(todayOrderCount, yesterdayOrderCount),
+      profitToday: todayRevenue - (todayCostAgg._sum.cost || 0) / 100,
+      profitChange: pctChange(
+        todayRevenue - (todayCostAgg._sum.cost || 0) / 100,
+        yesterdayRevenue - (yesterdayCostAgg._sum.cost || 0) / 100
+      ),
       monthRevenue: (monthRevenueAgg._sum.charge || 0) / 100,
+      monthCost: (monthCostAgg._sum.cost || 0) / 100,
+      monthProfit: ((monthRevenueAgg._sum.charge || 0) - (monthCostAgg._sum.cost || 0)) / 100,
       monthOrders: monthOrderCount,
       monthDeposits: (monthDepositsAgg._sum.amount || 0) / 100,
       monthNewUsers,
+      monthActiveUsers: monthOrdererIds.length,
+      idleUsersWithBalance: idleUsers,
       chartData,
       topPlatforms,
       byStatus: ordersByStatus.map(s => ({ status: s.status, count: s._count })),
@@ -171,6 +205,13 @@ export async function GET(req) {
         charge: (o.charge || 0) / 100,
         status: o.status,
         created: o.createdAt.toISOString(),
+      })),
+      recentDeposits: recentDeposits.map(tx => ({
+        id: tx.id,
+        user: tx.user?.name || tx.user?.email || 'Unknown',
+        amount: (tx.amount || 0) / 100,
+        method: tx.method || 'wallet',
+        created: tx.createdAt.toISOString(),
       })),
       generatedAt: now.toISOString(),
     });
