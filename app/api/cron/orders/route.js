@@ -328,10 +328,19 @@ export async function GET(req) {
       });
       for (const order of unrefunded) {
         try {
-          const refundAmount = order.status === 'Partial' && order.remains && order.quantity > 0
-            ? Math.round((order.remains / order.quantity) * order.charge / 100) * 100
-            : order.charge;
-          if (refundAmount <= 0) continue;
+          let refundAmount;
+          if (order.status === 'Partial') {
+            const remains = order.remains || 0;
+            refundAmount = remains > 0 && order.quantity > 0
+              ? Math.round((remains / order.quantity) * order.charge / 100) * 100
+              : 0;
+          } else {
+            refundAmount = order.charge;
+          }
+          if (refundAmount <= 0) {
+            await prisma.order.update({ where: { id: order.id }, data: { refundedAt: new Date() } });
+            continue;
+          }
           await prisma.$transaction(async (tx) => {
             const existing = await tx.transaction.aggregate({
               where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
