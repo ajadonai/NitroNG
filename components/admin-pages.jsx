@@ -194,9 +194,8 @@ export function AdminPaymentsPage({ dark, t }) {
                     <div className="adm-deposit-info">
                       <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                         <span className="text-base font-bold" style={{ color: sc.color }}>{fN(tx.amount)}</span>
-                        <span className="text-[11px] py-0.5 px-2 rounded font-semibold" style={{ background: sc.bg, color: sc.color }}>{tx.status}</span>
-                        <span className="text-[11px] py-0.5 px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", color: t.textMuted }}>{tx.method}</span>
-                        {tx.confirmed && tx.status === "Pending" && <span className="text-[11px] py-0.5 px-1.5 rounded" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.03)", color: dark ? "#6ee7b7" : "#059669" }}>Sent</span>}
+                        {statusFilter === "all" && <span className="text-[11px] py-0.5 px-2 rounded font-semibold" style={{ background: sc.bg, color: sc.color }}>{tx.status}</span>}
+                        {statusFilter === "all" && <span className="text-[11px] py-0.5 px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", color: t.textMuted }}>{tx.method}</span>}
                       </div>
                       <div className="text-sm" style={{ color: t.text }}>{tx.user} · <span style={{ color: t.textMuted }}>{tx.email}</span></div>
                       {tx.senderRef && (
