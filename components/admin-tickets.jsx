@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { fD, fRel } from "../lib/format";
 import { useConfirm } from "./confirm-dialog";
 import { FilterDropdown } from "./date-range-picker";
@@ -7,6 +7,16 @@ import { Avatar } from "./avatar";
 
 function statusClr(s, dk) { return s === "Open" ? (dk ? "#fcd34d" : "#d97706") : s === "In Progress" ? (dk ? "#60a5fa" : "#2563eb") : (dk ? "#6ee7b7" : "#059669"); }
 function statusBg(s, dk) { return s === "Open" ? (dk ? "rgba(234,179,8,0.1)" : "rgba(234,179,8,0.06)") : s === "In Progress" ? (dk ? "rgba(96,165,250,0.08)" : "rgba(37,99,235,0.06)") : (dk ? "rgba(110,231,183,0.08)" : "rgba(16,185,129,0.06)"); }
+function dayLabel(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return null;
+  const now = new Date();
+  const diff = Math.floor((now - d) / 86400000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  return d.toLocaleDateString("en-NG", { day: "numeric", month: "short", year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined });
+}
 
 export default function AdminTicketsPage({ dark, t, adminName }) {
   const confirm = useConfirm();
@@ -228,33 +238,57 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
           <div className="flex-1 overflow-y-auto min-h-0 py-4 px-[18px] flex flex-col gap-2" onClick={() => showInfo && setShowInfo(false)}>
             <div className="flex-1" />
             {/* Original message */}
-            <div className="flex flex-col items-start max-w-[82%]">
-              <div className="py-2.5 px-3.5 rounded-[14px] rounded-bl-[4px]" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.06)", border: `1px solid ${t.cardBorder}` }}>
-                <div className="text-sm leading-[1.55] whitespace-pre-wrap" style={{ color: t.text }}>{selected.message}</div>
-              </div>
-              <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{selected.created ? fD(selected.created) : ""}</div>
-            </div>
+            {(() => {
+              const replies = selected.replies || [];
+              const firstReplyFrom = replies[0]?.from;
+              const isLastInGroup = firstReplyFrom !== "user";
+              const origDay = dayLabel(selected.created);
+              return (
+                <>
+                  {origDay && <div className="text-center py-2"><span className="text-[11px] py-1 px-3 rounded-full font-medium" style={{ color: t.textMuted, background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)" }}>{origDay}</span></div>}
+                  <div className="flex flex-col items-start max-w-[82%]">
+                    <div className="py-2.5 px-3.5 rounded-[14px] rounded-bl-[4px]" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.06)", border: `1px solid ${t.cardBorder}` }}>
+                      <div className="text-sm leading-[1.55] whitespace-pre-wrap" style={{ color: t.text }}>{selected.message}</div>
+                    </div>
+                    {isLastInGroup && <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{selected.created ? fD(selected.created) : ""}</div>}
+                  </div>
+                </>
+              );
+            })()}
             {/* Replies */}
             {(selected.replies || []).map((r, i, arr) => {
               const isAdm = r.from === "admin";
               const prevFrom = i === 0 ? "user" : arr[i - 1].from;
+              const nextFrom = arr[i + 1]?.from;
               const showName = r.from !== prevFrom;
+              const isLastInGroup = r.from !== nextFrom;
+              const prevTime = i === 0 ? selected.created : arr[i - 1].time;
+              const prevDay = dayLabel(prevTime);
+              const curDay = dayLabel(r.time);
+              const showDate = curDay && curDay !== prevDay;
+              const dateEl = showDate ? <div className="text-center py-2"><span className="text-[11px] py-1 px-3 rounded-full font-medium" style={{ color: t.textMuted, background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)" }}>{curDay}</span></div> : null;
               if (isAdm) return (
-                <div key={i} className="flex flex-col items-end max-w-[78%] self-end">
-                  <div className="py-2.5 px-3.5 rounded-[14px]" style={{ borderBottomRightRadius: 4, background: dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.06)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.14)"}` }}>
-                    {showName && r.name && <div className="text-[10px] font-semibold mb-1" style={{ color: t.accent }}>{r.name}</div>}
-                    <div className="text-sm leading-[1.55] whitespace-pre-wrap" style={{ color: t.text }}>{r.msg}</div>
+                <React.Fragment key={i}>
+                  {dateEl}
+                  <div className="flex flex-col items-end max-w-[78%] self-end">
+                    <div className="py-2.5 px-3.5 rounded-[14px]" style={{ borderBottomRightRadius: 4, background: dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.06)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.14)"}` }}>
+                      {showName && r.name && <div className="text-[10px] font-semibold mb-1" style={{ color: t.accent }}>{r.name}</div>}
+                      <div className="text-sm leading-[1.55] whitespace-pre-wrap" style={{ color: t.text }}>{r.msg}</div>
+                    </div>
+                    {isLastInGroup && <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{r.time ? fD(r.time) : ""}</div>}
                   </div>
-                  <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{r.time ? fD(r.time) : ""}</div>
-                </div>
+                </React.Fragment>
               );
               return (
-                <div key={i} className="flex flex-col items-start max-w-[82%]">
-                  <div className="py-2.5 px-3.5 rounded-[14px] rounded-bl-[4px]" style={{ background: dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)", border: `1px solid ${t.cardBorder}` }}>
-                    <div className="text-sm leading-[1.55] whitespace-pre-wrap" style={{ color: t.text }}>{r.msg}</div>
+                <React.Fragment key={i}>
+                  {dateEl}
+                  <div className="flex flex-col items-start max-w-[82%]">
+                    <div className="py-2.5 px-3.5 rounded-[14px] rounded-bl-[4px]" style={{ background: dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)", border: `1px solid ${t.cardBorder}` }}>
+                      <div className="text-sm leading-[1.55] whitespace-pre-wrap" style={{ color: t.text }}>{r.msg}</div>
+                    </div>
+                    {isLastInGroup && <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{r.time ? fD(r.time) : ""}</div>}
                   </div>
-                  <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{r.time ? fD(r.time) : ""}</div>
-                </div>
+                </React.Fragment>
               );
             })}
             <div ref={msgsEnd} />
