@@ -299,7 +299,7 @@
 
 
 /* Footer */
-.dash-footer { padding: 24px 28px 16px; margin-top: auto; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; font-size: 14px; border-top: 1px solid; margin-left: -28px; margin-right: -28px; }
+.dash-footer { padding: 6px 28px; margin-top: auto; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; font-size: 11px; border-top: 1px solid; margin-left: -28px; margin-right: -28px; }
 .dash-footer-links { display: flex; align-items: center; gap: 16px; }
 .dash-footer-links a { text-decoration: none; display: flex; align-items: center; }
 
@@ -321,7 +321,7 @@
   .dash-overlay { display: block; }
   .dash-main { padding: 24px; }
   .page-divider { margin-left: -24px; margin-right: -24px; }
-  .dash-footer { padding: 24px 24px 14px; margin-left: -24px; margin-right: -24px; }
+  .dash-footer { padding: 6px 24px; margin-left: -24px; margin-right: -24px; }
   .dash-stats { grid-template-columns: 1fr 1fr 1fr; }
 }
 
@@ -333,7 +333,7 @@
   .dash-nav-right { gap: 4px; }
   .dash-main { padding: 16px; }
   .page-divider { margin-left: -16px; margin-right: -16px; }
-  .dash-footer { padding: 20px 16px 12px; margin-left: -16px; margin-right: -16px; }
+  .dash-footer { padding: 6px 16px; margin-left: -16px; margin-right: -16px; }
   .dash-stats { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
   .dash-stat-card { padding: 14px; border-radius: 10px; }
   .dash-stat-dot { top: 14px; right: 14px; }

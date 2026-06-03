@@ -78,7 +78,17 @@ function FormatText({ text, dark }) {
   })}</>;
 }
 
-function Bubble({ m, dark, t, prevFrom }) {
+function dayLabel(dateStr) {
+  if (!dateStr || typeof dateStr !== "string" || !dateStr.includes("T")) return null;
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diff = Math.floor((now - d) / 86400000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  return d.toLocaleDateString("en-NG", { day: "numeric", month: "short", year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined });
+}
+
+function Bubble({ m, dark, t, prevFrom, nextFrom, showDate }) {
   if (!m || typeof m !== "object" || !m.from) return null;
   if (m.from === "system") return (
     <div className="text-center py-1.5">
@@ -88,23 +98,25 @@ function Bubble({ m, dark, t, prevFrom }) {
   const isUser = m.from === "user";
   const isBot = m.from === "bot";
   const showName = m.from !== prevFrom;
-  const timeEl = m.time ? <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{typeof m.time === "string" && m.time.includes("T") ? fD(m.time) : String(m.time || "")}</div> : null;
+  const isLastInGroup = m.from !== nextFrom;
+  const timeEl = m.time && isLastInGroup ? <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{typeof m.time === "string" && m.time.includes("T") ? fD(m.time) : String(m.time || "")}</div> : null;
+  const dateEl = showDate ? <div className="text-center py-2"><span className="text-[11px] py-1 px-3 rounded-full font-medium" style={{ color: t.textMuted, background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)" }}>{showDate}</span></div> : null;
   if (isUser) return (
-    <div className="flex flex-col items-end">
+    <>{dateEl}<div className="flex flex-col items-end">
       <div className="max-w-[78%] py-2.5 px-3.5 rounded-[14px]" style={{ borderBottomRightRadius: 4, background: dark ? "rgba(196,125,142,.19)" : "rgba(196,125,142,.14)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.19)"}` }}>
         <div className="text-[15px] leading-relaxed whitespace-pre-line" style={{ color: t.text }}>{m.formatted ? <FormatText text={String(m.text || "")} dark={dark} /> : String(m.text || "")}</div>
       </div>
       {timeEl}
-    </div>
+    </div></>
   );
   return (
-    <div className="flex flex-col items-start max-w-[82%]">
+    <>{dateEl}<div className="flex flex-col items-start max-w-[82%]">
       <div className="py-2.5 px-3.5 rounded-[14px]" style={{ borderBottomLeftRadius: 4, background: isBot ? (dark ? "rgba(167,139,250,.06)" : "rgba(124,58,237,.04)") : (dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.06)"), border: `1px solid ${isBot ? (dark ? "rgba(167,139,250,.12)" : "rgba(124,58,237,.1)") : (dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)")}` }}>
         {showName && <div className="text-[13px] font-semibold mb-[3px]" style={{ color: isBot ? (dark ? "#a78bfa" : "#7c3aed") : t.accent }}>{m.name || (isBot ? "Nitro Bot" : "Support")}</div>}
         <div className="text-[15px] leading-relaxed whitespace-pre-line" style={{ color: t.text }}>{m.formatted ? <FormatText text={String(m.text || "")} dark={dark} /> : String(m.text || "")}</div>
       </div>
       {timeEl}
-    </div>
+    </div></>
   );
 }
 
@@ -502,16 +514,20 @@ export default function SupportPage({ dark, t }) {
           <>
             <div className="flex-1 overflow-y-auto min-h-0 py-3 px-[18px] flex flex-col gap-1.5">
               <div className="flex-1" />
-              {chatMsgs.map((m, i) => (
+              {chatMsgs.map((m, i) => {
+                const prevDay = i > 0 ? dayLabel(chatMsgs[i - 1]?.time) : null;
+                const curDay = dayLabel(m.time);
+                const showDate = (i === 0 && curDay) ? curDay : (curDay && curDay !== prevDay ? curDay : null);
+                return (
                 <div key={i}>
-                  <Bubble m={m} dark={dark} t={t} prevFrom={chatMsgs[i - 1]?.from} />
+                  <Bubble m={m} dark={dark} t={t} prevFrom={chatMsgs[i - 1]?.from} nextFrom={chatMsgs[i + 1]?.from} showDate={showDate} />
                   {m.followUp && <div className="mt-1.5 pl-1 transition-transform duration-200 hover:-translate-y-px"><button onClick={() => handleFollowUp(m.followUp)} className="py-1.5 px-3 rounded-lg text-xs cursor-pointer" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, color: t.textSoft || t.textMuted, fontFamily: "inherit" }}>{m.followUp}</button></div>}
                   {m.escalatePrompt && <div className="flex gap-1.5 mt-1.5 pl-1">
                     <button onClick={() => handleQuick("human")} className="py-1.5 px-3 rounded-lg text-xs font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)", border: `1px solid ${dark ? "rgba(196,125,142,.24)" : "rgba(196,125,142,.18)"}`, color: t.accent, fontFamily: "inherit" }}>Yes, connect me</button>
                     <button onClick={() => setShowQuick(true)} className="py-1.5 px-3 rounded-lg text-xs cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, color: t.textMuted, fontFamily: "inherit" }}>Ask something else</button>
                   </div>}
                 </div>
-              ))}
+              );})}
               {typing && <div className="self-start py-2.5 px-[18px] rounded-[14px] rounded-bl" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.06)", border: `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}><div className="flex gap-1">{[0,1,2].map(j=><div key={j} className="sup-typing-dot" style={{ width:6,height:6,borderRadius:3,background:t.textMuted,animationDelay:`${j*.15}s` }}/>)}</div></div>}
               <div ref={msgsEnd} />
             </div>
