@@ -177,6 +177,32 @@ const LINK_HINTS = {
   playstore: "play.google.com/store/apps/...",
 };
 
+const LINK_TIPS = {
+  instagram: { profile: "instagram.com/username", post: "instagram.com/p/ABC123 or /reel/ABC123" },
+  tiktok: { profile: "tiktok.com/@username", post: "tiktok.com/@username/video/123..." },
+  twitter: { profile: "x.com/username", post: "x.com/username/status/123..." },
+  youtube: { profile: "youtube.com/@channel", post: "youtube.com/watch?v=ABC123" },
+  facebook: { profile: "facebook.com/pagename", post: "facebook.com/username/posts/123..." },
+  threads: { profile: "threads.net/@username", post: "threads.net/@username/post/ABC123" },
+  telegram: { profile: "t.me/channelname", post: "t.me/channelname/123" },
+  linkedin: { profile: "linkedin.com/in/username", post: "linkedin.com/posts/..." },
+  snapchat: { profile: "snapchat.com/add/username", post: "snapchat.com/spotlight/..." },
+  pinterest: { profile: "pinterest.com/username", post: "pinterest.com/pin/123..." },
+  reddit: { profile: "reddit.com/r/community", post: "reddit.com/r/community/comments/..." },
+  twitch: { profile: "twitch.tv/username", post: "twitch.tv/videos/123..." },
+  kick: { profile: "kick.com/username", post: "kick.com/username/clips/..." },
+  spotify: { profile: "open.spotify.com/artist/...", post: "open.spotify.com/track/..." },
+  soundcloud: { profile: "soundcloud.com/artist", post: "soundcloud.com/artist/track-name" },
+};
+
+function getLinkTip(platform, isProfile, isPost) {
+  const tips = LINK_TIPS[platform];
+  if (!tips) return null;
+  if (isProfile) return "Profile link — e.g. " + tips.profile;
+  if (isPost) return "Post link — e.g. " + tips.post;
+  return null;
+}
+
 function isValidLink(link) {
   const v = link.trim();
   if (v.length < 3 || v.length > 500) return false;
@@ -248,6 +274,10 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const commentLines = (comments || "").split("\n").filter(l => l.trim()).length;
   const commentShort = needsComments && qtyNum > 0 && commentLines > 0 && commentLines < qtyNum;
 
+  const isProfileSvc = /follow|subscri/i.test(svcName);
+  const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays/i.test(svcName) && !isProfileSvc;
+  const linkTip = getLinkTip(platform, isProfileSvc, isPostSvc);
+
   const linkPlaceholder = LINK_HINTS[platform] || `${platform}.com/...`;
   const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
 
@@ -278,7 +308,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             <span className="inline-flex items-center px-3 text-sm font-semibold shrink-0 select-none" style={{ borderRight: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>https://</span>
             <input type="url" inputMode="url" aria-label={linkLabel} disabled={orderLoading} placeholder={linkPlaceholder} value={link} onChange={e => validateLink(e.target.value)} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
           </div>
-          {linkError && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626" }}>{linkError}</div>}
+          {linkError ? <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626" }}>{linkError}</div>
+            : linkTip && <div className="text-[11px] mt-[3px]" style={{ color: t.textMuted }}>{linkTip}</div>}
         </div>
         {showComments && (
           <div className="mb-3.5">
