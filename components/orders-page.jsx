@@ -6,6 +6,27 @@ import { PlatformIcon } from "./platform-icon";
 import { fN, fD } from "../lib/format";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 
+const LINK_EXAMPLES = {
+  instagram: { profile: "instagram.com/username", post: "instagram.com/p/ABC123 or /reel/ABC123" },
+  tiktok: { profile: "tiktok.com/@username", post: "tiktok.com/@username/video/123..." },
+  twitter: { profile: "x.com/username", post: "x.com/username/status/123..." },
+  youtube: { profile: "youtube.com/@channel", post: "youtube.com/watch?v=ABC123" },
+  facebook: { profile: "facebook.com/pagename", post: "facebook.com/username/posts/123..." },
+  threads: { profile: "threads.net/@username", post: "threads.net/@username/post/ABC123" },
+  telegram: { profile: "t.me/channelname", post: "t.me/channelname/123" },
+};
+
+function linkHint(platform, serviceName) {
+  const ex = LINK_EXAMPLES[platform?.toLowerCase()];
+  if (!ex) return "";
+  const svc = (serviceName || "").toLowerCase();
+  const isProfile = /follow|subscri/i.test(svc);
+  const isPost = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|plays/i.test(svc) && !isProfile;
+  if (isProfile) return " Make sure you used a profile link, e.g. " + ex.profile;
+  if (isPost) return " Make sure you used a post link, e.g. " + ex.post;
+  return "";
+}
+
 function Spinner({ size = 14, color = "currentColor" }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="animate-spin"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="3" strokeLinecap="round" opacity=".25" /><path d="M12 2a10 10 0 0 1 10 10" stroke={color} strokeWidth="3" strokeLinecap="round" /></svg>;
 }
@@ -235,7 +256,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
             {/duplicate/i.test(o.lastError) ? "A similar order is already active for this link. This order will start automatically once the other completes."
               : /balance|fund/i.test(o.lastError) ? "Temporarily delayed — our team has been notified and this will be resolved shortly."
               : /incorrect service|invalid service/i.test(o.lastError) ? "This service is temporarily unavailable. You'll be refunded if it can't be fulfilled."
-              : /link|url/i.test(o.lastError) ? "The link provided appears to be invalid or unsupported. Please double-check and try again."
+              : /link|url/i.test(o.lastError) ? "The link provided appears to be invalid or unsupported." + linkHint(o.platform, o.service)
               : /quantity.*less|minimum/i.test(o.lastError) ? "The quantity couldn't be processed. Please contact support if this persists."
               : /timeout|timed.?out/i.test(o.lastError) ? "There was a temporary connection issue. Your order will be retried automatically."
               : "Your order hit a temporary issue and will be retried automatically. Contact support if it stays pending."}
@@ -251,7 +272,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
             {/duplicate/i.test(o.lastError) ? "Cancelled — a similar order was already active for this link."
               : /balance|fund/i.test(o.lastError) ? "Cancelled due to a temporary provider issue. You've been refunded."
               : /incorrect service|invalid service/i.test(o.lastError) ? "This service was unavailable and the order couldn't be fulfilled."
-              : /link|url/i.test(o.lastError) ? "Cancelled — the link provided was invalid or not supported for this service."
+              : /link|url/i.test(o.lastError) ? "Cancelled — the link provided was invalid or not supported for this service." + linkHint(o.platform, o.service)
               : /quantity.*less|minimum/i.test(o.lastError) ? "The quantity couldn't be processed by the provider."
               : /timeout|timed.?out/i.test(o.lastError) ? "Cancelled after repeated connection failures."
               : "This order was cancelled. Your wallet has been refunded."}
