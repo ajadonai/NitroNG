@@ -117,8 +117,8 @@ export async function GET(req) {
     results.logRetention = { error: err.message };
   }
 
-  // ═══ WIN-BACK: email inactive new users after 7 days (scheduled runs only) ═══
-  if (isScheduled) try {
+  // ═══ WIN-BACK: email inactive new users after 7 days ═══
+  try {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
