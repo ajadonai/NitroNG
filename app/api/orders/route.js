@@ -26,11 +26,23 @@ export async function GET(req) {
     const session = await getCurrentUser();
     if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
 
+    const url = new URL(req.url);
+    const search = url.searchParams.get('search')?.trim();
+
+    const where = { userId: session.id, deletedAt: null };
+    if (search) {
+      where.OR = [
+        { orderId: { contains: search, mode: 'insensitive' } },
+        { batchId: { contains: search, mode: 'insensitive' } },
+        { link: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
     const orders = await prisma.order.findMany({
-      where: { userId: session.id, deletedAt: null },
+      where,
       orderBy: { createdAt: 'desc' },
       take: 200,
-      include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, speed: true, group: { select: { name: true } } } } },
+      include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, speed: true, refill: true, refillDays: true, group: { select: { name: true } } } } },
     });
 
     return Response.json({
@@ -51,6 +63,9 @@ export async function GET(req) {
         batchId: o.batchId || null,
         lastError: o.lastError || null,
         retryCount: o.retryCount || 0,
+        refill: o.tier?.refill || false,
+        refillDays: o.tier?.refillDays || 0,
+        completedAt: o.completedAt?.toISOString() || null,
         created: o.createdAt.toISOString(),
       })),
     });
@@ -232,10 +247,14 @@ export async function PATCH(req) {
         return created;
       });
 
-      // Step 2: Place on provider AFTER balance secured (skip if queued behind active duplicate)
+      // Step 2: Place on provider AFTER balance secured (skip in dev / skip if queued)
       let apiOrderId = null;
       const reorderQueued = !!reorderActiveForLink;
-      if (order.service.apiId && !reorderQueued) {
+      const isDevReorder = process.env.NODE_ENV === 'development';
+      if (isDevReorder) {
+        apiOrderId = `DEV-${Date.now()}`;
+        await prisma.order.update({ where: { id: newOrder.id }, data: { apiOrderId, status: 'Processing' } });
+      } else if (order.service.apiId && !reorderQueued) {
         try {
           await prisma.order.update({ where: { id: newOrder.id }, data: { dispatchedAt: new Date() } });
           const provider = order.service.provider || 'mtp';
@@ -510,10 +529,14 @@ export async function POST(req) {
       return order;
     });
 
-    // Step 2: Place on provider AFTER balance is secured (skip if queued behind active duplicate)
+    // Step 2: Place on provider AFTER balance is secured (skip in dev / skip if queued)
     let apiOrderId = null;
     const queued = !!activeForLink;
-    if (service.apiId && !queued) {
+    const isDev = process.env.NODE_ENV === 'development';
+    if (isDev) {
+      apiOrderId = `DEV-${Date.now()}`;
+      await prisma.order.update({ where: { id: result.id }, data: { apiOrderId, status: 'Processing' } });
+    } else if (service.apiId && !queued) {
       try {
         await prisma.order.update({ where: { id: result.id }, data: { dispatchedAt: new Date() } });
         const provider = service.provider || 'mtp';

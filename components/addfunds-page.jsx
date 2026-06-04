@@ -266,25 +266,35 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
     !couponApplied ? (
       <div className="mt-2">
         {!showCoupon ? (
-          <button onClick={() => setShowCoupon(true)} className="bg-transparent border-none text-[13px] font-medium cursor-pointer p-0 flex items-center gap-1.5 transition-transform duration-200 hover:-translate-y-px" style={{ color: t.accent }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
-            Apply coupon
+          <button onClick={() => setShowCoupon(true)} className="py-2 px-3 rounded-lg border-none text-[13px] font-semibold cursor-pointer flex items-center gap-2 transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.07)", color: t.accent }}>
+            <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.14)" }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+            </div>
+            Have a coupon code?
           </button>
         ) : (
-          <div>
-            <div className="flex gap-2">
-              <input value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} placeholder="Enter code" className="m flex-1 max-w-[200px] py-[9px] px-3 rounded-lg text-sm tracking-[1px] outline-none" style={{ background: dark ? "rgba(255,255,255,.12)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)"}`, color: t.text, fontFamily: "'JetBrains Mono',monospace" }} />
-              <button onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()} className="py-[9px] px-4 rounded-lg text-sm font-semibold cursor-pointer border-none transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.19)" : "rgba(196,125,142,.14)", color: t.accent, opacity: couponLoading || !couponCode.trim() ? .5 : 1 }}>{couponLoading ? "..." : "Apply"}</button>
+          <div className="py-2.5 px-3 rounded-lg" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)"}` }}>
+            <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-[1px]" style={{ color: t.accent }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+              Coupon Code
             </div>
-            <div className="text-xs mt-1.5" style={{ color: dark ? "#fca5a5" : "#dc2626", visibility: couponError ? "visible" : "hidden" }}>{couponError ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {couponError}</> : '\u00A0'}</div>
+            <div className="flex gap-2">
+              <input value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} placeholder="e.g. NITRO20" className="m flex-1 py-[9px] px-3 rounded-lg text-[13px] tracking-[1.5px] outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "#fff", border: `1.5px solid ${couponCode.trim() ? t.accent : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)")}`, color: t.text, fontFamily: "'JetBrains Mono',monospace", transition: "border-color .2s" }} />
+              <button onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()} className="py-[9px] px-4 rounded-lg text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: couponCode.trim() ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"), color: couponCode.trim() ? "#fff" : t.textMuted, opacity: couponLoading ? .5 : 1 }}>{couponLoading ? "..." : "Apply"}</button>
+            </div>
+            {couponError && <div className="text-xs mt-1.5 flex items-center gap-1" style={{ color: dark ? "#fca5a5" : "#dc2626" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {couponError}</div>}
           </div>
         )}
       </div>
     ) : (
-      <div className="flex items-center gap-2 mt-2 py-2 px-3 rounded-lg text-[13px]" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)", border: `1px solid ${dark ? "rgba(110,231,183,.19)" : "rgba(5,150,105,.14)"}`, color: dark ? "#6ee7b7" : "#059669" }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        <span>Coupon applied: <strong className="m">{couponApplied.code}</strong> · Wallet bonus: {couponApplied.type === "percent" ? `${couponApplied.value}%` : `+₦${couponApplied.value.toLocaleString()}`}</span>
-        <button onClick={removeCoupon} className="bg-transparent border-none text-xs cursor-pointer ml-auto transition-transform duration-200 hover:-translate-y-px" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Remove</button>
+      <div className="mt-2 py-2.5 px-3 rounded-lg" style={{ background: `linear-gradient(135deg, ${dark ? "rgba(110,231,183,.14)" : "rgba(5,150,105,.08)"}, ${dark ? "rgba(110,231,183,.04)" : "rgba(5,150,105,.02)"})`, border: `1px solid ${dark ? "rgba(110,231,183,.22)" : "rgba(5,150,105,.16)"}` }}>
+        <div className="flex items-center gap-2 text-[13px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}>
+          <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(110,231,183,.2)" : "rgba(5,150,105,.12)" }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <span className="font-semibold"><span className="m tracking-[1px]" style={{ fontFamily: "'JetBrains Mono',monospace" }}>{couponApplied.code}</span> · {couponApplied.type === "percent" ? `${couponApplied.value}%` : `+₦${couponApplied.value.toLocaleString()}`} bonus</span>
+          <button onClick={removeCoupon} className="ml-auto bg-transparent border-none text-[11px] font-semibold cursor-pointer py-1 px-2 rounded-md transition-all duration-200 hover:-translate-y-px" style={{ color: dark ? "#fca5a5" : "#dc2626", background: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.05)" }}>Remove</button>
+        </div>
       </div>
     )
   );
@@ -310,16 +320,27 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
     <>
       {/* Payment error — toast handles success */}
       {paymentStatus && paymentStatus.type !== "success" && (
-        <div className="flex items-center justify-between py-3.5 px-[18px] rounded-xl mb-4 gap-3" style={{
-          background: dark ? "rgba(252,165,165,.06)" : "rgba(220,38,38,.04)",
-          border: `1px solid ${dark ? "rgba(252,165,165,.24)" : "rgba(220,38,38,.19)"}`,
-          color: dark ? "#fca5a5" : "#dc2626",
+        <div className="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl mb-4" style={{
+          background: dark
+            ? "linear-gradient(135deg, rgba(239,68,68,.10), rgba(239,68,68,.04))"
+            : "linear-gradient(135deg, rgba(220,38,38,.07), rgba(220,38,38,.02))",
+          border: `1px solid ${dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.15)"}`,
         }}>
-          <div className="flex items-center gap-2.5">
-            <span className="text-base font-semibold shrink-0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
-            <div className="text-[15px] font-semibold">{paymentStatus.message}</div>
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{
+            background: dark ? "rgba(239,68,68,.15)" : "rgba(220,38,38,.10)",
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="1.5" opacity=".35" />
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill={dark ? "#fca5a5" : "#dc2626"} opacity=".12" />
+              <path d="M15 9l-6 6M9 9l6 6" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="2" strokeLinecap="round" />
+            </svg>
           </div>
-          <button onClick={() => setPaymentStatus(null)} className="bg-transparent border-none text-base cursor-pointer p-1 opacity-60" style={{ color: "inherit" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          <div className="flex-1 min-w-0">
+            <div className="text-[12px] font-semibold" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Payment unsuccessful <span className="font-normal" style={{ color: dark ? "rgba(252,165,165,.6)" : "rgba(220,38,38,.55)" }}>— {paymentStatus.message}</span></div>
+          </div>
+          <button onClick={() => setPaymentStatus(null)} className="bg-transparent border-none cursor-pointer p-1 rounded-md shrink-0" style={{ color: dark ? "rgba(252,165,165,.4)" : "rgba(220,38,38,.3)" }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
       )}
 
@@ -387,15 +408,15 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
               ) : (
                 <div className="flex flex-col gap-1">
                   {gateways.map(g => { const sel = method === g.id; const meta = GW_META[g.id] || {}; return (
-                    <button key={g.id} onClick={() => setMethod(g.id)} className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-left cursor-pointer transition-all duration-150" style={{ background: sel ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", border: `1.5px solid ${sel ? t.accent : t.cardBorder}`, fontFamily: "inherit" }}>
-                      <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)" }}>
-                        {g.id === "flutterwave" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? t.accent : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> : g.id === "crypto" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? t.accent : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.767 19.089c4.924.868 6.14-6.025 1.216-6.894m-1.216 6.894L5.86 18.047m5.908 1.042-.347 1.97m1.563-8.864c4.924.869 6.14-6.025 1.215-6.893m-1.215 6.893-6.083-1.072m6.083 1.072.347-1.969M7.116 16.676l-2.576-.454M9.21 4.835l-.347 1.97m0 0-2.576-.455"/></svg> : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? t.accent : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>}
+                    <button key={g.id} onClick={() => setMethod(g.id)} className="w-full flex items-center gap-2 py-2.5 px-2.5 rounded-lg text-left cursor-pointer transition-all duration-150" style={{ background: sel ? `linear-gradient(135deg, ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)"}, ${dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)"})` : "transparent", border: `1.5px solid ${sel ? t.accent : t.cardBorder}`, fontFamily: "inherit" }}>
+                      <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0" style={{ background: sel ? (dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.18)") : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)") }}>
+                        {g.id === "flutterwave" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> : g.id === "crypto" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.767 19.089c4.924.868 6.14-6.025 1.216-6.894m-1.216 6.894L5.86 18.047m5.908 1.042-.347 1.97m1.563-8.864c4.924.869 6.14-6.025 1.215-6.893m-1.215 6.893-6.083-1.072m6.083 1.072.347-1.969M7.116 16.676l-2.576-.454M9.21 4.835l-.347 1.97m0 0-2.576-.455"/></svg> : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[12px] font-semibold leading-tight" style={{ color: sel ? t.accent : t.text }}>{g.name}</div>
                         {meta.desc && <div className="text-[10px] leading-tight" style={{ color: t.textMuted }}>{meta.desc}</div>}
                       </div>
-                      {meta.speed && <span className="text-[9px] font-medium py-px px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>{meta.speed}</span>}
+                      {sel ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> : meta.speed ? <span className="text-[9px] font-medium py-px px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>{meta.speed}</span> : null}
                     </button>
                   ); })}
                 </div>
@@ -472,15 +493,15 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
               {gateways.length > 0 ? (
                 <div className="flex flex-col gap-1">
                   {gateways.map(g => { const sel = method === g.id; const meta = GW_META[g.id] || {}; return (
-                    <button key={g.id} onClick={() => setMethod(g.id)} className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-left cursor-pointer transition-all duration-150" style={{ background: sel ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", border: `1.5px solid ${sel ? t.accent : t.cardBorder}`, fontFamily: "inherit" }}>
-                      <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)" }}>
-                        {g.id === "flutterwave" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? t.accent : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> : g.id === "crypto" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? t.accent : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.767 19.089c4.924.868 6.14-6.025 1.216-6.894m-1.216 6.894L5.86 18.047m5.908 1.042-.347 1.97m1.563-8.864c4.924.869 6.14-6.025 1.215-6.893m-1.215 6.893-6.083-1.072m6.083 1.072.347-1.969M7.116 16.676l-2.576-.454M9.21 4.835l-.347 1.97m0 0-2.576-.455"/></svg> : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? t.accent : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>}
+                    <button key={g.id} onClick={() => setMethod(g.id)} className="w-full flex items-center gap-2 py-2.5 px-2.5 rounded-lg text-left cursor-pointer transition-all duration-150" style={{ background: sel ? `linear-gradient(135deg, ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)"}, ${dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)"})` : "transparent", border: `1.5px solid ${sel ? t.accent : t.cardBorder}`, fontFamily: "inherit" }}>
+                      <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0" style={{ background: sel ? (dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.18)") : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)") }}>
+                        {g.id === "flutterwave" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> : g.id === "crypto" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.767 19.089c4.924.868 6.14-6.025 1.216-6.894m-1.216 6.894L5.86 18.047m5.908 1.042-.347 1.97m1.563-8.864c4.924.869 6.14-6.025 1.215-6.893m-1.215 6.893-6.083-1.072m6.083 1.072.347-1.969M7.116 16.676l-2.576-.454M9.21 4.835l-.347 1.97m0 0-2.576-.455"/></svg> : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[12px] font-semibold leading-tight" style={{ color: sel ? t.accent : t.text }}>{g.name}</div>
                         {meta.desc && <div className="text-[10px] leading-tight" style={{ color: t.textMuted }}>{meta.desc}</div>}
                       </div>
-                      {meta.speed && <span className="text-[9px] font-medium py-px px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>{meta.speed}</span>}
+                      {sel ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> : meta.speed ? <span className="text-[9px] font-medium py-px px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>{meta.speed}</span> : null}
                     </button>
                   ); })}
                 </div>

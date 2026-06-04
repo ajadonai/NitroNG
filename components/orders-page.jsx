@@ -211,7 +211,8 @@ function PlatformStack({ platforms, dark }) {
 
 
 /* ── Shared expanded order details ── */
-function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, compact }) {
+function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, compact, toast }) {
+  const [refillLoading, setRefillLoading] = useState(false);
   const qty = o.quantity || 0;
   const isCancelled = o.status === "Cancelled";
   const hasData = o.remains != null;
@@ -221,6 +222,11 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
   const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : "#c47d8e";
   const waiting = !isCancelled && !hasData && !isComplete && (o.status === "Pending" || o.status === "Processing");
   const py = compact ? "py-3 px-3 desktop:py-3.5 desktop:px-4" : "py-3.5 px-3.5 desktop:py-4 desktop:px-[18px]";
+
+  const refillDays = o.refillDays || 0;
+  const refillExpiry = o.refill && refillDays > 0 && (o.completedAt || o.created) ? new Date(new Date(o.completedAt || o.created).getTime() + refillDays * 24 * 60 * 60 * 1000) : null;
+  const refillActive = refillExpiry && refillExpiry > new Date();
+  const refillDaysLeft = refillActive ? Math.ceil((refillExpiry - Date.now()) / (24 * 60 * 60 * 1000)) : 0;
 
   return (
     <div className={py} style={{ background: dark ? "rgba(196,125,142,.05)" : "rgba(196,125,142,.04)", borderTop: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)"}`, borderBottom: `3px solid ${dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.2)"}`, borderLeft: `3px solid ${t.accent}` }}>
@@ -247,6 +253,28 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
             : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor }} />}
         </div>
       </div>
+
+      {/* Completed info banner */}
+      {o.status === "Completed" && (
+        <div className="mb-3 py-2.5 px-3 rounded-lg flex items-start gap-2.5" style={{ background: dark ? "rgba(34,197,94,.08)" : "rgba(34,197,94,.04)", border: `1px solid ${dark ? "rgba(34,197,94,.18)" : "rgba(34,197,94,.12)"}` }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <div>
+            <div className="text-[13px] font-semibold mb-0.5" style={{ color: dark ? "#6ee7b7" : "#059669" }}>Your order is complete!</div>
+            <div className="text-[12px] leading-[1.55]" style={{ color: dark ? "#a09b95" : "#555250" }}>If you notice a small dip in the next few days, don't worry — platforms routinely clean up inactive accounts and it's completely normal. <strong style={{ color: dark ? "#e5e0db" : "#1a1a1a" }}>Services with refill will top you back up automatically.</strong></div>
+          </div>
+        </div>
+      )}
+
+      {/* Partial info banner */}
+      {o.status === "Partial" && (
+        <div className="mb-3 py-2.5 px-3 rounded-lg flex items-start gap-2.5" style={{ background: dark ? "rgba(245,158,11,.08)" : "rgba(245,158,11,.04)", border: `1px solid ${dark ? "rgba(245,158,11,.18)" : "rgba(245,158,11,.12)"}` }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          <div>
+            <div className="text-[13px] font-semibold mb-0.5" style={{ color: dark ? "#fbbf24" : "#d97706" }}>Partial delivery</div>
+            <div className="text-[12px] leading-[1.55]" style={{ color: dark ? "#a09b95" : "#555250" }}>Part of your order has been delivered and the rest has been refunded to your wallet. This usually happens when a provider runs out of capacity mid-delivery — it's not an error. You can use the refunded balance to place a new order anytime.</div>
+          </div>
+        </div>
+      )}
 
       {/* Issue notice */}
       {o.lastError && o.status === "Pending" && !o.apiOrderId && (
@@ -344,8 +372,25 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         </div>
       )}
       {(o.status === "Completed" || o.status === "Cancelled") && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button onClick={async () => { const ok = await confirm({ title: "Reorder", message: `Reorder ${o.service}? ₦${o.charge?.toLocaleString()} will be charged from your wallet.`, confirmLabel: "Place Reorder" }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>{actionLoading === o.id ? "..." : "Reorder"}</button>
+          {isComplete && refillActive && (
+            <button onClick={async () => {
+              const ok = await confirm({ title: "Request Refill", message: `Request a free refill for this order? The provider will top up any drops.`, confirmLabel: "Request Refill" });
+              if (!ok) return;
+              setRefillLoading(true);
+              try {
+                const res = await fetch("/api/orders/refill", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId: o.id }) });
+                const data = await res.json();
+                if (res.ok) toast?.success?.("Refill requested", data.message || "Delivery will begin shortly");
+                else toast?.error?.("Refill failed", data.error || "Something went wrong");
+              } catch { toast?.error?.("Request failed", "Check your connection"); }
+              setRefillLoading(false);
+            }} disabled={refillLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center gap-1.5" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)", color: dark ? "#6ee7b7" : "#059669" }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+              {refillLoading ? "..." : "Request Refill"}
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -354,7 +399,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
 
 
 /* ── Batch row ── */
-function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpandedOrder, doAction, actionLoading, doBatchAction, batchActionLoading, confirm }) {
+function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpandedOrder, doAction, actionLoading, doBatchAction, batchActionLoading, confirm, toast }) {
   const hasAttentionOrders = batch.orders.some(isAttention);
   const platforms = batch.orders.map(o => o.platform);
   const totalCharge = batch.orders.reduce((s, o) => s + (o.charge || 0), 0);
@@ -426,7 +471,8 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                   <PlatformIcon platform={o.platform} dark={dark} size={22} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}{o.tier ? <span className="font-normal" style={{ color: t.textMuted }}> · {o.tier}</span> : ""}</div>
+                  <div className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
+                  {o.tier && <div className="text-[10px] desktop:text-[11px] font-medium mt-0.5" style={{ color: t.accent }}>{o.tier}</div>}
                   <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>
                     <span className="m">{o.id}</span>
                     <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
@@ -435,11 +481,11 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                   {expandedOrder !== o.id && <ProgressBar order={o} dark={dark} />}
                 </div>
                 <div className="text-right shrink-0">
-                  <div className="m text-[13px] desktop:text-sm font-bold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
+                  <Badge status={o.status} dark={dark} />
                 </div>
                 <svg className="shrink-0 ml-0.5" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expandedOrder === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s", }}><polyline points="6 9 12 15 18 9"/></svg>
               </div>
-              {expandedOrder === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} compact />}
+              {expandedOrder === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} compact />}
             </div>
           ))}
         </div>
@@ -634,7 +680,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
       <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
         {pagedGroups.length > 0 ? pagedGroups.map((item, i) => {
           if (item.type === "batch") {
-            return <BatchRow key={item.batchId} batch={item} dark={dark} t={t} expanded={expandedBatch === item.batchId} onToggle={(id) => { setExpandedBatch(expandedBatch === id ? null : id); setExpandedBatchOrder(null); setExpanded(null); }} expandedOrder={expandedBatchOrder} setExpandedOrder={setExpandedBatchOrder} doAction={doAction} actionLoading={actionLoading} doBatchAction={doBatchAction} batchActionLoading={batchActionLoading} confirm={confirm} />;
+            return <BatchRow key={item.batchId} batch={item} dark={dark} t={t} expanded={expandedBatch === item.batchId} onToggle={(id) => { setExpandedBatch(expandedBatch === id ? null : id); setExpandedBatchOrder(null); setExpanded(null); }} expandedOrder={expandedBatchOrder} setExpandedOrder={setExpandedBatchOrder} doAction={doAction} actionLoading={actionLoading} doBatchAction={doBatchAction} batchActionLoading={batchActionLoading} confirm={confirm} toast={toast} />;
           }
           const o = item.order;
           const attn = isAttention(o);
@@ -645,25 +691,25 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                   <PlatformIcon platform={o.platform} dark={dark} size={26} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap desktop:whitespace-nowrap mb-0.5 max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}{o.tier ? <span className="font-normal" style={{ color: t.textMuted }}> · {o.tier}</span> : ""}</div>
-                  <div className="flex items-center gap-1.5 text-[11px] desktop:text-xs" style={{ color: t.textMuted }}>
+                  <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap desktop:whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
+                  {o.tier && <div className="text-[11px] desktop:text-xs font-medium mt-0.5" style={{ color: t.accent }}>{o.tier}</div>}
+                  <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>
                     <span className="m">{o.id}</span>
                     <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
                     <span>{o.quantity?.toLocaleString() || 0} qty</span>
-                    <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0 hidden desktop:block" />
-                    <span className="hidden desktop:inline">{o.created ? fD(o.created, true) : ""}</span>
+                    <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
+                    <span>{o.created ? fD(o.created, true) : ""}</span>
                   </div>
                   {expanded !== o.id && <ProgressBar order={o} dark={dark} />}
                 </div>
                 <div className="text-right shrink-0">
-                  <div className="m text-[13px] desktop:text-[15px] font-bold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
-                  <div className="text-[10px] desktop:text-[11px] mt-0.5 desktop:hidden" style={{ color: t.textMuted }}>{o.created ? fD(o.created, true) : ""}</div>
+                  <Badge status={o.status} dark={dark} />
                 </div>
                 <svg className="shrink-0 ml-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expanded === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s", }}><polyline points="6 9 12 15 18 9"/></svg>
               </div>
 
               {/* Expanded details */}
-              {expanded === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} />}
+              {expanded === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} />}
             </div>
           );
         }) : (
@@ -725,11 +771,9 @@ export function OrdersSidebar({ orders, dark, t }) {
           <div className="flex items-center gap-2.5">
             <PlatformIcon platform={o.platform} dark={dark} size={28} />
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{o.service}{o.tier ? ` · ${o.tier}` : ""}</div>
-              <div className="flex justify-between items-center text-[13px]">
-                <Badge status={o.status} dark={dark} />
-                <span className="text-[11px]" style={{ color: t.textMuted }}>{o.created ? fD(o.created, true) : ""}</span>
-              </div>
+              <div className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{o.service}</div>
+              {o.tier && <div className="text-[11px] font-medium" style={{ color: t.accent }}>{o.tier}</div>}
+              <div className="text-[11px]" style={{ color: t.textMuted }}>{o.created ? fD(o.created, true) : ""}</div>
             </div>
           </div>
         </div>
