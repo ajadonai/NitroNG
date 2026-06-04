@@ -82,8 +82,9 @@ export async function POST(req) {
     const body = await req.json();
     const { action, ticketId, message } = body;
 
-    if (action === 'create-from-order') {
-      if (!body.userId || !body.orderId) return Response.json({ error: 'User ID and order ID required' }, { status: 400 });
+    if (action === 'create-from-order' || action === 'create-for-user') {
+      if (!body.userId) return Response.json({ error: 'User ID required' }, { status: 400 });
+      if (!body.message?.trim()) return Response.json({ error: 'Message required' }, { status: 400 });
 
       const lastNumeric = await prisma.ticket.findMany({
         where: { OR: [{ ticketId: { startsWith: 'TKT-' } }, { ticketId: { startsWith: 'NTR-' } }] },
@@ -98,13 +99,16 @@ export async function POST(req) {
       }
       const newTicketId = `TKT-${maxNum + 1}`;
 
+      const adminMsg = body.message.trim().slice(0, 2000);
+      const defaultSubject = body.orderId ? `Issue with order ${body.orderId}` : 'Message from Nitro support';
+
       const newTicket = await prisma.ticket.create({
         data: {
           ticketId: newTicketId,
           userId: body.userId,
-          subject: (body.subject || `Issue with order ${body.orderId}`).slice(0, 200),
-          message: (body.message || `We noticed an issue with your order ${body.orderId}.`).slice(0, 2000),
-          orderId: body.orderId,
+          subject: (body.subject || defaultSubject).slice(0, 200),
+          message: `[admin:${admin.name}]`,
+          orderId: body.orderId || null,
           unreadByUser: true,
           unreadByAdmin: false,
           lockedBy: admin.name,
@@ -113,10 +117,10 @@ export async function POST(req) {
       });
 
       await prisma.ticketReply.create({
-        data: { ticketId: newTicket.id, from: `admin:${admin.name}`, message: (body.message || `We noticed an issue with your order ${body.orderId}.`).slice(0, 2000) },
+        data: { ticketId: newTicket.id, from: `admin:${admin.name}`, message: adminMsg },
       });
 
-      await logActivity(admin.name, `Created ticket ${newTicketId} for order ${body.orderId}`, 'ticket');
+      await logActivity(admin.name, `Created ticket ${newTicketId}${body.orderId ? ` for order ${body.orderId}` : ''}`, 'ticket');
       return Response.json({ success: true, ticketId: newTicketId });
     }
 

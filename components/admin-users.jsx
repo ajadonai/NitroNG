@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from "react";
 import { useConfirm } from "./confirm-dialog";
+import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
 import { FilterDropdown } from "./date-range-picker";
 import { Avatar } from "./avatar";
@@ -24,6 +25,7 @@ function filterCount(users, id) {
 
 export default function AdminUsersPage({ dark, t }) {
   const confirm = useConfirm();
+  const toast = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(null);
@@ -85,6 +87,22 @@ export default function AdminUsersPage({ dark, t }) {
     const label = creditType === "gift" ? "Gift" : "Credit";
     const ok = await confirm({ title: `${label} Wallet`, message: `${label} ${fN(Number(creditAmt))} to ${user.name}'s wallet?${creditType === "gift" ? "\n\nThis will be recorded as a gift (counts as an expense)." : ""}`, confirmLabel: `${label} ${fN(Number(creditAmt))}` });
     if (ok) doAction(user.id, "credit", creditAmt, creditType);
+  };
+
+  const [ticketPrompt, setTicketPrompt] = useState(null);
+  const [ticketMsg, setTicketMsg] = useState("");
+  const [ticketSending, setTicketSending] = useState(false);
+  const createTicket = async () => {
+    if (!ticketPrompt || !ticketMsg.trim()) return;
+    setTicketSending(true);
+    try {
+      const res = await fetch("/api/admin/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create-for-user", userId: ticketPrompt.id, message: ticketMsg.trim() }) });
+      const data = await res.json();
+      if (!res.ok) { toast.error("Failed", data.error || "Could not create ticket"); return; }
+      toast.success("Ticket created", data.ticketId);
+      setTicketPrompt(null);
+      setTicketMsg("");
+    } catch { toast.error("Failed", "Check your connection"); } finally { setTicketSending(false); }
   };
 
   const viewTransactions = async (user) => {
@@ -224,10 +242,11 @@ export default function AdminUsersPage({ dark, t }) {
                   </div>
 
                   {/* Actions — full width row on mobile */}
-                  <div className="flex gap-1.5 shrink-0 max-md:w-full max-md:mt-1 max-md:pl-[38px]">
+                  <div className="flex gap-1.5 shrink-0 max-md:w-full max-md:mt-1 max-md:pl-[38px] flex-wrap">
                     <button onClick={() => viewTransactions(u)} className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${txUser?.id === u.id ? t.accent : t.cardBorder}`, background: txUser?.id === u.id ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.06)") : "none", color: txUser?.id === u.id ? t.accent : t.textSoft }}>Txns</button>
                     {!isDeleted && <button onClick={() => setCreditId(creditId === u.id ? null : u.id)} className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${creditId === u.id ? t.accent : t.cardBorder}`, background: creditId === u.id ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.06)") : "none", color: t.accent }}>Credit</button>}
                     {!isDeleted && <button onClick={() => handleBan(u)} className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${u.status === "PendingDeletion" ? (dark ? "rgba(110,231,183,.28)" : "rgba(5,150,105,.24)") : (dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)")}`, background: "none", color: u.status === "PendingDeletion" ? t.green : (u.status === "Active" ? (dark ? "#fca5a5" : "#dc2626") : t.green) }}>{u.status === "PendingDeletion" ? "Reinstate" : (u.status === "Active" ? "Ban" : "Activate")}</button>}
+                    {!isDeleted && <button onClick={() => { setTicketMsg(`Hi ${u.name || "there"}, `); setTicketPrompt(u); }} className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${dark ? "rgba(224,164,88,.28)" : "rgba(224,164,88,.24)"}`, background: "none", color: dark ? "#e0a458" : "#b45309" }}>Ticket</button>}
                   </div>
                 </div>
 
@@ -315,6 +334,19 @@ export default function AdminUsersPage({ dark, t }) {
           <div className="flex gap-1">
             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="py-1.5 px-3 rounded-lg text-[12px] font-medium cursor-pointer font-[inherit]" style={{ border: `1px solid ${t.cardBorder}`, background: "none", color: t.textSoft, opacity: page === 1 ? .4 : 1 }}>← Prev</button>
             <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="py-1.5 px-3 rounded-lg text-[12px] font-medium cursor-pointer font-[inherit]" style={{ border: `1px solid ${t.cardBorder}`, background: "none", color: t.textSoft, opacity: page >= totalPages ? .4 : 1 }}>Next →</button>
+          </div>
+        </div>
+      )}
+      {ticketPrompt && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => { setTicketPrompt(null); setTicketMsg(""); }}>
+          <div className="w-full max-w-[420px] mx-4 rounded-xl p-5" style={{ background: dark ? "#1e1e1e" : "#fff", border: `1px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
+            <div className="text-[15px] font-semibold mb-1" style={{ color: t.text }}>Create ticket for {ticketPrompt.name || "user"}</div>
+            <div className="text-[12px] mb-3" style={{ color: t.textMuted }}>{ticketPrompt.email} — this will appear as a support message in their dashboard.</div>
+            <textarea value={ticketMsg} onChange={e => setTicketMsg(e.target.value)} rows={4} className="w-full rounded-lg py-2.5 px-3 text-sm resize-none outline-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.text }} placeholder="Type your message..." autoFocus />
+            <div className="flex justify-end gap-2 mt-3">
+              <button onClick={() => { setTicketPrompt(null); setTicketMsg(""); }} className="py-2 px-4 rounded-lg text-sm font-medium cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textSoft }}>Cancel</button>
+              <button onClick={createTicket} disabled={!ticketMsg.trim() || ticketSending} className="py-2 px-4 rounded-lg text-sm font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(224,164,88,.2)" : "rgba(224,164,88,.12)", color: dark ? "#e0a458" : "#b45309", opacity: !ticketMsg.trim() || ticketSending ? .5 : 1 }}>{ticketSending ? "Creating..." : "Create Ticket"}</button>
+            </div>
           </div>
         </div>
       )}
