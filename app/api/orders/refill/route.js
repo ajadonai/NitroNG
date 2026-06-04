@@ -35,15 +35,17 @@ export async function POST(req) {
 
   try {
     const result = await refillOrder(provider, order.apiOrderId);
-    if (result?.error) {
-      log.warn(`User refill ${order.orderId}`, result.error);
-      return Response.json({ error: result.error }, { status: 400 });
-    }
-
     log.info('User refill', `${session.email} requested refill for ${order.orderId}`);
     return Response.json({ success: true, message: 'Refill requested — delivery will begin shortly' });
   } catch (err) {
     log.warn(`User refill ${order.orderId}`, err.message);
-    return Response.json({ error: 'Failed to request refill. Please try again or contact support.' }, { status: 500 });
+    const msg = err.message || '';
+    if (msg.includes('Incorrect order') || msg.includes('not found')) {
+      return Response.json({ error: 'This order cannot be refilled by the provider.' }, { status: 400 });
+    }
+    if (msg.includes('Refill already')) {
+      return Response.json({ error: 'A refill is already in progress for this order.' }, { status: 400 });
+    }
+    return Response.json({ error: msg || 'Failed to request refill. Please try again or contact support.' }, { status: 500 });
   }
 }
