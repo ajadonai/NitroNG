@@ -41,8 +41,10 @@ export default function AdminUsersPage({ dark, t }) {
   const [page, setPage] = useState(1);
   const perPage = 15;
 
+  const [activeCount, setActiveCount] = useState(null);
+
   useEffect(() => {
-    fetch("/api/admin/users?limit=200").then(r => r.json()).then(d => { setUsers(d.users || []); if (d.totalCount != null) setTotalCount(d.totalCount); setLoading(false); }).catch(() => setLoading(false));
+    fetch("/api/admin/users?limit=200").then(r => r.json()).then(d => { setUsers(d.users || []); if (d.totalCount != null) setTotalCount(d.totalCount); if (d.activeCount != null) setActiveCount(d.activeCount); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
   const filtered = users.filter(u => {
@@ -138,7 +140,6 @@ export default function AdminUsersPage({ dark, t }) {
 
   const totalBal = users.reduce((s, u) => s + (u.balance || 0), 0);
   const totalOrd = users.reduce((s, u) => s + (u.orders || 0), 0);
-  const activeCount = users.filter(u => u.status === "Active").length;
 
   const cardBg = { background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)" };
   const accentHdr = { background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.10)" };
