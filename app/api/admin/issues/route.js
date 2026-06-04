@@ -71,8 +71,8 @@ export async function POST(req) {
       const issue = await prisma.adminIssue.findUnique({ where: { id: issueId } });
       if (!issue) return Response.json({ error: 'Issue not found' }, { status: 404 });
       if (issue.status !== 'open') return Response.json({ success: true, alreadyResolved: true });
-      await prisma.adminIssue.update({ where: { id: issueId }, data: { status: 'resolved', resolvedAt: new Date(), resolvedBy: admin.name } });
-      await logActivity(admin.name, `Resolved issue: ${issue.title}`, 'system');
+      await prisma.adminIssue.update({ where: { id: issueId }, data: { status: 'ignored', resolvedAt: new Date(), resolvedBy: admin.name } });
+      await logActivity(admin.name, `Ignored issue: ${issue.title}`, 'system');
       return Response.json({ success: true, detail: 'Issue ignored' });
     }
 
