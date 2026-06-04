@@ -28,7 +28,7 @@ export async function GET(req) {
         apiOrderId: { not: null },
         deletedAt: null,
       },
-      include: { service: { select: { provider: true } } },
+      include: { service: { select: { provider: true, category: true } }, tier: { select: { group: { select: { type: true } } } } },
       take: 200, // batch limit
       orderBy: { createdAt: 'asc' }, // oldest first
     });
@@ -75,7 +75,38 @@ export async function GET(req) {
 
           if (!newStatus || newStatus === order.status) continue;
 
-          const providerError = result.error || result.reason || null;
+          let providerError = result.error || result.reason || null;
+
+          // When provider gives no reason, try to diagnose from the order data
+          if (!providerError && newStatus === 'Cancelled') {
+            const groupType = (order.tier?.group?.type || '').toLowerCase();
+            const platform = (order.service?.category || '').toLowerCase();
+            const link = (order.link || '').toLowerCase();
+            const isUrl = /^https?:\/\//.test(link);
+
+            const postPatterns = {
+              instagram: /\/(p|reel|reels|tv|stories)\//i,
+              tiktok: /\/(video|photo|v)\//i,
+              'twitter/x': /\/status\//i,
+              youtube: /\/(watch|shorts|live)\b|youtu\.be\//i,
+              facebook: /\/(posts|videos|watch|reel|photo|story)\b/i,
+              threads: /\/post\//i,
+            };
+            const isPostLink = isUrl && Object.entries(postPatterns).some(([p, re]) => platform.includes(p) && re.test(link));
+            const needsPost = ['likes', 'views', 'comments', 'engagement', 'plays'].includes(groupType);
+            const needsProfile = groupType === 'followers';
+            const platformMatch = Object.keys(postPatterns).some(p => platform.includes(p));
+
+            if (isUrl && platformMatch && !link.includes(platform.replace('twitter/x', 'x.com').replace('twitter/x', 'twitter'))) {
+              providerError = 'wrong_platform_link';
+            } else if (!isUrl && needsPost) {
+              providerError = 'needs_post_link';
+            } else if (needsPost && !isPostLink && isUrl && platformMatch) {
+              providerError = 'needs_post_link';
+            } else if (needsProfile && isPostLink) {
+              providerError = 'needs_profile_link';
+            }
+          }
 
           if (newStatus === 'Cancelled') {
             // Atomic: status update + refund in one transaction so neither can succeed alone
