@@ -364,6 +364,47 @@ export async function POST(req) {
       return Response.json({ error: 'Service pricing not configured' }, { status: 400 });
     }
 
+    // Validate link type matches service type (profile vs post)
+    if (isUrl && tier?.group?.type) {
+      const groupType = tier.group.type.toLowerCase();
+      const needsProfile = groupType === 'followers';
+      const needsPost = ['likes', 'views', 'comments', 'engagement', 'plays'].includes(groupType);
+      const platform = (service.category || '').toLowerCase();
+
+      const postPatterns = {
+        instagram: /\/(p|reel|reels|tv|stories)\//i,
+        tiktok: /\/(video|photo|v)\//i,
+        'twitter/x': /\/status\//i,
+        youtube: /\/(watch|shorts|live)\b|youtu\.be\//i,
+        facebook: /\/(posts|videos|watch|reel|photo|story)\b/i,
+        threads: /\/post\//i,
+        telegram: /\/\d+\s*$/,
+      };
+
+      const isPostLink = Object.entries(postPatterns).some(
+        ([p, re]) => platform.includes(p) && re.test(trimmedLink)
+      );
+      const isProfileLink = isUrl && !isPostLink;
+
+      if (needsProfile && isPostLink) {
+        const example = platform.includes('instagram') ? 'https://instagram.com/yourpage'
+          : platform.includes('tiktok') ? 'https://tiktok.com/@yourpage'
+          : platform.includes('twitter') ? 'https://x.com/yourhandle'
+          : platform.includes('youtube') ? 'https://youtube.com/@yourchannel'
+          : 'your profile link';
+        return Response.json({ error: `This service needs a profile link, not a post link. Example: ${example}` }, { status: 400 });
+      }
+
+      if (needsPost && isProfileLink && Object.keys(postPatterns).some(p => platform.includes(p))) {
+        const example = platform.includes('instagram') ? 'https://instagram.com/p/ABC123'
+          : platform.includes('tiktok') ? 'https://tiktok.com/@user/video/123456'
+          : platform.includes('twitter') ? 'https://x.com/user/status/123456'
+          : platform.includes('youtube') ? 'https://youtube.com/watch?v=ABC123'
+          : 'a link to your post or video';
+        return Response.json({ error: `This service needs a post/content link, not a profile link. Example: ${example}` }, { status: 400 });
+      }
+    }
+
     // Apply loyalty discount based on total lifetime spend
     let loyaltyDiscount = 0;
     let loyaltyTierName = null;
