@@ -1480,6 +1480,19 @@ export function AdminIssuesPage({ dark, t }) {
     setResolving(null);
   };
 
+  const handleIgnore = async (id) => {
+    setResolving(id);
+    try {
+      const res = await fetch("/api/admin/issues", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "ignore", issueId: id }) });
+      const d = await res.json();
+      if (res.ok) {
+        setIssues(prev => prev.map(i => i.id === id ? { ...i, status: "resolved", resolvedAt: new Date().toISOString() } : i));
+        toast.success("Issue ignored");
+      } else { toast.error(d.error || "Failed"); }
+    } catch { toast.error("Network error"); }
+    setResolving(null);
+  };
+
   const handleFireCrons = async () => {
     setFiringCrons(true);
     setCronResults(null);
@@ -1589,7 +1602,7 @@ export function AdminIssuesPage({ dark, t }) {
           <div style={{ borderTop: `1px solid ${rowBorder}` }}>
             <div className="text-[11px] font-semibold uppercase tracking-wide py-2 px-4" style={{ color: t.red }}>Open Issues</div>
             {lowBalanceIssues.map((issue, i) => (
-              <IssueRow key={issue.id} issue={issue} i={i} total={lowBalanceIssues.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} />
+              <IssueRow key={issue.id} issue={issue} i={i} total={lowBalanceIssues.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
             ))}
           </div>
         )}
@@ -1627,7 +1640,7 @@ export function AdminIssuesPage({ dark, t }) {
           <div style={{ borderTop: `1px solid ${rowBorder}` }}>
             <div className="text-[11px] font-semibold uppercase tracking-wide py-2 px-4" style={{ color: t.red }}>Open Issues</div>
             {priceIssues.map((issue, i) => (
-              <IssueRow key={issue.id} issue={issue} i={i} total={priceIssues.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} />
+              <IssueRow key={issue.id} issue={issue} i={i} total={priceIssues.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
             ))}
           </div>
         )}
@@ -1641,7 +1654,7 @@ export function AdminIssuesPage({ dark, t }) {
         defaultOpen={deadServices.length > 0}
       >
         {deadServices.length > 0 ? deadServices.map((issue, i) => (
-          <IssueRow key={issue.id} issue={issue} i={i} total={deadServices.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} />
+          <IssueRow key={issue.id} issue={issue} i={i} total={deadServices.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
         )) : (
           <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>No dead services detected</div>
         )}
@@ -1655,7 +1668,7 @@ export function AdminIssuesPage({ dark, t }) {
         defaultOpen={revivedServices.length > 0}
       >
         {revivedServices.length > 0 ? revivedServices.map((issue, i) => (
-          <IssueRow key={issue.id} issue={issue} i={i} total={revivedServices.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} />
+          <IssueRow key={issue.id} issue={issue} i={i} total={revivedServices.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
         )) : (
           <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>No revived services</div>
         )}
@@ -1669,7 +1682,7 @@ export function AdminIssuesPage({ dark, t }) {
         defaultOpen={orderFailures.length > 0}
       >
         {orderFailures.length > 0 ? orderFailures.map((issue, i) => (
-          <IssueRow key={issue.id} issue={issue} i={i} total={orderFailures.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} />
+          <IssueRow key={issue.id} issue={issue} i={i} total={orderFailures.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
         )) : (
           <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>No order failures</div>
         )}
@@ -1686,7 +1699,7 @@ export function AdminIssuesPage({ dark, t }) {
             countColor={greenBadge}
           >
             {pagedResolved.map((issue, i) => (
-              <IssueRow key={issue.id} issue={issue} i={i} total={pagedResolved.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} />
+              <IssueRow key={issue.id} issue={issue} i={i} total={pagedResolved.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
             ))}
             {totalResolvedPages > 1 && (
               <div className="flex items-center justify-between py-2.5 px-4" style={{ borderTop: `1px solid ${rowBorder}` }}>
@@ -1709,7 +1722,7 @@ export function AdminIssuesPage({ dark, t }) {
   );
 }
 
-function IssueRow({ issue, i, total, dark, t, rowBorder, expanded, setExpanded, resolving, onResolve }) {
+function IssueRow({ issue, i, total, dark, t, rowBorder, expanded, setExpanded, resolving, onResolve, onIgnore }) {
   const isExpanded = expanded === issue.id;
   let meta = null;
   try { meta = issue.metadata ? JSON.parse(issue.metadata) : null; } catch {}
@@ -1721,9 +1734,14 @@ function IssueRow({ issue, i, total, dark, t, rowBorder, expanded, setExpanded, 
           <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(issue.createdAt)}</div>
         </div>
         {issue.status === "open" ? (
-          <button onClick={(e) => { e.stopPropagation(); onResolve(issue.id); }} disabled={resolving === issue.id} className="text-[11px] font-semibold py-1 px-2.5 rounded-lg border-none cursor-pointer font-[inherit] shrink-0" style={{ background: dark ? "rgba(110,231,183,.12)" : "#ecfdf5", color: t.green, opacity: resolving === issue.id ? .5 : 1 }}>
-            {resolving === issue.id ? "..." : "Resolve"}
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button onClick={(e) => { e.stopPropagation(); onIgnore(issue.id); }} disabled={resolving === issue.id} className="text-[11px] font-medium py-1 px-2.5 rounded-lg border-none cursor-pointer font-[inherit]" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textMuted, opacity: resolving === issue.id ? .5 : 1 }}>
+              Ignore
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); onResolve(issue.id); }} disabled={resolving === issue.id} className="text-[11px] font-semibold py-1 px-2.5 rounded-lg border-none cursor-pointer font-[inherit]" style={{ background: dark ? "rgba(110,231,183,.12)" : "#ecfdf5", color: t.green, opacity: resolving === issue.id ? .5 : 1 }}>
+              {resolving === issue.id ? "..." : "Resolve"}
+            </button>
+          </div>
         ) : (
           <span className="text-[11px] font-semibold py-0.5 px-2 rounded-[5px] shrink-0" style={{ background: dark ? "rgba(110,231,183,.08)" : "#ecfdf5", color: t.green }}>Resolved</span>
         )}
