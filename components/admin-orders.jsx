@@ -190,6 +190,22 @@ export default function AdminOrdersPage({ dark, t }) {
     if (expandedBatchOrder) { const o = orders.find(x => x.id === expandedBatchOrder); autoCheck(o); }
   }, [expandedBatchOrder]);
 
+  const [ticketPrompt, setTicketPrompt] = useState(null);
+  const [ticketMsg, setTicketMsg] = useState("");
+  const [ticketSending, setTicketSending] = useState(false);
+  const createTicket = async () => {
+    if (!ticketPrompt || !ticketMsg.trim()) return;
+    setTicketSending(true);
+    try {
+      const res = await fetch("/api/admin/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create-from-order", userId: ticketPrompt.userId, orderId: ticketPrompt.orderId, subject: `Issue with order ${ticketPrompt.orderId}`, message: ticketMsg.trim() }) });
+      const data = await res.json();
+      if (!res.ok) { toast.error("Failed", data.error || "Could not create ticket"); return; }
+      toast.success("Ticket created", data.ticketId);
+      setTicketPrompt(null);
+      setTicketMsg("");
+    } catch { toast.error("Failed", "Check your connection"); } finally { setTicketSending(false); }
+  };
+
   return (
     <>
       <div className="adm-header">
@@ -402,6 +418,7 @@ export default function AdminOrdersPage({ dark, t }) {
                               <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[62px] py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={12} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
                               {o.status !== "Cancelled" && o.status !== "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? This may issue a refund.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={!!actionLoading} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>}
                               {o.status === "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Refill Order", message: `Request a refill for order ${o.id}?`, confirmLabel: "Refill" }); if (ok) doAction(o.id, "refill"); }} disabled={!!actionLoading} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>Refill</button>}
+                              <button onClick={() => { setTicketMsg(`Hi ${o.user || "there"}, we noticed an issue with your order ${o.id}. `); setTicketPrompt({ userId: o.userId, orderId: o.id }); }} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(224,164,88,.12)" : "rgba(224,164,88,.08)", color: dark ? "#e0a458" : "#b45309" }}>Ticket</button>
                             </div>
                           </div>
                         )}
@@ -541,6 +558,7 @@ export default function AdminOrdersPage({ dark, t }) {
                     <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[72px] py-2 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
                     {o.status !== "Cancelled" && o.status !== "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? This may issue a refund.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={!!actionLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>}
                     {o.status === "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Refill Order", message: `Request a refill for order ${o.id}?`, confirmLabel: "Refill" }); if (ok) doAction(o.id, "refill"); }} disabled={!!actionLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>Refill</button>}
+                    <button onClick={() => { setTicketMsg(`Hi ${o.user || "there"}, we noticed an issue with your order ${o.id}. `); setTicketPrompt({ userId: o.userId, orderId: o.id }); }} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(224,164,88,.12)" : "rgba(224,164,88,.08)", color: dark ? "#e0a458" : "#b45309" }}>Ticket</button>
                   </div>
                 </div>
               )}
@@ -589,6 +607,20 @@ export default function AdminOrdersPage({ dark, t }) {
           </div>
         )}
       </div>
+
+      {ticketPrompt && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => { setTicketPrompt(null); setTicketMsg(""); }}>
+          <div className="w-full max-w-[420px] mx-4 rounded-xl p-5" style={{ background: dark ? "#1e1e1e" : "#fff", border: `1px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
+            <div className="text-[15px] font-semibold mb-1" style={{ color: t.text }}>Create ticket for {ticketPrompt.orderId}</div>
+            <div className="text-[12px] mb-3" style={{ color: t.textMuted }}>This will create a support ticket on the user's account. They'll see your message in their dashboard.</div>
+            <textarea value={ticketMsg} onChange={e => setTicketMsg(e.target.value)} rows={4} className="w-full rounded-lg py-2.5 px-3 text-sm resize-none outline-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.text }} placeholder="Type your message to the user..." autoFocus />
+            <div className="flex justify-end gap-2 mt-3">
+              <button onClick={() => { setTicketPrompt(null); setTicketMsg(""); }} className="py-2 px-4 rounded-lg text-sm font-medium cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textSoft }}>Cancel</button>
+              <button onClick={createTicket} disabled={!ticketMsg.trim() || ticketSending} className="py-2 px-4 rounded-lg text-sm font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(224,164,88,.2)" : "rgba(224,164,88,.12)", color: dark ? "#e0a458" : "#b45309", opacity: !ticketMsg.trim() || ticketSending ? .5 : 1 }}>{ticketSending ? "Creating..." : "Create Ticket"}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

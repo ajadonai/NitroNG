@@ -26,7 +26,7 @@ export async function GET() {
         unreadByUser: tk.unreadByUser,
         created: tk.createdAt.toISOString(),
         messages: [
-          { from: 'user', text: tk.message, time: tk.createdAt.toISOString() },
+          ...(tk.message.startsWith('[admin:') ? [] : [{ from: 'user', text: tk.message, time: tk.createdAt.toISOString() }]),
           ...tk.replies.map(r => {
             const fromStr = r.from || 'user';
             const isAdmin = fromStr.startsWith('admin');

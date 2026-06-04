@@ -79,7 +79,51 @@ export async function POST(req) {
   if (error) return error;
 
   try {
-    const { action, ticketId, message } = await req.json();
+    const body = await req.json();
+    const { action, ticketId, message } = body;
+
+    if (action === 'create-from-order' || action === 'create-for-user') {
+      if (!body.userId) return Response.json({ error: 'User ID required' }, { status: 400 });
+      if (!body.message?.trim()) return Response.json({ error: 'Message required' }, { status: 400 });
+
+      const lastNumeric = await prisma.ticket.findMany({
+        where: { OR: [{ ticketId: { startsWith: 'TKT-' } }, { ticketId: { startsWith: 'NTR-' } }] },
+        select: { ticketId: true },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      });
+      let maxNum = 0;
+      for (const tk of lastNumeric) {
+        const n = parseInt(tk.ticketId.replace(/^(TKT|NTR)-/, ''), 10);
+        if (!isNaN(n) && n > maxNum) maxNum = n;
+      }
+      const newTicketId = `TKT-${maxNum + 1}`;
+
+      const adminMsg = body.message.trim().slice(0, 2000);
+      const defaultSubject = body.orderId ? `Issue with order ${body.orderId}` : 'Message from Nitro support';
+
+      const newTicket = await prisma.ticket.create({
+        data: {
+          ticketId: newTicketId,
+          userId: body.userId,
+          subject: (body.subject || defaultSubject).slice(0, 200),
+          message: `[admin:${admin.name}]`,
+          orderId: body.orderId || null,
+          unreadByUser: true,
+          unreadByAdmin: false,
+          lockedBy: admin.name,
+          lockedAt: new Date(),
+        },
+      });
+
+      await prisma.ticketReply.create({
+        data: { ticketId: newTicket.id, from: `admin:${admin.name}`, message: adminMsg },
+      });
+
+      await logActivity(admin.name, `Created ticket ${newTicketId}${body.orderId ? ` for order ${body.orderId}` : ''}`, 'ticket');
+      return Response.json({ success: true, ticketId: newTicketId });
+    }
+
     if (!ticketId) return Response.json({ error: 'Ticket ID required' }, { status: 400 });
 
     const ticket = await prisma.ticket.findFirst({
