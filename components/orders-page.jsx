@@ -273,7 +273,16 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         } else if (err === "admin_cancelled") {
           msg = "This order was cancelled by our team. Your wallet has been refunded.";
         } else if (err === "dispatch_failed") {
-          msg = "This order couldn't be placed with the provider and was automatically refunded.";
+          msg = "This order couldn't be placed and was automatically refunded.";
+        } else if (err === "needs_post_link") {
+          msg = "This service needs a link to a post or video, not a profile link.";
+          guide = true;
+        } else if (err === "needs_profile_link") {
+          msg = "This service needs a profile link, not a post or video link.";
+          guide = true;
+        } else if (err === "wrong_platform_link") {
+          msg = "The link doesn't match the platform for this service.";
+          guide = true;
         } else if (/duplicate/i.test(err)) {
           msg = "A similar order was already active for this link.";
         } else if (/incorrect service|invalid service|service replaced/i.test(err)) {
@@ -288,7 +297,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         } else if (/balance|fund/i.test(err)) {
           msg = "Cancelled due to a temporary provider issue. You've been refunded.";
         } else {
-          msg = "This order was cancelled — this can happen when the link format is wrong or the service couldn't process it. You've been refunded.";
+          msg = "This order was cancelled and you've been refunded. If this keeps happening, check that you're using the right link type.";
           guide = true;
         }
         return (
