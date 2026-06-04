@@ -128,6 +128,16 @@ export async function GET() {
       if (ltRow) loyaltyTiers = JSON.parse(ltRow.value);
     } catch {}
 
+    let unreadTickets = [];
+    try {
+      unreadTickets = await prisma.ticket.findMany({
+        where: { userId: user.id, unreadByUser: true, status: { not: 'Archived' } },
+        select: { ticketId: true, subject: true, updatedAt: true },
+        orderBy: { updatedAt: 'desc' },
+        take: 20,
+      });
+    } catch {}
+
     let currentTosVersion = null;
     try {
       const tosSetting = await prisma.setting.findUnique({ where: { key: 'tos_version' } });
@@ -209,6 +219,11 @@ export async function GET() {
         id: a.id, message: a.message, type: a.type,
       })),
       currentTosVersion,
+      unreadTickets: unreadTickets.map(tk => ({
+        id: tk.ticketId,
+        subject: tk.subject,
+        updated: tk.updatedAt.toISOString(),
+      })),
     });
   } catch (err) {
     log.error('Dashboard', 'Fatal error', { error: err.message });
