@@ -632,6 +632,7 @@ function DashboardInner({ initialData }) {
     if (typeof window === 'undefined') return null;
     try { const s = localStorage.getItem("nitro-notif-readall-at"); return s ? new Date(s) : null; } catch { return null; }
   });
+  const [notifSynced, setNotifSynced] = useState(false);
 
   // Persist to localStorage on change
   useEffect(() => { try { localStorage.setItem("nitro-notif-read", JSON.stringify([...readNotifIds])); } catch {} }, [readNotifIds]);
@@ -731,11 +732,11 @@ function DashboardInner({ initialData }) {
       return true;
     }).sort((a, b) => (b.ts || 0) - (a.ts || 0));
   }, [orders, txs, notifClearedAt, clearedNotifIds]);
-  const bellUnread = notifItems.filter(n => {
+  const bellUnread = notifSynced ? notifItems.filter(n => {
     if (readNotifIds.has(n.id)) return false;
     if (notifReadAllAt && n.ts && n.ts <= notifReadAllAt) return false;
     return true;
-  }).length;
+  }).length : 0;
 
   /* Services/Order state (lifted so sidebars can access) */
   const [noPlatform, setNoPlatform] = useState("instagram");
@@ -860,8 +861,10 @@ function DashboardInner({ initialData }) {
                 try { localStorage.setItem("nitro-per-page", String(nd.perPagePreference)); } catch {}
               }
             }
+            setNotifSynced(true);
           }
         } catch {}
+        setNotifSynced(true);
       } catch { setUser({ name: "User", email: "", balance: 0, refCode: "—", refs: 0, earnings: 0 }); }
     }
     load().then(() => {
