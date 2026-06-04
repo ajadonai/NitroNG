@@ -275,7 +275,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
           : isLink ? "Cancelled — the link provided was invalid or not supported for this service."
           : /quantity.*less|minimum/i.test(err) ? "The quantity couldn't be processed by the provider."
           : /timeout|timed.?out/i.test(err) ? "Cancelled after repeated connection failures."
-          : "This order was cancelled by the provider. Your wallet has been refunded.";
+          : "This order was cancelled — usually this means the link format was incorrect or not supported for this service. You've been refunded.";
         const showGuide = err !== "user_cancelled";
         return (
         <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(252,165,165,.06)" : "rgba(220,38,38,.04)", border: `1px solid ${dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.1)"}` }}>
