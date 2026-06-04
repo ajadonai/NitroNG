@@ -80,7 +80,7 @@ export async function POST(req) {
       const result = await prisma.$transaction(async (tx) => {
         const claimed = await tx.order.updateMany({
           where: { id: order.id, status: { not: 'Cancelled' } },
-          data: { status: 'Cancelled', refundedAt: new Date() },
+          data: { status: 'Cancelled', lastError: 'admin_cancelled', refundedAt: new Date() },
         });
         if (claimed.count === 0) return { ok: false };
 
