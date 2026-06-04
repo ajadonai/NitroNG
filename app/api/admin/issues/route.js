@@ -66,6 +66,16 @@ export async function POST(req) {
       return Response.json({ success: true, detail: check.detail });
     }
 
+    if (action === 'ignore') {
+      if (!issueId) return Response.json({ error: 'Issue ID required' }, { status: 400 });
+      const issue = await prisma.adminIssue.findUnique({ where: { id: issueId } });
+      if (!issue) return Response.json({ error: 'Issue not found' }, { status: 404 });
+      if (issue.status !== 'open') return Response.json({ success: true, alreadyResolved: true });
+      await prisma.adminIssue.update({ where: { id: issueId }, data: { status: 'resolved', resolvedAt: new Date(), resolvedBy: admin.name } });
+      await logActivity(admin.name, `Resolved issue: ${issue.title}`, 'system');
+      return Response.json({ success: true, detail: 'Issue ignored' });
+    }
+
     if (action === 'fire_crons') {
       const secret = process.env.CRON_SECRET;
       if (!secret) return Response.json({ error: 'CRON_SECRET not configured' }, { status: 503 });
