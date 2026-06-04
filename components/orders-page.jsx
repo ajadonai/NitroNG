@@ -265,21 +265,26 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
       )}
 
       {/* Cancellation reason */}
-      {(o.status === "Cancelled" || o.status === "Failed" || o.status === "Rejected") && (
+      {(o.status === "Cancelled" || o.status === "Failed" || o.status === "Rejected") && (() => {
+        const err = o.lastError || "";
+        const isLink = /link|url/i.test(err);
+        const msg = err === "user_cancelled" ? "You cancelled this order. Your wallet has been refunded."
+          : /duplicate/i.test(err) ? "Cancelled — a similar order was already active for this link."
+          : /balance|fund/i.test(err) ? "Cancelled due to a temporary provider issue. You've been refunded."
+          : /incorrect service|invalid service/i.test(err) ? "This service was unavailable and the order couldn't be fulfilled."
+          : isLink ? "Cancelled — the link provided was invalid or not supported for this service."
+          : /quantity.*less|minimum/i.test(err) ? "The quantity couldn't be processed by the provider."
+          : /timeout|timed.?out/i.test(err) ? "Cancelled after repeated connection failures."
+          : "This order was cancelled by the provider. Your wallet has been refunded.";
+        const showGuide = err !== "user_cancelled";
+        return (
         <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(252,165,165,.06)" : "rgba(220,38,38,.04)", border: `1px solid ${dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.1)"}` }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
           <div className="text-[12px]" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>
-            {o.lastError === "user_cancelled" ? "You cancelled this order. Your wallet has been refunded."
-              : o.lastError && /duplicate/i.test(o.lastError) ? "Cancelled — a similar order was already active for this link."
-              : o.lastError && /balance|fund/i.test(o.lastError) ? "Cancelled due to a temporary provider issue. You've been refunded."
-              : o.lastError && /incorrect service|invalid service/i.test(o.lastError) ? "This service was unavailable and the order couldn't be fulfilled."
-              : o.lastError && /link|url/i.test(o.lastError) ? "Cancelled — the link provided was invalid or not supported for this service. " + linkHint(o.platform, o.service)
-              : o.lastError && /quantity.*less|minimum/i.test(o.lastError) ? "The quantity couldn't be processed by the provider."
-              : o.lastError && /timeout|timed.?out/i.test(o.lastError) ? "Cancelled after repeated connection failures."
-              : "This order was cancelled by the provider. Your wallet has been refunded."}
+            {msg}{showGuide && <>{" "}<a href="/blog/how-to-find-the-right-link" target="_blank" style={{ color: dark ? "#fca5a5" : "#dc2626", textDecoration: "underline", fontWeight: 600 }}>Learn more</a></>}
           </div>
-        </div>
-      )}
+        </div>);
+      })()}
 
       {/* Info grid */}
       <div className="grid grid-cols-2 desktop:grid-cols-4 gap-2 mb-3">
