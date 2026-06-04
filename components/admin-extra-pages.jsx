@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
@@ -30,9 +30,19 @@ export function AdminActivityPage({ dark, t }) {
   const [sysPage, setSysPage] = useState(0);
   const [sysPerPage, setSysPerPage] = useState(10);
 
-  useEffect(() => {
-    fetch("/api/admin/activity").then(r => r.json()).then(d => { setLogs(d.activity || []); setLoading(false); }).catch(() => setLoading(false));
+  const fetchActivity = useCallback((q) => {
+    const params = q ? `?search=${encodeURIComponent(q)}` : '';
+    fetch(`/api/admin/activity${params}`).then(r => r.json()).then(d => { setLogs(d.activity || []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
+
+  useEffect(() => { fetchActivity(); }, [fetchActivity]);
+
+  const actSearchTimer = useRef(null);
+  useEffect(() => {
+    if (actSearchTimer.current) clearTimeout(actSearchTimer.current);
+    actSearchTimer.current = setTimeout(() => fetchActivity(search), search ? 350 : 0);
+    return () => clearTimeout(actSearchTimer.current);
+  }, [search, fetchActivity]);
 
   useEffect(() => {
     if (tab === "system" && sysEvents.length === 0 && !sysLoading) {
@@ -56,7 +66,6 @@ export function AdminActivityPage({ dark, t }) {
   const filtered = logs.filter(l => {
     if (filter !== "all" && getTypeLabel(l.type) !== filter) return false;
     if (adminFilter !== "all" && l.admin !== adminFilter) return false;
-    if (search) { const q = search.toLowerCase(); return (l.action || "").toLowerCase().includes(q) || (l.admin || "").toLowerCase().includes(q); }
     return true;
   });
   const adminPages = Math.ceil(filtered.length / perPage);

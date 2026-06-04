@@ -88,25 +88,29 @@ export default function AdminOrdersPage({ dark, t }) {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(() => { try { const s = localStorage.getItem("adm-per-page"); return s ? Number(s) : 25; } catch { return 25; } });
 
-  const fetchOrders = useCallback(() => {
-    fetch("/api/admin/orders").then(r => r.json()).then(d => { setOrders(d.orders || []); setLoading(false); }).catch(() => setLoading(false));
+  const fetchOrders = useCallback((q) => {
+    const params = q ? `?search=${encodeURIComponent(q)}` : '';
+    fetch(`/api/admin/orders${params}`).then(r => r.json()).then(d => { setOrders(d.orders || []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
   useEffect(() => {
-    const id = setInterval(fetchOrders, 30000);
-    const onVis = () => { if (document.visibilityState === 'visible') fetchOrders(); };
+    const id = setInterval(() => fetchOrders(search), 30000);
+    const onVis = () => { if (document.visibilityState === 'visible') fetchOrders(search); };
     document.addEventListener('visibilitychange', onVis);
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); };
-  }, [fetchOrders]);
+  }, [fetchOrders, search]);
+
+  const searchTimer = useRef(null);
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => fetchOrders(search), search ? 350 : 0);
+    return () => clearTimeout(searchTimer.current);
+  }, [search, fetchOrders]);
 
   const filtered = orders.filter(o => {
     if (filter !== "all" && o.status !== filter) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      return (o.id || "").toLowerCase().includes(q) || (o.service || "").toLowerCase().includes(q) || (o.user || "").toLowerCase().includes(q) || (o.batchId || "").toLowerCase().includes(q) || (o.platform || "").toLowerCase().includes(q) || (o.link || "").toLowerCase().includes(q);
-    }
     return true;
   });
 
