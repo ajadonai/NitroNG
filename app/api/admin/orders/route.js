@@ -10,9 +10,23 @@ export async function GET(req) {
 
   try {
     const url = new URL(req.url);
+    const search = url.searchParams.get('search')?.trim();
+
+    const where = { deletedAt: null };
+    if (search) {
+      where.OR = [
+        { orderId: { contains: search, mode: 'insensitive' } },
+        { batchId: { contains: search, mode: 'insensitive' } },
+        { link: { contains: search, mode: 'insensitive' } },
+        { user: { name: { contains: search, mode: 'insensitive' } } },
+        { user: { email: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
     const orders = await prisma.order.findMany({
-      where: { deletedAt: null },
+      where,
       orderBy: { createdAt: 'desc' },
+      take: 300,
       include: {
         user: { select: { name: true, email: true } },
         service: { select: { name: true, category: true, provider: true, apiId: true } },

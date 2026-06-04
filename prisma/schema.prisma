@@ -207,8 +207,9 @@ model ServiceTier {
   serviceId String?
   tier      String  @default("Standard")
   sellPer1k Int
-  refill    Boolean @default(false)
-  speed     String  @default("0-2 hrs")
+  refill     Boolean @default(false)
+  refillDays Int     @default(0)
+  speed      String  @default("0-2 hrs")
   enabled   Boolean @default(true)
   sortOrder Int     @default(0)
   createdAt DateTime @default(now())
@@ -246,6 +247,7 @@ model Order {
   retryCount      Int      @default(0)
   lastError       String?
   dispatchedAt    DateTime?
+  completedAt     DateTime?
   refundedAt      DateTime?
   loyaltyDiscount       Int      @default(0)
   campaignDiscount      Int      @default(0)

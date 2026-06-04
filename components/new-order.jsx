@@ -68,20 +68,49 @@ const TS = {
 const PROV_COLORS = { mtp: "#ef4444", jap: "#3b82f6", dao: "#22c55e" };
 
 function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion }) {
+  const [tipOpen, setTipOpen] = useState(false);
   const promoOff = activePromotion?.active ? activePromotion.discountPercent / 100 : 0;
   return (
-    <div className="flex gap-1.5 flex-wrap mt-2.5" data-tour="no-tier-select">
-      {svc.tiers.map(tier => {
-        const s = TS[tier.tier];
-        const isSel = selTier?.tier === tier.tier && selSvc?.id === svc.id;
-        const displayPrice = promoOff > 0 ? Math.round(tier.price * (1 - promoOff)) : tier.price;
-        return (
-          <button key={tier.tier} onClick={e => onPickTier(tier, e)} className={`no-tier-chip relative py-1 px-2.5 desktop:py-[7px] desktop:px-3.5 rounded-[20px] text-[11px] desktop:text-[13px] font-semibold cursor-pointer border-[1.5px] border-solid font-[inherit] transition-all duration-150 ease-in-out flex items-center gap-1.5 hover:brightness-110 hover:-translate-y-px${isSel ? " !border-2 shadow-[0_2px_8px_rgba(0,0,0,.28)] -translate-y-px" : ""}`} style={{ background: dark ? s.bgD : s.bg, color: s.text, borderColor: isSel ? s.text : (dark ? s.borderD : s.border) }}>
-            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PROV_COLORS[tier.provider] || PROV_COLORS.mtp }} />
-            {s.label} {tier.tier} · ₦{displayPrice.toLocaleString()}
-          </button>
-        );
-      })}
+    <div className="mt-2.5" data-tour="no-tier-select">
+      <div className="flex gap-1.5 flex-wrap items-center">
+        {svc.tiers.map(tier => {
+          const s = TS[tier.tier];
+          const isSel = selTier?.tier === tier.tier && selSvc?.id === svc.id;
+          const displayPrice = promoOff > 0 ? Math.round(tier.price * (1 - promoOff)) : tier.price;
+          return (
+            <button key={tier.tier} onClick={e => onPickTier(tier, e)} className={`no-tier-chip relative py-1 px-2.5 desktop:py-[7px] desktop:px-3.5 rounded-[20px] text-[11px] desktop:text-[13px] font-semibold cursor-pointer border-[1.5px] border-solid font-[inherit] transition-all duration-150 ease-in-out flex items-center gap-1.5 hover:brightness-110 hover:-translate-y-px${isSel ? " !border-2 shadow-[0_2px_8px_rgba(0,0,0,.28)] -translate-y-px" : ""}`} style={{ background: dark ? s.bgD : s.bg, color: s.text, borderColor: isSel ? s.text : (dark ? s.borderD : s.border) }}>
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PROV_COLORS[tier.provider] || PROV_COLORS.mtp }} />
+              {s.label} {tier.tier} · ₦{displayPrice.toLocaleString()}
+            </button>
+          );
+        })}
+        <button onClick={e => { e.stopPropagation(); setTipOpen(!tipOpen); }} className="shrink-0 bg-transparent border-none cursor-pointer p-0 ml-0.5" style={{ color: dark ? "#8a8580" : "#918b85" }} aria-label="What do the tiers mean?">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        </button>
+      </div>
+      {tipOpen && (
+        <div className="mt-2.5 rounded-xl border border-solid p-3 desktop:p-3.5" style={{ background: dark ? "#141830" : "#fafaf8", borderColor: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)" }}>
+          <div className="text-[13px] font-bold mb-2.5" style={{ color: dark ? "#e8e4df" : "#1a1a1a" }}>What do the tiers mean?</div>
+          <div className="flex flex-col gap-2">
+            <div className="py-2 px-2.5 rounded-lg" style={{ background: dark ? "#2d2210" : "#fef7ed" }}>
+              <div className="text-[11.5px] font-bold mb-0.5 flex items-center gap-1.5" style={{ color: "#854F0B" }}>{TS.Budget.label} Budget</div>
+              <div className="text-[11px] leading-[1.5]" style={{ color: dark ? "#b0a9a2" : "#555250" }}>Cheapest option. No refill — if the count drops, it stays dropped. Best for one-time boosts where you don't need long-term retention.</div>
+            </div>
+            <div className="py-2 px-2.5 rounded-lg" style={{ background: dark ? "#0f1e30" : "#eef4fb" }}>
+              <div className="text-[11.5px] font-bold mb-0.5 flex items-center gap-1.5" style={{ color: "#185FA5" }}>{TS.Standard.label} Standard</div>
+              <div className="text-[11px] leading-[1.5]" style={{ color: dark ? "#b0a9a2" : "#555250" }}>Mid-range. Comes with a free top-up if the count drops during the refill window (usually 30 days). Great for most people.</div>
+            </div>
+            <div className="py-2 px-2.5 rounded-lg" style={{ background: dark ? "#221535" : "#f5eef5" }}>
+              <div className="text-[11.5px] font-bold mb-0.5 flex items-center gap-1.5" style={{ color: "#534AB7" }}>{TS.Premium.label} Premium</div>
+              <div className="text-[11px] leading-[1.5]" style={{ color: dark ? "#b0a9a2" : "#555250" }}>Highest quality accounts with lifetime guarantee. If the count ever drops, we refill it forever. Best for profiles you're building long-term.</div>
+            </div>
+          </div>
+          <div className="mt-2.5 py-1.5 px-2.5 rounded-lg flex gap-2 items-start" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px" style={{ color: dark ? "#e0c0c8" : "#8a4a5a" }}><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z"/></svg>
+            <span className="text-[11px] leading-[1.5]" style={{ color: dark ? "#e0c0c8" : "#8a4a5a" }}>With platforms actively removing fake accounts, we recommend <strong>Standard or Premium</strong> for anything you want to keep long-term.</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -278,7 +307,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays/i.test(svcName) && !isProfileSvc;
   const linkTip = getLinkTip(platform, isProfileSvc, isPostSvc);
 
-  const linkPlaceholder = LINK_HINTS[platform] || `${platform}.com/...`;
+  const linkPlaceholder = (LINK_TIPS[platform] ? (isPostSvc ? LINK_TIPS[platform].post : isProfileSvc ? LINK_TIPS[platform].profile : null) : null) || LINK_HINTS[platform] || `${platform}.com/...`;
   const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
 
   const plat = PLATFORMS.find(pl => pl.id === platform);
@@ -292,9 +321,9 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           {onClose && <button onClick={onClose} className="bg-transparent border border-solid rounded-lg w-7 h-7 flex items-center justify-center cursor-pointer shrink-0" style={{ borderColor: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)", color: t.textSoft }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
         </div>
         <div className="text-[17px] font-semibold mb-1 max-md:text-base" style={{ color: t.text }}>{selSvc?.name}</div>
-        {s && <div className="flex items-center gap-1.5 text-sm mb-1.5">
-          <span className="inline-flex items-center gap-1 font-semibold py-0.5 px-2 rounded-md text-[12px]" style={{ background: dark ? s.bgD : s.bg, color: s.text }}>{s.label} {selTier.tier}</span>
-          <span style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace", fontSize: 13 }}>₦{selTier.price.toLocaleString()}/{selTier.per}</span>
+        {s && <div className="inline-flex items-center gap-0 rounded-lg overflow-hidden mb-1.5" style={{ border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+          <span className="inline-flex items-center gap-1 font-semibold py-1 px-2.5 text-[12px]" style={{ background: dark ? s.bgD : s.bg, color: s.text }}>{s.label} {selTier.tier}</span>
+          <span className="py-1 px-2.5 text-[12px] font-semibold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace", background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }}>₦{selTier.price.toLocaleString()}/{selTier.per}</span>
         </div>}
         <div className="text-xs" style={{ color: t.textMuted }}>{refillLabel(selTier.tier)} · {selTier.speed || "Instant"} delivery</div>
       </div>
@@ -309,6 +338,21 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             <input type="url" inputMode="url" aria-label={linkLabel} disabled={orderLoading} placeholder={linkPlaceholder} value={link} onChange={e => validateLink(e.target.value)} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
           </div>
           {linkError ? <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626" }}>{linkError}</div>
+            : !link.trim() && LINK_TIPS[platform] && (isProfileSvc || isPostSvc) ? (() => {
+              const yes = isProfileSvc ? "profile" : "post";
+              const no = isProfileSvc ? "post" : "profile";
+              return <div className="mt-2 rounded-lg py-2.5 px-3 flex flex-col gap-1.5" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", border: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.14)"}` }}>
+                <div className="text-[11px] font-semibold" style={{ color: t.textMuted }}>Paste the right link format</div>
+                {LINK_TIPS[platform][yes] && <div className="flex items-center gap-2 py-1.5 px-2 rounded-md" style={{ background: dark ? "rgba(74,222,128,.08)" : "rgba(22,163,74,.06)", border: `0.5px solid ${dark ? "rgba(74,222,128,.15)" : "rgba(22,163,74,.1)"}` }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={dark ? "#4ade80" : "#16a34a"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span className="text-[11px] font-semibold" style={{ fontFamily: "'JetBrains Mono', monospace", color: dark ? "#4ade80" : "#16a34a" }}>{LINK_TIPS[platform][yes]}</span>
+                </div>}
+                {LINK_TIPS[platform][no] && <div className="flex items-center gap-2 py-1 px-2 rounded-md" style={{ opacity: 0.6 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={dark ? "#f87171" : "#dc2626"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  <span className="text-[11px] line-through" style={{ fontFamily: "'JetBrains Mono', monospace", color: t.textMuted }}>{LINK_TIPS[platform][no]}</span>
+                </div>}
+              </div>;
+            })()
             : linkTip && <div className="text-[11px] mt-[3px]" style={{ color: t.textMuted }}>{linkTip}</div>}
         </div>
         {showComments && (
@@ -347,11 +391,9 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           </div>
         </div>
         <div className="rounded-[10px] p-2.5 mb-3 border border-solid" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", borderColor: t.cardBorder }}>
-          <div className="flex justify-between mb-1 text-[13px]" style={{ color: t.textMuted }}><span>Rate</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>₦{selTier.price.toLocaleString()} / {selTier.per}</span></div>
-          <div className="flex justify-between mb-1 text-[13px]" style={{ color: t.textMuted }}><span>Quantity</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>{qtyNum.toLocaleString()}</span></div>
           {discountAmount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}><span>{loyaltyTier} discount ({loyaltyDiscount}%)</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{discountAmount.toLocaleString()}</span></div>}
           {cappedPromoDiscount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#f9a8d4" : "#be185d" }}><span>Discount ({activePromotion.discountPercent}%){cappedPromoDiscount < promoDiscountAmt ? ` · capped at ₦${cappedPromoDiscount.toLocaleString()}` : ''}</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{cappedPromoDiscount.toLocaleString()}</span></div>}
-          <div className="border-t border-solid pt-2 mt-1 flex justify-between items-baseline" style={{ borderColor: t.cardBorder }}>
+          <div className={`flex justify-between items-baseline${(discountAmount > 0 || cappedPromoDiscount > 0) ? " border-t border-solid pt-2 mt-1" : ""}`} style={(discountAmount > 0 || cappedPromoDiscount > 0) ? { borderColor: t.cardBorder } : undefined}>
             <span className="text-[13px] font-semibold" style={{ color: t.textMuted }}>Total</span>
             <span className="font-bold text-[20px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>{(discountAmount > 0 || cappedPromoDiscount > 0) && <span className="text-[14px] font-normal line-through mr-1.5" style={{ color: t.textMuted }}>₦{basePrice.toLocaleString()}</span>}₦{price.toLocaleString()}</span>
           </div>
@@ -990,36 +1032,29 @@ function MobileGuide({ dark, t }) {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       {open && (
-        <div className="px-3.5 pb-3.5 text-[13px] leading-[1.7]" style={{ color: t.textMuted, borderLeft: `3px solid ${t.accent}`, borderTop: `2px solid ${dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)"}` }}>
-          <div className="mb-1.5"><b style={{ color: "#e0a458" }}>Budget</b> — Cheapest. No refill if count drops.</div>
-          <div className="mb-1.5"><b style={{ color: "#60a5fa" }}>Standard</b> — Best value. Free top-up if count drops.</div>
-          <div className="mb-1.5"><b style={{ color: "#a78bfa" }}>Premium</b> — Top quality. Won't drop. Lifetime guarantee.</div>
+        <div className="px-3.5 pb-3.5 pt-2.5 text-[13px] leading-[1.7] flex flex-col gap-2.5" style={{ color: t.textMuted, borderLeft: `3px solid ${t.accent}`, borderTop: `2px solid ${dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)"}` }}>
+          <div className="text-xs" style={{ color: t.textMuted }}>
+            <div className="mb-[3px]">• Set profile to <b style={{ color: t.text }}>public</b> before ordering</div>
+            <div className="mb-[3px]">• <b style={{ color: t.text }}>Start small</b> — test Budget first</div>
+            <div>• Not sure which tier? Tap the <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"-1px"}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> for a quick breakdown</div>
+          </div>
+
+          <div style={{ height: 1, background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.07)" }} />
+
           <div className="py-2 px-2.5 rounded-lg border border-solid" style={{ background: dark ? "rgba(74,222,128,.1)" : "rgba(22,163,74,.06)", borderColor: dark ? "rgba(74,222,128,.18)" : "rgba(22,163,74,.12)" }}>
             <span className="font-semibold" style={{ color: dark ? "#4ade80" : "#16a34a" }}>🇳🇬 Nigerian Services</span>
             <span className="ml-1">— Look for the flag! Local engagement for Naija creators.</span>
           </div>
-
-          <div className="my-2.5" style={{ height: 1, background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.07)" }} />
 
           <div className="py-2 px-2.5 rounded-lg border border-solid" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderColor: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>
             <span className="font-semibold" style={{ color: "#c47d8e" }}>Bulk Orders</span>
             <span className="ml-1">— Switch to <b style={{ color: t.text }}>Bulk</b> mode to place up to 50 orders in one checkout. Failed orders are retried and refunded automatically.</span>
           </div>
 
-          <div className="my-2.5" style={{ height: 1, background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.07)" }} />
-
           <button onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent("nitro-order-tour")); }} className="py-[9px] px-0 w-full rounded-lg text-[13px] font-semibold cursor-pointer font-[inherit] flex items-center justify-center gap-1.5 border border-solid text-[#c47d8e] transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ borderColor: dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)", background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.06)" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             Need a walkthrough?
           </button>
-
-          <div className="my-2.5" style={{ height: 1, background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.07)" }} />
-
-          <div className="text-xs" style={{ color: t.textMuted }}>
-            <div className="mb-[3px]">• <b style={{ color: t.text }}>Refill</b> = free top-up if count drops</div>
-            <div className="mb-[3px]">• <b style={{ color: t.text }}>Start small</b> — test Budget first</div>
-            <div>• Set profile to <b style={{ color: t.text }}>public</b> before ordering</div>
-          </div>
         </div>
       )}
     </div>
@@ -1384,54 +1419,32 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
 /* ═══ SERVICES RIGHT SIDEBAR              ═══ */
 /* ═══════════════════════════════════════════ */
 export function ServicesSidebar({ dark, t }) {
-  const divider = <div className="my-3" style={{ height: 1, background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.07)" }} />;
   return (
-    <div style={{ fontSize: "103%" }}>
-      <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-2 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Pricing Guide</div>
-      {[
-        ["Budget", TS.Budget.label, "Cheapest. No refill if count drops. Good for testing."],
-        ["Standard", TS.Standard.label, "Best value. Free top-up if count drops."],
-        ["Premium", TS.Premium.label, "Top quality. Won't drop. Lifetime guarantee."],
-      ].map(([tier, icon, desc]) => {
-        const s = TS[tier];
-        return (
-          <div key={tier} className="py-2 px-2.5 rounded-[10px] border border-solid mb-1" style={{ background: dark ? s.bgD : s.bg, borderColor: dark ? s.borderD : s.border }}>
-            <div className="text-[14px] font-semibold mb-[2px]" style={{ color: s.text }}>{icon} {tier}</div>
-            <div className="text-[13px] leading-[1.4]" style={{ color: t.textMuted }}>{desc}</div>
-          </div>
-        );
-      })}
+    <div className="flex flex-col gap-3" style={{ fontSize: "103%" }}>
+      <div className="text-[11px] font-semibold uppercase tracking-[1px] py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Quick Tips</div>
 
-      {/* Nigerian services callout */}
-      <div className="mt-1.5 py-2 px-2.5 rounded-[10px] border border-solid" style={{ background: dark ? "rgba(74,222,128,.1)" : "rgba(22,163,74,.06)", borderColor: dark ? "rgba(74,222,128,.19)" : "rgba(22,163,74,.14)" }}>
-        <div className="text-[13px] font-semibold mb-0.5" style={{ color: dark ? "#4ade80" : "#16a34a" }}>🇳🇬 Nigerian Services</div>
-        <div className="text-[12px] leading-[1.5]" style={{ color: t.textMuted }}>Look for the 🇳🇬 flag! These target Nigerian audiences — real local engagement for Naija creators and businesses.</div>
+      <div className="text-[12px] leading-[1.6]" style={{ color: t.textMuted }}>
+        <div className="mb-1">• Set profile to <b style={{ color: t.text }}>public</b> before ordering</div>
+        <div className="mb-1">• <b style={{ color: t.text }}>Start small</b> — test a Budget tier first</div>
+        <div>• Not sure which tier? Tap the <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"-1px"}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> for a quick breakdown</div>
       </div>
 
-      {divider}
+      <div style={{ height: 1, background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.07)" }} />
 
-      {/* Bulk orders */}
+      <div className="py-2 px-2.5 rounded-[10px] border border-solid" style={{ background: dark ? "rgba(74,222,128,.1)" : "rgba(22,163,74,.06)", borderColor: dark ? "rgba(74,222,128,.19)" : "rgba(22,163,74,.14)" }}>
+        <div className="text-[13px] font-semibold mb-0.5" style={{ color: dark ? "#4ade80" : "#16a34a" }}>🇳🇬 Nigerian Services</div>
+        <div className="text-[12px] leading-[1.5]" style={{ color: t.textMuted }}>Look for the 🇳🇬 flag! Real local engagement for Naija creators and businesses.</div>
+      </div>
+
       <div className="py-2 px-2.5 rounded-[10px] border border-solid" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderColor: dark ? "rgba(196,125,142,.19)" : "rgba(196,125,142,.14)" }}>
         <div className="text-[13px] font-semibold mb-0.5" style={{ color: "#c47d8e" }}>Bulk Orders</div>
-        <div className="text-[12px] leading-[1.5]" style={{ color: t.textMuted }}>Switch to <b style={{ color: t.text }}>Bulk</b> mode to place up to 50 orders in one checkout. Mix platforms, services, and links. Failed orders are retried automatically and refunded if they can't be placed.</div>
+        <div className="text-[12px] leading-[1.5]" style={{ color: t.textMuted }}>Switch to <b style={{ color: t.text }}>Bulk</b> mode to place up to 50 orders in one checkout. Failed orders are retried and refunded automatically.</div>
       </div>
 
-      {divider}
-
-      {/* Walkthrough trigger */}
       <button onClick={() => window.dispatchEvent(new CustomEvent("nitro-order-tour"))} className="py-2.5 px-0 w-full rounded-lg text-[12px] font-semibold cursor-pointer font-[inherit] flex items-center justify-center gap-1.5 border border-solid text-[#c47d8e] transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ borderColor: dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)", background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.06)" }}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         Need a walkthrough?
       </button>
-
-      {divider}
-
-      {/* Pro tips */}
-      <div className="text-[12px] leading-[1.6]" style={{ color: t.textMuted }}>
-        <div className="mb-0.5">• <b style={{ color: t.text }}>Refill</b> = free top-up if count drops</div>
-        <div className="mb-0.5">• <b style={{ color: t.text }}>Start small</b> — test a Budget tier first</div>
-        <div>• Set profile to <b style={{ color: t.text }}>public</b> before ordering</div>
-      </div>
     </div>
   );
 }

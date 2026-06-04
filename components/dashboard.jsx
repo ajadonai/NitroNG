@@ -60,7 +60,7 @@ const NAV_ITEMS = [
   { id: "cleanup", label: "Cleanup", soon: true },
   { id: "earn", label: "Earn", soon: true },
   { id: "leaderboard", label: "Leaderboard", soon: true },
-  { id: "guide", label: "Guide" },
+  { id: "guide", label: "Blog" },
   { id: "referrals", label: "Referrals" },
   { id: "support", label: "Support" },
   { id: "settings", label: "Settings" },
@@ -79,7 +79,7 @@ const MORE_ITEMS = [
   { id: "earn", label: "Earn", soon: true },
   { id: "leaderboard", label: "Leaderboard", soon: true },
   { id: "referrals", label: "Referrals" },
-  { id: "guide", label: "Guide" },
+  { id: "guide", label: "Blog" },
   { id: "support", label: "Support" },
   { id: "settings", label: "Settings" },
   { id: "logout", label: "Log Out" },
@@ -118,6 +118,7 @@ function MobileMenuHint({ dark, t }) {
 /* ═══ OVERVIEW PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
 function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
+  const [eduOpen, setEduOpen] = useState(false);
   const balance = user?.balance || 0;
   const activeOrders = orders.filter(o => o.status === "Processing" || o.status === "Pending" || o.status === "Partial");
   const completed = orders.filter(o => o.status === "Completed").length;
@@ -217,6 +218,56 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
         </div>
       )}
 
+      {/* ── Feature cards ── */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <button onClick={() => setEduOpen(true)} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: `linear-gradient(135deg, ${dark ? "rgba(196,125,142,.22)" : "rgba(196,125,142,.14)"}, ${dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)"})`, border: `1px solid ${dark ? "rgba(196,125,142,.3)" : "rgba(196,125,142,.2)"}` }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.3)" : "rgba(196,125,142,.2)" }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={dark ? "#e8b4c0" : "#a05468"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0018 8 6 6 0 006 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 018.91 14"/></svg>
+          </div>
+          <div className="text-[12px] font-semibold" style={{ color: dark ? "#e8b4c0" : "#a05468" }}>How it works</div>
+        </button>
+        <button onClick={() => setActive("guide")} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: `linear-gradient(135deg, ${dark ? "rgba(110,231,183,.2)" : "rgba(22,163,74,.12)"}, ${dark ? "rgba(110,231,183,.05)" : "rgba(22,163,74,.02)"})`, border: `1px solid ${dark ? "rgba(110,231,183,.28)" : "rgba(22,163,74,.2)"}` }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(110,231,183,.25)" : "rgba(22,163,74,.18)" }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#15803d"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+          </div>
+          <div className="text-[12px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#15803d" }}>Blog</div>
+        </button>
+        <button onClick={() => setActive("support")} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: `linear-gradient(135deg, ${dark ? "rgba(96,165,250,.2)" : "rgba(37,99,235,.1)"}, ${dark ? "rgba(96,165,250,.05)" : "rgba(37,99,235,.02)"})`, border: `1px solid ${dark ? "rgba(96,165,250,.28)" : "rgba(37,99,235,.18)"}` }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(96,165,250,.25)" : "rgba(37,99,235,.16)" }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={dark ? "#60a5fa" : "#1d4ed8"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <div className="text-[12px] font-semibold" style={{ color: dark ? "#60a5fa" : "#1d4ed8" }}>Support</div>
+        </button>
+      </div>
+
+      {/* Education popup */}
+      {eduOpen && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4" onClick={() => setEduOpen(false)}>
+          <div role="dialog" aria-modal="true" className="w-full max-w-[420px] rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,.3)]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#ffffff", border: `1px solid ${t.cardBorder}` }}>
+            <div className="py-4 px-5 flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderBottom: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
+              <div className="text-[15px] font-semibold" style={{ color: t.text }}>How growth services work</div>
+              <button onClick={() => setEduOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent" style={{ borderColor: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)", color: t.textSoft }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div className="py-5 px-5 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
+              {[
+                { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>, color: dark ? "#a5b4fc" : "#4f46e5", title: "Gradual delivery", desc: "Orders are delivered over hours or days, not all at once. This keeps activity looking natural and protects your account from being flagged." },
+                { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>, color: dark ? "#fbbf24" : "#d97706", title: "Normal drops happen", desc: "Social platforms routinely clean up inactive or low-quality accounts. A small drop after delivery is expected — it's the platform doing its job, not a problem with your order." },
+                { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>, color: dark ? "#6ee7b7" : "#059669", title: "Refill is your safety net", desc: "Standard and Premium tiers include automatic refills. If a cleanup hits your count, we top you back up at no extra cost — 30-day window for Standard, lifetime for Premium." },
+                { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, color: dark ? "#f9a8d4" : "#be185d", title: "Keep your account safe", desc: "Always set your profile to public before ordering. Start small with a Budget tier to test, and avoid ordering on brand-new accounts with zero content." },
+              ].map((item, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: `${item.color}14`, color: item.color }}>{item.icon}</div>
+                  <div>
+                    <div className="text-[13px] font-semibold mb-0.5" style={{ color: t.text }}>{item.title}</div>
+                    <div className="text-[12px] leading-[1.55]" style={{ color: t.textMuted }}>{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Recent orders ── */}
       <div className="rounded-[14px] max-md:rounded-xl overflow-hidden mb-3" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
         <div className="py-3 px-[18px] flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
@@ -290,23 +341,9 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
             <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No orders yet</div>
             <div className="text-sm mb-4 leading-[1.5] max-w-[320px]" style={{ color: t.textMuted }}>Choose a platform, pick a service, and place your first order.</div>
             <button onClick={() => setActive("services")} className="cursor-pointer py-2.5 px-6 rounded-[10px] text-sm font-semibold border-none transition-transform duration-200 hover:-translate-y-px mb-2" style={{ background: t.accent, color: "#fff" }}>Place first order</button>
-            <button onClick={() => setActive("guide")} className="cursor-pointer py-2 px-4 rounded-[10px] text-[13px] font-medium border-none transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", color: t.textMuted }}>View guide</button>
+            <button onClick={() => setActive("guide")} className="cursor-pointer py-2 px-4 rounded-[10px] text-[13px] font-medium border-none transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", color: t.textMuted }}>View blog</button>
           </div>
         )}
-      </div>
-
-      {/* ── Quick links ── */}
-      <div className="flex gap-2 mb-3">
-        {[
-          { id: "support", label: "Support", icon: I.support },
-          { id: "guide", label: "Guide", icon: I.guide },
-          { id: "referrals", label: "Referrals", icon: I.referrals },
-        ].map(a => (
-          <button key={a.id} onClick={() => setActive(a.id)} className="flex-1 flex items-center justify-center gap-2 py-2.5 max-md:py-2 rounded-xl border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, color: t.text }}>
-            <span className="shrink-0" style={{ color: t.accent }}>{a.icon}</span>
-            <span className="text-sm max-md:text-[13px] font-medium">{a.label}</span>
-          </button>
-        ))}
       </div>
 
       {/* ── Referral card — tablet/mobile only ── */}
@@ -327,6 +364,7 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
           <button onClick={() => setActive("referrals")} className="w-full py-2 rounded-lg text-[13px] font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>Open referrals</button>
         </div>
       </div>
+
     </>
   );
 }
