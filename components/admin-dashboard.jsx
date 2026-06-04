@@ -771,12 +771,6 @@ function AdminDashboardInner({ initialData }) {
           })}
           <div className="flex-1" />
           <div className="dash-sidebar-divider" style={{ background: t.sidebarBorder }} />
-          <div className="py-1 px-3.5">
-            <button onClick={handleLogout} className="flex items-center gap-2 w-full py-2 px-2.5 rounded-lg border-none text-[13px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(220,38,38,.14)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-              Log Out
-            </button>
-          </div>
           <div className="pt-1 px-3.5 pb-2">
             <a href={SITE.status} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 no-underline">
               <div className="w-1.5 h-1.5 rounded-full" style={{ background: t.green }} />
