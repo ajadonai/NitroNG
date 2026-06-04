@@ -549,9 +549,10 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
 
   useEffect(() => { setOrders(initialOrders); }, [initialOrders]);
 
-  const fetchOrders = useCallback(async () => {
+  const fetchOrders = useCallback(async (q) => {
     try {
-      const res = await fetch("/api/orders");
+      const params = q ? `?search=${encodeURIComponent(q)}` : '';
+      const res = await fetch(`/api/orders${params}`);
       const data = await res.json();
       if (res.ok && data.orders) setOrders(data.orders);
     } catch {}
@@ -607,14 +608,17 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
     try { const saved = localStorage.getItem("nitro-per-page"); if (saved) setPerPage(Number(saved)); } catch {}
   }, []);
 
+  const searchTimer = useRef(null);
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => fetchOrders(search), search ? 350 : 0);
+    return () => clearTimeout(searchTimer.current);
+  }, [search, fetchOrders]);
+
   const filteredOrders = orders.filter(o => {
     if (filter === "active" && o.status !== "Processing" && o.status !== "Pending") return false;
     if (filter === "attention" && !isAttention(o)) return false;
     if (filter !== "all" && filter !== "active" && filter !== "attention" && o.status !== filter) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      if (!o.id?.toLowerCase().includes(q) && !o.service?.toLowerCase().includes(q) && !(o.batchId || "").toLowerCase().includes(q) && !(o.tier || "").toLowerCase().includes(q) && !(o.platform || "").toLowerCase().includes(q) && !(o.link || "").toLowerCase().includes(q)) return false;
-    }
     if (dateRange) {
       const d = new Date(o.created);
       if (dateRange.start && d < dateRange.start) return false;
