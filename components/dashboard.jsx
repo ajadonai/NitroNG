@@ -834,7 +834,13 @@ function DashboardInner({ initialData }) {
           if (nr.ok) {
             const nd = await nr.json();
             if (nd.notifClearedAt) setNotifClearedAt(new Date(nd.notifClearedAt));
-            if (nd.notifReadAllAt) setNotifReadAllAt(new Date(nd.notifReadAllAt));
+            if (nd.notifReadAllAt) {
+              setNotifReadAllAt(new Date(nd.notifReadAllAt));
+            } else {
+              const now = new Date();
+              setNotifReadAllAt(now);
+              fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ readAllAt: now.toISOString() }) }).catch(() => {});
+            }
             if (Array.isArray(nd.notifReadIds) && nd.notifReadIds.length > 0) {
               setReadNotifIds(prev => new Set([...prev, ...nd.notifReadIds]));
             }
