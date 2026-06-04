@@ -1486,7 +1486,7 @@ export function AdminIssuesPage({ dark, t }) {
       const res = await fetch("/api/admin/issues", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "ignore", issueId: id }) });
       const d = await res.json();
       if (res.ok) {
-        setIssues(prev => prev.map(i => i.id === id ? { ...i, status: "resolved", resolvedAt: new Date().toISOString() } : i));
+        setIssues(prev => prev.map(i => i.id === id ? { ...i, status: "ignored", resolvedAt: new Date().toISOString() } : i));
         toast.success("Issue ignored");
       } else { toast.error(d.error || "Failed"); }
     } catch { toast.error("Network error"); }
@@ -1516,7 +1516,7 @@ export function AdminIssuesPage({ dark, t }) {
   const orderFailures = issues.filter(i => i.type === "order_failure" && i.status === "open");
   const lowBalanceIssues = issues.filter(i => i.type === "low_balance" && i.status === "open");
   const priceIssues = issues.filter(i => i.type === "price_alert" && i.status === "open");
-  const resolvedIssues = issues.filter(i => i.status === "resolved");
+  const resolvedIssues = issues.filter(i => i.status === "resolved" || i.status === "ignored");
 
   const balanceEntries = balances ? Object.entries(balances).filter(([k]) => k !== "checkedAt") : [];
   const losers = priceAlerts?.losers || [];
@@ -1693,7 +1693,7 @@ export function AdminIssuesPage({ dark, t }) {
         const totalResolvedPages = Math.ceil(resolvedIssues.length / resolvedPerPage);
         const pagedResolved = resolvedIssues.slice((resolvedPage - 1) * resolvedPerPage, resolvedPage * resolvedPerPage);
         return (
-          <IssueSection title="Resolved" dark={dark} t={t}
+          <IssueSection title="Resolved & Ignored" dark={dark} t={t}
             icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
             count={resolvedIssues.length}
             countColor={greenBadge}
@@ -1743,7 +1743,7 @@ function IssueRow({ issue, i, total, dark, t, rowBorder, expanded, setExpanded, 
             </button>
           </div>
         ) : (
-          <span className="text-[11px] font-semibold py-0.5 px-2 rounded-[5px] shrink-0" style={{ background: dark ? "rgba(110,231,183,.08)" : "#ecfdf5", color: t.green }}>Resolved</span>
+          <span className="text-[11px] font-semibold py-0.5 px-2 rounded-[5px] shrink-0" style={{ background: issue.status === "ignored" ? (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)") : (dark ? "rgba(110,231,183,.08)" : "#ecfdf5"), color: issue.status === "ignored" ? t.textMuted : t.green }}>{issue.status === "ignored" ? "Ignored" : "Resolved"}</span>
         )}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s", flexShrink: 0 }}><polyline points="6 9 12 15 18 9"/></svg>
       </div>
@@ -1757,7 +1757,7 @@ function IssueRow({ issue, i, total, dark, t, rowBorder, expanded, setExpanded, 
               ))}
             </div>
           )}
-          {issue.resolvedBy && <div className="mt-2 text-[12px]">Resolved by <strong style={{ color: t.text }}>{issue.resolvedBy}</strong> on {fD(issue.resolvedAt)}</div>}
+          {issue.resolvedBy && <div className="mt-2 text-[12px]">{issue.status === "ignored" ? "Ignored" : "Resolved"} by <strong style={{ color: t.text }}>{issue.resolvedBy}</strong> on {fD(issue.resolvedAt)}</div>}
         </div>
       )}
     </div>

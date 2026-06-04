@@ -486,15 +486,16 @@ const NOTIF_ICONS = {
   x: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
   dollar: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>,
   gift: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/></svg>,
+  chat: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,
 };
 
-function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedIds, setClearedIds, setClearedAt, readAllAt, setReadAllAt }) {
+function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedIds, setClearedIds, setClearedAt, readAllAt, setReadAllAt, onNavigate }) {
   const [filter, setFilter] = useState("all");
 
   const filtered = filter === "all" ? items : items.filter(n => n.type === filter);
   const display = filtered.slice(0, 10);
   const hasMore = filtered.length > 10;
-  const unreadCount = items.filter(n => !readIds.has(n.id) && !(readAllAt && n.ts && n.ts <= readAllAt)).length;
+  const unreadCount = items.filter(n => n.alwaysUnread || (!readIds.has(n.id) && !(readAllAt && n.ts && n.ts <= readAllAt))).length;
   const markAllRead = () => {
     const allIds = items.map(n => n.id);
     const now = new Date();
@@ -538,9 +539,9 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
       {/* List */}
       <div className="max-h-[280px] overflow-y-auto">
         {display.length > 0 ? display.map((n, i) => {
-          const isRead = readIds.has(n.id) || (readAllAt && n.ts && n.ts <= readAllAt);
+          const isRead = n.alwaysUnread ? false : readIds.has(n.id) || (readAllAt && n.ts && n.ts <= readAllAt);
           return (
-            <div key={n.id} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => markRead(n.id)} className="flex items-start gap-2.5 py-3 px-4 transition-colors duration-150 hover:bg-[rgba(196,125,142,.1)]" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: !isRead ? (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)") : "transparent", cursor: "pointer" }}>
+            <div key={n.id} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => { if (n.type === "ticket" && onNavigate) { onNavigate("support"); onClose(); } else { markRead(n.id); } }} className="flex items-start gap-2.5 py-3 px-4 transition-colors duration-150 hover:bg-[rgba(196,125,142,.1)]" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: !isRead ? (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)") : "transparent", cursor: "pointer" }}>
               <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${n.color}15`, color: n.color }}>{NOTIF_ICONS[n.icon]}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center gap-1.5">
@@ -663,6 +664,7 @@ function DashboardInner({ initialData }) {
   });
   const [orders, setOrders] = useState(initialData?.orders || []);
   const [txs, setTxs] = useState(initialData?.transactions || []);
+  const [unreadTickets, setUnreadTickets] = useState(initialData?.unreadTickets || []);
   const [walletSummary, setWalletSummary] = useState(initialData?.walletSummary || { funded: 0, spent: 0 });
   const enrichedTxs = useMemo(() => {
     const orderMap = {};
@@ -725,14 +727,25 @@ function DashboardInner({ initialData }) {
         color: dark_ ? "#e0a458" : "#d97706",
         icon: "gift",
       })),
+      ...unreadTickets.map(tk => ({
+        id: `tkt-${tk.id}`, type: "ticket",
+        title: "New message from support",
+        desc: tk.subject || "You have an unread support message",
+        time: tk.updated ? fD(tk.updated) : "", ts: new Date(tk.updated),
+        color: dark_ ? "#a5b4fc" : "#4f46e5",
+        icon: "chat",
+        alwaysUnread: true,
+      })),
     ];
     return all.filter(n => {
+      if (n.alwaysUnread) return true;
       if (clearedNotifIds.has(n.id)) return false;
       if (notifClearedAt && n.ts && n.ts <= new Date(notifClearedAt)) return false;
       return true;
     }).sort((a, b) => (b.ts || 0) - (a.ts || 0));
-  }, [orders, txs, notifClearedAt, clearedNotifIds]);
+  }, [orders, txs, unreadTickets, notifClearedAt, clearedNotifIds]);
   const bellUnread = notifSynced ? notifItems.filter(n => {
+    if (n.alwaysUnread) return true;
     if (readNotifIds.has(n.id)) return false;
     if (notifReadAllAt && n.ts && n.ts <= notifReadAllAt) return false;
     return true;
@@ -789,6 +802,7 @@ function DashboardInner({ initialData }) {
         setUser(data.user);
         if (data.orders) setOrders(data.orders);
         if (data.transactions) setTxs(data.transactions);
+        if (data.unreadTickets) setUnreadTickets(data.unreadTickets);
         if (data.walletSummary) setWalletSummary(data.walletSummary);
         if (data.alerts) setAlerts(data.alerts);
         if (data.currentTosVersion) setCurrentTosVersion(data.currentTosVersion);
@@ -821,6 +835,7 @@ function DashboardInner({ initialData }) {
             setUser(data.user);
             if (data.orders) setOrders(data.orders);
             if (data.transactions) setTxs(data.transactions);
+        if (data.unreadTickets) setUnreadTickets(data.unreadTickets);
             if (data.walletSummary) setWalletSummary(data.walletSummary);
             if (data.alerts) setAlerts(data.alerts);
             if (data.currentTosVersion) setCurrentTosVersion(data.currentTosVersion);
@@ -895,6 +910,7 @@ function DashboardInner({ initialData }) {
           if (data.user) setUser(data.user);
           if (data.orders) setOrders(data.orders);
           if (data.transactions) setTxs(data.transactions);
+        if (data.unreadTickets) setUnreadTickets(data.unreadTickets);
           if (data.walletSummary) setWalletSummary(data.walletSummary);
           if (data.alerts) setAlerts(data.alerts);
         }
@@ -935,6 +951,7 @@ function DashboardInner({ initialData }) {
               const dashData = await dashRes.json();
               setUser(dashData.user);
               if (dashData.transactions) setTxs(dashData.transactions);
+              if (dashData.unreadTickets) setUnreadTickets(dashData.unreadTickets);
               if (dashData.walletSummary) setWalletSummary(dashData.walletSummary);
             }
           } catch {}
@@ -1124,7 +1141,7 @@ function DashboardInner({ initialData }) {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
               {bellUnread > 0 && <div className="dash-bell-badge">{bellUnread > 10 ? "10+" : bellUnread}</div>}
             </button>
-            {notifOpen && <NotifDropdown items={notifItems} dark={dark} t={t} onClose={() => setNotifOpen(false)} readIds={readNotifIds} setReadIds={setReadNotifIds} clearedIds={clearedNotifIds} setClearedIds={setClearedNotifIds} setClearedAt={setNotifClearedAt} readAllAt={notifReadAllAt} setReadAllAt={setNotifReadAllAt} />}
+            {notifOpen && <NotifDropdown items={notifItems} dark={dark} t={t} onClose={() => setNotifOpen(false)} readIds={readNotifIds} setReadIds={setReadNotifIds} clearedIds={clearedNotifIds} setClearedIds={setClearedNotifIds} setClearedAt={setNotifClearedAt} readAllAt={notifReadAllAt} setReadAllAt={setNotifReadAllAt} onNavigate={setActive} />}
           </div>
           {/* Avatar → Settings */}
           <button onClick={() => { setActive("settings"); setLeftOpen(false); }} className="dash-avatar-btn" aria-label="Profile">

@@ -24,6 +24,7 @@ export async function GET(req) {
       orders: orders.map(o => ({
         id: o.orderId || o.id,
         internalId: o.id,
+        userId: o.userId,
         user: o.user?.name || 'Unknown',
         email: o.user?.email || '',
         service: o.tier?.group?.name || o.service?.name || o.serviceId,
