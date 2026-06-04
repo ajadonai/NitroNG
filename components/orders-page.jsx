@@ -267,21 +267,35 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
       {/* Cancellation reason */}
       {(o.status === "Cancelled" || o.status === "Failed" || o.status === "Rejected") && (() => {
         const err = o.lastError || "";
-        const isLink = /link|url/i.test(err);
-        const msg = err === "user_cancelled" ? "You cancelled this order. Your wallet has been refunded."
-          : /duplicate/i.test(err) ? "Cancelled — a similar order was already active for this link."
-          : /balance|fund/i.test(err) ? "Cancelled due to a temporary provider issue. You've been refunded."
-          : /incorrect service|invalid service/i.test(err) ? "This service was unavailable and the order couldn't be fulfilled."
-          : isLink ? "Cancelled — the link provided was invalid or not supported for this service."
-          : /quantity.*less|minimum/i.test(err) ? "The quantity couldn't be processed by the provider."
-          : /timeout|timed.?out/i.test(err) ? "Cancelled after repeated connection failures."
-          : "This order was cancelled — usually this means the link format was incorrect or not supported for this service. You've been refunded.";
-        const showGuide = err !== "user_cancelled";
+        let msg, guide = false;
+        if (err === "user_cancelled") {
+          msg = "You cancelled this order. Your wallet has been refunded.";
+        } else if (err === "admin_cancelled") {
+          msg = "This order was cancelled by our team. Your wallet has been refunded.";
+        } else if (err === "dispatch_failed") {
+          msg = "This order couldn't be placed with the provider and was automatically refunded.";
+        } else if (/duplicate/i.test(err)) {
+          msg = "A similar order was already active for this link.";
+        } else if (/incorrect service|invalid service|service replaced/i.test(err)) {
+          msg = "This service was temporarily unavailable. You've been refunded.";
+        } else if (/quantity.*less|minim/i.test(err)) {
+          msg = "The quantity was below the minimum for this service.";
+        } else if (/link|url/i.test(err)) {
+          msg = "The link you provided wasn't supported for this service.";
+          guide = true;
+        } else if (/timeout|timed.?out/i.test(err)) {
+          msg = "This order failed after repeated connection issues. You've been refunded.";
+        } else if (/balance|fund/i.test(err)) {
+          msg = "Cancelled due to a temporary provider issue. You've been refunded.";
+        } else {
+          msg = "This order was cancelled — this can happen when the link format is wrong or the service couldn't process it. You've been refunded.";
+          guide = true;
+        }
         return (
         <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(252,165,165,.06)" : "rgba(220,38,38,.04)", border: `1px solid ${dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.1)"}` }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
           <div className="text-[12px]" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>
-            {msg}{showGuide && <>{" "}<a href="/blog/how-to-find-the-right-link" target="_blank" style={{ color: dark ? "#fca5a5" : "#dc2626", textDecoration: "underline", fontWeight: 600 }}>Learn more</a></>}
+            {msg}{guide && <>{" "}<a href="/blog/how-to-find-the-right-link" target="_blank" style={{ color: dark ? "#fca5a5" : "#dc2626", textDecoration: "underline", fontWeight: 600 }}>Learn more</a></>}
           </div>
         </div>);
       })()}

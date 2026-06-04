@@ -297,7 +297,7 @@ export async function GET(req) {
           await prisma.$transaction(async (tx) => {
             const claimed = await tx.order.updateMany({
               where: { id: order.id, status: { in: ['Pending', 'Dispatching'] }, apiOrderId: null },
-              data: { status: 'Cancelled', refundedAt: new Date() },
+              data: { status: 'Cancelled', lastError: 'dispatch_failed', refundedAt: new Date() },
             });
             if (claimed.count === 0) return;
             await tx.$executeRaw`UPDATE users SET balance = balance + ${order.charge} WHERE id = ${order.userId}`;
