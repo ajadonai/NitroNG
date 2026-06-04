@@ -275,13 +275,13 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         } else if (err === "dispatch_failed") {
           msg = "This order couldn't be placed and was automatically refunded.";
         } else if (err === "needs_post_link") {
-          msg = "This service needs a link to a post or video, not a profile link.";
+          msg = "This service works on posts and videos — you'll need to paste a link to the specific post, not your profile.";
           guide = true;
         } else if (err === "needs_profile_link") {
-          msg = "This service needs a profile link, not a post or video link.";
+          msg = "This service works on profiles — paste your profile link instead of a link to a specific post or video.";
           guide = true;
         } else if (err === "wrong_platform_link") {
-          msg = "The link doesn't match the platform for this service.";
+          msg = "The link you shared isn't from the right platform for this service. Double-check you're copying from the correct app.";
           guide = true;
         } else if (/duplicate/i.test(err)) {
           msg = "A similar order was already active for this link.";
@@ -290,14 +290,14 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         } else if (/quantity.*less|minim/i.test(err)) {
           msg = "The quantity was below the minimum for this service.";
         } else if (/link|url/i.test(err)) {
-          msg = "The link you provided wasn't supported for this service.";
+          msg = "Something about this link didn't work for this service. Make sure you're copying the right type of link.";
           guide = true;
         } else if (/timeout|timed.?out/i.test(err)) {
           msg = "This order failed after repeated connection issues. You've been refunded.";
         } else if (/balance|fund/i.test(err)) {
           msg = "Cancelled due to a temporary provider issue. You've been refunded.";
         } else {
-          msg = "This order was cancelled and you've been refunded. If this keeps happening, check that you're using the right link type.";
+          msg = "This order didn't go through and you've been refunded. If this keeps happening, make sure you're using the right link.";
           guide = true;
         }
         return (
