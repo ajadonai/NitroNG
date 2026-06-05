@@ -19,29 +19,6 @@ function Badge({ status, dark }) {
   return <span className="text-[13px] font-semibold py-0.5 px-2 rounded-[5px] border-[0.5px] whitespace-nowrap inline-block" style={{ background: sBg(status, dark), color: sClr(status, dark), borderColor: sBrd(status, dark) }}>{status}</span>;
 }
 
-function ProgressBar({ order, dark }) {
-  const qty = order.quantity || 0;
-  if (!qty || order.status === "Cancelled") return null;
-  const hasData = order.remains != null;
-  const isComplete = order.status === "Completed";
-  const delivered = isComplete ? qty : hasData ? Math.max(0, qty - Math.max(0, order.remains)) : 0;
-  const pct = isComplete ? 100 : hasData ? Math.min(100, Math.round((delivered / qty) * 100)) : 0;
-  const color = isComplete ? (dark ? "#6ee7b7" : "#059669") : "#c47d8e";
-  const waiting = !hasData && !isComplete && (order.status === "Pending" || order.status === "Processing");
-  return (
-    <div>
-      <div className="flex items-center justify-between text-[11px] mb-1" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.45)" }}>
-        <span>{waiting ? "Waiting to start" : `${delivered.toLocaleString()} / ${qty.toLocaleString()} delivered`}</span>
-      </div>
-      <div className="max-w-[220px] h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
-        {waiting
-          ? <div className="h-full w-1/3 rounded-full" style={{ background: `${color}40`, animation: "progress-pulse 1.8s ease-in-out infinite" }} />
-          : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: color }} />}
-      </div>
-    </div>
-  );
-}
-
 function PlatformStack({ platforms, dark }) {
   const unique = [...new Set(platforms.filter(Boolean))];
   if (!unique.length) return null;
@@ -309,14 +286,13 @@ export default function AdminOrdersPage({ dark, t }) {
                           <div className="min-w-0 flex-1">
                             <div className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
                             {o.tier && <div className="text-[10px] desktop:text-[11px] font-medium mt-0.5" style={{ color: t.accent }}>{o.tier}</div>}
-                            <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>
-                              <span className="m" style={o.status === "Cancelled" ? { color: dark ? "#fca5a5" : "#dc2626" } : o.status === "Completed" ? { color: dark ? "#6ee7b7" : "#059669" } : o.status === "Partial" ? { color: dark ? "#fbbf24" : "#d97706" } : undefined}>{o.id}</span>
+                            <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5 flex-wrap" style={{ color: t.textMuted }}>
+                              <span>{o.created ? fD(o.created, true) : ""}</span>
                               <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-                              <span>{o.quantity?.toLocaleString() || 0} qty</span>
+                              <span>{o.user}</span>
                             </div>
                           </div>
                           <div className="text-right shrink-0 flex items-center gap-1.5">
-                            {!["Completed", "Cancelled", "Partial"].includes(o.status) && <span className="inline-block w-[5px] h-[5px] rounded-full shrink-0" style={{ background: sClr(o.status, dark) }} />}
                             <div className="m text-[13px] desktop:text-sm font-bold" style={{ color: o.status === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : o.status === "Partial" ? (dark ? "#fbbf24" : "#d97706") : (dark ? "#6ee7b7" : "#059669") }}>{o.status === "Cancelled" ? "-" : "+"}{fN(o.charge)}</div>
                           </div>
                           <svg className="shrink-0 ml-0.5" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expandedBatchOrder === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
@@ -335,12 +311,11 @@ export default function AdminOrdersPage({ dark, t }) {
 
                             {/* Link */}
                             {o.link && (
-                              <div className="mb-2.5 py-1.5 px-2.5 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                                <div className="flex items-center gap-1.5 mb-0.5">
-                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                                  <span className="text-[10px] uppercase tracking-[1px] font-medium" style={{ color: t.textMuted }}>Link</span>
+                              <div className="mb-2.5 py-1.5 px-2.5 rounded-lg flex items-center gap-2 min-w-0 max-w-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.025)", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>
+                                <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
                                 </div>
-                                <a href={o.link} target="_blank" rel="noopener noreferrer" className="m text-[12px] break-all" style={{ color: t.accent, textDecoration: "underline", textUnderlineOffset: 3 }}>{o.link}</a>
+                                <a href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="m min-w-0 flex-1 text-[12px] leading-[1.45] overflow-hidden text-ellipsis whitespace-nowrap no-underline" style={{ color: t.textSoft }}>{o.link}</a>
                               </div>
                             )}
 
@@ -382,7 +357,15 @@ export default function AdminOrdersPage({ dark, t }) {
 
                             {/* Info grid */}
                             {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); return (
-                            <div className="grid grid-cols-3 desktop:grid-cols-4 gap-1.5 mb-2.5">
+                            <div className="grid grid-cols-2 desktop:grid-cols-4 gap-1.5 mb-2.5">
+                              <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                                <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Order No</div>
+                                <div className="m text-[13px] font-semibold break-all" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.id || "—"}</div>
+                              </div>
+                              <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                                <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Quantity</div>
+                                <div className="m text-[13px] font-semibold" style={{ color: t.text }}>{(o.quantity || 0).toLocaleString()}</div>
+                              </div>
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : isPartial ? "Net Charge" : "Charge"}</div>
                                 <div className="m text-[13px] font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : o.status === "Partial" ? (dark ? "#fbbf24" : "#d97706") : (dark ? "#6ee7b7" : "#059669") }}>{o.status === "Cancelled" ? "-" : "+"}{fN(netCharge)}</div>
@@ -447,17 +430,12 @@ export default function AdminOrdersPage({ dark, t }) {
                   <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
                   {o.tier && <div className="text-[11px] desktop:text-xs font-medium mt-0.5" style={{ color: t.accent }}>{o.tier}</div>}
                   <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5 flex-wrap" style={{ color: t.textMuted }}>
-                    <span className="m" style={o.status === "Cancelled" ? { color: dark ? "#fca5a5" : "#dc2626" } : o.status === "Completed" ? { color: dark ? "#6ee7b7" : "#059669" } : o.status === "Partial" ? { color: dark ? "#fbbf24" : "#d97706" } : undefined}>{o.id}</span>
+                    <span>{o.created ? fD(o.created, true) : ""}</span>
                     <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
                     <span>{o.user}</span>
-                    <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-                    <span>{o.quantity?.toLocaleString() || 0} qty</span>
-                    <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-                    <span>{o.created ? fD(o.created, true) : ""}</span>
                   </div>
                 </div>
                 <div className="text-right shrink-0 flex items-center gap-1.5">
-                  {!["Completed", "Cancelled", "Partial"].includes(o.status) && <span className="inline-block w-[6px] h-[6px] rounded-full shrink-0" style={{ background: sClr(o.status, dark) }} />}
                   <div className="m text-[13px] desktop:text-[15px] font-bold" style={{ color: o.status === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : o.status === "Partial" ? (dark ? "#fbbf24" : "#d97706") : (dark ? "#6ee7b7" : "#059669") }}>{o.status === "Cancelled" ? "-" : "+"}{fN(o.charge)}</div>
                 </div>
                 <svg className="shrink-0 ml-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expanded === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
@@ -476,12 +454,11 @@ export default function AdminOrdersPage({ dark, t }) {
 
                   {/* Link */}
                   {o.link && (
-                    <div className="mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                        <span className="text-[11px] uppercase tracking-[1px] font-medium" style={{ color: t.textMuted }}>Link</span>
+                    <div className="mb-3 py-2 px-2.5 rounded-lg flex items-center gap-2 min-w-0 max-w-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.025)", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>
+                      <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
                       </div>
-                      <a href={o.link} target="_blank" rel="noopener noreferrer" className="m text-[13px] break-all" style={{ color: t.accent, textDecoration: "underline", textUnderlineOffset: 3 }}>{o.link}</a>
+                      <a href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="m min-w-0 flex-1 text-[12px] desktop:text-[13px] leading-[1.45] overflow-hidden text-ellipsis whitespace-nowrap no-underline" style={{ color: t.textSoft }}>{o.link}</a>
                     </div>
                   )}
 
@@ -523,7 +500,15 @@ export default function AdminOrdersPage({ dark, t }) {
 
                   {/* Info grid */}
                   {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); return (
-                  <div className="grid grid-cols-3 desktop:grid-cols-4 gap-2 mb-3">
+                  <div className="grid grid-cols-2 desktop:grid-cols-4 gap-2 mb-3">
+                    <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                      <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Order No</div>
+                      <div className="m text-sm font-semibold break-all" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.id || "—"}</div>
+                    </div>
+                    <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                      <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Quantity</div>
+                      <div className="m text-sm font-semibold" style={{ color: t.text }}>{(o.quantity || 0).toLocaleString()}</div>
+                    </div>
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : isPartial ? "Net Charge" : "Charge"}</div>
                       <div className="m text-sm font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : o.status === "Partial" ? (dark ? "#fbbf24" : "#d97706") : (dark ? "#6ee7b7" : "#059669") }}>{o.status === "Cancelled" ? "-" : "+"}{fN(netCharge)}</div>
