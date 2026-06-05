@@ -118,7 +118,8 @@ function MobileMenuHint({ dark, t }) {
 /* ═══ OVERVIEW PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
 function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
-  const [eduOpen, setEduOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
+  const [tipsOpen, setTipsOpen] = useState(false);
   const balance = user?.balance || 0;
   const activeOrders = orders.filter(o => o.status === "Processing" || o.status === "Pending" || o.status === "Partial");
   const completed = orders.filter(o => o.status === "Completed").length;
@@ -131,32 +132,34 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
   const attentionOrders = activeOrders.filter(isAttn);
   const sortedActive = [...attentionOrders, ...activeOrders.filter(o => !isAttn(o))];
 
-  const primaryAction = isNew ? { label: "Place first order", target: "services" }
-    : lowBal ? { label: "Add funds", target: "add-funds" }
-    : activeOrders.length > 0 ? { label: "Track orders", target: "orders" }
-    : { label: "New order", target: "services" };
+  const primaryAction = isNew
+    ? { label: "Place your first order", sub: "Pick a platform and start growing today", target: "services" }
+    : lowBal
+    ? { label: "Add funds", sub: "Top up your balance to keep the momentum going", target: "add-funds" }
+    : activeOrders.length > 0
+    ? { label: "Track your orders", sub: `${activeOrders.length} order${activeOrders.length > 1 ? "s" : ""} in progress right now`, target: "orders" }
+    : { label: "Start a new order", sub: "Ready when you are — let's keep growing", target: "services" };
 
   return (
     <>
       {/* ── Stat cards ── */}
       <div className="dash-stats">
         {[
-          ["Active", String(activeOrders.length), dark ? "#e0a458" : "#d97706", activeOrders.length > 0 ? "In progress" : "All clear"],
-          ["Delivered", String(completed), dark ? "#6ee7b7" : "#059669", completed > 0 ? `of ${orders.length} total` : "No orders yet"],
-          ["This Week", String(weekOrders), dark ? "#a5b4fc" : "#4f46e5", weekOrders > 0 ? `${weekOrders} order${weekOrders > 1 ? "s" : ""}` : "None yet"],
-        ].map(([label, val, color, sub]) => (
-          <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+          ["Active", String(activeOrders.length), dark ? "#e0a458" : "#d97706"],
+          ["Delivered", String(completed), dark ? "#6ee7b7" : "#059669"],
+          ["This Week", String(weekOrders), dark ? "#a5b4fc" : "#4f46e5"],
+        ].map(([label, val, color]) => (
+          <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
             <div className="dash-stat-dot" style={{ background: color }} />
             <div className="dash-stat-label" style={{ color: t.textMuted }}>{label}</div>
             <div className="m dash-stat-value" style={{ color }}>{val}</div>
-            <div className="dash-stat-sub" style={{ color: t.textMuted }}>{sub}</div>
           </div>
         ))}
       </div>
 
       {/* Add to Home Screen — mobile/tablet only */}
       {!a2hs.dismissed && (a2hs.ready || a2hs.isIos) && (
-        <div className="hidden max-desktop:flex items-center gap-3 rounded-[14px] max-md:rounded-xl py-3.5 px-5 max-md:py-3 max-md:px-4 mb-3" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", border: `1px solid ${dark ? "rgba(196,125,142,.24)" : "rgba(196,125,142,.18)"}` }}>
+        <div className="hidden max-desktop:flex items-center gap-3 rounded-[14px] max-md:rounded-xl py-3.5 px-5 max-md:py-3 max-md:px-4 mb-5 max-md:mb-4" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", border: `1px solid ${dark ? "rgba(196,125,142,.24)" : "rgba(196,125,142,.18)"}` }}>
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
           </div>
@@ -180,13 +183,14 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
       )}
 
       {/* ── Next action ── */}
-      <div className="mb-3">
+      <div className="mb-5 max-md:mb-4 rounded-xl py-4 px-5 max-md:py-3.5 max-md:px-4" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)"}` }}>
+        <div className="text-[13px] mb-2.5 max-md:mb-2" style={{ color: t.textMuted }}>{primaryAction.sub}</div>
         <button onClick={() => setActive(primaryAction.target)} className="w-full py-2.5 max-md:py-2 rounded-[10px] text-sm max-md:text-[13px] font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>{primaryAction.label}</button>
       </div>
 
       {/* ── Active orders (mobile/tablet only — desktop uses RightSidebar) ── */}
       {sortedActive.length > 0 && (
-        <div className="hidden max-desktop:!block rounded-[14px] max-md:rounded-xl overflow-hidden mb-3" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+        <div className="hidden max-desktop:!block rounded-[14px] max-md:rounded-xl overflow-hidden mb-5 max-md:mb-4" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
           <div className="py-3 px-[18px] flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
             <div className="flex items-center gap-2">
               <div className="text-sm font-semibold tracking-wide uppercase" style={{ color: t.textMuted }}>Active Orders</div>
@@ -219,34 +223,62 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
       )}
 
       {/* ── Feature cards ── */}
-      <div className="grid grid-cols-3 gap-2 mb-3">
-        <button onClick={() => setEduOpen(true)} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: `linear-gradient(135deg, ${dark ? "rgba(196,125,142,.22)" : "rgba(196,125,142,.14)"}, ${dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)"})`, border: `1px solid ${dark ? "rgba(196,125,142,.3)" : "rgba(196,125,142,.2)"}` }}>
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.3)" : "rgba(196,125,142,.2)" }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={dark ? "#e8b4c0" : "#a05468"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0018 8 6 6 0 006 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 018.91 14"/></svg>
+      <div className="grid grid-cols-2 gap-2 mb-5 max-md:mb-4">
+        <button onClick={() => setTutorialOpen(true)} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)" }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0018 8 6 6 0 006 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 018.91 14"/></svg>
           </div>
-          <div className="text-[12px] font-semibold" style={{ color: dark ? "#e8b4c0" : "#a05468" }}>How it works</div>
+          <div className="text-[12px] font-semibold" style={{ color: t.text }}>How it works</div>
+          <div className="text-[11px] -mt-0.5" style={{ color: t.textMuted }}>Step-by-step</div>
         </button>
-        <button onClick={() => setActive("guide")} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: `linear-gradient(135deg, ${dark ? "rgba(110,231,183,.2)" : "rgba(22,163,74,.12)"}, ${dark ? "rgba(110,231,183,.05)" : "rgba(22,163,74,.02)"})`, border: `1px solid ${dark ? "rgba(110,231,183,.28)" : "rgba(22,163,74,.2)"}` }}>
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(110,231,183,.25)" : "rgba(22,163,74,.18)" }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#15803d"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        <button onClick={() => setActive("support")} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)" }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
           </div>
-          <div className="text-[12px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#15803d" }}>Blog</div>
-        </button>
-        <button onClick={() => setActive("support")} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: `linear-gradient(135deg, ${dark ? "rgba(96,165,250,.2)" : "rgba(37,99,235,.1)"}, ${dark ? "rgba(96,165,250,.05)" : "rgba(37,99,235,.02)"})`, border: `1px solid ${dark ? "rgba(96,165,250,.28)" : "rgba(37,99,235,.18)"}` }}>
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(96,165,250,.25)" : "rgba(37,99,235,.16)" }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={dark ? "#60a5fa" : "#1d4ed8"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-          </div>
-          <div className="text-[12px] font-semibold" style={{ color: dark ? "#60a5fa" : "#1d4ed8" }}>Support</div>
+          <div className="text-[12px] font-semibold" style={{ color: t.text }}>Support</div>
+          <div className="text-[11px] -mt-0.5" style={{ color: t.textMuted }}>Get help</div>
         </button>
       </div>
 
-      {/* Education popup */}
-      {eduOpen && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4" onClick={() => setEduOpen(false)}>
+      {/* Tutorial popup */}
+      {tutorialOpen && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4" onClick={() => setTutorialOpen(false)}>
           <div role="dialog" aria-modal="true" className="w-full max-w-[420px] rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,.3)]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#ffffff", border: `1px solid ${t.cardBorder}` }}>
             <div className="py-4 px-5 flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderBottom: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
-              <div className="text-[15px] font-semibold" style={{ color: t.text }}>How growth services work</div>
-              <button onClick={() => setEduOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent" style={{ borderColor: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)", color: t.textSoft }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <div className="text-[15px] font-semibold" style={{ color: t.text }}>How it works</div>
+              <button onClick={() => setTutorialOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent" style={{ borderColor: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)", color: t.textSoft }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div className="py-5 px-5 flex flex-col gap-3.5 max-h-[70vh] overflow-y-auto">
+              {[
+                { step: "1", title: "Create your account", desc: "Sign up with your email — it only takes a few seconds." },
+                { step: "2", title: "Add funds", desc: "Top up your balance via bank transfer or card payment." },
+                { step: "3", title: "Pick a platform", desc: "Choose Instagram, TikTok, X, or any platform you want to grow on." },
+                { step: "4", title: "Choose a service & tier", desc: "Pick what you need — followers, likes, views — then select Budget, Standard, or Premium quality." },
+                { step: "5", title: "Paste your link", desc: "Drop your profile or post link and set the quantity you want." },
+                { step: "6", title: "Place your order", desc: "Confirm and your order starts processing. Delivery begins within minutes." },
+                { step: "7", title: "Track delivery", desc: "Watch your order progress in real time from your dashboard." },
+              ].map((item, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[12px] font-bold" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)", color: t.accent }}>{item.step}</div>
+                  <div className="pt-0.5">
+                    <div className="text-[13px] font-semibold mb-0.5" style={{ color: t.text }}>{item.title}</div>
+                    <div className="text-[12px] leading-[1.55]" style={{ color: t.textMuted }}>{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+              <button onClick={() => { setTutorialOpen(false); setTipsOpen(true); }} className="mt-1 w-full py-2 rounded-lg text-[13px] font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", color: t.accent }}>Growth Tips →</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Growth Tips popup */}
+      {tipsOpen && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4" onClick={() => setTipsOpen(false)}>
+          <div role="dialog" aria-modal="true" className="w-full max-w-[420px] rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,.3)]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#ffffff", border: `1px solid ${t.cardBorder}` }}>
+            <div className="py-4 px-5 flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderBottom: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
+              <div className="text-[15px] font-semibold" style={{ color: t.text }}>Growth Tips</div>
+              <button onClick={() => setTipsOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent" style={{ borderColor: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)", color: t.textSoft }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div className="py-5 px-5 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
               {[
@@ -269,7 +301,7 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
       )}
 
       {/* ── Recent orders ── */}
-      <div className="rounded-[14px] max-md:rounded-xl overflow-hidden mb-3" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+      <div className="rounded-[14px] max-md:rounded-xl overflow-hidden mb-5 max-md:mb-4" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
         <div className="py-3 px-[18px] flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
           <div className="text-sm font-semibold tracking-wide uppercase" style={{ color: t.textMuted }}>Recent orders</div>
           {orders.length > 0 && <button onClick={() => setActive("orders")} className="text-xs font-medium bg-transparent border-none cursor-pointer font-[inherit]" style={{ color: t.accent }}>View all →</button>}
@@ -287,44 +319,25 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
           const display = items.slice(0, 5);
           return display.length > 0 ? display.map((item, i) => {
             if (item.type === "batch") {
-              const totalCharge = item.orders.reduce((s, o) => s + (o.charge || 0), 0);
-              const statusCounts = {};
-              item.orders.forEach(o => { statusCounts[o.status] = (statusCounts[o.status] || 0) + 1; });
-              const summary = Object.entries(statusCounts).map(([s, c]) => `${c} ${s.toLowerCase()}`).join(" · ");
-              const batchAttn = item.orders.some(isAttn);
               return (
-                <div key={item.batchId} onClick={() => setActive("orders")} className="flex items-center py-3.5 px-[18px] max-md:py-3 max-md:px-3.5 gap-3.5 max-md:gap-2.5 cursor-pointer transition-colors duration-150 hover:bg-[rgba(196,125,142,.08)]" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-                  <div className="shrink-0 flex items-center justify-center" style={{ width: 36, height: 36, borderRadius: 10, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.08)" }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+                <div key={item.batchId} onClick={() => setActive("orders")} className="flex items-center py-3 px-[18px] max-md:py-2.5 max-md:px-3.5 gap-3 cursor-pointer transition-colors duration-150 hover:bg-[rgba(196,125,142,.08)]" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
+                  <div className="shrink-0 flex items-center justify-center" style={{ width: 32, height: 32, borderRadius: 8, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.08)" }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 mb-[3px]">
-                      <span className="text-[15px] max-md:text-sm font-medium" style={{ color: t.text }}>{item.batchId} · {item.orders.length} orders</span>
-                      {batchAttn && <span className="text-[10px] font-semibold py-px px-1.5 rounded-full" style={{ background: dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)", color: dark ? "#fcd34d" : "#d97706" }}>!</span>}
-                    </div>
-                    <div className="text-[13px] max-md:text-xs" style={{ color: t.textMuted }}>{summary}</div>
+                    <div className="text-sm font-medium" style={{ color: t.text }}>{item.orders.length} orders</div>
+                    <div className="text-xs mt-px" style={{ color: t.textMuted }}>{item.created ? fD(item.created, true) : ""}</div>
                   </div>
-                  <div className="m text-[15px] max-md:text-sm font-semibold shrink-0" style={{ color: item.orders.every(o => o.status === "Cancelled") ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{fN(totalCharge)}</div>
                 </div>
               );
             }
             const o = item.order;
             return (
-              <div key={o.id} onClick={() => setActive("orders")} className="flex items-center py-3.5 px-[18px] max-md:py-3 max-md:px-3.5 gap-3.5 max-md:gap-2.5 cursor-pointer transition-colors duration-150 hover:bg-[rgba(196,125,142,.08)]" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-                <PlatformIcon platform={o.platform} dark={dark} />
+              <div key={o.id} onClick={() => setActive("orders")} className="flex items-center py-3 px-[18px] max-md:py-2.5 max-md:px-3.5 gap-3 cursor-pointer transition-colors duration-150 hover:bg-[rgba(196,125,142,.08)]" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
+                <PlatformIcon platform={o.platform} dark={dark} size={32} />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[15px] max-md:text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 mb-[3px]" style={{ color: t.text }}>{o.service}{o.tier ? ` · ${o.tier}` : ""}</div>
-                  <div className="flex items-center gap-1.5 max-md:gap-[5px] text-[13px] max-md:text-xs">
-                    <span style={{ color: t.textMuted }}>{o.id}</span>
-                    <span className="w-[3px] h-[3px] rounded-full bg-current opacity-35 shrink-0" />
-                    <span style={{ color: t.textMuted }}>{o.quantity?.toLocaleString() || 0} qty</span>
-                    <span className="w-[3px] h-[3px] rounded-full bg-current opacity-35 shrink-0" />
-                    <span style={{ color: t.textMuted }}>{o.created ? fD(o.created) : ""}</span>
-                  </div>
-                </div>
-                <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                  <div className="m text-[15px] max-md:text-sm font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{fN(o.charge)}</div>
-                  <Badge status={o.status} dark={dark} />
+                  <div className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{o.service}</div>
+                  <div className="text-xs mt-px" style={{ color: t.textMuted }}>{o.created ? fD(o.created, true) : ""}</div>
                 </div>
               </div>
             );
@@ -347,7 +360,7 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
       </div>
 
       {/* ── Referral card — tablet/mobile only ── */}
-      <div className="hidden max-desktop:block mb-2 rounded-[14px] max-md:rounded-xl overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+      <div className="hidden max-desktop:block mb-4 rounded-[14px] max-md:rounded-xl overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
         <div className="flex items-center gap-3 p-4 max-md:p-3.5">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", color: t.accent }}>
             {I.referrals}
@@ -405,7 +418,7 @@ function WaitlistPage({ feature, dark, t }) {
   if (loading) return <div className="flex justify-center py-20"><div className={`skel-bone w-48 h-6 rounded-lg ${dark ? "skel-dark" : "skel-light"}`} /></div>;
 
   return (
-    <div className="rounded-[14px] max-md:rounded-xl overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+    <div className="rounded-[14px] max-md:rounded-xl overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
       <div className="py-10 px-6 max-md:py-8 max-md:px-4 flex flex-col items-center text-center">
         <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", color: t.accent }}>
           <span style={{ transform: "scale(1.8)" }}>{meta.icon}</span>
@@ -505,7 +518,7 @@ function RightSidebar({ orders, user, dark, t, setActive }) {
 
       {/* ── Referral Card ── */}
       <div className="shrink-0 flex items-center pt-2">
-        <div className="p-3.5 rounded-xl text-center w-full" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+        <div className="p-3.5 rounded-xl text-center w-full" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
           <div className="text-[13px] uppercase tracking-[1.5px] mb-1" style={{ color: t.textMuted }}>Your referral code</div>
           <div className="m text-lg font-semibold tracking-[2px]" style={{ color: t.accent }}>{user?.refCode || "—"}</div>
           <div className="text-sm mt-1" style={{ color: t.textMuted }}>{user?.refs || 0} referrals · {fN(user?.earnings || 0)} earned</div>
@@ -1021,7 +1034,7 @@ function DashboardInner({ initialData }) {
     sidebarBg: dark ? "#0e1122" : "#eceae5",
     sidebarBorder: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)",
     cardBg: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.8)",
-    cardBorder: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)",
+    cardBorder: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)",
     navActive: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)",
   }), [dark, baseT]);
 
@@ -1055,7 +1068,7 @@ function DashboardInner({ initialData }) {
             <div className={`${skBone} w-[200px] h-3.5 mb-6`} />
             <div className="grid grid-cols-4 gap-3 mb-6">
               {[1,2,3,4].map(i => (
-                <div key={i} className="p-5 rounded-2xl" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+                <div key={i} className="p-5 rounded-2xl" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
                   <div className={skBone} style={{ width: "60%", height: 10, marginBottom: 10 }} />
                   <div className={skBone} style={{ width: "45%", height: 24, marginBottom: 8 }} />
                   <div className={skBone} style={{ width: "70%", height: 9 }} />
@@ -1119,7 +1132,7 @@ function DashboardInner({ initialData }) {
         return <WaitlistPage feature="cleanup" dark={dark} t={t} />;
       default:
         return (
-          <div className="p-10 rounded-2xl flex flex-col items-center justify-center min-h-[300px]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+          <div className="p-10 rounded-2xl flex flex-col items-center justify-center min-h-[300px]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
             <div className="text-base font-medium" style={{ color: t.textMuted }}>{active.charAt(0).toUpperCase() + active.slice(1).replace("-", " ")}</div>
             <div className="text-sm opacity-50 mt-1" style={{ color: t.textMuted }}>Coming soon</div>
           </div>
@@ -1250,13 +1263,13 @@ function DashboardInner({ initialData }) {
               <span className="px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 m text-center" style={{ background: activePromotion.bannerColor || '#10b981', color: '#fff' }}>{activePromotion.discountPercent}% OFF{activePromotion.maxDiscountPerOrder ? <><br /><span className="font-medium opacity-90" style={{ fontSize: 10 }}>up to ₦{(activePromotion.maxDiscountPerOrder / 100).toLocaleString()}</span></> : ''}</span>
             </div>
           )}
-          {!isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isGuide && !isLeaderboard && !isAudit && !isCleanup && !isEarn && <div className="pb-3.5 max-md:pb-2">
+          {!isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isGuide && !isLeaderboard && !isAudit && !isCleanup && !isEarn && <div className="pb-6 max-md:pb-4">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xl max-md:text-lg font-semibold mb-0.5" style={{ color: t.text }}>Welcome back, {firstName}</div>
                 <div className="text-sm" style={{ color: t.textMuted }}>{orders.length === 0 ? "Place your first order in under a minute." : "Here's your dashboard at a glance."}</div>
               </div>
-              <div className="shrink-0 ml-4 py-1.5 px-3 max-md:py-1 max-md:px-2.5 rounded-xl text-right" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+              <div className="shrink-0 ml-4 py-1.5 px-3 max-md:py-1 max-md:px-2.5 rounded-xl text-right" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Balance</div>
                 <div className="m text-lg max-md:text-base font-semibold" style={{ color: t.green }}>{fN(user?.balance || 0)}</div>
               </div>
@@ -1278,14 +1291,6 @@ function DashboardInner({ initialData }) {
             {renderPage()}
           </div>
 
-          {/* Footer */}
-          <div className={`dash-footer${isSupport ? " dash-footer-support" : ""}`} style={{ borderTopColor: t.sidebarBorder, flexShrink: 0 }}>
-            <span style={{ color: t.textMuted }}>© {new Date().getFullYear() > 2025 ? `2025–${new Date().getFullYear()}` : "2025"} Nitro</span>
-            <div className="dash-footer-links">
-              <a href="/terms" style={{ color: t.textMuted }}>Terms</a>
-              <a href="/privacy" style={{ color: t.textMuted }}>Privacy</a>
-            </div>
-          </div>
         </main>
 
         {/* ── RIGHT SIDEBAR ── */}

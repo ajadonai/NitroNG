@@ -31,34 +31,6 @@ function Spinner({ size = 14, color = "currentColor" }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="animate-spin"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="3" strokeLinecap="round" opacity=".25" /><path d="M12 2a10 10 0 0 1 10 10" stroke={color} strokeWidth="3" strokeLinecap="round" /></svg>;
 }
 
-function estimateTime(speed, qty) {
-  if (!speed || !qty) return null;
-  const s = speed.trim();
-  if (/^\d+[-–]\d+\s*hrs?$/i.test(s) || /^\d+\s*hrs?$/i.test(s) || /^\d+[-–]\d+\s*hours?$/i.test(s)) return s;
-  if (/^\d+\s*min(ute)?s?$/i.test(s) || /^\d+[-–]\d+\s*min/i.test(s)) return s;
-  if (/^\d+[-–]\d+\s*days?$/i.test(s) || /^\d+\s*days?$/i.test(s)) return s;
-  if (/^\d+\s*months?$/i.test(s) || /^\d+[-–]\d+\s*months?$/i.test(s)) return s;
-  if (/^(instant|fast|natural|custom)$/i.test(s)) return s;
-  if (/^\d+[-–]\d+\s*hr/i.test(s) || /^0-\d+\s*hr/i.test(s)) return s;
-  if (/^\d+hr/i.test(s)) return s;
-  const rateMatch = s.match(/^(\d+(?:\.\d+)?)\s*[-–]?\s*(\d+(?:\.\d+)?)?\s*(K|M)?\s*\/\s*day$/i);
-  if (!rateMatch) return s;
-  const mult = (rateMatch[3] || '').toUpperCase() === 'M' ? 1000000 : (rateMatch[3] || '').toUpperCase() === 'K' ? 1000 : 1;
-  const lo = parseFloat(rateMatch[1]) * mult;
-  const hi = rateMatch[2] ? parseFloat(rateMatch[2]) * mult : lo;
-  if (lo <= 0 && hi <= 0) return s;
-  const fastHrs = hi > 0 ? (qty / hi) * 24 : 0;
-  const slowHrs = lo > 0 ? (qty / lo) * 24 : fastHrs;
-  const fmt = (h) => {
-    if (h < 1) return `${Math.max(1, Math.round(h * 60))} min`;
-    if (h < 48) return `${Math.round(h)} hr${Math.round(h) !== 1 ? 's' : ''}`;
-    const d = Math.round(h / 24);
-    return `${d} day${d !== 1 ? 's' : ''}`;
-  };
-  if (Math.abs(fastHrs - slowHrs) < 0.5) return `~${fmt(fastHrs)}`;
-  return `${fmt(fastHrs)} – ${fmt(slowHrs)}`;
-}
-
 /* ── Status helpers (unified) ── */
 function sClr(s, dk) { return s === "Completed" ? (dk ? "#6ee7b7" : "#059669") : s === "Processing" ? (dk ? "#a5b4fc" : "#4f46e5") : s === "Pending" ? (dk ? "#fcd34d" : "#d97706") : s === "Partial" ? (dk ? "#fdba74" : "#ea580c") : (s === "Failed" || s === "Rejected") ? (dk ? "#fca5a5" : "#dc2626") : s === "Cancelled" ? (dk ? "#a1a1aa" : "#71717a") : (dk ? "#555250" : "#8a8785"); }
 function sBg(s, dk) { return s === "Completed" ? (dk ? "#0a2416" : "#ecfdf5") : s === "Processing" ? (dk ? "#0f1629" : "#eef2ff") : s === "Pending" ? (dk ? "#1c1608" : "#fffbeb") : s === "Partial" ? (dk ? "#1c1008" : "#fff7ed") : (s === "Failed" || s === "Rejected") ? (dk ? "#1f0a0a" : "#fef2f2") : s === "Cancelled" ? (dk ? "#1a1a1a" : "#f5f5f5") : (dk ? "#141414" : "#f5f5f5"); }
@@ -222,18 +194,45 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
   const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : "#c47d8e";
   const waiting = !isCancelled && !hasData && !isComplete && (o.status === "Pending" || o.status === "Processing");
   const py = compact ? "py-3 px-3 desktop:py-3.5 desktop:px-4" : "py-3.5 px-3.5 desktop:py-4 desktop:px-[18px]";
+  const reportIssueButton = (
+    <button onClick={async () => {
+      setTicketLoading(true);
+      try {
+        const res = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", subject: `Issue with order ${o.id}`, message: `I have an issue with order ${o.id} (${o.service}${o.tier ? ' — ' + o.tier : ''}).`, category: "Order Issue" }) });
+        const data = await res.json();
+        if (res.ok) {
+          toast?.success?.("Ticket created", `${data.ticket?.id} — we'll get back to you shortly`);
+          if (onNavigate) onNavigate("support");
+        } else if (res.status === 409) {
+          const close = await confirm({ title: "You have an open ticket", message: `You already have ticket ${data.ticket?.id} open. Would you like to close it and open a new one for this order?`, confirmLabel: "Close & Create New", danger: false });
+          if (close) {
+            await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "close", ticketId: data.ticket?.id }) });
+            const r2 = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", subject: `Issue with order ${o.id}`, message: `I have an issue with order ${o.id} (${o.service}${o.tier ? ' — ' + o.tier : ''}).`, category: "Order Issue" }) });
+            const d2 = await r2.json();
+            if (r2.ok) { toast?.success?.("Ticket created", `${d2.ticket?.id} — we'll get back to you shortly`); if (onNavigate) onNavigate("support"); }
+            else toast?.error?.("Failed", d2.error || "Could not create ticket");
+          }
+        } else {
+          toast?.error?.("Failed", data.error || "Could not create ticket");
+        }
+      } catch { toast?.error?.("Request failed", "Check your connection"); }
+      setTicketLoading(false);
+    }} disabled={ticketLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center gap-1.5" style={{ background: dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)", color: dark ? "#fcd34d" : "#d97706" }}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      {ticketLoading ? "..." : "Report Issue"}
+    </button>
+  );
 
 
   return (
     <div className={py} style={{ background: dark ? "rgba(196,125,142,.05)" : "rgba(196,125,142,.04)", borderTop: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)"}`, borderBottom: `3px solid ${dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.2)"}`, borderLeft: `3px solid ${t.accent}` }}>
       {/* Link */}
       {o.link && (
-        <div className="mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-          <div className="flex items-center gap-1.5 mb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-            <span className="text-[11px] uppercase tracking-[1px] font-medium" style={{ color: t.textMuted }}>Link</span>
+        <div className="mb-3 py-2 px-2.5 rounded-lg flex items-center gap-2 min-w-0 max-w-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.025)", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>
+          <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
           </div>
-          <a href={o.link} target="_blank" rel="noopener noreferrer" className="m text-[13px] break-all" style={{ color: t.accent, textDecoration: "underline", textUnderlineOffset: 3 }}>{o.link}</a>
+          <a href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="m min-w-0 flex-1 text-[12px] desktop:text-[13px] leading-[1.45] overflow-hidden text-ellipsis whitespace-nowrap no-underline" style={{ color: t.textSoft }}>{o.link}</a>
         </div>
       )}
 
@@ -347,57 +346,25 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
           <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Start Count</div>
           <div className="m text-sm font-semibold" style={{ color: o.startCount != null ? t.text : t.textMuted }}>{o.startCount != null ? o.startCount.toLocaleString() : "—"}</div>
         </div>
-        {o.speed && !["Completed", "Cancelled"].includes(o.status) ? (
-          <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-            <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Est. Time</div>
-            <div className="m text-sm font-semibold" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{estimateTime(o.speed, o.quantity)}</div>
-          </div>
-        ) : (
-          <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-            <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Ordered</div>
-            <div className="m text-sm font-semibold" style={{ color: t.text }}>{o.created ? fD(o.created, true) : "—"}</div>
-          </div>
-        )}
+        <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+          <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Order No</div>
+          <div className="m text-sm font-semibold break-all" style={{ color: t.text }}>{o.id || "—"}</div>
+        </div>
       </div>
 
       {/* Actions */}
-      {(o.status === "Processing" || o.status === "Pending") && (
-        <div className="flex gap-2 flex-wrap">
-          <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[72px] py-2 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
-          <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>
-        </div>
-      )}
-      {(o.status === "Completed" || o.status === "Cancelled") && (
-        <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap">
+        {(o.status === "Processing" || o.status === "Pending") && (
+          <>
+            <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[72px] py-2 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
+            <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>
+          </>
+        )}
+        {(o.status === "Completed" || o.status === "Cancelled") && (
           <button onClick={async () => { const ok = await confirm({ title: "Reorder", message: `Reorder ${o.service}? ₦${o.charge?.toLocaleString()} will be charged from your wallet.`, confirmLabel: "Place Reorder" }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>{actionLoading === o.id ? "..." : "Reorder"}</button>
-        </div>
-      )}
-      <button onClick={async () => {
-        setTicketLoading(true);
-        try {
-          const res = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", subject: `Issue with order ${o.id}`, message: `I have an issue with order ${o.id} (${o.service}${o.tier ? ' — ' + o.tier : ''}).`, category: "Order Issue" }) });
-          const data = await res.json();
-          if (res.ok) {
-            toast?.success?.("Ticket created", `${data.ticket?.id} — we'll get back to you shortly`);
-            if (onNavigate) onNavigate("support");
-          } else if (res.status === 409) {
-            const close = await confirm({ title: "You have an open ticket", message: `You already have ticket ${data.ticket?.id} open. Would you like to close it and open a new one for this order?`, confirmLabel: "Close & Create New", danger: false });
-            if (close) {
-              await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "close", ticketId: data.ticket?.id }) });
-              const r2 = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", subject: `Issue with order ${o.id}`, message: `I have an issue with order ${o.id} (${o.service}${o.tier ? ' — ' + o.tier : ''}).`, category: "Order Issue" }) });
-              const d2 = await r2.json();
-              if (r2.ok) { toast?.success?.("Ticket created", `${d2.ticket?.id} — we'll get back to you shortly`); if (onNavigate) onNavigate("support"); }
-              else toast?.error?.("Failed", d2.error || "Could not create ticket");
-            }
-          } else {
-            toast?.error?.("Failed", data.error || "Could not create ticket");
-          }
-        } catch { toast?.error?.("Request failed", "Check your connection"); }
-        setTicketLoading(false);
-      }} disabled={ticketLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center gap-1.5 mt-1" style={{ background: dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)", color: dark ? "#fcd34d" : "#d97706" }}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        {ticketLoading ? "..." : "Report Issue"}
-      </button>
+        )}
+        {reportIssueButton}
+      </div>
     </div>
   );
 }
@@ -478,11 +445,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
                   {o.tier && <div className="text-[10px] desktop:text-[11px] font-medium mt-0.5" style={{ color: t.accent }}>{o.tier}</div>}
-                  <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>
-                    <span className="m">{o.id}</span>
-                    <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-                    <span>{o.quantity?.toLocaleString() || 0} qty</span>
-                  </div>
+                  {o.created && <div className="text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(o.created, true)}</div>}
                   {expandedOrder !== o.id && <ProgressBar order={o} dark={dark} />}
                 </div>
                 <div className="text-right shrink-0">
@@ -664,9 +627,9 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavi
       </div>
 
       {/* Search + filters */}
-      <div className="flex items-center gap-2 desktop:gap-3 mb-2 desktop:mb-3 flex-wrap">
-        <div className="relative flex-1 min-w-full desktop:min-w-[200px]">
-          <input aria-label="Search orders" placeholder="Search by ID, service, platform, link..." value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="w-full py-2 desktop:py-2.5 px-3 desktop:px-3.5 pr-8 rounded-[10px] border text-[13px] desktop:text-sm font-[inherit] outline-none box-border" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.09)" : "#fff", color: t.text }} />
+      <div className="flex items-center gap-2 desktop:gap-3 mb-2 desktop:mb-3 flex-nowrap desktop:flex-wrap min-w-0">
+        <div className="relative flex-1 min-w-0 desktop:min-w-[200px]">
+          <input aria-label="Search orders" placeholder="Search orders..." value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="w-full min-w-0 py-2 desktop:py-2.5 px-3 desktop:px-3.5 pr-8 rounded-[10px] border text-[13px] desktop:text-sm font-[inherit] outline-none box-border" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.09)" : "#fff", color: t.text }} />
           {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setOPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
         </div>
         <DateRangePicker dark={dark} t={t} value={dateRange} onChange={(v) => { setDateRange(v); setOPage(1); }} />
@@ -702,13 +665,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavi
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap desktop:whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
                   {o.tier && <div className="text-[11px] desktop:text-xs font-medium mt-0.5" style={{ color: t.accent }}>{o.tier}</div>}
-                  <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>
-                    <span className="m">{o.id}</span>
-                    <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-                    <span>{o.quantity?.toLocaleString() || 0} qty</span>
-                    <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-                    <span>{o.created ? fD(o.created, true) : ""}</span>
-                  </div>
+                  {o.created && <div className="text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(o.created, true)}</div>}
                   {expanded !== o.id && <ProgressBar order={o} dark={dark} />}
                 </div>
                 <div className="text-right shrink-0">

@@ -106,7 +106,7 @@ export default function PreviewPopups() {
               </div>
               <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.06)', fontSize: 12, color: dark ? '#e0c0c8' : '#8a4a5a', lineHeight: 1.5, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                 <span style={{ flexShrink: 0, marginTop: 1, color: dark ? '#e0c0c8' : '#8a4a5a' }}>{ICO.lightbulb}</span>
-                <span>With platforms actively removing fake accounts, we recommend <strong>Standard or Premium</strong> for anything you want to keep long-term.</span>
+                <span>With platforms actively removing inactive accounts, we recommend <strong>Standard or Premium</strong> for anything you want to keep long-term.</span>
               </div>
             </div>
           </div>
@@ -186,7 +186,7 @@ export default function PreviewPopups() {
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: t.text, marginBottom: 2 }}>Choosing the right tier matters</div>
                 <div style={{ fontSize: 12, lineHeight: 1.55, color: t.textSoft }}>
-                  Social platforms are getting better at removing fake accounts. <strong style={{ color: t.text }}>Budget</strong> is great for a quick boost, but if you want followers that stick, go with <strong style={{ color: t.text }}>Standard</strong> (30-day refill) or <strong style={{ color: t.text }}>Premium</strong> (lifetime guarantee).
+                  Social platforms are getting better at removing inactive accounts. <strong style={{ color: t.text }}>Budget</strong> is great for a quick boost, but if you want followers that stick, go with <strong style={{ color: t.text }}>Standard</strong> (30-day refill) or <strong style={{ color: t.text }}>Premium</strong> (lifetime guarantee).
                 </div>
                 <button style={{ marginTop: 4, fontSize: 11, color: t.textMuted, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textUnderlineOffset: 2 }}>Dismiss</button>
               </div>
