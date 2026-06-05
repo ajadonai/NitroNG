@@ -1098,7 +1098,7 @@ function DashboardInner({ initialData }) {
       case "services":
         return <NewOrderPage dark={dark} t={t} user={user} onOrderSuccess={refreshDashboard} onViewOrders={() => setActive("orders")} onTopUp={() => setActive("add-funds")} platform={noPlatform} setPlatform={setNoPlatform} selSvc={noSelSvc} setSelSvc={setNoSelSvc} selTier={noSelTier} setSelTier={setNoSelTier} qty={noQty} setQty={setNoQty} link={noLink} setLink={setNoLink} comments={noComments} setComments={setNoComments} catModal={noCatModal} setCatModal={setNoCatModal} tourActive={showOrderTour} activePromotion={activePromotion} />;
       case "orders":
-        return <OrdersPage orders={orders} txs={enrichedTxs} dark={dark} t={t} />;
+        return <OrdersPage orders={orders} txs={enrichedTxs} dark={dark} t={t} onNavigate={setActive} />;
       case "referrals":
         return <ReferralsPage user={user} dark={dark} t={t} />;
       case "settings":

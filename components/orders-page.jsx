@@ -211,8 +211,8 @@ function PlatformStack({ platforms, dark }) {
 
 
 /* ── Shared expanded order details ── */
-function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, compact, toast }) {
-  const [refillLoading, setRefillLoading] = useState(false);
+function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, compact, toast, onNavigate }) {
+  const [ticketLoading, setTicketLoading] = useState(false);
   const qty = o.quantity || 0;
   const isCancelled = o.status === "Cancelled";
   const hasData = o.remains != null;
@@ -223,10 +223,6 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
   const waiting = !isCancelled && !hasData && !isComplete && (o.status === "Pending" || o.status === "Processing");
   const py = compact ? "py-3 px-3 desktop:py-3.5 desktop:px-4" : "py-3.5 px-3.5 desktop:py-4 desktop:px-[18px]";
 
-  const refillDays = o.refillDays || 0;
-  const refillExpiry = o.refill && refillDays > 0 && (o.completedAt || o.created) ? new Date(new Date(o.completedAt || o.created).getTime() + refillDays * 24 * 60 * 60 * 1000) : null;
-  const refillActive = refillExpiry && refillExpiry > new Date();
-  const refillDaysLeft = refillActive ? Math.ceil((refillExpiry - Date.now()) / (24 * 60 * 60 * 1000)) : 0;
 
   return (
     <div className={py} style={{ background: dark ? "rgba(196,125,142,.05)" : "rgba(196,125,142,.04)", borderTop: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)"}`, borderBottom: `3px solid ${dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.2)"}`, borderLeft: `3px solid ${t.accent}` }}>
@@ -366,7 +362,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
 
       {/* Actions */}
       {(o.status === "Processing" || o.status === "Pending") && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[72px] py-2 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
           <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>
         </div>
@@ -374,32 +370,41 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
       {(o.status === "Completed" || o.status === "Cancelled") && (
         <div className="flex gap-2 flex-wrap">
           <button onClick={async () => { const ok = await confirm({ title: "Reorder", message: `Reorder ${o.service}? ₦${o.charge?.toLocaleString()} will be charged from your wallet.`, confirmLabel: "Place Reorder" }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>{actionLoading === o.id ? "..." : "Reorder"}</button>
-          {isComplete && refillActive && (
-            <button onClick={async () => {
-              const ok = await confirm({ title: "Request Refill", message: `Request a free refill for this order? The provider will top up any drops.`, confirmLabel: "Request Refill" });
-              if (!ok) return;
-              setRefillLoading(true);
-              try {
-                const res = await fetch("/api/orders/refill", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId: o.id }) });
-                const data = await res.json();
-                if (res.ok) toast?.success?.("Refill requested", data.message || "Delivery will begin shortly");
-                else toast?.error?.("Refill failed", data.error || "Something went wrong");
-              } catch { toast?.error?.("Request failed", "Check your connection"); }
-              setRefillLoading(false);
-            }} disabled={refillLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center gap-1.5" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)", color: dark ? "#6ee7b7" : "#059669" }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-              {refillLoading ? "..." : "Request Refill"}
-            </button>
-          )}
         </div>
       )}
+      <button onClick={async () => {
+        setTicketLoading(true);
+        try {
+          const res = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", subject: `Issue with order ${o.id}`, message: `I have an issue with order ${o.id} (${o.service}${o.tier ? ' — ' + o.tier : ''}).`, category: "Order Issue" }) });
+          const data = await res.json();
+          if (res.ok) {
+            toast?.success?.("Ticket created", `${data.ticket?.id} — we'll get back to you shortly`);
+            if (onNavigate) onNavigate("support");
+          } else if (res.status === 409) {
+            const close = await confirm({ title: "You have an open ticket", message: `You already have ticket ${data.ticket?.id} open. Would you like to close it and open a new one for this order?`, confirmLabel: "Close & Create New", danger: false });
+            if (close) {
+              await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "close", ticketId: data.ticket?.id }) });
+              const r2 = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", subject: `Issue with order ${o.id}`, message: `I have an issue with order ${o.id} (${o.service}${o.tier ? ' — ' + o.tier : ''}).`, category: "Order Issue" }) });
+              const d2 = await r2.json();
+              if (r2.ok) { toast?.success?.("Ticket created", `${d2.ticket?.id} — we'll get back to you shortly`); if (onNavigate) onNavigate("support"); }
+              else toast?.error?.("Failed", d2.error || "Could not create ticket");
+            }
+          } else {
+            toast?.error?.("Failed", data.error || "Could not create ticket");
+          }
+        } catch { toast?.error?.("Request failed", "Check your connection"); }
+        setTicketLoading(false);
+      }} disabled={ticketLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center gap-1.5 mt-1" style={{ background: dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)", color: dark ? "#fcd34d" : "#d97706" }}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        {ticketLoading ? "..." : "Report Issue"}
+      </button>
     </div>
   );
 }
 
 
 /* ── Batch row ── */
-function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpandedOrder, doAction, actionLoading, doBatchAction, batchActionLoading, confirm, toast }) {
+function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpandedOrder, doAction, actionLoading, doBatchAction, batchActionLoading, confirm, toast, onNavigate }) {
   const hasAttentionOrders = batch.orders.some(isAttention);
   const platforms = batch.orders.map(o => o.platform);
   const totalCharge = batch.orders.reduce((s, o) => s + (o.charge || 0), 0);
@@ -485,7 +490,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                 </div>
                 <svg className="shrink-0 ml-0.5" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expandedOrder === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s", }}><polyline points="6 9 12 15 18 9"/></svg>
               </div>
-              {expandedOrder === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} compact />}
+              {expandedOrder === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} compact />}
             </div>
           ))}
         </div>
@@ -533,7 +538,7 @@ function Pagination({ total, page, setPage, perPage, setPerPage, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ ORDERS PAGE                         ═══ */
 /* ═══════════════════════════════════════════ */
-export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
+export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavigate }) {
   const confirm = useConfirm();
   const [orders, setOrders] = useState(initialOrders);
   const [filter, setFilter] = useState("all");
@@ -684,7 +689,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
       <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
         {pagedGroups.length > 0 ? pagedGroups.map((item, i) => {
           if (item.type === "batch") {
-            return <BatchRow key={item.batchId} batch={item} dark={dark} t={t} expanded={expandedBatch === item.batchId} onToggle={(id) => { setExpandedBatch(expandedBatch === id ? null : id); setExpandedBatchOrder(null); setExpanded(null); }} expandedOrder={expandedBatchOrder} setExpandedOrder={setExpandedBatchOrder} doAction={doAction} actionLoading={actionLoading} doBatchAction={doBatchAction} batchActionLoading={batchActionLoading} confirm={confirm} toast={toast} />;
+            return <BatchRow key={item.batchId} batch={item} dark={dark} t={t} expanded={expandedBatch === item.batchId} onToggle={(id) => { setExpandedBatch(expandedBatch === id ? null : id); setExpandedBatchOrder(null); setExpanded(null); }} expandedOrder={expandedBatchOrder} setExpandedOrder={setExpandedBatchOrder} doAction={doAction} actionLoading={actionLoading} doBatchAction={doBatchAction} batchActionLoading={batchActionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} />;
           }
           const o = item.order;
           const attn = isAttention(o);
@@ -713,7 +718,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
               </div>
 
               {/* Expanded details */}
-              {expanded === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} />}
+              {expanded === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} />}
             </div>
           );
         }) : (
