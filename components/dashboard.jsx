@@ -223,25 +223,25 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
 
       {/* ── Feature cards ── */}
       <div className="grid grid-cols-3 gap-2 mb-5 max-md:mb-4">
-        <button onClick={() => setEduOpen(true)} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: `linear-gradient(135deg, ${dark ? "rgba(196,125,142,.22)" : "rgba(196,125,142,.14)"}, ${dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)"})`, border: `1px solid ${dark ? "rgba(196,125,142,.3)" : "rgba(196,125,142,.2)"}` }}>
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.3)" : "rgba(196,125,142,.2)" }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={dark ? "#e8b4c0" : "#a05468"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0018 8 6 6 0 006 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 018.91 14"/></svg>
+        <button onClick={() => setEduOpen(true)} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)" }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0018 8 6 6 0 006 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 018.91 14"/></svg>
           </div>
-          <div className="text-[12px] font-semibold" style={{ color: dark ? "#e8b4c0" : "#a05468" }}>How it works</div>
+          <div className="text-[12px] font-semibold" style={{ color: t.text }}>How it works</div>
           <div className="text-[11px] -mt-0.5" style={{ color: t.textMuted }}>Learn the basics</div>
         </button>
-        <button onClick={() => setActive("guide")} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: `linear-gradient(135deg, ${dark ? "rgba(110,231,183,.2)" : "rgba(22,163,74,.12)"}, ${dark ? "rgba(110,231,183,.05)" : "rgba(22,163,74,.02)"})`, border: `1px solid ${dark ? "rgba(110,231,183,.28)" : "rgba(22,163,74,.2)"}` }}>
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(110,231,183,.25)" : "rgba(22,163,74,.18)" }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#15803d"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        <button onClick={() => setActive("guide")} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)" }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
           </div>
-          <div className="text-[12px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#15803d" }}>Blog</div>
+          <div className="text-[12px] font-semibold" style={{ color: t.text }}>Blog</div>
           <div className="text-[11px] -mt-0.5" style={{ color: t.textMuted }}>Tips & guides</div>
         </button>
-        <button onClick={() => setActive("support")} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: `linear-gradient(135deg, ${dark ? "rgba(96,165,250,.2)" : "rgba(37,99,235,.1)"}, ${dark ? "rgba(96,165,250,.05)" : "rgba(37,99,235,.02)"})`, border: `1px solid ${dark ? "rgba(96,165,250,.28)" : "rgba(37,99,235,.18)"}` }}>
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(96,165,250,.25)" : "rgba(37,99,235,.16)" }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={dark ? "#60a5fa" : "#1d4ed8"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <button onClick={() => setActive("support")} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)" }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
           </div>
-          <div className="text-[12px] font-semibold" style={{ color: dark ? "#60a5fa" : "#1d4ed8" }}>Support</div>
+          <div className="text-[12px] font-semibold" style={{ color: t.text }}>Support</div>
           <div className="text-[11px] -mt-0.5" style={{ color: t.textMuted }}>Get help</div>
         </button>
       </div>
