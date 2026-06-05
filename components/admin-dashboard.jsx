@@ -84,7 +84,7 @@ function AdminOverview({ data, dark, t, setActive }) {
           ["Processing", String(stats.processing || 0), t.amber, "Est. 1-2 hrs"],
           ["Deposits (Today)", fN(stats.deposits || 0), t.green, `${stats.depositsChange || 0}% vs yesterday`],
         ].map(([label, val, color, sub]) => (
-          <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+          <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
             <div className="dash-stat-dot" style={{ background: color }} />
             <div className="dash-stat-label" style={{ color: t.textMuted }}>{label}</div>
             <div className="m dash-stat-value" style={{ color }}>{val}</div>
@@ -96,7 +96,7 @@ function AdminOverview({ data, dark, t, setActive }) {
       {/* Two column — Recent Orders + Recent Users */}
       <div className="adm-grid-2">
         <div>
-          <div className="rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+          <div className="rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
             <div className="py-3 px-[18px] flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
               <span className="text-sm font-semibold tracking-wide uppercase" style={{ color: t.textMuted }}>Recent orders</span>
               <button onClick={() => setActive("orders")} className="text-xs font-medium bg-transparent border-none cursor-pointer font-[inherit]" style={{ color: t.accent }}>View all →</button>
@@ -168,7 +168,7 @@ function AdminOverview({ data, dark, t, setActive }) {
         </div>
 
         <div>
-          <div className="rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+          <div className="rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
             <div className="py-3 px-[18px] flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
               <span className="text-sm font-semibold tracking-wide uppercase" style={{ color: t.textMuted }}>New users</span>
               <button onClick={() => setActive("users")} className="text-xs font-medium bg-transparent border-none cursor-pointer font-[inherit]" style={{ color: t.accent }}>View all →</button>
@@ -269,7 +269,7 @@ function AdminRightSidebar({ data, dark, t, active }) {
       {showTickets && (<>
         <div className="text-xs font-semibold uppercase tracking-[1px] mt-2.5 mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Open Tickets</div>
         {(data.openTickets || []).length > 0 ? (data.openTickets || []).slice(0, 4).map((tk, i) => (
-          <div key={tk.id || i} className="adm-rs-ticket" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+          <div key={tk.id || i} className="adm-rs-ticket" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
             <div className="adm-rs-ticket-top">
               <span className="text-[13px]" style={{ color: t.accent }}>{tk.id}</span>
               <span className="text-xs" style={{ color: t.textMuted }}>{tk.created ? fD(tk.created) : ""}</span>
@@ -788,10 +788,6 @@ function AdminDashboardInner({ initialData }) {
             {renderPage()}
           </div>
 
-          <div className="dash-footer" style={{ borderTopColor: t.sidebarBorder, flexShrink: 0 }}>
-            <span style={{ color: t.textMuted }}>© {new Date().getFullYear() > 2025 ? `2025–${new Date().getFullYear()}` : "2025"} Nitro Admin</span>
-            <span className="text-[13px]" style={{ color: t.textMuted }}>v1.0.0</span>
-          </div>
         </main>
 
         <div className="dash-right" style={{ background: t.sidebarBg, borderLeft: `0.5px solid ${t.sidebarBorder}` }}>
