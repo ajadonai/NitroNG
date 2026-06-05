@@ -107,7 +107,7 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion }) 
           </div>
           <div className="mt-2.5 py-1.5 px-2.5 rounded-lg flex gap-2 items-start" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px" style={{ color: dark ? "#e0c0c8" : "#8a4a5a" }}><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z"/></svg>
-            <span className="text-[11px] leading-[1.5]" style={{ color: dark ? "#e0c0c8" : "#8a4a5a" }}>With platforms actively removing fake accounts, we recommend <strong>Standard or Premium</strong> for anything you want to keep long-term.</span>
+            <span className="text-[11px] leading-[1.5]" style={{ color: dark ? "#e0c0c8" : "#8a4a5a" }}>With platforms actively removing inactive accounts, we recommend <strong>Standard or Premium</strong> for anything you want to keep long-term.</span>
           </div>
         </div>
       )}

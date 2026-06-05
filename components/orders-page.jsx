@@ -222,6 +222,34 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
   const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : "#c47d8e";
   const waiting = !isCancelled && !hasData && !isComplete && (o.status === "Pending" || o.status === "Processing");
   const py = compact ? "py-3 px-3 desktop:py-3.5 desktop:px-4" : "py-3.5 px-3.5 desktop:py-4 desktop:px-[18px]";
+  const reportIssueButton = (
+    <button onClick={async () => {
+      setTicketLoading(true);
+      try {
+        const res = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", subject: `Issue with order ${o.id}`, message: `I have an issue with order ${o.id} (${o.service}${o.tier ? ' — ' + o.tier : ''}).`, category: "Order Issue" }) });
+        const data = await res.json();
+        if (res.ok) {
+          toast?.success?.("Ticket created", `${data.ticket?.id} — we'll get back to you shortly`);
+          if (onNavigate) onNavigate("support");
+        } else if (res.status === 409) {
+          const close = await confirm({ title: "You have an open ticket", message: `You already have ticket ${data.ticket?.id} open. Would you like to close it and open a new one for this order?`, confirmLabel: "Close & Create New", danger: false });
+          if (close) {
+            await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "close", ticketId: data.ticket?.id }) });
+            const r2 = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", subject: `Issue with order ${o.id}`, message: `I have an issue with order ${o.id} (${o.service}${o.tier ? ' — ' + o.tier : ''}).`, category: "Order Issue" }) });
+            const d2 = await r2.json();
+            if (r2.ok) { toast?.success?.("Ticket created", `${d2.ticket?.id} — we'll get back to you shortly`); if (onNavigate) onNavigate("support"); }
+            else toast?.error?.("Failed", d2.error || "Could not create ticket");
+          }
+        } else {
+          toast?.error?.("Failed", data.error || "Could not create ticket");
+        }
+      } catch { toast?.error?.("Request failed", "Check your connection"); }
+      setTicketLoading(false);
+    }} disabled={ticketLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center gap-1.5" style={{ background: dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)", color: dark ? "#fcd34d" : "#d97706" }}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      {ticketLoading ? "..." : "Report Issue"}
+    </button>
+  );
 
 
   return (
@@ -361,43 +389,18 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
       </div>
 
       {/* Actions */}
-      {(o.status === "Processing" || o.status === "Pending") && (
-        <div className="flex gap-2 flex-wrap">
-          <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[72px] py-2 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
-          <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>
-        </div>
-      )}
-      {(o.status === "Completed" || o.status === "Cancelled") && (
-        <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap">
+        {(o.status === "Processing" || o.status === "Pending") && (
+          <>
+            <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[72px] py-2 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
+            <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>
+          </>
+        )}
+        {(o.status === "Completed" || o.status === "Cancelled") && (
           <button onClick={async () => { const ok = await confirm({ title: "Reorder", message: `Reorder ${o.service}? ₦${o.charge?.toLocaleString()} will be charged from your wallet.`, confirmLabel: "Place Reorder" }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>{actionLoading === o.id ? "..." : "Reorder"}</button>
-        </div>
-      )}
-      <button onClick={async () => {
-        setTicketLoading(true);
-        try {
-          const res = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", subject: `Issue with order ${o.id}`, message: `I have an issue with order ${o.id} (${o.service}${o.tier ? ' — ' + o.tier : ''}).`, category: "Order Issue" }) });
-          const data = await res.json();
-          if (res.ok) {
-            toast?.success?.("Ticket created", `${data.ticket?.id} — we'll get back to you shortly`);
-            if (onNavigate) onNavigate("support");
-          } else if (res.status === 409) {
-            const close = await confirm({ title: "You have an open ticket", message: `You already have ticket ${data.ticket?.id} open. Would you like to close it and open a new one for this order?`, confirmLabel: "Close & Create New", danger: false });
-            if (close) {
-              await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "close", ticketId: data.ticket?.id }) });
-              const r2 = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", subject: `Issue with order ${o.id}`, message: `I have an issue with order ${o.id} (${o.service}${o.tier ? ' — ' + o.tier : ''}).`, category: "Order Issue" }) });
-              const d2 = await r2.json();
-              if (r2.ok) { toast?.success?.("Ticket created", `${d2.ticket?.id} — we'll get back to you shortly`); if (onNavigate) onNavigate("support"); }
-              else toast?.error?.("Failed", d2.error || "Could not create ticket");
-            }
-          } else {
-            toast?.error?.("Failed", data.error || "Could not create ticket");
-          }
-        } catch { toast?.error?.("Request failed", "Check your connection"); }
-        setTicketLoading(false);
-      }} disabled={ticketLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center gap-1.5 mt-1" style={{ background: dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)", color: dark ? "#fcd34d" : "#d97706" }}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        {ticketLoading ? "..." : "Report Issue"}
-      </button>
+        )}
+        {reportIssueButton}
+      </div>
     </div>
   );
 }
