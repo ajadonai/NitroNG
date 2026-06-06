@@ -598,7 +598,7 @@ Purchased followers provide social proof, but your content is what drives real g
 
 Most social media platforms have terms that discourage artificial inflation of metrics. How they enforce varies:
 
-- **Instagram** — has historically focused on automation tools and bot networks, not individual accounts receiving followers. They do run periodic purges of fake accounts.
+- **Instagram** — has historically focused on automation tools and bot networks, not individual accounts receiving followers. They do run periodic purges of inactive accounts.
 - **TikTok** — primarily targets spam accounts and automation. Their detection is evolving.
 - **YouTube** — cracks down on bots and view manipulation. Subscriber purchases are common but carry some risk.
 - **Twitter/X** — targets coordinated inauthentic behaviour at scale.

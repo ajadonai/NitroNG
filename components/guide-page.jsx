@@ -18,7 +18,7 @@ export default function GuidePage({ dark, t }) {
   return (
     <>
       <div className="svc-header">
-        <div className="svc-title" style={{ color: t.text }}>Guide</div>
+        <div className="svc-title" style={{ color: t.text }}>Blog</div>
         <div className="svc-subtitle" style={{ color: t.textMuted }}>Step-by-step guides and tutorials</div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -80,7 +80,7 @@ export default function GuidePage({ dark, t }) {
 export function GuideSidebar({ dark, t }) {
   return (
     <>
-      <div className="text-xs font-semibold uppercase tracking-[1px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>About Guide</div>
+      <div className="text-xs font-semibold uppercase tracking-[1px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>About Blog</div>
       <div className="text-sm leading-[1.7] mb-4" style={{ color: t.textSoft }}>Step-by-step guides and tutorials to help you get the most out of Nitro. New content is added regularly.</div>
 
       <div className="py-3 px-3.5 rounded-[10px] border" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", borderColor: dark ? "rgba(196,125,142,.19)" : "rgba(196,125,142,.14)" }}>

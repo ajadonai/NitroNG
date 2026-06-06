@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
-import { placeOrder, checkOrder, cancelOrder } from '@/lib/smm';
+import { placeOrder, checkOrder } from '@/lib/smm';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { cleanLink } from '@/lib/clean-link';
@@ -26,11 +26,23 @@ export async function GET(req) {
     const session = await getCurrentUser();
     if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
 
+    const url = new URL(req.url);
+    const search = url.searchParams.get('search')?.trim();
+
+    const where = { userId: session.id, deletedAt: null };
+    if (search) {
+      where.OR = [
+        { orderId: { contains: search, mode: 'insensitive' } },
+        { batchId: { contains: search, mode: 'insensitive' } },
+        { link: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
     const orders = await prisma.order.findMany({
-      where: { userId: session.id, deletedAt: null },
+      where,
       orderBy: { createdAt: 'desc' },
       take: 200,
-      include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, speed: true, group: { select: { name: true } } } } },
+      include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, speed: true, refill: true, refillDays: true, group: { select: { name: true } } } } },
     });
 
     return Response.json({
@@ -51,6 +63,9 @@ export async function GET(req) {
         batchId: o.batchId || null,
         lastError: o.lastError || null,
         retryCount: o.retryCount || 0,
+        refill: o.tier?.refill || false,
+        refillDays: o.tier?.refillDays || 0,
+        completedAt: o.completedAt?.toISOString() || null,
         created: o.createdAt.toISOString(),
       })),
     });
@@ -80,11 +95,13 @@ export async function PATCH(req) {
           const provider = order.service?.provider || 'mtp';
           const status = await checkOrder(provider, order.apiOrderId);
           const statusMap = { 'Completed': 'Completed', 'In progress': 'Processing', 'Processing': 'Processing', 'Pending': 'Pending', 'Partial': 'Partial', 'Canceled': 'Cancelled', 'Refunded': 'Cancelled' };
-          const newStatus = statusMap[status.status] || order.status;
+          const providerStatus = statusMap[status.status] || order.status;
+          const terminal = ['Partial', 'Cancelled'].includes(order.status);
+          const newStatus = terminal ? order.status : providerStatus;
           const liveStartCount = status.start_count != null ? Number(status.start_count) : null;
           const updateData = {
             ...(newStatus !== order.status && { status: newStatus }),
-            ...(status.remains != null && { remains: Number(status.remains) }),
+            ...(!terminal && status.remains != null && { remains: Number(status.remains) }),
             ...(liveStartCount != null && !order.startCount && { startCount: liveStartCount }),
           };
           if (Object.keys(updateData).length > 0) {
@@ -99,17 +116,16 @@ export async function PATCH(req) {
     }
 
     if (action === 'cancel') {
+      if (order.apiOrderId) {
+        return Response.json({ error: 'This order has already been sent to our providers and cannot be cancelled. Please contact support if you need help.' }, { status: 400 });
+      }
       if (order.status === 'Completed' || order.status === 'Cancelled' || order.status === 'Partial') {
         return Response.json({ error: `Cannot cancel ${order.status.toLowerCase()} order` }, { status: 400 });
       }
-      if (order.apiOrderId) {
-        try { const provider = order.service?.provider || 'mtp'; await cancelOrder(provider, order.apiOrderId); } catch (e) { log.warn('Cancel Order', e.message); }
-      }
-      // Atomic claim + refund — conditional update inside transaction prevents double-refund
       const refunded = await prisma.$transaction(async (tx) => {
         const claimed = await tx.order.updateMany({
-          where: { id: order.id, status: { in: ['Pending', 'Processing', 'In progress'] } },
-          data: { status: 'Cancelled', lastError: 'user_cancelled' },
+          where: { id: order.id, status: { in: ['Pending', 'Processing'] }, apiOrderId: null },
+          data: { status: 'Cancelled', lastError: 'user_cancelled', refundedAt: new Date() },
         });
         if (claimed.count === 0) return false;
         await tx.user.update({ where: { id: session.id }, data: { balance: { increment: order.charge } } });
@@ -123,7 +139,7 @@ export async function PATCH(req) {
         });
         return true;
       });
-      if (!refunded) return Response.json({ error: 'Order already processed' }, { status: 409 });
+      if (!refunded) return Response.json({ error: 'Order already sent to provider' }, { status: 409 });
       return Response.json({ success: true, status: 'Cancelled', refunded: order.charge / 100 });
     }
 
@@ -232,10 +248,14 @@ export async function PATCH(req) {
         return created;
       });
 
-      // Step 2: Place on provider AFTER balance secured (skip if queued behind active duplicate)
+      // Step 2: Place on provider AFTER balance secured (skip in dev / skip if queued)
       let apiOrderId = null;
       const reorderQueued = !!reorderActiveForLink;
-      if (order.service.apiId && !reorderQueued) {
+      const isDevReorder = process.env.NODE_ENV === 'development';
+      if (isDevReorder) {
+        apiOrderId = `DEV-${Date.now()}`;
+        await prisma.order.update({ where: { id: newOrder.id }, data: { apiOrderId, status: 'Processing' } });
+      } else if (order.service.apiId && !reorderQueued) {
         try {
           await prisma.order.update({ where: { id: newOrder.id }, data: { dispatchedAt: new Date() } });
           const provider = order.service.provider || 'mtp';
@@ -510,10 +530,14 @@ export async function POST(req) {
       return order;
     });
 
-    // Step 2: Place on provider AFTER balance is secured (skip if queued behind active duplicate)
+    // Step 2: Place on provider AFTER balance is secured (skip in dev / skip if queued)
     let apiOrderId = null;
     const queued = !!activeForLink;
-    if (service.apiId && !queued) {
+    const isDev = process.env.NODE_ENV === 'development';
+    if (isDev) {
+      apiOrderId = `DEV-${Date.now()}`;
+      await prisma.order.update({ where: { id: result.id }, data: { apiOrderId, status: 'Processing' } });
+    } else if (service.apiId && !queued) {
       try {
         await prisma.order.update({ where: { id: result.id }, data: { dispatchedAt: new Date() } });
         const provider = service.provider || 'mtp';

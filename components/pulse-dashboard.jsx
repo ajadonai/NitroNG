@@ -387,12 +387,74 @@ function LiveFeed({ orders }) {
             <div style={{ flex: 1, fontSize: 12, color: '#f5f3f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
               {o.service}
             </div>
-            <div style={{ fontSize: 11, color: '#666', whiteSpace: 'nowrap' }}>{o.user?.split('@')[0]}</div>
             <div className="m" style={{ fontSize: 11, color: '#c47d8e', whiteSpace: 'nowrap', fontWeight: 600 }}>{fmtNaira(o.charge)}</div>
             <div style={{ fontSize: 10, color: '#555', whiteSpace: 'nowrap', minWidth: 40, textAlign: 'right' }}>{timeAgo(o.created)}</div>
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ─── Payout feed ───────────────────────────────────────────────
+const PAYOUT_META = {
+  admin_gift:   { label: 'Gift',         color: '#f0abfc' },
+  referral:     { label: 'Referral',     color: '#c47d8e' },
+  coupon:       { label: 'Coupon',       color: '#fcd34d' },
+  leaderboard:  { label: 'Leaderboard',  color: '#fb923c' },
+  game_reward:  { label: 'Game Reward',  color: '#6ee7b7' },
+  video_reward: { label: 'Video Reward', color: '#60a5fa' },
+};
+
+function PayoutFeed({ payouts, monthPayouts }) {
+  const total = monthPayouts ? Object.values(monthPayouts).reduce((s, v) => s + v, 0) : 0;
+
+  if (!payouts || payouts.length === 0) return (
+    <div style={{
+      background: 'rgba(255,255,255,.03)',
+      border: '1px solid rgba(255,255,255,.07)',
+      borderRadius: 12,
+      padding: '10px 14px',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600 }}>Payouts</div>
+      <div style={{ fontSize: 11, color: '#444', marginTop: 6 }}>No payouts yet</div>
+    </div>
+  );
+
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,.03)',
+      border: '1px solid rgba(255,255,255,.07)',
+      borderRadius: 12,
+      padding: '10px 14px',
+    }}>
+      <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 6 }}>Payouts</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {payouts.map((tx, i) => {
+          const meta = PAYOUT_META[tx.type] || { label: tx.type, color: '#888' };
+          return (
+            <div key={tx.id} style={{
+              display: 'flex', alignItems: 'center', gap: 10, padding: '3px 4px',
+              borderTop: i > 0 ? '1px solid rgba(255,255,255,.04)' : 'none',
+              animation: `pulse-feed-in .5s ease ${i * 40}ms both`,
+            }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: meta.color, boxShadow: `0 0 6px ${meta.color}66` }} />
+              <div style={{ flex: 1, fontSize: 12, color: '#f5f3f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
+                {meta.label}
+              </div>
+              <div className="m" style={{ fontSize: 11, color: meta.color, whiteSpace: 'nowrap', fontWeight: 600 }}>{fmtNaira(tx.amount)}</div>
+              <div style={{ fontSize: 10, color: '#555', whiteSpace: 'nowrap', minWidth: 40, textAlign: 'right' }}>{timeAgo(tx.created)}</div>
+            </div>
+          );
+        })}
+      </div>
+      {total > 0 && (
+        <div style={{ marginTop: 6, padding: '5px 8px', borderRadius: 6, background: 'rgba(252,165,165,.06)', border: '1px solid rgba(252,165,165,.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 10, color: '#8a8580', fontWeight: 500 }}>This month</span>
+          <span className="m" style={{ fontSize: 12, color: '#fca5a5', fontWeight: 700 }}>{fmtNaira(Math.round(total))}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -691,9 +753,6 @@ export default function PulseDashboard({ secretKey }) {
             </div>
           </div>
           {(() => {
-            const totalOrd = (data.byStatus || []).reduce((s, i) => s + i.count, 0) || 1;
-            const failedCount = (data.byStatus || []).filter(s => ['Failed', 'Cancelled', 'Rejected'].includes(s.status)).reduce((s, i) => s + i.count, 0);
-            const failRate = Math.round((failedCount / totalOrd) * 100);
             return (
               <div style={{
                 background: 'rgba(255,255,255,.03)',
@@ -702,17 +761,18 @@ export default function PulseDashboard({ secretKey }) {
                 padding: '10px 14px',
                 flex: 3,
               }}>
-                <DonutChart items={data.byStatus} label="Order Status" inline />
-                <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 6, background: failRate > 15 ? 'rgba(252,165,165,.08)' : 'rgba(110,231,183,.06)' }}>
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: failRate > 15 ? '#fca5a5' : '#6ee7b7' }} />
-                  <span style={{ fontSize: 11, color: failRate > 15 ? '#fca5a5' : '#6ee7b7', fontWeight: 500 }}>
-                    <span className="m" style={{ fontWeight: 700 }}>{failRate}%</span> failure rate
-                  </span>
-                  <span style={{ fontSize: 10, color: '#555', marginLeft: 'auto' }}>{failedCount} of {totalOrd}</span>
-                </div>
+                <DonutChart items={(data.byStatus || []).reduce((acc, s) => {
+                  if (s.status === 'Failed' || s.status === 'Rejected') {
+                    const existing = acc.find(a => a.status === 'Cancelled');
+                    if (existing) existing.count += s.count;
+                    else acc.push({ status: 'Cancelled', count: s.count });
+                  } else acc.push({ ...s });
+                  return acc;
+                }, [])} label="Order Status" inline />
               </div>
             );
           })()}
+          <PayoutFeed payouts={data.recentPayouts} monthPayouts={data.monthPayouts} />
         </div>
         <LiveFeed orders={data.recentOrders} />
         <DepositFeed deposits={data.recentDeposits} />

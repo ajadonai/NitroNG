@@ -31,34 +31,6 @@ function Spinner({ size = 14, color = "currentColor" }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="animate-spin"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="3" strokeLinecap="round" opacity=".25" /><path d="M12 2a10 10 0 0 1 10 10" stroke={color} strokeWidth="3" strokeLinecap="round" /></svg>;
 }
 
-function estimateTime(speed, qty) {
-  if (!speed || !qty) return null;
-  const s = speed.trim();
-  if (/^\d+[-–]\d+\s*hrs?$/i.test(s) || /^\d+\s*hrs?$/i.test(s) || /^\d+[-–]\d+\s*hours?$/i.test(s)) return s;
-  if (/^\d+\s*min(ute)?s?$/i.test(s) || /^\d+[-–]\d+\s*min/i.test(s)) return s;
-  if (/^\d+[-–]\d+\s*days?$/i.test(s) || /^\d+\s*days?$/i.test(s)) return s;
-  if (/^\d+\s*months?$/i.test(s) || /^\d+[-–]\d+\s*months?$/i.test(s)) return s;
-  if (/^(instant|fast|natural|custom)$/i.test(s)) return s;
-  if (/^\d+[-–]\d+\s*hr/i.test(s) || /^0-\d+\s*hr/i.test(s)) return s;
-  if (/^\d+hr/i.test(s)) return s;
-  const rateMatch = s.match(/^(\d+(?:\.\d+)?)\s*[-–]?\s*(\d+(?:\.\d+)?)?\s*(K|M)?\s*\/\s*day$/i);
-  if (!rateMatch) return s;
-  const mult = (rateMatch[3] || '').toUpperCase() === 'M' ? 1000000 : (rateMatch[3] || '').toUpperCase() === 'K' ? 1000 : 1;
-  const lo = parseFloat(rateMatch[1]) * mult;
-  const hi = rateMatch[2] ? parseFloat(rateMatch[2]) * mult : lo;
-  if (lo <= 0 && hi <= 0) return s;
-  const fastHrs = hi > 0 ? (qty / hi) * 24 : 0;
-  const slowHrs = lo > 0 ? (qty / lo) * 24 : fastHrs;
-  const fmt = (h) => {
-    if (h < 1) return `${Math.max(1, Math.round(h * 60))} min`;
-    if (h < 48) return `${Math.round(h)} hr${Math.round(h) !== 1 ? 's' : ''}`;
-    const d = Math.round(h / 24);
-    return `${d} day${d !== 1 ? 's' : ''}`;
-  };
-  if (Math.abs(fastHrs - slowHrs) < 0.5) return `~${fmt(fastHrs)}`;
-  return `${fmt(fastHrs)} – ${fmt(slowHrs)}`;
-}
-
 /* ── Status helpers (unified) ── */
 function sClr(s, dk) { return s === "Completed" ? (dk ? "#6ee7b7" : "#059669") : s === "Processing" ? (dk ? "#a5b4fc" : "#4f46e5") : s === "Pending" ? (dk ? "#fcd34d" : "#d97706") : s === "Partial" ? (dk ? "#fdba74" : "#ea580c") : (s === "Failed" || s === "Rejected") ? (dk ? "#fca5a5" : "#dc2626") : s === "Cancelled" ? (dk ? "#a1a1aa" : "#71717a") : (dk ? "#555250" : "#8a8785"); }
 function sBg(s, dk) { return s === "Completed" ? (dk ? "#0a2416" : "#ecfdf5") : s === "Processing" ? (dk ? "#0f1629" : "#eef2ff") : s === "Pending" ? (dk ? "#1c1608" : "#fffbeb") : s === "Partial" ? (dk ? "#1c1008" : "#fff7ed") : (s === "Failed" || s === "Rejected") ? (dk ? "#1f0a0a" : "#fef2f2") : s === "Cancelled" ? (dk ? "#1a1a1a" : "#f5f5f5") : (dk ? "#141414" : "#f5f5f5"); }
@@ -211,7 +183,8 @@ function PlatformStack({ platforms, dark }) {
 
 
 /* ── Shared expanded order details ── */
-function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, compact }) {
+function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, compact, toast, onNavigate }) {
+  const [ticketLoading, setTicketLoading] = useState(false);
   const qty = o.quantity || 0;
   const isCancelled = o.status === "Cancelled";
   const hasData = o.remains != null;
@@ -221,17 +194,45 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
   const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : "#c47d8e";
   const waiting = !isCancelled && !hasData && !isComplete && (o.status === "Pending" || o.status === "Processing");
   const py = compact ? "py-3 px-3 desktop:py-3.5 desktop:px-4" : "py-3.5 px-3.5 desktop:py-4 desktop:px-[18px]";
+  const reportIssueButton = (
+    <button onClick={async () => {
+      setTicketLoading(true);
+      try {
+        const res = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", subject: `Issue with order ${o.id}`, message: `I have an issue with order ${o.id} (${o.service}${o.tier ? ' — ' + o.tier : ''}).`, category: "Order Issue" }) });
+        const data = await res.json();
+        if (res.ok) {
+          toast?.success?.("Ticket created", `${data.ticket?.id} — we'll get back to you shortly`);
+          if (onNavigate) onNavigate("support");
+        } else if (res.status === 409) {
+          const close = await confirm({ title: "You have an open ticket", message: `You already have ticket ${data.ticket?.id} open. Would you like to close it and open a new one for this order?`, confirmLabel: "Close & Create New", danger: false });
+          if (close) {
+            await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "close", ticketId: data.ticket?.id }) });
+            const r2 = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", subject: `Issue with order ${o.id}`, message: `I have an issue with order ${o.id} (${o.service}${o.tier ? ' — ' + o.tier : ''}).`, category: "Order Issue" }) });
+            const d2 = await r2.json();
+            if (r2.ok) { toast?.success?.("Ticket created", `${d2.ticket?.id} — we'll get back to you shortly`); if (onNavigate) onNavigate("support"); }
+            else toast?.error?.("Failed", d2.error || "Could not create ticket");
+          }
+        } else {
+          toast?.error?.("Failed", data.error || "Could not create ticket");
+        }
+      } catch { toast?.error?.("Request failed", "Check your connection"); }
+      setTicketLoading(false);
+    }} disabled={ticketLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center gap-1.5" style={{ background: dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)", color: dark ? "#fcd34d" : "#d97706" }}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      {ticketLoading ? "..." : "Report Issue"}
+    </button>
+  );
+
 
   return (
     <div className={py} style={{ background: dark ? "rgba(196,125,142,.05)" : "rgba(196,125,142,.04)", borderTop: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)"}`, borderBottom: `3px solid ${dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.2)"}`, borderLeft: `3px solid ${t.accent}` }}>
       {/* Link */}
       {o.link && (
-        <div className="mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-          <div className="flex items-center gap-1.5 mb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-            <span className="text-[11px] uppercase tracking-[1px] font-medium" style={{ color: t.textMuted }}>Link</span>
+        <div className="mb-3 py-2 px-2.5 rounded-lg flex items-center gap-2 min-w-0 max-w-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.025)", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>
+          <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
           </div>
-          <a href={o.link} target="_blank" rel="noopener noreferrer" className="m text-[13px] break-all" style={{ color: t.accent, textDecoration: "underline", textUnderlineOffset: 3 }}>{o.link}</a>
+          <a href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="m min-w-0 flex-1 text-[12px] desktop:text-[13px] leading-[1.45] overflow-hidden text-ellipsis whitespace-nowrap no-underline" style={{ color: t.textSoft }}>{o.link}</a>
         </div>
       )}
 
@@ -247,6 +248,28 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
             : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor }} />}
         </div>
       </div>
+
+      {/* Completed info banner */}
+      {o.status === "Completed" && (
+        <div className="mb-3 py-2.5 px-3 rounded-lg flex items-start gap-2.5" style={{ background: dark ? "rgba(34,197,94,.08)" : "rgba(34,197,94,.04)", border: `1px solid ${dark ? "rgba(34,197,94,.18)" : "rgba(34,197,94,.12)"}` }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <div>
+            <div className="text-[13px] font-semibold mb-0.5" style={{ color: dark ? "#6ee7b7" : "#059669" }}>Your order is complete!</div>
+            <div className="text-[12px] leading-[1.55]" style={{ color: dark ? "#a09b95" : "#555250" }}>If you notice a small dip in the next few days, don't worry — platforms routinely clean up inactive accounts and it's completely normal. <strong style={{ color: dark ? "#e5e0db" : "#1a1a1a" }}>Services with refill will top you back up automatically.</strong></div>
+          </div>
+        </div>
+      )}
+
+      {/* Partial info banner */}
+      {o.status === "Partial" && (
+        <div className="mb-3 py-2.5 px-3 rounded-lg flex items-start gap-2.5" style={{ background: dark ? "rgba(245,158,11,.08)" : "rgba(245,158,11,.04)", border: `1px solid ${dark ? "rgba(245,158,11,.18)" : "rgba(245,158,11,.12)"}` }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          <div>
+            <div className="text-[13px] font-semibold mb-0.5" style={{ color: dark ? "#fbbf24" : "#d97706" }}>Partial delivery</div>
+            <div className="text-[12px] leading-[1.55]" style={{ color: dark ? "#a09b95" : "#555250" }}>Part of your order has been delivered and the rest has been refunded to your wallet. This usually happens when a provider runs out of capacity mid-delivery — it's not an error. You can use the refunded balance to place a new order anytime.</div>
+          </div>
+        </div>
+      )}
 
       {/* Issue notice */}
       {o.lastError && o.status === "Pending" && !o.apiOrderId && (
@@ -312,49 +335,43 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
       {/* Info grid */}
       <div className="grid grid-cols-2 desktop:grid-cols-4 gap-2 mb-3">
         <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-          <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : "Charge"}</div>
-          <div className="m text-sm font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
+          <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Order No</div>
+          <div className="m text-sm font-semibold break-all" style={{ color: t.text }}>{o.id || "—"}</div>
         </div>
         <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
           <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Status</div>
           <Badge status={o.status} dark={dark} />
         </div>
         <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+          <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : "Charge"}</div>
+          <div className="m text-sm font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
+        </div>
+        <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
           <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Start Count</div>
           <div className="m text-sm font-semibold" style={{ color: o.startCount != null ? t.text : t.textMuted }}>{o.startCount != null ? o.startCount.toLocaleString() : "—"}</div>
         </div>
-        {o.speed && !["Completed", "Cancelled"].includes(o.status) ? (
-          <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-            <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Est. Time</div>
-            <div className="m text-sm font-semibold" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{estimateTime(o.speed, o.quantity)}</div>
-          </div>
-        ) : (
-          <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-            <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Ordered</div>
-            <div className="m text-sm font-semibold" style={{ color: t.text }}>{o.created ? fD(o.created, true) : "—"}</div>
-          </div>
-        )}
       </div>
 
       {/* Actions */}
-      {(o.status === "Processing" || o.status === "Pending") && (
-        <div className="flex gap-2">
-          <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[72px] py-2 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
-          <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>
-        </div>
-      )}
-      {(o.status === "Completed" || o.status === "Cancelled") && (
-        <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
+        {(o.status === "Processing" || o.status === "Pending") && (
+          <>
+            <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[72px] py-2 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
+            {!o.apiOrderId && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>}
+          </>
+        )}
+        {(o.status === "Completed" || o.status === "Cancelled") && (
           <button onClick={async () => { const ok = await confirm({ title: "Reorder", message: `Reorder ${o.service}? ₦${o.charge?.toLocaleString()} will be charged from your wallet.`, confirmLabel: "Place Reorder" }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>{actionLoading === o.id ? "..." : "Reorder"}</button>
-        </div>
-      )}
+        )}
+        {reportIssueButton}
+      </div>
     </div>
   );
 }
 
 
 /* ── Batch row ── */
-function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpandedOrder, doAction, actionLoading, doBatchAction, batchActionLoading, confirm }) {
+function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpandedOrder, doAction, actionLoading, doBatchAction, batchActionLoading, confirm, toast, onNavigate }) {
   const hasAttentionOrders = batch.orders.some(isAttention);
   const platforms = batch.orders.map(o => o.platform);
   const totalCharge = batch.orders.reduce((s, o) => s + (o.charge || 0), 0);
@@ -364,7 +381,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
   const accentColor = hasAttentionOrders ? (dark ? "#fcd34d" : "#d97706") : t.accent;
 
   const hasActive = batch.orders.some(o => o.status === "Processing" || o.status === "Pending");
-  const hasCancellable = batch.orders.some(o => o.status === "Processing" || o.status === "Pending");
+  const hasCancellable = batch.orders.some(o => (o.status === "Processing" || o.status === "Pending") && !o.apiOrderId);
   const hasReorderable = batch.orders.some(o => o.status === "Completed" || o.status === "Cancelled");
 
   return (
@@ -411,7 +428,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
               </button>
             )}
             {hasCancellable && (
-              <button onClick={async () => { const ok = await confirm({ title: "Cancel Batch", message: `Cancel all active orders in ${batch.batchId}? Your wallet will be refunded.`, confirmLabel: "Cancel All", danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isLoading} className="m py-1.5 px-3 rounded-md text-[11px] desktop:text-xs font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626", opacity: isLoading ? .5 : 1 }}>Cancel all</button>
+              <button onClick={async () => { const ok = await confirm({ title: "Cancel Batch", message: `Cancel all pending orders in ${batch.batchId} that haven't been sent to providers yet? Your wallet will be refunded.`, confirmLabel: "Cancel All", danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isLoading} className="m py-1.5 px-3 rounded-md text-[11px] desktop:text-xs font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626", opacity: isLoading ? .5 : 1 }}>Cancel all</button>
             )}
             {hasReorderable && (
               <button onClick={async () => { const ok = await confirm({ title: "Reorder Batch", message: `Reorder all completed/cancelled orders from ${batch.batchId}?`, confirmLabel: "Reorder All" }); if (ok) doBatchAction(batch.batchId, "reorder_completed"); }} disabled={isLoading} className="m py-1.5 px-3 rounded-md text-[11px] desktop:text-xs font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent, opacity: isLoading ? .5 : 1 }}>Reorder all</button>
@@ -426,20 +443,17 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                   <PlatformIcon platform={o.platform} dark={dark} size={22} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}{o.tier ? <span className="font-normal" style={{ color: t.textMuted }}> · {o.tier}</span> : ""}</div>
-                  <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>
-                    <span className="m">{o.id}</span>
-                    <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-                    <span>{o.quantity?.toLocaleString() || 0} qty</span>
-                  </div>
+                  <div className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
+                  {o.tier && <div className="text-[10px] desktop:text-[11px] font-medium mt-0.5" style={{ color: t.accent }}>{o.tier}</div>}
+                  {o.created && <div className="text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(o.created, true)}</div>}
                   {expandedOrder !== o.id && <ProgressBar order={o} dark={dark} />}
                 </div>
                 <div className="text-right shrink-0">
-                  <div className="m text-[13px] desktop:text-sm font-bold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
+                  <Badge status={o.status} dark={dark} />
                 </div>
                 <svg className="shrink-0 ml-0.5" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expandedOrder === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s", }}><polyline points="6 9 12 15 18 9"/></svg>
               </div>
-              {expandedOrder === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} compact />}
+              {expandedOrder === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} compact />}
             </div>
           ))}
         </div>
@@ -487,7 +501,7 @@ function Pagination({ total, page, setPage, perPage, setPerPage, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ ORDERS PAGE                         ═══ */
 /* ═══════════════════════════════════════════ */
-export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
+export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavigate }) {
   const confirm = useConfirm();
   const [orders, setOrders] = useState(initialOrders);
   const [filter, setFilter] = useState("all");
@@ -503,9 +517,10 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
 
   useEffect(() => { setOrders(initialOrders); }, [initialOrders]);
 
-  const fetchOrders = useCallback(async () => {
+  const fetchOrders = useCallback(async (q) => {
     try {
-      const res = await fetch("/api/orders");
+      const params = q ? `?search=${encodeURIComponent(q)}` : '';
+      const res = await fetch(`/api/orders${params}`);
       const data = await res.json();
       if (res.ok && data.orders) setOrders(data.orders);
     } catch {}
@@ -561,14 +576,17 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
     try { const saved = localStorage.getItem("nitro-per-page"); if (saved) setPerPage(Number(saved)); } catch {}
   }, []);
 
+  const searchTimer = useRef(null);
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => fetchOrders(search), search ? 350 : 0);
+    return () => clearTimeout(searchTimer.current);
+  }, [search, fetchOrders]);
+
   const filteredOrders = orders.filter(o => {
     if (filter === "active" && o.status !== "Processing" && o.status !== "Pending") return false;
     if (filter === "attention" && !isAttention(o)) return false;
     if (filter !== "all" && filter !== "active" && filter !== "attention" && o.status !== filter) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      if (!o.id?.toLowerCase().includes(q) && !o.service?.toLowerCase().includes(q) && !(o.batchId || "").toLowerCase().includes(q) && !(o.tier || "").toLowerCase().includes(q) && !(o.platform || "").toLowerCase().includes(q) && !(o.link || "").toLowerCase().includes(q)) return false;
-    }
     if (dateRange) {
       const d = new Date(o.created);
       if (dateRange.start && d < dateRange.start) return false;
@@ -581,7 +599,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
 
   const autoChecked = useRef(new Set());
   const autoCheck = useCallback((o) => {
-    if (!o || !o.apiOrderId || ["Completed", "Cancelled"].includes(o.status) || autoChecked.current.has(o.id) || actionLoading) return;
+    if (!o || !o.apiOrderId || ["Completed", "Cancelled", "Partial"].includes(o.status) || autoChecked.current.has(o.id) || actionLoading) return;
     autoChecked.current.add(o.id);
     doAction(o.id, "check");
   }, [actionLoading]);
@@ -609,9 +627,9 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
       </div>
 
       {/* Search + filters */}
-      <div className="flex items-center gap-2 desktop:gap-3 mb-2 desktop:mb-3 flex-wrap">
-        <div className="relative flex-1 min-w-full desktop:min-w-[200px]">
-          <input aria-label="Search orders" placeholder="Search by ID, service, platform, link..." value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="w-full py-2 desktop:py-2.5 px-3 desktop:px-3.5 pr-8 rounded-[10px] border text-[13px] desktop:text-sm font-[inherit] outline-none box-border" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.09)" : "#fff", color: t.text }} />
+      <div className="flex items-center gap-2 desktop:gap-3 mb-2 desktop:mb-3 flex-nowrap desktop:flex-wrap min-w-0">
+        <div className="relative flex-1 min-w-0 desktop:min-w-[200px]">
+          <input aria-label="Search orders" placeholder="Search orders..." value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="w-full min-w-0 py-2 desktop:py-2.5 px-3 desktop:px-3.5 pr-8 rounded-[10px] border text-[13px] desktop:text-sm font-[inherit] outline-none box-border" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.09)" : "#fff", color: t.text }} />
           {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setOPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
         </div>
         <DateRangePicker dark={dark} t={t} value={dateRange} onChange={(v) => { setDateRange(v); setOPage(1); }} />
@@ -634,7 +652,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
       <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
         {pagedGroups.length > 0 ? pagedGroups.map((item, i) => {
           if (item.type === "batch") {
-            return <BatchRow key={item.batchId} batch={item} dark={dark} t={t} expanded={expandedBatch === item.batchId} onToggle={(id) => { setExpandedBatch(expandedBatch === id ? null : id); setExpandedBatchOrder(null); setExpanded(null); }} expandedOrder={expandedBatchOrder} setExpandedOrder={setExpandedBatchOrder} doAction={doAction} actionLoading={actionLoading} doBatchAction={doBatchAction} batchActionLoading={batchActionLoading} confirm={confirm} />;
+            return <BatchRow key={item.batchId} batch={item} dark={dark} t={t} expanded={expandedBatch === item.batchId} onToggle={(id) => { setExpandedBatch(expandedBatch === id ? null : id); setExpandedBatchOrder(null); setExpanded(null); }} expandedOrder={expandedBatchOrder} setExpandedOrder={setExpandedBatchOrder} doAction={doAction} actionLoading={actionLoading} doBatchAction={doBatchAction} batchActionLoading={batchActionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} />;
           }
           const o = item.order;
           const attn = isAttention(o);
@@ -645,25 +663,20 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t }) {
                   <PlatformIcon platform={o.platform} dark={dark} size={26} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap desktop:whitespace-nowrap mb-0.5 max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}{o.tier ? <span className="font-normal" style={{ color: t.textMuted }}> · {o.tier}</span> : ""}</div>
-                  <div className="flex items-center gap-1.5 text-[11px] desktop:text-xs" style={{ color: t.textMuted }}>
-                    <span className="m">{o.id}</span>
-                    <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-                    <span>{o.quantity?.toLocaleString() || 0} qty</span>
-                    <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0 hidden desktop:block" />
-                    <span className="hidden desktop:inline">{o.created ? fD(o.created, true) : ""}</span>
-                  </div>
+                  <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap desktop:whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
+                  {o.tier && <div className="text-[11px] desktop:text-xs font-medium mt-0.5" style={{ color: t.accent }}>{o.tier}</div>}
+                  {o.created && <div className="text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(o.created, true)}</div>}
                   {expanded !== o.id && <ProgressBar order={o} dark={dark} />}
                 </div>
-                <div className="text-right shrink-0">
-                  <div className="m text-[13px] desktop:text-[15px] font-bold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
-                  <div className="text-[10px] desktop:text-[11px] mt-0.5 desktop:hidden" style={{ color: t.textMuted }}>{o.created ? fD(o.created, true) : ""}</div>
+                <div className="text-right shrink-0 flex items-center gap-1.5">
+                  {(o.status === "Processing" || o.status === "Pending") && <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: sClr(o.status, dark) }} />}
+                  <Badge status={o.status} dark={dark} />
                 </div>
                 <svg className="shrink-0 ml-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expanded === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s", }}><polyline points="6 9 12 15 18 9"/></svg>
               </div>
 
               {/* Expanded details */}
-              {expanded === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} />}
+              {expanded === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} />}
             </div>
           );
         }) : (
@@ -725,11 +738,9 @@ export function OrdersSidebar({ orders, dark, t }) {
           <div className="flex items-center gap-2.5">
             <PlatformIcon platform={o.platform} dark={dark} size={28} />
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{o.service}{o.tier ? ` · ${o.tier}` : ""}</div>
-              <div className="flex justify-between items-center text-[13px]">
-                <Badge status={o.status} dark={dark} />
-                <span className="text-[11px]" style={{ color: t.textMuted }}>{o.created ? fD(o.created, true) : ""}</span>
-              </div>
+              <div className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{o.service}</div>
+              {o.tier && <div className="text-[11px] font-medium" style={{ color: t.accent }}>{o.tier}</div>}
+              <div className="text-[11px]" style={{ color: t.textMuted }}>{o.created ? fD(o.created, true) : ""}</div>
             </div>
           </div>
         </div>

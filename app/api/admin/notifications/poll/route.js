@@ -20,7 +20,7 @@ export async function GET(req) {
 
   const [newTickets, newReplies, newDeposits, pendingManual, staleTickets, priceAlertSetting] = await Promise.all([
     prisma.ticket.findMany({
-      where: { createdAt: { gt: sinceDate } },
+      where: { createdAt: { gt: sinceDate }, unreadByAdmin: true },
       select: { ticketId: true, subject: true, createdAt: true, user: { select: { name: true } } },
       orderBy: { createdAt: 'desc' },
       take: 10,

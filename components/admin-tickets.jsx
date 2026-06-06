@@ -166,7 +166,7 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[13px] font-medium mb-[3px] truncate" style={{ color: isSel ? t.text : (dark ? "rgba(255,255,255,.85)" : "rgba(0,0,0,.8)") }}>{tk.id}</div>
-                  <div className="text-xs mb-1 truncate" style={{ color: t.textMuted }}>{(() => { const lr = tk.replies?.[tk.replies.length - 1]; if (lr) { const who = lr.from === "admin" ? (lr.name || "You") : (tk.user?.split(" ")[0] || "User"); return `${who}: ${lr.msg?.split("\n")[0]?.slice(0, 50) || ""}`; } return tk.message?.split("\n")[0]?.slice(0, 50) || tk.subject; })()}</div>
+                  <div className="text-xs mb-1 truncate" style={{ color: t.textMuted }}>{(() => { const lr = tk.replies?.[tk.replies.length - 1]; if (lr) { const who = lr.from === "admin" ? (lr.name || "You") : (tk.user?.split(" ")[0] || "User"); return `${who}: ${lr.msg?.split("\n")[0]?.slice(0, 50) || ""}`; } return tk.message?.startsWith('[admin:') ? tk.subject : (tk.message?.split("\n")[0]?.slice(0, 50) || tk.subject); })()}</div>
                   <div className="flex gap-[5px] items-center">
                     <span className="text-[11px] font-semibold py-px px-[7px] rounded" style={{ background: statusBg(tk.status, dark), color: statusClr(tk.status, dark) }}>{(tk.status || "").toLowerCase()}</span>
                     {tk.claimedBy && <span className="text-[10px] font-medium" style={{ color: tk.claimedBy === adminName ? t.accent : (dark ? "#fcd34d" : "#d97706") }}>{tk.claimedBy === adminName ? "You" : tk.claimedBy}</span>}
@@ -240,20 +240,23 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
             {/* Original message + Replies */}
             {(() => {
               const replies = selected.replies || [];
-              const allMsgs = [{ from: "user", time: selected.created }, ...replies];
+              const isAdminCreated = selected.message?.startsWith('[admin:');
+              const allMsgs = isAdminCreated ? [...replies] : [{ from: "user", time: selected.created }, ...replies];
               const lastIdx = {};
               allMsgs.forEach((m, i) => { if (m.from) lastIdx[m.from] = i; });
               const origDay = dayLabel(selected.created);
-              const showOrigTime = lastIdx["user"] === 0;
+              const showOrigTime = !isAdminCreated && lastIdx["user"] === 0;
               return (
                 <>
                   {origDay && <div className="text-center py-2"><span className="text-[11px] py-1 px-3 rounded-full font-medium" style={{ color: t.textMuted, background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)" }}>{origDay}</span></div>}
-                  <div className="flex flex-col items-start max-w-[82%]">
-                    <div className="py-2.5 px-3.5 rounded-[14px] rounded-bl-[4px]" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.06)", border: `1px solid ${t.cardBorder}` }}>
-                      <div className="text-sm leading-[1.55] whitespace-pre-wrap" style={{ color: t.text }}>{selected.message}</div>
+                  {!isAdminCreated && (
+                    <div className="flex flex-col items-start max-w-[82%]">
+                      <div className="py-2.5 px-3.5 rounded-[14px] rounded-bl-[4px]" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.06)", border: `1px solid ${t.cardBorder}` }}>
+                        <div className="text-sm leading-[1.55] whitespace-pre-wrap" style={{ color: t.text }}>{selected.message}</div>
+                      </div>
+                      {showOrigTime && <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{selected.created ? fD(selected.created) : ""}</div>}
                     </div>
-                    {showOrigTime && <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{selected.created ? fD(selected.created) : ""}</div>}
-                  </div>
+                  )}
                 </>
               );
             })()}

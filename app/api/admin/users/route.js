@@ -11,12 +11,23 @@ export async function GET(req) {
     const url = new URL(req.url);
     const cursor = url.searchParams.get('cursor');
     const limit = Math.min(Number(url.searchParams.get('limit')) || 50, 200);
+    const search = url.searchParams.get('search')?.trim();
+
+    const searchWhere = search ? {
+      OR: [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { deletedName: { contains: search, mode: 'insensitive' } },
+        { deletedEmail: { contains: search, mode: 'insensitive' } },
+      ],
+    } : {};
 
     const [totalCount, activeCount] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { status: 'Active' } }),
     ]);
     const users = await prisma.user.findMany({
+      where: searchWhere,
       orderBy: { createdAt: 'desc' },
       take: limit + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),

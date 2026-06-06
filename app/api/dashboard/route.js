@@ -198,6 +198,7 @@ export async function GET() {
         link: o.link, quantity: o.quantity,
         charge: o.charge / 100,
         remains: o.remains,
+        startCount: o.startCount,
         status: o.status,
         batchId: o.batchId || null,
         apiOrderId: o.apiOrderId || null,

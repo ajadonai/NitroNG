@@ -10,10 +10,17 @@ export async function GET(req) {
     const url = new URL(req.url);
     const cursor = url.searchParams.get('cursor');
     const limit = Math.min(Number(url.searchParams.get('limit')) || 100, 500);
+    const search = url.searchParams.get('search')?.trim();
 
     const where = ['support', 'finance'].includes(admin.role)
       ? { adminName: admin.name }
       : {};
+    if (search) {
+      where.OR = [
+        { action: { contains: search, mode: 'insensitive' } },
+        { adminName: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
     const logs = await prisma.activityLog.findMany({
       where,
