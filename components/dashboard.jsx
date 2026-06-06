@@ -886,7 +886,7 @@ function DashboardInner({ initialData }) {
         /* Skip dashboard fetch if server already provided data */
         if (!initialData) {
           const res = await fetch("/api/dashboard");
-          if (res.status === 401) { try { await fetch("/api/auth/logout", { method: "POST" }); } catch {} window.location.replace("/?session_expired=1"); return; }
+          if (res.status === 401) { window.location.replace("/?session_expired=1"); return; }
           if (res.ok) {
             const data = await res.json();
             setUser(data.user);
@@ -961,7 +961,7 @@ function DashboardInner({ initialData }) {
         const mRes = await fetch("/api/maintenance-check");
         if (mRes.ok) { const m = await mRes.json(); if (m.maintenance) { window.location.replace("/maintenance"); return; } }
         const res = await fetch("/api/dashboard");
-        if (res.status === 401) { try { await fetch("/api/auth/logout", { method: "POST" }); } catch {} window.location.replace("/?session_expired=1"); return; }
+        if (res.status === 401) { window.location.replace("/?session_expired=1"); return; }
         if (res.ok) {
           const data = await res.json();
           if (data.user) setUser(data.user);

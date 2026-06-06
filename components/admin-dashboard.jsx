@@ -358,7 +358,7 @@ function AdminDashboardInner({ initialData }) {
       try {
         const res = await fetch("/api/admin/overview");
         if (!res.ok) {
-          if (res.status === 401) { setRedirecting(true); try { await fetch("/api/auth/admin/logout", { method: "POST" }); } catch {} window.location.replace("/admin/login"); }
+          if (res.status === 401) { setRedirecting(true); window.location.replace("/admin/login"); }
           return;
         }
         const d = await res.json();
@@ -543,7 +543,7 @@ function AdminDashboardInner({ initialData }) {
     const poll = async () => {
       try {
         const res = await fetch("/api/admin/overview");
-        if (res.status === 401) { try { await fetch("/api/auth/admin/logout", { method: "POST" }); } catch {} window.location.replace("/admin/login"); return; }
+        if (res.status === 401) { window.location.replace("/admin/login"); return; }
         if (res.ok) {
           const d = await res.json();
           setAdmin(prev => ({ ...prev, name: d.admin?.name || prev.name, role: d.admin?.role || prev.role, pages: d.admin?.pages || prev.pages }));
