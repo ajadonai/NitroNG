@@ -44,11 +44,12 @@ export async function POST(req) {
         'Refunded': 'Cancelled',
       };
 
-      const newStatus = statusMap[providerStatus.status] || order.status;
+      const terminal = ['Partial', 'Cancelled'].includes(order.status);
+      const newStatus = terminal ? order.status : (statusMap[providerStatus.status] || order.status);
 
-      // Always persist delivery progress from provider
+      // Always persist delivery progress from provider (unless terminal)
       const progressData = {
-        ...(providerStatus.remains != null && { remains: Number(providerStatus.remains) }),
+        ...(!terminal && providerStatus.remains != null && { remains: Number(providerStatus.remains) }),
       };
       if (newStatus === order.status && Object.keys(progressData).length > 0) {
         await prisma.order.update({ where: { id: order.id }, data: progressData });

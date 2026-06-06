@@ -95,11 +95,13 @@ export async function PATCH(req) {
           const provider = order.service?.provider || 'mtp';
           const status = await checkOrder(provider, order.apiOrderId);
           const statusMap = { 'Completed': 'Completed', 'In progress': 'Processing', 'Processing': 'Processing', 'Pending': 'Pending', 'Partial': 'Partial', 'Canceled': 'Cancelled', 'Refunded': 'Cancelled' };
-          const newStatus = statusMap[status.status] || order.status;
+          const providerStatus = statusMap[status.status] || order.status;
+          const terminal = ['Partial', 'Cancelled'].includes(order.status);
+          const newStatus = terminal ? order.status : providerStatus;
           const liveStartCount = status.start_count != null ? Number(status.start_count) : null;
           const updateData = {
             ...(newStatus !== order.status && { status: newStatus }),
-            ...(status.remains != null && { remains: Number(status.remains) }),
+            ...(!terminal && status.remains != null && { remains: Number(status.remains) }),
             ...(liveStartCount != null && !order.startCount && { startCount: liveStartCount }),
           };
           if (Object.keys(updateData).length > 0) {
