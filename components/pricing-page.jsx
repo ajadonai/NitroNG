@@ -64,7 +64,7 @@ function PricingInner({ platforms }) {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0018 8 6 6 0 006 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 018.91 14"/></svg>
             <div>
               <div className="text-[13px] font-semibold mb-0.5" style={{ color: t.text }}>Choosing the right tier matters</div>
-              <div className="text-[12px] leading-[1.55]" style={{ color: t.textSoft }}>Social platforms routinely clean up inactive accounts. <strong style={{ color: t.text }}>Budget</strong> is great for a quick boost, but if you want followers that stick, go with <strong style={{ color: t.text }}>Standard</strong> (30-day refill) or <strong style={{ color: t.text }}>Premium</strong> (lifetime guarantee).</div>
+              <div className="text-[12px] leading-[1.55]" style={{ color: t.textSoft }}>Social platforms routinely clean up inactive accounts. <strong style={{ color: t.text }}>Budget</strong> is great for a quick boost, but if you want followers that stick, go with <strong style={{ color: t.text }}>Standard</strong> (30-day refill) or <strong style={{ color: t.text }}>Premium</strong> (auto-refill).</div>
             </div>
           </div>
 
