@@ -26,7 +26,7 @@ export async function generateMetadata({ params }) {
 
   return {
     title: `${meta.name} Growth Services | Fastest Delivery in Nigeria`,
-    description: `Grow your ${meta.name} with ${meta.desc}. Nigeria's fastest social media growth platform with instant delivery, Naira pricing, and refill guarantees. Order in seconds.`,
+    description: `Promote your ${meta.name} with ${meta.desc}. Instant results, Naira pricing, and satisfaction guarantees. Get started in seconds.`,
     alternates: { canonical: `https://nitro.ng/services/${platform}` },
     openGraph: {
       title: `${meta.name} Growth Services | The Nitro NG`,

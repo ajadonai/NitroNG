@@ -7,8 +7,8 @@ export const revalidate = 300;
 const PER_PAGE = 9;
 
 export const metadata = {
-  title: 'Blog | Social Media Growth Tips from The Nitro NG',
-  description: 'Tips, guides, and strategies to grow your social media presence in Nigeria. From the team behind Nigeria\'s fastest social media growth platform.',
+  title: 'Blog | Social Media Tips & Strategies from The Nitro NG',
+  description: 'Tips, guides, and strategies to build your audience and promote your content in Nigeria. From the team at The Nitro NG.',
   alternates: { canonical: 'https://nitro.ng/blog' },
   openGraph: {
     title: 'The Nitro NG Blog',

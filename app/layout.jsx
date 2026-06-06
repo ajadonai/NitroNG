@@ -15,11 +15,10 @@ import CookieBanner from '@/components/cookie-banner';
 
 export const metadata = {
   title: {
-    default: "The Nitro NG | Your Socials Deserve Better Numbers",
+    default: "The Nitro NG | Your Content Deserves a Bigger Audience",
     template: '%s | The Nitro NG',
   },
-  description: "Nigeria's fastest social media growth platform with the cleanest dashboard. 190+ services across 35+ platforms including Instagram, TikTok, YouTube, and X. Instant delivery, Naira pricing, automatic refunds.",
-  keywords: ['social media growth Nigeria', 'grow Instagram followers Nigeria', 'grow TikTok Nigeria', 'YouTube subscribers Nigeria', 'social media marketing Nigeria', 'boost engagement Nigeria', 'social media promotion Nigeria', 'Nigerian creators', 'grow social media fast', 'Naira social media services'],
+  description: "Nitro helps Nigerian creators, artists, and businesses reach a wider audience. Premium content promotion across 35+ platforms. Naira pricing, instant results, 24/7 support.",
   authors: [{ name: 'The Nitro NG', url: 'https://nitro.ng' }],
   creator: 'The Nitro NG',
   publisher: 'The Nitro NG',
@@ -28,8 +27,8 @@ export const metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: 'The Nitro NG | Grow Your Socials Faster',
-    description: "Nigeria's fastest social media growth platform. 190+ services, instant delivery, Naira pricing, cleanest dashboard you'll find.",
+    title: 'The Nitro NG | Your Content Deserves a Bigger Audience',
+    description: "Nitro helps Nigerian creators, artists, and businesses reach a wider audience. Premium promotion, Naira pricing, built for Naija.",
     url: 'https://nitro.ng',
     siteName: 'The Nitro NG',
     locale: 'en_NG',
@@ -37,8 +36,8 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'The Nitro NG | Grow Your Socials Faster',
-    description: "Nigeria's fastest social media growth platform. 190+ services, instant delivery, Naira pricing, cleanest dashboard you'll find.",
+    title: 'The Nitro NG | Your Content Deserves a Bigger Audience',
+    description: "Nitro helps Nigerian creators, artists, and businesses reach a wider audience. Premium promotion, Naira pricing, built for Naija.",
     creator: '@TheNitroNG',
     site: '@TheNitroNG',
   },
@@ -83,7 +82,7 @@ export default function RootLayout({ children }) {
     name: "The Nitro NG",
     url: "https://nitro.ng",
     logo: "https://nitro.ng/icon-512.png",
-    description: "Nigeria's fastest social media growth platform. 190+ services across 35+ platforms with instant delivery, Naira pricing, and a dashboard built for speed.",
+    description: "Nigerian digital marketing company helping creators, artists, and businesses promote their content and reach wider audiences across social media.",
     foundingDate: "2025",
     foundingLocation: { "@type": "Place", address: { "@type": "PostalAddress", addressLocality: "Lagos", addressCountry: "NG" } },
     sameAs: [
@@ -99,7 +98,7 @@ export default function RootLayout({ children }) {
       email: "support@nitro.ng",
       availableLanguage: "English",
     },
-    slogan: "Your socials deserve better numbers",
+    slogan: "Your content deserves a bigger audience",
   };
 
   const websiteSchema = {
@@ -107,7 +106,7 @@ export default function RootLayout({ children }) {
     "@type": "WebSite",
     name: "The Nitro NG",
     url: "https://nitro.ng",
-    description: "Nigeria's fastest social media growth platform with the cleanest dashboard. Instant delivery, Naira pricing, 35+ platforms.",
+    description: "Content promotion and digital marketing platform for Nigerian creators and businesses. Manage campaigns, track results, Naira pricing.",
     inLanguage: "en",
     potentialAction: {
       "@type": "SearchAction",
@@ -123,23 +122,23 @@ export default function RootLayout({ children }) {
     url: "https://nitro.ng",
     applicationCategory: "BusinessApplication",
     operatingSystem: "All",
-    description: "The fastest social media growth platform in Nigeria with the cleanest dashboard. Grow Instagram, TikTok, YouTube, X, and 35+ platforms. Instant delivery, automatic refunds, Naira pricing. For Nigerian creators, artists, agencies, and businesses.",
+    description: "Digital marketing and content promotion platform for Nigerian creators, artists, agencies, and businesses. Manage your social media campaigns from one clean dashboard. Naira pricing, instant results, 24/7 support.",
     offers: {
       "@type": "Offer",
       price: "0",
       priceCurrency: "NGN",
-      description: "Free to sign up. Fund your wallet and order services starting from ₦20 per 1,000.",
+      description: "Free to sign up. Flexible campaign budgets in Naira.",
     },
     featureList: [
-      "Instant delivery across 35+ platforms",
-      "Cleanest social media dashboard in Nigeria",
+      "Campaign management across 35+ platforms",
+      "Cleanest marketing dashboard in Nigeria",
       "Naira pricing, no USD conversion",
-      "Automatic refunds for failed orders",
-      "3-tier quality system: Budget, Standard, Premium",
+      "Performance tracking and analytics",
+      "3-tier campaign quality: Budget, Standard, Premium",
       "24/7 WhatsApp and in-app support",
       "API access for developers and agencies",
-      "Bulk ordering for large campaigns",
-      "Auto-refill guarantees on qualifying services",
+      "Bulk campaign tools for large projects",
+      "Satisfaction guarantees on qualifying campaigns",
       "Bank transfer, card, and crypto payments",
     ],
     screenshot: "https://nitro.ng/opengraph-image",
@@ -150,7 +149,7 @@ export default function RootLayout({ children }) {
     "@context": "https://schema.org",
     "@type": "Product",
     name: "The Nitro NG",
-    description: "Nigeria's fastest social media growth platform for creators, agencies, and businesses.",
+    description: "Digital marketing platform helping Nigerian creators and businesses promote their content and reach wider audiences.",
     brand: { "@type": "Brand", name: "The Nitro NG" },
     aggregateRating: {
       "@type": "AggregateRating",
@@ -159,8 +158,8 @@ export default function RootLayout({ children }) {
       ratingCount: "850",
     },
     review: [
-      { "@type": "Review", reviewRating: { "@type": "Rating", ratingValue: "5" }, author: { "@type": "Person", name: "Nigerian Creator" }, reviewBody: "Fastest social media growth platform I've used in Nigeria. Dashboard is clean, orders deliver in minutes, and everything is in Naira." },
-      { "@type": "Review", reviewRating: { "@type": "Rating", ratingValue: "5" }, author: { "@type": "Person", name: "Lagos Business Owner" }, reviewBody: "Cleanest dashboard I've seen. No clutter, no confusion. I manage all my clients' social media growth from one place." },
+      { "@type": "Review", reviewRating: { "@type": "Rating", ratingValue: "5" }, author: { "@type": "Person", name: "Nigerian Creator" }, reviewBody: "Best marketing dashboard I've used in Nigeria. Campaigns launch in minutes and everything is in Naira." },
+      { "@type": "Review", reviewRating: { "@type": "Rating", ratingValue: "5" }, author: { "@type": "Person", name: "Lagos Business Owner" }, reviewBody: "Cleanest dashboard I've seen. No clutter, no confusion. I manage all my clients' promotions from one place." },
     ],
   };
 

@@ -2,8 +2,8 @@ import prisma from '@/lib/prisma';
 import PricingView from '@/components/pricing-page';
 
 export const metadata = {
-  title: 'Pricing | Affordable Social Media Growth Services in Nigeria',
-  description: 'Nigeria\'s most affordable social media growth platform. Transparent Naira pricing for Instagram, TikTok, YouTube, X, and 35+ platforms. No hidden fees, no USD conversion. Starting from ₦20 per 1,000.',
+  title: 'Pricing | Affordable Content Promotion in Nigeria',
+  description: 'Transparent Naira pricing for content promotion across Instagram, TikTok, YouTube, X, and 35+ platforms. No hidden fees, no USD conversion.',
   alternates: { canonical: 'https://nitro.ng/pricing' },
   openGraph: {
     title: 'Pricing | The Nitro NG',
