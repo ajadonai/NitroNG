@@ -208,6 +208,9 @@ export default function RootLayout({ children }) {
         <Script src="https://plausible.io/js/pa-nE8AS3pS0CWFTGc_htkYL.js" strategy="afterInteractive" />
         <Script id="plausible-init" strategy="afterInteractive">{`window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`}</Script>
 
+        <Script id="meta-pixel" strategy="afterInteractive">{`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','27456534517306114');fbq('track','PageView');`}</Script>
+        <noscript><img height="1" width="1" style={{ display: 'none' }} src="https://www.facebook.com/tr?id=27456534517306114&ev=PageView&noscript=1" alt="" /></noscript>
+
         <SentryInit />
         <CookieBanner />
         <main id="main-content">{children}</main>

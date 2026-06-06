@@ -1001,6 +1001,7 @@ function DashboardInner({ initialData }) {
         const data = await res.json();
         if (data.success) {
           setPaymentStatus({ type: "success", message: "Payment successful!", amount: data.amount });
+          if (typeof window.fbq === "function") fbq("track", "AddPaymentInfo", { value: data.amount / 100, currency: "NGN" });
           /* Refresh user balance */
           try {
             const dashRes = await fetch("/api/dashboard");
