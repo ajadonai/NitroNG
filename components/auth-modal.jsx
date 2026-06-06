@@ -207,6 +207,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via }) {
         setAuthLoading(false);
         return;
       }
+      if (typeof window.fbq === "function") fbq("track", "CompleteRegistration");
       window.location.replace('/dashboard');
     } catch (err) {
       console.error('[Signup Error]', err);
