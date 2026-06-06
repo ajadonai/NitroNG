@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
-import { placeOrder, checkOrder, cancelOrder } from '@/lib/smm';
+import { placeOrder, checkOrder } from '@/lib/smm';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { cleanLink } from '@/lib/clean-link';
@@ -114,17 +114,16 @@ export async function PATCH(req) {
     }
 
     if (action === 'cancel') {
+      if (order.apiOrderId) {
+        return Response.json({ error: 'This order has already been sent to our providers and cannot be cancelled. Please contact support if you need help.' }, { status: 400 });
+      }
       if (order.status === 'Completed' || order.status === 'Cancelled' || order.status === 'Partial') {
         return Response.json({ error: `Cannot cancel ${order.status.toLowerCase()} order` }, { status: 400 });
       }
-      if (order.apiOrderId) {
-        try { const provider = order.service?.provider || 'mtp'; await cancelOrder(provider, order.apiOrderId); } catch (e) { log.warn('Cancel Order', e.message); }
-      }
-      // Atomic claim + refund — conditional update inside transaction prevents double-refund
       const refunded = await prisma.$transaction(async (tx) => {
         const claimed = await tx.order.updateMany({
-          where: { id: order.id, status: { in: ['Pending', 'Processing', 'In progress'] } },
-          data: { status: 'Cancelled', lastError: 'user_cancelled' },
+          where: { id: order.id, status: { in: ['Pending', 'Processing'] }, apiOrderId: null },
+          data: { status: 'Cancelled', lastError: 'user_cancelled', refundedAt: new Date() },
         });
         if (claimed.count === 0) return false;
         await tx.user.update({ where: { id: session.id }, data: { balance: { increment: order.charge } } });
@@ -138,7 +137,7 @@ export async function PATCH(req) {
         });
         return true;
       });
-      if (!refunded) return Response.json({ error: 'Order already processed' }, { status: 409 });
+      if (!refunded) return Response.json({ error: 'Order already sent to provider' }, { status: 409 });
       return Response.json({ success: true, status: 'Cancelled', refunded: order.charge / 100 });
     }
 

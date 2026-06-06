@@ -92,21 +92,25 @@ export async function POST(req) {
         } catch (e) { log.warn(`Admin Cancel ${providerLabel}`, e.message); }
       }
 
+      const delivered = order.remains != null && order.quantity > 0 ? Math.max(0, order.quantity - order.remains) : 0;
+      const isPartial = delivered > 0 && delivered < order.quantity;
+      const maxRefund = isPartial ? Math.round((order.remains / order.quantity) * order.charge / 100) * 100 : order.charge;
+
       const result = await prisma.$transaction(async (tx) => {
         const claimed = await tx.order.updateMany({
           where: { id: order.id, status: { not: 'Cancelled' } },
-          data: { status: 'Cancelled', lastError: 'admin_cancelled', refundedAt: new Date() },
+          data: { status: isPartial ? 'Partial' : 'Cancelled', lastError: 'admin_cancelled', refundedAt: new Date() },
         });
         if (claimed.count === 0) return { ok: false };
 
         let refundAmount = 0;
-        if (order.charge > 0) {
+        if (maxRefund > 0) {
           const existing = await tx.transaction.aggregate({
             where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
             _sum: { amount: true },
           });
           const alreadyRefunded = existing._sum.amount || 0;
-          refundAmount = Math.max(0, order.charge - alreadyRefunded);
+          refundAmount = Math.max(0, maxRefund - alreadyRefunded);
 
           if (refundAmount > 0) {
             await tx.user.update({ where: { id: order.userId }, data: { balance: { increment: refundAmount } } });
@@ -115,7 +119,7 @@ export async function POST(req) {
                 userId: order.userId, type: 'refund', amount: refundAmount,
                 method: 'wallet', status: 'Completed',
                 reference: `ADM-REF-${order.orderId || order.id}`,
-                note: `Refund — order cancelled by admin${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} already refunded)` : ''}`,
+                note: `Refund — order cancelled by admin${isPartial ? ` (${delivered}/${order.quantity} delivered)` : ''}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} already refunded)` : ''}`,
               },
             });
           }

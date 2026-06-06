@@ -357,7 +357,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         {(o.status === "Processing" || o.status === "Pending") && (
           <>
             <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[72px] py-2 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
-            <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>
+            {!o.apiOrderId && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>}
           </>
         )}
         {(o.status === "Completed" || o.status === "Cancelled") && (
@@ -381,7 +381,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
   const accentColor = hasAttentionOrders ? (dark ? "#fcd34d" : "#d97706") : t.accent;
 
   const hasActive = batch.orders.some(o => o.status === "Processing" || o.status === "Pending");
-  const hasCancellable = batch.orders.some(o => o.status === "Processing" || o.status === "Pending");
+  const hasCancellable = batch.orders.some(o => (o.status === "Processing" || o.status === "Pending") && !o.apiOrderId);
   const hasReorderable = batch.orders.some(o => o.status === "Completed" || o.status === "Cancelled");
 
   return (
@@ -428,7 +428,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
               </button>
             )}
             {hasCancellable && (
-              <button onClick={async () => { const ok = await confirm({ title: "Cancel Batch", message: `Cancel all active orders in ${batch.batchId}? Your wallet will be refunded.`, confirmLabel: "Cancel All", danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isLoading} className="m py-1.5 px-3 rounded-md text-[11px] desktop:text-xs font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626", opacity: isLoading ? .5 : 1 }}>Cancel all</button>
+              <button onClick={async () => { const ok = await confirm({ title: "Cancel Batch", message: `Cancel all pending orders in ${batch.batchId} that haven't been sent to providers yet? Your wallet will be refunded.`, confirmLabel: "Cancel All", danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isLoading} className="m py-1.5 px-3 rounded-md text-[11px] desktop:text-xs font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626", opacity: isLoading ? .5 : 1 }}>Cancel all</button>
             )}
             {hasReorderable && (
               <button onClick={async () => { const ok = await confirm({ title: "Reorder Batch", message: `Reorder all completed/cancelled orders from ${batch.batchId}?`, confirmLabel: "Reorder All" }); if (ok) doBatchAction(batch.batchId, "reorder_completed"); }} disabled={isLoading} className="m py-1.5 px-3 rounded-md text-[11px] desktop:text-xs font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent, opacity: isLoading ? .5 : 1 }}>Reorder all</button>

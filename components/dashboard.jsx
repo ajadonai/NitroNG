@@ -223,13 +223,20 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
       )}
 
       {/* ── Feature cards ── */}
-      <div className="grid grid-cols-2 gap-2 mb-5 max-md:mb-4">
+      <div className="grid grid-cols-3 gap-2 mb-5 max-md:mb-4">
         <button onClick={() => setTutorialOpen(true)} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
           <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)" }}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0018 8 6 6 0 006 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 018.91 14"/></svg>
           </div>
           <div className="text-[12px] font-semibold" style={{ color: t.text }}>How it works</div>
           <div className="text-[11px] -mt-0.5" style={{ color: t.textMuted }}>Step-by-step</div>
+        </button>
+        <button onClick={() => setTipsOpen(true)} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)" }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div className="text-[12px] font-semibold" style={{ color: t.text }}>What to Expect</div>
+          <div className="text-[11px] -mt-0.5" style={{ color: t.textMuted }}>Good to know</div>
         </button>
         <button onClick={() => setActive("support")} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
           <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)" }}>
@@ -266,18 +273,17 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs }) {
                   </div>
                 </div>
               ))}
-              <button onClick={() => { setTutorialOpen(false); setTipsOpen(true); }} className="mt-1 w-full py-2 rounded-lg text-[13px] font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", color: t.accent }}>Growth Tips →</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Growth Tips popup */}
+      {/* What to Expect popup */}
       {tipsOpen && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4" onClick={() => setTipsOpen(false)}>
           <div role="dialog" aria-modal="true" className="w-full max-w-[420px] rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,.3)]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#ffffff", border: `1px solid ${t.cardBorder}` }}>
             <div className="py-4 px-5 flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderBottom: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
-              <div className="text-[15px] font-semibold" style={{ color: t.text }}>Growth Tips</div>
+              <div className="text-[15px] font-semibold" style={{ color: t.text }}>What to Expect</div>
               <button onClick={() => setTipsOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent" style={{ borderColor: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)", color: t.textSoft }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div className="py-5 px-5 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
