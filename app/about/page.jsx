@@ -1,8 +1,8 @@
 import AboutView from '@/components/about-page';
 
 export const metadata = {
-  title: 'About The Nitro NG | Nigeria\'s Fastest SMM Panel',
-  description: 'The Nitro NG is a registered Nigerian company (RC 9514845) building the fastest SMM panel in Nigeria with the cleanest dashboard. Lagos based, Naira native, used by creators and businesses across the country.',
+  title: 'About The Nitro NG | Nigeria\'s Fastest Social Media Growth Platform',
+  description: 'The Nitro NG is a registered Nigerian company (RC 9514845) building the fastest social media growth platform in Nigeria with the cleanest dashboard. Lagos based, Naira native, used by creators and businesses across the country.',
   alternates: { canonical: 'https://nitro.ng/about' },
   openGraph: {
     title: 'About | The Nitro NG',
