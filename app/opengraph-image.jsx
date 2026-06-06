@@ -68,7 +68,7 @@ export default function OGImage() {
             display: 'flex',
           }}
         >
-          Your socials deserve better numbers
+          Your content deserves a bigger audience
         </div>
 
         {/* Bottom accent line */}

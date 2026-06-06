@@ -1,8 +1,8 @@
 import HomeClient from '@/components/home-client';
 
 export const metadata = {
-  title: 'The Nitro NG | Grow Your Socials Faster',
-  description: 'Nigeria\'s fastest social media growth platform with the cleanest dashboard. Grow Instagram, TikTok, YouTube, X, and 35+ platforms. Instant delivery, Naira pricing, automatic refunds.',
+  title: 'The Nitro NG | Your Content Deserves a Bigger Audience',
+  description: 'Nitro helps Nigerian creators, artists, and businesses reach a wider audience. Premium content promotion across 35+ platforms. Naira pricing, instant results, 24/7 support.',
   alternates: { canonical: 'https://nitro.ng' },
 };
 
