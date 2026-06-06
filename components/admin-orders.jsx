@@ -159,7 +159,7 @@ export default function AdminOrdersPage({ dark, t }) {
 
   const autoChecked = useRef(new Set());
   const autoCheck = useCallback((o) => {
-    if (!o || !o.apiOrderId || ["Completed", "Cancelled"].includes(o.status) || autoChecked.current.has(o.id) || actionLoading) return;
+    if (!o || !o.apiOrderId || ["Completed", "Cancelled", "Partial"].includes(o.status) || autoChecked.current.has(o.id) || actionLoading) return;
     autoChecked.current.add(o.id);
     doAction(o.id, "check");
   }, [actionLoading]);
@@ -436,6 +436,7 @@ export default function AdminOrdersPage({ dark, t }) {
                   </div>
                 </div>
                 <div className="text-right shrink-0 flex items-center gap-1.5">
+                  {(o.status === "Processing" || o.status === "Pending") && <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: sClr(o.status, dark) }} />}
                   <div className="m text-[13px] desktop:text-[15px] font-bold" style={{ color: o.status === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : o.status === "Partial" ? (dark ? "#fbbf24" : "#d97706") : (dark ? "#6ee7b7" : "#059669") }}>{o.status === "Cancelled" ? "-" : "+"}{fN(o.charge)}</div>
                 </div>
                 <svg className="shrink-0 ml-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expanded === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>

@@ -158,11 +158,12 @@ export async function POST(req) {
         try {
           const status = await checkOrder(provider, order.apiOrderId);
           const statusMap = { 'Completed': 'Completed', 'In progress': 'Processing', 'Processing': 'Processing', 'Pending': 'Pending', 'Partial': 'Partial', 'Canceled': 'Cancelled', 'Refunded': 'Cancelled' };
-          const newStatus = statusMap[status.status] || order.status;
+          const terminal = ['Partial', 'Cancelled'].includes(order.status);
+          const newStatus = terminal ? order.status : (statusMap[status.status] || order.status);
           const liveRemains = status.remains != null ? Number(status.remains) : null;
           const liveStartCount = status.start_count != null ? Number(status.start_count) : null;
           const remainsUpdate = {};
-          if (liveRemains != null && liveRemains !== order.remains) remainsUpdate.remains = liveRemains;
+          if (!terminal && liveRemains != null && liveRemains !== order.remains) remainsUpdate.remains = liveRemains;
           if (liveStartCount != null && !order.startCount) remainsUpdate.startCount = liveStartCount;
           if (Object.keys(remainsUpdate).length > 0) {
             await prisma.order.update({ where: { id: order.id }, data: remainsUpdate });
