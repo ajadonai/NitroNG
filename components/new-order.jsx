@@ -890,7 +890,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           })}
         </div>
         {visiblePlatforms.length > 5 && (
-          <button onClick={() => setPlatExpanded(!platExpanded)} className="w-full py-2 rounded-lg border border-dashed bg-transparent text-xs font-medium cursor-pointer font-[inherit] mb-2 transition-transform duration-200 hover:-translate-y-px" style={{ color: t.textMuted, borderColor: t.cardBorder }}>
+          <button onClick={() => setPlatExpanded(!platExpanded)} className="w-full py-2 rounded-lg border border-dashed bg-transparent text-xs font-medium cursor-pointer font-[inherit] mb-2 transition-transform duration-200 hover:-translate-y-px" style={{ color: t.accent, borderColor: dark ? "rgba(196,125,142,.35)" : "rgba(196,125,142,.4)", background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)" }}>
             {platExpanded ? "Collapse ▴" : `View all ${visiblePlatforms.length} platforms ▾`}
           </button>
         )}
