@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getCurrentUser } from '@/lib/auth';
-import { checkOrder, cancelOrder } from '@/lib/smm';
+import { checkOrder } from '@/lib/smm';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
@@ -150,34 +150,24 @@ export async function PATCH(req) {
     if (batchOrders.length === 0) return Response.json({ error: 'Batch not found' }, { status: 404 });
 
     if (action === 'cancel') {
-      const cancellable = batchOrders.filter(o => ['Pending', 'Processing', 'In progress'].includes(o.status));
-      if (cancellable.length === 0) return Response.json({ error: 'No cancellable orders in batch' }, { status: 400 });
-
-      for (const o of cancellable) {
-        if (o.apiOrderId) {
-          try { await cancelOrder(o.service?.provider || 'mtp', o.apiOrderId); } catch (e) { log.warn('Bulk cancel', e.message); }
-        }
-      }
-
       const result = await prisma.$transaction(async (tx) => {
-        // Snapshot what's actually cancellable inside the transaction
-        const actualCancellable = await tx.order.findMany({
-          where: { batchId, userId: session.id, status: { in: ['Pending', 'Processing', 'In progress'] } },
-          select: { id: true, charge: true },
+        const cancellable = await tx.order.findMany({
+          where: { batchId, userId: session.id, status: { in: ['Pending', 'Processing'] }, apiOrderId: null, deletedAt: null },
+          select: { id: true, charge: true, orderId: true },
         });
-        if (actualCancellable.length === 0) return { cancelled: 0, refunded: 0 };
+        if (cancellable.length === 0) return { cancelled: 0, refunded: 0 };
         await tx.order.updateMany({
-          where: { id: { in: actualCancellable.map(o => o.id) } },
-          data: { status: 'Cancelled', refundedAt: new Date() },
+          where: { id: { in: cancellable.map(o => o.id) } },
+          data: { status: 'Cancelled', lastError: 'user_cancelled', refundedAt: new Date() },
         });
-        const refundAmount = actualCancellable.reduce((s, o) => s + o.charge, 0);
+        const refundAmount = cancellable.reduce((s, o) => s + o.charge, 0);
         await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${session.id}`;
         await tx.transaction.create({
-          data: { userId: session.id, type: 'refund', amount: refundAmount, method: 'wallet', status: 'Completed', reference: `REF-${batchId}`, note: `Bulk cancel ${batchId} — ${actualCancellable.length} orders` },
+          data: { userId: session.id, type: 'refund', amount: refundAmount, method: 'wallet', status: 'Completed', reference: `REF-${batchId}`, note: `Cancelled ${cancellable.length} pending orders from ${batchId}` },
         });
-        return { cancelled: actualCancellable.length, refunded: refundAmount / 100 };
+        return { cancelled: cancellable.length, refunded: refundAmount / 100 };
       });
-
+      if (result.cancelled === 0) return Response.json({ error: 'No cancellable orders — all have been sent to providers' }, { status: 400 });
       return Response.json({ success: true, ...result });
     }
 

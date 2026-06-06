@@ -126,25 +126,20 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
         <div className="flex-1 min-w-0 max-md:basis-[60%]">
           <div className="text-sm md:text-[15px] desktop:text-base font-semibold mb-1" style={{ color: svc.ng ? (dark ? "#5dcaa5" : "#0F6E56") : t.text }}>{svc.name}</div>
           {svc.description && <div className="text-[11px] mb-1.5 leading-snug" style={{ color: t.textMuted }}>{svc.description}</div>}
-          {!isSel && (
-            <div className="flex gap-[3px] flex-wrap">
-              {svc.tiers.map(tier => (
-                <span key={tier.tier} className="m text-[10px] py-0.5 px-[7px] rounded font-bold tracking-wide border border-solid" style={{ background: dark ? TS[tier.tier].bgD : TS[tier.tier].bg, color: TS[tier.tier].text, borderColor: dark ? TS[tier.tier].borderD : TS[tier.tier].border }}>{tier.tier}</span>
-              ))}
-            </div>
-          )}
         </div>
-        <div className="text-right shrink-0">
-          <div className="text-[10px] desktop:text-[11px] mb-0.5" style={{ color: t.textMuted }}>{activeTier ? activeTier.tier : "from"}</div>
-          {activePromotion?.active && <div className="m text-[12px] font-normal line-through" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>₦{(activeTier ? activeTier.price : lowestPrice).toLocaleString()}</div>}
-          <div className="m text-[15px] md:text-base desktop:text-lg font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{Math.round((activeTier ? activeTier.price : lowestPrice) * (1 - (activePromotion?.active ? activePromotion.discountPercent / 100 : 0))).toLocaleString()}<span className="text-[11px] font-normal" style={{ color: t.textMuted }}>/{activeTier ? activeTier.per : lowestPer}</span></div>
-        </div>
+        {!isSel && (
+          <div className="text-right shrink-0">
+            <div className="text-[10px] desktop:text-[11px] mb-0.5" style={{ color: t.textMuted }}>from</div>
+            {activePromotion?.active && <div className="m text-[12px] font-normal line-through" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>₦{lowestPrice.toLocaleString()}</div>}
+            <div className="m text-[15px] md:text-base desktop:text-lg font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{Math.round(lowestPrice * (1 - (activePromotion?.active ? activePromotion.discountPercent / 100 : 0))).toLocaleString()}<span className="text-[11px] font-normal" style={{ color: t.textMuted }}>/{lowestPer}</span></div>
+          </div>
+        )}
       </div>
       {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={onPickTier} dark={dark} activePromotion={activePromotion} />}
       {isSel && !activeTier && (
         <div className="flex items-center gap-1.5 mt-2 text-xs font-medium py-2 px-3 rounded-lg bg-[rgba(196,125,142,.06)]" style={{ color: t.textMuted }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-          Select a tier to see details and order
+          Pick a tier to continue
         </div>
       )}
       {isSel && activeTier && (
@@ -303,7 +298,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const commentLines = (comments || "").split("\n").filter(l => l.trim()).length;
   const commentShort = needsComments && qtyNum > 0 && commentLines > 0 && commentLines < qtyNum;
 
-  const isProfileSvc = /follow|subscri/i.test(svcName);
+  const isMultiPostSvc = /last\s+\d+\s*(tweet|post|video|reel|photo)/i.test(svcName);
+  const isProfileSvc = /follow|subscri/i.test(svcName) || isMultiPostSvc;
   const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays/i.test(svcName) && !isProfileSvc;
   const linkTip = getLinkTip(platform, isProfileSvc, isPostSvc);
 
