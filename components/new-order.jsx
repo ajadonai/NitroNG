@@ -9,7 +9,7 @@ import { SegPill } from "./seg-pill";
 /* ═══ Grouped: Social (21) Music (9) Utility (5) */
 /* ═══════════════════════════════════════════ */
 
-const refillLabel = (tier) => tier === "Budget" ? "No refill if count drops" : tier === "Standard" ? "Free top-up if count drops" : "Won't drop. Lifetime guarantee";
+const refillLabel = (tier) => tier === "Budget" ? "No refill if count drops" : tier === "Standard" ? "Free top-up if count drops" : "Auto-refill if count drops";
 const I = (d, vb = "0 0 24 24") => <svg width="24" height="24" viewBox={vb} fill="currentColor">{d}</svg>;
 const IS = (d, vb = "0 0 24 24") => <svg width="24" height="24" viewBox={vb} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{d}</svg>;
 
@@ -102,7 +102,7 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion }) 
             </div>
             <div className="py-2 px-2.5 rounded-lg" style={{ background: dark ? "#221535" : "#f5eef5" }}>
               <div className="text-[11.5px] font-bold mb-0.5 flex items-center gap-1.5" style={{ color: "#534AB7" }}>{TS.Premium.label} Premium</div>
-              <div className="text-[11px] leading-[1.5]" style={{ color: dark ? "#b0a9a2" : "#555250" }}>Highest quality accounts with lifetime guarantee. If the count ever drops, we refill it forever. Best for profiles you're building long-term.</div>
+              <div className="text-[11px] leading-[1.5]" style={{ color: dark ? "#b0a9a2" : "#555250" }}>Highest quality accounts with auto-refill. If the count drops, we top it back up automatically. Best for profiles you're building long-term.</div>
             </div>
           </div>
           <div className="mt-2.5 py-1.5 px-2.5 rounded-lg flex gap-2 items-start" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)" }}>
@@ -273,12 +273,32 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const [dripOpen, setDripOpen] = useState(false);
 
   /* Link validation */
+  const POST_LINK_PATTERNS = {
+    twitter: /\/(status|i\/status)\//i,
+    instagram: /\/(p|reel|reels|stories|tv)\//i,
+    tiktok: /\/video\//i,
+    youtube: /\/(watch|shorts|live)\b/i,
+    facebook: /\/(posts|videos|watch|photos|reel)\//i,
+    threads: /\/post\//i,
+    linkedin: /\/(posts|pulse)\//i,
+    snapchat: /\/spotlight\//i,
+    pinterest: /\/pin\//i,
+    reddit: /\/comments\//i,
+    twitch: /\/videos\//i,
+    kick: /\/clips\//i,
+  };
   const validateLink = (val) => {
     const cleaned = val.replace(/^https?:\/\//i, "");
     setLink(cleaned);
     if (!cleaned.trim()) { setLinkError(""); return; }
-    if (isValidLink(cleaned)) { setLinkError(""); return; }
-    setLinkError("Enter a valid URL or @username");
+    if (!isValidLink(cleaned)) { setLinkError("Enter a valid URL or @username"); return; }
+    const pat = POST_LINK_PATTERNS[platform];
+    if (pat && cleaned.includes(".")) {
+      const looksLikePost = pat.test(cleaned);
+      if (isProfileSvc && looksLikePost) { setLinkError("This service needs your profile link, not a post link"); return; }
+      if (isPostSvc && !looksLikePost) { setLinkError("This service needs a link to a specific post, not your profile"); return; }
+    }
+    setLinkError("");
   };
   const linkValid = link.trim() && !linkError;
 
