@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 
-export const alt = 'The Nitro NG — Your Socials Deserve Better Numbers';
+export const alt = 'The Nitro NG — Your Content Deserves a Bigger Audience';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
