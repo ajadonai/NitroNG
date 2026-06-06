@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
@@ -43,16 +43,27 @@ export default function AdminUsersPage({ dark, t }) {
 
   const [activeCount, setActiveCount] = useState(null);
 
-  useEffect(() => {
-    fetch("/api/admin/users?limit=200").then(r => r.json()).then(d => { setUsers(d.users || []); if (d.totalCount != null) setTotalCount(d.totalCount); if (d.activeCount != null) setActiveCount(d.activeCount); setLoading(false); }).catch(() => setLoading(false));
+  const fetchUsers = useCallback((q) => {
+    setLoading(true);
+    const params = new URLSearchParams({ limit: '200' });
+    if (q) params.set('search', q);
+    fetch(`/api/admin/users?${params}`).then(r => r.json()).then(d => { setUsers(d.users || []); if (d.totalCount != null) setTotalCount(d.totalCount); if (d.activeCount != null) setActiveCount(d.activeCount); setLoading(false); }).catch(() => setLoading(false));
   }, []);
+
+  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+
+  const searchTimer = useRef(null);
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => fetchUsers(search), search ? 350 : 0);
+    return () => clearTimeout(searchTimer.current);
+  }, [search, fetchUsers]);
 
   const filtered = users.filter(u => {
     if (filter === "active" && u.status !== "Active") return false;
     if (filter === "suspended" && u.status !== "Suspended") return false;
     if (filter === "deleted" && u.status !== "Deleted" && u.status !== "PendingDeletion") return false;
     if (filter === "pending-deletion" && u.status !== "PendingDeletion") return false;
-    if (search) { const q = search.toLowerCase(); const name = (u.deletedName || u.name || "").toLowerCase(); const email = (u.deletedEmail || u.email || "").toLowerCase(); return name.includes(q) || email.includes(q); }
     return true;
   });
 

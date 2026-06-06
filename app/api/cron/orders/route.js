@@ -176,6 +176,7 @@ export async function GET(req) {
               where: { id: order.id },
               data: {
                 status: newStatus,
+                ...(newStatus === 'Completed' ? { completedAt: new Date() } : {}),
                 ...(liveRemains != null ? { remains: liveRemains } : {}),
                 ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}),
               },

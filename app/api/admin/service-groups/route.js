@@ -126,7 +126,7 @@ export async function POST(req) {
 
     // ── Tier actions ──
     if (action === 'add-tier') {
-      const { groupId, serviceId, tier, sellPer1k, refill, speed } = body;
+      const { groupId, serviceId, tier, sellPer1k, refill, refillDays, speed } = body;
       if (!groupId || !serviceId) return Response.json({ error: 'Group ID and service ID required' }, { status: 400 });
 
       const group = await prisma.serviceGroup.findUnique({ where: { id: groupId } });
@@ -154,6 +154,7 @@ export async function POST(req) {
           tier: tier || 'Standard',
           sellPer1k: finalSellPer1k,
           refill: !!refill,
+          refillDays: refill ? (Number(refillDays) || 30) : 0,
           speed: speed || service.avgTime || '0-2 hrs',
           sortOrder: (maxSort._max.sortOrder || 0) + 1,
         },
@@ -169,7 +170,11 @@ export async function POST(req) {
       const data = {};
       if (updates.tier !== undefined) data.tier = updates.tier;
       if (updates.sellPer1k !== undefined) data.sellPer1k = Number(updates.sellPer1k);
-      if (updates.refill !== undefined) data.refill = !!updates.refill;
+      if (updates.refill !== undefined) {
+        data.refill = !!updates.refill;
+        if (!updates.refill) data.refillDays = 0;
+      }
+      if (updates.refillDays !== undefined) data.refillDays = Number(updates.refillDays) || 0;
       if (updates.speed !== undefined) data.speed = updates.speed;
       if (updates.enabled !== undefined) data.enabled = !!updates.enabled;
       if (updates.sortOrder !== undefined) data.sortOrder = Number(updates.sortOrder);
