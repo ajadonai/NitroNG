@@ -10,7 +10,8 @@ export async function GET() {
     const links = await prisma.acquisitionLink.findMany({ orderBy: { createdAt: 'desc' } });
 
     const slugs = links.map(l => l.slug);
-    const [signupStats, orderStats] = await Promise.all([
+    const linkIds = links.map(l => l.id);
+    const [signupStats, orderStats, clickStats, uniqueClickStats] = await Promise.all([
       prisma.user.groupBy({
         by: ['signupSource'],
         where: { signupSource: { in: slugs }, deletedAt: null },
@@ -22,14 +23,20 @@ export async function GET() {
         WHERE u."signupSource" = ANY(${slugs}) AND u."deletedAt" IS NULL AND o."deletedAt" IS NULL AND o.status = 'Completed'
         GROUP BY u."signupSource"
       `,
+      prisma.linkClick.groupBy({ by: ['linkId'], where: { linkId: { in: linkIds } }, _count: true }),
+      prisma.$queryRaw`SELECT "linkId", COUNT(DISTINCT "ipHash")::int AS cnt FROM link_clicks WHERE "linkId" = ANY(${linkIds}) GROUP BY "linkId"`,
     ]);
 
     const signupMap = Object.fromEntries(signupStats.map(s => [s.signupSource, s._count]));
     const orderMap = Object.fromEntries(orderStats.map(s => [s.slug, { orders: s.orders, revenue: s.revenue }]));
+    const clickMap = Object.fromEntries(clickStats.map(c => [c.linkId, c._count]));
+    const uniqueMap = Object.fromEntries(uniqueClickStats.map(c => [c.linkId, c.cnt]));
 
     return Response.json({
       links: links.map(l => ({
         ...l,
+        clicks: clickMap[l.id] || 0,
+        uniqueClicks: uniqueMap[l.id] || 0,
         signups: signupMap[l.slug] || 0,
         orders: orderMap[l.slug]?.orders || 0,
         revenue: orderMap[l.slug]?.revenue || 0,
