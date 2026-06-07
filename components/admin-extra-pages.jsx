@@ -1266,7 +1266,20 @@ function DeviceRing({ devices, dark, t }) {
 
 function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRange, dark, t }) {
   const cardStyle = { background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` };
-  if (analyticsLoading) return <div className="py-8 text-center text-sm" style={{ color: t.textMuted }}>Loading analytics...</div>;
+  const sk = `skel-bone ${dark ? "skel-dark" : "skel-light"}`;
+  if (analyticsLoading) return (
+    <div style={{ animation: "fadeIn .2s ease" }}>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        {[1,2,3,4].map(i => <div key={i} className={`${sk} h-[88px] rounded-xl`} />)}
+      </div>
+      <div className={`${sk} h-[140px] rounded-xl mb-4`} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        {[1,2,3].map(i => <div key={i} className={`${sk} h-[180px] rounded-xl`} />)}
+      </div>
+      <div className={`${sk} h-[60px] rounded-xl mb-4`} />
+      <div className={`${sk} h-[80px] rounded-xl`} />
+    </div>
+  );
   if (!analytics) return null;
 
   if (analytics.totalClicks === 0) {
@@ -1661,9 +1674,13 @@ export function AdminAcquisitionPage({ dark, t }) {
   const totalOrders = displayLinks.reduce((s, l) => s + (l.orders || 0), 0);
   const totalRevenue = displayLinks.reduce((s, l) => s + (l.revenue || 0), 0);
 
-  if (loading) return <><div className="adm-header"><div className="adm-title" style={{ color: t.text }}>Tracking Links</div><div className="adm-subtitle" style={{ color: t.textMuted }}>Loading...</div><div className="page-divider" style={{ background: t.cardBorder }} /></div><div>{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[60px] rounded-[10px] mb-2`} />)}</div></>;
+  if (loading) {
+    const sk = `skel-bone ${dark ? "skel-dark" : "skel-light"}`;
+    return <><div className="adm-header"><div className="adm-title" style={{ color: t.text }}>Tracking Links</div><div className={`${sk} h-4 w-72 rounded mt-2`} /><div className="page-divider" style={{ background: t.cardBorder }} /></div><div className="adm-stats mb-5">{[1,2,3,4,5].map(i => <div key={i} className={`${sk} h-[72px] rounded-xl`} />)}</div><div className={`${sk} h-[52px] rounded-xl mb-3`} />{[1,2,3].map(i => <div key={i} className={`${sk} h-[62px] rounded-[10px] mb-2`} />)}</>;
+  }
 
   if (detailLink) {
+    const hasActivity = (detailLink.clicks || 0) + (detailLink.signups || 0) > 0;
     return (
       <>
         <div className="adm-header">
@@ -1671,10 +1688,24 @@ export function AdminAcquisitionPage({ dark, t }) {
             <button onClick={() => { setDetailLink(null); setAnalytics(null); }} className="w-8 h-8 rounded-lg flex items-center justify-center border border-solid cursor-pointer transition-all duration-200 hover:-translate-y-px shrink-0" style={{ background: "transparent", borderColor: t.cardBorder, color: t.textMuted }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
-            <div>
+            <div className="flex-1 min-w-0">
               <div className="adm-title" style={{ color: t.text }}>{detailLink.name}</div>
-              <div className="adm-subtitle font-mono" style={{ color: t.textMuted }}>{baseUrl}/go/{detailLink.slug}</div>
+              <div className="text-[12px] font-mono mt-0.5" style={{ color: t.textMuted }}>{baseUrl}/go/{detailLink.slug}</div>
             </div>
+            {hasActivity && (
+              <div className="flex items-center gap-3 shrink-0">
+                {[
+                  [(detailLink.clicks || 0).toLocaleString(), "clicks", t.accent],
+                  [detailLink.signups || 0, "signups", dark ? "#a5b4fc" : "#6366f1"],
+                  [detailLink.orders || 0, "orders", dark ? "#6ee7b7" : "#059669"],
+                ].map(([val, label, color]) => (
+                  <div key={label} className="text-right hidden sm:block">
+                    <div className="text-[15px] font-bold leading-tight" style={{ color }}>{val}</div>
+                    <div className="text-[9px] font-semibold uppercase tracking-[1px]" style={{ color: t.textMuted }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div className="page-divider" style={{ background: t.cardBorder }} />
         </div>
