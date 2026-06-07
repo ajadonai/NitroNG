@@ -764,7 +764,7 @@ function DashboardInner({ initialData }) {
         return {
           id: `ord-${o.id}`, type: "order",
           title: s === "Completed" ? "Order delivered" : s === "Cancelled" ? "Order cancelled" : "Order in progress",
-          desc: `${o.id} · ${o.service || "Service"} ${s === "Completed" ? "delivered" : s === "Cancelled" ? "cancelled" : "started"}`,
+          desc: `${o.service || "Service"} ${s === "Completed" ? "delivered" : s === "Cancelled" ? "cancelled" : "started"}`,
           time: o.created ? fD(o.created) : "", ts: new Date(o.created),
           color: s === "Completed" ? (dark_ ? "#60a5fa" : "#2563eb") : s === "Cancelled" ? (dark_ ? "#fca5a5" : "#dc2626") : (dark_ ? "#e0a458" : "#d97706"),
           icon: s === "Completed" ? "check" : s === "Cancelled" ? "x" : "clock",
