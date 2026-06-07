@@ -1035,13 +1035,13 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 </div>
 
                 {/* Cross-sell spotlight */}
-                {successCrossSell && <div className="rounded-xl p-3.5 mb-4 flex items-start gap-3 cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: successCrossSell.color + "08", border: `1px solid ${successCrossSell.color}20` }} onClick={() => { setOrderSuccess(null); setOrderModal(false); }}>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: successCrossSell.color + "15" }}>{successCrossSell.icon}</div>
+                {successCrossSell && <div className="rounded-xl p-3.5 mb-4 flex items-center gap-3 cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: successCrossSell.color + "08", border: `1px solid ${successCrossSell.color}20` }} onClick={() => { setOrderSuccess(null); setOrderModal(false); }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: successCrossSell.color + "15" }}>{successCrossSell.icon}</div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[13px] font-semibold mb-0.5" style={{ color: t.text }}>{successCrossSell.title}</div>
                     <div className="text-[12px] leading-relaxed" style={{ color: t.textMuted }}>{successCrossSell.body}</div>
                   </div>
-                  <span className="text-[11px] font-semibold whitespace-nowrap shrink-0 px-2.5 py-1 rounded-md mt-0.5" style={{ background: successCrossSell.color, color: "#fff" }}>{successCrossSell.cta}</span>
+                  <span className="text-[11px] font-semibold whitespace-nowrap shrink-0 px-2.5 py-1 rounded-md" style={{ background: successCrossSell.color, color: "#fff" }}>{successCrossSell.cta}</span>
                 </div>}
 
                 {/* Action buttons */}

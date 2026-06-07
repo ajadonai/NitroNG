@@ -2,12 +2,17 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { requireAdmin, canPerformAction, logActivity } from '@/lib/admin';
 
-export async function GET() {
+export async function GET(req) {
   const { admin, error } = await requireAdmin('acquisition');
   if (error) return error;
 
   try {
-    const links = await prisma.acquisitionLink.findMany({ orderBy: { createdAt: 'desc' } });
+    const { searchParams } = new URL(req.url);
+    const includeArchived = searchParams.get('includeArchived') === 'true';
+    const links = await prisma.acquisitionLink.findMany({
+      where: includeArchived ? {} : { archivedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
 
     const slugs = links.map(l => l.slug);
     const linkIds = links.map(l => l.id);
@@ -32,6 +37,8 @@ export async function GET() {
     const clickMap = Object.fromEntries(clickStats.map(c => [c.linkId, c._count]));
     const uniqueMap = Object.fromEntries(uniqueClickStats.map(c => [c.linkId, c.cnt]));
 
+    const archivedCount = includeArchived ? 0 : await prisma.acquisitionLink.count({ where: { archivedAt: { not: null } } });
+
     return Response.json({
       links: links.map(l => ({
         ...l,
@@ -42,6 +49,7 @@ export async function GET() {
         revenue: orderMap[l.slug]?.revenue || 0,
       })),
       canManage: canPerformAction(admin, 'acquisition.manage'),
+      archivedCount,
     });
   } catch (err) {
     log.error('Admin Acquisition GET', err.message);
@@ -101,6 +109,26 @@ export async function POST(req) {
       }
       await prisma.acquisitionLink.delete({ where: { id } });
       await logActivity(admin.name, `Deleted tracking link ${link.slug}`, 'acquisition');
+      return Response.json({ success: true });
+    }
+
+    if (action === 'archive') {
+      const { id } = body;
+      if (!id) return Response.json({ error: 'Link ID required' }, { status: 400 });
+      const link = await prisma.acquisitionLink.findUnique({ where: { id } });
+      if (!link) return Response.json({ error: 'Not found' }, { status: 404 });
+      await prisma.acquisitionLink.update({ where: { id }, data: { archivedAt: new Date(), enabled: false } });
+      await logActivity(admin.name, `Archived tracking link: ${link.slug}`, 'acquisition');
+      return Response.json({ success: true });
+    }
+
+    if (action === 'unarchive') {
+      const { id } = body;
+      if (!id) return Response.json({ error: 'Link ID required' }, { status: 400 });
+      const link = await prisma.acquisitionLink.findUnique({ where: { id } });
+      if (!link) return Response.json({ error: 'Not found' }, { status: 404 });
+      await prisma.acquisitionLink.update({ where: { id }, data: { archivedAt: null, enabled: true } });
+      await logActivity(admin.name, `Unarchived tracking link: ${link.slug}`, 'acquisition');
       return Response.json({ success: true });
     }
 
