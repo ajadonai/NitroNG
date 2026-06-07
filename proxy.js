@@ -72,7 +72,7 @@ export async function proxy(request) {
     const payload = await verifyToken(token, ADMIN_SECRET);
     if (!payload || payload.type !== 'admin') {
       const response = NextResponse.redirect(new URL('/admin/login', request.url));
-      response.cookies.set('nitro_admin_token', '', { maxAge: 0, path: '/' });
+      response.cookies.set('nitro_admin_token', '', { maxAge: 0, path: '/', sameSite: 'strict', secure: true });
       return response;
     }
   }

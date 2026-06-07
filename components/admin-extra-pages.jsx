@@ -1217,32 +1217,295 @@ export function AdminAPIPage({ dark, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ TRACKING LINKS                      ═══ */
 /* ═══════════════════════════════════════════ */
-function LinkAccordion({ link, dark, t, baseUrl, copied, copyLink, canManage, handleToggle, handleDelete, last, rowBorder }) {
+
+const countryFlag = (code) => { if (!code) return ''; try { return String.fromCodePoint(...[...code.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65)); } catch { return ''; } };
+const countryName = (code) => { try { return new Intl.DisplayNames(['en'], { type: 'region' }).of(code); } catch { return code; } };
+
+function MiniBar({ pct, color, dark }) {
+  return (
+    <div className="h-[6px] rounded-full flex-1 overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }}>
+      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
+    </div>
+  );
+}
+
+function SparkChart({ data, color, height = 64 }) {
+  const max = Math.max(...data, 1);
+  return (
+    <div className="flex items-end gap-[2px]" style={{ height }}>
+      {data.map((v, i) => (
+        <div key={i} className="flex-1 rounded-t-[2px] transition-all duration-300 relative group/bar cursor-default" style={{ height: `${Math.max(4, (v / max) * 100)}%`, background: v === max ? color : `${color}55` }}>
+          <div className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-semibold px-1.5 py-0.5 rounded whitespace-nowrap opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none z-10" style={{ background: "#1a1d2e", color: "#eee", border: "1px solid rgba(255,255,255,.1)" }}>{v}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DeviceRing({ devices, dark, t }) {
+  const total = (devices.mobile || 0) + (devices.desktop || 0) + (devices.tablet || 0);
+  if (!total) return null;
+  const r = 44, c = 2 * Math.PI * r;
+  const mArc = ((devices.mobile || 0) / total) * c;
+  const dArc = ((devices.desktop || 0) / total) * c;
+  const tArc = ((devices.tablet || 0) / total) * c;
+  return (
+    <div className="relative flex items-center justify-center" style={{ width: 110, height: 110 }}>
+      <svg width="110" height="110" viewBox="0 0 100 100" className="-rotate-90">
+        <circle cx="50" cy="50" r={r} fill="none" stroke="#c47d8e" strokeWidth="8" strokeDasharray={`${mArc} ${c}`} strokeDashoffset="0" strokeLinecap="round" />
+        <circle cx="50" cy="50" r={r} fill="none" stroke="#60a5fa" strokeWidth="8" strokeDasharray={`${dArc} ${c}`} strokeDashoffset={-mArc} strokeLinecap="round" />
+        <circle cx="50" cy="50" r={r} fill="none" stroke="#a78bfa" strokeWidth="8" strokeDasharray={`${tArc} ${c}`} strokeDashoffset={-(mArc + dArc)} strokeLinecap="round" />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div className="text-lg font-bold" style={{ color: t.text }}>{total.toLocaleString()}</div>
+        <div className="text-[10px]" style={{ color: t.textMuted }}>clicks</div>
+      </div>
+    </div>
+  );
+}
+
+function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRange, dark, t }) {
+  const cardStyle = { background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` };
+  const sk = `skel-bone ${dark ? "skel-dark" : "skel-light"}`;
+  if (analyticsLoading) return (
+    <div style={{ animation: "fadeIn .2s ease" }}>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        {[1,2,3,4].map(i => <div key={i} className={`${sk} h-[88px] rounded-xl`} />)}
+      </div>
+      <div className={`${sk} h-[140px] rounded-xl mb-4`} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        {[1,2,3].map(i => <div key={i} className={`${sk} h-[180px] rounded-xl`} />)}
+      </div>
+      <div className={`${sk} h-[60px] rounded-xl mb-4`} />
+      <div className={`${sk} h-[80px] rounded-xl`} />
+    </div>
+  );
+  if (!analytics) return null;
+
+  if (analytics.totalClicks === 0) {
+    return (
+      <div style={{ animation: "fadeIn .2s ease" }}>
+        <div className="rounded-xl p-8 text-center" style={cardStyle}>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3 opacity-40"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <div className="text-sm font-semibold mb-1" style={{ color: t.text }}>No clicks yet</div>
+          <div className="text-[13px] mb-4" style={{ color: t.textMuted }}>Share this link to start tracking analytics</div>
+          {(link.signups > 0 || link.orders > 0) && (
+            <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto mt-4">
+              <div className="rounded-lg p-3" style={cardStyle}>
+                <div className="text-lg font-bold" style={{ color: dark ? "#a5b4fc" : "#6366f1" }}>{(link.signups || 0).toLocaleString()}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[1px] mt-0.5" style={{ color: t.textMuted }}>Signups</div>
+              </div>
+              <div className="rounded-lg p-3" style={cardStyle}>
+                <div className="text-lg font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{(link.orders || 0).toLocaleString()}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[1px] mt-0.5" style={{ color: t.textMuted }}>Orders</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const convRate = analytics.totalClicks > 0 ? ((link.signups / analytics.totalClicks) * 100).toFixed(1) : "0";
+  const orderRate = link.signups > 0 ? ((link.orders / link.signups) * 100).toFixed(1) : "0";
+
+  const timelineData = range === "24h"
+    ? Array.from({ length: 24 }, (_, h) => { const m = analytics.timeline.find(t => t.bucket === h); return m ? m.clicks : 0; })
+    : analytics.timeline.map(t => t.clicks);
+  const timelineLabels = range === "24h"
+    ? Array.from({ length: 24 }, (_, i) => `${i}:00`)
+    : analytics.timeline.map(t => { const d = new Date(t.bucket); return d.toLocaleDateString('en', { month: 'short', day: 'numeric' }); });
+
+  const browserColors = { Chrome: "#4caf50", Safari: "#60a5fa", Firefox: "#ff9800", Instagram: "#e040fb", Facebook: "#1877f2", TikTok: "#ff0050", Edge: "#03a9f4", Opera: "#ff1b2d" };
+  const accentColors = ["#c47d8e", "#60a5fa", "#a78bfa", "#6ee7b7", "#fcd34d", "#f43f5e", "#f97316", "#06b6d4"];
+
+  return (
+    <div style={{ animation: "fadeIn .2s ease" }}>
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        {[
+          ["Total Clicks", analytics.totalClicks.toLocaleString(), `${analytics.uniqueClicks.toLocaleString()} unique`, t.accent],
+          ["Signups", (link.signups || 0).toLocaleString(), `${convRate}% conversion`, dark ? "#a5b4fc" : "#6366f1"],
+          ["Orders", (link.orders || 0).toLocaleString(), `${orderRate}% of signups`, dark ? "#6ee7b7" : "#059669"],
+          ["Revenue", fN((link.revenue || 0) / 100), "from this link", dark ? "#fcd34d" : "#d97706"],
+        ].map(([label, val, sub, color]) => (
+          <div key={label} className="rounded-xl p-3.5 relative overflow-hidden" style={cardStyle}>
+            <div className="text-[10px] font-semibold uppercase tracking-[1.5px] mb-1.5" style={{ color: t.textMuted }}>{label}</div>
+            <div className="text-xl font-bold" style={{ color }}>{val}</div>
+            <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>{sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Timeline */}
+      {timelineData.length > 0 && (
+        <div className="rounded-xl p-4 mb-4" style={cardStyle}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className="text-sm font-semibold" style={{ color: t.text }}>Click Timeline</div>
+              <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{range === "24h" ? "Today, by hour" : range === "7d" ? "Last 7 days" : "Last 30 days"}</div>
+            </div>
+            <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+              {["24h", "7d", "30d"].map(p => (
+                <button key={p} onClick={() => setRange(p)} className="px-3 py-1.5 text-[11px] font-semibold border-none cursor-pointer" style={{ background: range === p ? "rgba(196,125,142,.15)" : "transparent", color: range === p ? t.accent : t.textMuted }}>{p}</button>
+              ))}
+            </div>
+          </div>
+          <SparkChart data={timelineData} color={t.accent} height={72} />
+          {timelineLabels.length <= 14 && (
+            <div className="flex justify-between mt-2">
+              {timelineLabels.map((l, i) => (
+                range === "24h"
+                  ? (i % 4 === 0 && <span key={i} className="text-[9px]" style={{ color: t.textMuted }}>{l}</span>)
+                  : <span key={i} className="text-[9px] flex-1 text-center" style={{ color: t.textMuted }}>{l}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 3-col: Devices / Countries / Referrers */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        {/* Devices */}
+        <div className="rounded-xl p-4" style={cardStyle}>
+          <div className="text-sm font-semibold mb-3" style={{ color: t.text }}>Devices</div>
+          <div className="flex justify-center mb-3"><DeviceRing devices={analytics.devices} dark={dark} t={t} /></div>
+          <div className="space-y-2">
+            {[
+              { label: "Mobile", val: analytics.devices.mobile || 0, color: "#c47d8e", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> },
+              { label: "Desktop", val: analytics.devices.desktop || 0, color: "#60a5fa", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> },
+              { label: "Tablet", val: analytics.devices.tablet || 0, color: "#a78bfa", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> },
+            ].map(d => (
+              <div key={d.label} className="flex items-center gap-2">
+                <span style={{ color: d.color }}>{d.icon}</span>
+                <span className="text-[12px] flex-1" style={{ color: t.text }}>{d.label}</span>
+                <span className="text-[12px] font-semibold tabular-nums" style={{ color: d.color }}>{d.val.toLocaleString()}</span>
+                <span className="text-[10px] w-8 text-right" style={{ color: t.textMuted }}>{analytics.totalClicks ? ((d.val / analytics.totalClicks) * 100).toFixed(0) : 0}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Countries */}
+        <div className="rounded-xl p-4" style={cardStyle}>
+          <div className="text-sm font-semibold mb-3" style={{ color: t.text }}>Top Countries</div>
+          {analytics.countries.length === 0 ? <div className="text-[12px] py-4 text-center" style={{ color: t.textMuted }}>No geo data yet</div> : (
+            <div className="space-y-2.5">
+              {analytics.countries.map((c, i) => (
+                <div key={c.code}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[13px]">{countryFlag(c.code)}</span>
+                    <span className="text-[12px] flex-1" style={{ color: t.text }}>{countryName(c.code)}</span>
+                    <span className="text-[12px] font-semibold tabular-nums" style={{ color: t.accent }}>{c.clicks.toLocaleString()}</span>
+                  </div>
+                  <MiniBar pct={(c.clicks / analytics.totalClicks) * 100} color={i === 0 ? t.accent : `${t.accent}66`} dark={dark} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Referrers */}
+        <div className="rounded-xl p-4" style={cardStyle}>
+          <div className="text-sm font-semibold mb-3" style={{ color: t.text }}>Traffic Sources</div>
+          {analytics.referrers.length === 0 ? <div className="text-[12px] py-4 text-center" style={{ color: t.textMuted }}>No referrer data yet</div> : (
+            <div className="space-y-2.5">
+              {analytics.referrers.map((r, i) => {
+                const pct = analytics.totalClicks ? ((r.clicks / analytics.totalClicks) * 100).toFixed(0) : 0;
+                return (
+                  <div key={r.source}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ background: accentColors[i % accentColors.length] }} />
+                      <span className="text-[12px] flex-1" style={{ color: t.text }}>{r.source}</span>
+                      <span className="text-[12px] font-semibold tabular-nums" style={{ color: accentColors[i % accentColors.length] }}>{pct}%</span>
+                    </div>
+                    <MiniBar pct={pct} color={accentColors[i % accentColors.length]} dark={dark} />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Browsers */}
+      {analytics.browsers.length > 0 && (
+        <div className="rounded-xl p-4 mb-4" style={cardStyle}>
+          <div className="text-sm font-semibold mb-3" style={{ color: t.text }}>Browsers</div>
+          <div className="flex gap-2 flex-wrap">
+            {analytics.browsers.map(b => {
+              const bc = browserColors[b.name] || t.textMuted;
+              const pct = analytics.totalClicks ? ((b.clicks / analytics.totalClicks) * 100).toFixed(0) : 0;
+              return (
+                <div key={b.name} className="rounded-lg py-2 px-3 flex items-center gap-2" style={{ background: `${bc}10`, border: `1px solid ${bc}25` }}>
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: bc }} />
+                  <span className="text-[12px] font-medium" style={{ color: t.text }}>{b.name}</span>
+                  <span className="text-[11px] font-semibold" style={{ color: bc }}>{pct}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Conversion funnel */}
+      <div className="rounded-xl p-4" style={cardStyle}>
+        <div className="text-sm font-semibold mb-3" style={{ color: t.text }}>Conversion Funnel</div>
+        <div className="flex items-center gap-2">
+          {[
+            { label: "Clicks", val: analytics.totalClicks, color: t.accent },
+            { label: "Unique", val: analytics.uniqueClicks, color: dark ? "#f59e0b" : "#d97706" },
+            { label: "Signups", val: link.signups || 0, color: dark ? "#a5b4fc" : "#6366f1" },
+            { label: "Orders", val: link.orders || 0, color: dark ? "#6ee7b7" : "#059669" },
+          ].map((step, i, arr) => (
+            <div key={step.label} className="flex items-center gap-2 flex-1">
+              <div className="flex-1 text-center">
+                <div className="text-lg font-bold mb-0.5" style={{ color: step.color }}>{step.val.toLocaleString()}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[1px]" style={{ color: t.textMuted }}>{step.label}</div>
+                {i > 0 && arr[i-1].val > 0 && <div className="text-[10px] mt-0.5 font-semibold" style={{ color: step.color }}>{((step.val / arr[i-1].val) * 100).toFixed(1)}%</div>}
+              </div>
+              {i < arr.length - 1 && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.12)"} strokeWidth="2" strokeLinecap="round" className="shrink-0"><polyline points="9 18 15 12 9 6"/></svg>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LinkAccordion({ link, dark, t, baseUrl, copied, copyLink, canManage, handleDelete, handleArchive, onViewAnalytics, last, rowBorder }) {
   const [open, setOpen] = useState(false);
-  const hasStats = (link.signups || 0) + (link.orders || 0) + (link.revenue || 0) > 0;
+  const hasActivity = (link.clicks || 0) + (link.signups || 0) > 0;
+  const statusColor = link.archivedAt ? (dark ? "#fcd34d" : "#d97706") : t.accent;
   return (
     <div style={!last ? rowBorder : {}}>
       <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(v => !v); } }} onClick={() => setOpen(v => !v)} className="flex items-center gap-3 py-3.5 px-1 cursor-pointer transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.04)]" style={{ userSelect: "none" }}>
-        <div className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)" }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        <div className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg" style={{ background: `${statusColor}15` }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={statusColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-0.5">
             <span className="text-[15px] font-semibold" style={{ color: t.text }}>{link.name}</span>
-            {!link.enabled && <span className="text-[10px] py-0.5 px-1.5 rounded-full font-semibold" style={{ background: dark ? "rgba(220,38,38,.1)" : "rgba(220,38,38,.05)", color: dark ? "#fca5a5" : "#dc2626" }}>Off</span>}
+            {link.archivedAt && <span className="text-[10px] py-0.5 px-1.5 rounded-full font-semibold" style={{ background: dark ? "rgba(217,119,6,.1)" : "rgba(217,119,6,.05)", color: dark ? "#fcd34d" : "#d97706" }}>Archived</span>}
           </div>
-          <div className="flex items-center gap-2 text-[11px]" style={{ color: t.textMuted }}>
-            {hasStats ? <><span>{link.signups || 0} signups</span><span className="opacity-30">·</span><span>{link.orders || 0} orders</span><span className="opacity-30">·</span><span>{fN((link.revenue || 0) / 100)} rev</span></> : <span>No activity yet</span>}
+          <div className="flex items-center gap-2 text-[11px] flex-wrap" style={{ color: t.textMuted }}>
+            {hasActivity ? <><span>{(link.clicks || 0).toLocaleString()} clicks</span><span className="opacity-30">·</span><span>{link.signups || 0} signups</span><span className="opacity-30">·</span><span>{link.orders || 0} orders</span><span className="opacity-30">·</span><span>{fN((link.revenue || 0) / 100)} rev</span></> : <span>No activity yet</span>}
+            <span className="opacity-30">·</span>
+            <span>{new Date(link.createdAt).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
           </div>
         </div>
         {canManage && (
           <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
-            <div role="switch" aria-checked={link.enabled} aria-label={`Toggle ${link.name}`} tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(link.id, !link.enabled); } }} onClick={() => handleToggle(link.id, !link.enabled)} className="w-[36px] h-5 rounded-xl relative cursor-pointer shrink-0" style={{ background: link.enabled ? "#c47d8e" : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)") }}>
-              <div className="w-[14px] h-[14px] rounded-full bg-white absolute top-[3px] transition-[left] duration-200" style={{ left: link.enabled ? 19 : 3 }} />
-            </div>
-            <button onClick={() => handleDelete(link)} className="bg-transparent border-none cursor-pointer p-1 transition-opacity hover:opacity-70" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            <button onClick={() => handleArchive(link)} className="bg-transparent border-none cursor-pointer p-1 transition-opacity hover:opacity-70" style={{ color: dark ? "#fcd34d" : "#d97706" }} title={link.archivedAt ? "Restore" : "Archive"}>
+              {link.archivedAt
+                ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>}
             </button>
+            {!link.archivedAt && (
+              <button onClick={() => handleDelete(link)} className="bg-transparent border-none cursor-pointer p-1 transition-opacity hover:opacity-70" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+              </button>
+            )}
           </div>
         )}
         <svg className="shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
@@ -1252,14 +1515,15 @@ function LinkAccordion({ link, dark, t, baseUrl, copied, copyLink, canManage, ha
         <div className="pb-3.5 px-1" style={{ animation: "fadeIn .15s ease" }}>
           <div className="flex items-center gap-2 mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)"}` }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-            <span className="text-[12px] font-mono truncate flex-1" style={{ color: t.textSoft }}>{baseUrl}?via={link.slug}</span>
+            <span className="text-[12px] font-mono truncate flex-1" style={{ color: t.textSoft }}>{baseUrl}/go/{link.slug}</span>
             <button onClick={(e) => { e.stopPropagation(); copyLink(link.slug); }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: copied === link.slug ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }}>
               {copied === link.slug ? "Copied!" : "Copy"}
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2 mb-3">
             {[
+              ["Clicks", (link.clicks || 0).toLocaleString(), t.accent],
               ["Signups", (link.signups || 0).toLocaleString(), dark ? "#a5b4fc" : "#6366f1"],
               ["Orders", (link.orders || 0).toLocaleString(), dark ? "#6ee7b7" : "#059669"],
               ["Revenue", fN((link.revenue || 0) / 100), dark ? "#fcd34d" : "#d97706"],
@@ -1270,6 +1534,11 @@ function LinkAccordion({ link, dark, t, baseUrl, copied, copyLink, canManage, ha
               </div>
             ))}
           </div>
+
+          <button onClick={(e) => { e.stopPropagation(); onViewAnalytics(link); }} className="w-full py-2.5 rounded-lg text-[13px] font-semibold border-none cursor-pointer transition-all duration-200 hover:-translate-y-px flex items-center justify-center gap-1.5" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            View Analytics
+          </button>
         </div>
       )}
     </div>
@@ -1287,6 +1556,14 @@ export function AdminAcquisitionPage({ dark, t }) {
   const [newSlug, setNewSlug] = useState("");
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(null);
+  const [detailLink, setDetailLink] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [range, setRange] = useState("7d");
+  const [viewFilter, setViewFilter] = useState("active");
+  const [archivedCount, setArchivedCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const perPage = 10;
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://nitro.ng";
   const cardBg = dark ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.85)";
@@ -1296,13 +1573,34 @@ export function AdminAcquisitionPage({ dark, t }) {
   const rowBorder = { borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` };
 
   const load = () => {
-    fetch("/api/admin/acquisition").then(r => r.json()).then(d => {
+    const params = viewFilter === "archived" ? "?includeArchived=true" : "";
+    fetch(`/api/admin/acquisition${params}`).then(r => r.json()).then(d => {
       setLinks(d.links || []);
       setCanManage(d.canManage);
+      setArchivedCount(d.archivedCount || 0);
       setLoading(false);
+      setPage(1);
     }).catch(() => setLoading(false));
   };
-  useEffect(load, []);
+  useEffect(load, [viewFilter]);
+
+  const loadAnalytics = useCallback((linkId, r) => {
+    setAnalyticsLoading(true);
+    fetch(`/api/admin/acquisition/analytics?linkId=${linkId}&range=${r}`)
+      .then(res => res.json())
+      .then(d => { setAnalytics(d); setAnalyticsLoading(false); })
+      .catch(() => setAnalyticsLoading(false));
+  }, []);
+
+  const openAnalytics = useCallback((link) => {
+    setDetailLink(link);
+    setRange("7d");
+    loadAnalytics(link.id, "7d");
+  }, [loadAnalytics]);
+
+  useEffect(() => {
+    if (detailLink) loadAnalytics(detailLink.id, range);
+  }, [range]);
 
   const handleCreate = async () => {
     if (!newName.trim() || !newSlug.trim()) return;
@@ -1320,57 +1618,99 @@ export function AdminAcquisitionPage({ dark, t }) {
     setSaving(false);
   };
 
-  const handleToggle = async (id, enabled) => {
+  const handleArchive = async (link) => {
+    const isArchived = !!link.archivedAt;
+    if (!isArchived) {
+      const ok = await confirm(`Archive "${link.name}"?`, "Archived links are hidden from the main list but can be restored anytime.");
+      if (!ok) return;
+    }
     await fetch("/api/admin/acquisition", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "toggle", id, enabled }),
+      body: JSON.stringify({ action: isArchived ? "unarchive" : "archive", id: link.id }),
     });
+    toast.success(isArchived ? "Link restored" : "Link archived");
     load();
   };
 
   const handleDelete = async (link) => {
-    const ok = await confirm(`Delete "${link.name}"?`, link.signups > 0 ? "This link has signups — it will be disabled instead of deleted." : "This cannot be undone.");
+    const ok = await confirm(`Delete "${link.name}"?`, link.signups > 0 ? "This link has signups — archive it instead to keep the data." : "This cannot be undone.");
     if (!ok) return;
     const res = await fetch("/api/admin/acquisition", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "delete", id: link.id }),
     });
     const d = await res.json();
-    if (d.soft) toast.info("Link disabled (has signups)");
+    if (d.soft) toast.info("Link disabled (has signups — use Archive instead)");
     else toast.success("Link deleted");
     load();
   };
 
   const copyLink = (slug) => {
-    navigator.clipboard.writeText(`${baseUrl}?via=${slug}`);
+    navigator.clipboard.writeText(`${baseUrl}/go/${slug}`);
     setCopied(slug);
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const totalSignups = links.reduce((s, l) => s + (l.signups || 0), 0);
-  const totalOrders = links.reduce((s, l) => s + (l.orders || 0), 0);
-  const totalRevenue = links.reduce((s, l) => s + (l.revenue || 0), 0);
+  const displayLinks = viewFilter === "archived" ? links.filter(l => l.archivedAt) : links.filter(l => !l.archivedAt);
+  const totalPages = Math.ceil(displayLinks.length / perPage);
+  const paginatedLinks = displayLinks.slice((page - 1) * perPage, page * perPage);
 
-  if (loading) return <><div className="adm-header"><div className="adm-title" style={{ color: t.text }}>Tracking Links</div><div className="adm-subtitle" style={{ color: t.textMuted }}>Loading...</div><div className="page-divider" style={{ background: t.cardBorder }} /></div><div>{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[60px] rounded-[10px] mb-2`} />)}</div></>;
+  const totalClicks = displayLinks.reduce((s, l) => s + (l.clicks || 0), 0);
+  const totalSignups = displayLinks.reduce((s, l) => s + (l.signups || 0), 0);
+  const totalOrders = displayLinks.reduce((s, l) => s + (l.orders || 0), 0);
+  const totalRevenue = displayLinks.reduce((s, l) => s + (l.revenue || 0), 0);
+
+  if (loading) {
+    const sk = `skel-bone ${dark ? "skel-dark" : "skel-light"}`;
+    return <><div className="adm-header"><div className="adm-title" style={{ color: t.text }}>Tracking Links</div><div className={`${sk} h-4 w-72 rounded mt-2`} /><div className="page-divider" style={{ background: t.cardBorder }} /></div><div className="adm-stats mb-5">{[1,2,3,4,5].map(i => <div key={i} className={`${sk} h-[72px] rounded-xl`} />)}</div><div className={`${sk} h-[52px] rounded-xl mb-3`} />{[1,2,3].map(i => <div key={i} className={`${sk} h-[62px] rounded-[10px] mb-2`} />)}</>;
+  }
+
+  if (detailLink) {
+    return (
+      <>
+        <div className="adm-header">
+          <div className="flex items-center gap-3">
+            <button onClick={() => { setDetailLink(null); setAnalytics(null); }} className="w-8 h-8 rounded-lg flex items-center justify-center border border-solid cursor-pointer transition-all duration-200 hover:-translate-y-px shrink-0" style={{ background: "transparent", borderColor: t.cardBorder, color: t.textMuted }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div className="flex-1 min-w-0">
+              <div className="adm-title" style={{ color: t.text }}>{detailLink.name}</div>
+              <div className="text-[12px] font-mono mt-0.5" style={{ color: t.textMuted }}>{baseUrl}/go/{detailLink.slug}</div>
+            </div>
+          </div>
+          <div className="page-divider" style={{ background: t.cardBorder }} />
+        </div>
+        <LinkAnalyticsDetail link={detailLink} analytics={analytics} analyticsLoading={analyticsLoading} range={range} setRange={setRange} dark={dark} t={t} />
+      </>
+    );
+  }
 
   return (
     <>
       <div className="adm-header">
-        <div className="adm-title" style={{ color: t.text }}>Tracking Links</div>
-        <div className="adm-subtitle" style={{ color: t.textMuted }}>Create tracking links for marketing campaigns</div>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <div className="adm-title" style={{ color: t.text }}>Tracking Links</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>Create tracking links and see who clicks, where they come from, and what they do</div>
+          </div>
+          {(links.length > 0 || archivedCount > 0) && (
+            <SegPill value={viewFilter} options={[{ value: "active", label: "Active" }, { value: "archived", label: `Archived${archivedCount > 0 ? ` (${archivedCount})` : ""}` }]} onChange={v => { setViewFilter(v); setPage(1); }} dark={dark} t={t} />
+          )}
+        </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
       {/* ═══ Summary Stats ═══ */}
-      {links.length > 0 && (
+      {displayLinks.length > 0 && (
         <div className="adm-stats mb-5">
           {[
-            ["Total Links", links.length, t.accent],
+            ["Total Links", displayLinks.length, t.accent],
+            ["Clicks", totalClicks.toLocaleString(), dark ? "#f59e0b" : "#d97706"],
             ["Signups", totalSignups.toLocaleString(), dark ? "#a5b4fc" : "#6366f1"],
             ["Orders", totalOrders.toLocaleString(), dark ? "#6ee7b7" : "#059669"],
             ["Revenue", fN(totalRevenue / 100), dark ? "#fcd34d" : "#d97706"],
           ].map(([label, val, color]) => (
-            <div key={label} className="py-3.5 px-4 rounded-xl" style={{ background: cardBg, border: cardBd }}>
+            <div key={label} className="py-3.5 px-4 rounded-xl relative overflow-hidden" style={{ background: cardBg, border: cardBd, borderLeft: `3px solid ${color}` }}>
               <div className="text-[10px] font-semibold uppercase tracking-[1px] mb-1.5" style={{ color: t.textMuted }}>{label}</div>
               <div className="text-xl font-bold" style={{ color }}>{val}</div>
             </div>
@@ -1383,7 +1723,7 @@ export function AdminAcquisitionPage({ dark, t }) {
         <div className="set-card-header flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
           <div>
             <div className="set-card-title" style={{ color: t.textMuted }}>Tracking Links</div>
-            <div className="set-card-desc" style={{ color: t.textSoft }}>Share these URLs in ads, bios, or with influencers to track signups</div>
+            <div className="set-card-desc" style={{ color: t.textSoft }}>Share these URLs in ads, bios, or with influencers</div>
           </div>
           {canManage && <button onClick={() => setShowAdd(!showAdd)} className="adm-btn-sm flex items-center gap-1.5" style={{ borderColor: t.cardBorder, color: t.accent }}>{showAdd ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel</> : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New</>}</button>}
         </div>
@@ -1397,7 +1737,7 @@ export function AdminAcquisitionPage({ dark, t }) {
             </div>
             {newName.trim() && (
               <div className="py-2 px-3 rounded-lg mb-3 text-[13px] font-mono" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)", color: t.textMuted }}>
-                {baseUrl}?via={newSlug}
+                {baseUrl}/go/{newSlug}
               </div>
             )}
             <button onClick={handleCreate} disabled={saving || !newName.trim()} className="adm-btn-primary" style={{ opacity: (saving || !newName.trim()) ? .5 : 1 }}>
@@ -1409,18 +1749,38 @@ export function AdminAcquisitionPage({ dark, t }) {
         {/* ═══ Info callout ═══ */}
         <div className="set-card-body">
           <div className="py-2.5 px-3.5 rounded-lg text-[13px] leading-relaxed mb-4 border-l-[3px] border-l-[#c47d8e]" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", color: t.textMuted }}>
-            Create a link for each campaign or influencer. When someone visits nitro.ng through your link and signs up, their account is tagged — you can see how many signed up, placed orders, and how much they spent.
+            Share <span className="font-mono text-[12px]">nitro.ng/go/your-slug</span> in ads, bios, or with influencers. Every click is tracked — device, location, browser, and source — plus signups and revenue.
           </div>
 
           {/* ═══ Links List ═══ */}
-          {links.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-sm font-medium mb-1" style={{ color: t.text }}>No links yet</div>
-              <div className="text-[13px]" style={{ color: t.textMuted }}>Click "+ New" above to create your first tracking link</div>
+          {displayLinks.length > 0 && (
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[12px] font-medium" style={{ color: t.textMuted }}>
+                Showing {displayLinks.length} {viewFilter === "archived" ? "archived " : ""}link{displayLinks.length !== 1 ? "s" : ""}
+              </span>
             </div>
-          ) : links.map((link, i) => (
-            <LinkAccordion key={link.id} link={link} dark={dark} t={t} baseUrl={baseUrl} copied={copied} copyLink={copyLink} canManage={canManage} handleToggle={handleToggle} handleDelete={handleDelete} last={i === links.length - 1} rowBorder={rowBorder} />
+          )}
+          {displayLinks.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-sm font-medium mb-1" style={{ color: t.text }}>{viewFilter === "archived" ? "No archived links" : "No links yet"}</div>
+              <div className="text-[13px]" style={{ color: t.textMuted }}>{viewFilter === "archived" ? "Archived links will appear here" : "Click \"+ New\" above to create your first tracking link"}</div>
+            </div>
+          ) : paginatedLinks.map((link, i) => (
+            <LinkAccordion key={link.id} link={link} dark={dark} t={t} baseUrl={baseUrl} copied={copied} copyLink={copyLink} canManage={canManage} handleDelete={handleDelete} handleArchive={handleArchive} onViewAnalytics={openAnalytics} last={i === paginatedLinks.length - 1} rowBorder={rowBorder} />
           ))}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-3 mt-2" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="adm-btn-sm flex items-center gap-1" style={{ borderColor: t.cardBorder, color: t.textMuted, opacity: page === 1 ? .35 : 1 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                Prev
+              </button>
+              <span className="text-[12px] font-medium" style={{ color: t.textMuted }}>Page {page} of {totalPages}</span>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="adm-btn-sm flex items-center gap-1" style={{ borderColor: t.cardBorder, color: t.textMuted, opacity: page >= totalPages ? .35 : 1 }}>
+                Next
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </>
