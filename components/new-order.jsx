@@ -10,6 +10,14 @@ import { SegPill } from "./seg-pill";
 /* ═══════════════════════════════════════════ */
 
 const refillLabel = (tier) => tier === "Budget" ? "No refill if count drops" : tier === "Standard" ? "Free top-up if count drops" : "Auto-refill if count drops";
+const tierClr = { Budget: { text: "#e0a458", bg: "rgba(224,164,88,.1)" }, Standard: { text: "#60a5fa", bg: "rgba(96,165,250,.1)" }, Premium: { text: "#a78bfa", bg: "rgba(167,139,250,.1)" } };
+const crossSells = {
+  follower: { title: "Complete the look", body: "New followers check your posts first. Add likes so your content matches your profile.", cta: "Add Likes", color: "#f43f5e", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="#f43f5e" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> },
+  comment: { title: "Pair it with Likes", body: "Comments without likes look odd. Add likes to match and keep it natural.", cta: "Add Likes", color: "#f43f5e", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="#f43f5e" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> },
+  like: { title: "Make it convincing", body: "Likes are great but comments seal the deal. A few comments make your post pop.", cta: "Add Comments", color: "#3b82f6", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> },
+  view: { title: "Boost the engagement", body: "High views + low likes looks off. Add likes so the numbers tell the right story.", cta: "Add Likes", color: "#f43f5e", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="#f43f5e" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> },
+};
+const getCrossSell = (svc) => { const s = (svc || "").toLowerCase(); return s.includes("follower") ? crossSells.follower : s.includes("comment") ? crossSells.comment : s.includes("like") ? crossSells.like : s.includes("view") ? crossSells.view : crossSells.follower; };
 const I = (d, vb = "0 0 24 24") => <svg width="24" height="24" viewBox={vb} fill="currentColor">{d}</svg>;
 const IS = (d, vb = "0 0 24 24") => <svg width="24" height="24" viewBox={vb} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{d}</svg>;
 
@@ -453,6 +461,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   const [menuError, setMenuError] = useState("");
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(null);
+  const successTierClr = orderSuccess ? (tierClr[orderSuccess.tier] || tierClr.Budget) : null;
+  const successCrossSell = orderSuccess ? getCrossSell(orderSuccess.service) : null;
 
   // Bulk mode state — hydrate from storage after mount to avoid SSR mismatch
   const [orderMode, setOrderMode] = useState("single");
@@ -690,7 +700,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       });
       const data = await res.json();
       if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong"); setOrderLoading(false); return; }
-      setOrderSuccess({ ...data.order, queued: data.queued, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", speed: selTier?.speed || null });
+      setOrderSuccess({ ...data.order, queued: data.queued, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", speed: selTier?.speed || null, tier: selTier?.tier || null, link: link.trim(), balanceAfter: data.order?.charge != null && user?.balance != null ? Math.max(0, (user.balance - (data.order.charge * 100)) / 100) : null });
       if (typeof window.fbq === "function") fbq("track", "Purchase", { value: (data.order?.charge || 0) / 100, currency: "NGN", content_name: selSvc?.name || "Order", content_category: platform || "unknown" });
       setLink("");
       if (onOrderSuccess) onOrderSuccess();
@@ -974,42 +984,70 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
         <div className="no-modal-overlay flex fixed inset-0 bg-black/40 z-50 items-end justify-center px-3.5 pb-[70px] desktop:items-center desktop:p-6" onClick={() => { setOrderModal(false); setOrderSuccess(null); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null)}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!orderSuccess&&!orderLoading){submitOrder()}}}>
           <div role="dialog" aria-modal="true" aria-label="Order summary" className="w-full rounded-[14px] overflow-y-auto shadow-[0_20px_60px_rgba(0,0,0,.38)] border border-solid max-h-[calc(100dvh-84px)] desktop:max-w-[420px] desktop:max-h-[90vh] desktop:rounded-2xl" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#ffffff", borderColor: t.cardBorder }}>
             {orderSuccess ? (
-              <div className="p-6 max-md:p-5 text-center">
-                <div className="relative w-16 h-16 mx-auto mb-4">
-                  <div className="absolute inset-0 rounded-full animate-ping opacity-20" style={{ background: orderSuccess.queued ? (dark ? "#fbbf24" : "#d97706") : (dark ? "#6ee7b7" : "#059669"), animationDuration: "1.5s", animationIterationCount: 1 }} />
-                  <div className="relative w-16 h-16 rounded-full flex items-center justify-center" style={{ background: orderSuccess.queued ? (dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.08)") : (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)") }}>
+              <div className="p-5 max-md:p-4">
+                {/* Header — platform icon + title + check */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textMuted }}>
+                    {PLATFORM_GROUPS.flatMap(g => g.platforms).find(p => p.label.toLowerCase().includes((orderSuccess.platform || "").toLowerCase()))?.icon || <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/></svg>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-base font-semibold" style={{ color: t.text }}>{orderSuccess.queued ? "Order queued" : "Order placed!"}</div>
+                    <div className="text-xs mt-0.5" style={{ color: t.textMuted }}>
+                      {orderSuccess.queued ? "Starts when your active order completes" : orderSuccess.speed ? `Est. delivery: ${orderSuccess.speed}` : "Processing now"}
+                    </div>
+                  </div>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: orderSuccess.queued ? (dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)") : (dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)") }}>
                     {orderSuccess.queued
-                      ? <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      : <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>}
+                      ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
                   </div>
                 </div>
-                <div className="text-xl max-md:text-lg font-semibold mb-1" style={{ color: t.text }}>{orderSuccess.queued ? "Order queued" : "Order placed!"}</div>
-                <div className="text-sm mb-5 max-w-[320px] mx-auto" style={{ color: t.textMuted }}>
-                  {orderSuccess.queued
-                    ? "You have an active order for this link. This order will start automatically once it completes."
-                    : orderSuccess.speed
-                      ? `Your order is being processed. Estimated delivery: ${orderSuccess.speed}.`
-                      : "Your order is being processed. Track progress from your order history."}
+
+                {/* Service + tier + link card */}
+                <div className="rounded-xl p-3.5 mb-3" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${t.cardBorder}` }}>
+                  <div className="text-sm font-medium truncate" style={{ color: t.text }}>{orderSuccess.service}</div>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    {successTierClr && orderSuccess.tier && <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md" style={{ background: successTierClr.bg, color: successTierClr.text }}>{orderSuccess.tier}</span>}
+                    {orderSuccess.link && <span className="text-[11px] truncate max-w-[200px]" style={{ color: t.textMuted }}>{orderSuccess.link}</span>}
+                  </div>
                 </div>
-                <div className="rounded-xl overflow-hidden mb-5 text-left" style={{ border: `1px solid ${t.cardBorder}` }}>
-                  <div className="py-2 px-4 text-[11px] font-semibold uppercase tracking-[1.5px]" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}` }}>Order summary</div>
-                  {[
-                    ["Order ID", orderSuccess.id],
-                    ["Platform", orderSuccess.platform],
-                    ["Service", orderSuccess.service],
-                    ["Quantity", (orderSuccess.quantity || 0).toLocaleString()],
-                    ...(orderSuccess.speed ? [["Est. delivery", orderSuccess.speed]] : []),
-                    ["Charged", `₦${(orderSuccess.charge || 0).toLocaleString()}`],
-                  ].map(([label, val], i, arr) => (
-                    <div key={label} className="flex justify-between py-2.5 px-4 text-sm" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-                      <span style={{ color: t.textMuted }}>{label}</span>
-                      <span className="font-medium text-right max-w-[60%] truncate" style={{ color: label === "Charged" ? t.green : t.text }}>{val}</span>
-                    </div>
-                  ))}
+
+                {/* 3-col numbers grid */}
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${t.cardBorder}` }}>
+                    <div className="text-[11px] mb-0.5" style={{ color: t.textMuted }}>Qty</div>
+                    <div className="text-sm font-semibold" style={{ color: t.text }}>{(orderSuccess.quantity || 0).toLocaleString()}</div>
+                  </div>
+                  <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${t.cardBorder}` }}>
+                    <div className="text-[11px] mb-0.5" style={{ color: t.textMuted }}>Charged</div>
+                    <div className="text-sm font-semibold" style={{ color: t.green }}>₦{(orderSuccess.charge || 0).toLocaleString()}</div>
+                  </div>
+                  <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${t.cardBorder}` }}>
+                    <div className="text-[11px] mb-0.5" style={{ color: t.textMuted }}>Balance</div>
+                    <div className="text-sm font-semibold" style={{ color: t.text }}>{orderSuccess.balanceAfter != null ? `₦${orderSuccess.balanceAfter.toLocaleString()}` : "—"}</div>
+                  </div>
                 </div>
-                <div className="flex max-md:flex-col gap-3">
-                  <button onClick={() => { setOrderSuccess(null); setOrderModal(true); }} className="flex-1 py-2.5 rounded-[10px] text-sm font-semibold border border-solid cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", borderColor: t.cardBorder, color: t.text }}>Place another</button>
-                  {onViewOrders && <button onClick={() => { setOrderSuccess(null); setOrderModal(false); onViewOrders(); }} className="flex-1 py-2.5 rounded-[10px] text-sm font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>View orders</button>}
+
+                {/* Order ID accent row */}
+                <div className="flex items-center justify-between rounded-lg py-2 px-3 mb-4" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)" }}>
+                  <span className="text-[11px] font-medium" style={{ color: t.textMuted }}>Order ID</span>
+                  <span className="text-xs font-semibold" style={{ color: t.accent }}>#{orderSuccess.id}</span>
+                </div>
+
+                {/* Cross-sell spotlight */}
+                {successCrossSell && <div className="rounded-xl p-3.5 mb-4 flex items-start gap-3 cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: successCrossSell.color + "08", border: `1px solid ${successCrossSell.color}20` }} onClick={() => { setOrderSuccess(null); setOrderModal(false); }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: successCrossSell.color + "15" }}>{successCrossSell.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-semibold mb-0.5" style={{ color: t.text }}>{successCrossSell.title}</div>
+                    <div className="text-[12px] leading-relaxed" style={{ color: t.textMuted }}>{successCrossSell.body}</div>
+                  </div>
+                  <span className="text-[11px] font-semibold whitespace-nowrap shrink-0 px-2.5 py-1 rounded-md mt-0.5" style={{ background: successCrossSell.color, color: "#fff" }}>{successCrossSell.cta}</span>
+                </div>}
+
+                {/* Action buttons */}
+                <div className="flex gap-2.5">
+                  <button onClick={() => { setOrderSuccess(null); setOrderModal(true); }} className="flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold border border-solid cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", borderColor: t.cardBorder, color: t.text }}>Place another</button>
+                  {onViewOrders && <button onClick={() => { setOrderSuccess(null); setOrderModal(false); onViewOrders(); }} className="flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>View orders</button>}
                 </div>
               </div>
             ) : (
