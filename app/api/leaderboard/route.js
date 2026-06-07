@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { watBounds } from '@/lib/format';
 
 const DEFAULT_TIERS = [
   { name: "Starter", threshold: 0, discount: 0, color: "#6B7280" },
@@ -33,8 +34,7 @@ export async function GET(req) {
     const url = new URL(req.url);
     const period = url.searchParams.get('period') || 'month'; // 'month' or 'all'
 
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const { monthStart } = watBounds();
     const dateFilter = period === 'month' ? { createdAt: { gte: monthStart } } : {};
     const tiers = await getLoyaltyTiers();
 

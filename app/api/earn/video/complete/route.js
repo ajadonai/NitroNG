@@ -1,5 +1,6 @@
 import { getCurrentUser } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { watBounds } from '@/lib/format';
 
 export async function POST() {
   const session = await getCurrentUser();
@@ -10,8 +11,7 @@ export async function POST() {
     return Response.json({ error: 'Video rewards not enabled' }, { status: 400 });
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const { todayStart: today } = watBounds();
   const watchCount = await prisma.videoWatch.count({
     where: { userId: session.id, createdAt: { gte: today } },
   });
