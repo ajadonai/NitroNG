@@ -1473,10 +1473,10 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
   );
 }
 
-function LinkAccordion({ link, dark, t, baseUrl, copied, copyLink, canManage, handleToggle, handleDelete, handleArchive, onViewAnalytics, last, rowBorder }) {
+function LinkAccordion({ link, dark, t, baseUrl, copied, copyLink, canManage, handleDelete, handleArchive, onViewAnalytics, last, rowBorder }) {
   const [open, setOpen] = useState(false);
   const hasActivity = (link.clicks || 0) + (link.signups || 0) > 0;
-  const statusColor = link.archivedAt ? (dark ? "#fcd34d" : "#d97706") : link.enabled ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626");
+  const statusColor = link.archivedAt ? (dark ? "#fcd34d" : "#d97706") : t.accent;
   return (
     <div style={!last ? rowBorder : {}}>
       <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(v => !v); } }} onClick={() => setOpen(v => !v)} className="flex items-center gap-3 py-3.5 px-1 cursor-pointer transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.04)]" style={{ userSelect: "none" }}>
@@ -1487,7 +1487,6 @@ function LinkAccordion({ link, dark, t, baseUrl, copied, copyLink, canManage, ha
           <div className="flex items-center gap-2 mb-0.5">
             <span className="text-[15px] font-semibold" style={{ color: t.text }}>{link.name}</span>
             {link.archivedAt && <span className="text-[10px] py-0.5 px-1.5 rounded-full font-semibold" style={{ background: dark ? "rgba(217,119,6,.1)" : "rgba(217,119,6,.05)", color: dark ? "#fcd34d" : "#d97706" }}>Archived</span>}
-            {!link.archivedAt && !link.enabled && <span className="text-[10px] py-0.5 px-1.5 rounded-full font-semibold" style={{ background: dark ? "rgba(220,38,38,.1)" : "rgba(220,38,38,.05)", color: dark ? "#fca5a5" : "#dc2626" }}>Off</span>}
           </div>
           <div className="flex items-center gap-2 text-[11px] flex-wrap" style={{ color: t.textMuted }}>
             {hasActivity ? <><span>{(link.clicks || 0).toLocaleString()} clicks</span><span className="opacity-30">·</span><span>{link.signups || 0} signups</span><span className="opacity-30">·</span><span>{link.orders || 0} orders</span><span className="opacity-30">·</span><span>{fN((link.revenue || 0) / 100)} rev</span></> : <span>No activity yet</span>}
@@ -1497,11 +1496,6 @@ function LinkAccordion({ link, dark, t, baseUrl, copied, copyLink, canManage, ha
         </div>
         {canManage && (
           <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
-            {!link.archivedAt && (
-              <div role="switch" aria-checked={link.enabled} aria-label={`Toggle ${link.name}`} tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(link.id, !link.enabled); } }} onClick={() => handleToggle(link.id, !link.enabled)} className="w-[36px] h-5 rounded-xl relative cursor-pointer shrink-0" style={{ background: link.enabled ? "#c47d8e" : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)") }}>
-                <div className="w-[14px] h-[14px] rounded-full bg-white absolute top-[3px] transition-[left] duration-200" style={{ left: link.enabled ? 19 : 3 }} />
-              </div>
-            )}
             <button onClick={() => handleArchive(link)} className="bg-transparent border-none cursor-pointer p-1 transition-opacity hover:opacity-70" style={{ color: dark ? "#fcd34d" : "#d97706" }} title={link.archivedAt ? "Restore" : "Archive"}>
               {link.archivedAt
                 ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
@@ -1541,7 +1535,7 @@ function LinkAccordion({ link, dark, t, baseUrl, copied, copyLink, canManage, ha
             ))}
           </div>
 
-          <button onClick={(e) => { e.stopPropagation(); onViewAnalytics(link); }} className="w-full py-2 rounded-lg text-[13px] font-semibold border border-solid cursor-pointer transition-all duration-200 hover:-translate-y-px flex items-center justify-center gap-1.5" style={{ background: "transparent", borderColor: t.cardBorder, color: t.accent }}>
+          <button onClick={(e) => { e.stopPropagation(); onViewAnalytics(link); }} className="w-full py-2.5 rounded-lg text-[13px] font-semibold border-none cursor-pointer transition-all duration-200 hover:-translate-y-px flex items-center justify-center gap-1.5" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             View Analytics
           </button>
@@ -1624,14 +1618,6 @@ export function AdminAcquisitionPage({ dark, t }) {
     setSaving(false);
   };
 
-  const handleToggle = async (id, enabled) => {
-    await fetch("/api/admin/acquisition", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "toggle", id, enabled }),
-    });
-    load();
-  };
-
   const handleArchive = async (link) => {
     const isArchived = !!link.archivedAt;
     if (!isArchived) {
@@ -1680,7 +1666,6 @@ export function AdminAcquisitionPage({ dark, t }) {
   }
 
   if (detailLink) {
-    const hasActivity = (detailLink.clicks || 0) + (detailLink.signups || 0) > 0;
     return (
       <>
         <div className="adm-header">
@@ -1692,20 +1677,6 @@ export function AdminAcquisitionPage({ dark, t }) {
               <div className="adm-title" style={{ color: t.text }}>{detailLink.name}</div>
               <div className="text-[12px] font-mono mt-0.5" style={{ color: t.textMuted }}>{baseUrl}/go/{detailLink.slug}</div>
             </div>
-            {hasActivity && (
-              <div className="flex items-center gap-3 shrink-0">
-                {[
-                  [(detailLink.clicks || 0).toLocaleString(), "clicks", t.accent],
-                  [detailLink.signups || 0, "signups", dark ? "#a5b4fc" : "#6366f1"],
-                  [detailLink.orders || 0, "orders", dark ? "#6ee7b7" : "#059669"],
-                ].map(([val, label, color]) => (
-                  <div key={label} className="text-right hidden sm:block">
-                    <div className="text-[15px] font-bold leading-tight" style={{ color }}>{val}</div>
-                    <div className="text-[9px] font-semibold uppercase tracking-[1px]" style={{ color: t.textMuted }}>{label}</div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
           <div className="page-divider" style={{ background: t.cardBorder }} />
         </div>
@@ -1717,13 +1688,15 @@ export function AdminAcquisitionPage({ dark, t }) {
   return (
     <>
       <div className="adm-header">
-        <div className="adm-title" style={{ color: t.text }}>Tracking Links</div>
-        <div className="adm-subtitle" style={{ color: t.textMuted }}>Create tracking links and see who clicks, where they come from, and what they do</div>
-        {(displayLinks.length > 0 || archivedCount > 0) && (
-          <div className="mt-3">
-            <SegPill value={viewFilter} options={[{ value: "active", label: "Active" }, { value: "archived", label: `Archived${archivedCount > 0 ? ` (${archivedCount})` : ""}` }]} onChange={v => { setViewFilter(v); setPage(1); }} dark={dark} t={t} />
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <div className="adm-title" style={{ color: t.text }}>Tracking Links</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>Create tracking links and see who clicks, where they come from, and what they do</div>
           </div>
-        )}
+          {(links.length > 0 || archivedCount > 0) && (
+            <SegPill value={viewFilter} options={[{ value: "active", label: "Active" }, { value: "archived", label: `Archived${archivedCount > 0 ? ` (${archivedCount})` : ""}` }]} onChange={v => { setViewFilter(v); setPage(1); }} dark={dark} t={t} />
+          )}
+        </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
@@ -1793,7 +1766,7 @@ export function AdminAcquisitionPage({ dark, t }) {
               <div className="text-[13px]" style={{ color: t.textMuted }}>{viewFilter === "archived" ? "Archived links will appear here" : "Click \"+ New\" above to create your first tracking link"}</div>
             </div>
           ) : paginatedLinks.map((link, i) => (
-            <LinkAccordion key={link.id} link={link} dark={dark} t={t} baseUrl={baseUrl} copied={copied} copyLink={copyLink} canManage={canManage} handleToggle={handleToggle} handleDelete={handleDelete} handleArchive={handleArchive} onViewAnalytics={openAnalytics} last={i === paginatedLinks.length - 1} rowBorder={rowBorder} />
+            <LinkAccordion key={link.id} link={link} dark={dark} t={t} baseUrl={baseUrl} copied={copied} copyLink={copyLink} canManage={canManage} handleDelete={handleDelete} handleArchive={handleArchive} onViewAnalytics={openAnalytics} last={i === paginatedLinks.length - 1} rowBorder={rowBorder} />
           ))}
           {totalPages > 1 && (
             <div className="flex items-center justify-between pt-3 mt-2" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>

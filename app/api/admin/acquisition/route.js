@@ -37,7 +37,7 @@ export async function GET(req) {
     const clickMap = Object.fromEntries(clickStats.map(c => [c.linkId, c._count]));
     const uniqueMap = Object.fromEntries(uniqueClickStats.map(c => [c.linkId, c.cnt]));
 
-    const archivedCount = includeArchived ? 0 : await prisma.acquisitionLink.count({ where: { archivedAt: { not: null } } });
+    const archivedCount = await prisma.acquisitionLink.count({ where: { archivedAt: { not: null } } });
 
     return Response.json({
       links: links.map(l => ({
