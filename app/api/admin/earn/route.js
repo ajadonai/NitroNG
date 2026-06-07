@@ -172,5 +172,6 @@ export async function POST(req) {
 
 function getCurrentMonthKey() {
   const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const watNow = new Date(now.getTime() + 60 * 60 * 1000);
+  return `${watNow.getUTCFullYear()}-${String(watNow.getUTCMonth() + 1).padStart(2, '0')}`;
 }
