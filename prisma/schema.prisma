@@ -619,12 +619,33 @@ model RecurringCampaign {
 // ──────────────────────────────────────
 
 model AcquisitionLink {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   name      String
-  slug      String   @unique
-  enabled   Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  slug      String      @unique
+  enabled   Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  clicks    LinkClick[]
 
   @@map("acquisition_links")
+}
+
+model LinkClick {
+  id         String   @id @default(cuid())
+  linkId     String
+  ipHash     String
+  deviceType String   @default("desktop")
+  os         String?
+  browser    String?
+  country    String?
+  city       String?
+  referrer   String?
+  createdAt  DateTime @default(now())
+
+  link AcquisitionLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId, createdAt])
+  @@index([linkId, ipHash])
+  @@index([createdAt])
+  @@map("link_clicks")
 }
