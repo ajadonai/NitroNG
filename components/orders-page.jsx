@@ -445,7 +445,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
                   {o.tier && <div className="text-[10px] desktop:text-[11px] font-medium mt-0.5" style={{ color: t.accent }}>{o.tier}</div>}
-                  {o.created && <div className="text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(o.created, true)}</div>}
+                  {o.created && <div className="text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(o.created)}</div>}
                   {expandedOrder !== o.id && <ProgressBar order={o} dark={dark} />}
                 </div>
                 <div className="text-right shrink-0">
@@ -665,7 +665,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavi
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap desktop:whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
                   {o.tier && <div className="text-[11px] desktop:text-xs font-medium mt-0.5" style={{ color: t.accent }}>{o.tier}</div>}
-                  {o.created && <div className="text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(o.created, true)}</div>}
+                  {o.created && <div className="text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(o.created)}</div>}
                   {expanded !== o.id && <ProgressBar order={o} dark={dark} />}
                 </div>
                 <div className="text-right shrink-0 flex items-center gap-1.5">
