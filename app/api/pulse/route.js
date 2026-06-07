@@ -44,7 +44,7 @@ export async function GET(req) {
       recentOrders, recentDeposits,
       monthOrdererIds,
       idleUsers,
-      monthGiftsAgg, monthReferralsAgg, monthCouponsAgg, monthLeaderboardAgg, monthGameRewardsAgg, monthVideoRewardsAgg,
+      payoutRows,
       recentPayouts,
     ] = await Promise.all([
       prisma.user.count({ where: { emailVerified: true } }),
@@ -107,13 +107,24 @@ export async function GET(req) {
       prisma.user.count({
         where: { emailVerified: true, balance: { gt: 0 }, orders: { none: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null } } },
       }),
-      // Payouts: month-to-date
-      prisma.transaction.aggregate({ where: { type: 'admin_gift', status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
-      prisma.transaction.aggregate({ where: { type: 'referral', status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
-      prisma.transaction.aggregate({ where: { type: 'bonus', status: 'Completed', createdAt: { gte: monthStart }, note: { contains: 'Coupon' } }, _sum: { amount: true } }),
-      prisma.transaction.aggregate({ where: { type: 'bonus', status: 'Completed', createdAt: { gte: monthStart }, note: { contains: 'Leaderboard' } }, _sum: { amount: true } }),
-      prisma.transaction.aggregate({ where: { type: 'game_reward', status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
-      prisma.transaction.aggregate({ where: { type: 'video_reward', status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
+      // Payouts: month-to-date (single query instead of 6)
+      prisma.$queryRaw`
+        SELECT
+          CASE
+            WHEN type = 'bonus' AND note ILIKE '%Coupon%' THEN 'coupons'
+            WHEN type = 'bonus' AND note ILIKE '%Leaderboard%' THEN 'leaderboard'
+            WHEN type = 'admin_gift' THEN 'gifts'
+            WHEN type = 'referral' THEN 'referrals'
+            WHEN type = 'game_reward' THEN 'gameRewards'
+            WHEN type = 'video_reward' THEN 'videoRewards'
+          END AS category,
+          COALESCE(SUM(amount), 0)::int AS total
+        FROM transactions
+        WHERE status = 'Completed' AND "createdAt" >= ${monthStart}
+          AND (type IN ('admin_gift', 'referral', 'game_reward', 'video_reward')
+            OR (type = 'bonus' AND (note ILIKE '%Coupon%' OR note ILIKE '%Leaderboard%')))
+        GROUP BY category
+      `,
       // Recent payouts feed
       prisma.transaction.findMany({
         where: { type: { in: ['admin_gift', 'referral', 'bonus', 'game_reward', 'video_reward'] }, status: 'Completed' },
@@ -229,14 +240,10 @@ export async function GET(req) {
         method: tx.method || 'wallet',
         created: tx.createdAt.toISOString(),
       })),
-      monthPayouts: {
-        gifts: (monthGiftsAgg._sum.amount || 0) / 100,
-        referrals: (monthReferralsAgg._sum.amount || 0) / 100,
-        coupons: (monthCouponsAgg._sum.amount || 0) / 100,
-        leaderboard: (monthLeaderboardAgg._sum.amount || 0) / 100,
-        gameRewards: (monthGameRewardsAgg._sum.amount || 0) / 100,
-        videoRewards: (monthVideoRewardsAgg._sum.amount || 0) / 100,
-      },
+      monthPayouts: (() => {
+        const pm = Object.fromEntries((payoutRows || []).map(r => [r.category, Number(r.total) / 100]));
+        return { gifts: pm.gifts || 0, referrals: pm.referrals || 0, coupons: pm.coupons || 0, leaderboard: pm.leaderboard || 0, gameRewards: pm.gameRewards || 0, videoRewards: pm.videoRewards || 0 };
+      })(),
       recentPayouts: recentPayouts.map(tx => ({
         id: tx.id,
         type: tx.type === 'bonus' ? ((tx.note || '').includes('Leaderboard') ? 'leaderboard' : 'coupon') : tx.type,

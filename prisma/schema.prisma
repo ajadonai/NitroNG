@@ -266,6 +266,7 @@ model Order {
 
   @@index([userId])
   @@index([userId, batchId])
+  @@index([userId, deletedAt, status])
   @@index([status])
   @@index([createdAt])
   @@index([platformCampaignId])
@@ -294,7 +295,9 @@ model Transaction {
 
   @@unique([userId, idempotencyKey])
   @@index([userId])
+  @@index([userId, type])
   @@index([type])
+  @@index([type, status, createdAt])
   @@index([createdAt])
   @@map("transactions")
 }
