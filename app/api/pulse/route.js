@@ -160,8 +160,8 @@ export async function GET(req) {
       .slice(0, 5)
       .map(p => ({ ...p, revenue: Math.round(p.revenue) }));
 
-    // Chart data — 30 days
-    const toDay = (d) => new Date(d).toISOString().slice(0, 10);
+    // Chart data — 30 days (bucket by WAT date, not UTC)
+    const toDay = (d) => { const w = new Date(new Date(d).getTime() + 60 * 60 * 1000); return w.toISOString().slice(0, 10); };
     const dayMap = {};
     chartOrders.forEach(o => {
       const day = toDay(o.createdAt);
@@ -186,7 +186,7 @@ export async function GET(req) {
     const chartData = [];
     const d = new Date(thirtyDaysAgo);
     while (d <= now) {
-      const key = d.toISOString().slice(0, 10);
+      const key = toDay(d);
       chartData.push({
         date: key,
         orders: dayMap[key]?.orders || 0,
