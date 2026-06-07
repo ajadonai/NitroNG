@@ -146,7 +146,7 @@ export async function GET(req) {
 
     // Build daily chart data
     const dayMap = {};
-    const toDay = (d) => new Date(d).toISOString().slice(0, 10);
+    const toDay = (d) => { const w = new Date(new Date(d).getTime() + 60 * 60 * 1000); return w.toISOString().slice(0, 10); };
     chartOrders.forEach(o => {
       const day = toDay(o.createdAt);
       if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, deposits: 0 };
@@ -162,7 +162,7 @@ export async function GET(req) {
     const chartData = [];
     const d = new Date(since);
     while (d <= now) {
-      const key = d.toISOString().slice(0, 10);
+      const key = toDay(d);
       chartData.push({ date: key, orders: dayMap[key]?.orders || 0, revenue: Math.round(dayMap[key]?.revenue || 0), deposits: Math.round(dayMap[key]?.deposits || 0) });
       d.setDate(d.getDate() + 1);
     }
