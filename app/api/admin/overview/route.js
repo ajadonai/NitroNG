@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, getAdminPages } from '@/lib/admin';
+import { watBounds } from '@/lib/format';
 
 function humanize(raw, admin) {
   const name = admin?.split(' ')[0] || 'Admin';
@@ -82,11 +83,7 @@ export async function GET() {
   if (error) return error;
 
   try {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-
-    const yesterdayStart = new Date(todayStart);
-    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    const { todayStart, yesterdayStart } = watBounds();
 
     // All counts + aggregates in parallel
     const [
