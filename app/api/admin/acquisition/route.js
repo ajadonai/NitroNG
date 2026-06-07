@@ -2,15 +2,21 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { requireAdmin, canPerformAction, logActivity } from '@/lib/admin';
 
-export async function GET() {
+export async function GET(req) {
   const { admin, error } = await requireAdmin('acquisition');
   if (error) return error;
 
   try {
-    const links = await prisma.acquisitionLink.findMany({ orderBy: { createdAt: 'desc' } });
+    const { searchParams } = new URL(req.url);
+    const includeArchived = searchParams.get('includeArchived') === 'true';
+    const links = await prisma.acquisitionLink.findMany({
+      where: includeArchived ? {} : { archivedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
 
     const slugs = links.map(l => l.slug);
-    const [signupStats, orderStats] = await Promise.all([
+    const linkIds = links.map(l => l.id);
+    const [signupStats, orderStats, clickStats, uniqueClickStats] = await Promise.all([
       prisma.user.groupBy({
         by: ['signupSource'],
         where: { signupSource: { in: slugs }, deletedAt: null },
@@ -22,19 +28,28 @@ export async function GET() {
         WHERE u."signupSource" = ANY(${slugs}) AND u."deletedAt" IS NULL AND o."deletedAt" IS NULL AND o.status = 'Completed'
         GROUP BY u."signupSource"
       `,
+      prisma.linkClick.groupBy({ by: ['linkId'], where: { linkId: { in: linkIds } }, _count: true }),
+      prisma.$queryRaw`SELECT "linkId", COUNT(DISTINCT "ipHash")::int AS cnt FROM link_clicks WHERE "linkId" = ANY(${linkIds}) GROUP BY "linkId"`,
     ]);
 
     const signupMap = Object.fromEntries(signupStats.map(s => [s.signupSource, s._count]));
     const orderMap = Object.fromEntries(orderStats.map(s => [s.slug, { orders: s.orders, revenue: s.revenue }]));
+    const clickMap = Object.fromEntries(clickStats.map(c => [c.linkId, c._count]));
+    const uniqueMap = Object.fromEntries(uniqueClickStats.map(c => [c.linkId, c.cnt]));
+
+    const archivedCount = await prisma.acquisitionLink.count({ where: { archivedAt: { not: null } } });
 
     return Response.json({
       links: links.map(l => ({
         ...l,
+        clicks: clickMap[l.id] || 0,
+        uniqueClicks: uniqueMap[l.id] || 0,
         signups: signupMap[l.slug] || 0,
         orders: orderMap[l.slug]?.orders || 0,
         revenue: orderMap[l.slug]?.revenue || 0,
       })),
       canManage: canPerformAction(admin, 'acquisition.manage'),
+      archivedCount,
     });
   } catch (err) {
     log.error('Admin Acquisition GET', err.message);
@@ -94,6 +109,26 @@ export async function POST(req) {
       }
       await prisma.acquisitionLink.delete({ where: { id } });
       await logActivity(admin.name, `Deleted tracking link ${link.slug}`, 'acquisition');
+      return Response.json({ success: true });
+    }
+
+    if (action === 'archive') {
+      const { id } = body;
+      if (!id) return Response.json({ error: 'Link ID required' }, { status: 400 });
+      const link = await prisma.acquisitionLink.findUnique({ where: { id } });
+      if (!link) return Response.json({ error: 'Not found' }, { status: 404 });
+      await prisma.acquisitionLink.update({ where: { id }, data: { archivedAt: new Date(), enabled: false } });
+      await logActivity(admin.name, `Archived tracking link: ${link.slug}`, 'acquisition');
+      return Response.json({ success: true });
+    }
+
+    if (action === 'unarchive') {
+      const { id } = body;
+      if (!id) return Response.json({ error: 'Link ID required' }, { status: 400 });
+      const link = await prisma.acquisitionLink.findUnique({ where: { id } });
+      if (!link) return Response.json({ error: 'Not found' }, { status: 404 });
+      await prisma.acquisitionLink.update({ where: { id }, data: { archivedAt: null, enabled: true } });
+      await logActivity(admin.name, `Unarchived tracking link: ${link.slug}`, 'acquisition');
       return Response.json({ success: true });
     }
 

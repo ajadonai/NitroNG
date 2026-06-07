@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
-import { fN, fD } from "../lib/format";
+import { fN, fD, fT } from "../lib/format";
 import { FilterDropdown } from "./date-range-picker";
 
 function Spinner({ size = 14, color = "currentColor" }) {
@@ -450,7 +450,7 @@ export default function AdminOrdersPage({ dark, t }) {
                       <div className="text-[14px] font-semibold" style={{ color: t.text }}>{o.user}</div>
                       <div className="text-[12px]" style={{ color: t.textMuted }}>{o.email}</div>
                     </div>
-                    <div className="text-[12px] text-right shrink-0" style={{ color: t.textMuted }}>{o.created ? fD(o.created) : ""}</div>
+                    <div className="text-[12px] text-right shrink-0" style={{ color: t.textMuted }}>{o.created ? fT(o.created) : ""}</div>
                   </div>
 
                   {/* Link */}
