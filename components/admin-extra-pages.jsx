@@ -1269,6 +1269,30 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
   if (analyticsLoading) return <div className="py-8 text-center text-sm" style={{ color: t.textMuted }}>Loading analytics...</div>;
   if (!analytics) return null;
 
+  if (analytics.totalClicks === 0) {
+    return (
+      <div style={{ animation: "fadeIn .2s ease" }}>
+        <div className="rounded-xl p-8 text-center" style={cardStyle}>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3 opacity-40"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <div className="text-sm font-semibold mb-1" style={{ color: t.text }}>No clicks yet</div>
+          <div className="text-[13px] mb-4" style={{ color: t.textMuted }}>Share this link to start tracking analytics</div>
+          {(link.signups > 0 || link.orders > 0) && (
+            <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto mt-4">
+              <div className="rounded-lg p-3" style={cardStyle}>
+                <div className="text-lg font-bold" style={{ color: dark ? "#a5b4fc" : "#6366f1" }}>{(link.signups || 0).toLocaleString()}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[1px] mt-0.5" style={{ color: t.textMuted }}>Signups</div>
+              </div>
+              <div className="rounded-lg p-3" style={cardStyle}>
+                <div className="text-lg font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{(link.orders || 0).toLocaleString()}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[1px] mt-0.5" style={{ color: t.textMuted }}>Orders</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const convRate = analytics.totalClicks > 0 ? ((link.signups / analytics.totalClicks) * 100).toFixed(1) : "0";
   const orderRate = link.signups > 0 ? ((link.orders / link.signups) * 100).toFixed(1) : "0";
 
@@ -1436,32 +1460,45 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
   );
 }
 
-function LinkAccordion({ link, dark, t, baseUrl, copied, copyLink, canManage, handleToggle, handleDelete, onViewAnalytics, last, rowBorder }) {
+function LinkAccordion({ link, dark, t, baseUrl, copied, copyLink, canManage, handleToggle, handleDelete, handleArchive, onViewAnalytics, last, rowBorder }) {
   const [open, setOpen] = useState(false);
   const hasActivity = (link.clicks || 0) + (link.signups || 0) > 0;
+  const statusColor = link.archivedAt ? (dark ? "#fcd34d" : "#d97706") : link.enabled ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626");
   return (
     <div style={!last ? rowBorder : {}}>
       <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(v => !v); } }} onClick={() => setOpen(v => !v)} className="flex items-center gap-3 py-3.5 px-1 cursor-pointer transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.04)]" style={{ userSelect: "none" }}>
-        <div className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)" }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        <div className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg" style={{ background: `${statusColor}15` }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={statusColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-0.5">
             <span className="text-[15px] font-semibold" style={{ color: t.text }}>{link.name}</span>
-            {!link.enabled && <span className="text-[10px] py-0.5 px-1.5 rounded-full font-semibold" style={{ background: dark ? "rgba(220,38,38,.1)" : "rgba(220,38,38,.05)", color: dark ? "#fca5a5" : "#dc2626" }}>Off</span>}
+            {link.archivedAt && <span className="text-[10px] py-0.5 px-1.5 rounded-full font-semibold" style={{ background: dark ? "rgba(217,119,6,.1)" : "rgba(217,119,6,.05)", color: dark ? "#fcd34d" : "#d97706" }}>Archived</span>}
+            {!link.archivedAt && !link.enabled && <span className="text-[10px] py-0.5 px-1.5 rounded-full font-semibold" style={{ background: dark ? "rgba(220,38,38,.1)" : "rgba(220,38,38,.05)", color: dark ? "#fca5a5" : "#dc2626" }}>Off</span>}
           </div>
-          <div className="flex items-center gap-2 text-[11px]" style={{ color: t.textMuted }}>
+          <div className="flex items-center gap-2 text-[11px] flex-wrap" style={{ color: t.textMuted }}>
             {hasActivity ? <><span>{(link.clicks || 0).toLocaleString()} clicks</span><span className="opacity-30">·</span><span>{link.signups || 0} signups</span><span className="opacity-30">·</span><span>{link.orders || 0} orders</span><span className="opacity-30">·</span><span>{fN((link.revenue || 0) / 100)} rev</span></> : <span>No activity yet</span>}
+            <span className="opacity-30">·</span>
+            <span>{new Date(link.createdAt).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
           </div>
         </div>
         {canManage && (
           <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
-            <div role="switch" aria-checked={link.enabled} aria-label={`Toggle ${link.name}`} tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(link.id, !link.enabled); } }} onClick={() => handleToggle(link.id, !link.enabled)} className="w-[36px] h-5 rounded-xl relative cursor-pointer shrink-0" style={{ background: link.enabled ? "#c47d8e" : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)") }}>
-              <div className="w-[14px] h-[14px] rounded-full bg-white absolute top-[3px] transition-[left] duration-200" style={{ left: link.enabled ? 19 : 3 }} />
-            </div>
-            <button onClick={() => handleDelete(link)} className="bg-transparent border-none cursor-pointer p-1 transition-opacity hover:opacity-70" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            {!link.archivedAt && (
+              <div role="switch" aria-checked={link.enabled} aria-label={`Toggle ${link.name}`} tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(link.id, !link.enabled); } }} onClick={() => handleToggle(link.id, !link.enabled)} className="w-[36px] h-5 rounded-xl relative cursor-pointer shrink-0" style={{ background: link.enabled ? "#c47d8e" : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)") }}>
+                <div className="w-[14px] h-[14px] rounded-full bg-white absolute top-[3px] transition-[left] duration-200" style={{ left: link.enabled ? 19 : 3 }} />
+              </div>
+            )}
+            <button onClick={() => handleArchive(link)} className="bg-transparent border-none cursor-pointer p-1 transition-opacity hover:opacity-70" style={{ color: dark ? "#fcd34d" : "#d97706" }} title={link.archivedAt ? "Restore" : "Archive"}>
+              {link.archivedAt
+                ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>}
             </button>
+            {!link.archivedAt && (
+              <button onClick={() => handleDelete(link)} className="bg-transparent border-none cursor-pointer p-1 transition-opacity hover:opacity-70" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+              </button>
+            )}
           </div>
         )}
         <svg className="shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
@@ -1491,12 +1528,10 @@ function LinkAccordion({ link, dark, t, baseUrl, copied, copyLink, canManage, ha
             ))}
           </div>
 
-          {(link.clicks || 0) > 0 && (
-            <button onClick={(e) => { e.stopPropagation(); onViewAnalytics(link); }} className="w-full py-2 rounded-lg text-[13px] font-semibold border border-solid cursor-pointer transition-all duration-200 hover:-translate-y-px flex items-center justify-center gap-1.5" style={{ background: "transparent", borderColor: t.cardBorder, color: t.accent }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-              View Analytics
-            </button>
-          )}
+          <button onClick={(e) => { e.stopPropagation(); onViewAnalytics(link); }} className="w-full py-2 rounded-lg text-[13px] font-semibold border border-solid cursor-pointer transition-all duration-200 hover:-translate-y-px flex items-center justify-center gap-1.5" style={{ background: "transparent", borderColor: t.cardBorder, color: t.accent }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            View Analytics
+          </button>
         </div>
       )}
     </div>
@@ -1518,6 +1553,10 @@ export function AdminAcquisitionPage({ dark, t }) {
   const [analytics, setAnalytics] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [range, setRange] = useState("7d");
+  const [viewFilter, setViewFilter] = useState("active");
+  const [archivedCount, setArchivedCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const perPage = 10;
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://nitro.ng";
   const cardBg = dark ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.85)";
@@ -1527,13 +1566,16 @@ export function AdminAcquisitionPage({ dark, t }) {
   const rowBorder = { borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` };
 
   const load = () => {
-    fetch("/api/admin/acquisition").then(r => r.json()).then(d => {
+    const params = viewFilter === "archived" ? "?includeArchived=true" : "";
+    fetch(`/api/admin/acquisition${params}`).then(r => r.json()).then(d => {
       setLinks(d.links || []);
       setCanManage(d.canManage);
+      setArchivedCount(d.archivedCount || 0);
       setLoading(false);
+      setPage(1);
     }).catch(() => setLoading(false));
   };
-  useEffect(load, []);
+  useEffect(load, [viewFilter]);
 
   const loadAnalytics = useCallback((linkId, r) => {
     setAnalyticsLoading(true);
@@ -1577,15 +1619,29 @@ export function AdminAcquisitionPage({ dark, t }) {
     load();
   };
 
+  const handleArchive = async (link) => {
+    const isArchived = !!link.archivedAt;
+    if (!isArchived) {
+      const ok = await confirm(`Archive "${link.name}"?`, "Archived links are hidden from the main list but can be restored anytime.");
+      if (!ok) return;
+    }
+    await fetch("/api/admin/acquisition", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: isArchived ? "unarchive" : "archive", id: link.id }),
+    });
+    toast.success(isArchived ? "Link restored" : "Link archived");
+    load();
+  };
+
   const handleDelete = async (link) => {
-    const ok = await confirm(`Delete "${link.name}"?`, link.signups > 0 ? "This link has signups — it will be disabled instead of deleted." : "This cannot be undone.");
+    const ok = await confirm(`Delete "${link.name}"?`, link.signups > 0 ? "This link has signups — archive it instead to keep the data." : "This cannot be undone.");
     if (!ok) return;
     const res = await fetch("/api/admin/acquisition", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "delete", id: link.id }),
     });
     const d = await res.json();
-    if (d.soft) toast.info("Link disabled (has signups)");
+    if (d.soft) toast.info("Link disabled (has signups — use Archive instead)");
     else toast.success("Link deleted");
     load();
   };
@@ -1596,10 +1652,14 @@ export function AdminAcquisitionPage({ dark, t }) {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const totalClicks = links.reduce((s, l) => s + (l.clicks || 0), 0);
-  const totalSignups = links.reduce((s, l) => s + (l.signups || 0), 0);
-  const totalOrders = links.reduce((s, l) => s + (l.orders || 0), 0);
-  const totalRevenue = links.reduce((s, l) => s + (l.revenue || 0), 0);
+  const displayLinks = viewFilter === "archived" ? links.filter(l => l.archivedAt) : links.filter(l => !l.archivedAt);
+  const totalPages = Math.ceil(displayLinks.length / perPage);
+  const paginatedLinks = displayLinks.slice((page - 1) * perPage, page * perPage);
+
+  const totalClicks = displayLinks.reduce((s, l) => s + (l.clicks || 0), 0);
+  const totalSignups = displayLinks.reduce((s, l) => s + (l.signups || 0), 0);
+  const totalOrders = displayLinks.reduce((s, l) => s + (l.orders || 0), 0);
+  const totalRevenue = displayLinks.reduce((s, l) => s + (l.revenue || 0), 0);
 
   if (loading) return <><div className="adm-header"><div className="adm-title" style={{ color: t.text }}>Tracking Links</div><div className="adm-subtitle" style={{ color: t.textMuted }}>Loading...</div><div className="page-divider" style={{ background: t.cardBorder }} /></div><div>{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[60px] rounded-[10px] mb-2`} />)}</div></>;
 
@@ -1628,20 +1688,25 @@ export function AdminAcquisitionPage({ dark, t }) {
       <div className="adm-header">
         <div className="adm-title" style={{ color: t.text }}>Tracking Links</div>
         <div className="adm-subtitle" style={{ color: t.textMuted }}>Create tracking links and see who clicks, where they come from, and what they do</div>
+        {(displayLinks.length > 0 || archivedCount > 0) && (
+          <div className="mt-3">
+            <SegPill value={viewFilter} options={[{ value: "active", label: "Active" }, { value: "archived", label: `Archived${archivedCount > 0 ? ` (${archivedCount})` : ""}` }]} onChange={v => { setViewFilter(v); setPage(1); }} dark={dark} t={t} />
+          </div>
+        )}
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
       {/* ═══ Summary Stats ═══ */}
-      {links.length > 0 && (
+      {displayLinks.length > 0 && (
         <div className="adm-stats mb-5">
           {[
-            ["Total Links", links.length, t.accent],
+            ["Total Links", displayLinks.length, t.accent],
             ["Clicks", totalClicks.toLocaleString(), dark ? "#f59e0b" : "#d97706"],
             ["Signups", totalSignups.toLocaleString(), dark ? "#a5b4fc" : "#6366f1"],
             ["Orders", totalOrders.toLocaleString(), dark ? "#6ee7b7" : "#059669"],
             ["Revenue", fN(totalRevenue / 100), dark ? "#fcd34d" : "#d97706"],
           ].map(([label, val, color]) => (
-            <div key={label} className="py-3.5 px-4 rounded-xl" style={{ background: cardBg, border: cardBd }}>
+            <div key={label} className="py-3.5 px-4 rounded-xl relative overflow-hidden" style={{ background: cardBg, border: cardBd, borderLeft: `3px solid ${color}` }}>
               <div className="text-[10px] font-semibold uppercase tracking-[1px] mb-1.5" style={{ color: t.textMuted }}>{label}</div>
               <div className="text-xl font-bold" style={{ color }}>{val}</div>
             </div>
@@ -1684,14 +1749,34 @@ export function AdminAcquisitionPage({ dark, t }) {
           </div>
 
           {/* ═══ Links List ═══ */}
-          {links.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-sm font-medium mb-1" style={{ color: t.text }}>No links yet</div>
-              <div className="text-[13px]" style={{ color: t.textMuted }}>Click "+ New" above to create your first tracking link</div>
+          {displayLinks.length > 0 && (
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[12px] font-medium" style={{ color: t.textMuted }}>
+                Showing {displayLinks.length} {viewFilter === "archived" ? "archived " : ""}link{displayLinks.length !== 1 ? "s" : ""}
+              </span>
             </div>
-          ) : links.map((link, i) => (
-            <LinkAccordion key={link.id} link={link} dark={dark} t={t} baseUrl={baseUrl} copied={copied} copyLink={copyLink} canManage={canManage} handleToggle={handleToggle} handleDelete={handleDelete} onViewAnalytics={openAnalytics} last={i === links.length - 1} rowBorder={rowBorder} />
+          )}
+          {displayLinks.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-sm font-medium mb-1" style={{ color: t.text }}>{viewFilter === "archived" ? "No archived links" : "No links yet"}</div>
+              <div className="text-[13px]" style={{ color: t.textMuted }}>{viewFilter === "archived" ? "Archived links will appear here" : "Click \"+ New\" above to create your first tracking link"}</div>
+            </div>
+          ) : paginatedLinks.map((link, i) => (
+            <LinkAccordion key={link.id} link={link} dark={dark} t={t} baseUrl={baseUrl} copied={copied} copyLink={copyLink} canManage={canManage} handleToggle={handleToggle} handleDelete={handleDelete} handleArchive={handleArchive} onViewAnalytics={openAnalytics} last={i === paginatedLinks.length - 1} rowBorder={rowBorder} />
           ))}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-3 mt-2" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="adm-btn-sm flex items-center gap-1" style={{ borderColor: t.cardBorder, color: t.textMuted, opacity: page === 1 ? .35 : 1 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                Prev
+              </button>
+              <span className="text-[12px] font-medium" style={{ color: t.textMuted }}>Page {page} of {totalPages}</span>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="adm-btn-sm flex items-center gap-1" style={{ borderColor: t.cardBorder, color: t.textMuted, opacity: page >= totalPages ? .35 : 1 }}>
+                Next
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </>
