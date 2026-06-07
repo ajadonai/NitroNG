@@ -263,7 +263,7 @@ export async function PATCH(req) {
           let reorderQty = order.quantity;
           if (order.service.dripfeed) {
             const { calculateDripFeed } = await import('@/lib/drip-feed');
-            const dripFeed = calculateDripFeed(order.service.category, order.quantity);
+            const dripFeed = calculateDripFeed(order.service.category, order.quantity, null, order.service.min || 0);
             if (dripFeed) {
               reorderQty = Math.ceil(order.quantity / dripFeed.runs);
               extra.runs = dripFeed.runs;
@@ -553,7 +553,7 @@ export async function POST(req) {
         let orderQty = qty;
         if (service.dripfeed) {
           const { calculateDripFeed } = await import('@/lib/drip-feed');
-          const dripFeed = calculateDripFeed(service.category, qty);
+          const dripFeed = calculateDripFeed(service.category, qty, null, service.min || 0);
           if (dripFeed) {
             orderQty = Math.ceil(qty / dripFeed.runs);
             extra.runs = dripFeed.runs;

@@ -231,6 +231,16 @@ export async function POST(req) {
       return Response.json({ success: true, status: order.status, message: `No ${providerLabel} tracking` });
     }
 
+    if (action === 'retry') {
+      const order = await prisma.order.findFirst({ where: { orderId, deletedAt: null } });
+      if (!order) return Response.json({ error: 'Order not found' }, { status: 404 });
+      if (order.apiOrderId) return Response.json({ error: 'Order already dispatched' }, { status: 400 });
+      if (order.status === 'Cancelled') return Response.json({ error: 'Order is cancelled' }, { status: 400 });
+      await prisma.order.update({ where: { id: order.id }, data: { status: 'Pending', retryCount: 0, lastError: null } });
+      await logActivity(admin.name, `Reset order ${orderId} for retry`, 'order');
+      return Response.json({ success: true });
+    }
+
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
     log.error('Admin Orders POST', err.message);
