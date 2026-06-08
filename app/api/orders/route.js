@@ -387,8 +387,10 @@ export async function POST(req) {
     // Validate link type matches service type (profile vs post)
     if (tier?.group?.type) {
       const groupType = tier.group.type.toLowerCase();
-      const needsProfile = groupType === 'followers';
-      const needsPost = ['likes', 'views', 'comments', 'engagement', 'plays'].includes(groupType);
+      const groupName = (tier.group.name || '').toLowerCase();
+      const isMultiPost = /last\s+\d+\s*(tweet|post|video|reel|photo)/i.test(groupName);
+      const needsProfile = groupType === 'followers' || isMultiPost;
+      const needsPost = ['likes', 'views', 'comments', 'engagement', 'plays'].includes(groupType) && !isMultiPost;
       const platform = (service.category || '').toLowerCase();
       const guide = ' Learn more: https://nitro.ng/blog/how-to-find-the-right-link';
 

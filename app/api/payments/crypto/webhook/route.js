@@ -1,6 +1,7 @@
 import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 import crypto from 'crypto';
+import { applyWelcomeBonus } from '@/lib/welcome-bonus';
 
 const NP_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 
@@ -86,6 +87,7 @@ export async function POST(req) {
         if (bonus > 0) {
           await db.transaction.create({ data: { userId: tx.userId, type: 'bonus', amount: bonus, status: 'Completed', note: `Coupon bonus [cid:${couponId}]` } });
         }
+        await applyWelcomeBonus(db, tx.userId, tx.amount);
         return bonus;
       });
       log.info('NowPayments Webhook', `✓ Credited ${tx.amount / 100} + ₦${couponBonus / 100} bonus to user ${tx.userId}`);

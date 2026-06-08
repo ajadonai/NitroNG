@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
 import { sendEmail, leaderboardRewardEmail } from '@/lib/email';
+import { watBounds } from '@/lib/format';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('leaderboard');
@@ -10,8 +11,7 @@ export async function GET(req) {
   try {
     const url = new URL(req.url);
     const period = url.searchParams.get('period') || 'month';
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const { monthStart } = watBounds();
     const dateFilter = period === 'month' ? { createdAt: { gte: monthStart } } : {};
 
     // Top spenders

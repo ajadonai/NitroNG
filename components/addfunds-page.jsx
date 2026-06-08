@@ -62,7 +62,11 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
   useEffect(() => {
     if (paymentStatus?.type === "success" && !toastShown.current) {
       toastShown.current = true;
-      toast.success("Payment successful!", paymentStatus.amount ? `₦${Number(paymentStatus.amount).toLocaleString()} credited` : "Your wallet has been credited");
+      const amt = paymentStatus.amount ? `₦${Number(paymentStatus.amount).toLocaleString()} credited` : "Your wallet has been credited";
+      toast.success("Payment successful!", amt);
+      if (paymentStatus.welcomeBonus > 0) {
+        setTimeout(() => toast.success("🎁 Welcome bonus!", `₦${Number(paymentStatus.welcomeBonus).toLocaleString()} bonus added to your wallet`), 1500);
+      }
     }
     if (!paymentStatus) toastShown.current = false;
   }, [paymentStatus]);
@@ -234,9 +238,20 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
     }
   };
 
+  const welcomeEligible = user?.welcomeBonusEligible;
+
   /* ── Shared sub-components ── */
   const amountInput = (
     <>
+      {welcomeEligible && (
+        <div className="flex items-start gap-3 rounded-xl p-3.5 mb-4" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.06)', border: `1px solid ${dark ? 'rgba(196,125,142,.2)' : 'rgba(196,125,142,.15)'}` }}>
+          <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0 }}>🎁</span>
+          <div>
+            <div className="text-[13px] font-semibold" style={{ color: t.accent }}>Welcome bonus</div>
+            <div className="text-[12.5px] mt-0.5" style={{ color: t.textSoft, lineHeight: 1.45 }}>Add ₦2,500 or more now and we'll top you up with ₦500 free. One-time welcome bonus.</div>
+          </div>
+        </div>
+      )}
       <div className="text-sm font-semibold uppercase tracking-[1px] mb-2.5" style={{ color: t.textSoft }}>Amount to deposit</div>
       <div className="flex items-center gap-1 py-3.5 px-[18px] max-desktop:py-3 max-desktop:px-4 max-md:py-3 max-md:px-3.5 rounded-xl mb-4 max-md:mb-3" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${amount ? t.accent : t.cardBorder}` }}>
         <span className="m text-[26px] max-desktop:text-[22px] max-md:text-xl font-semibold" style={{ color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.4)" }}>₦</span>
@@ -249,6 +264,18 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
           </button>
         ))}
       </div>
+      {welcomeEligible && numAmount >= 2500 && (
+        <div className="flex items-center gap-2 mt-1 mb-1 py-2 px-3 rounded-lg" style={{ background: dark ? 'rgba(110,231,183,.08)' : 'rgba(5,150,105,.05)', border: `1px solid ${dark ? 'rgba(110,231,183,.15)' : 'rgba(5,150,105,.12)'}` }}>
+          <span style={{ fontSize: 14 }}>🎁</span>
+          <span className="text-[12.5px] font-semibold" style={{ color: dark ? '#6ee7b7' : '#059669' }}>+₦500 welcome bonus will be added</span>
+        </div>
+      )}
+      {welcomeEligible && numAmount > 0 && numAmount < 2500 && numAmount >= 500 && (
+        <div className="flex items-center gap-2 mt-1 mb-1 py-2 px-3 rounded-lg" style={{ background: dark ? 'rgba(196,125,142,.08)' : 'rgba(196,125,142,.05)', border: `1px solid ${dark ? 'rgba(196,125,142,.15)' : 'rgba(196,125,142,.1)'}` }}>
+          <span style={{ fontSize: 14 }}>💡</span>
+          <span className="text-[12.5px] font-medium" style={{ color: t.textSoft }}>Add ₦{(2500 - numAmount).toLocaleString()} more to unlock your ₦500 welcome bonus</span>
+        </div>
+      )}
       <div className="min-h-6 mt-2.5 flex items-center">
         {numAmount > 0 && numAmount < 500 ? (
           <div className="text-sm font-medium flex items-center gap-1.5" style={{ color: dark ? "#fcd34d" : "#d97706" }}>

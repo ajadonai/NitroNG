@@ -207,8 +207,9 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via }) {
         setAuthLoading(false);
         return;
       }
-      if (typeof window.fbq === "function") fbq("track", "CompleteRegistration");
-      window.location.replace('/dashboard');
+      console.log("CR about to fire", typeof window !== "undefined", !!window.fbq);
+      window.fbq && window.fbq("track", "CompleteRegistration", { content_name: "signup", status: true });
+      setTimeout(() => window.location.replace('/dashboard'), 300);
     } catch (err) {
       console.error('[Signup Error]', err);
       setError('Network error. Check your connection and try again.');
@@ -331,7 +332,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via }) {
         aria-modal="true"
         aria-label={mode === 'login' ? 'Log in' : 'Create account'}
         onClick={(e) => e.stopPropagation()}
-        className="auth-card w-full max-w-[440px] max-h-[90dvh] overflow-y-auto overflow-x-hidden rounded-[20px] px-8 py-9 relative backdrop-blur-[20px]"
+        className="auth-card w-full max-w-[440px] max-h-[90dvh] overflow-y-auto overflow-x-hidden rounded-[20px] px-8 py-9 max-md:py-6 relative backdrop-blur-[20px]"
         style={{
           background: dark
             ? 'rgba(17,22,40,0.98)'
@@ -601,6 +602,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via }) {
         {/* ====== SIGNUP STEP 1 ====== */}
         {mode === 'signup' && step === 1 && (
           <>
+            <div className="text-center mb-3"><span className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-[12px] font-semibold" style={{background:dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.1)",color:t.accent}}>🎁 Fund ₦2,500, get ₦500 free — your welcome bonus</span></div>
             {/* Google button */}
             <button
               onClick={() => {
