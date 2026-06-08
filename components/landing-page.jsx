@@ -224,6 +224,7 @@ function LandingInner(){
                         </div>
                       )}
                     </div>
+                    <div className="text-center mb-2.5"><span className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-[11px] font-semibold" style={{background:dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.1)",color:t.accent}}>🎁 Fund ₦2,500, get ₦500 free — your welcome bonus</span></div>
                     <button onClick={()=>setModal("signup")} className="w-full py-[14px] rounded-xl text-[16px] font-bold border-none cursor-pointer hero-cta-pulse" style={{background:"linear-gradient(135deg,#c47d8e,#a3586b)",color:"#fff",boxShadow:"0 6px 24px rgba(196,125,142,.4)"}}>Create free account →</button>
                     <button onClick={()=>setModal("login")} className="w-full py-[11px] rounded-xl text-[14px] font-semibold cursor-pointer mt-2" style={{background:"transparent",border:`1.5px solid ${dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.14)"}`,color:dark?"rgba(255,255,255,.7)":"rgba(0,0,0,.55)"}}>Log in to your account</button>
                   </div>
