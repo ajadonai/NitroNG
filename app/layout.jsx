@@ -194,7 +194,7 @@ export default function RootLayout({ children }) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://sentry.io" crossOrigin="anonymous" />
-        <Script src="https://t.contentsquare.net/uxa/326b90ddf7f96.js" strategy="beforeInteractive" />
+        <Script src="https://t.contentsquare.net/uxa/326b90ddf7f96.js" strategy="afterInteractive" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(appSchema) }} />

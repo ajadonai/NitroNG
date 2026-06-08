@@ -84,6 +84,7 @@ export async function GET(req) {
 
     // Check if user exists
     let user = await prisma.user.findUnique({ where: { email } });
+    let isNewUser = false;
 
     if (user) {
       // Existing user — check status
@@ -139,6 +140,7 @@ export async function GET(req) {
         },
       });
 
+      isNewUser = true;
       sendWelcomeEmail(firstName || name, email).catch(err =>
         log.error('Google signup', `Welcome email failed: ${err.message}`)
       );
@@ -160,7 +162,7 @@ export async function GET(req) {
       data: { userId: user.id, tokenHash: hashToken(token), deviceType: device.type, deviceInfo: device.info, ip },
     });
 
-    return NextResponse.redirect(`${APP_URL}/dashboard`);
+    return NextResponse.redirect(`${APP_URL}/dashboard${isNewUser ? '?new_user=1' : ''}`);
   } catch (err) {
     log.error('Google OAuth Callback', err.message);
     return NextResponse.redirect(`${APP_URL}/?error=google_failed`);

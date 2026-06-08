@@ -70,7 +70,7 @@ export async function GET(req, { params }) {
       : uaLower.includes('tiktok') ? 'TikTok'
       : browserInfo.name || 'Other';
 
-    prisma.linkClick.create({
+    await prisma.linkClick.create({
       data: {
         linkId: link.id,
         ipHash: hashIp(ip),
@@ -81,7 +81,7 @@ export async function GET(req, { params }) {
         city,
         referrer: parseReferrer(referer),
       },
-    }).catch(err => log.error('LinkClick', `Failed to log click: ${err.message}`));
+    });
   } catch (err) {
     log.error('GoRedirect', `Click logging error: ${err.message}`);
   }

@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
+import { applyWelcomeBonus } from '@/lib/welcome-bonus';
 
 async function getGatewayKeys(gatewayId) {
   const setting = await prisma.setting.findUnique({ where: { key: `gateway_${gatewayId}` } });
@@ -114,12 +115,13 @@ export async function POST(req) {
       if (couponBonus > 0) {
         await tx.transaction.create({ data: { userId: session.id, type: 'bonus', amount: couponBonus, status: 'Completed', note: couponLabel } });
       }
-      return { couponBonus, totalCredit };
+      const welcomeBonus = await applyWelcomeBonus(tx, session.id, paidAmount);
+      return { couponBonus, totalCredit: totalCredit + welcomeBonus, welcomeBonus };
     });
 
-    const { couponBonus, totalCredit } = result;
+    const { couponBonus, totalCredit, welcomeBonus } = result;
 
-    log.info('Payments Verify', `₦${paidAmount / 100} + ₦${couponBonus / 100} bonus credited (ref: ${reference})`);
+    log.info('Payments Verify', `₦${paidAmount / 100} + ₦${couponBonus / 100} coupon + ₦${welcomeBonus / 100} welcome credited (ref: ${reference})`);
 
     // Check for deferred referral bonus (if ref_min_deposit is set)
     try {
@@ -172,6 +174,7 @@ export async function POST(req) {
       message: couponBonus > 0 ? `Payment successful! ₦${couponBonus / 100} bonus applied.` : 'Payment successful',
       amount: paidAmount / 100,
       bonus: couponBonus / 100,
+      welcomeBonus: welcomeBonus / 100,
       total: totalCredit / 100,
     });
   } catch (err) {

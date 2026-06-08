@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin } from '@/lib/admin';
+import { watBounds } from '@/lib/format';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('financials');
@@ -16,6 +17,7 @@ export async function GET(req) {
     const provider = url.searchParams.get('provider') || 'all';
 
     const now = new Date();
+    const { monthStart } = watBounds();
     let since, rangeEnd = null;
     if (fromParam) {
       since = new Date(fromParam);
@@ -23,9 +25,9 @@ export async function GET(req) {
     } else if (range === '24h') since = new Date(now - 24 * 60 * 60 * 1000);
     else if (range === '7d') since = new Date(now - 7 * 24 * 60 * 60 * 1000);
     else if (range === '90d') since = new Date(now - 90 * 24 * 60 * 60 * 1000);
-    else if (range === 'month') { since = new Date(now.getFullYear(), now.getMonth(), 1); }
-    else if (range === 'lastmonth') { since = new Date(now.getFullYear(), now.getMonth() - 1, 1); rangeEnd = new Date(now.getFullYear(), now.getMonth(), 1); }
-    else if (range === 'year') { since = new Date(now.getFullYear(), 0, 1); }
+    else if (range === 'month') { since = monthStart; }
+    else if (range === 'lastmonth') { const watNow = new Date(now.getTime() + 60 * 60 * 1000); since = new Date(Date.UTC(watNow.getUTCFullYear(), watNow.getUTCMonth() - 1, 1) - 60 * 60 * 1000); rangeEnd = monthStart; }
+    else if (range === 'year') { const watNow = new Date(now.getTime() + 60 * 60 * 1000); since = new Date(Date.UTC(watNow.getUTCFullYear(), 0, 1) - 60 * 60 * 1000); }
     else since = new Date(now - 30 * 24 * 60 * 60 * 1000);
 
     // Build order filters
