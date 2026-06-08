@@ -65,6 +65,7 @@ model User {
   signupIp        String?
   tosAcceptedAt   DateTime?
   tosVersion      String?
+  firstDepositBonusPaid Boolean @default(false)
   winbackSentAt DateTime?
   status        String   @default("Active")
   deletedAt     DateTime?
