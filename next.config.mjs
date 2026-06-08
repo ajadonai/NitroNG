@@ -20,9 +20,10 @@ const nextConfig = {
               "img-src 'self' data: blob: https:",
               "font-src 'self' https://fonts.gstatic.com",
               "connect-src 'self' https://*.neon.tech https://*.ingest.us.sentry.io https://*.ingest.sentry.io https://plausible.io https://*.contentsquare.net https://www.facebook.com https://connect.facebook.net",
+              "frame-src 'self' https://www.facebook.com",
               "frame-ancestors 'none'",
               "base-uri 'self'",
-              "form-action 'self'",
+              "form-action 'self' https://www.facebook.com",
             ].join('; '),
           },
           // Prevent clickjacking
