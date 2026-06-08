@@ -207,7 +207,8 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via }) {
         setAuthLoading(false);
         return;
       }
-      if (typeof window.fbq === "function") fbq("track", "CompleteRegistration", { content_name: "signup", status: true });
+      console.log("CR about to fire", typeof window !== "undefined", !!window.fbq);
+      window.fbq && window.fbq("track", "CompleteRegistration", { content_name: "signup", status: true });
       setTimeout(() => window.location.replace('/dashboard'), 300);
     } catch (err) {
       console.error('[Signup Error]', err);
