@@ -207,8 +207,8 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via }) {
         setAuthLoading(false);
         return;
       }
-      if (typeof window.fbq === "function") fbq("track", "CompleteRegistration");
-      window.location.replace('/dashboard');
+      if (typeof window.fbq === "function") fbq("track", "CompleteRegistration", { content_name: "signup", status: true });
+      setTimeout(() => window.location.replace('/dashboard'), 300);
     } catch (err) {
       console.error('[Signup Error]', err);
       setError('Network error. Check your connection and try again.');
