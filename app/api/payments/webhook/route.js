@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
+import { applyWelcomeBonus } from '@/lib/welcome-bonus';
 
 export async function POST(req) {
   try {
@@ -90,6 +91,7 @@ export async function POST(req) {
         if (bonus > 0) {
           await db.transaction.create({ data: { userId: tx.userId, type: 'bonus', amount: bonus, status: 'Completed', note: bonusLabel } });
         }
+        await applyWelcomeBonus(db, tx.userId, amountKobo);
         return bonus;
       });
 

@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
+import { applyWelcomeBonus } from '@/lib/welcome-bonus';
 
 const DEFAULT_GATEWAYS = [
   { id: 'flutterwave', name: 'Flutterwave', desc: 'Cards, Bank Transfer, Mobile Money', enabled: false, priority: 1, fields: { secretKey: '', publicKey: '' } },
@@ -255,6 +256,7 @@ export async function POST(req) {
         if (bonus > 0) {
           await db.transaction.create({ data: { userId: tx.userId, type: 'bonus', amount: bonus, status: 'Completed', note: `Coupon bonus [cid:${couponId}]` } });
         }
+        await applyWelcomeBonus(db, tx.userId, tx.amount);
         return true;
       });
       if (!approved) return Response.json({ error: 'Transaction already processed' }, { status: 409 });

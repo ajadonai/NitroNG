@@ -639,6 +639,11 @@ function DashboardInner({ initialData }) {
       if (isReload) { let saved = localStorage.getItem("nitro-page"); if (saved === "how-to") { saved = "guide"; localStorage.setItem("nitro-page", "guide"); } if (saved) setActiveRaw(saved); }
       else { localStorage.removeItem("nitro-page"); }
     } catch {}
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("new_user")) {
+      if (typeof window.fbq === "function") fbq("track", "CompleteRegistration");
+      window.history.replaceState({}, "", "/dashboard");
+    }
   }, []);
   const [leftOpen, setLeftOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -1000,8 +1005,8 @@ function DashboardInner({ initialData }) {
         });
         const data = await res.json();
         if (data.success) {
-          setPaymentStatus({ type: "success", message: "Payment successful!", amount: data.amount });
-          if (typeof window.fbq === "function") fbq("track", "AddPaymentInfo", { value: data.amount / 100, currency: "NGN" });
+          setPaymentStatus({ type: "success", message: "Payment successful!", amount: data.amount, welcomeBonus: data.welcomeBonus || 0 });
+          if (typeof window.fbq === "function") fbq("track", "AddPaymentInfo", { value: data.amount, currency: "NGN" });
           /* Refresh user balance */
           try {
             const dashRes = await fetch("/api/dashboard");

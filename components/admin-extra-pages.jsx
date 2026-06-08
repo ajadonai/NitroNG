@@ -1588,8 +1588,8 @@ export function AdminAcquisitionPage({ dark, t }) {
     setAnalyticsLoading(true);
     fetch(`/api/admin/acquisition/analytics?linkId=${linkId}&range=${r}`)
       .then(res => res.json())
-      .then(d => { setAnalytics(d); setAnalyticsLoading(false); })
-      .catch(() => setAnalyticsLoading(false));
+      .then(d => { setAnalytics(d.error ? null : d); setAnalyticsLoading(false); })
+      .catch(() => { setAnalytics(null); setAnalyticsLoading(false); });
   }, []);
 
   const openAnalytics = useCallback((link) => {
