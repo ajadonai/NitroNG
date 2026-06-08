@@ -641,7 +641,7 @@ function DashboardInner({ initialData }) {
     } catch {}
     const sp = new URLSearchParams(window.location.search);
     if (sp.get("new_user")) {
-      if (typeof window.fbq === "function") fbq("track", "CompleteRegistration");
+      if (typeof window.fbq === "function") fbq("track", "CompleteRegistration", { content_name: "signup", status: true });
       window.history.replaceState({}, "", "/dashboard");
     }
   }, []);
