@@ -235,8 +235,8 @@ export default function AdminOrdersPage({ dark, t }) {
                     {batch.created && <div className="text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(batch.created, true)}</div>}
                   </div>
                   <div className="text-right shrink-0 flex items-center gap-1.5">
-                    {batchSt === "Processing" && <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: sClr("Processing", dark) }} />}
-                    <span className="text-[11px] font-semibold py-0.5 px-1.5 rounded-[5px] border-[0.5px] whitespace-nowrap inline-block leading-tight" style={{ background: sBg(batchSt, dark), color: sClr(batchSt, dark), borderColor: sBrd(batchSt, dark) }}>{batchSt}</span>
+                    {(batchSt === "Processing") && <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: sClr("Processing", dark) }} />}
+                    <div className="m text-[13px] desktop:text-[15px] font-bold" style={{ color: batchSt === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : batchSt === "Partial" ? (dark ? "#fbbf24" : "#d97706") : (dark ? "#6ee7b7" : "#059669") }}>{batchSt === "Cancelled" ? "-" : "+"}{fN(totalCharge)}</div>
                   </div>
                   <svg className="shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
                 </div>
