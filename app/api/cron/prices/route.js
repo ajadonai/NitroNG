@@ -160,6 +160,30 @@ export async function GET(req) {
       }
     }
 
+    // Check for enabled tiers/groups pointing to disabled services
+    const danglingTiers = await prisma.serviceTier.findMany({
+      where: { enabled: true, service: { enabled: false }, group: { enabled: true } },
+      select: { tier: true, service: { select: { name: true, apiId: true, provider: true } }, group: { select: { name: true, platform: true } } },
+    });
+    stats.dangling = danglingTiers.length;
+    if (danglingTiers.length > 0) {
+      try {
+        const existingIssue = await prisma.adminIssue.findFirst({
+          where: { type: 'dangling_tier', status: 'open' },
+        });
+        const title = `${danglingTiers.length} menu item${danglingTiers.length > 1 ? 's' : ''} pointing to disabled services`;
+        const message = danglingTiers.map(d => `${d.group.name} (${d.tier}) → ${d.service.name.slice(0, 50)} (${(d.service.provider || '').toUpperCase()} #${d.service.apiId})`).join('\n');
+        const metadata = JSON.stringify({ count: danglingTiers.length, tiers: danglingTiers.map(d => ({ group: d.group.name, platform: d.group.platform, tier: d.tier, service: d.service.name.slice(0, 60), provider: d.service.provider, apiId: d.service.apiId })) });
+        if (existingIssue) {
+          await prisma.adminIssue.update({ where: { id: existingIssue.id }, data: { title, message, metadata, createdAt: new Date() } });
+        } else {
+          await prisma.adminIssue.create({ data: { type: 'dangling_tier', title, message, metadata } });
+        }
+      } catch (err) {
+        log.warn('PriceSync', `Failed to create dangling tier issue: ${err.message}`);
+      }
+    }
+
     await prisma.setting.upsert({
       where: { key: 'price_alerts' },
       update: { value: JSON.stringify({ losers, checkedAt: new Date().toISOString(), usdRate }) },
