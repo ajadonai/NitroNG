@@ -510,7 +510,7 @@ export async function POST(req) {
           method: 'wallet',
           status: 'Completed',
           reference: batchId,
-          note: `Bulk ${batchId} — ${orderData.length} orders${loyaltyPercent > 0 ? ` (${loyaltyTierName} -${loyaltyPercent}%)` : ''}${activeCamp ? ` (${activeCamp.lineItemLabel})` : ''}${idempotencyKey ? ` [${idempotencyKey}]` : ''}`,
+          note: `Bulk ${batchId} — ${orderData.length} orders${loyaltyPercent > 0 ? ` (${loyaltyTierName} -${loyaltyPercent}%)` : ''}${activePromo ? ` (Promo -${activePromo.discountPercent}%)` : ''}${idempotencyKey ? ` [${idempotencyKey}]` : ''}`,
         },
       });
 
