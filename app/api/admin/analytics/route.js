@@ -24,7 +24,7 @@ export async function GET(req) {
 
     const dateFilter = { gte: since, ...(until && { lte: until }) };
 
-    const [ordersAgg, userCount, depositAgg, adminCreditAgg, adminGiftAgg, couponBonusAgg, referralBonusAgg, refundAgg, ordersByStatus, topServices, allOrders, chartOrders, chartDeposits, partialOrders] = await Promise.all([
+    const [ordersAgg, userCount, depositAgg, adminCreditAgg, adminGiftAgg, couponBonusAgg, referralBonusAgg, refundAgg, ordersByStatus, topServices, allOrders, chartOrders, chartDeposits, partialOrders, providerTopupAgg] = await Promise.all([
       prisma.order.aggregate({
         where: { createdAt: dateFilter, deletedAt: null, status: { notIn: ['Cancelled'] } },
         _sum: { charge: true, cost: true, campaignDiscount: true, loyaltyDiscount: true },
@@ -92,6 +92,11 @@ export async function GET(req) {
       prisma.order.findMany({
         where: { createdAt: dateFilter, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } },
         select: { charge: true, cost: true, quantity: true, remains: true },
+      }),
+      // Provider top-ups (actual cash out)
+      prisma.providerTopup.aggregate({
+        where: { createdAt: dateFilter },
+        _sum: { amount: true },
       }),
     ]);
 
@@ -161,7 +166,8 @@ export async function GET(req) {
     const totalCouponBonuses = (couponBonusAgg._sum.amount || 0) / 100;
     const totalReferralBonuses = (referralBonusAgg._sum.amount || 0) / 100;
     const totalMoneyIn = totalDeposits + totalAdminCredits;
-    const totalMoneyOut = totalCost;
+    const totalProviderTopups = (providerTopupAgg._sum.amount || 0) / 100;
+    const totalMoneyOut = totalProviderTopups;
     const totalWalletObligations = totalRefunds + totalCouponBonuses + totalReferralBonuses + totalAdminGifts;
     const netCashFlow = totalMoneyIn - totalMoneyOut;
 
