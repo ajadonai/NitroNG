@@ -1279,33 +1279,65 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
 
       {/* Success overlay */}
       {bulkSuccess && (
-        <div className="flex-1 overflow-y-auto py-6 px-[18px] max-md:py-4 max-md:px-3.5 flex flex-col items-center">
-          <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)" }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div className="flex-1 overflow-y-auto py-5 px-[18px] max-md:py-4 max-md:px-3.5">
+          {/* Header — cart icon + title + check */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textMuted }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-base font-semibold" style={{ color: t.text }}>{bulkSuccess.total} order{bulkSuccess.total !== 1 ? "s" : ""} placed!</div>
+              <div className="text-xs mt-0.5" style={{ color: t.textMuted }}>Dispatching to providers now</div>
+            </div>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
           </div>
-          <div className="text-lg font-semibold mb-1" style={{ color: t.text }}>{bulkSuccess.total} order{bulkSuccess.total !== 1 ? "s" : ""} placed</div>
-          <div className="text-sm mb-4 text-center" style={{ color: t.textMuted }}>₦{(bulkSuccess.totalCharge || 0).toLocaleString()} deducted from your wallet{bulkSuccess.newBalance != null ? ` · New balance: ₦${bulkSuccess.newBalance.toLocaleString()}` : ""}</div>
+
+          {/* Loyalty discount badge */}
           {bulkSuccess.loyaltyDiscount > 0 && (
-            <div className="text-[12.5px] mb-3 py-1.5 px-3 rounded-full" style={{ background: dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.06)", color: dark ? "#6ee7b7" : "#059669" }}>{bulkSuccess.loyaltyTier} discount applied ({bulkSuccess.loyaltyDiscount}%)</div>
+            <div className="text-[12px] mb-3 py-1.5 px-3 rounded-full text-center" style={{ background: dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.06)", color: dark ? "#6ee7b7" : "#059669" }}>{bulkSuccess.loyaltyTier} discount applied ({bulkSuccess.loyaltyDiscount}%)</div>
           )}
-          <div className="w-full rounded-xl p-4 mb-5 border border-solid" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}>
-            <div className="flex justify-between text-sm mb-2" style={{ color: t.textMuted }}>
-              <span>Batch</span><span className="font-medium font-[JetBrains_Mono,monospace] text-xs" style={{ color: t.text }}>{bulkSuccess.batchId}</span>
+
+          {/* 3-col numbers grid */}
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${t.cardBorder}` }}>
+              <div className="text-[11px] mb-0.5" style={{ color: t.textMuted }}>Orders</div>
+              <div className="text-sm font-semibold" style={{ color: t.text }}>{bulkSuccess.total}</div>
             </div>
-            <div className="flex justify-between text-sm mb-3" style={{ color: t.textMuted }}>
-              <span>Total charged</span><span className="font-medium" style={{ color: t.accent }}>₦{(bulkSuccess.totalCharge || 0).toLocaleString()}</span>
+            <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${t.cardBorder}` }}>
+              <div className="text-[11px] mb-0.5" style={{ color: t.textMuted }}>Charged</div>
+              <div className="text-sm font-semibold" style={{ color: t.green }}>₦{(bulkSuccess.totalCharge || 0).toLocaleString()}</div>
             </div>
+            <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${t.cardBorder}` }}>
+              <div className="text-[11px] mb-0.5" style={{ color: t.textMuted }}>Balance</div>
+              <div className="text-sm font-semibold" style={{ color: t.text }}>{bulkSuccess.newBalance != null ? `₦${bulkSuccess.newBalance.toLocaleString()}` : "—"}</div>
+            </div>
+          </div>
+
+          {/* Batch ID accent row */}
+          <div className="flex items-center justify-between rounded-lg py-2 px-3 mb-3" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)" }}>
+            <span className="text-[11px] font-medium" style={{ color: t.textMuted }}>Batch ID</span>
+            <span className="text-xs font-semibold" style={{ color: t.accent }}>{bulkSuccess.batchId}</span>
+          </div>
+
+          {/* Order list card */}
+          <div className="w-full rounded-xl mb-3 border border-solid overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", borderColor: t.cardBorder }}>
             {(bulkSuccess.rows || bulkSuccess.orders || []).map((o, i) => {
               const status = (bulkSuccess.orders || [])[i]?.status || o.status || "Pending";
               const isProcessing = status === "Processing";
               const plat = PLATFORMS.find(pl => pl.id === o.platform);
               return (
-                <div key={i} className="flex items-center gap-2 text-xs py-1.5 border-t border-dashed" style={{ borderColor: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)" }}>
-                  {plat && <span className="flex items-center justify-center w-[18px] h-[18px] shrink-0 [&_svg]:w-[16px] [&_svg]:h-[16px]" style={{ color: t.textMuted }}>{plat.icon}</span>}
-                  <span className="truncate flex-1 min-w-0" style={{ color: t.text }}>{o.name || o.service || o.link}</span>
-                  {o.tier && <span className="text-[9px] font-medium py-0.5 px-1.5 rounded-full shrink-0" style={{ background: dark ? TS[o.tier]?.bgD : TS[o.tier]?.bg, color: TS[o.tier]?.text }}>{o.tier}</span>}
-                  <span className="shrink-0 text-[10px]" style={{ color: t.textMuted }}>{(o.qty || 0).toLocaleString()}</span>
-                  <span className="flex items-center gap-1 shrink-0">
+                <div key={i} className="flex items-center gap-2.5 py-2.5 px-3.5" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
+                  {plat && <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 [&_svg]:w-[18px] [&_svg]:h-[18px]" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>{plat.icon}</div>}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[12.5px] font-medium truncate" style={{ color: t.text }}>{o.name || o.service || o.link}</div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      {o.tier && <span className="text-[9px] font-semibold py-0.5 px-1.5 rounded-md shrink-0" style={{ background: dark ? TS[o.tier]?.bgD : TS[o.tier]?.bg, color: TS[o.tier]?.text }}>{o.tier}</span>}
+                      <span className="text-[10px]" style={{ color: t.textMuted }}>{(o.qty || 0).toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <span className="flex items-center gap-1 shrink-0 py-0.5 px-2 rounded-md" style={{ background: isProcessing ? (dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.06)") : (dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.06)") }}>
                     <span className="w-1.5 h-1.5 rounded-full" style={{ background: isProcessing ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fbbf24" : "#d97706") }} />
                     <span className="text-[10px] font-medium" style={{ color: isProcessing ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fbbf24" : "#d97706") }}>{isProcessing ? "Processing" : "Pending"}</span>
                   </span>
@@ -1313,12 +1345,16 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
               );
             })}
           </div>
+
+          {/* Dispatch info */}
           <div className="w-full text-[11px] text-center mb-4 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", color: dark ? "#6ee7b7" : "#059669" }}>
             Orders are being dispatched — check your order history for live status
           </div>
-          <div className="flex gap-3 w-full max-md:flex-col">
-            <button onClick={() => { setBulkSuccess(null); onClose(); }} className="flex-1 py-2.5 rounded-[10px] text-sm font-semibold border border-solid cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", borderColor: t.cardBorder, color: t.text }}>Place another</button>
-            {onViewOrders && <button onClick={() => { setBulkSuccess(null); onClose(); onViewOrders(); }} className="flex-1 py-2.5 rounded-[10px] text-sm font-semibold border-none cursor-pointer bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]">View order history</button>}
+
+          {/* Action buttons */}
+          <div className="flex gap-2.5 w-full">
+            <button onClick={() => { setBulkSuccess(null); onClose(); }} className="flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold border border-solid cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", borderColor: t.cardBorder, color: t.text }}>Place another</button>
+            {onViewOrders && <button onClick={() => { setBulkSuccess(null); onClose(); onViewOrders(); }} className="flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>View orders</button>}
           </div>
         </div>
       )}

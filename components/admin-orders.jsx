@@ -19,20 +19,6 @@ function Badge({ status, dark }) {
   return <span className="text-[13px] font-semibold py-0.5 px-2 rounded-[5px] border-[0.5px] whitespace-nowrap inline-block" style={{ background: sBg(status, dark), color: sClr(status, dark), borderColor: sBrd(status, dark) }}>{status}</span>;
 }
 
-function PlatformStack({ platforms, dark }) {
-  const unique = [...new Set(platforms.filter(Boolean))];
-  if (!unique.length) return null;
-  return (
-    <div className="flex items-center">
-      {unique.slice(0, 4).map((p, i) => (
-        <div key={p} className="rounded-lg flex items-center justify-center" style={{ width: 26, height: 26, background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}`, marginLeft: i > 0 ? -6 : 0, zIndex: unique.length - i }}>
-          <PlatformIcon platform={p} dark={dark} size={16} />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function groupOrders(orders) {
   const batches = {};
   const items = [];
@@ -224,59 +210,46 @@ export default function AdminOrdersPage({ dark, t }) {
           if (item.type === "batch") {
             const batch = item;
             const isOpen = expandedBatch === batch.batchId;
-            const statusCounts = {};
-            batch.orders.forEach(o => { statusCounts[o.status] = (statusCounts[o.status] || 0) + 1; });
             const totalCharge = batch.orders.reduce((s, o) => s + (o.charge || 0), 0);
-            const hasAttention = batch.orders.some(o => o.status === "Pending" || o.status === "Processing");
+            const hasAttention = batch.orders.some(o => o.status === "Partial" || (o.lastError && o.status === "Pending" && !o.apiOrderId));
             const activeOrders = batch.orders.filter(o => !["Completed", "Cancelled"].includes(o.status));
             const checkable = batch.orders.filter(o => o.apiOrderId && !["Completed", "Cancelled"].includes(o.status));
             const isBatchLoading = batchActionLoading === batch.batchId;
-            const allCancelled = batch.orders.every(o => o.status === "Cancelled");
             const accentColor = hasAttention ? (dark ? "#fcd34d" : "#d97706") : t.accent;
-            const platforms = batch.orders.map(o => o.platform);
+
+            const batchSt = batch.orders.every(o => o.status === "Completed") ? "Completed"
+              : batch.orders.every(o => o.status === "Cancelled") ? "Cancelled"
+              : batch.orders.some(o => ["Pending", "Processing", "In progress"].includes(o.status)) ? "Processing"
+              : "Partial";
 
             return (
               <div key={batch.batchId} style={{ borderBottom: idx < paged.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                 {/* Batch header */}
-                <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={() => { setExpandedBatch(isOpen ? null : batch.batchId); setExpandedBatchOrder(null); setExpanded(null); }} className="flex items-center py-3 px-3.5 desktop:py-3.5 desktop:px-5 cursor-pointer gap-3 desktop:gap-4 transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.06)]">
+                <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={() => { setExpandedBatch(isOpen ? null : batch.batchId); setExpandedBatchOrder(null); setExpanded(null); }} className="flex items-center py-3 px-3.5 desktop:py-3.5 desktop:px-5 cursor-pointer gap-3 desktop:gap-4 transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.06)]" style={{ ...(hasAttention && { borderLeft: `3px solid ${dark ? "#fbbf24" : "#d97706"}` }) }}>
                   <div className="shrink-0 flex items-center justify-center rounded-xl" style={{ width: 42, height: 42, background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", border: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)"}` }}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                      <span className="m text-[13px] desktop:text-[15px] font-semibold" style={{ color: t.text }}>{batch.batchId}</span>
-                      <span className="text-[11px] desktop:text-xs" style={{ color: t.textMuted }}>{batch.orders[0]?.user}</span>
-                      {hasAttention && <span className="text-[10px] font-bold py-0.5 px-1.5 rounded-md uppercase tracking-wide" style={{ background: dark ? "rgba(252,211,77,.15)" : "rgba(217,119,6,.08)", color: dark ? "#fcd34d" : "#d97706" }}>Attention</span>}
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[11px] desktop:text-xs flex-wrap" style={{ color: t.textMuted }}>
-                      <span className="font-medium">{batch.orders.length} orders</span>
-                      {Object.entries(statusCounts).map(([status, count]) => (
-                        <span key={status} className="flex items-center gap-1">
-                          <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-                          <span className="inline-block w-[5px] h-[5px] rounded-full shrink-0" style={{ background: sClr(status, dark) }} />
-                          <span>{count} {status}</span>
-                        </span>
-                      ))}
-                      <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-                      <span>{batch.created ? fD(batch.created, true) : ""}</span>
-                    </div>
+                    <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{batch.batchId} <span className="text-[11px] desktop:text-xs font-normal" style={{ color: t.textMuted }}>{batch.orders[0]?.user}</span></div>
+                    <div className="text-[11px] desktop:text-xs font-medium mt-0.5" style={{ color: t.accent }}>{batch.orders.length} order{batch.orders.length !== 1 ? "s" : ""}</div>
+                    {batch.created && <div className="text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(batch.created, true)}</div>}
                   </div>
-                  <div className="text-right shrink-0 flex items-center gap-2.5">
-                    <div className="flex flex-col items-end gap-1.5">
-                      <div className="m text-[13px] desktop:text-[15px] font-bold" style={{ color: allCancelled ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{allCancelled ? "-" : "+"}{fN(totalCharge)}</div>
-                      <PlatformStack platforms={platforms} dark={dark} />
-                    </div>
-                    <div className="flex gap-1">
-                      {checkable.length > 0 && <button onClick={e => { e.stopPropagation(); doBatchAction(batch.batchId, "check"); }} disabled={isBatchLoading} className="adm-btn-sm text-[11px] flex items-center justify-center gap-1.5 min-w-[70px]" style={{ borderColor: dark ? "rgba(96,165,250,.25)" : "rgba(37,99,235,.2)", color: dark ? "#60a5fa" : "#2563eb", background: dark ? "rgba(96,165,250,.08)" : "rgba(37,99,235,.04)" }}>{isBatchLoading ? <Spinner size={11} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check All"}</button>}
-                      {activeOrders.length > 0 && <button onClick={async e => { e.stopPropagation(); const ok = await confirm({ title: "Cancel Batch", message: `Cancel ${activeOrders.length} active order${activeOrders.length > 1 ? "s" : ""} in ${batch.batchId}? This may issue refunds.`, confirmLabel: "Cancel All", danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isBatchLoading} className="adm-btn-sm text-[11px]" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626", opacity: isBatchLoading ? .5 : 1 }}>Cancel All</button>}
-                    </div>
-                    <svg className="shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
+                  <div className="text-right shrink-0 flex items-center gap-1.5">
+                    {batchSt === "Processing" && <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: sClr("Processing", dark) }} />}
+                    <span className="text-[11px] font-semibold py-0.5 px-1.5 rounded-[5px] border-[0.5px] whitespace-nowrap inline-block leading-tight" style={{ background: sBg(batchSt, dark), color: sClr(batchSt, dark), borderColor: sBrd(batchSt, dark) }}>{batchSt}</span>
                   </div>
+                  <svg className="shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
                 </div>
 
                 {/* Expanded batch — order list */}
                 {isOpen && (
                   <div style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", borderLeft: `3px solid ${accentColor}`, borderTop: `2px solid ${dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)"}` }}>
+                    {/* Batch action bar */}
+                    <div className="flex items-center gap-2 py-2.5 px-4 desktop:px-5 flex-wrap" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+                      <span className="text-[11px] uppercase tracking-[1px] font-medium mr-auto" style={{ color: t.textMuted }}>Batch actions</span>
+                      {checkable.length > 0 && <button onClick={() => doBatchAction(batch.batchId, "check")} disabled={isBatchLoading} className="adm-btn-sm text-[11px] flex items-center justify-center gap-1.5 min-w-[70px]" style={{ borderColor: dark ? "rgba(96,165,250,.25)" : "rgba(37,99,235,.2)", color: dark ? "#60a5fa" : "#2563eb", background: dark ? "rgba(96,165,250,.08)" : "rgba(37,99,235,.04)" }}>{isBatchLoading ? <Spinner size={11} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check all"}</button>}
+                      {activeOrders.length > 0 && <button onClick={async () => { const ok = await confirm({ title: "Cancel Batch", message: `Cancel ${activeOrders.length} active order${activeOrders.length > 1 ? "s" : ""} in ${batch.batchId}? This may issue refunds.`, confirmLabel: "Cancel All", danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isBatchLoading} className="adm-btn-sm text-[11px]" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626", opacity: isBatchLoading ? .5 : 1 }}>Cancel all</button>}
+                    </div>
                     {batch.orders.map((o, i) => (
                       <div key={o.id}>
                         <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={() => setExpandedBatchOrder(expandedBatchOrder === o.id ? null : o.id)} className="flex items-center py-2.5 px-3 desktop:py-3 desktop:px-4 pl-4 desktop:pl-5 cursor-pointer gap-2.5 desktop:gap-3 transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.06)]" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>

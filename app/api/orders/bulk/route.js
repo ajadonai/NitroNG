@@ -55,6 +55,10 @@ async function dispatchBatch(createdOrders, userId, batchId, totalCharge) {
         new Promise((_, reject) => setTimeout(() => reject(new Error('dispatch_timeout')), 10000)),
       ]);
       if (apiOrderId) { placed++; consecutiveFails = 0; }
+      else {
+        await prisma.order.update({ where: { id: o.dbId }, data: { lastError: 'dispatch_no_response' } }).catch(() => {});
+        consecutiveFails++;
+      }
     } catch (err) {
       log.error('Bulk dispatch', `${o.orderId}: ${err.message}`);
       const isTimeout = /timed?\s?out|dispatch_timeout|ETIMEDOUT|ECONNABORTED|ECONNRESET|retries failed/i.test(err.message);
@@ -244,6 +248,10 @@ export async function PATCH(req) {
           const apiOrderId = await placeWithProvider({ id: order.id, service: order.service, tier: order.tier, link: order.link, quantity: order.quantity, comments: order.comments });
           retried++;
           if (apiOrderId) { placed++; consecutiveFails = 0; }
+          else {
+            await prisma.order.update({ where: { id: order.id }, data: { lastError: 'dispatch_no_response' } }).catch(() => {});
+            consecutiveFails++;
+          }
         } catch (err) {
           log.error('Bulk reorder', `${order.orderId}: ${err.message}`);
           const isTimeout = /timed?\s?out|dispatch_timeout|ETIMEDOUT|ECONNABORTED|ECONNRESET|retries failed/i.test(err.message);
