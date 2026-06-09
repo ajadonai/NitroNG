@@ -654,3 +654,19 @@ model LinkClick {
   @@index([createdAt])
   @@map("link_clicks")
 }
+
+// ──────────────────────────────────────
+// Provider Top-ups
+// ──────────────────────────────────────
+model ProviderTopup {
+  id        String   @id @default(cuid())
+  provider  String
+  amount    Int
+  note      String?
+  adminName String?
+  createdAt DateTime @default(now())
+
+  @@index([provider, createdAt])
+  @@index([createdAt])
+  @@map("provider_topups")
+}
