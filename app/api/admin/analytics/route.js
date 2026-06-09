@@ -24,7 +24,7 @@ export async function GET(req) {
 
     const dateFilter = { gte: since, ...(until && { lte: until }) };
 
-    const [ordersAgg, userCount, depositAgg, adminCreditAgg, adminGiftAgg, couponBonusAgg, referralBonusAgg, refundAgg, ordersByStatus, topServices, allOrders, chartOrders, chartDeposits] = await Promise.all([
+    const [ordersAgg, userCount, depositAgg, adminCreditAgg, adminGiftAgg, couponBonusAgg, referralBonusAgg, refundAgg, ordersByStatus, topServices, allOrders, chartOrders, chartDeposits, partialOrders] = await Promise.all([
       prisma.order.aggregate({
         where: { createdAt: dateFilter, deletedAt: null, status: { notIn: ['Cancelled'] } },
         _sum: { charge: true, cost: true, campaignDiscount: true, loyaltyDiscount: true },
@@ -74,12 +74,12 @@ export async function GET(req) {
       // For platform aggregation — get orders with service category
       prisma.order.findMany({
         where: { createdAt: dateFilter, deletedAt: null, status: { notIn: ['Cancelled'] } },
-        select: { charge: true, service: { select: { category: true } } },
+        select: { charge: true, status: true, quantity: true, remains: true, service: { select: { category: true } } },
       }),
       // Chart: daily order counts + revenue
       prisma.order.findMany({
         where: { createdAt: dateFilter, deletedAt: null },
-        select: { createdAt: true, charge: true, status: true },
+        select: { createdAt: true, charge: true, status: true, quantity: true, remains: true },
         orderBy: { createdAt: 'asc' },
       }),
       // Chart: daily deposits
@@ -88,7 +88,20 @@ export async function GET(req) {
         select: { createdAt: true, amount: true },
         orderBy: { createdAt: 'asc' },
       }),
+      // Partial order adjustments
+      prisma.order.findMany({
+        where: { createdAt: dateFilter, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } },
+        select: { charge: true, cost: true, quantity: true, remains: true },
+      }),
     ]);
+
+    // Compute partial adjustment
+    let partialChargeAdj = 0, partialCostAdj = 0;
+    for (const p of partialOrders) {
+      const ratio = p.remains / p.quantity;
+      partialChargeAdj += Math.round(p.charge * ratio);
+      partialCostAdj += Math.round((p.cost || 0) * ratio);
+    }
 
     // Resolve service → group names via tiers, fall back to service name
     const serviceIds = topServices.map(s => s.serviceId);
@@ -107,6 +120,14 @@ export async function GET(req) {
     const serviceMap = {};
     services.forEach(s => { serviceMap[s.id] = s; });
 
+    // Helper: effective charge for an order (adjusts partials)
+    const effCharge = (o) => {
+      if (o.status === 'Partial' && o.remains > 0 && o.quantity > 0) {
+        return Math.round(o.charge * (o.quantity - o.remains) / o.quantity);
+      }
+      return o.charge || 0;
+    };
+
     // Aggregate by platform (only real social platforms)
     const PLATFORMS = new Set(['instagram', 'youtube', 'tiktok', 'facebook', 'twitter/x', 'telegram', 'spotify', 'twitch', 'snapchat', 'linkedin', 'threads', 'whatsapp', 'discord', 'pinterest', 'reddit']);
     const platformMap = {};
@@ -116,15 +137,15 @@ export async function GET(req) {
       const name = cat === 'twitter/x' ? 'Twitter/X' : cat.charAt(0).toUpperCase() + cat.slice(1);
       if (!platformMap[name]) platformMap[name] = { name, orders: 0, revenue: 0 };
       platformMap[name].orders++;
-      platformMap[name].revenue += (o.charge || 0) / 100;
+      platformMap[name].revenue += effCharge(o) / 100;
     });
     const topPlatforms = Object.values(platformMap)
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5)
       .map(p => ({ ...p, revenue: Math.round(p.revenue) }));
 
-    const totalRevenue = (ordersAgg._sum.charge || 0) / 100;
-    const totalCost = (ordersAgg._sum.cost || 0) / 100;
+    const totalRevenue = ((ordersAgg._sum.charge || 0) - partialChargeAdj) / 100;
+    const totalCost = ((ordersAgg._sum.cost || 0) - partialCostAdj) / 100;
     const totalCampaignDiscounts = (ordersAgg._sum.campaignDiscount || 0) / 100;
     const totalLoyaltyDiscounts = (ordersAgg._sum.loyaltyDiscount || 0) / 100;
     const orderCount = ordersAgg._count || 0;
@@ -151,7 +172,7 @@ export async function GET(req) {
       const day = toDay(o.createdAt);
       if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, deposits: 0 };
       dayMap[day].orders++;
-      if (o.status !== 'Cancelled') dayMap[day].revenue += (o.charge || 0) / 100;
+      if (o.status !== 'Cancelled') dayMap[day].revenue += effCharge(o) / 100;
     });
     chartDeposits.forEach(tx => {
       const day = toDay(tx.createdAt);

@@ -46,6 +46,7 @@ export async function GET(req) {
       idleUsers,
       payoutRows,
       recentPayouts,
+      partialToday, partialYesterday, partialMonth,
     ] = await Promise.all([
       prisma.user.count({ where: { emailVerified: true } }),
       prisma.user.count({ where: { createdAt: { gte: todayStart }, emailVerified: true } }),
@@ -66,11 +67,11 @@ export async function GET(req) {
       prisma.order.groupBy({ by: ['status'], where: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null }, _count: true }),
       prisma.order.findMany({
         where: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null, status: { notIn: ['Cancelled'] } },
-        select: { charge: true, service: { select: { category: true } } },
+        select: { charge: true, status: true, quantity: true, remains: true, service: { select: { category: true } } },
       }),
       prisma.order.findMany({
         where: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null },
-        select: { createdAt: true, charge: true, cost: true, status: true },
+        select: { createdAt: true, charge: true, cost: true, status: true, quantity: true, remains: true },
         orderBy: { createdAt: 'asc' },
       }),
       prisma.transaction.findMany({
@@ -132,6 +133,10 @@ export async function GET(req) {
         take: 15,
         include: { user: { select: { name: true, email: true } } },
       }),
+      // Partial order adjustments
+      prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
+      prisma.order.findMany({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
+      prisma.order.findMany({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
     ]);
 
     const pctChange = (today, yesterday) => {
@@ -139,8 +144,32 @@ export async function GET(req) {
       return Math.round(((today - yesterday) / yesterday) * 100);
     };
 
-    const todayRevenue = (todayRevenueAgg._sum.charge || 0) / 100;
-    const yesterdayRevenue = (yesterdayRevenueAgg._sum.charge || 0) / 100;
+    // Partial adjustment helper
+    const partialAdj = (orders) => {
+      let charge = 0, cost = 0;
+      for (const p of orders) {
+        const ratio = p.remains / p.quantity;
+        charge += Math.round(p.charge * ratio);
+        cost += Math.round((p.cost || 0) * ratio);
+      }
+      return { charge, cost };
+    };
+    const effCharge = (o) => {
+      if (o.status === 'Partial' && o.remains > 0 && o.quantity > 0)
+        return Math.round(o.charge * (o.quantity - o.remains) / o.quantity);
+      return o.charge || 0;
+    };
+    const effCost = (o) => {
+      if (o.status === 'Partial' && o.remains > 0 && o.quantity > 0)
+        return Math.round((o.cost || 0) * (o.quantity - o.remains) / o.quantity);
+      return o.cost || 0;
+    };
+    const adjToday = partialAdj(partialToday);
+    const adjYesterday = partialAdj(partialYesterday);
+    const adjMonth = partialAdj(partialMonth);
+
+    const todayRevenue = ((todayRevenueAgg._sum.charge || 0) - adjToday.charge) / 100;
+    const yesterdayRevenue = ((yesterdayRevenueAgg._sum.charge || 0) - adjYesterday.charge) / 100;
     const todayDeposits = (todayDepositsAgg._sum.amount || 0) / 100;
     const yesterdayDeposits = (yesterdayDepositsAgg._sum.amount || 0) / 100;
 
@@ -153,7 +182,7 @@ export async function GET(req) {
       const name = cat === 'twitter/x' ? 'Twitter/X' : cat.charAt(0).toUpperCase() + cat.slice(1);
       if (!platformMap[name]) platformMap[name] = { name, orders: 0, revenue: 0 };
       platformMap[name].orders++;
-      platformMap[name].revenue += (o.charge || 0) / 100;
+      platformMap[name].revenue += effCharge(o) / 100;
     });
     const topPlatforms = Object.values(platformMap)
       .sort((a, b) => b.orders - a.orders)
@@ -168,8 +197,8 @@ export async function GET(req) {
       if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, profit: 0, deposits: 0, newUsers: 0 };
       dayMap[day].orders++;
       if (o.status !== 'Cancelled') {
-        dayMap[day].revenue += (o.charge || 0) / 100;
-        dayMap[day].profit += ((o.charge || 0) - (o.cost || 0)) / 100;
+        dayMap[day].revenue += effCharge(o) / 100;
+        dayMap[day].profit += (effCharge(o) - effCost(o)) / 100;
       }
     });
     chartDeposits.forEach(tx => {
@@ -208,14 +237,14 @@ export async function GET(req) {
       revenueChange: pctChange(todayRevenue, yesterdayRevenue),
       depositsChange: pctChange(todayDeposits, yesterdayDeposits),
       ordersChange: pctChange(todayOrderCount, yesterdayOrderCount),
-      profitToday: todayRevenue - (todayCostAgg._sum.cost || 0) / 100,
+      profitToday: todayRevenue - ((todayCostAgg._sum.cost || 0) - adjToday.cost) / 100,
       profitChange: pctChange(
-        todayRevenue - (todayCostAgg._sum.cost || 0) / 100,
-        yesterdayRevenue - (yesterdayCostAgg._sum.cost || 0) / 100
+        todayRevenue - ((todayCostAgg._sum.cost || 0) - adjToday.cost) / 100,
+        yesterdayRevenue - ((yesterdayCostAgg._sum.cost || 0) - adjYesterday.cost) / 100
       ),
-      monthRevenue: (monthRevenueAgg._sum.charge || 0) / 100,
-      monthCost: (monthCostAgg._sum.cost || 0) / 100,
-      monthProfit: ((monthRevenueAgg._sum.charge || 0) - (monthCostAgg._sum.cost || 0)) / 100,
+      monthRevenue: ((monthRevenueAgg._sum.charge || 0) - adjMonth.charge) / 100,
+      monthCost: ((monthCostAgg._sum.cost || 0) - adjMonth.cost) / 100,
+      monthProfit: (((monthRevenueAgg._sum.charge || 0) - adjMonth.charge) - ((monthCostAgg._sum.cost || 0) - adjMonth.cost)) / 100,
       monthOrders: monthOrderCount,
       monthDeposits: (monthDepositsAgg._sum.amount || 0) / 100,
       monthNewUsers,
