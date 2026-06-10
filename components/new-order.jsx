@@ -295,6 +295,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
     twitch: /\/videos\//i,
     kick: /\/clips\//i,
   };
+  const SHORT_POST_DOMAINS = /^(vt|vm)\.tiktok\.com$|^t\.co$|^(fb\.watch|fb\.me)$|^ig\.me$/i;
   const validateLink = (val) => {
     const cleaned = val.replace(/^https?:\/\//i, "");
     setLink(cleaned);
@@ -302,7 +303,9 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
     if (!isValidLink(cleaned)) { setLinkError("Enter a valid URL or @username"); return; }
     const pat = POST_LINK_PATTERNS[platform];
     if (pat && cleaned.includes(".")) {
-      const looksLikePost = pat.test(cleaned);
+      let host = ""; try { host = new URL("https://" + cleaned).hostname; } catch {}
+      const isShortPost = SHORT_POST_DOMAINS.test(host);
+      const looksLikePost = isShortPost || pat.test(cleaned);
       if (isProfileSvc && looksLikePost) { setLinkError("This service needs your profile link, not a post link"); return; }
       if (isPostSvc && !looksLikePost) { setLinkError("This service needs a link to a specific post, not your profile"); return; }
     }
