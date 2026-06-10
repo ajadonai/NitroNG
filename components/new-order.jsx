@@ -284,8 +284,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const POST_LINK_PATTERNS = {
     twitter: /\/(status|i\/status)\//i,
     instagram: /\/(p|reel|reels|stories|tv)\//i,
-    tiktok: /\/video\//i,
-    youtube: /\/(watch|shorts|live)\b/i,
+    tiktok: /\/(video|photo|v)\//i,
+    youtube: /\/(watch|shorts|live)\b|youtu\.be\//i,
     facebook: /\/(posts|videos|watch|photos|reel)\//i,
     threads: /\/post\//i,
     linkedin: /\/(posts|pulse)\//i,
@@ -295,7 +295,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
     twitch: /\/videos\//i,
     kick: /\/clips\//i,
   };
-  const SHORT_POST_DOMAINS = /^(vt|vm)\.tiktok\.com$|^t\.co$|^(fb\.watch|fb\.me)$|^ig\.me$/i;
+  const SHORT_POST_DOMAINS = /^(vt|vm)\.tiktok\.com$|^t\.co$|^(fb\.watch|fb\.me)$|^ig\.me$|^youtu\.be$/i;
   const validateLink = (val) => {
     const cleaned = val.replace(/^https?:\/\//i, "");
     setLink(cleaned);
