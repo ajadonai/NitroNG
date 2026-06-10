@@ -7,6 +7,8 @@ import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { sendEmail, batchPlacementEmail } from '@/lib/email';
 import { cleanLink } from '@/lib/clean-link';
+import { sendEvent, generateEventId, parseFbCookies } from '@/lib/meta-capi';
+import { headers as getHeaders } from 'next/headers';
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -533,8 +535,22 @@ export async function POST(req) {
     const orderResults = result.createdOrders.map(o => ({ id: o.orderId, link: o.link, status: 'Pending', service: o.tierName }));
     const newBalance = (await prisma.user.findUnique({ where: { id: session.id }, select: { balance: true } }))?.balance || 0;
 
+    const eventId = generateEventId();
+    const hdrs = await getHeaders();
+    const { fbp, fbc } = parseFbCookies(hdrs.get('cookie'));
+    sendEvent('Purchase', {
+      eventId,
+      email: session.email,
+      clientIp: hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip'),
+      userAgent: hdrs.get('user-agent'),
+      fbp, fbc,
+      sourceUrl: hdrs.get('referer'),
+      customData: { value: result.totalCharge / 100, currency: 'NGN' },
+    });
+
     const responseBody = {
       success: true,
+      eventId,
       batchId,
       total: result.createdOrders.length,
       placed: 0,

@@ -96,8 +96,7 @@ function LandingInner(){
       const res=await fetch("/api/auth/signup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:`${heroFirstName} ${heroLastName}`,firstName:heroFirstName,lastName:heroLastName,email:heroEmail,password:heroPw,phone:heroPhone?`+234${heroPhone}`:undefined,referralCode:heroRefCode||undefined,via:heroVia||undefined})});
       const data=await res.json();
       if(!res.ok){setHeroError(data.error||"Signup failed");setHeroLoading(false);return;}
-      console.log("CR about to fire",typeof window!=="undefined",!!window.fbq);
-      window.fbq&&window.fbq("track","CompleteRegistration",{content_name:"signup",status:true});
+      window.fbq&&window.fbq("track","CompleteRegistration",{content_name:"signup",status:true},{eventID:data.eventId});
       setTimeout(()=>window.location.replace("/dashboard"),300);
     }catch{setHeroError("Something went wrong.");setHeroLoading(false);}
   };
