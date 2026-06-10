@@ -5,6 +5,8 @@ import { placeOrder, checkOrder } from '@/lib/smm';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { cleanLink } from '@/lib/clean-link';
+import { sendEvent, generateEventId, parseFbCookies } from '@/lib/meta-capi';
+import { headers as getHeaders } from 'next/headers';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -634,8 +636,22 @@ export async function POST(req) {
       }
     }
 
+    const eventId = generateEventId();
+    const hdrs2 = await getHeaders();
+    const { fbp, fbc } = parseFbCookies(hdrs2.get('cookie'));
+    sendEvent('Purchase', {
+      eventId,
+      email: session.email,
+      clientIp: hdrs2.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs2.get('x-real-ip'),
+      userAgent: hdrs2.get('user-agent'),
+      fbp, fbc,
+      sourceUrl: hdrs2.get('referer'),
+      customData: { value: charge / 100, currency: 'NGN' },
+    });
+
     return Response.json({
       success: true,
+      eventId,
       ...(queued ? { queued: true, message: `Order queued — will start automatically when your current order for this link completes.` } : {}),
       order: {
         id: orderId,

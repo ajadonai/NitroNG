@@ -641,8 +641,8 @@ function DashboardInner({ initialData }) {
     } catch {}
     const sp = new URLSearchParams(window.location.search);
     if (sp.get("new_user")) {
-      console.log("CR about to fire", typeof window !== "undefined", !!window.fbq);
-      window.fbq && window.fbq("track", "CompleteRegistration", { content_name: "signup", status: true });
+      const eid = sp.get("eid");
+      window.fbq && window.fbq("track", "CompleteRegistration", { content_name: "signup", status: true }, eid ? { eventID: eid } : {});
       window.history.replaceState({}, "", "/dashboard");
     }
   }, []);
@@ -1007,7 +1007,7 @@ function DashboardInner({ initialData }) {
         const data = await res.json();
         if (data.success) {
           setPaymentStatus({ type: "success", message: "Payment successful!", amount: data.amount, welcomeBonus: data.welcomeBonus || 0 });
-          if (typeof window.fbq === "function") fbq("track", "AddPaymentInfo", { value: data.amount, currency: "NGN" });
+          if (typeof window.fbq === "function") fbq("track", "AddPaymentInfo", { value: data.amount, currency: "NGN" }, { eventID: data.eventId });
           /* Refresh user balance */
           try {
             const dashRes = await fetch("/api/dashboard");

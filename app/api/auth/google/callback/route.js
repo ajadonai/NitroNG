@@ -6,6 +6,7 @@ import { generateReferralCode } from '@/lib/utils';
 import { sendWelcomeEmail } from '@/lib/email';
 import { isDisposableEmail } from '@/lib/validate';
 import { cookies, headers } from 'next/headers';
+import { sendEvent, generateEventId, parseFbCookies } from '@/lib/meta-capi';
 
 export async function GET(req) {
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -166,7 +167,22 @@ export async function GET(req) {
       await prisma.session.deleteMany({ where: { id: { in: sessions.slice(5).map(s => s.id) } } });
     }
 
-    return NextResponse.redirect(`${APP_URL}/dashboard${isNewUser ? '?new_user=1' : ''}`);
+    if (isNewUser) {
+      const eventId = generateEventId();
+      const hdrs2 = await headers();
+      const { fbp, fbc } = parseFbCookies(hdrs2.get('cookie'));
+      sendEvent('CompleteRegistration', {
+        eventId,
+        email,
+        clientIp: hdrs2.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs2.get('x-real-ip'),
+        userAgent: hdrs2.get('user-agent'),
+        fbp, fbc,
+        sourceUrl: `${APP_URL}/`,
+        customData: { content_name: 'google_signup', status: true },
+      });
+      return NextResponse.redirect(`${APP_URL}/dashboard?new_user=1&eid=${eventId}`);
+    }
+    return NextResponse.redirect(`${APP_URL}/dashboard`);
   } catch (err) {
     log.error('Google OAuth Callback', err.message);
     return NextResponse.redirect(`${APP_URL}/?error=google_failed`);
