@@ -22,7 +22,7 @@ export async function GET(req) {
           orderBy: { sortOrder: 'asc' },
           include: {
             service: {
-              select: { id: true, apiId: true, name: true, min: true, max: true, refill: true, avgTime: true, provider: true },
+              select: { id: true, apiId: true, name: true, min: true, max: true, refill: true, avgTime: true, provider: true, apiType: true },
             },
           },
         },
@@ -90,6 +90,7 @@ export async function GET(req) {
             speed: t.speed,
             serviceId: t.serviceId,
             provider: t.service?.provider || 'mtp',
+            apiType: t.service?.apiType || 'Default',
           })),
         };
       }).filter(g => g.tiers.length > 0),
