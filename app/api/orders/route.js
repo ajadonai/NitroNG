@@ -262,6 +262,12 @@ export async function PATCH(req) {
           await prisma.order.update({ where: { id: newOrder.id }, data: { dispatchedAt: new Date() } });
           const provider = order.service.provider || 'mtp';
           const extra = {};
+          if (order.comments) {
+            const at = (order.service.apiType || '').toLowerCase();
+            if (at.includes('mention')) extra.usernames = order.comments;
+            else if (at === 'poll') extra.answer_number = order.comments;
+            else extra.comments = order.comments;
+          }
           let reorderQty = order.quantity;
           if (order.service.dripfeed) {
             const { calculateDripFeed } = await import('@/lib/drip-feed');
