@@ -750,9 +750,11 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       scrollToRow(dupIdx);
       return;
     }
-    const needsComments = cartRows.findIndex(r => (r.needsComments || r.needsMentions) && !r.comments.trim());
+    const needsComments = cartRows.findIndex(r => (r.needsComments || r.needsMentions || r.needsPoll) && !r.comments.trim());
     if (needsComments >= 0) {
-      toast.error("Missing comments", `Row ${needsComments + 1} needs comments`);
+      const r = cartRows[needsComments];
+      const label = r.needsPoll ? "a poll answer" : r.needsMentions ? "usernames" : "comments";
+      toast.error(`Missing ${label}`, `Row ${needsComments + 1} needs ${label}`);
       scrollToRow(needsComments);
       return;
     }
@@ -1245,9 +1247,9 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
           const emptyLink = !r.link.trim();
           const validLink = !emptyLink && isValidLink(r.link);
           const qtyOk = r.qty >= r.min && r.qty <= r.max;
-          const needsComments = (r.needsComments || r.needsMentions) && !r.comments.trim() && !emptyLink;
+          const needsInput = (r.needsComments || r.needsMentions || r.needsPoll) && !r.comments.trim() && !emptyLink;
           const dup = isDuplicate(prev, i);
-          if (!validLink || !qtyOk || needsComments || dup) return r;
+          if (!validLink || !qtyOk || needsInput || dup) return r;
           changed = true;
           return { ...r, expanded: undefined };
         });
@@ -1388,7 +1390,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
           const emptyLink = !row.link.trim();
           const badLink = !emptyLink && !isValidLink(row.link);
           const qtyBad = row.qty < row.min || row.qty > row.max;
-          const needsCommentsWarning = (row.needsComments || row.needsMentions) && !row.comments.trim() && !emptyLink;
+          const needsCommentsWarning = (row.needsComments || row.needsMentions || row.needsPoll) && !row.comments.trim() && !emptyLink;
           const hasErrors = dup || badLink || qtyBad || needsCommentsWarning;
           const hasValidLink = !emptyLink && isValidLink(row.link);
           const isCollapsed = hasValidLink && !hasErrors && !row.expanded;
@@ -1444,16 +1446,16 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
               {emptyLink && !dup && <div className="text-[10.5px] mt-1.5 flex items-center gap-1.5" style={{ color: t.accent }}>○ Paste a link for this row</div>}
               {badLink && !dup && <div className="text-[10.5px] mt-1.5 flex items-center gap-1.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>● Enter a valid URL or @username</div>}
               {qtyBad && !dup && <div className="text-[10.5px] mt-1.5" style={{ color: t.accent }}>{row.qty < row.min ? `Min ${row.min.toLocaleString()} for this service` : `Max ${row.max.toLocaleString()} for this service`}</div>}
-              {needsCommentsWarning && !dup && <div className="text-[10.5px] mt-1.5" style={{ color: t.accent }}>○ This service needs at least one comment</div>}
+              {needsCommentsWarning && !dup && <div className="text-[10.5px] mt-1.5" style={{ color: t.accent }}>○ {row.needsPoll ? "Select a poll answer" : row.needsMentions ? "Enter usernames" : "This service needs at least one comment"}</div>}
 
-              {/* Comment section */}
-              {(row.needsComments || row.needsMentions) && (
+              {/* Comment/mention/poll section */}
+              {(row.needsComments || row.needsMentions || row.needsPoll) && (
                 <div className="mt-2 pt-2 border-t border-dashed" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}>
                   {commentCount > 0 && !row.commentsOpen ? (
                     <>
                       <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[5px] px-3 rounded-full border border-solid text-[11.5px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(127,184,74,.25)" : "#e4f3d9", borderColor: dark ? "#639922" : "#7fb84a", color: dark ? "#b4db7a" : "#27500A" }}>
                         <span className="w-[5px] h-[5px] rounded-full" style={{ background: dark ? "#b4db7a" : "#27500A" }} />
-                        <span><b>{commentCount}</b> {row.needsMentions ? "username" : "comment"}{commentCount !== 1 ? "s" : ""}</span>
+                        <span><b>{commentCount}</b> {row.needsPoll ? "answer" : row.needsMentions ? "username" : "comment"}{commentCount !== 1 ? "s" : ""}</span>
                         <span className="text-[10.5px] underline ml-1" style={{ color: t.textMuted }}>edit</span>
                       </button>
                       <div className="text-[10.5px] mt-1.5" style={{ color: t.textMuted }}>We'll cycle through them to fill your order</div>
@@ -1461,19 +1463,19 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                   ) : row.commentsOpen ? (
                     <div className="rounded-lg border border-solid p-2.5" style={{ background: dark ? "#0f1322" : "#fff", borderColor: t.accent }}>
                       <div className="flex justify-between items-center mb-1.5">
-                        <span className="text-[11px] font-medium" style={{ color: t.text }}>{row.needsMentions ? "Usernames — one per line" : "Seed comments — one per line"}</span>
+                        <span className="text-[11px] font-medium" style={{ color: t.text }}>{row.needsPoll ? "Poll answer (number)" : row.needsMentions ? "Usernames — one per line" : "Seed comments — one per line"}</span>
                         <button onClick={() => updateRow(idx, { commentsOpen: false })} className="bg-transparent border-none text-[11px] cursor-pointer py-0.5 px-1.5 rounded font-[inherit] hover:bg-[rgba(0,0,0,.08)] transition-transform duration-200 hover:-translate-y-px" style={{ color: t.textMuted }}>Done</button>
                       </div>
-                      <textarea placeholder={row.needsMentions ? "username1\nusername2\nusername3" : "Fire post\nLove this\nLegendary..."} value={row.comments} onChange={e => updateRow(idx, { comments: e.target.value })} rows={4} className="w-full min-h-[90px] rounded-md border border-solid py-2 px-2.5 text-[11.5px] font-[JetBrains_Mono,monospace] outline-none resize-y" style={{ background: dark ? "rgba(255,255,255,.09)" : "#f7f5f1", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.text }} />
+                      <textarea placeholder={row.needsPoll ? "1" : row.needsMentions ? "username1\nusername2\nusername3" : "Fire post\nLove this\nLegendary..."} value={row.comments} onChange={e => updateRow(idx, { comments: e.target.value })} rows={4} className="w-full min-h-[90px] rounded-md border border-solid py-2 px-2.5 text-[11.5px] font-[JetBrains_Mono,monospace] outline-none resize-y" style={{ background: dark ? "rgba(255,255,255,.09)" : "#f7f5f1", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.text }} />
                       <div className="flex justify-between items-center mt-2 text-[10.5px] flex-wrap gap-2" style={{ color: t.textMuted }}>
-                        <div className="flex items-center gap-1"><strong style={{ color: t.accent }}>{commentCount}</strong> seed {row.needsMentions ? "username" : "comment"}{commentCount !== 1 ? "s" : ""} · will cycle to fill {row.qty.toLocaleString()}</div>
+                        <div className="flex items-center gap-1"><strong style={{ color: t.accent }}>{commentCount}</strong> {row.needsPoll ? "answer" : `seed ${row.needsMentions ? "username" : "comment"}${commentCount !== 1 ? "s" : ""}`}{row.needsPoll ? "" : ` · will cycle to fill ${row.qty.toLocaleString()}`}</div>
                         {row.qty > 100 && <button onClick={() => { setUploadIdx(idx); fileInputRef.current?.click(); }} className="inline-flex items-center gap-1 py-1 px-2.5 rounded-md border border-solid text-[10.5px] font-medium cursor-pointer bg-transparent font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}>↑ Upload .txt</button>}
                       </div>
                     </div>
                   ) : (
                     <>
-                      <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[7px] px-3 rounded-lg border border-solid text-[11.5px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)", borderColor: t.accent, color: t.accent }}>+ Add {row.needsMentions ? "usernames" : "comments"}</button>
-                      <div className="text-[10.5px] mt-1.5" style={{ color: t.textMuted }}>We'll cycle through them to fill your order</div>
+                      <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[7px] px-3 rounded-lg border border-solid text-[11.5px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)", borderColor: t.accent, color: t.accent }}>+ Add {row.needsPoll ? "poll answer" : row.needsMentions ? "usernames" : "comments"}</button>
+                      {!row.needsPoll && <div className="text-[10.5px] mt-1.5" style={{ color: t.textMuted }}>We'll cycle through them to fill your order</div>}
                     </>
                   )}
                 </div>
