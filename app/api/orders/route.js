@@ -409,7 +409,20 @@ export async function POST(req) {
           telegram: /\/\d+\s*$/,
         };
 
-        const isPostLink = Object.entries(postPatterns).some(
+        // Shortened/redirect URLs are always post/content links
+        const shortPostDomains = {
+          tiktok: /^(vt|vm)\.tiktok\.com$/i,
+          'twitter/x': /^t\.co$/i,
+          facebook: /^(fb\.watch|fb\.me)$/i,
+          instagram: /^ig\.me$/i,
+        };
+        let linkHost;
+        try { linkHost = new URL(trimmedLink).hostname; } catch { linkHost = ''; }
+        const isShortPostLink = Object.entries(shortPostDomains).some(
+          ([p, re]) => platform.includes(p) && re.test(linkHost)
+        );
+
+        const isPostLink = isShortPostLink || Object.entries(postPatterns).some(
           ([p, re]) => platform.includes(p) && re.test(trimmedLink)
         );
         const isProfileLink = !isPostLink;
@@ -432,6 +445,16 @@ export async function POST(req) {
           return Response.json({ error: `This service needs a post/content link, not a profile link. Example: ${example}.${guide}` }, { status: 400 });
         }
       }
+    }
+
+    // Validate extra params based on provider service type
+    const apiType = (service.apiType || '').toLowerCase();
+    const needsCommentText = apiType.includes('custom comment') || apiType.includes('comment replies');
+    const needsUsernames = apiType.includes('mention');
+    const needsAnswer = apiType === 'poll';
+    if ((needsCommentText || needsUsernames || needsAnswer) && !comments?.trim()) {
+      const label = needsUsernames ? 'Usernames are' : needsAnswer ? 'An answer selection is' : 'Comments are';
+      return Response.json({ error: `${label} required for this service` }, { status: 400 });
     }
 
     // Apply loyalty discount based on total lifetime spend
@@ -543,13 +566,11 @@ export async function POST(req) {
       try {
         await prisma.order.update({ where: { id: result.id }, data: { dispatchedAt: new Date() } });
         const provider = service.provider || 'mtp';
-        const sType = (serviceType || tier?.group?.type || "").toLowerCase();
-        const sName = (tier?.group?.name || service?.name || "").toLowerCase();
         const extra = {};
         if (comments) {
           const safeComments = comments.trim().slice(0, 5000);
-          if (sName.includes("mention")) extra.usernames = safeComments;
-          else if (sName.includes("poll") || sName.includes("vote")) extra.answer_number = safeComments;
+          if (needsUsernames) extra.usernames = safeComments;
+          else if (needsAnswer) extra.answer_number = safeComments;
           else extra.comments = safeComments;
         }
         let orderQty = qty;

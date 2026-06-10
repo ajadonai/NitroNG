@@ -423,6 +423,11 @@ export async function POST(req) {
       const tierName = `${tier.group.name} (${tier.tier})`;
       const comments = row.comments?.trim().slice(0, 5000) || null;
 
+      const at = (service.apiType || '').toLowerCase();
+      if ((at.includes('custom comment') || at.includes('comment replies') || at.includes('mention') || at === 'poll') && !comments) {
+        return Response.json({ error: `Row ${i + 1}: this service requires ${at.includes('mention') ? 'usernames' : at === 'poll' ? 'an answer selection' : 'comments'}` }, { status: 400 });
+      }
+
       resolved.push({ tier, service, link: trimmedLink, qty, charge, cost, tierName, comments });
     }
 

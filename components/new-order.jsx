@@ -310,13 +310,13 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   };
   const linkValid = link.trim() && !linkError;
 
-  /* Detect service type from name + type field */
+  /* Detect service type from provider apiType (reliable) with name fallback */
   const svcName = (selSvc?.name || "").toLowerCase();
-  const svcType = (selSvc?.type || "").toLowerCase();
-  const isComment = (svcType.includes("comment") || svcName.includes("comment")) && !svcName.includes("comment like");
-  const isCustomComment = isComment && (svcName.includes("custom") || svcType.includes("custom"));
-  const isMention = svcName.includes("mention");
-  const isPoll = svcName.includes("poll vote") || svcName.includes("poll") && !svcName.includes("upvote");
+  const apiType = (selTier?.apiType || "").toLowerCase();
+  const isComment = apiType.includes("comment") || ((svcName.includes("comment")) && !svcName.includes("comment like"));
+  const isCustomComment = apiType.includes("custom comment") || apiType.includes("comment replies");
+  const isMention = apiType.includes("mention");
+  const isPoll = apiType === "poll";
   const isReview = svcName.includes("review") && !svcName.includes("review like");
   const needsComments = isCustomComment || isReview;
   const showComments = isComment || isReview;
@@ -628,10 +628,10 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     if (cartRows.length >= 50) { toast.info("Cart full", "50-row limit reached"); return; }
     const svc = services.find(s => s.tiers.some(t2 => t2.id === tier.id));
     const svcName = svc?.name || "Service";
-    const svcType = (svc?.type || "").toLowerCase();
-    const needsComments = (svcType.includes("comment") || svcName.toLowerCase().includes("comment")) && !svcName.toLowerCase().includes("comment like");
-    const needsMentions = svcName.toLowerCase().includes("mention");
-    const needsPoll = svcName.toLowerCase().includes("poll vote") || (svcName.toLowerCase().includes("poll") && !svcName.toLowerCase().includes("upvote"));
+    const at = (tier.apiType || "").toLowerCase();
+    const needsComments = at.includes("custom comment") || at.includes("comment replies");
+    const needsMentions = at.includes("mention");
+    const needsPoll = at === "poll";
     const needsReview = svcName.toLowerCase().includes("review") && !svcName.toLowerCase().includes("review like");
 
     setCartRows(prev => [...prev, {

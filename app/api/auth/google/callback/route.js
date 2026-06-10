@@ -156,11 +156,15 @@ export async function GET(req) {
     const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown';
     const device = detectDevice(ua);
 
-    // Kill existing session of same device type
-    await prisma.session.deleteMany({ where: { userId: user.id, deviceType: device.type } });
     await prisma.session.create({
       data: { userId: user.id, tokenHash: hashToken(token), deviceType: device.type, deviceInfo: device.info, ip },
     });
+
+    // Cap at 5 sessions — prune oldest beyond limit
+    const sessions = await prisma.session.findMany({ where: { userId: user.id }, orderBy: { lastActive: 'desc' }, select: { id: true } });
+    if (sessions.length > 5) {
+      await prisma.session.deleteMany({ where: { id: { in: sessions.slice(5).map(s => s.id) } } });
+    }
 
     return NextResponse.redirect(`${APP_URL}/dashboard${isNewUser ? '?new_user=1' : ''}`);
   } catch (err) {

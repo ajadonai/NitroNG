@@ -92,7 +92,10 @@ export async function GET(req) {
               facebook: /\/(posts|videos|watch|reel|photo|story)\b/i,
               threads: /\/post\//i,
             };
-            const isPostLink = isUrl && Object.entries(postPatterns).some(([p, re]) => platform.includes(p) && re.test(link));
+            const shortPostDomains = { tiktok: /^(vt|vm)\.tiktok\.com$/i, 'twitter/x': /^t\.co$/i, facebook: /^(fb\.watch|fb\.me)$/i, instagram: /^ig\.me$/i };
+            let linkHost; try { linkHost = new URL(link).hostname; } catch { linkHost = ''; }
+            const isShortPost = Object.entries(shortPostDomains).some(([p, re]) => platform.includes(p) && re.test(linkHost));
+            const isPostLink = isUrl && (isShortPost || Object.entries(postPatterns).some(([p, re]) => platform.includes(p) && re.test(link)));
             const needsPost = ['likes', 'views', 'comments', 'engagement', 'plays'].includes(groupType);
             const needsProfile = groupType === 'followers';
             const platformMatch = Object.keys(postPatterns).some(p => platform.includes(p));
