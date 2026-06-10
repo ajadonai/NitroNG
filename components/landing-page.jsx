@@ -194,7 +194,7 @@ function LandingInner(){
                 <span className="m py-1 px-3 rounded-lg font-semibold text-[13px]" style={{background:dark?"rgba(52,211,153,.14)":"rgba(255,255,255,.24)",color:dark?"#34d399":"#fff",border:`1px solid ${dark?"rgba(52,211,153,.19)":"rgba(255,255,255,.28)"}`}}>Campaigns</span>
                 <span>from ₦850</span>
               </div>
-              <p className="text-base max-md:text-[13px] font-normal max-w-[460px] max-desktop:max-w-[480px] max-md:max-w-[300px] mb-6 max-desktop:mb-5 max-md:mb-4 leading-[1.65] max-md:leading-[1.55] max-desktop:text-center" style={{color:t.heroSoft}}>Nigeria's fastest content promotion platform with the cleanest dashboard. Instant results across {siteStats.platforms?`${siteStats.platforms}+`:"35+"} platforms. Naira pricing. 24/7 support.</p>
+              <p className="text-base max-md:text-[13px] font-normal max-w-[460px] max-desktop:max-w-[480px] max-md:max-w-[300px] mb-6 max-desktop:mb-5 max-md:mb-4 leading-[1.65] max-md:leading-[1.55] max-desktop:text-center" style={{color:t.heroSoft}}>Nigeria's fastest content promotion platform with the cleanest dashboard.<br/>Instant results across {siteStats.platforms?`${siteStats.platforms}+`:"35+"} platforms.<br/>Naira pricing. 24/7 support.</p>
 
               {/* Stats — desktop/tablet only (inside mobile card below) */}
               <div className="fu fd3 flex gap-2.5 max-md:!hidden mb-7 w-full max-w-[460px] max-desktop:max-w-[400px] max-desktop:justify-center">
