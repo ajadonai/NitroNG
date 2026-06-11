@@ -26,6 +26,7 @@ export async function GET(req) {
     const todayStart = new Date(Date.UTC(watNow.getUTCFullYear(), watNow.getUTCMonth(), watNow.getUTCDate()) - 60 * 60 * 1000);
 
     const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+    const yesterdaySameTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
     const monthStart = new Date(Date.UTC(watNow.getUTCFullYear(), watNow.getUTCMonth(), 1) - 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
@@ -53,9 +54,9 @@ export async function GET(req) {
       prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
       prisma.order.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
       prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true } }),
-      prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
-      prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true } }),
-      prisma.order.count({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null } }),
+      prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: yesterdaySameTime }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
+      prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: yesterdaySameTime } }, _sum: { amount: true } }),
+      prisma.order.count({ where: { createdAt: { gte: yesterdayStart, lt: yesterdaySameTime }, deletedAt: null } }),
       prisma.order.count({ where: { status: 'Processing', deletedAt: null } }),
       prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
       prisma.order.count({ where: { createdAt: { gte: monthStart }, deletedAt: null } }),
@@ -63,7 +64,7 @@ export async function GET(req) {
       prisma.user.count({ where: { createdAt: { gte: monthStart }, emailVerified: true } }),
       prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
       prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
-      prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
+      prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: yesterdaySameTime }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
       prisma.order.groupBy({ by: ['status'], where: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null }, _count: true }),
       prisma.order.findMany({
         where: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null, status: { notIn: ['Cancelled'] } },
@@ -135,7 +136,7 @@ export async function GET(req) {
       }),
       // Partial order adjustments
       prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
-      prisma.order.findMany({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
+      prisma.order.findMany({ where: { createdAt: { gte: yesterdayStart, lt: yesterdaySameTime }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
       prisma.order.findMany({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
     ]);
 
