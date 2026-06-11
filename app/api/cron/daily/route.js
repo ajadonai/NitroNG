@@ -3,7 +3,7 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getBalance } from '@/lib/smm';
-import { sendEmail, emailWrap, emailRow, emailDataBox, sendWinbackEmail } from '@/lib/email';
+import { sendEmail, emailWrap, emailRow, emailDataBox, sendWinbackEmail, sendNudgeIdleFunds, sendNudgeComeback, sendNudgeLapsed, sendNudgeIdleBalance } from '@/lib/email';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -152,6 +152,138 @@ export async function GET(req) {
   } catch (err) {
     log.error('Winback', err.message);
     results.winback = { error: err.message };
+  }
+
+  // ═══ NUDGE: funded wallet but never ordered (7+ days) ═══
+  try {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    let idleFundsSent = 0;
+    const idleFundsBatch = await prisma.user.findMany({
+      where: {
+        status: 'Active', emailVerified: true, notifPromo: true,
+        nudgeIdleFundsSentAt: null,
+        balance: { gt: 0 },
+        createdAt: { lte: sevenDaysAgo },
+        orders: { none: {} },
+        transactions: { some: { type: { in: ['deposit', 'admin_credit', 'admin_gift'] } } },
+      },
+      select: { id: true, name: true, email: true, balance: true },
+      take: 50,
+    });
+    for (const user of idleFundsBatch) {
+      try {
+        await sendNudgeIdleFunds(user.name || 'there', user.email, user.balance / 100);
+        await prisma.user.update({ where: { id: user.id }, data: { nudgeIdleFundsSentAt: new Date() } });
+        idleFundsSent++;
+      } catch (e) {
+        log.warn('NudgeIdleFunds', `Failed: ${user.email}: ${e.message}`);
+        await prisma.user.update({ where: { id: user.id }, data: { nudgeIdleFundsSentAt: new Date(0) } }).catch(() => {});
+      }
+    }
+    if (idleFundsSent > 0) log.info('NudgeIdleFunds', `Sent ${idleFundsSent} of ${idleFundsBatch.length}`);
+    results.nudgeIdleFunds = { sent: idleFundsSent, total: idleFundsBatch.length };
+  } catch (err) {
+    log.error('NudgeIdleFunds', err.message);
+    results.nudgeIdleFunds = { error: err.message };
+  }
+
+  // ═══ NUDGE: ordered once, quiet 7+ days ═══
+  try {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    let comebackSent = 0;
+    const comebackBatch = await prisma.user.findMany({
+      where: {
+        status: 'Active', emailVerified: true, notifPromo: true,
+        nudgeComebackSentAt: null,
+        orders: { some: { status: 'Completed', createdAt: { lte: sevenDaysAgo } } },
+      },
+      select: { id: true, name: true, email: true, _count: { select: { orders: { where: { status: { not: 'Cancelled' }, deletedAt: null } } } } },
+      take: 50,
+    });
+    const oneTimers = comebackBatch.filter(u => u._count.orders === 1);
+    for (const user of oneTimers) {
+      try {
+        await sendNudgeComeback(user.name || 'there', user.email);
+        await prisma.user.update({ where: { id: user.id }, data: { nudgeComebackSentAt: new Date() } });
+        comebackSent++;
+      } catch (e) {
+        log.warn('NudgeComeback', `Failed: ${user.email}: ${e.message}`);
+        await prisma.user.update({ where: { id: user.id }, data: { nudgeComebackSentAt: new Date(0) } }).catch(() => {});
+      }
+    }
+    if (comebackSent > 0) log.info('NudgeComeback', `Sent ${comebackSent} of ${oneTimers.length}`);
+    results.nudgeComeback = { sent: comebackSent, total: oneTimers.length };
+  } catch (err) {
+    log.error('NudgeComeback', err.message);
+    results.nudgeComeback = { error: err.message };
+  }
+
+  // ═══ NUDGE: was active, gone 14+ days ═══
+  try {
+    const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+    let lapsedSent = 0;
+    const lapsedBatch = await prisma.user.findMany({
+      where: {
+        status: 'Active', emailVerified: true, notifPromo: true,
+        nudgeLapsedSentAt: null,
+        orders: {
+          some: { status: { not: 'Cancelled' }, deletedAt: null },
+          none: { createdAt: { gt: fourteenDaysAgo }, deletedAt: null },
+        },
+      },
+      select: { id: true, name: true, email: true, _count: { select: { orders: { where: { status: { not: 'Cancelled' }, deletedAt: null } } } } },
+      take: 50,
+    });
+    const multiOrderLapsed = lapsedBatch.filter(u => u._count.orders >= 2);
+    for (const user of multiOrderLapsed) {
+      try {
+        await sendNudgeLapsed(user.name || 'there', user.email);
+        await prisma.user.update({ where: { id: user.id }, data: { nudgeLapsedSentAt: new Date() } });
+        lapsedSent++;
+      } catch (e) {
+        log.warn('NudgeLapsed', `Failed: ${user.email}: ${e.message}`);
+        await prisma.user.update({ where: { id: user.id }, data: { nudgeLapsedSentAt: new Date(0) } }).catch(() => {});
+      }
+    }
+    if (lapsedSent > 0) log.info('NudgeLapsed', `Sent ${lapsedSent} of ${multiOrderLapsed.length}`);
+    results.nudgeLapsed = { sent: lapsedSent, total: multiOrderLapsed.length };
+  } catch (err) {
+    log.error('NudgeLapsed', err.message);
+    results.nudgeLapsed = { error: err.message };
+  }
+
+  // ═══ NUDGE: has ₦500+ balance, no orders in 7+ days ═══
+  try {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    let idleBalSent = 0;
+    const idleBalBatch = await prisma.user.findMany({
+      where: {
+        status: 'Active', emailVerified: true, notifPromo: true,
+        nudgeIdleBalanceSentAt: null,
+        balance: { gte: 50000 },
+        orders: {
+          some: { deletedAt: null },
+          none: { createdAt: { gt: sevenDaysAgo }, deletedAt: null },
+        },
+      },
+      select: { id: true, name: true, email: true, balance: true },
+      take: 50,
+    });
+    for (const user of idleBalBatch) {
+      try {
+        await sendNudgeIdleBalance(user.name || 'there', user.email, user.balance / 100);
+        await prisma.user.update({ where: { id: user.id }, data: { nudgeIdleBalanceSentAt: new Date() } });
+        idleBalSent++;
+      } catch (e) {
+        log.warn('NudgeIdleBalance', `Failed: ${user.email}: ${e.message}`);
+        await prisma.user.update({ where: { id: user.id }, data: { nudgeIdleBalanceSentAt: new Date(0) } }).catch(() => {});
+      }
+    }
+    if (idleBalSent > 0) log.info('NudgeIdleBalance', `Sent ${idleBalSent} of ${idleBalBatch.length}`);
+    results.nudgeIdleBalance = { sent: idleBalSent, total: idleBalBatch.length };
+  } catch (err) {
+    log.error('NudgeIdleBalance', err.message);
+    results.nudgeIdleBalance = { error: err.message };
   }
 
   // ═══ BALANCE: check provider balances + alert if low ═══

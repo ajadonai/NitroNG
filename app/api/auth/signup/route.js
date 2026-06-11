@@ -126,6 +126,7 @@ export async function POST(req) {
     sendEvent('CompleteRegistration', {
       eventId,
       email,
+      externalId: user.id,
       clientIp: ip,
       userAgent: ua,
       fbp, fbc,

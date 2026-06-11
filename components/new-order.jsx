@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useMemo, useCallback, forwardRef } from "react";
+import { trackViewContent } from "./capi-tracker";
 import { fN } from "../lib/format";
 import { useToast } from "./toast";
 import { SegPill } from "./seg-pill";
@@ -478,6 +479,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     try { const saved = sessionStorage.getItem("nitro_order_mode"); if (saved) setOrderMode(saved); } catch {}
     const loaded = loadCart();
     if (loaded.length) setCartRows(loaded);
+    trackViewContent({ content_name: 'order_form', content_type: 'product' });
   }, []);
   const [cartOpen, setCartOpen] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);

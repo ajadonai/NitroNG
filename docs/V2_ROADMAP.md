@@ -657,6 +657,109 @@ Detailed implementation plan exists (10 files identified, build order defined). 
 
 ---
 
+## Feature: Drip Feed Ordering
+
+*Added June 2026*
+
+### What it is
+
+Gradual delivery of large orders over multiple days. Instead of dumping 5,000 followers at once (which looks suspicious and triggers platform detection), drip feed splits the order into daily sub-orders delivered over 2–7 days. Produces more natural-looking growth.
+
+### Design decisions (locked in)
+
+| Decision | What was chosen | Why |
+|---|---|---|
+| Minimum quantity | 500 | Below this, dripping is pointless — too few to split meaningfully |
+| Maximum duration | 7 days | Longer than a week creates support headaches ("where are my followers?") |
+| Order model | Parent-child | One parent order tracks the overall drip; child sub-orders are dispatched daily to the provider. Each child has its own status and provider tracking. |
+| Quantity distribution | Even split across days, remainder on day 1 | Simplest to implement and explain. 5,000 over 5 days = 1,000/day. |
+| Pricing | Same as regular order (no drip surcharge) | Drip feed is a delivery preference, not a premium feature |
+
+### How it works
+
+1. User selects service, enters quantity (≥500), toggles "Drip feed" on
+2. User picks duration (2–7 days) via slider or dropdown
+3. Order is created as a parent order with `dripDays` and `dripQuantity` fields
+4. A cron job runs daily, finds parent drip orders that need their next child dispatched, creates the child order, and sends it to the provider
+5. Parent order status reflects overall progress (Pending → Processing → Partial → Completed)
+6. If a child order fails, the parent pauses and admin is alerted
+
+### Admin UI
+
+- Orders list shows drip parents with an expandable row — click to see child sub-orders with individual statuses
+- Each child shows: day number, quantity, provider order ID, status, timestamps
+- Admin can pause/resume a drip parent, which stops/restarts child dispatching
+- Dashboard drip orders card shows active drips and completion %
+
+### Mockup
+
+Interactive drip feed mockup at `/app/mockup/page.jsx` — demonstrates the parent-child UI and admin controls.
+
+### Status
+
+Design complete. Implementation partially started (cron scaffolding exists). Currently under maintenance — drip dispatch has known issues being debugged. Awaiting stable fix before full rollout.
+
+---
+
+## Feature: Loyalty Points Program
+
+*Added June 2026*
+
+### What it is
+
+Points-based loyalty system where users earn points on every order and redeem them for wallet credit. Incentivizes repeat ordering and rewards high-value customers with better redemption rates through account ranks.
+
+### Core mechanics
+
+- **Earning:** Every ₦1 spent = 1 point (calculated on order charge, not wallet top-up)
+- **Redemption:** 100 points = ₦1 to ₦2 depending on account rank
+- **Minimum redemption:** 500 points (prevents micro-redemptions that create noise)
+- **Points never expire** (simplicity — no expiry tracking, no angry emails)
+
+### Account rank system (to be designed)
+
+Ranks determine redemption rate. Higher rank = better point-to-naira conversion. Structure TBD, but the likely shape:
+
+| Rank | Qualification | Redemption rate |
+|---|---|---|
+| Starter | Default | 100 pts = ₦1.00 |
+| Regular | ₦50,000+ lifetime spend | 100 pts = ₦1.25 |
+| VIP | ₦200,000+ lifetime spend | 100 pts = ₦1.50 |
+| Elite | ₦500,000+ lifetime spend | 100 pts = ₦2.00 |
+
+Thresholds and rates are starting hypotheses. Rank should be computed from lifetime completed order spend (not deposits). Ranks only go up — no demotion if spending slows.
+
+### What users see
+
+**Dashboard card:**
+```
+┌──────────────────────────────────────────┐
+│  Loyalty Points              VIP rank    │
+│  2,340 pts available                     │
+│  Redeem 500+ pts → wallet credit         │
+│  Your rate: 100 pts = ₦1.50             │
+│  [Redeem Points]                         │
+└──────────────────────────────────────────┘
+```
+
+**Order confirmation:** "+2,500 points earned" shown after each completed order.
+
+**Redemption flow:** User enters point amount (≥500), sees naira equivalent at their rank rate, confirms, credit hits wallet instantly.
+
+### Key decisions still needed
+
+- Exact rank thresholds and redemption rates (validate against margin impact)
+- Whether points earned on promotional/discounted orders count at full value or reduced
+- Whether to show rank progress ("₦38,000 more to VIP") — likely yes
+- Admin controls: ability to adjust a user's points, view point ledger, toggle feature on/off
+- Whether referral bonuses also earn points for the referrer
+
+### Status
+
+Concept defined. No implementation yet. Awaiting account rank system design and margin analysis before build.
+
+---
+
 ## Things we're explicitly NOT doing
 
 To save future-us from re-litigating bad ideas:

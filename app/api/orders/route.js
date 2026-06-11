@@ -655,6 +655,7 @@ export async function POST(req) {
     sendEvent('Purchase', {
       eventId,
       email: session.email,
+      externalId: session.id,
       clientIp: hdrs2.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs2.get('x-real-ip'),
       userAgent: hdrs2.get('user-agent'),
       fbp, fbc,
