@@ -616,9 +616,9 @@ export default function PulseDashboard({ secretKey }) {
           sub={<>{changeBadge(data.revenueChange)} vs yesterday</>}
           icon={<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>}
         />
-        <MetricCard label="Profit" value={Math.round(data.profitToday)} formatter={fmtNaira} color="#34d399"
+        <MetricCard label="Profit" value={Math.round(data.profitToday)} formatter={v => (v < 0 ? '-' : '') + fmtNaira(Math.abs(v))} color={data.profitToday < 0 ? '#fca5a5' : '#34d399'}
           sub={<>{changeBadge(data.profitChange)} vs yesterday</>}
-          icon={<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>}
+          icon={<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={data.profitToday < 0 ? '#fca5a5' : '#34d399'} strokeWidth="2.5" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>}
         />
         <MetricCard label="Orders" value={data.ordersToday} color="#c47d8e"
           sub={<>{changeBadge(data.ordersChange)} vs yesterday</>}
@@ -656,7 +656,7 @@ export default function PulseDashboard({ secretKey }) {
             {[
               { label: 'Revenue', value: fmtNaira(Math.round(data.monthRevenue)), color: '#10b981' },
               { label: 'Cost', value: fmtNaira(Math.round(data.monthCost)), color: '#fca5a5' },
-              { label: 'Profit', value: fmtNaira(Math.round(data.monthProfit)), color: '#34d399' },
+              { label: 'Profit', value: (data.monthProfit < 0 ? '-' : '') + fmtNaira(Math.abs(Math.round(data.monthProfit))), color: data.monthProfit < 0 ? '#fca5a5' : '#34d399' },
               { label: 'Orders', value: fmtNum(data.monthOrders), color: '#c47d8e' },
               { label: 'Deposits', value: fmtNaira(Math.round(data.monthDeposits)), color: '#e0a458' },
             ].map(s => (
@@ -671,12 +671,12 @@ export default function PulseDashboard({ secretKey }) {
               <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
                 <div style={{
                   height: '100%', borderRadius: 2,
-                  background: 'linear-gradient(90deg, #34d399, #10b981)',
-                  width: `${Math.max(0, Math.min(100, (data.monthProfit / data.monthRevenue) * 100))}%`,
+                  background: data.monthProfit < 0 ? 'linear-gradient(90deg, #fca5a5, #f87171)' : 'linear-gradient(90deg, #34d399, #10b981)',
+                  width: `${Math.max(0, Math.min(100, Math.abs((data.monthProfit / data.monthRevenue) * 100)))}%`,
                   transition: 'width 1s ease',
                 }} />
               </div>
-              <span className="m" style={{ fontSize: 10, color: '#34d399', fontWeight: 600, whiteSpace: 'nowrap' }}>
+              <span className="m" style={{ fontSize: 10, color: data.monthProfit < 0 ? '#fca5a5' : '#34d399', fontWeight: 600, whiteSpace: 'nowrap' }}>
                 {Math.round((data.monthProfit / data.monthRevenue) * 100)}% margin
               </span>
             </div>
