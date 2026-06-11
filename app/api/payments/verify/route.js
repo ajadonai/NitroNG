@@ -2,6 +2,8 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { applyWelcomeBonus } from '@/lib/welcome-bonus';
+import { sendEvent, generateEventId, parseFbCookies } from '@/lib/meta-capi';
+import { headers as getHeaders } from 'next/headers';
 
 async function getGatewayKeys(gatewayId) {
   const setting = await prisma.setting.findUnique({ where: { key: `gateway_${gatewayId}` } });
@@ -169,8 +171,22 @@ export async function POST(req) {
       }
     } catch (err) { log.error('Deferred referral', err.message); }
 
+    const eventId = generateEventId();
+    const hdrs = await getHeaders();
+    const { fbp, fbc } = parseFbCookies(hdrs.get('cookie'));
+    sendEvent('AddPaymentInfo', {
+      eventId,
+      email: session.email,
+      clientIp: hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip'),
+      userAgent: hdrs.get('user-agent'),
+      fbp, fbc,
+      sourceUrl: hdrs.get('referer'),
+      customData: { value: paidAmount / 100, currency: 'NGN' },
+    });
+
     return Response.json({
       success: true,
+      eventId,
       message: couponBonus > 0 ? `Payment successful! ₦${couponBonus / 100} bonus applied.` : 'Payment successful',
       amount: paidAmount / 100,
       bonus: couponBonus / 100,

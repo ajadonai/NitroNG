@@ -6,6 +6,7 @@ import { generateReferralCode } from '@/lib/utils';
 import { sendWelcomeEmail } from '@/lib/email';
 import { isDisposableEmail } from '@/lib/validate';
 import { cookies, headers } from 'next/headers';
+import { sendEvent, generateEventId, parseFbCookies } from '@/lib/meta-capi';
 
 export async function GET(req) {
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -156,13 +157,32 @@ export async function GET(req) {
     const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown';
     const device = detectDevice(ua);
 
-    // Kill existing session of same device type
-    await prisma.session.deleteMany({ where: { userId: user.id, deviceType: device.type } });
     await prisma.session.create({
       data: { userId: user.id, tokenHash: hashToken(token), deviceType: device.type, deviceInfo: device.info, ip },
     });
 
-    return NextResponse.redirect(`${APP_URL}/dashboard${isNewUser ? '?new_user=1' : ''}`);
+    // Cap at 5 sessions — prune oldest beyond limit
+    const sessions = await prisma.session.findMany({ where: { userId: user.id }, orderBy: { lastActive: 'desc' }, select: { id: true } });
+    if (sessions.length > 5) {
+      await prisma.session.deleteMany({ where: { id: { in: sessions.slice(5).map(s => s.id) } } });
+    }
+
+    if (isNewUser) {
+      const eventId = generateEventId();
+      const hdrs2 = await headers();
+      const { fbp, fbc } = parseFbCookies(hdrs2.get('cookie'));
+      sendEvent('CompleteRegistration', {
+        eventId,
+        email,
+        clientIp: hdrs2.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs2.get('x-real-ip'),
+        userAgent: hdrs2.get('user-agent'),
+        fbp, fbc,
+        sourceUrl: `${APP_URL}/`,
+        customData: { content_name: 'google_signup', status: true },
+      });
+      return NextResponse.redirect(`${APP_URL}/dashboard?new_user=1&eid=${eventId}`);
+    }
+    return NextResponse.redirect(`${APP_URL}/dashboard`);
   } catch (err) {
     log.error('Google OAuth Callback', err.message);
     return NextResponse.redirect(`${APP_URL}/?error=google_failed`);

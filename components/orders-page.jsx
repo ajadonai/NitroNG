@@ -168,20 +168,6 @@ function groupOrders(orders) {
 }
 
 
-function PlatformStack({ platforms, dark }) {
-  const unique = [...new Set(platforms)].slice(0, 4);
-  return (
-    <div className="flex items-center" style={{ marginLeft: 4 }}>
-      {unique.map((p, i) => (
-        <div key={p} style={{ marginLeft: i > 0 ? -8 : 0, zIndex: unique.length - i, position: "relative" }}>
-          <PlatformIcon platform={p} dark={dark} size={24} />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-
 /* ── Shared expanded order details ── */
 function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, compact, toast, onNavigate }) {
   const [ticketLoading, setTicketLoading] = useState(false);
@@ -373,16 +359,18 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
 /* ── Batch row ── */
 function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpandedOrder, doAction, actionLoading, doBatchAction, batchActionLoading, confirm, toast, onNavigate }) {
   const hasAttentionOrders = batch.orders.some(isAttention);
-  const platforms = batch.orders.map(o => o.platform);
   const totalCharge = batch.orders.reduce((s, o) => s + (o.charge || 0), 0);
-  const statusCounts = {};
-  batch.orders.forEach(o => { statusCounts[o.status] = (statusCounts[o.status] || 0) + 1; });
   const isLoading = batchActionLoading === batch.batchId;
   const accentColor = hasAttentionOrders ? (dark ? "#fcd34d" : "#d97706") : t.accent;
 
   const hasActive = batch.orders.some(o => o.status === "Processing" || o.status === "Pending");
   const hasCancellable = batch.orders.some(o => (o.status === "Processing" || o.status === "Pending") && !o.apiOrderId);
   const hasReorderable = batch.orders.some(o => o.status === "Completed" || o.status === "Cancelled");
+
+  const batchSt = batch.orders.every(o => o.status === "Completed") ? "Completed"
+    : batch.orders.every(o => o.status === "Cancelled") ? "Cancelled"
+    : batch.orders.some(o => ["Pending", "Processing", "In progress"].includes(o.status)) ? "Processing"
+    : "Partial";
 
   return (
     <div>
@@ -392,26 +380,13 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap mb-0.5">
-            <span className="m text-[13px] desktop:text-[15px] font-semibold" style={{ color: t.text }}>{batch.batchId}</span>
-            {hasAttentionOrders && <span className="text-[10px] font-bold py-0.5 px-1.5 rounded-md uppercase tracking-wide" style={{ background: dark ? "rgba(252,211,77,.15)" : "rgba(217,119,6,.08)", color: dark ? "#fcd34d" : "#d97706" }}>Attention</span>}
-          </div>
-          <div className="flex items-center gap-1.5 text-[11px] desktop:text-xs flex-wrap" style={{ color: t.textMuted }}>
-            <span className="font-medium">{batch.orders.length} orders</span>
-            {Object.entries(statusCounts).map(([status, count]) => (
-              <span key={status} className="flex items-center gap-1">
-                <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-                <Badge status={status} dark={dark} />
-                <span>{count}</span>
-              </span>
-            ))}
-            <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-            <span>{batch.created ? fD(batch.created, true) : ""}</span>
-          </div>
+          <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{batch.batchId}</div>
+          <div className="text-[11px] desktop:text-xs font-medium mt-0.5" style={{ color: t.accent }}>{batch.orders.length} order{batch.orders.length !== 1 ? "s" : ""}</div>
+          {batch.created && <div className="text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(batch.created, true)}</div>}
         </div>
-        <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
-          <div className="m text-[13px] desktop:text-[15px] font-bold" style={{ color: batch.orders.every(o => o.status === "Cancelled") ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{batch.orders.every(o => o.status === "Cancelled") ? "+" : "-"}{fN(totalCharge)}</div>
-          <PlatformStack platforms={platforms} dark={dark} />
+        <div className="text-right shrink-0 flex items-center gap-1.5">
+          {(batchSt === "Processing") && <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: sClr("Processing", dark) }} />}
+          <Badge status={batchSt} dark={dark} />
         </div>
         <svg className="shrink-0 ml-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s", }}><polyline points="6 9 12 15 18 9"/></svg>
       </div>

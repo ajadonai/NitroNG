@@ -86,11 +86,23 @@ export async function GET() {
     const { todayStart, yesterdayStart } = watBounds();
 
     // All counts + aggregates in parallel
+    // Helper: compute partial order adjustment for a date filter
+    const partialAdj = (orders) => {
+      let charge = 0, cost = 0;
+      for (const p of orders) {
+        const ratio = p.remains / p.quantity;
+        charge += Math.round(p.charge * ratio);
+        cost += Math.round((p.cost || 0) * ratio);
+      }
+      return { charge, cost };
+    };
+
     const [
       userCount, orderCount, processingCount,
       revenueAgg, costAgg, depositsAgg,
       todayOrders, todayRevenueAgg, todayUsers, todayDepositsAgg,
       yesterdayRevenueAgg, yesterdayDepositsAgg,
+      partialAll, partialToday, partialYesterday,
       recentOrders, recentUsers, openTickets, unreadTicketCount, pendingManualCount, pendingOrderCount, openIssueCount, activityLogs,
     ] = await Promise.all([
       prisma.user.count({ where: { emailVerified: true } }),
@@ -107,6 +119,10 @@ export async function GET() {
       // Yesterday (for % change)
       prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
       prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true } }),
+      // Partial adjustments
+      prisma.order.findMany({ where: { deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
+      prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
+      prisma.order.findMany({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
       // Recent orders (last 5)
       prisma.order.findMany({
         where: { deletedAt: null },
@@ -152,8 +168,11 @@ export async function GET() {
       }),
     ]);
 
-    const todayRevenue = (todayRevenueAgg._sum.charge || 0) / 100;
-    const yesterdayRevenue = (yesterdayRevenueAgg._sum.charge || 0) / 100;
+    const adjAll = partialAdj(partialAll);
+    const adjToday = partialAdj(partialToday);
+    const adjYesterday = partialAdj(partialYesterday);
+    const todayRevenue = ((todayRevenueAgg._sum.charge || 0) - adjToday.charge) / 100;
+    const yesterdayRevenue = ((yesterdayRevenueAgg._sum.charge || 0) - adjYesterday.charge) / 100;
     const todayDeposits = (todayDepositsAgg._sum.amount || 0) / 100;
     const yesterdayDeposits = (yesterdayDepositsAgg._sum.amount || 0) / 100;
 
@@ -173,9 +192,9 @@ export async function GET() {
       newUsersToday: todayUsers,
       revenueChange: pctChange(todayRevenue, yesterdayRevenue),
       depositsChange: pctChange(todayDeposits, yesterdayDeposits),
-      totalRevenue: (revenueAgg._sum.charge || 0) / 100,
-      totalCost: (costAgg._sum.cost || 0) / 100,
-      totalProfit: ((revenueAgg._sum.charge || 0) - (costAgg._sum.cost || 0)) / 100,
+      totalRevenue: ((revenueAgg._sum.charge || 0) - adjAll.charge) / 100,
+      totalCost: ((costAgg._sum.cost || 0) - adjAll.cost) / 100,
+      totalProfit: (((revenueAgg._sum.charge || 0) - adjAll.charge) - ((costAgg._sum.cost || 0) - adjAll.cost)) / 100,
       totalDeposits: (depositsAgg._sum.amount || 0) / 100,
       unreadTicketCount,
       pendingManualCount,

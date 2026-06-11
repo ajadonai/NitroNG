@@ -284,8 +284,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const POST_LINK_PATTERNS = {
     twitter: /\/(status|i\/status)\//i,
     instagram: /\/(p|reel|reels|stories|tv)\//i,
-    tiktok: /\/video\//i,
-    youtube: /\/(watch|shorts|live)\b/i,
+    tiktok: /\/(video|photo|v)\//i,
+    youtube: /\/(watch|shorts|live)\b|youtu\.be\//i,
     facebook: /\/(posts|videos|watch|photos|reel)\//i,
     threads: /\/post\//i,
     linkedin: /\/(posts|pulse)\//i,
@@ -295,6 +295,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
     twitch: /\/videos\//i,
     kick: /\/clips\//i,
   };
+  const SHORT_POST_DOMAINS = /^(vt|vm)\.tiktok\.com$|^t\.co$|^(fb\.watch|fb\.me)$|^ig\.me$|^youtu\.be$/i;
   const validateLink = (val) => {
     const cleaned = val.replace(/^https?:\/\//i, "");
     setLink(cleaned);
@@ -302,7 +303,9 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
     if (!isValidLink(cleaned)) { setLinkError("Enter a valid URL or @username"); return; }
     const pat = POST_LINK_PATTERNS[platform];
     if (pat && cleaned.includes(".")) {
-      const looksLikePost = pat.test(cleaned);
+      let host = ""; try { host = new URL("https://" + cleaned).hostname; } catch {}
+      const isShortPost = SHORT_POST_DOMAINS.test(host);
+      const looksLikePost = isShortPost || pat.test(cleaned);
       if (isProfileSvc && looksLikePost) { setLinkError("This service needs your profile link, not a post link"); return; }
       if (isPostSvc && !looksLikePost) { setLinkError("This service needs a link to a specific post, not your profile"); return; }
     }
@@ -310,13 +313,13 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   };
   const linkValid = link.trim() && !linkError;
 
-  /* Detect service type from name + type field */
+  /* Detect service type from provider apiType (reliable) with name fallback */
   const svcName = (selSvc?.name || "").toLowerCase();
-  const svcType = (selSvc?.type || "").toLowerCase();
-  const isComment = (svcType.includes("comment") || svcName.includes("comment")) && !svcName.includes("comment like");
-  const isCustomComment = isComment && (svcName.includes("custom") || svcType.includes("custom"));
-  const isMention = svcName.includes("mention");
-  const isPoll = svcName.includes("poll vote") || svcName.includes("poll") && !svcName.includes("upvote");
+  const apiType = (selTier?.apiType || "").toLowerCase();
+  const isComment = apiType.includes("comment") || ((svcName.includes("comment")) && !svcName.includes("comment like"));
+  const isCustomComment = apiType.includes("custom comment") || apiType.includes("comment replies");
+  const isMention = apiType.includes("mention");
+  const isPoll = apiType === "poll";
   const isReview = svcName.includes("review") && !svcName.includes("review like");
   const needsComments = isCustomComment || isReview;
   const showComments = isComment || isReview;
@@ -324,7 +327,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const needsAnswer = isPoll;
 
   const commentLines = (comments || "").split("\n").filter(l => l.trim()).length;
-  const commentShort = needsComments && qtyNum > 0 && commentLines > 0 && commentLines < qtyNum;
+  const minCommentLines = isCustomComment ? Math.max(selTier?.min || 10, 10) : 0;
+  const commentShort = needsComments && commentLines > 0 && commentLines < minCommentLines;
 
   const isMultiPostSvc = /last\s+\d+\s*(tweet|post|video|reel|photo)/i.test(svcName);
   const isProfileSvc = /follow|subscri/i.test(svcName) || isMultiPostSvc;
@@ -383,7 +387,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           <div className="mb-3.5">
             <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{isReview ? "Reviews" : "Comments"} <span className="font-normal normal-case tracking-normal text-[11px]">({needsComments ? "required, one per line" : "optional, one per line"})</span></label>
             <textarea disabled={orderLoading} placeholder={isReview ? "Great service, highly recommend!\nFast delivery and excellent quality\nBest experience I've had, 5 stars" : "Great content!\nLove this post!\nAmazing work, keep it up\nThis is fire"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={4} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
-            <div className="text-[11px] mt-1" style={{ color: commentShort ? (dark ? "#fca5a5" : "#dc2626") : t.textMuted }}>{commentShort ? `Need at least ${qtyNum} ${isReview ? "reviews" : "comments"} — you have ${commentLines}` : commentLines > 0 ? `${commentLines} ${isReview ? "reviews" : "comments"} entered · we'll cycle through them` : needsComments ? `Enter at least one per line` : `Leave empty to use provider's comments`}</div>
+            <div className="text-[11px] mt-1" style={{ color: commentShort ? (dark ? "#fca5a5" : "#dc2626") : t.textMuted }}>{commentShort ? `Need at least ${minCommentLines} unique ${isReview ? "reviews" : "comments"} — you have ${commentLines}` : commentLines > 0 ? `${commentLines} ${isReview ? "reviews" : "comments"} entered · we'll cycle through them` : needsComments ? `Enter at least ${minCommentLines} unique comments, one per line` : `Leave empty to use provider's comments`}</div>
           </div>
         )}
         {needsUsernames && (
@@ -628,10 +632,10 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     if (cartRows.length >= 50) { toast.info("Cart full", "50-row limit reached"); return; }
     const svc = services.find(s => s.tiers.some(t2 => t2.id === tier.id));
     const svcName = svc?.name || "Service";
-    const svcType = (svc?.type || "").toLowerCase();
-    const needsComments = (svcType.includes("comment") || svcName.toLowerCase().includes("comment")) && !svcName.toLowerCase().includes("comment like");
-    const needsMentions = svcName.toLowerCase().includes("mention");
-    const needsPoll = svcName.toLowerCase().includes("poll vote") || (svcName.toLowerCase().includes("poll") && !svcName.toLowerCase().includes("upvote"));
+    const at = (tier.apiType || "").toLowerCase();
+    const needsComments = at.includes("custom comment") || at.includes("comment replies");
+    const needsMentions = at.includes("mention");
+    const needsPoll = at === "poll";
     const needsReview = svcName.toLowerCase().includes("review") && !svcName.toLowerCase().includes("review like");
 
     setCartRows(prev => [...prev, {
@@ -701,7 +705,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       const data = await res.json();
       if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong"); setOrderLoading(false); return; }
       setOrderSuccess({ ...data.order, queued: data.queued, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", speed: selTier?.speed || null, tier: selTier?.tier || null, link: link.trim(), balanceAfter: data.order?.charge != null && user?.balance != null ? Math.max(0, (user.balance - (data.order.charge * 100)) / 100) : null });
-      if (typeof window.fbq === "function") fbq("track", "Purchase", { value: (data.order?.charge || 0) / 100, currency: "NGN", content_name: selSvc?.name || "Order", content_category: platform || "unknown" });
+      if (typeof window.fbq === "function") fbq("track", "Purchase", { value: (data.order?.charge || 0) / 100, currency: "NGN", content_name: selSvc?.name || "Order", content_category: platform || "unknown" }, { eventID: data.eventId });
       setLink("");
       if (onOrderSuccess) onOrderSuccess();
     } catch (err) {
@@ -747,9 +751,11 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       scrollToRow(dupIdx);
       return;
     }
-    const needsComments = cartRows.findIndex(r => (r.needsComments || r.needsMentions) && !r.comments.trim());
+    const needsComments = cartRows.findIndex(r => (r.needsComments || r.needsMentions || r.needsPoll) && !r.comments.trim());
     if (needsComments >= 0) {
-      toast.error("Missing comments", `Row ${needsComments + 1} needs comments`);
+      const r = cartRows[needsComments];
+      const label = r.needsPoll ? "a poll answer" : r.needsMentions ? "usernames" : "comments";
+      toast.error(`Missing ${label}`, `Row ${needsComments + 1} needs ${label}`);
       scrollToRow(needsComments);
       return;
     }
@@ -808,7 +814,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       }
       sessionStorage.removeItem("nitro_bulk_pending_key");
       setBulkSuccess({ ...data, rows: cartRows.map(r => ({ ...r })) });
-      if (typeof window.fbq === "function") fbq("track", "Purchase", { value: (data.totalCharge || 0) / 100, currency: "NGN", content_name: "Bulk Order", num_items: data.total || cartRows.length });
+      if (typeof window.fbq === "function") fbq("track", "Purchase", { value: (data.totalCharge || 0) / 100, currency: "NGN", content_name: "Bulk Order", num_items: data.total || cartRows.length }, { eventID: data.eventId });
       setCartRows([]);
       localStorage.removeItem(CART_KEY);
       if (onOrderSuccess) onOrderSuccess();
@@ -1242,9 +1248,9 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
           const emptyLink = !r.link.trim();
           const validLink = !emptyLink && isValidLink(r.link);
           const qtyOk = r.qty >= r.min && r.qty <= r.max;
-          const needsComments = (r.needsComments || r.needsMentions) && !r.comments.trim() && !emptyLink;
+          const needsInput = (r.needsComments || r.needsMentions || r.needsPoll) && !r.comments.trim() && !emptyLink;
           const dup = isDuplicate(prev, i);
-          if (!validLink || !qtyOk || needsComments || dup) return r;
+          if (!validLink || !qtyOk || needsInput || dup) return r;
           changed = true;
           return { ...r, expanded: undefined };
         });
@@ -1279,33 +1285,65 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
 
       {/* Success overlay */}
       {bulkSuccess && (
-        <div className="flex-1 overflow-y-auto py-6 px-[18px] max-md:py-4 max-md:px-3.5 flex flex-col items-center">
-          <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)" }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div className="flex-1 overflow-y-auto py-5 px-[18px] max-md:py-4 max-md:px-3.5">
+          {/* Header — cart icon + title + check */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textMuted }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-base font-semibold" style={{ color: t.text }}>{bulkSuccess.total} order{bulkSuccess.total !== 1 ? "s" : ""} placed!</div>
+              <div className="text-xs mt-0.5" style={{ color: t.textMuted }}>Dispatching to providers now</div>
+            </div>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
           </div>
-          <div className="text-lg font-semibold mb-1" style={{ color: t.text }}>{bulkSuccess.total} order{bulkSuccess.total !== 1 ? "s" : ""} placed</div>
-          <div className="text-sm mb-4 text-center" style={{ color: t.textMuted }}>₦{(bulkSuccess.totalCharge || 0).toLocaleString()} deducted from your wallet{bulkSuccess.newBalance != null ? ` · New balance: ₦${bulkSuccess.newBalance.toLocaleString()}` : ""}</div>
+
+          {/* Loyalty discount badge */}
           {bulkSuccess.loyaltyDiscount > 0 && (
-            <div className="text-[12.5px] mb-3 py-1.5 px-3 rounded-full" style={{ background: dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.06)", color: dark ? "#6ee7b7" : "#059669" }}>{bulkSuccess.loyaltyTier} discount applied ({bulkSuccess.loyaltyDiscount}%)</div>
+            <div className="text-[12px] mb-3 py-1.5 px-3 rounded-full text-center" style={{ background: dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.06)", color: dark ? "#6ee7b7" : "#059669" }}>{bulkSuccess.loyaltyTier} discount applied ({bulkSuccess.loyaltyDiscount}%)</div>
           )}
-          <div className="w-full rounded-xl p-4 mb-5 border border-solid" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}>
-            <div className="flex justify-between text-sm mb-2" style={{ color: t.textMuted }}>
-              <span>Batch</span><span className="font-medium font-[JetBrains_Mono,monospace] text-xs" style={{ color: t.text }}>{bulkSuccess.batchId}</span>
+
+          {/* 3-col numbers grid */}
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${t.cardBorder}` }}>
+              <div className="text-[11px] mb-0.5" style={{ color: t.textMuted }}>Orders</div>
+              <div className="text-sm font-semibold" style={{ color: t.text }}>{bulkSuccess.total}</div>
             </div>
-            <div className="flex justify-between text-sm mb-3" style={{ color: t.textMuted }}>
-              <span>Total charged</span><span className="font-medium" style={{ color: t.accent }}>₦{(bulkSuccess.totalCharge || 0).toLocaleString()}</span>
+            <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${t.cardBorder}` }}>
+              <div className="text-[11px] mb-0.5" style={{ color: t.textMuted }}>Charged</div>
+              <div className="text-sm font-semibold" style={{ color: t.green }}>₦{(bulkSuccess.totalCharge || 0).toLocaleString()}</div>
             </div>
+            <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${t.cardBorder}` }}>
+              <div className="text-[11px] mb-0.5" style={{ color: t.textMuted }}>Balance</div>
+              <div className="text-sm font-semibold" style={{ color: t.text }}>{bulkSuccess.newBalance != null ? `₦${bulkSuccess.newBalance.toLocaleString()}` : "—"}</div>
+            </div>
+          </div>
+
+          {/* Batch ID accent row */}
+          <div className="flex items-center justify-between rounded-lg py-2 px-3 mb-3" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)" }}>
+            <span className="text-[11px] font-medium" style={{ color: t.textMuted }}>Batch ID</span>
+            <span className="text-xs font-semibold" style={{ color: t.accent }}>{bulkSuccess.batchId}</span>
+          </div>
+
+          {/* Order list card */}
+          <div className="w-full rounded-xl mb-3 border border-solid overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", borderColor: t.cardBorder }}>
             {(bulkSuccess.rows || bulkSuccess.orders || []).map((o, i) => {
               const status = (bulkSuccess.orders || [])[i]?.status || o.status || "Pending";
               const isProcessing = status === "Processing";
               const plat = PLATFORMS.find(pl => pl.id === o.platform);
               return (
-                <div key={i} className="flex items-center gap-2 text-xs py-1.5 border-t border-dashed" style={{ borderColor: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)" }}>
-                  {plat && <span className="flex items-center justify-center w-[18px] h-[18px] shrink-0 [&_svg]:w-[16px] [&_svg]:h-[16px]" style={{ color: t.textMuted }}>{plat.icon}</span>}
-                  <span className="truncate flex-1 min-w-0" style={{ color: t.text }}>{o.name || o.service || o.link}</span>
-                  {o.tier && <span className="text-[9px] font-medium py-0.5 px-1.5 rounded-full shrink-0" style={{ background: dark ? TS[o.tier]?.bgD : TS[o.tier]?.bg, color: TS[o.tier]?.text }}>{o.tier}</span>}
-                  <span className="shrink-0 text-[10px]" style={{ color: t.textMuted }}>{(o.qty || 0).toLocaleString()}</span>
-                  <span className="flex items-center gap-1 shrink-0">
+                <div key={i} className="flex items-center gap-2.5 py-2.5 px-3.5" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
+                  {plat && <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 [&_svg]:w-[18px] [&_svg]:h-[18px]" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>{plat.icon}</div>}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[12.5px] font-medium truncate" style={{ color: t.text }}>{o.name || o.service || o.link}</div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      {o.tier && <span className="text-[9px] font-semibold py-0.5 px-1.5 rounded-md shrink-0" style={{ background: dark ? TS[o.tier]?.bgD : TS[o.tier]?.bg, color: TS[o.tier]?.text }}>{o.tier}</span>}
+                      <span className="text-[10px]" style={{ color: t.textMuted }}>{(o.qty || 0).toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <span className="flex items-center gap-1 shrink-0 py-0.5 px-2 rounded-md" style={{ background: isProcessing ? (dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.06)") : (dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.06)") }}>
                     <span className="w-1.5 h-1.5 rounded-full" style={{ background: isProcessing ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fbbf24" : "#d97706") }} />
                     <span className="text-[10px] font-medium" style={{ color: isProcessing ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fbbf24" : "#d97706") }}>{isProcessing ? "Processing" : "Pending"}</span>
                   </span>
@@ -1313,12 +1351,16 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
               );
             })}
           </div>
+
+          {/* Dispatch info */}
           <div className="w-full text-[11px] text-center mb-4 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", color: dark ? "#6ee7b7" : "#059669" }}>
             Orders are being dispatched — check your order history for live status
           </div>
-          <div className="flex gap-3 w-full max-md:flex-col">
-            <button onClick={() => { setBulkSuccess(null); onClose(); }} className="flex-1 py-2.5 rounded-[10px] text-sm font-semibold border border-solid cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", borderColor: t.cardBorder, color: t.text }}>Place another</button>
-            {onViewOrders && <button onClick={() => { setBulkSuccess(null); onClose(); onViewOrders(); }} className="flex-1 py-2.5 rounded-[10px] text-sm font-semibold border-none cursor-pointer bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]">View order history</button>}
+
+          {/* Action buttons */}
+          <div className="flex gap-2.5 w-full">
+            <button onClick={() => { setBulkSuccess(null); onClose(); }} className="flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold border border-solid cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", borderColor: t.cardBorder, color: t.text }}>Place another</button>
+            {onViewOrders && <button onClick={() => { setBulkSuccess(null); onClose(); onViewOrders(); }} className="flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>View orders</button>}
           </div>
         </div>
       )}
@@ -1349,7 +1391,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
           const emptyLink = !row.link.trim();
           const badLink = !emptyLink && !isValidLink(row.link);
           const qtyBad = row.qty < row.min || row.qty > row.max;
-          const needsCommentsWarning = (row.needsComments || row.needsMentions) && !row.comments.trim() && !emptyLink;
+          const needsCommentsWarning = (row.needsComments || row.needsMentions || row.needsPoll) && !row.comments.trim() && !emptyLink;
           const hasErrors = dup || badLink || qtyBad || needsCommentsWarning;
           const hasValidLink = !emptyLink && isValidLink(row.link);
           const isCollapsed = hasValidLink && !hasErrors && !row.expanded;
@@ -1405,16 +1447,16 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
               {emptyLink && !dup && <div className="text-[10.5px] mt-1.5 flex items-center gap-1.5" style={{ color: t.accent }}>○ Paste a link for this row</div>}
               {badLink && !dup && <div className="text-[10.5px] mt-1.5 flex items-center gap-1.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>● Enter a valid URL or @username</div>}
               {qtyBad && !dup && <div className="text-[10.5px] mt-1.5" style={{ color: t.accent }}>{row.qty < row.min ? `Min ${row.min.toLocaleString()} for this service` : `Max ${row.max.toLocaleString()} for this service`}</div>}
-              {needsCommentsWarning && !dup && <div className="text-[10.5px] mt-1.5" style={{ color: t.accent }}>○ This service needs at least one comment</div>}
+              {needsCommentsWarning && !dup && <div className="text-[10.5px] mt-1.5" style={{ color: t.accent }}>○ {row.needsPoll ? "Select a poll answer" : row.needsMentions ? "Enter usernames" : "This service needs at least one comment"}</div>}
 
-              {/* Comment section */}
-              {(row.needsComments || row.needsMentions) && (
+              {/* Comment/mention/poll section */}
+              {(row.needsComments || row.needsMentions || row.needsPoll) && (
                 <div className="mt-2 pt-2 border-t border-dashed" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}>
                   {commentCount > 0 && !row.commentsOpen ? (
                     <>
                       <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[5px] px-3 rounded-full border border-solid text-[11.5px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(127,184,74,.25)" : "#e4f3d9", borderColor: dark ? "#639922" : "#7fb84a", color: dark ? "#b4db7a" : "#27500A" }}>
                         <span className="w-[5px] h-[5px] rounded-full" style={{ background: dark ? "#b4db7a" : "#27500A" }} />
-                        <span><b>{commentCount}</b> {row.needsMentions ? "username" : "comment"}{commentCount !== 1 ? "s" : ""}</span>
+                        <span><b>{commentCount}</b> {row.needsPoll ? "answer" : row.needsMentions ? "username" : "comment"}{commentCount !== 1 ? "s" : ""}</span>
                         <span className="text-[10.5px] underline ml-1" style={{ color: t.textMuted }}>edit</span>
                       </button>
                       <div className="text-[10.5px] mt-1.5" style={{ color: t.textMuted }}>We'll cycle through them to fill your order</div>
@@ -1422,19 +1464,19 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                   ) : row.commentsOpen ? (
                     <div className="rounded-lg border border-solid p-2.5" style={{ background: dark ? "#0f1322" : "#fff", borderColor: t.accent }}>
                       <div className="flex justify-between items-center mb-1.5">
-                        <span className="text-[11px] font-medium" style={{ color: t.text }}>{row.needsMentions ? "Usernames — one per line" : "Seed comments — one per line"}</span>
+                        <span className="text-[11px] font-medium" style={{ color: t.text }}>{row.needsPoll ? "Poll answer (number)" : row.needsMentions ? "Usernames — one per line" : "Seed comments — one per line"}</span>
                         <button onClick={() => updateRow(idx, { commentsOpen: false })} className="bg-transparent border-none text-[11px] cursor-pointer py-0.5 px-1.5 rounded font-[inherit] hover:bg-[rgba(0,0,0,.08)] transition-transform duration-200 hover:-translate-y-px" style={{ color: t.textMuted }}>Done</button>
                       </div>
-                      <textarea placeholder={row.needsMentions ? "username1\nusername2\nusername3" : "Fire post\nLove this\nLegendary..."} value={row.comments} onChange={e => updateRow(idx, { comments: e.target.value })} rows={4} className="w-full min-h-[90px] rounded-md border border-solid py-2 px-2.5 text-[11.5px] font-[JetBrains_Mono,monospace] outline-none resize-y" style={{ background: dark ? "rgba(255,255,255,.09)" : "#f7f5f1", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.text }} />
+                      <textarea placeholder={row.needsPoll ? "1" : row.needsMentions ? "username1\nusername2\nusername3" : "Fire post\nLove this\nLegendary..."} value={row.comments} onChange={e => updateRow(idx, { comments: e.target.value })} rows={4} className="w-full min-h-[90px] rounded-md border border-solid py-2 px-2.5 text-[11.5px] font-[JetBrains_Mono,monospace] outline-none resize-y" style={{ background: dark ? "rgba(255,255,255,.09)" : "#f7f5f1", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.text }} />
                       <div className="flex justify-between items-center mt-2 text-[10.5px] flex-wrap gap-2" style={{ color: t.textMuted }}>
-                        <div className="flex items-center gap-1"><strong style={{ color: t.accent }}>{commentCount}</strong> seed {row.needsMentions ? "username" : "comment"}{commentCount !== 1 ? "s" : ""} · will cycle to fill {row.qty.toLocaleString()}</div>
+                        <div className="flex items-center gap-1"><strong style={{ color: t.accent }}>{commentCount}</strong> {row.needsPoll ? "answer" : `seed ${row.needsMentions ? "username" : "comment"}${commentCount !== 1 ? "s" : ""}`}{row.needsPoll ? "" : ` · will cycle to fill ${row.qty.toLocaleString()}`}</div>
                         {row.qty > 100 && <button onClick={() => { setUploadIdx(idx); fileInputRef.current?.click(); }} className="inline-flex items-center gap-1 py-1 px-2.5 rounded-md border border-solid text-[10.5px] font-medium cursor-pointer bg-transparent font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}>↑ Upload .txt</button>}
                       </div>
                     </div>
                   ) : (
                     <>
-                      <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[7px] px-3 rounded-lg border border-solid text-[11.5px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)", borderColor: t.accent, color: t.accent }}>+ Add {row.needsMentions ? "usernames" : "comments"}</button>
-                      <div className="text-[10.5px] mt-1.5" style={{ color: t.textMuted }}>We'll cycle through them to fill your order</div>
+                      <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[7px] px-3 rounded-lg border border-solid text-[11.5px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)", borderColor: t.accent, color: t.accent }}>+ Add {row.needsPoll ? "poll answer" : row.needsMentions ? "usernames" : "comments"}</button>
+                      {!row.needsPoll && <div className="text-[10.5px] mt-1.5" style={{ color: t.textMuted }}>We'll cycle through them to fill your order</div>}
                     </>
                   )}
                 </div>

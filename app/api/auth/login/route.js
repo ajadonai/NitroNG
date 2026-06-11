@@ -47,28 +47,21 @@ export async function POST(req) {
     const token = signUserToken(user);
     await setUserCookie(token);
 
-    // Session management — 1 web + 1 mobile
     const hdrs = await headers();
     const ua = hdrs.get('user-agent') || '';
     const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown';
     const device = detectDevice(ua);
     const tHash = hashToken(token);
 
-    // Kill existing session of same device type for this user
-    await prisma.session.deleteMany({
-      where: { userId: user.id, deviceType: device.type },
+    await prisma.session.create({
+      data: { userId: user.id, tokenHash: tHash, deviceType: device.type, deviceInfo: device.info, ip },
     });
 
-    // Create new session
-    await prisma.session.create({
-      data: {
-        userId: user.id,
-        tokenHash: tHash,
-        deviceType: device.type,
-        deviceInfo: device.info,
-        ip,
-      },
-    });
+    // Cap at 5 sessions — prune oldest beyond limit
+    const sessions = await prisma.session.findMany({ where: { userId: user.id }, orderBy: { lastActive: 'desc' }, select: { id: true } });
+    if (sessions.length > 5) {
+      await prisma.session.deleteMany({ where: { id: { in: sessions.slice(5).map(s => s.id) } } });
+    }
 
     return ok({
       user: {
