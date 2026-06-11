@@ -83,7 +83,7 @@ export async function GET() {
   if (error) return error;
 
   try {
-    const { todayStart, yesterdayStart } = watBounds();
+    const { todayStart, yesterdayStart, yesterdaySameTime } = watBounds();
 
     // All counts + aggregates in parallel
     // Helper: compute partial order adjustment for a date filter
@@ -116,13 +116,13 @@ export async function GET() {
       prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
       prisma.user.count({ where: { createdAt: { gte: todayStart }, emailVerified: true } }),
       prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true } }),
-      // Yesterday (for % change)
-      prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
-      prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true } }),
+      // Yesterday up to same time of day (for fair % change)
+      prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: yesterdaySameTime }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
+      prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: yesterdayStart, lt: yesterdaySameTime } }, _sum: { amount: true } }),
       // Partial adjustments
       prisma.order.findMany({ where: { deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
       prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
-      prisma.order.findMany({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
+      prisma.order.findMany({ where: { createdAt: { gte: yesterdayStart, lt: yesterdaySameTime }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
       // Recent orders (last 5)
       prisma.order.findMany({
         where: { deletedAt: null },
