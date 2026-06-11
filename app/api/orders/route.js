@@ -464,6 +464,13 @@ export async function POST(req) {
       const label = needsUsernames ? 'Usernames are' : needsAnswer ? 'An answer selection is' : 'Comments are';
       return Response.json({ error: `${label} required for this service` }, { status: 400 });
     }
+    if (needsCommentText && comments) {
+      const lineCount = comments.split('\n').filter(l => l.trim()).length;
+      const minLines = Math.max(service.min, 10);
+      if (lineCount < minLines) {
+        return Response.json({ error: `Please provide at least ${minLines} unique comments (one per line). You entered ${lineCount}.` }, { status: 400 });
+      }
+    }
 
     // Apply loyalty discount based on total lifetime spend
     let loyaltyDiscount = 0;

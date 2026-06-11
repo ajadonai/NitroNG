@@ -429,6 +429,13 @@ export async function POST(req) {
       if ((at.includes('custom comment') || at.includes('comment replies') || at.includes('mention') || at === 'poll') && !comments) {
         return Response.json({ error: `Row ${i + 1}: this service requires ${at.includes('mention') ? 'usernames' : at === 'poll' ? 'an answer selection' : 'comments'}` }, { status: 400 });
       }
+      if ((at.includes('custom comment') || at.includes('comment replies')) && comments) {
+        const lineCount = comments.split('\n').filter(l => l.trim()).length;
+        const minLines = Math.max(service.min, 10);
+        if (lineCount < minLines) {
+          return Response.json({ error: `Row ${i + 1}: please provide at least ${minLines} unique comments (one per line). You entered ${lineCount}.` }, { status: 400 });
+        }
+      }
 
       resolved.push({ tier, service, link: trimmedLink, qty, charge, cost, tierName, comments });
     }
