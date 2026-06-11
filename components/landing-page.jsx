@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme } from "./shared-nav";
 import { SITE } from "../lib/site";
 import AnnouncementBanner from "./announcement-banner";
+import { trackViewContent } from "./capi-tracker";
 
 const AuthModal = dynamic(() => import("./auth-modal"), { ssr: false });
 const BelowFold = dynamic(() => import('./landing-below-fold'), { ssr: true });
@@ -65,6 +66,7 @@ function LandingInner(){
   const [pricingData,setPricingData]=useState(null);
 
   useEffect(()=>{const el=scrollRef.current;if(!el)return;const onScroll=()=>setScrolled(el.scrollTop>20);el.addEventListener("scroll",onScroll);return()=>el.removeEventListener("scroll",onScroll);},[]);
+  useEffect(()=>{trackViewContent({content_name:'homepage',content_type:'landing'});},[]);
   const [logoutMsg,setLogoutMsg]=useState(false);
   const [googleError,setGoogleError]=useState(false);
   const [sessionExpired,setSessionExpired]=useState(false);

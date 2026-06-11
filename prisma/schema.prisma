@@ -66,7 +66,11 @@ model User {
   tosAcceptedAt   DateTime?
   tosVersion      String?
   firstDepositBonusPaid Boolean @default(false)
-  winbackSentAt DateTime?
+  winbackSentAt          DateTime?
+  nudgeIdleFundsSentAt   DateTime?
+  nudgeComebackSentAt    DateTime?
+  nudgeLapsedSentAt      DateTime?
+  nudgeIdleBalanceSentAt DateTime?
   status        String   @default("Active")
   deletedAt     DateTime?
   deletedName   String?
