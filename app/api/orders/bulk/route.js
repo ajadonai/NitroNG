@@ -7,6 +7,8 @@ import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { sendEmail, batchPlacementEmail } from '@/lib/email';
 import { cleanLink } from '@/lib/clean-link';
+import { sendEvent, generateEventId, parseFbCookies } from '@/lib/meta-capi';
+import { headers as getHeaders } from 'next/headers';
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -55,6 +57,10 @@ async function dispatchBatch(createdOrders, userId, batchId, totalCharge) {
         new Promise((_, reject) => setTimeout(() => reject(new Error('dispatch_timeout')), 10000)),
       ]);
       if (apiOrderId) { placed++; consecutiveFails = 0; }
+      else {
+        await prisma.order.update({ where: { id: o.dbId }, data: { lastError: 'dispatch_no_response' } }).catch(() => {});
+        consecutiveFails++;
+      }
     } catch (err) {
       log.error('Bulk dispatch', `${o.orderId}: ${err.message}`);
       const isTimeout = /timed?\s?out|dispatch_timeout|ETIMEDOUT|ECONNABORTED|ECONNRESET|retries failed/i.test(err.message);
@@ -244,6 +250,10 @@ export async function PATCH(req) {
           const apiOrderId = await placeWithProvider({ id: order.id, service: order.service, tier: order.tier, link: order.link, quantity: order.quantity, comments: order.comments });
           retried++;
           if (apiOrderId) { placed++; consecutiveFails = 0; }
+          else {
+            await prisma.order.update({ where: { id: order.id }, data: { lastError: 'dispatch_no_response' } }).catch(() => {});
+            consecutiveFails++;
+          }
         } catch (err) {
           log.error('Bulk reorder', `${order.orderId}: ${err.message}`);
           const isTimeout = /timed?\s?out|dispatch_timeout|ETIMEDOUT|ECONNABORTED|ECONNRESET|retries failed/i.test(err.message);
@@ -415,6 +425,18 @@ export async function POST(req) {
       const tierName = `${tier.group.name} (${tier.tier})`;
       const comments = row.comments?.trim().slice(0, 5000) || null;
 
+      const at = (service.apiType || '').toLowerCase();
+      if ((at.includes('custom comment') || at.includes('comment replies') || at.includes('mention') || at === 'poll') && !comments) {
+        return Response.json({ error: `Row ${i + 1}: this service requires ${at.includes('mention') ? 'usernames' : at === 'poll' ? 'an answer selection' : 'comments'}` }, { status: 400 });
+      }
+      if ((at.includes('custom comment') || at.includes('comment replies')) && comments) {
+        const lineCount = comments.split('\n').filter(l => l.trim()).length;
+        const minLines = Math.max(service.min, 10);
+        if (lineCount < minLines) {
+          return Response.json({ error: `Row ${i + 1}: please provide at least ${minLines} unique comments (one per line). You entered ${lineCount}.` }, { status: 400 });
+        }
+      }
+
       resolved.push({ tier, service, link: trimmedLink, qty, charge, cost, tierName, comments });
     }
 
@@ -510,7 +532,7 @@ export async function POST(req) {
           method: 'wallet',
           status: 'Completed',
           reference: batchId,
-          note: `Bulk ${batchId} — ${orderData.length} orders${loyaltyPercent > 0 ? ` (${loyaltyTierName} -${loyaltyPercent}%)` : ''}${activeCamp ? ` (${activeCamp.lineItemLabel})` : ''}${idempotencyKey ? ` [${idempotencyKey}]` : ''}`,
+          note: `Bulk ${batchId} — ${orderData.length} orders${loyaltyPercent > 0 ? ` (${loyaltyTierName} -${loyaltyPercent}%)` : ''}${activePromo ? ` (Promo -${activePromo.discountPercent}%)` : ''}${idempotencyKey ? ` [${idempotencyKey}]` : ''}`,
         },
       });
 
@@ -520,8 +542,22 @@ export async function POST(req) {
     const orderResults = result.createdOrders.map(o => ({ id: o.orderId, link: o.link, status: 'Pending', service: o.tierName }));
     const newBalance = (await prisma.user.findUnique({ where: { id: session.id }, select: { balance: true } }))?.balance || 0;
 
+    const eventId = generateEventId();
+    const hdrs = await getHeaders();
+    const { fbp, fbc } = parseFbCookies(hdrs.get('cookie'));
+    sendEvent('Purchase', {
+      eventId,
+      email: session.email,
+      clientIp: hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip'),
+      userAgent: hdrs.get('user-agent'),
+      fbp, fbc,
+      sourceUrl: hdrs.get('referer'),
+      customData: { value: result.totalCharge / 100, currency: 'NGN' },
+    });
+
     const responseBody = {
       success: true,
+      eventId,
       batchId,
       total: result.createdOrders.length,
       placed: 0,

@@ -7,6 +7,7 @@ import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { validateEmail, validatePassword, validateName, sanitizeEmail, sanitizeString, isDisposableEmail } from '@/lib/validate';
 import { headers } from 'next/headers';
 import { sendWelcomeEmail } from '@/lib/email';
+import { sendEvent, generateEventId, parseFbCookies } from '@/lib/meta-capi';
 
 export async function POST(req) {
   try {
@@ -120,7 +121,20 @@ export async function POST(req) {
     const device = detectDevice(ua);
     await prisma.session.create({ data: { userId: user.id, tokenHash: hashToken(token), deviceType: device.type, deviceInfo: device.info, ip } });
 
+    const eventId = generateEventId();
+    const { fbp, fbc } = parseFbCookies(hdrs.get('cookie'));
+    sendEvent('CompleteRegistration', {
+      eventId,
+      email,
+      clientIp: ip,
+      userAgent: ua,
+      fbp, fbc,
+      sourceUrl: hdrs.get('referer'),
+      customData: { content_name: 'signup', status: true },
+    });
+
     return ok({
+      eventId,
       user: {
         id: user.id,
         name: user.name,

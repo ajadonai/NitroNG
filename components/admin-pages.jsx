@@ -435,7 +435,7 @@ function FinanceOverviewTab({ dark, t }) {
           ["Provider Cost", fN(s.totalCost || 0), dark ? "#fca5a5" : "#dc2626"],
           ["Profit", fN(s.profit || 0), s.profit >= 0 ? t.green : (dark ? "#fca5a5" : "#dc2626")],
           ["Money In", fN(s.totalMoneyIn || 0), t.green],
-          ["Provider Cost Out", fN(s.totalMoneyOut || 0), dark ? "#fca5a5" : "#dc2626"],
+          ["Provider Top-ups", fN(s.totalMoneyOut || 0), dark ? "#fca5a5" : "#dc2626"],
           ["Net Cash Flow", fN(s.netCashFlow || 0), (s.netCashFlow || 0) >= 0 ? t.green : (dark ? "#fca5a5" : "#dc2626")],
           ["Orders", String(s.orderCount || 0), t.amber],
           ["New Users", String(s.newUsers || 0), t.blue],
@@ -1087,6 +1087,10 @@ function FinanceBreakdownTab({ dark, t }) {
   const [platform, setPlatform] = useState("all");
   const [tier, setTier] = useState("all");
   const [provider, setProvider] = useState("all");
+  const [topupProvider, setTopupProvider] = useState("dao");
+  const [topupAmount, setTopupAmount] = useState("");
+  const [topupNote, setTopupNote] = useState("");
+  const [topupSaving, setTopupSaving] = useState(false);
 
   const load = () => {
     if (!dateValue) return;
@@ -1101,6 +1105,26 @@ function FinanceBreakdownTab({ dark, t }) {
       .then(r => r.json()).then(d => { setStats(d); setLoading(false); }).catch(() => setLoading(false));
   };
   useEffect(() => { load(); }, [dateValue, platform, tier, provider]);
+
+  const handleTopup = async () => {
+    const amt = parseFloat(topupAmount);
+    if (!amt || amt <= 0) return;
+    setTopupSaving(true);
+    try {
+      const res = await fetch("/api/admin/provider-topups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: topupProvider, amount: amt, note: topupNote || null }),
+      });
+      const d = await res.json();
+      if (d.success) {
+        setTopupAmount("");
+        setTopupNote("");
+        load();
+      }
+    } catch {}
+    setTopupSaving(false);
+  };
 
   const green = dark ? "#6ee7b7" : "#059669";
   const red = dark ? "#fca5a5" : "#dc2626";
@@ -1137,7 +1161,7 @@ function FinanceBreakdownTab({ dark, t }) {
   const wObl = s.walletObligations || {};
   const lib = s.liability || {};
   const totalIn = (mIn.deposits || 0) + (mIn.adminCredits || 0);
-  const totalOut = mOut.providerCosts || 0;
+  const totalOut = (mOut.providerTopups || 0);
   const totalWalletObl = (wObl.refunds || 0) + (wObl.couponBonuses || 0) + (wObl.referralBonuses || 0) + (wObl.adminGifts || 0);
 
   return (
@@ -1204,7 +1228,8 @@ function FinanceBreakdownTab({ dark, t }) {
               Money Out
             </div>
             {[
-              ["Provider Costs", mOut.providerCosts],
+              ["Provider Top-ups", mOut.providerTopups],
+              ["Est. Provider Cost", mOut.providerCosts],
             ].map(([label, val]) => (
               <div key={label} className="flex justify-between py-[7px]" style={{ borderBottom: `0.5px solid ${rowBorder}` }}>
                 <span className="text-[13px]" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.5)" }}>{label}</span>
@@ -1234,6 +1259,23 @@ function FinanceBreakdownTab({ dark, t }) {
               <span className="m text-[15px] font-bold" style={{ color: amber }}>{fN(totalWalletObl)}</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Record Top-up */}
+      <div className="rounded-[14px] py-3.5 px-4 mb-5" style={{ background: cardBg, border: `0.5px solid ${cardBorder}` }}>
+        <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-3" style={{ color: subText }}>Record Provider Top-up</div>
+        <div className="flex gap-2 flex-wrap items-end">
+          <select value={topupProvider} onChange={e => setTopupProvider(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }}>
+            <option value="dao">DaoSMM</option>
+            <option value="mtp">MTP</option>
+            <option value="jap">JAP</option>
+          </select>
+          <input type="number" placeholder="Amount (₦)" value={topupAmount} onChange={e => setTopupAmount(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] w-32 outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }} />
+          <input type="text" placeholder="Note (optional)" value={topupNote} onChange={e => setTopupNote(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] flex-1 min-w-[120px] outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }} />
+          <button onClick={handleTopup} disabled={topupSaving || !topupAmount} className="h-9 px-4 rounded-lg text-[13px] font-semibold text-white" style={{ background: t.accent, opacity: topupSaving || !topupAmount ? 0.5 : 1 }}>
+            {topupSaving ? "Saving..." : "Record"}
+          </button>
         </div>
       </div>
 

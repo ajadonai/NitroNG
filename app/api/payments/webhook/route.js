@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { applyWelcomeBonus } from '@/lib/welcome-bonus';
+import { sendEvent, generateEventId } from '@/lib/meta-capi';
 
 export async function POST(req) {
   try {
@@ -96,6 +97,11 @@ export async function POST(req) {
       });
 
       log.info('Webhook', `₦${amountKobo / 100} + ₦${couponBonus / 100} bonus credited (ref: ${reference})`);
+
+      try {
+        const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true } });
+        if (u) sendEvent('AddPaymentInfo', { eventId: generateEventId(), email: u.email, customData: { value: amountKobo / 100, currency: 'NGN' } });
+      } catch {}
 
       // Deferred referral bonus
       try {

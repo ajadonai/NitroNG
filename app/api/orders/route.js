@@ -5,6 +5,8 @@ import { placeOrder, checkOrder } from '@/lib/smm';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { cleanLink } from '@/lib/clean-link';
+import { sendEvent, generateEventId, parseFbCookies } from '@/lib/meta-capi';
+import { headers as getHeaders } from 'next/headers';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -260,6 +262,12 @@ export async function PATCH(req) {
           await prisma.order.update({ where: { id: newOrder.id }, data: { dispatchedAt: new Date() } });
           const provider = order.service.provider || 'mtp';
           const extra = {};
+          if (order.comments) {
+            const at = (order.service.apiType || '').toLowerCase();
+            if (at.includes('mention')) extra.usernames = order.comments;
+            else if (at === 'poll') extra.answer_number = order.comments;
+            else extra.comments = order.comments;
+          }
           let reorderQty = order.quantity;
           if (order.service.dripfeed) {
             const { calculateDripFeed } = await import('@/lib/drip-feed');
@@ -409,7 +417,20 @@ export async function POST(req) {
           telegram: /\/\d+\s*$/,
         };
 
-        const isPostLink = Object.entries(postPatterns).some(
+        // Shortened/redirect URLs are always post/content links
+        const shortPostDomains = {
+          tiktok: /^(vt|vm)\.tiktok\.com$/i,
+          'twitter/x': /^t\.co$/i,
+          facebook: /^(fb\.watch|fb\.me)$/i,
+          instagram: /^ig\.me$/i,
+        };
+        let linkHost;
+        try { linkHost = new URL(trimmedLink).hostname; } catch { linkHost = ''; }
+        const isShortPostLink = Object.entries(shortPostDomains).some(
+          ([p, re]) => platform.includes(p) && re.test(linkHost)
+        );
+
+        const isPostLink = isShortPostLink || Object.entries(postPatterns).some(
           ([p, re]) => platform.includes(p) && re.test(trimmedLink)
         );
         const isProfileLink = !isPostLink;
@@ -431,6 +452,23 @@ export async function POST(req) {
             : 'a link to your post or video';
           return Response.json({ error: `This service needs a post/content link, not a profile link. Example: ${example}.${guide}` }, { status: 400 });
         }
+      }
+    }
+
+    // Validate extra params based on provider service type
+    const apiType = (service.apiType || '').toLowerCase();
+    const needsCommentText = apiType.includes('custom comment') || apiType.includes('comment replies');
+    const needsUsernames = apiType.includes('mention');
+    const needsAnswer = apiType === 'poll';
+    if ((needsCommentText || needsUsernames || needsAnswer) && !comments?.trim()) {
+      const label = needsUsernames ? 'Usernames are' : needsAnswer ? 'An answer selection is' : 'Comments are';
+      return Response.json({ error: `${label} required for this service` }, { status: 400 });
+    }
+    if (needsCommentText && comments) {
+      const lineCount = comments.split('\n').filter(l => l.trim()).length;
+      const minLines = Math.max(service.min, 10);
+      if (lineCount < minLines) {
+        return Response.json({ error: `Please provide at least ${minLines} unique comments (one per line). You entered ${lineCount}.` }, { status: 400 });
       }
     }
 
@@ -543,13 +581,11 @@ export async function POST(req) {
       try {
         await prisma.order.update({ where: { id: result.id }, data: { dispatchedAt: new Date() } });
         const provider = service.provider || 'mtp';
-        const sType = (serviceType || tier?.group?.type || "").toLowerCase();
-        const sName = (tier?.group?.name || service?.name || "").toLowerCase();
         const extra = {};
         if (comments) {
           const safeComments = comments.trim().slice(0, 5000);
-          if (sName.includes("mention")) extra.usernames = safeComments;
-          else if (sName.includes("poll") || sName.includes("vote")) extra.answer_number = safeComments;
+          if (needsUsernames) extra.usernames = safeComments;
+          else if (needsAnswer) extra.answer_number = safeComments;
           else extra.comments = safeComments;
         }
         let orderQty = qty;
@@ -613,8 +649,22 @@ export async function POST(req) {
       }
     }
 
+    const eventId = generateEventId();
+    const hdrs2 = await getHeaders();
+    const { fbp, fbc } = parseFbCookies(hdrs2.get('cookie'));
+    sendEvent('Purchase', {
+      eventId,
+      email: session.email,
+      clientIp: hdrs2.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs2.get('x-real-ip'),
+      userAgent: hdrs2.get('user-agent'),
+      fbp, fbc,
+      sourceUrl: hdrs2.get('referer'),
+      customData: { value: charge / 100, currency: 'NGN' },
+    });
+
     return Response.json({
       success: true,
+      eventId,
       ...(queued ? { queued: true, message: `Order queued — will start automatically when your current order for this link completes.` } : {}),
       order: {
         id: orderId,

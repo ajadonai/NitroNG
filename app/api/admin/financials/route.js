@@ -49,6 +49,7 @@ export async function GET(req) {
       ordersByPlatform, ordersByTier,
       topSpenders,
       partialOrders,
+      providerTopupAgg,
     ] = await Promise.all([
       // Revenue & cost (excluding cancelled)
       prisma.order.aggregate({ where: orderWhere, _sum: { charge: true, cost: true, campaignDiscount: true, loyaltyDiscount: true }, _count: true }),
@@ -86,6 +87,11 @@ export async function GET(req) {
       prisma.order.findMany({
         where: { ...orderWhere, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } },
         select: { charge: true, cost: true, quantity: true, remains: true, userId: true },
+      }),
+      // Provider top-ups (actual cash out)
+      prisma.providerTopup.aggregate({
+        where: { createdAt: { gte: since, ...(rangeEnd ? { [rangeEndOp]: rangeEnd } : {}) } },
+        _sum: { amount: true },
       }),
     ]);
 
@@ -184,6 +190,7 @@ export async function GET(req) {
       },
       moneyOut: {
         providerCosts: k(totalCost),
+        providerTopups: k(providerTopupAgg._sum.amount),
       },
       walletObligations: {
         refunds: k(totalRefunds),
