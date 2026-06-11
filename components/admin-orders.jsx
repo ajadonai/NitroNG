@@ -15,6 +15,23 @@ function sClr(s, dk) { return s === "Completed" ? (dk ? "#6ee7b7" : "#059669") :
 function sBg(s, dk) { return s === "Completed" ? (dk ? "#0a2416" : "#ecfdf5") : s === "Processing" ? (dk ? "#0f1629" : "#eef2ff") : s === "Pending" ? (dk ? "#1c1608" : "#fffbeb") : s === "Partial" ? (dk ? "#1c1008" : "#fff7ed") : (s === "Failed" || s === "Rejected") ? (dk ? "#1f0a0a" : "#fef2f2") : s === "Cancelled" ? (dk ? "#1a1a1a" : "#f5f5f5") : (dk ? "#141414" : "#f5f5f5"); }
 function sBrd(s, dk) { return s === "Completed" ? (dk ? "#166534" : "#a7f3d0") : s === "Processing" ? (dk ? "#3730a3" : "#c7d2fe") : s === "Pending" ? (dk ? "#92400e" : "#fde68a") : s === "Partial" ? (dk ? "#9a3412" : "#fed7aa") : (s === "Failed" || s === "Rejected") ? (dk ? "#991b1b" : "#fecaca") : s === "Cancelled" ? (dk ? "#404040" : "#d4d4d4") : (dk ? "#404040" : "#d4d4d4"); }
 
+function errInfo(err, retryCount) {
+  if (err === "user_cancelled") return { label: "Cancelled by User", tone: "neutral" };
+  if (err === "admin_cancelled") return { label: "Cancelled by Admin", tone: "neutral" };
+  if (err === "dispatch_failed") return { label: "Dispatch Failed", detail: "Order couldn't reach the provider and was auto-refunded", tone: "warn" };
+  if (err === "needs_post_link") return { label: "Wrong Link Type", detail: "Customer sent a profile link — this service needs a post/video link", tone: "warn" };
+  if (err === "needs_profile_link") return { label: "Wrong Link Type", detail: "Customer sent a post link — this service needs a profile link", tone: "warn" };
+  if (err === "wrong_platform_link") return { label: "Wrong Platform", detail: "Link is from a different platform than the service", tone: "warn" };
+  if (err === "wrong_service_type") return { label: "Service Mismatch", detail: "Service type doesn't match the link (e.g. followers service with a post link)", tone: "warn" };
+  if (err === "missing_comments") return { label: "Missing Input", detail: "This service requires custom comments but none were provided", tone: "warn" };
+  if (/incorrect service|invalid service|service replaced/i.test(err)) return { label: "Service Unavailable", detail: "Provider rejected or removed this service", tone: "error" };
+  if (/quantity.*less|minim/i.test(err)) return { label: "Quantity Too Low", detail: err, tone: "warn" };
+  if (/duplicate/i.test(err)) return { label: "Duplicate Order", detail: "Provider already has an active order for this link", tone: "warn" };
+  if (/^\[TIMEOUT\]/.test(err)) return { label: `Timeout${retryCount > 0 ? ` · ${retryCount}/5 retries` : ""}`, detail: "Provider didn't respond in time — will retry", tone: "warn" };
+  if (/^\[DUPLICATE\]/.test(err)) return { label: "Needs Manual Review", detail: err.replace("[DUPLICATE] ", ""), tone: "error" };
+  return { label: `Provider Error${retryCount > 0 ? ` · ${retryCount} retries` : ""}`, detail: err, tone: "error" };
+}
+
 function Badge({ status, dark }) {
   return <span className="text-[13px] font-semibold py-0.5 px-2 rounded-[5px] border-[0.5px] whitespace-nowrap inline-block" style={{ background: sBg(status, dark), color: sClr(status, dark), borderColor: sBrd(status, dark) }}>{status}</span>;
 }
@@ -338,19 +355,14 @@ export default function AdminOrdersPage({ dark, t }) {
 
                             {/* Error / cancel info */}
                             {o.lastError && (() => {
-                              const isUser = o.lastError === "user_cancelled";
-                              const isAdmin = o.lastError === "admin_cancelled";
-                              const label = isUser ? "Cancelled by User" : isAdmin ? "Cancelled by Admin" : `Provider Error${o.retryCount > 0 ? ` · ${o.retryCount} retries` : ""}`;
-                              const isCancel = isUser || isAdmin;
-                              const bg = isCancel ? (dark ? "rgba(161,161,170,.08)" : "rgba(113,113,122,.04)") : (dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)");
-                              const brd = isCancel ? (dark ? "rgba(161,161,170,.18)" : "rgba(113,113,122,.12)") : (dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.12)");
-                              const clr = isCancel ? (dark ? "#a1a1aa" : "#71717a") : (dark ? "#fca5a5" : "#dc2626");
+                              const ei = errInfo(o.lastError, o.retryCount);
+                              const colors = { neutral: { bg: dark ? "rgba(161,161,170,.08)" : "rgba(113,113,122,.04)", brd: dark ? "rgba(161,161,170,.18)" : "rgba(113,113,122,.12)", clr: dark ? "#a1a1aa" : "#71717a" }, warn: { bg: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.04)", brd: dark ? "rgba(251,191,36,.18)" : "rgba(217,119,6,.12)", clr: dark ? "#fbbf24" : "#d97706" }, error: { bg: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)", brd: dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.12)", clr: dark ? "#fca5a5" : "#dc2626" } }[ei.tone];
                               return (
-                              <div className="mb-2.5 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: bg, border: `1px solid ${brd}` }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={clr} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                              <div className="mb-2.5 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: colors.bg, border: `1px solid ${colors.brd}` }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.clr} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                                 <div className="min-w-0">
-                                  <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-0.5" style={{ color: clr }}>{label}</div>
-                                  {!isCancel && <div className="text-[12px] break-all" style={{ color: dark ? "rgba(252,165,165,.8)" : "rgba(220,38,38,.7)", fontFamily: "var(--font-mono, monospace)" }}>{o.lastError}</div>}
+                                  <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-0.5" style={{ color: colors.clr }}>{ei.label}</div>
+                                  {ei.detail && <div className="text-[12px] break-all" style={{ color: colors.clr, opacity: .8 }}>{ei.detail}</div>}
                                 </div>
                               </div>);
                             })()}
@@ -491,19 +503,14 @@ export default function AdminOrdersPage({ dark, t }) {
 
                   {/* Error / cancel info */}
                   {o.lastError && (() => {
-                    const isUser = o.lastError === "user_cancelled";
-                    const isAdmin = o.lastError === "admin_cancelled";
-                    const label = isUser ? "Cancelled by User" : isAdmin ? "Cancelled by Admin" : `Provider Error${o.retryCount > 0 ? ` · ${o.retryCount} retries` : ""}`;
-                    const isCancel = isUser || isAdmin;
-                    const bg = isCancel ? (dark ? "rgba(161,161,170,.08)" : "rgba(113,113,122,.04)") : (dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)");
-                    const brd = isCancel ? (dark ? "rgba(161,161,170,.18)" : "rgba(113,113,122,.12)") : (dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.12)");
-                    const clr = isCancel ? (dark ? "#a1a1aa" : "#71717a") : (dark ? "#fca5a5" : "#dc2626");
+                    const ei = errInfo(o.lastError, o.retryCount);
+                    const colors = { neutral: { bg: dark ? "rgba(161,161,170,.08)" : "rgba(113,113,122,.04)", brd: dark ? "rgba(161,161,170,.18)" : "rgba(113,113,122,.12)", clr: dark ? "#a1a1aa" : "#71717a" }, warn: { bg: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.04)", brd: dark ? "rgba(251,191,36,.18)" : "rgba(217,119,6,.12)", clr: dark ? "#fbbf24" : "#d97706" }, error: { bg: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)", brd: dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.12)", clr: dark ? "#fca5a5" : "#dc2626" } }[ei.tone];
                     return (
-                    <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: bg, border: `1px solid ${brd}` }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={clr} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: colors.bg, border: `1px solid ${colors.brd}` }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.clr} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                       <div className="min-w-0">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-0.5" style={{ color: clr }}>{label}</div>
-                        {!isCancel && <div className="text-[12px] break-all" style={{ color: dark ? "rgba(252,165,165,.8)" : "rgba(220,38,38,.7)", fontFamily: "var(--font-mono, monospace)" }}>{o.lastError}</div>}
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-0.5" style={{ color: colors.clr }}>{ei.label}</div>
+                        {ei.detail && <div className="text-[12px] break-all" style={{ color: colors.clr, opacity: .8 }}>{ei.detail}</div>}
                       </div>
                     </div>);
                   })()}

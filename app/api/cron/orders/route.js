@@ -265,47 +265,62 @@ export async function GET(req) {
           }
         } catch (err) {
           const isTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(err.message);
-          await prisma.order.update({
-            where: { id: order.id },
-            data: {
-              status: 'Pending',
-              retryCount: isTimeout ? 5 : { increment: 1 },
-              lastError: (isTimeout ? '[TIMEOUT] ' : '') + err.message.slice(0, 500),
-            },
-          });
-          if (isTimeout) log.warn(`Cron retry ${order.orderId}`, `Timeout — halted auto-retry (provider may have processed)`);
-          else {
-            log.warn(`Cron retry ${order.orderId}`, err.message);
-            if (/incorrect service|invalid service/i.test(err.message)) {
-              const svc = order.service;
-              prisma.adminIssue.findFirst({
-                where: { type: 'order_failure', status: 'open' },
-              }).then(existing => {
-                const pid = svc.provider || 'mtp';
-                const entry = { serviceId: svc.id, name: svc.name, apiId: svc.apiId, provider: pid, orderId: order.orderId };
-                if (existing) {
-                  let prev = [];
-                  try { const m = JSON.parse(existing.metadata); prev = m.services || []; } catch {}
-                  if (!prev.some(s => s.serviceId === svc.id)) prev.push(entry);
-                  return prisma.adminIssue.update({
-                    where: { id: existing.id },
+          const isDuplicate = /duplicate/i.test(err.message);
+          const hadTimeout = (order.lastError || '').startsWith('[TIMEOUT]');
+
+          if (isDuplicate && hadTimeout) {
+            await prisma.order.update({
+              where: { id: order.id },
+              data: { status: 'Pending', retryCount: 5, lastError: '[DUPLICATE] Provider has this order from a previous timed-out dispatch — check provider dashboard' },
+            });
+            prisma.adminIssue.create({
+              data: { type: 'order_failure', title: `Order ${order.orderId} may be duplicated on provider`, message: `Retry after timeout got "duplicate" from ${(order.service?.provider || 'mtp').toUpperCase()}. The original timed-out dispatch likely went through. Check provider dashboard and link the order ID manually.`, metadata: JSON.stringify({ orderId: order.orderId, serviceApiId: order.service?.apiId, provider: order.service?.provider || 'mtp', link: order.link }) },
+            }).catch(() => {});
+            log.warn(`Cron retry ${order.orderId}`, `Duplicate after timeout — flagged for admin review`);
+          } else {
+            await prisma.order.update({
+              where: { id: order.id },
+              data: {
+                status: 'Pending',
+                retryCount: { increment: 1 },
+                lastError: (isTimeout ? '[TIMEOUT] ' : '') + err.message.slice(0, 500),
+              },
+            });
+            if (isTimeout) {
+              log.warn(`Cron retry ${order.orderId}`, `Timeout — will retry next cycle (${order.retryCount + 1}/5)`);
+            } else {
+              log.warn(`Cron retry ${order.orderId}`, err.message);
+              if (/incorrect service|invalid service/i.test(err.message)) {
+                const svc = order.service;
+                prisma.adminIssue.findFirst({
+                  where: { type: 'order_failure', status: 'open' },
+                }).then(existing => {
+                  const pid = svc.provider || 'mtp';
+                  const entry = { serviceId: svc.id, name: svc.name, apiId: svc.apiId, provider: pid, orderId: order.orderId };
+                  if (existing) {
+                    let prev = [];
+                    try { const m = JSON.parse(existing.metadata); prev = m.services || []; } catch {}
+                    if (!prev.some(s => s.serviceId === svc.id)) prev.push(entry);
+                    return prisma.adminIssue.update({
+                      where: { id: existing.id },
+                      data: {
+                        title: `${prev.length} service${prev.length > 1 ? 's' : ''} rejected by provider`,
+                        message: prev.map(s => `${s.name} (${(s.provider || 'mtp').toUpperCase()} #${s.apiId})`).join('\n'),
+                        metadata: JSON.stringify({ count: prev.length, services: prev }),
+                        createdAt: new Date(),
+                      },
+                    });
+                  }
+                  return prisma.adminIssue.create({
                     data: {
-                      title: `${prev.length} service${prev.length > 1 ? 's' : ''} rejected by provider`,
-                      message: prev.map(s => `${s.name} (${(s.provider || 'mtp').toUpperCase()} #${s.apiId})`).join('\n'),
-                      metadata: JSON.stringify({ count: prev.length, services: prev }),
-                      createdAt: new Date(),
+                      type: 'order_failure',
+                      title: `1 service rejected by provider`,
+                      message: `${svc.name} (${pid.toUpperCase()} #${svc.apiId})`,
+                      metadata: JSON.stringify({ count: 1, services: [entry] }),
                     },
                   });
-                }
-                return prisma.adminIssue.create({
-                  data: {
-                    type: 'order_failure',
-                    title: `1 service rejected by provider`,
-                    message: `${svc.name} (${pid.toUpperCase()} #${svc.apiId})`,
-                    metadata: JSON.stringify({ count: 1, services: [entry] }),
-                  },
-                });
-              }).catch(() => {});
+                }).catch(() => {});
+              }
             }
           }
         }
