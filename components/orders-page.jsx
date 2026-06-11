@@ -264,9 +264,11 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
           <div className="text-[12px]" style={{ color: dark ? "#fbbf24" : "#d97706" }}>
             {/duplicate/i.test(o.lastError) ? "A similar order is already active for this link. This order will start automatically once the other completes."
               : /balance|fund/i.test(o.lastError) ? "Temporarily delayed — our team has been notified and this will be resolved shortly."
-              : /incorrect service|invalid service/i.test(o.lastError) ? "This service is temporarily unavailable. You'll be refunded if it can't be fulfilled."
-              : /link|url/i.test(o.lastError) ? "The link provided appears to be invalid or unsupported." + linkHint(o.platform, o.service)
-              : /quantity.*less|minimum/i.test(o.lastError) ? "The quantity couldn't be processed. Please contact support if this persists."
+              : /incorrect service|invalid service|service replaced/i.test(o.lastError) ? "This service is temporarily unavailable. You'll be refunded if it can't be fulfilled."
+              : o.lastError === "wrong_service_type" ? "The link type didn't match this service. You'll be refunded if it can't be fulfilled."
+              : o.lastError === "missing_comments" ? "This service needs custom comments. You'll be refunded if it can't be fulfilled."
+              : /link|url|wrong_platform|needs_post|needs_profile/i.test(o.lastError) ? "There's an issue with the link for this order. You'll be refunded if it can't be fulfilled."
+              : /quantity.*less|minim/i.test(o.lastError) ? "The quantity couldn't be processed. Please contact support if this persists."
               : /timeout|timed.?out/i.test(o.lastError) ? "There was a temporary connection issue. Your order will be retried automatically."
               : "Your order hit a temporary issue and will be retried automatically. Contact support if it stays pending."}
           </div>
@@ -294,6 +296,11 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         } else if (err === "wrong_platform_link") {
           msg = "Looks like the link is from a different platform. Make sure you're copying from the right app.";
           guide = true;
+        } else if (err === "wrong_service_type") {
+          msg = "The link type didn't match this service — for example, a followers service needs a profile link, not a post. Try again with the right link!";
+          guide = true;
+        } else if (err === "missing_comments") {
+          msg = "This service needs custom comments but none were included. Try placing the order again with your comments.";
         } else if (/duplicate/i.test(err)) {
           msg = "There was already an active order for this link, so this one was skipped.";
         } else if (/incorrect service|invalid service|service replaced/i.test(err)) {
