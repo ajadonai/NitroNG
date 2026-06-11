@@ -177,7 +177,7 @@ export async function GET() {
     const yesterdayDeposits = (yesterdayDepositsAgg._sum.amount || 0) / 100;
 
     const pctChange = (today, yesterday) => {
-      if (yesterday === 0) return today > 0 ? 100 : 0;
+      if (yesterday === 0) return today > 0 ? null : 0;
       return Math.round(((today - yesterday) / yesterday) * 100);
     };
 

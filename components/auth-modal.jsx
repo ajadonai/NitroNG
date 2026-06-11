@@ -76,6 +76,16 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via }) {
   const [refCode, setRefCode] = useState('');
   const [agree, setAgree] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
+  const [resetToken, setResetToken] = useState('');
+  const [resetDone, setResetDone] = useState(false);
+
+  useEffect(() => {
+    if (mode === 'reset') {
+      const p = new URLSearchParams(window.location.search);
+      const tok = p.get('reset');
+      if (tok) setResetToken(tok);
+    }
+  }, [mode]);
 
   useEffect(() => {
     setAuthLoading(false);
@@ -84,6 +94,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via }) {
     setPw2('');
     setEmailTaken(false);
     setForgotSent(false);
+    setResetDone(false);
     if (mode === 'signup' && prefill) {
       const parts = (prefill.name || '').split(' ');
       setFirstName(parts[0] || '');
@@ -243,6 +254,29 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via }) {
     }
   };
 
+  const handleReset = async () => {
+    setError('');
+    if (!pw || pw.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (pw !== pw2) { setError('Passwords do not match'); return; }
+    if (!resetToken) { setError('Invalid reset link. Please request a new one.'); return; }
+    setAuthLoading(true);
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: resetToken, password: pw }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Reset failed'); setAuthLoading(false); return; }
+      setResetDone(true);
+      setAuthLoading(false);
+      window.history.replaceState({}, '', '/');
+    } catch {
+      setError('Something went wrong.');
+      setAuthLoading(false);
+    }
+  };
+
   const validEmail =
     email && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
   const validPhone = phone && /^[0-9]{10,11}$/.test(phone);
@@ -365,9 +399,11 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via }) {
             ? "Let's run it up"
             : mode === 'forgot'
               ? 'Forgot password?'
-              : step === 1
-                ? 'Create Account'
-                : 'Secure Your Account'}
+              : mode === 'reset'
+                ? 'Reset password'
+                : step === 1
+                  ? 'Create Account'
+                  : 'Secure Your Account'}
         </h2>
 
         {/* Subheading */}
@@ -381,9 +417,13 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via }) {
               ? forgotSent
                 ? 'Check your email'
                 : 'Enter your email for reset link'
-              : step === 1
-                ? 'Step 1 of 2 — Your details'
-                : 'Step 2 of 2 — Set your password'}
+              : mode === 'reset'
+                ? resetDone
+                  ? 'You are all set'
+                  : 'Choose a new password'
+                : step === 1
+                  ? 'Step 1 of 2 — Your details'
+                  : 'Step 2 of 2 — Set your password'}
         </p>
 
         {/* Error bar */}
@@ -984,6 +1024,41 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via }) {
                 style={{ background: t.accent }}
               />
             </div>
+          </>
+        )}
+
+        {/* ====== RESET MODE — FORM ====== */}
+        {mode === 'reset' && !resetDone && (
+          <>
+            <Lbl t={t} htmlFor="reset-pw">New Password</Lbl>
+            <div className="relative mb-1">
+              <input id="reset-pw" value={pw} onChange={(e) => setPw(e.target.value.slice(0, 128))} placeholder="Enter new password" type={showPw ? 'text' : 'password'} className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none pr-11" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+              <EyeBtn show={showPw} toggle={() => setShowPw(!showPw)} />
+            </div>
+            <PwStrength pw={pw} t={t} />
+
+            <Lbl t={t} htmlFor="reset-pw2">Confirm Password</Lbl>
+            <div className="relative mb-5">
+              <input id="reset-pw2" value={pw2} onChange={(e) => setPw2(e.target.value.slice(0, 128))} placeholder="Confirm new password" type={showPw2 ? 'text' : 'password'} className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none pr-11" style={{ background: t.inputBg, border: `1px solid ${pwMismatch ? '#dc2626' : t.inputBorder}`, color: t.text }} />
+              <EyeBtn show={showPw2} toggle={() => setShowPw2(!showPw2)} />
+              {pwMismatch && <p className="text-[12px] mt-1 font-medium" style={{ color: '#dc2626' }}>Passwords do not match</p>}
+            </div>
+
+            <button onClick={handleReset} disabled={authLoading || !pw || !pwMatch} className="w-full py-3.5 rounded-xl text-white text-base font-semibold mb-5 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: authLoading ? '#999' : t.btnPrimary, opacity: authLoading || !pw || !pwMatch ? 0.7 : 1 }}>
+              {authLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-[spin_0.6s_linear_infinite]" />}
+              {authLoading ? 'Resetting...' : 'Reset Password'}
+            </button>
+          </>
+        )}
+
+        {/* ====== RESET MODE — DONE ====== */}
+        {mode === 'reset' && resetDone && (
+          <>
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: dark ? 'rgba(110,231,183,0.1)' : 'rgba(5,150,105,0.06)', border: `2px solid ${t.green}` }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+            </div>
+            <p className="text-[15px] text-center mb-6" style={{ color: t.textSoft }}>Your password has been reset. You can now log in.</p>
+            <button onClick={() => { setMode('login'); window.history.replaceState({}, '', '/'); }} className="w-full py-3.5 rounded-xl text-white text-base font-semibold" style={{ background: t.btnPrimary }}>Log In</button>
           </>
         )}
 

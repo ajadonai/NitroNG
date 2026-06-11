@@ -157,6 +157,25 @@ export default function AdminOrdersPage({ dark, t }) {
     if (expandedBatchOrder) { const o = orders.find(x => x.id === expandedBatchOrder); autoCheck(o); }
   }, [expandedBatchOrder]);
 
+  const [refundPrompt, setRefundPrompt] = useState(null);
+  const [refundType, setRefundType] = useState('full');
+  const [refundAmount, setRefundAmount] = useState('');
+  const [refundSending, setRefundSending] = useState(false);
+  const openRefund = (o) => { setRefundPrompt(o); setRefundType('full'); setRefundAmount(''); };
+  const doRefund = async () => {
+    if (!refundPrompt) return;
+    if (refundType === 'partial' && (!refundAmount || Number(refundAmount) <= 0)) return;
+    setRefundSending(true);
+    try {
+      const res = await fetch("/api/admin/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "refund", orderId: refundPrompt.id, refundType, ...(refundType === 'partial' && { amount: Number(refundAmount) }) }) });
+      const data = await res.json();
+      if (!res.ok) { toast.error("Refund failed", data.error || "Something went wrong"); return; }
+      toast.success(refundPrompt.id, data.message || "Refund processed");
+      setRefundPrompt(null);
+      fetchOrders(search);
+    } catch { toast.error("Refund failed", "Check your connection"); } finally { setRefundSending(false); }
+  };
+
   const [ticketPrompt, setTicketPrompt] = useState(null);
   const [ticketMsg, setTicketMsg] = useState("");
   const [ticketSending, setTicketSending] = useState(false);
@@ -317,16 +336,24 @@ export default function AdminOrdersPage({ dark, t }) {
                               );
                             })()}
 
-                            {/* Provider error */}
-                            {o.lastError && (
-                              <div className="mb-2.5 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)", border: `1px solid ${dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.12)"}` }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            {/* Error / cancel info */}
+                            {o.lastError && (() => {
+                              const isUser = o.lastError === "user_cancelled";
+                              const isAdmin = o.lastError === "admin_cancelled";
+                              const label = isUser ? "Cancelled by User" : isAdmin ? "Cancelled by Admin" : `Provider Error${o.retryCount > 0 ? ` · ${o.retryCount} retries` : ""}`;
+                              const isCancel = isUser || isAdmin;
+                              const bg = isCancel ? (dark ? "rgba(161,161,170,.08)" : "rgba(113,113,122,.04)") : (dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)");
+                              const brd = isCancel ? (dark ? "rgba(161,161,170,.18)" : "rgba(113,113,122,.12)") : (dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.12)");
+                              const clr = isCancel ? (dark ? "#a1a1aa" : "#71717a") : (dark ? "#fca5a5" : "#dc2626");
+                              return (
+                              <div className="mb-2.5 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: bg, border: `1px solid ${brd}` }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={clr} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                                 <div className="min-w-0">
-                                  <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-0.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Provider Error{o.retryCount > 0 ? ` · ${o.retryCount} retries` : ""}</div>
-                                  <div className="text-[12px] break-all" style={{ color: dark ? "rgba(252,165,165,.8)" : "rgba(220,38,38,.7)", fontFamily: "var(--font-mono, monospace)" }}>{o.lastError}</div>
+                                  <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-0.5" style={{ color: clr }}>{label}</div>
+                                  {!isCancel && <div className="text-[12px] break-all" style={{ color: dark ? "rgba(252,165,165,.8)" : "rgba(220,38,38,.7)", fontFamily: "var(--font-mono, monospace)" }}>{o.lastError}</div>}
                                 </div>
-                              </div>
-                            )}
+                              </div>);
+                            })()}
 
                             {/* Info grid */}
                             {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); return (
@@ -349,7 +376,7 @@ export default function AdminOrdersPage({ dark, t }) {
                               </div>
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Profit</div>
-                                <div className="m text-[13px] font-semibold" style={{ color: o.status === "Cancelled" ? t.textMuted : (dark ? "#6ee7b7" : "#059669") }}>{fN(o.status === "Cancelled" ? 0 : netCharge - netCost)}</div>
+                                <div className="m text-[13px] font-semibold" style={{ color: o.status === "Cancelled" ? t.textMuted : netCharge - netCost < 0 ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{o.status === "Cancelled" ? fN(0) : `${netCharge - netCost < 0 ? "-" : ""}${fN(netCharge - netCost)}`}</div>
                               </div>
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Status</div>
@@ -379,6 +406,7 @@ export default function AdminOrdersPage({ dark, t }) {
                               <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[62px] py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={12} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
                               {o.status !== "Cancelled" && o.status !== "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? This may issue a refund.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={!!actionLoading} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>}
                               {o.status === "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Refill Order", message: `Request a refill for order ${o.id}?`, confirmLabel: "Refill" }); if (ok) doAction(o.id, "refill"); }} disabled={!!actionLoading} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>Refill</button>}
+                              {(o.status === "Completed" || o.status === "Partial") && <button onClick={() => openRefund(o)} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(52,211,153,.12)" : "rgba(5,150,105,.08)", color: dark ? "#34d399" : "#059669" }}>Refund</button>}
                               <button onClick={() => { setTicketMsg(`Hi ${o.user || "there"}, we noticed an issue with your order ${o.id}. `); setTicketPrompt({ userId: o.userId, orderId: o.id }); }} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(224,164,88,.12)" : "rgba(224,164,88,.08)", color: dark ? "#e0a458" : "#b45309" }}>Ticket</button>
                             </div>
                           </div>
@@ -461,16 +489,24 @@ export default function AdminOrdersPage({ dark, t }) {
                     );
                   })()}
 
-                  {/* Provider error */}
-                  {o.lastError && (
-                    <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)", border: `1px solid ${dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.12)"}` }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  {/* Error / cancel info */}
+                  {o.lastError && (() => {
+                    const isUser = o.lastError === "user_cancelled";
+                    const isAdmin = o.lastError === "admin_cancelled";
+                    const label = isUser ? "Cancelled by User" : isAdmin ? "Cancelled by Admin" : `Provider Error${o.retryCount > 0 ? ` · ${o.retryCount} retries` : ""}`;
+                    const isCancel = isUser || isAdmin;
+                    const bg = isCancel ? (dark ? "rgba(161,161,170,.08)" : "rgba(113,113,122,.04)") : (dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)");
+                    const brd = isCancel ? (dark ? "rgba(161,161,170,.18)" : "rgba(113,113,122,.12)") : (dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.12)");
+                    const clr = isCancel ? (dark ? "#a1a1aa" : "#71717a") : (dark ? "#fca5a5" : "#dc2626");
+                    return (
+                    <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: bg, border: `1px solid ${brd}` }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={clr} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                       <div className="min-w-0">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-0.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Provider Error{o.retryCount > 0 ? ` · ${o.retryCount} retries` : ""}</div>
-                        <div className="text-[12px] break-all" style={{ color: dark ? "rgba(252,165,165,.8)" : "rgba(220,38,38,.7)", fontFamily: "var(--font-mono, monospace)" }}>{o.lastError}</div>
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-0.5" style={{ color: clr }}>{label}</div>
+                        {!isCancel && <div className="text-[12px] break-all" style={{ color: dark ? "rgba(252,165,165,.8)" : "rgba(220,38,38,.7)", fontFamily: "var(--font-mono, monospace)" }}>{o.lastError}</div>}
                       </div>
-                    </div>
-                  )}
+                    </div>);
+                  })()}
 
                   {/* Info grid */}
                   {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); return (
@@ -493,7 +529,7 @@ export default function AdminOrdersPage({ dark, t }) {
                     </div>
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Profit</div>
-                      <div className="m text-sm font-semibold" style={{ color: o.status === "Cancelled" ? t.textMuted : (dark ? "#6ee7b7" : "#059669") }}>{fN(o.status === "Cancelled" ? 0 : netCharge - netCost)}</div>
+                      <div className="m text-sm font-semibold" style={{ color: o.status === "Cancelled" ? t.textMuted : netCharge - netCost < 0 ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{o.status === "Cancelled" ? fN(0) : `${netCharge - netCost < 0 ? "-" : ""}${fN(netCharge - netCost)}`}</div>
                     </div>
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Status</div>
@@ -523,6 +559,7 @@ export default function AdminOrdersPage({ dark, t }) {
                     <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[72px] py-2 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
                     {o.status !== "Cancelled" && o.status !== "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? This may issue a refund.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={!!actionLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>}
                     {o.status === "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Refill Order", message: `Request a refill for order ${o.id}?`, confirmLabel: "Refill" }); if (ok) doAction(o.id, "refill"); }} disabled={!!actionLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>Refill</button>}
+                    {(o.status === "Completed" || o.status === "Partial") && <button onClick={() => openRefund(o)} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(52,211,153,.12)" : "rgba(5,150,105,.08)", color: dark ? "#34d399" : "#059669" }}>Refund</button>}
                     <button onClick={() => { setTicketMsg(`Hi ${o.user || "there"}, we noticed an issue with your order ${o.id}. `); setTicketPrompt({ userId: o.userId, orderId: o.id }); }} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(224,164,88,.12)" : "rgba(224,164,88,.08)", color: dark ? "#e0a458" : "#b45309" }}>Ticket</button>
                   </div>
                 </div>
@@ -572,6 +609,40 @@ export default function AdminOrdersPage({ dark, t }) {
           </div>
         )}
       </div>
+
+      {refundPrompt && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => setRefundPrompt(null)}>
+          <div className="w-full max-w-[400px] mx-4 rounded-xl p-5" style={{ background: dark ? "#1e1e1e" : "#fff", border: `1px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
+            <div className="text-[15px] font-semibold mb-1" style={{ color: t.text }}>Refund order {refundPrompt.id}</div>
+            <div className="text-[12px] mb-4" style={{ color: t.textMuted }}>Customer: {refundPrompt.user} · Charged: {fN(refundPrompt.charge)}</div>
+
+            <div className="flex gap-2 mb-4">
+              {['full', 'partial'].map(rt => (
+                <button key={rt} onClick={() => setRefundType(rt)} className="flex-1 py-2 rounded-lg text-sm font-semibold cursor-pointer border transition-all duration-150" style={{ background: refundType === rt ? (dark ? "rgba(52,211,153,.15)" : "rgba(5,150,105,.1)") : "transparent", borderColor: refundType === rt ? (dark ? "#34d399" : "#059669") : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"), color: refundType === rt ? (dark ? "#34d399" : "#059669") : t.textMuted }}>{rt === 'full' ? 'Full Refund' : 'Partial'}</button>
+              ))}
+            </div>
+
+            {refundType === 'full' && (
+              <div className="py-3 px-3 rounded-lg mb-4 text-center" style={{ background: dark ? "rgba(52,211,153,.08)" : "rgba(5,150,105,.05)", border: `1px solid ${dark ? "rgba(52,211,153,.2)" : "rgba(5,150,105,.15)"}` }}>
+                <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Refund Amount</div>
+                <div className="m text-lg font-bold" style={{ color: dark ? "#34d399" : "#059669" }}>{fN(refundPrompt.charge)}</div>
+              </div>
+            )}
+
+            {refundType === 'partial' && (
+              <div className="mb-4">
+                <label className="text-[11px] uppercase tracking-[1px] block mb-1.5" style={{ color: t.textMuted }}>Amount (₦)</label>
+                <input type="number" value={refundAmount} onChange={e => setRefundAmount(e.target.value)} min="1" max={refundPrompt.charge} step="any" className="w-full rounded-lg py-2.5 px-3 text-sm outline-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.text }} placeholder={`Max ₦${refundPrompt.charge.toLocaleString()}`} autoFocus />
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setRefundPrompt(null)} className="py-2 px-4 rounded-lg text-sm font-medium cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textSoft }}>Cancel</button>
+              <button onClick={doRefund} disabled={refundSending || (refundType === 'partial' && (!refundAmount || Number(refundAmount) <= 0))} className="py-2 px-4 rounded-lg text-sm font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(52,211,153,.2)" : "rgba(5,150,105,.12)", color: dark ? "#34d399" : "#059669", opacity: refundSending || (refundType === 'partial' && (!refundAmount || Number(refundAmount) <= 0)) ? .5 : 1 }}>{refundSending ? "Processing..." : "Confirm Refund"}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {ticketPrompt && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => { setTicketPrompt(null); setTicketMsg(""); }}>

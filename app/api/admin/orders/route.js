@@ -72,7 +72,8 @@ export async function POST(req) {
   if (error) return error;
 
   try {
-    const { action, orderId } = await req.json();
+    const body = await req.json();
+    const { action, orderId } = body;
 
     if (!orderId) return Response.json({ error: 'Order ID required' }, { status: 400 });
 
@@ -229,6 +230,56 @@ export async function POST(req) {
         }
       }
       return Response.json({ success: true, status: order.status, message: `No ${providerLabel} tracking` });
+    }
+
+    if (action === 'refund') {
+      const { refundType, amount } = body;
+      if (!refundType || !['full', 'partial'].includes(refundType)) {
+        return Response.json({ error: 'Refund type must be "full" or "partial"' }, { status: 400 });
+      }
+
+      const existing = await prisma.transaction.aggregate({
+        where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
+        _sum: { amount: true },
+      });
+      const alreadyRefunded = existing._sum.amount || 0;
+      const maxRefundable = Math.max(0, order.charge - alreadyRefunded);
+
+      if (maxRefundable <= 0) return Response.json({ error: 'Order already fully refunded' }, { status: 400 });
+
+      let refundAmount;
+      if (refundType === 'full') {
+        refundAmount = maxRefundable;
+      } else {
+        refundAmount = Math.round((amount || 0) * 100);
+        if (refundAmount <= 0) return Response.json({ error: 'Amount must be greater than zero' }, { status: 400 });
+        if (refundAmount > maxRefundable) return Response.json({ error: `Amount exceeds maximum refundable (₦${(maxRefundable / 100).toLocaleString()})` }, { status: 400 });
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({ where: { id: order.userId }, data: { balance: { increment: refundAmount } } });
+        await tx.transaction.create({
+          data: {
+            userId: order.userId, type: 'refund', amount: refundAmount,
+            method: 'wallet', status: 'Completed',
+            reference: `ADM-REF-${order.orderId || order.id}`,
+            note: `Admin refund — ${refundType}${refundType === 'partial' ? ` (₦${(refundAmount / 100).toLocaleString()})` : ''}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} previously refunded)` : ''}`,
+          },
+        });
+        await tx.order.update({ where: { id: order.id }, data: { refundedAt: new Date() } });
+      });
+
+      try {
+        const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true, notifEmail: true, notifOrders: true } });
+        if (user?.email && user.notifEmail !== false && user.notifOrders !== false) {
+          const amt = refundAmount / 100;
+          walletCreditEmail(user.name || 'there', amt, 'Refund processed for your order').then(html => sendEmail(user.email, `₦${amt.toLocaleString()} refunded to your Nitro wallet`, html)).catch(() => {});
+        }
+      } catch {}
+
+      const refundMsg = `₦${(refundAmount / 100).toLocaleString()}`;
+      await logActivity(admin.name, `Refunded ${refundMsg} for order ${orderId} (${refundType})`, 'order');
+      return Response.json({ success: true, message: `${refundMsg} refunded to customer` });
     }
 
     if (action === 'retry') {
