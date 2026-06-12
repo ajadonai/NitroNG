@@ -128,10 +128,7 @@ function AdminOverview({ data, dark, t, setActive }) {
                           <span style={{ color: t.textMuted }}>{item.created ? fD(item.created) : ""}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {item.orders.some(o => ["Pending","Processing"].includes(o.status)) && <span className="inline-block w-[5px] h-[5px] rounded-full" style={{ background: item.orders.some(o => o.status === "Processing") ? (dark ? "#a5b4fc" : "#6366f1") : (dark ? "#fcd34d" : "#d97706") }} />}
-                        <span className="text-[14px] font-semibold" style={{ color: item.orders.every(o => o.status === "Cancelled") ? (dark ? "#fca5a5" : "#dc2626") : item.orders.some(o => o.status === "Partial") ? (dark ? "#fbbf24" : "#d97706") : t.green }}>{fN(totalCharge)}</span>
-                      </div>
+                      <span className="text-[14px] font-semibold shrink-0" style={{ color: item.orders.every(o => o.status === "Cancelled") ? (dark ? "#fca5a5" : "#dc2626") : item.orders.some(o => o.status === "Partial") ? (dark ? "#fbbf24" : "#d97706") : t.green }}>{fN(totalCharge)}</span>
                     </div>
                   );
                 }
@@ -147,10 +144,7 @@ function AdminOverview({ data, dark, t, setActive }) {
                         <span style={{ color: t.textMuted }}>{o.created ? fD(o.created) : ""}</span>
                       </div>
                     </div>
-                    <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                      <div className="text-[14px] font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : o.status === "Partial" ? (dark ? "#fbbf24" : "#d97706") : t.green }}>{fN(o.charge || 0)}</div>
-                      <span className="text-[11px] font-semibold py-0.5 px-2 rounded-[5px] whitespace-nowrap" style={{ background: o.status === "Completed" ? (dark ? "rgba(110,231,183,.1)" : "#ecfdf5") : o.status === "Processing" ? (dark ? "rgba(165,180,252,.1)" : "#eef2ff") : (o.status === "Failed" || o.status === "Cancelled" || o.status === "Rejected" || o.status === "Partial") ? (dark ? "rgba(252,165,165,.1)" : "#fef2f2") : (dark ? "rgba(252,211,77,.1)" : "#fffbeb"), color: o.status === "Completed" ? t.green : o.status === "Processing" ? t.blue : (o.status === "Failed" || o.status === "Cancelled" || o.status === "Rejected" || o.status === "Partial") ? t.red : t.amber }}>{o.status}</span>
-                    </div>
+                    <span className="text-[14px] font-semibold shrink-0" style={{ color: o.status === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : o.status === "Partial" ? (dark ? "#fbbf24" : "#d97706") : t.green }}>{fN(o.charge || 0)}</span>
                   </div>
                 );
               }) : null;
