@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getCurrentUser } from '@/lib/auth';
-import { checkOrder } from '@/lib/smm';
+import { placeOrder, checkOrder } from '@/lib/smm';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
@@ -444,8 +444,9 @@ export async function POST(req) {
       return Response.json({ error: 'price_drift', rows: driftRows }, { status: 409 });
     }
 
-    // Atomic transaction: loyalty discount + balance deduction + order creation
-    const batchId = await nextBatchId();
+    // Single-item cart → treat as a regular single order (no batch)
+    const isSingleOrder = resolved.length === 1;
+    const batchId = isSingleOrder ? null : await nextBatchId();
 
     const result = await prisma.$transaction(async (tx) => {
       // Loyalty discount — computed inside transaction for concurrency safety
@@ -523,7 +524,7 @@ export async function POST(req) {
         createdOrders.push({ dbId: order.id, orderId, ...o });
       }
 
-      // Single transaction record for the batch
+      const txRef = batchId || ids[0];
       await tx.transaction.create({
         data: {
           userId: session.id,
@@ -531,8 +532,10 @@ export async function POST(req) {
           amount: -totalCharge,
           method: 'wallet',
           status: 'Completed',
-          reference: batchId,
-          note: `Bulk ${batchId} — ${orderData.length} orders${loyaltyPercent > 0 ? ` (${loyaltyTierName} -${loyaltyPercent}%)` : ''}${activePromo ? ` (Promo -${activePromo.discountPercent}%)` : ''}${idempotencyKey ? ` [${idempotencyKey}]` : ''}`,
+          reference: txRef,
+          note: isSingleOrder
+            ? `Order ${ids[0]} — ${orderData[0].tierName} x${orderData[0].qty.toLocaleString()}${loyaltyPercent > 0 ? ` (${loyaltyTierName} -${loyaltyPercent}%)` : ''}${activePromo ? ` (Promo -${activePromo.discountPercent}%)` : ''}`
+            : `Bulk ${batchId} — ${orderData.length} orders${loyaltyPercent > 0 ? ` (${loyaltyTierName} -${loyaltyPercent}%)` : ''}${activePromo ? ` (Promo -${activePromo.discountPercent}%)` : ''}${idempotencyKey ? ` [${idempotencyKey}]` : ''}`,
         },
       });
 
@@ -541,6 +544,47 @@ export async function POST(req) {
 
     const orderResults = result.createdOrders.map(o => ({ id: o.orderId, link: o.link, status: 'Pending', service: o.tierName }));
     const newBalance = (await prisma.user.findUnique({ where: { id: session.id }, select: { balance: true } }))?.balance || 0;
+
+    // Single-order: dispatch directly before response; batch dispatches fire-and-forget after
+    if (isSingleOrder) {
+      const o = result.createdOrders[0];
+      const isDev = process.env.NODE_ENV === 'development';
+      if (isDev) {
+        await prisma.order.update({ where: { id: o.dbId }, data: { apiOrderId: `DEV-${Date.now()}`, status: 'Processing' } });
+        orderResults[0].status = 'Processing';
+      } else if (o.service.apiId) {
+        try {
+          await prisma.order.update({ where: { id: o.dbId }, data: { dispatchedAt: new Date() } });
+          const provider = o.service.provider || 'mtp';
+          const extra = {};
+          if (o.comments) {
+            const at = (o.service.apiType || '').toLowerCase();
+            if (at.includes('mention')) extra.usernames = o.comments;
+            else if (at === 'poll') extra.answer_number = o.comments;
+            else extra.comments = o.comments;
+          }
+          let orderQty = o.qty;
+          if (o.service.dripfeed) {
+            const { calculateDripFeed } = await import('@/lib/drip-feed');
+            const dripFeed = calculateDripFeed(o.service.category, o.qty, null, o.service.min || 0);
+            if (dripFeed) {
+              orderQty = Math.ceil(o.qty / dripFeed.runs);
+              extra.runs = dripFeed.runs;
+              extra.interval = dripFeed.interval;
+            }
+          }
+          const provResult = await placeOrder(provider, o.service.apiId, o.link, orderQty, extra);
+          const apiOrderId = provResult.order ? String(provResult.order) : null;
+          if (apiOrderId) {
+            await prisma.order.update({ where: { id: o.dbId }, data: { apiOrderId, status: 'Processing' } });
+            orderResults[0].status = 'Processing';
+          }
+        } catch (err) {
+          log.error('Order dispatch', err.message);
+          await prisma.order.update({ where: { id: o.dbId }, data: { lastError: err.message.slice(0, 500) } }).catch(() => {});
+        }
+      }
+    }
 
     const eventId = generateEventId();
     const hdrs = await getHeaders();
@@ -561,7 +605,7 @@ export async function POST(req) {
       eventId,
       batchId,
       total: result.createdOrders.length,
-      placed: 0,
+      placed: isSingleOrder && orderResults[0]?.status === 'Processing' ? 1 : 0,
       failed: 0,
       totalCharge: result.totalCharge / 100,
       newBalance: newBalance / 100,
@@ -576,8 +620,9 @@ export async function POST(req) {
       }).catch(e => log.warn('Idempotency update', e.message));
     }
 
-    // Fire-and-forget: dispatch to providers + send email (non-blocking)
-    dispatchBatch(result.createdOrders, session.id, batchId, result.totalCharge).catch(e => log.error('Batch dispatch', e.message));
+    if (!isSingleOrder) {
+      dispatchBatch(result.createdOrders, session.id, batchId, result.totalCharge).catch(e => log.error('Batch dispatch', e.message));
+    }
 
     return Response.json(responseBody);
   } catch (err) {

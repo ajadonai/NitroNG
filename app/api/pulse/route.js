@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'crypto';
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
+import { watBounds } from '@/lib/format';
 
 async function validateKey(req) {
   const key = new URL(req.url).searchParams.get('key');
@@ -20,15 +21,7 @@ export async function GET(req) {
   }
 
   try {
-    const now = new Date();
-    // WAT (UTC+1) — midnight in Lagos = 23:00 previous day UTC
-    const watNow = new Date(now.getTime() + 60 * 60 * 1000);
-    const todayStart = new Date(Date.UTC(watNow.getUTCFullYear(), watNow.getUTCMonth(), watNow.getUTCDate()) - 60 * 60 * 1000);
-
-    const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
-    const yesterdaySameTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-    const monthStart = new Date(Date.UTC(watNow.getUTCFullYear(), watNow.getUTCMonth(), 1) - 60 * 60 * 1000);
+    const { now, todayStart, yesterdayStart, yesterdaySameTime, monthStart } = watBounds();
     const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
 
     const [

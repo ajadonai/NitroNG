@@ -78,11 +78,11 @@ function AdminOverview({ data, dark, t, setActive }) {
       {/* Stat cards */}
       <div className="adm-stats">
         {[
-          ["Today's Revenue", fN(stats.revenue || 0), t.green, `${stats.revenueChange || 0}% vs yesterday`],
+          ["Today's Revenue", fN(stats.revenue || 0), t.green, stats.revenueChange == null ? 'New today' : `${stats.revenueChange}% vs yesterday`],
           ["Total Users", String(stats.users || 0), t.blue, `${stats.newUsersToday || 0} today`],
           ["Total Orders", String(stats.orders || 0), t.accent, `${stats.ordersToday || 0} today`],
           ["Processing", String(stats.processing || 0), t.amber, "Est. 1-2 hrs"],
-          ["Deposits (Today)", fN(stats.deposits || 0), t.green, `${stats.depositsChange || 0}% vs yesterday`],
+          ["Deposits (Today)", fN(stats.deposits || 0), t.green, stats.depositsChange == null ? 'New today' : `${stats.depositsChange}% vs yesterday`],
         ].map(([label, val, color, sub]) => (
           <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
             <div className="dash-stat-dot" style={{ background: color }} />

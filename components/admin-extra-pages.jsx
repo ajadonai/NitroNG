@@ -1282,25 +1282,14 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
   );
   if (!analytics) return null;
 
-  if (analytics.totalClicks === 0) {
+  const hasAnyData = analytics.totalClicks > 0 || (link.signups || 0) > 0 || (link.orders || 0) > 0;
+  if (!hasAnyData) {
     return (
       <div style={{ animation: "fadeIn .2s ease" }}>
         <div className="rounded-xl p-8 text-center" style={cardStyle}>
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3 opacity-40"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          <div className="text-sm font-semibold mb-1" style={{ color: t.text }}>No clicks yet</div>
-          <div className="text-[13px] mb-4" style={{ color: t.textMuted }}>Share this link to start tracking analytics</div>
-          {(link.signups > 0 || link.orders > 0) && (
-            <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto mt-4">
-              <div className="rounded-lg p-3" style={cardStyle}>
-                <div className="text-lg font-bold" style={{ color: dark ? "#a5b4fc" : "#6366f1" }}>{(link.signups || 0).toLocaleString()}</div>
-                <div className="text-[10px] font-semibold uppercase tracking-[1px] mt-0.5" style={{ color: t.textMuted }}>Signups</div>
-              </div>
-              <div className="rounded-lg p-3" style={cardStyle}>
-                <div className="text-lg font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{(link.orders || 0).toLocaleString()}</div>
-                <div className="text-[10px] font-semibold uppercase tracking-[1px] mt-0.5" style={{ color: t.textMuted }}>Orders</div>
-              </div>
-            </div>
-          )}
+          <div className="text-sm font-semibold mb-1" style={{ color: t.text }}>No activity yet</div>
+          <div className="text-[13px]" style={{ color: t.textMuted }}>Share this link to start tracking analytics</div>
         </div>
       </div>
     );
@@ -1312,6 +1301,9 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
   const timelineData = range === "24h"
     ? Array.from({ length: 24 }, (_, h) => { const m = analytics.timeline.find(t => t.bucket === h); return m ? m.clicks : 0; })
     : analytics.timeline.map(t => t.clicks);
+  const signupTimelineData = range === "24h"
+    ? Array.from({ length: 24 }, (_, h) => { const m = (analytics.signupTimeline || []).find(t => t.bucket === h); return m ? m.signups : 0; })
+    : (analytics.signupTimeline || []).map(t => t.signups);
   const timelineLabels = range === "24h"
     ? Array.from({ length: 24 }, (_, i) => `${i}:00`)
     : analytics.timeline.map(t => { const d = new Date(t.bucket); return d.toLocaleDateString('en', { month: 'short', day: 'numeric' }); });
@@ -1327,7 +1319,7 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
           ["Total Clicks", analytics.totalClicks.toLocaleString(), `${analytics.uniqueClicks.toLocaleString()} unique`, t.accent],
           ["Signups", (link.signups || 0).toLocaleString(), `${convRate}% conversion`, dark ? "#a5b4fc" : "#6366f1"],
           ["Orders", (link.orders || 0).toLocaleString(), `${orderRate}% of signups`, dark ? "#6ee7b7" : "#059669"],
-          ["Revenue", fN((link.revenue || 0) / 100), "from this link", dark ? "#fcd34d" : "#d97706"],
+          ["Revenue", fN(analytics.periodRevenue || (link.revenue || 0) / 100), `${fN(analytics.periodProfit || 0)} profit`, dark ? "#fcd34d" : "#d97706"],
         ].map(([label, val, sub, color]) => (
           <div key={label} className="rounded-xl p-3.5 relative overflow-hidden" style={cardStyle}>
             <div className="text-[10px] font-semibold uppercase tracking-[1.5px] mb-1.5" style={{ color: t.textMuted }}>{label}</div>
@@ -1351,7 +1343,20 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
               ))}
             </div>
           </div>
-          <SparkChart data={timelineData} color={t.accent} height={72} />
+          <div className="relative">
+            <SparkChart data={timelineData} color={t.accent} height={72} />
+            {signupTimelineData.some(v => v > 0) && (
+              <div className="absolute inset-0" style={{ opacity: 0.5 }}>
+                <SparkChart data={signupTimelineData} color={dark ? "#a5b4fc" : "#6366f1"} height={72} />
+              </div>
+            )}
+          </div>
+          {signupTimelineData.some(v => v > 0) && (
+            <div className="flex gap-4 mt-2">
+              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ background: t.accent }} /><span className="text-[10px]" style={{ color: t.textMuted }}>Clicks</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ background: dark ? "#a5b4fc" : "#6366f1" }} /><span className="text-[10px]" style={{ color: t.textMuted }}>Signups</span></div>
+            </div>
+          )}
           {timelineLabels.length <= 14 && (
             <div className="flex justify-between mt-2">
               {timelineLabels.map((l, i) => (
@@ -1445,6 +1450,45 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* OS + Cities */}
+      {((analytics.os || []).length > 0 || (analytics.cities || []).length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          {(analytics.os || []).length > 0 && (
+            <div className="rounded-xl p-4" style={cardStyle}>
+              <div className="text-sm font-semibold mb-3" style={{ color: t.text }}>Operating Systems</div>
+              <div className="flex gap-2 flex-wrap">
+                {analytics.os.map((o, i) => {
+                  const pct = analytics.totalClicks ? ((o.clicks / analytics.totalClicks) * 100).toFixed(0) : 0;
+                  return (
+                    <div key={o.name} className="rounded-lg py-2 px-3 flex items-center gap-2" style={{ background: `${accentColors[i % accentColors.length]}10`, border: `1px solid ${accentColors[i % accentColors.length]}25` }}>
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: accentColors[i % accentColors.length] }} />
+                      <span className="text-[12px] font-medium" style={{ color: t.text }}>{o.name}</span>
+                      <span className="text-[11px] font-semibold" style={{ color: accentColors[i % accentColors.length] }}>{pct}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {(analytics.cities || []).length > 0 && (
+            <div className="rounded-xl p-4" style={cardStyle}>
+              <div className="text-sm font-semibold mb-3" style={{ color: t.text }}>Top Cities</div>
+              <div className="space-y-2.5">
+                {analytics.cities.map((c, i) => (
+                  <div key={c.name}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[12px] flex-1" style={{ color: t.text }}>{c.name}</span>
+                      <span className="text-[12px] font-semibold tabular-nums" style={{ color: t.accent }}>{c.clicks.toLocaleString()}</span>
+                    </div>
+                    <MiniBar pct={(c.clicks / analytics.totalClicks) * 100} color={i === 0 ? t.accent : `${t.accent}66`} dark={dark} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
