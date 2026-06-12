@@ -554,7 +554,7 @@ export async function POST(req) {
       }
     } catch (err) { log.warn('Promotion discount', err.message); }
 
-    const qty = Math.floor(Number(quantity));
+    qty = Math.floor(Number(quantity));
 
     // Check for active order on same service + link (MTP rejects duplicates)
     const activeForLink = await prisma.order.findFirst({
