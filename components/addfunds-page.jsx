@@ -389,11 +389,10 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
             <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-lg border-[3px] mb-2.5" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)", borderColor: dark ? "#0e1225" : "#f3f0ec" }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
             </div>
-            <div className="flex items-baseline gap-2">
+            <div className="flex items-baseline gap-2.5">
               <div className="text-[11px] uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>Current Balance</div>
-              <div className="text-[10px] font-medium" style={{ color: dark ? "#6ee7b7" : "#059669" }}>Available now</div>
+              <div className="text-[28px] font-bold" style={{ color: t.green }}>{fN(balance)}</div>
             </div>
-            <div className="text-[28px] font-bold mt-0.5" style={{ color: t.green }}>{fN(balance)}</div>
             {lastFunded && <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>Last funded {fD(lastFunded.date, true)}</div>}
             {pendingDeposits.length > 0 && (() => {
               const awaitingTx = pendingDeposits.find(tx => tx.awaitingConfirmation);
@@ -479,17 +478,20 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
                 <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 shadow-md border-[2.5px] mb-2" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)", borderColor: dark ? "#0e1225" : "#f3f0ec" }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                 </div>
-                <div className="flex items-baseline gap-1.5">
+                <div className="flex items-baseline gap-2">
                   <div className="text-[11px] uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>Current Balance</div>
-                  <div className="text-[10px] font-medium" style={{ color: dark ? "#6ee7b7" : "#059669" }}>Available</div>
+                  <div className="text-[22px] font-semibold" style={{ color: t.green }}>{fN(balance)}</div>
                 </div>
-                <div className="m text-[22px] font-semibold" style={{ color: t.green }}>{fN(balance)}</div>
-                {pendingDeposits.length > 0 && (
-                  <div className="flex items-center gap-1.5 mt-1.5 text-[11px]" style={{ color: dark ? "#fcd34d" : "#d97706" }}>
-                    <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: dark ? "#fcd34d" : "#d97706" }} />
-                    {pendingDeposits.length} pending{pendingTotal > 0 ? ` · ${fN(pendingTotal)}` : ""}
-                  </div>
-                )}
+                {pendingDeposits.length > 0 && (() => {
+                  const awaitingTx = pendingDeposits.find(tx => tx.awaitingConfirmation);
+                  return (
+                    <div className="flex items-center gap-1.5 mt-1.5 py-1 px-2 rounded-lg text-[11px]" style={{ background: dark ? "rgba(252,211,77,.06)" : "rgba(217,119,6,.04)", border: `1px solid ${dark ? "rgba(252,211,77,.14)" : "rgba(217,119,6,.1)"}`, color: dark ? "#fcd34d" : "#d97706" }}>
+                      <div className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ background: dark ? "#fcd34d" : "#d97706" }} />
+                      <span className="flex-1">{pendingDeposits.length} pending{pendingTotal > 0 ? ` · ${fN(pendingTotal)}` : ""}</span>
+                      {awaitingTx && <button onClick={() => { setConfirmModal(awaitingTx); setSenderName(""); }} className="py-0.5 px-2 rounded-md text-[11px] font-semibold cursor-pointer shrink-0 border-none" style={{ background: dark ? "rgba(252,211,77,.15)" : "rgba(217,119,6,.12)", color: dark ? "#fcd34d" : "#d97706" }}>I've paid</button>}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -817,7 +819,6 @@ function WalletHistory({ txs, walletSummary, dark, t, onRefresh, setConfirmModal
               </div>
               <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{tx.date ? fD(tx.date, true) : ""}</div>
             </div>
-            {tx.status === "Pending" && tx.method === "manual" && tx.awaitingConfirmation && tx.reference && <button onClick={() => { setConfirmModal(tx); setSenderName(""); }} className="py-1 px-2.5 rounded-md bg-transparent text-[11px] font-semibold cursor-pointer shrink-0 transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${dark ? "rgba(252,211,77,.25)" : "rgba(217,119,6,.2)"}`, color: dark ? "#fcd34d" : "#d97706", fontFamily: "inherit" }}>I've paid</button>}
           </div>
         )) : (
           <div className="p-10 text-center text-[15px]" style={{ color: t.textMuted }}>
