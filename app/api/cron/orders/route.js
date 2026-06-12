@@ -228,7 +228,7 @@ export async function GET(req) {
     try {
       const retryable = await prisma.order.findMany({
         where: {
-          status: 'Pending', apiOrderId: null, dripDays: null,
+          status: 'Pending', apiOrderId: null,
           retryCount: { lt: 5 },
           createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
           OR: [

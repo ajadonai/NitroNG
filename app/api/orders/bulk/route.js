@@ -7,7 +7,6 @@ import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { sendEmail, batchPlacementEmail } from '@/lib/email';
 import { cleanLink } from '@/lib/clean-link';
-import { calculateIntradayDrip, INTRADAY_THRESHOLD } from '@/lib/drip-feed';
 import { sendEvent, generateEventId, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
 
@@ -52,50 +51,19 @@ async function dispatchBatch(createdOrders, userId, batchId, totalCharge) {
   for (const o of createdOrders) {
     if (consecutiveFails >= 5) break;
     try {
-      if (o.hasDrip) {
-        const first = await prisma.dripDispatch.findFirst({ where: { orderId: o.dbId, day: 1, batch: 1 } });
-        if (!first) continue;
-        await prisma.order.update({ where: { id: o.dbId }, data: { status: 'Processing', dispatchedAt: new Date() } }).catch(() => {});
-        await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'dispatching', dispatchedAt: new Date() } });
-        const provider = o.service.provider || 'mtp';
-        const extra = {};
-        if (o.comments) {
-          const at = (o.service.apiType || '').toLowerCase();
-          if (at.includes('mention')) extra.usernames = o.comments;
-          else if (at === 'poll') extra.answer_number = o.comments;
-          else extra.comments = o.comments;
-        }
-        const result = await Promise.race([
-          placeOrder(provider, o.service.apiId, o.link, first.quantity, extra),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('dispatch_timeout')), 10000)),
-        ]);
-        const batchApiId = result.order ? String(result.order) : null;
-        if (batchApiId) {
-          await prisma.dripDispatch.update({ where: { id: first.id }, data: { apiOrderId: batchApiId, status: 'processing' } });
-          await prisma.order.update({ where: { id: o.dbId }, data: { dripDelivered: 1 } }).catch(() => {});
-          placed++; consecutiveFails = 0;
-        } else {
-          await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'pending', dispatchedAt: null } }).catch(() => {});
-          consecutiveFails++;
-        }
-      } else {
-        await prisma.order.update({ where: { id: o.dbId }, data: { dispatchedAt: new Date() } }).catch(() => {});
-        const apiOrderId = await Promise.race([
-          placeWithProvider({ id: o.dbId, service: o.service, tier: o.tier, link: o.link, quantity: o.qty, comments: o.comments }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('dispatch_timeout')), 10000)),
-        ]);
-        if (apiOrderId) { placed++; consecutiveFails = 0; }
-        else {
-          await prisma.order.update({ where: { id: o.dbId }, data: { lastError: 'dispatch_no_response' } }).catch(() => {});
-          consecutiveFails++;
-        }
+      await prisma.order.update({ where: { id: o.dbId }, data: { dispatchedAt: new Date() } }).catch(() => {});
+      const apiOrderId = await Promise.race([
+        placeWithProvider({ id: o.dbId, service: o.service, tier: o.tier, link: o.link, quantity: o.qty, comments: o.comments }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('dispatch_timeout')), 10000)),
+      ]);
+      if (apiOrderId) { placed++; consecutiveFails = 0; }
+      else {
+        await prisma.order.update({ where: { id: o.dbId }, data: { lastError: 'dispatch_no_response' } }).catch(() => {});
+        consecutiveFails++;
       }
     } catch (err) {
       log.error('Bulk dispatch', `${o.orderId}: ${err.message}`);
       const isTimeout = /timed?\s?out|dispatch_timeout|ETIMEDOUT|ECONNABORTED|ECONNRESET|retries failed/i.test(err.message);
-      if (o.hasDrip) {
-        await prisma.dripDispatch.updateMany({ where: { orderId: o.dbId, day: 1, batch: 1, status: 'dispatching' }, data: { status: 'pending', lastError: (isTimeout ? '[TIMEOUT] ' : '') + err.message.slice(0, 500), dispatchedAt: null } }).catch(() => {});
-      }
       await prisma.order.update({ where: { id: o.dbId }, data: { lastError: (isTimeout ? '[TIMEOUT] ' : '') + err.message.slice(0, 500), retryCount: { increment: 1 } } }).catch(() => {});
       consecutiveFails++;
     }
@@ -469,8 +437,7 @@ export async function POST(req) {
         }
       }
 
-      const dripSchedule = process.env.NODE_ENV !== 'development' && tier.group?.tags?.includes('drip') && qty >= INTRADAY_THRESHOLD && qty < 3000 ? calculateIntradayDrip(qty, service.min || 50, new Date()) : null;
-      resolved.push({ tier, service, link: trimmedLink, qty, charge, cost, tierName, comments, dripSchedule });
+      resolved.push({ tier, service, link: trimmedLink, qty, charge, cost, tierName, comments });
     }
 
     if (driftRows.length > 0) {
@@ -552,21 +519,9 @@ export async function POST(req) {
             platformCampaignId: promoType === 'platform' ? activePromo.id : null,
             recurringCampaignId: promoType === 'recurring' ? activePromo.id : null,
             status: 'Pending',
-            ...(o.dripSchedule ? { dripDays: 1 } : {}),
           },
         });
-        if (o.dripSchedule) {
-          await tx.dripDispatch.createMany({
-            data: o.dripSchedule.dispatches.map(d => ({
-              orderId: order.id,
-              day: 1,
-              batch: d.batch,
-              quantity: d.quantity,
-              scheduledAt: d.scheduledAt,
-            })),
-          });
-        }
-        createdOrders.push({ dbId: order.id, orderId, ...o, hasDrip: !!o.dripSchedule });
+        createdOrders.push({ dbId: order.id, orderId, ...o });
       }
 
       const txRef = batchId || ids[0];
@@ -598,47 +553,35 @@ export async function POST(req) {
         await prisma.order.update({ where: { id: o.dbId }, data: { apiOrderId: `DEV-${Date.now()}`, status: 'Processing' } });
         orderResults[0].status = 'Processing';
       } else if (o.service.apiId) {
-        const provider = o.service.provider || 'mtp';
-        const extra = {};
-        if (o.comments) {
-          const at = (o.service.apiType || '').toLowerCase();
-          if (at.includes('mention')) extra.usernames = o.comments;
-          else if (at === 'poll') extra.answer_number = o.comments;
-          else extra.comments = o.comments;
-        }
-        if (o.hasDrip) {
-          await prisma.order.update({ where: { id: o.dbId }, data: { status: 'Processing', dispatchedAt: new Date() } });
-          orderResults[0].status = 'Processing';
-          const first = await prisma.dripDispatch.findFirst({ where: { orderId: o.dbId, day: 1, batch: 1 } });
-          if (first) {
-            try {
-              await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'dispatching', dispatchedAt: new Date() } });
-              const provResult = await placeOrder(provider, o.service.apiId, o.link, first.quantity, extra);
-              const batchApiId = provResult.order ? String(provResult.order) : null;
-              if (batchApiId) {
-                await prisma.dripDispatch.update({ where: { id: first.id }, data: { apiOrderId: batchApiId, status: 'processing' } });
-                await prisma.order.update({ where: { id: o.dbId }, data: { dripDelivered: 1 } });
-              } else {
-                await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'pending', dispatchedAt: null } });
-              }
-            } catch (err) {
-              log.error('Drip batch 1', err.message);
-              await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'pending', lastError: err.message.slice(0, 500), dispatchedAt: null } }).catch(() => {});
+        try {
+          await prisma.order.update({ where: { id: o.dbId }, data: { dispatchedAt: new Date() } });
+          const provider = o.service.provider || 'mtp';
+          const extra = {};
+          if (o.comments) {
+            const at = (o.service.apiType || '').toLowerCase();
+            if (at.includes('mention')) extra.usernames = o.comments;
+            else if (at === 'poll') extra.answer_number = o.comments;
+            else extra.comments = o.comments;
+          }
+          let orderQty = o.qty;
+          if (o.service.dripfeed) {
+            const { calculateDripFeed } = await import('@/lib/drip-feed');
+            const dripFeed = calculateDripFeed(o.service.category, o.qty, null, o.service.min || 0);
+            if (dripFeed) {
+              orderQty = Math.ceil(o.qty / dripFeed.runs);
+              extra.runs = dripFeed.runs;
+              extra.interval = dripFeed.interval;
             }
           }
-        } else {
-          try {
-            await prisma.order.update({ where: { id: o.dbId }, data: { dispatchedAt: new Date() } });
-            const provResult = await placeOrder(provider, o.service.apiId, o.link, o.qty, extra);
-            const apiOrderId = provResult.order ? String(provResult.order) : null;
-            if (apiOrderId) {
-              await prisma.order.update({ where: { id: o.dbId }, data: { apiOrderId, status: 'Processing' } });
-              orderResults[0].status = 'Processing';
-            }
-          } catch (err) {
-            log.error('Order dispatch', err.message);
-            await prisma.order.update({ where: { id: o.dbId }, data: { lastError: err.message.slice(0, 500) } }).catch(() => {});
+          const provResult = await placeOrder(provider, o.service.apiId, o.link, orderQty, extra);
+          const apiOrderId = provResult.order ? String(provResult.order) : null;
+          if (apiOrderId) {
+            await prisma.order.update({ where: { id: o.dbId }, data: { apiOrderId, status: 'Processing' } });
+            orderResults[0].status = 'Processing';
           }
+        } catch (err) {
+          log.error('Order dispatch', err.message);
+          await prisma.order.update({ where: { id: o.dbId }, data: { lastError: err.message.slice(0, 500) } }).catch(() => {});
         }
       }
     }

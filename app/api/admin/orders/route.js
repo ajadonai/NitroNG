@@ -23,22 +23,15 @@ export async function GET(req) {
       ];
     }
 
-    let hasDripTable = true;
-    const include = {
-      user: { select: { name: true, email: true } },
-      service: { select: { name: true, category: true, provider: true, apiId: true } },
-      tier: { select: { tier: true, group: { select: { name: true, platform: true } } } },
-    };
-    try {
-      await prisma.dripDispatch.findFirst({ take: 1 });
-      include.dripDispatches = { select: { id: true, day: true, batch: true, quantity: true, status: true, apiOrderId: true, scheduledAt: true, dispatchedAt: true, completedAt: true, lastError: true }, orderBy: { scheduledAt: 'asc' } };
-    } catch { hasDripTable = false; }
-
     const orders = await prisma.order.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       take: 300,
-      include,
+      include: {
+        user: { select: { name: true, email: true } },
+        service: { select: { name: true, category: true, provider: true, apiId: true } },
+        tier: { select: { tier: true, group: { select: { name: true, platform: true } } } },
+      },
     });
 
     return Response.json({
@@ -62,8 +55,6 @@ export async function GET(req) {
         startCount: o.startCount,
         status: o.status,
         apiOrderId: o.apiOrderId,
-        dripDays: o.dripDays || null,
-        dripDispatches: o.dripDispatches?.length > 0 ? o.dripDispatches.map(d => ({ id: d.id, day: d.day, batch: d.batch, qty: d.quantity, status: d.status, apiOrderId: d.apiOrderId, scheduled: d.scheduledAt?.toISOString(), dispatched: d.dispatchedAt?.toISOString(), completed: d.completedAt?.toISOString(), error: d.lastError })) : null,
         batchId: o.batchId || null,
         lastError: o.lastError || null,
         retryCount: o.retryCount || 0,

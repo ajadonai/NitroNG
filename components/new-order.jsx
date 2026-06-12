@@ -140,7 +140,7 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
           <div className="text-right shrink-0">
             <div className="text-[10px] desktop:text-[11px] mb-0.5" style={{ color: t.textMuted }}>from</div>
             {activePromotion?.active && <div className="m text-[12px] font-normal line-through" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>₦{lowestPrice.toLocaleString()}</div>}
-            <div className="m text-[15px] md:text-base desktop:text-lg font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{Math.round(lowestPrice * (1 - (activePromotion?.active ? activePromotion.discountPercent / 100 : 0))).toLocaleString()}</div>
+            <div className="m text-[15px] md:text-base desktop:text-lg font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{Math.round(lowestPrice * (1 - (activePromotion?.active ? activePromotion.discountPercent / 100 : 0))).toLocaleString()}<span className="text-[11px] font-normal" style={{ color: t.textMuted }}>/{lowestPer}</span></div>
           </div>
         )}
       </div>
@@ -154,7 +154,7 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
       {isSel && activeTier && (
         <div className="mt-2.5 py-2.5 px-3 desktop:py-3 desktop:px-3.5 rounded-[10px] flex items-center justify-between gap-3 border border-solid" style={{ background: dark ? `${TS[activeTier.tier].text}08` : `${TS[activeTier.tier].text}06`, borderColor: dark ? `${TS[activeTier.tier].text}18` : `${TS[activeTier.tier].text}12` }}>
           <div className="text-xs" style={{ color: t.textMuted }}>{refillLabel(activeTier.tier)} · {activeTier.speed} · Min {(activeTier.min || 100).toLocaleString()}</div>
-          {orderMode === "bulk" && <div className="m text-[15px] font-bold" style={{ color: TS[activeTier.tier].text, fontFamily: "'JetBrains Mono', monospace" }}>₦{activeTier.price.toLocaleString()}</div>}
+          {orderMode === "bulk" && <div className="m text-[15px] font-bold" style={{ color: TS[activeTier.tier].text, fontFamily: "'JetBrains Mono', monospace" }}>₦{activeTier.price.toLocaleString()}<span className="text-[11px] font-normal" style={{ color: t.textMuted }}>/{activeTier.per}</span></div>}
         </div>
       )}
     </div>
@@ -226,22 +226,6 @@ const LINK_TIPS = {
   kick: { profile: "kick.com/username", post: "kick.com/username/clips/..." },
   spotify: { profile: "open.spotify.com/artist/...", post: "open.spotify.com/track/..." },
   soundcloud: { profile: "soundcloud.com/artist", post: "soundcloud.com/artist/track-name" },
-  applemusic: { profile: "music.apple.com/artist/...", post: "music.apple.com/album/.../song" },
-  audiomack: { profile: "audiomack.com/artist", post: "audiomack.com/artist/song/track" },
-  boomplay: { profile: "boomplay.com/artists/...", post: "boomplay.com/songs/..." },
-  deezer: { profile: "deezer.com/artist/...", post: "deezer.com/track/..." },
-  shazam: { profile: "shazam.com/artist/...", post: "shazam.com/track/..." },
-  mixcloud: { profile: "mixcloud.com/username", post: "mixcloud.com/username/mix-name" },
-  discord: { profile: "discord.gg/invite-code", post: "discord.com/channels/..." },
-  whatsapp: { profile: "chat.whatsapp.com/invite-code", post: "wa.me/phonenumber" },
-  tumblr: { profile: "tumblr.com/username", post: "tumblr.com/username/post/123..." },
-  quora: { profile: "quora.com/profile/username", post: "quora.com/question-slug" },
-  vimeo: { profile: "vimeo.com/username", post: "vimeo.com/123456789" },
-  google: { profile: "maps.google.com/place/...", post: "g.co/kgs/..." },
-  trustpilot: { profile: "trustpilot.com/review/domain.com", post: "trustpilot.com/review/domain.com" },
-  onlyfans: { profile: "onlyfans.com/username", post: "onlyfans.com/username" },
-  clubhouse: { profile: "clubhouse.com/@username", post: "clubhouse.com/room/..." },
-  kwai: { profile: "kwai.com/@username", post: "kwai.com/video/..." },
 };
 
 function getLinkTip(platform, isProfile, isPost) {
@@ -279,13 +263,8 @@ function saveCart(rows) {
 /* ═══════════════════════════════════════════ */
 /* ═══ ORDER FORM                          ═══ */
 /* ═══════════════════════════════════════════ */
-function shortPrice(n) { return n >= 1e6 ? (n / 1e6).toFixed(n % 1e6 === 0 ? 0 : 1).replace(/\.0$/, "") + "M" : n >= 1e3 ? (n / 1e3).toFixed(n % 1e3 === 0 ? 0 : 1).replace(/\.0$/, "") + "k" : String(n); }
-const MULTIDAY_THRESHOLD = 3000;
-const DAILY_CAP = { followers: 5000, likes: 15000, views: 75000, plays: 75000, comments: 1000, reviews: 1000, engagement: 15000 };
-const DEFAULT_DAILY_CAP = 15000;
-function safeDailyCap(type) { return DAILY_CAP[(type || "").toLowerCase()] || DEFAULT_DAILY_CAP; }
-function maxDripDays(qty) { return qty <= 5000 ? 5 : qty <= 10000 ? 7 : qty <= 25000 ? 12 : qty <= 50000 ? 18 : qty <= 100000 ? 25 : 30; }
-function minDripDays(qty, type) { return Math.max(3, Math.ceil(qty / safeDailyCap(type))); }
+const CONSERVATIVE = ['instagram','tiktok','facebook','twitter','snapchat','threads'];
+const showDripNote = (plat, qty) => { const p = (plat || '').toLowerCase(); return CONSERVATIVE.some(c => p.includes(c)) ? qty > 100 : qty > 500; };
 
 export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp }) {
   const minQty = selTier?.min || 100;
@@ -300,26 +279,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const price = Math.max(0, afterLoyalty - cappedPromoDiscount);
   const s = selTier ? TS[selTier.tier] : null;
   const [linkError, setLinkError] = useState("");
-  const [linkHelpOpen, setLinkHelpOpen] = useState(false);
-  const linkHelpRef = useRef(null);
-  const [dripOn, setDripOn] = useState(false);
-  const [dripStep, setDripStep] = useState(1);
-  const [dripDays, setDripDays] = useState(3);
-  const showMultiDay = selTier?.tags?.includes('drip') && qtyNum >= MULTIDAY_THRESHOLD;
-  const daysMax = maxDripDays(qtyNum);
-  const daysMin = Math.min(minDripDays(qtyNum, selSvc?.type), daysMax);
-  const clampedDays = Math.max(daysMin, Math.min(dripDays, daysMax));
-  const perDay = clampedDays > 0 ? Math.floor(qtyNum / clampedDays) : qtyNum;
-  const dripRemainder = clampedDays > 0 ? qtyNum % clampedDays : 0;
-  const dripCap = safeDailyCap(selSvc?.type);
-  const dripZone = perDay <= dripCap * 0.5 ? "safe" : perDay <= dripCap ? "moderate" : "hot";
-
-  useEffect(() => {
-    if (!linkHelpOpen) return;
-    const close = (e) => { if (linkHelpRef.current && !linkHelpRef.current.contains(e.target)) setLinkHelpOpen(false); };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [linkHelpOpen]);
+  const [dripOpen, setDripOpen] = useState(false);
 
   /* Link validation */
   const POST_LINK_PATTERNS = {
@@ -340,9 +300,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const validateLink = (val) => {
     const cleaned = val.replace(/^https?:\/\//i, "");
     setLink(cleaned);
-    if (cleaned.trim()) setLinkHelpOpen(false);
     if (!cleaned.trim()) { setLinkError(""); return; }
-    if (!isValidLink(cleaned)) { setLinkError("Enter a valid link"); return; }
+    if (!isValidLink(cleaned)) { setLinkError("Enter a valid URL or @username"); return; }
     const pat = POST_LINK_PATTERNS[platform];
     if (pat && cleaned.includes(".")) {
       let host = ""; try { host = new URL("https://" + cleaned).hostname; } catch {}
@@ -373,7 +332,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const commentShort = needsComments && commentLines > 0 && commentLines < minCommentLines;
 
   const isMultiPostSvc = /last\s+\d+\s*(tweet|post|video|reel|photo)/i.test(svcName);
-  const isProfileSvc = /follow|subscri|member/i.test(svcName) || isMultiPostSvc;
+  const isProfileSvc = /follow|subscri/i.test(svcName) || isMultiPostSvc;
   const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays/i.test(svcName) && !isProfileSvc;
   const linkTip = getLinkTip(platform, isProfileSvc, isPostSvc);
 
@@ -386,67 +345,44 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
     <div>
       {/* ── Service header card ── */}
       <div className="p-5 pb-4 max-md:p-3.5 max-md:pb-3 rounded-t-[14px] desktop:rounded-t-2xl" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderBottom: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.12)"}` }}>
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <div className="text-[17px] font-semibold max-md:text-base" style={{ color: t.text }}>{selSvc?.name}</div>
+        <div className="flex items-start justify-between mb-2.5">
+          {plat && <span className="flex items-center justify-center w-8 h-8 rounded-[10px] shrink-0 [&_svg]:w-[20px] [&_svg]:h-[20px]" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)", color: t.textMuted }}>{plat.icon}</span>}
           {onClose && <button onClick={onClose} className="bg-transparent border border-solid rounded-lg w-7 h-7 flex items-center justify-center cursor-pointer shrink-0" style={{ borderColor: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)", color: t.textSoft }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
         </div>
-        {s && <div className="flex items-center gap-1.5 flex-wrap">
-          <div className="inline-flex items-center gap-0 rounded-lg overflow-hidden" style={{ border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
-            <span className="inline-flex items-center gap-1 font-semibold py-1 px-2.5 text-[12px]" style={{ background: dark ? s.bgD : s.bg, color: s.text }}>{s.label} {selTier.tier}</span>
-            <span className="py-1 px-2.5 text-[12px] font-semibold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace", background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }}>₦{selTier.price.toLocaleString()}</span>
-          </div>
-          {selTier.tier === "Budget" ? (
-            <span className="inline-flex items-center gap-1 text-[11px] py-[3px] px-2 rounded-md" style={{ background: dark ? "rgba(239,68,68,.08)" : "rgba(239,68,68,.06)", color: dark ? "#fca5a5" : "#dc2626" }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              No refill
-            </span>
-          ) : selTier.tier === "Standard" ? (
-            <span className="inline-flex items-center gap-1 text-[11px] py-[3px] px-2 rounded-md" style={{ background: dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.06)", color: dark ? "#6ee7b7" : "#059669" }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              Free refill
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-[11px] py-[3px] px-2 rounded-md" style={{ background: dark ? "rgba(167,139,250,.08)" : "rgba(167,139,250,.06)", color: dark ? "#c4b5fd" : "#7c3aed" }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
-              Auto-refill
-            </span>
-          )}
+        <div className="text-[17px] font-semibold mb-1 max-md:text-base" style={{ color: t.text }}>{selSvc?.name}</div>
+        {s && <div className="inline-flex items-center gap-0 rounded-lg overflow-hidden mb-1.5" style={{ border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+          <span className="inline-flex items-center gap-1 font-semibold py-1 px-2.5 text-[12px]" style={{ background: dark ? s.bgD : s.bg, color: s.text }}>{s.label} {selTier.tier}</span>
+          <span className="py-1 px-2.5 text-[12px] font-semibold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace", background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }}>₦{selTier.price.toLocaleString()}/{selTier.per}</span>
         </div>}
+        <div className="text-xs" style={{ color: t.textMuted }}>{refillLabel(selTier.tier)} · {selTier.speed || "Instant"} delivery</div>
       </div>
 
       {/* ── Form fields ── */}
       <div className="p-5 max-md:p-3.5">
       {selTier && <>
-        {dripStep === 1 ? (<>
         <div className="mb-3" data-tour="no-link-input">
           <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{linkLabel}</label>
           <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${linkError ? (dark ? "#f87171" : "#dc2626") : !link.trim() ? t.accent : dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)"}`, background: !link.trim() ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)") : (dark ? "#131728" : "#fff") }}>
             <span className="inline-flex items-center px-3 text-sm font-semibold shrink-0 select-none" style={{ borderRight: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>https://</span>
             <input type="url" inputMode="url" aria-label={linkLabel} disabled={orderLoading} placeholder={linkPlaceholder} value={link} onChange={e => validateLink(e.target.value)} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
           </div>
-          {linkError && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626" }}>{linkError}</div>}
-          {!linkError && LINK_TIPS[platform] && (isProfileSvc || isPostSvc) && (() => {
+          {linkError ? <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626" }}>{linkError}</div>
+            : !link.trim() && LINK_TIPS[platform] && (isProfileSvc || isPostSvc) ? (() => {
               const yes = isProfileSvc ? "profile" : "post";
               const no = isProfileSvc ? "post" : "profile";
-              return <div ref={linkHelpRef} className="relative mt-1.5 rounded-lg overflow-hidden" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>
-                <button type="button" onClick={() => setLinkHelpOpen(o => !o)} className="w-full flex items-center gap-2 py-[7px] px-2.5 border-0 cursor-pointer" style={{ background: "transparent", color: dark ? "#d4949f" : "#a0616e" }}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                  <span className="text-[11px] font-semibold flex-1 text-left">Paste the right link format</span>
-                  <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-[2px] px-[6px] rounded-full" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)", color: dark ? "#d4949f" : "#a0616e" }}>Learn more</span>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ transform: linkHelpOpen ? "rotate(180deg)" : "none", transition: "transform .15s" }}><polyline points="6 9 12 15 18 9"/></svg>
-                </button>
-                {linkHelpOpen && <div className="px-2.5 pb-2 flex flex-col gap-1.5">
-                  {LINK_TIPS[platform][yes] && <div className="flex items-center gap-2 py-1.5 px-2 rounded-md" style={{ background: dark ? "rgba(74,222,128,.08)" : "rgba(22,163,74,.06)", border: `0.5px solid ${dark ? "rgba(74,222,128,.15)" : "rgba(22,163,74,.1)"}` }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={dark ? "#4ade80" : "#16a34a"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
-                    <span className="text-[11px] font-semibold" style={{ fontFamily: "'JetBrains Mono', monospace", color: dark ? "#4ade80" : "#16a34a" }}>{LINK_TIPS[platform][yes]}</span>
-                  </div>}
-                  {LINK_TIPS[platform][no] && <div className="flex items-center gap-2 py-1 px-2 rounded-md" style={{ opacity: 0.6 }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={dark ? "#f87171" : "#dc2626"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    <span className="text-[11px] line-through" style={{ fontFamily: "'JetBrains Mono', monospace", color: t.textMuted }}>{LINK_TIPS[platform][no]}</span>
-                  </div>}
+              return <div className="mt-2 rounded-lg py-2.5 px-3 flex flex-col gap-1.5" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", border: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.14)"}` }}>
+                <div className="text-[11px] font-semibold" style={{ color: t.textMuted }}>Paste the right link format</div>
+                {LINK_TIPS[platform][yes] && <div className="flex items-center gap-2 py-1.5 px-2 rounded-md" style={{ background: dark ? "rgba(74,222,128,.08)" : "rgba(22,163,74,.06)", border: `0.5px solid ${dark ? "rgba(74,222,128,.15)" : "rgba(22,163,74,.1)"}` }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={dark ? "#4ade80" : "#16a34a"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span className="text-[11px] font-semibold" style={{ fontFamily: "'JetBrains Mono', monospace", color: dark ? "#4ade80" : "#16a34a" }}>{LINK_TIPS[platform][yes]}</span>
+                </div>}
+                {LINK_TIPS[platform][no] && <div className="flex items-center gap-2 py-1 px-2 rounded-md" style={{ opacity: 0.6 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={dark ? "#f87171" : "#dc2626"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  <span className="text-[11px] line-through" style={{ fontFamily: "'JetBrains Mono', monospace", color: t.textMuted }}>{LINK_TIPS[platform][no]}</span>
                 </div>}
               </div>;
-            })()}
+            })()
+            : linkTip && <div className="text-[11px] mt-[3px]" style={{ color: t.textMuted }}>{linkTip}</div>}
         </div>
         {showComments && (
           <div className="mb-3.5">
@@ -475,31 +411,14 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
         )}
         <div className="mb-3">
           <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>Quantity</label>
-          <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${qtyOutOfRange ? (dark ? "rgba(220,38,38,.4)" : "rgba(220,38,38,.38)") : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)")}`, background: dark ? "#131728" : "#fff" }}>
-            <input type="number" aria-label="Quantity" disabled={orderLoading} value={qty} onChange={e => setQty(e.target.value === "" ? "" : e.target.value)} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
-            <span className="inline-flex items-center px-3 text-[11px] font-semibold shrink-0 select-none whitespace-nowrap" style={{ borderLeft: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>max<br/>{fQty(maxQty)}</span>
-          </div>
+          <input type="number" aria-label="Quantity" disabled={orderLoading} value={qty} onChange={e => setQty(e.target.value === "" ? "" : e.target.value)} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="m w-full py-2 px-3 rounded-lg border border-solid text-[15px] outline-none box-border font-[inherit] disabled:opacity-50" style={{ borderColor: qtyOutOfRange ? (dark ? "rgba(220,38,38,.4)" : "rgba(220,38,38,.38)") : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)"), background: dark ? "#131728" : "#fff", color: t.text }} />
           {qtyOutOfRange && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{qtyNum < minQty ? `Minimum: ${minQty.toLocaleString()}` : `Maximum: ${maxQty.toLocaleString()}`}</div>}
-        </div>
-          {showMultiDay && (<>
-          <div className="rounded-xl mb-3 flex items-center gap-[10px] py-2.5 px-3 cursor-pointer select-none" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.12)"}`, WebkitTapHighlightColor: "transparent" }} onClick={() => setDripOn(v => !v)}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dripOn ? (dark ? "#4ade80" : "#16a34a") : (dark ? "#6e6a65" : "#918b85")} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            </svg>
-            <div className="flex-1">
-              <div className="text-[13px] font-semibold" style={{ color: dark ? "#a09b95" : "#555250" }}>Gradual delivery</div>
-              <div className="text-[11px]" style={{ color: dark ? "#6e6a65" : "#918b85", marginTop: 1 }}>Spread across multiple days for safety</div>
-            </div>
-            <div className="relative w-10 h-[22px] shrink-0" aria-hidden="true">
-              <div className="absolute inset-0 rounded-[11px] transition-colors duration-200" style={{ background: dripOn ? "#c47d8e" : (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.15)") }} />
-              <div className="absolute top-[2px] w-[18px] h-[18px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.2)] transition-[left] duration-200" style={{ left: dripOn ? 20 : 2 }} />
-            </div>
+          <div className="flex gap-1 mt-1.5">
+            {getPresets(minQty, maxQty).map(q => (
+              <button key={q} onClick={() => setQty(q)} disabled={orderLoading} className="m flex-1 py-[5px] rounded-md text-[13px] border border-solid cursor-pointer bg-transparent font-[inherit] disabled:opacity-40 transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: qty === q ? t.accent : t.cardBorder, background: qty === q ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: qty === q ? t.accent : t.textMuted }}>{fQty(q)}</button>
+            ))}
           </div>
-          {!dripOn && <div className="flex items-center justify-center gap-1.5 -mt-1.5 mb-3 text-[11px]" style={{ color: dark ? "#fcd34d" : "#b45309" }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            Large delivery may flag the target account
-          </div>}
-          </>)}
+        </div>
         <div className="rounded-[10px] p-2.5 mb-3 border border-solid" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", borderColor: t.cardBorder }}>
           {discountAmount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}><span>{loyaltyTier} discount ({loyaltyDiscount}%)</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{discountAmount.toLocaleString()}</span></div>}
           {cappedPromoDiscount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#f9a8d4" : "#be185d" }}><span>Discount ({activePromotion.discountPercent}%){cappedPromoDiscount < promoDiscountAmt ? ` · capped at ₦${cappedPromoDiscount.toLocaleString()}` : ''}</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{cappedPromoDiscount.toLocaleString()}</span></div>}
@@ -508,71 +427,26 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             <span className="font-bold text-[20px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>{(discountAmount > 0 || cappedPromoDiscount > 0) && <span className="text-[14px] font-normal line-through mr-1.5" style={{ color: t.textMuted }}>₦{basePrice.toLocaleString()}</span>}₦{price.toLocaleString()}</span>
           </div>
         </div>
-          {balance != null && qtyNum > 0 && price > balance ? (
-            <button onClick={onTopUp} data-tour="no-submit-btn" className="w-full py-2.5 rounded-lg border border-solid text-[15px] font-semibold cursor-pointer flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(250,204,21,.08)" : "rgba(250,204,21,.1)", borderColor: dark ? "rgba(250,204,21,.25)" : "rgba(250,204,21,.35)", color: dark ? "#fcd34d" : "#b45309" }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              Insufficient balance · Top up
+        {showDripNote(platform, qtyNum) && (
+          <div className="rounded-lg mb-3 overflow-hidden" style={{ background: dark ? "rgba(110,231,183,.05)" : "rgba(5,150,105,.04)", border: `0.5px solid ${dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)"}` }}>
+            <button type="button" onClick={() => setDripOpen(!dripOpen)} className="flex items-center gap-[7px] w-full py-2 px-2.5 bg-transparent border-none cursor-pointer text-left" style={{ fontFamily: "inherit" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span className="flex-1 text-xs font-semibold" style={{ color: dark ? "#a09b95" : "#555250" }}>Your account stays safe</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={dark ? "#8a8580" : "#757170"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transition-transform duration-200" style={{ transform: dripOpen ? "rotate(180deg)" : "rotate(0)" }}><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-          ) : (
-            <button onClick={() => { if (dripOn && showMultiDay) { setDripStep(2); } else { onSubmit(dripOn && showMultiDay ? clampedDays : undefined); } }} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer) || (comments || "").trim()) && !commentShort && !orderLoading ? 1 : .5 }}>{orderLoading ? "Placing..." : dripOn && showMultiDay ? "Next" : "Place Order"}</button>
-          )}
-        </>) : (<>
-          {/* Step 2: Drip config — replaces entire form body */}
-          <div className="flex items-center gap-2 mb-3 cursor-pointer select-none" onClick={() => setDripStep(1)} style={{ WebkitTapHighlightColor: "transparent" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#a09b95" : "#555250"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            <span className="text-[13px] font-semibold" style={{ color: dark ? "#a09b95" : "#555250" }}>Delivery schedule</span>
-          </div>
-          <div className="flex items-start gap-2.5 rounded-xl py-2.5 px-3 mb-3" style={{ background: dark ? "rgba(74,222,128,.06)" : "rgba(22,163,74,.04)", border: `1px solid ${dark ? "rgba(74,222,128,.12)" : "rgba(22,163,74,.1)"}` }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark ? "#4ade80" : "#16a34a"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <div className="text-[11.5px] leading-[1.6]" style={{ color: dark ? "#8a8580" : "#6e6a65" }}>
-              Delivered in safe batches to protect the target account.
+            <div className="transition-all duration-200 overflow-hidden" style={{ maxHeight: dripOpen ? 60 : 0, padding: dripOpen ? "0 10px 8px" : "0 10px 0" }}>
+              <div className="text-xs leading-[1.5]" style={{ color: dark ? "#8a8580" : "#757170" }}>Large orders are delivered gradually, not all at once. This keeps activity looking natural and protects your account from flags.</div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.12)"}` }}>
-              <div className="text-[10px] mb-0.5" style={{ color: t.textMuted }}>Total</div>
-              <div className="text-[13px] font-semibold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{qtyNum.toLocaleString()}</div>
-            </div>
-            <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dripZone === "safe" ? (dark ? "rgba(74,222,128,.08)" : "rgba(22,163,74,.05)") : dripZone === "moderate" ? (dark ? "rgba(250,204,21,.08)" : "rgba(202,138,4,.05)") : (dark ? "rgba(239,68,68,.08)" : "rgba(220,38,38,.05)"), border: `1px solid ${dripZone === "safe" ? (dark ? "rgba(74,222,128,.18)" : "rgba(22,163,74,.15)") : dripZone === "moderate" ? (dark ? "rgba(250,204,21,.18)" : "rgba(202,138,4,.15)") : (dark ? "rgba(239,68,68,.18)" : "rgba(220,38,38,.15)")}` }}>
-              <div className="text-[10px] mb-0.5" style={{ color: t.textMuted }}>Per day</div>
-              <div className="text-[13px] font-semibold" style={{ color: dripZone === "safe" ? (dark ? "#4ade80" : "#16a34a") : dripZone === "moderate" ? (dark ? "#fcd34d" : "#b45309") : (dark ? "#fca5a5" : "#dc2626"), fontFamily: "'JetBrains Mono', monospace" }}>~{perDay.toLocaleString()}</div>
-            </div>
-            <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.12)"}` }}>
-              <div className="text-[10px] mb-0.5" style={{ color: t.textMuted }}>Duration</div>
-              <div className="text-[13px] font-semibold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{clampedDays} days</div>
-            </div>
-            <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.12)"}` }}>
-              <div className="text-[10px] mb-0.5" style={{ color: t.textMuted }}>Completes by</div>
-              <div className="text-[13px] font-semibold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{new Date(Date.now() + clampedDays * 86400000).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</div>
-            </div>
-          </div>
-          {daysMin < daysMax ? (<>
-          <style>{`
-            .nitro-drip-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px; outline: none; }
-            .nitro-drip-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25); background: var(--thumb-color, #c47d8e); }
-            .nitro-drip-slider::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25); background: var(--thumb-color, #c47d8e); }
-          `}</style>
-          <div className="mb-3 px-1">
-            <input type="range" min={daysMin} max={daysMax} value={clampedDays} onChange={e => setDripDays(Number(e.target.value))} className="nitro-drip-slider" style={{ background: `linear-gradient(to right, ${dripZone === "safe" ? "#4ade80" : dripZone === "moderate" ? "#fbbf24" : "#ef4444"} ${((clampedDays - daysMin) / (daysMax - daysMin)) * 100}%, ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)"} ${((clampedDays - daysMin) / (daysMax - daysMin)) * 100}%)`, "--thumb-color": dripZone === "safe" ? "#4ade80" : dripZone === "moderate" ? "#fbbf24" : "#ef4444" }} />
-            <div className="flex justify-between text-[10px] mt-1.5" style={{ color: t.textMuted }}>
-              <span>{daysMin} days</span>
-              <span>{daysMax} days</span>
-            </div>
-          </div>
-          </>) : (
-          <div className="flex items-center justify-center gap-1.5 mb-3 py-2 rounded-lg text-[11px]" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)", color: t.textMuted }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-            Fixed at {clampedDays} days for this order size
-          </div>
-          )}
-          <div className="rounded-[10px] p-2.5 mb-3 border border-solid" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", borderColor: t.cardBorder }}>
-            <div className="flex justify-between items-baseline">
-              <span className="text-[13px] font-semibold" style={{ color: t.textMuted }}>Total</span>
-              <span className="font-bold text-[20px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{price.toLocaleString()}</span>
-            </div>
-          </div>
-          <button onClick={() => onSubmit(clampedDays)} data-tour="no-submit-btn" disabled={orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: !orderLoading ? 1 : .5 }}>{orderLoading ? "Placing..." : "Place Order"}</button>
-        </>)}
+        )}
+        {balance != null && qtyNum > 0 && price > balance ? (
+          <button onClick={onTopUp} data-tour="no-submit-btn" className="w-full py-2.5 rounded-lg border border-solid text-[15px] font-semibold cursor-pointer flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(250,204,21,.08)" : "rgba(250,204,21,.1)", borderColor: dark ? "rgba(250,204,21,.25)" : "rgba(250,204,21,.35)", color: dark ? "#fcd34d" : "#b45309" }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Insufficient balance · Top up
+          </button>
+        ) : (
+          <button onClick={onSubmit} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer) || (comments || "").trim()) && !commentShort && !orderLoading ? 1 : .5 }}>{orderLoading ? "Placing..." : "Place Order"}</button>
+        )}
       </>}
       </div>
     </div>
@@ -714,7 +588,6 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           min: tier.min,
           max: tier.max,
           provider: tier.provider || "mtp",
-          tags: tier.tags || [],
         })),
       }));
   })();
@@ -821,14 +694,14 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   }, [services, selSvc]);
 
   /* Place order */
-  const submitOrder = async (dripDaysArg) => {
+  const submitOrder = async () => {
     if (!selTier?.id || !link || orderLoading) return;
     setOrderLoading(true);
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tierId: selTier.id, link: `https://${link.trim()}`, quantity: qty, ...(comments?.trim() ? { comments: comments.trim() } : {}), serviceType: selSvc?.type || "", ...(dripDaysArg != null ? { dripDays: dripDaysArg } : {}) }),
+        body: JSON.stringify({ tierId: selTier.id, link: `https://${link.trim()}`, quantity: qty, ...(comments?.trim() ? { comments: comments.trim() } : {}), serviceType: selSvc?.type || "" }),
         signal: AbortSignal.timeout(30000),
       });
       const data = await res.json();
@@ -1104,7 +977,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
             <div className="text-[15px] max-md:text-sm font-semibold whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: t.text }}>{selSvc?.name}</div>
             <div className="text-sm mt-px">
               <span className="font-semibold" style={{ color: TS[selTier.tier].text }}>{TS[selTier.tier].label} {selTier.tier}</span>
-              <span style={{ color: t.textMuted }}> · ₦{selTier.price.toLocaleString()}</span>
+              <span style={{ color: t.textMuted }}> · ₦{selTier.price.toLocaleString()}/{selTier.per}</span>
             </div>
           </div>
           <div className="flex items-center gap-2.5 shrink-0">

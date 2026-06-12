@@ -172,7 +172,6 @@ model Service {
   max       Int     @default(50000)
   refill    Boolean @default(false)
   dripfeed  Boolean @default(false)
-  tags      String[] @default([])
   apiType   String  @default("Default")
   avgTime   String  @default("0-2 hrs")
   enabled   Boolean @default(true)
@@ -200,7 +199,6 @@ model ServiceGroup {
   enabled     Boolean @default(true)
   sortOrder   Int     @default(0)
   description String?
-  tags        String[] @default([])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -254,8 +252,6 @@ model Order {
   comments        String?  @db.Text
   retryCount      Int      @default(0)
   lastError       String?
-  dripDays        Int?
-  dripDelivered   Int      @default(0)
   dispatchedAt    DateTime?
   completedAt     DateTime?
   refundedAt      DateTime?
@@ -273,7 +269,6 @@ model Order {
   tier              ServiceTier?       @relation(fields: [tierId], references: [id])
   platformCampaign  PlatformCampaign?  @relation(fields: [platformCampaignId], references: [id])
   recurringCampaign RecurringCampaign? @relation(fields: [recurringCampaignId], references: [id])
-  dripDispatches    DripDispatch[]
 
   @@index([userId])
   @@index([userId, batchId])
@@ -283,30 +278,6 @@ model Order {
   @@index([platformCampaignId])
   @@index([recurringCampaignId])
   @@map("orders")
-}
-
-model DripDispatch {
-  id           String    @id @default(cuid())
-  orderId      String
-  day          Int
-  batch        Int
-  quantity     Int
-  apiOrderId   String?
-  status       String    @default("pending") // pending | dispatching | processing | completed | partial | failed
-  startCount   Int?
-  remains      Int?
-  scheduledAt  DateTime
-  dispatchedAt DateTime?
-  completedAt  DateTime?
-  lastError    String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@index([orderId])
-  @@index([status, scheduledAt])
-  @@map("drip_dispatches")
 }
 
 // ──────────────────────────────────────

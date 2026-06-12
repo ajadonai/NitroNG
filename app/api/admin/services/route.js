@@ -34,7 +34,6 @@ export async function GET() {
         avgTime: s.avgTime,
         enabled: s.enabled,
         provider: s.provider || 'mtp',
-        tags: s.tags || [],
         orders: s._count.orders,
         tiers: s._count.tiers,
       })),
@@ -69,27 +68,6 @@ export async function POST(req) {
       });
       await logActivity(admin.name, `Sync-enabled ${result.count} services used by active tiers`, 'service');
       return Response.json({ success: true, enabled: result.count, total: ids.length, message: `Enabled ${result.count} services (${ids.length} total in use)` });
-    }
-
-    if (action === 'bulk-tag') {
-      const { serviceIds, tag, remove } = body;
-      if (!tag || typeof tag !== 'string') return Response.json({ error: 'Tag required' }, { status: 400 });
-      if (!Array.isArray(serviceIds) || serviceIds.length === 0) return Response.json({ error: 'Service IDs required' }, { status: 400 });
-      const cleanTag = tag.trim().toLowerCase();
-      const services = await prisma.service.findMany({ where: { id: { in: serviceIds } }, select: { id: true, tags: true } });
-      let updated = 0;
-      for (const s of services) {
-        const has = (s.tags || []).includes(cleanTag);
-        if (remove && has) {
-          await prisma.service.update({ where: { id: s.id }, data: { tags: (s.tags || []).filter(t => t !== cleanTag) } });
-          updated++;
-        } else if (!remove && !has) {
-          await prisma.service.update({ where: { id: s.id }, data: { tags: [...(s.tags || []), cleanTag] } });
-          updated++;
-        }
-      }
-      await logActivity(admin.name, `${remove ? 'Removed' : 'Added'} tag "${cleanTag}" on ${updated} service(s)`, 'service');
-      return Response.json({ success: true, updated, message: `${remove ? 'Removed' : 'Added'} "${cleanTag}" on ${updated} service(s)` });
     }
 
     if (!serviceId) return Response.json({ error: 'Service ID required' }, { status: 400 });
@@ -133,13 +111,12 @@ export async function POST(req) {
       if (typeof body.enabled === 'boolean') data.enabled = body.enabled;
       if (typeof body.refill === 'boolean') data.refill = body.refill;
       if (body.avgTime !== undefined) data.avgTime = String(body.avgTime).trim();
-      if (Array.isArray(body.tags)) data.tags = body.tags.map(t => String(t).trim().toLowerCase()).filter(Boolean);
 
       if (Object.keys(data).length === 0) return Response.json({ error: 'No changes provided' }, { status: 400 });
 
       const updated = await prisma.service.update({ where: { id: serviceId }, data });
       await logActivity(admin.name, `Edited service: ${updated.name}`, 'service');
-      return Response.json({ success: true, service: { id: updated.id, name: updated.name, category: updated.category, min: updated.min, max: updated.max, enabled: updated.enabled, refill: updated.refill, avgTime: updated.avgTime, tags: updated.tags || [] } });
+      return Response.json({ success: true, service: { id: updated.id, name: updated.name, category: updated.category, min: updated.min, max: updated.max, enabled: updated.enabled, refill: updated.refill, avgTime: updated.avgTime } });
     }
 
     if (action === 'delete') {

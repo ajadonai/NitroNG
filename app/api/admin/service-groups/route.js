@@ -36,7 +36,6 @@ export async function GET() {
         nigerian: g.nigerian,
         enabled: g.enabled,
         sortOrder: g.sortOrder,
-        tags: g.tags || [],
         tiers: g.tiers.map(t => ({
           id: t.id,
           tier: t.tier,
@@ -89,7 +88,6 @@ export async function POST(req) {
           type: type || 'Standard',
           nigerian: !!nigerian,
           sortOrder: (maxSort._max.sortOrder || 0) + 1,
-          ...(Array.isArray(body.tags) ? { tags: body.tags.map(t => String(t).trim().toLowerCase()).filter(Boolean) } : {}),
         },
       });
       await logActivity(admin.name, `Created service group "${name}"`, 'service');
@@ -108,7 +106,6 @@ export async function POST(req) {
       if (updates.enabled !== undefined) data.enabled = !!updates.enabled;
       if (updates.sortOrder !== undefined) data.sortOrder = Number(updates.sortOrder);
       if (updates.description !== undefined) data.description = updates.description?.trim() || null;
-      if (Array.isArray(updates.tags)) data.tags = updates.tags.map(t => String(t).trim().toLowerCase()).filter(Boolean);
 
       const group = await prisma.serviceGroup.update({ where: { id: groupId }, data });
       await logActivity(admin.name, `Updated service group "${group.name}"`, 'service');
