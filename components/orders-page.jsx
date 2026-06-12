@@ -6,6 +6,24 @@ import { PlatformIcon } from "./platform-icon";
 import { fN, fD } from "../lib/format";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 
+function CopyId({ value, dark, mono = true }) {
+  const [copied, setCopied] = useState(false);
+  if (!value) return null;
+  return (
+    <span
+      className="text-sm font-semibold cursor-pointer inline-flex items-center gap-1 transition-opacity hover:opacity-70"
+      style={{ color: copied ? (dark ? "#4ade80" : "#16a34a") : (dark ? "#e5e0db" : "#1a1a1a"), fontFamily: mono ? "var(--font-mono, monospace)" : "inherit" }}
+      title="Click to copy"
+      onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(String(value)); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+    >
+      {value}
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: copied ? 1 : 0.4 }}>
+        {copied ? <><polyline points="20 6 9 17 4 12"/></> : <><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></>}
+      </svg>
+    </span>
+  );
+}
+
 const LINK_EXAMPLES = {
   instagram: { profile: "instagram.com/username", post: "instagram.com/p/ABC123 or /reel/ABC123" },
   tiktok: { profile: "tiktok.com/@username", post: "tiktok.com/@username/video/123..." },
@@ -334,7 +352,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
       <div className="grid grid-cols-2 desktop:grid-cols-4 gap-2 mb-3">
         <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
           <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Order No</div>
-          <div className="m text-sm font-semibold break-all" style={{ color: t.text }}>{o.id || "—"}</div>
+          <CopyId value={o.id} dark={dark} />
         </div>
         <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
           <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Status</div>

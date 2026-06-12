@@ -3,7 +3,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  allowedDevOrigins: ['192.168.1.11', '192.168.1.12', '192.168.1.15'],
+  allowedDevOrigins: ['192.168.1.11', '192.168.1.12', '192.168.1.15', '192.168.1.16'],
   async headers() {
     return [
       {
