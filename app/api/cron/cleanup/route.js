@@ -15,7 +15,7 @@ export async function GET(req) {
 
   try {
     // Auto-expire manual deposits: 10 min if user never confirmed, 24 hrs if unprocessed by admin
-    const abandonedCutoff = new Date(Date.now() - 10 * 60 * 1000);
+    const abandonedCutoff = new Date(Date.now() - 60 * 60 * 1000);
     const unprocessedCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const { count: expiredAbandoned } = await prisma.transaction.deleteMany({
       where: { type: 'deposit', method: 'manual', status: 'Pending', note: { contains: '[awaiting_confirmation]' }, createdAt: { lt: abandonedCutoff } },

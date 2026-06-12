@@ -215,6 +215,7 @@ export async function GET() {
         method: tx.method || tx.type,
         date: tx.createdAt.toISOString(),
         description: tx.note?.replace(/\[(rejected_by|approved_by|user_confirmed|awaiting_confirmation):?[^\]]*\]\s*/g, '').trim() || null,
+        awaitingConfirmation: tx.status === 'Pending' && tx.method === 'manual' && tx.note?.includes('[awaiting_confirmation]') || false,
       })),
       walletSummary,
       alerts: alerts.map(a => ({
