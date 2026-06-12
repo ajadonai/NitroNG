@@ -10,6 +10,94 @@ function Spinner({ size = 14, color = "currentColor" }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="animate-spin"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="3" strokeLinecap="round" opacity=".25" /><path d="M12 2a10 10 0 0 1 10 10" stroke={color} strokeWidth="3" strokeLinecap="round" /></svg>;
 }
 
+function CopyId({ value, dark, mono = true, size = "sm" }) {
+  const [copied, setCopied] = useState(false);
+  if (!value) return null;
+  const fs = size === "sm" ? "text-[13px]" : "text-sm";
+  return (
+    <span
+      className={`${fs} font-semibold cursor-pointer inline-flex items-center gap-1 transition-opacity hover:opacity-70`}
+      style={{ color: copied ? (dark ? "#4ade80" : "#16a34a") : (dark ? "#e5e0db" : "#1a1a1a"), fontFamily: mono ? "var(--font-mono, monospace)" : "inherit" }}
+      title="Click to copy"
+      onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(String(value)); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+    >
+      {value}
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: copied ? 1 : 0.4 }}>
+        {copied ? <><polyline points="20 6 9 17 4 12"/></> : <><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></>}
+      </svg>
+    </span>
+  );
+}
+
+
+function CopyAllIds({ ids, dark }) {
+  const [copied, setCopied] = useState(false);
+  if (!ids || ids.length === 0) return null;
+  return (
+    <button
+      onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(ids.join(", ")); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+      className="text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1 px-2.5 transition-all duration-200 hover:-translate-y-px"
+      style={{ background: copied ? (dark ? "rgba(74,222,128,.15)" : "rgba(22,163,74,.1)") : (dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)"), color: copied ? (dark ? "#4ade80" : "#16a34a") : (dark ? "#60a5fa" : "#2563eb") }}
+    >{copied ? "Copied!" : `Copy all ${ids.length} IDs`}</button>
+  );
+}
+
+function DripSection({ dispatches, dark, t }) {
+  const [openDays, setOpenDays] = useState({});
+  const allIds = dispatches.filter(d => d.apiOrderId).map(d => d.apiOrderId);
+  const doneCount = dispatches.filter(d => d.status === "completed" || d.status === "partial").length;
+  const days = {};
+  for (const d of dispatches) {
+    const day = d.day || 1;
+    if (!days[day]) days[day] = [];
+    days[day].push(d);
+  }
+  const dayKeys = Object.keys(days).sort((a, b) => a - b);
+  const toggleDay = (day) => setOpenDays(prev => ({ ...prev, [day]: !prev[day] }));
+  const statusLabel = (s) => s === "completed" ? "Completed" : s === "processing" ? "Processing" : s === "failed" ? "Failed" : s === "partial" ? "Partial" : "Pending";
+
+  return (
+    <div className="mt-2 mb-2 rounded-lg overflow-hidden" style={{ border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.14)"}` }}>
+      <div className="flex items-center justify-between py-1.5 px-2.5" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.accent }}>Drip · {doneCount}/{dispatches.length} batches · {dayKeys.length} days</span>
+        <CopyAllIds ids={allIds} dark={dark} />
+      </div>
+      {dayKeys.map(day => {
+        const batches = days[day];
+        const dayIds = batches.filter(d => d.apiOrderId).map(d => d.apiOrderId);
+        const dayDone = batches.filter(d => d.status === "completed" || d.status === "partial").length;
+        const isOpen = openDays[day];
+        const dayDate = batches[0]?.scheduled ? new Date(batches[0].scheduled).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+        return (
+          <div key={day}>
+            <button onClick={() => toggleDay(day)} className="w-full flex items-center gap-2 py-1.5 px-2.5 text-[11px] cursor-pointer bg-transparent border-none" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}`, color: t.text }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transition-transform" style={{ transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}><polyline points="9 18 15 12 9 6"/></svg>
+              <span className="font-semibold">Day {day}</span>
+              {dayDate && <span style={{ color: t.textMuted }}>{dayDate}</span>}
+              <span className="py-0.5 px-1.5 rounded text-[10px] font-semibold" style={{ background: dayDone === batches.length ? (dark ? "#0a2416" : "#ecfdf5") : (dark ? "rgba(250,204,21,.08)" : "#fffbeb"), color: dayDone === batches.length ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fcd34d" : "#d97706") }}>{dayDone}/{batches.length}</span>
+              <span className="ml-auto flex items-center gap-1.5">
+                {dayIds.length > 0 && <CopyAllIds ids={dayIds} dark={dark} />}
+              </span>
+            </button>
+            {isOpen && (
+              <div style={{ background: dark ? "rgba(0,0,0,.15)" : "rgba(0,0,0,.02)" }}>
+                {batches.map((d, i) => (
+                  <div key={d.id || i} className="flex items-center gap-2 py-2 px-2.5 pl-7 text-[11px]" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)"}` }}>
+                    <span className="shrink-0 w-5 text-center font-semibold" style={{ color: t.textMuted }}>#{d.batch}</span>
+                    <span className="shrink-0 w-12 font-semibold" style={{ color: t.text }}>{d.qty?.toLocaleString()}</span>
+                    <span className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold" style={{ background: sBg(statusLabel(d.status), dark), color: sClr(statusLabel(d.status), dark) }}>{d.status}</span>
+                    {d.apiOrderId ? <CopyId value={d.apiOrderId} dark={dark} size="sm" /> : <span style={{ color: t.textMuted }}>—</span>}
+                    <span className="ml-auto shrink-0" style={{ color: t.textMuted }}>{d.scheduled ? new Date(d.scheduled).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function sClr(s, dk) { return s === "Completed" ? (dk ? "#6ee7b7" : "#059669") : s === "Processing" ? (dk ? "#a5b4fc" : "#4f46e5") : s === "Pending" ? (dk ? "#fcd34d" : "#d97706") : s === "Partial" ? (dk ? "#fdba74" : "#ea580c") : (s === "Failed" || s === "Rejected") ? (dk ? "#fca5a5" : "#dc2626") : s === "Cancelled" ? (dk ? "#a1a1aa" : "#71717a") : (dk ? "#555250" : "#8a8785"); }
 function sBg(s, dk) { return s === "Completed" ? (dk ? "#0a2416" : "#ecfdf5") : s === "Processing" ? (dk ? "#0f1629" : "#eef2ff") : s === "Pending" ? (dk ? "#1c1608" : "#fffbeb") : s === "Partial" ? (dk ? "#1c1008" : "#fff7ed") : (s === "Failed" || s === "Rejected") ? (dk ? "#1f0a0a" : "#fef2f2") : s === "Cancelled" ? (dk ? "#1a1a1a" : "#f5f5f5") : (dk ? "#141414" : "#f5f5f5"); }
@@ -372,7 +460,7 @@ export default function AdminOrdersPage({ dark, t }) {
                             <div className="grid grid-cols-2 desktop:grid-cols-4 gap-1.5 mb-2.5">
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Order No</div>
-                                <div className="m text-[13px] font-semibold break-all" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.id || "—"}</div>
+                                <CopyId value={o.id} dark={dark} size="sm" />
                               </div>
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Quantity</div>
@@ -400,11 +488,11 @@ export default function AdminOrdersPage({ dark, t }) {
                               </div>
                               {o.serviceApiId && <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Service ID</div>
-                                <div className="m text-[13px] font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.serviceApiId}</div>
+                                <CopyId value={o.serviceApiId} dark={dark} size="sm" />
                               </div>}
                               {o.apiOrderId && <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Provider Order</div>
-                                <div className="m text-[13px] font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.apiOrderId}</div>
+                                <CopyId value={o.apiOrderId} dark={dark} size="sm" />
                               </div>}
                               {o.startCount != null && <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Start Count</div>
@@ -412,6 +500,9 @@ export default function AdminOrdersPage({ dark, t }) {
                               </div>}
                             </div>
                             ); })()}
+
+                            {/* Drip dispatches */}
+                            {o.dripDispatches && <DripSection dispatches={o.dripDispatches} dark={dark} t={t} />}
 
                             {/* Actions */}
                             <div className="flex gap-1.5">
@@ -520,7 +611,7 @@ export default function AdminOrdersPage({ dark, t }) {
                   <div className="grid grid-cols-2 desktop:grid-cols-4 gap-2 mb-3">
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Order No</div>
-                      <div className="m text-sm font-semibold break-all" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.id || "—"}</div>
+                      <CopyId value={o.id} dark={dark} />
                     </div>
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Quantity</div>
@@ -548,11 +639,11 @@ export default function AdminOrdersPage({ dark, t }) {
                     </div>
                     {o.serviceApiId && <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Service ID</div>
-                      <div className="m text-sm font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.serviceApiId}</div>
+                      <CopyId value={o.serviceApiId} dark={dark} />
                     </div>}
                     {o.apiOrderId && <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Provider Order</div>
-                      <div className="m text-sm font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.apiOrderId}</div>
+                      <CopyId value={o.apiOrderId} dark={dark} />
                     </div>}
                     {o.startCount != null && <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Start Count</div>
@@ -560,6 +651,9 @@ export default function AdminOrdersPage({ dark, t }) {
                     </div>}
                   </div>
                   ); })()}
+
+                  {/* Drip dispatches */}
+                  {o.dripDispatches && <DripSection dispatches={o.dripDispatches} dark={dark} t={t} />}
 
                   {/* Actions */}
                   <div className="flex gap-2">
