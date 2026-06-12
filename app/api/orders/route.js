@@ -379,7 +379,7 @@ export async function POST(req) {
       return Response.json({ error: 'Please enter a valid URL (https://...) or username' }, { status: 400 });
     }
 
-    let service, tier, charge, cost, tierName;
+    let service, tier, charge, cost, tierName, qty;
 
     if (tierId) {
       // New flow: resolve service from tier
@@ -399,7 +399,7 @@ export async function POST(req) {
       const NITRO_MINS = { followers: 100, likes: 50, views: 500, comments: 10, engagement: 50, plays: 500, reviews: 10 };
       const nitroMin = NITRO_MINS[tier.group.type?.toLowerCase()] || 50;
       const effectiveMin = Math.max(service.min, nitroMin);
-      const qty = Math.floor(Number(quantity));
+      qty = Math.floor(Number(quantity));
       if (!qty || isNaN(qty) || qty <= 0 || !Number.isFinite(qty)) {
         return Response.json({ error: 'Invalid quantity' }, { status: 400 });
       }
@@ -414,7 +414,7 @@ export async function POST(req) {
       if (!service || !service.enabled) {
         return Response.json({ error: 'Service not available' }, { status: 400 });
       }
-      const qty = Math.floor(Number(quantity));
+      qty = Math.floor(Number(quantity));
       if (!qty || isNaN(qty) || qty <= 0 || !Number.isFinite(qty)) {
         return Response.json({ error: 'Invalid quantity' }, { status: 400 });
       }
