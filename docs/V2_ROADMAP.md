@@ -760,6 +760,12 @@ Concept defined. No implementation yet. Awaiting account rank system design and 
 
 ---
 
+## Feature: Changelog (What's New)
+
+Public-facing release notes page visible to logged-in users. Simple list of entries (date + short description) showing platform updates, new features, and fixes. Stored in the database with an admin UI to create/edit entries — no deploys needed to publish updates. Could live as a dashboard tab or standalone page. Keep it lightweight: no comments, no reactions, just a chronological feed.
+
+---
+
 ## Things we're explicitly NOT doing
 
 To save future-us from re-litigating bad ideas:
