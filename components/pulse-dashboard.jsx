@@ -557,7 +557,7 @@ export default function PulseDashboard({ secretKey }) {
   }
 
   const changeBadge = (val) => {
-    if (val === undefined || val === null) return null;
+    if (val === undefined || val === null) return <span style={{ color: '#10b981', fontSize: 11, fontWeight: 600 }}>NEW</span>;
     const color = val > 0 ? '#10b981' : val < 0 ? '#fca5a5' : '#8a8580';
     const arrow = val > 0 ? '↑' : val < 0 ? '↓' : '';
     return <span style={{ color, fontSize: 11, fontWeight: 600 }}>{arrow}{val > 0 ? '+' : ''}{val}%</span>;

@@ -56,10 +56,6 @@ const NAV_ITEMS = [
   { id: "services", label: "New Order" },
   { id: "orders", label: "History" },
   { id: "add-funds", label: "Wallet" },
-  { id: "audit", label: "Audit", soon: true },
-  { id: "cleanup", label: "Cleanup", soon: true },
-  { id: "earn", label: "Earn", soon: true },
-  { id: "leaderboard", label: "Leaderboard", soon: true },
   { id: "guide", label: "Blog" },
   { id: "referrals", label: "Referrals" },
   { id: "support", label: "Support" },
@@ -74,10 +70,6 @@ const BOTTOM_TABS = [
   { id: "more", label: "More" },
 ];
 const MORE_ITEMS = [
-  { id: "audit", label: "Audit", soon: true },
-  { id: "cleanup", label: "Cleanup", soon: true },
-  { id: "earn", label: "Earn", soon: true },
-  { id: "leaderboard", label: "Leaderboard", soon: true },
   { id: "referrals", label: "Referrals" },
   { id: "guide", label: "Blog" },
   { id: "support", label: "Support" },
