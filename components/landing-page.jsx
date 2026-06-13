@@ -67,6 +67,7 @@ function LandingInner(){
 
   useEffect(()=>{const el=scrollRef.current;if(!el)return;const onScroll=()=>setScrolled(el.scrollTop>20);el.addEventListener("scroll",onScroll);return()=>el.removeEventListener("scroll",onScroll);},[]);
   useEffect(()=>{trackViewContent({content_name:'homepage',content_type:'landing'});},[]);
+  useEffect(()=>{if(initVia)fetch('/api/click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:initVia})}).catch(()=>{});},[]);
   const [logoutMsg,setLogoutMsg]=useState(false);
   const [googleError,setGoogleError]=useState(false);
   const [sessionExpired,setSessionExpired]=useState(false);
