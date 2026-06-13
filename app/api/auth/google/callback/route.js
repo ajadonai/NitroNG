@@ -174,6 +174,7 @@ export async function GET(req) {
       sendEvent('CompleteRegistration', {
         eventId,
         email,
+        externalId: user.id,
         clientIp: hdrs2.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs2.get('x-real-ip'),
         userAgent: hdrs2.get('user-agent'),
         fbp, fbc,

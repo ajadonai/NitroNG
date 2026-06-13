@@ -42,12 +42,14 @@ export default function AdminUsersPage({ dark, t }) {
   const perPage = 15;
 
   const [activeCount, setActiveCount] = useState(null);
+  const [totalOrderCount, setTotalOrderCount] = useState(0);
+  const [totalBalance, setTotalBalance] = useState(0);
 
   const fetchUsers = useCallback((q) => {
     setLoading(true);
     const params = new URLSearchParams({ limit: '200' });
     if (q) params.set('search', q);
-    fetch(`/api/admin/users?${params}`).then(r => r.json()).then(d => { setUsers(d.users || []); if (d.totalCount != null) setTotalCount(d.totalCount); if (d.activeCount != null) setActiveCount(d.activeCount); setLoading(false); }).catch(() => setLoading(false));
+    fetch(`/api/admin/users?${params}`).then(r => r.json()).then(d => { setUsers(d.users || []); if (d.totalCount != null) setTotalCount(d.totalCount); if (d.activeCount != null) setActiveCount(d.activeCount); if (d.totalOrderCount != null) setTotalOrderCount(d.totalOrderCount); if (d.totalBalance != null) setTotalBalance(d.totalBalance); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
@@ -149,8 +151,8 @@ export default function AdminUsersPage({ dark, t }) {
     URL.revokeObjectURL(url);
   };
 
-  const totalBal = users.reduce((s, u) => s + (u.balance || 0), 0);
-  const totalOrd = users.reduce((s, u) => s + (u.orders || 0), 0);
+  const totalBal = totalBalance;
+  const totalOrd = totalOrderCount;
 
   const cardBg = { background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)" };
   const accentHdr = { background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.10)" };

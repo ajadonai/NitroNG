@@ -6,6 +6,50 @@ import { PlatformIcon } from "./platform-icon";
 import { fN, fD } from "../lib/format";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 
+function CopyId({ value, dark, mono = true }) {
+  const [copied, setCopied] = useState(false);
+  if (!value) return null;
+  return (
+    <span
+      className="text-sm font-semibold cursor-pointer inline-flex items-center gap-1 transition-opacity hover:opacity-70"
+      style={{ color: copied ? (dark ? "#4ade80" : "#16a34a") : (dark ? "#e5e0db" : "#1a1a1a"), fontFamily: mono ? "var(--font-mono, monospace)" : "inherit" }}
+      title="Click to copy"
+      onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(String(value)); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+    >
+      {value}
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: copied ? 1 : 0.4 }}>
+        {copied ? <><polyline points="20 6 9 17 4 12"/></> : <><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></>}
+      </svg>
+    </span>
+  );
+}
+
+const DRIP_CONFIG = {
+  followers:  { batchSize: 500,  intervalHours: 2 },
+  views:      { batchSize: 5000, intervalHours: 1 },
+  likes:      { batchSize: 500,  intervalHours: 1 },
+  comments:   { batchSize: 50,   intervalHours: 0.5 },
+  engagement: { batchSize: 1500, intervalHours: 1 },
+  reviews:    { batchSize: 10,   intervalHours: 2 },
+};
+
+function estimateDelivery(serviceType, quantity, remains) {
+  const cfg = DRIP_CONFIG[(serviceType || '').toLowerCase()];
+  if (!cfg) return null;
+  if (remains != null && remains <= 0) return null;
+  const left = remains != null && remains < quantity ? remains : quantity;
+  const batches = Math.floor(left / cfg.batchSize);
+  if (batches < 2) {
+    if (cfg.intervalHours < 1) return `< ${Math.round(cfg.intervalHours * 60)} minutes`;
+    return `< ${cfg.intervalHours} ${cfg.intervalHours === 1 ? 'hour' : 'hours'}`;
+  }
+  const totalHours = (batches - 1) * cfg.intervalHours;
+  if (totalHours < 1) return `~${Math.round(totalHours * 60)} minutes`;
+  const rounded = Math.round(totalHours);
+  if (rounded >= 24) { const d = Math.round(rounded / 24); return `~${d} ${d === 1 ? 'day' : 'days'}`; }
+  return `~${rounded} ${rounded === 1 ? 'hour' : 'hours'}`;
+}
+
 const LINK_EXAMPLES = {
   instagram: { profile: "instagram.com/username", post: "instagram.com/p/ABC123 or /reel/ABC123" },
   tiktok: { profile: "tiktok.com/@username", post: "tiktok.com/@username/video/123..." },
@@ -76,8 +120,10 @@ function ProgressBar({ order, dark, detailed }) {
   const isComplete = order.status === "Completed";
   const delivered = isComplete ? qty : hasData ? Math.max(0, qty - Math.max(0, order.remains)) : 0;
   const pct = isComplete ? 100 : hasData ? Math.min(100, Math.round((delivered / qty) * 100)) : 0;
-  const color = isComplete ? (dark ? "#6ee7b7" : "#059669") : "#c47d8e";
+  const isPartial = order.status === "Partial";
+  const color = isComplete ? (dark ? "#6ee7b7" : "#059669") : isPartial ? (dark ? "#fbbf24" : "#d97706") : "#c47d8e";
   const waiting = !hasData && !isComplete && (order.status === "Pending" || order.status === "Processing");
+  const isProcessing = !isComplete && !isPartial && !waiting && pct > 0 && pct < 100;
   if (detailed) {
     return (
       <div>
@@ -87,17 +133,17 @@ function ProgressBar({ order, dark, detailed }) {
         </div>
         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
           {waiting
-            ? <div className="h-full w-1/3 rounded-full" style={{ background: `${color}40`, animation: "progress-pulse 1.8s ease-in-out infinite" }} />
-            : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: color }} />}
+            ? <div className="h-full rounded-full" style={{ background: `repeating-linear-gradient(-55deg, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"}, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 12px)`, backgroundSize: "28px 100%", animation: "progress-stripe .8s linear infinite" }} />
+            : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: color, ...(isProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />}
         </div>
       </div>
     );
   }
   return (
-    <div className="w-full h-[3px] rounded-full overflow-hidden mt-1.5" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)" }}>
+    <div className="w-full h-1 rounded-full overflow-hidden mt-1.5" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)" }}>
       {waiting
-        ? <div className="h-full w-1/4 rounded-full" style={{ background: `${color}40`, animation: "progress-pulse 1.8s ease-in-out infinite" }} />
-        : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: color }} />}
+        ? <div className="h-full rounded-full" style={{ background: `repeating-linear-gradient(-55deg, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"}, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 12px)`, backgroundSize: "28px 100%", animation: "progress-stripe .8s linear infinite" }} />
+        : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: color, ...(isProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />}
     </div>
   );
 }
@@ -177,7 +223,8 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
   const isComplete = o.status === "Completed";
   const delivered = isCancelled ? 0 : isComplete ? qty : hasData ? Math.max(0, qty - Math.max(0, o.remains)) : 0;
   const pct = isCancelled ? 0 : isComplete ? 100 : hasData ? Math.min(100, Math.round((delivered / qty) * 100)) : 0;
-  const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : "#c47d8e";
+  const isPartial = o.status === "Partial";
+  const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : isPartial ? (dark ? "#fbbf24" : "#d97706") : "#c47d8e";
   const waiting = !isCancelled && !hasData && !isComplete && (o.status === "Pending" || o.status === "Processing");
   const py = compact ? "py-3 px-3 desktop:py-3.5 desktop:px-4" : "py-3.5 px-3.5 desktop:py-4 desktop:px-[18px]";
   const reportIssueButton = (
@@ -223,17 +270,30 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
       )}
 
       {/* Delivery progress */}
-      <div className="mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
-        <div className="flex items-center justify-between text-[12px] mb-1.5">
-          <span style={{ color: t.textMuted }}>{isCancelled ? "Cancelled" : waiting ? "Waiting to start" : "Delivered"}</span>
-          {!waiting && <span className="m font-semibold" style={{ color: barColor }}>{delivered.toLocaleString()} / {qty.toLocaleString()}</span>}
-        </div>
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
-          {waiting
-            ? <div className="h-full w-1/3 rounded-full" style={{ background: `${barColor}40`, animation: "progress-pulse 1.8s ease-in-out infinite" }} />
-            : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor }} />}
-        </div>
-      </div>
+      {(() => {
+        const estTime = estimateDelivery(o.serviceType, qty, o.remains);
+        const isActive = !isCancelled && !isComplete && o.status !== "Partial";
+        const isProcessing = isActive && !waiting && pct > 0 && pct < 100;
+        return (
+          <div className="mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
+            <div className="flex items-center justify-between text-[12px] mb-1.5">
+              <span style={{ color: t.textMuted }}>{isCancelled ? "Cancelled" : waiting ? "Waiting to start" : "Delivered"}</span>
+              {!waiting && <span className="m font-semibold" style={{ color: barColor }}>{delivered.toLocaleString()} / {qty.toLocaleString()}</span>}
+            </div>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
+              {waiting
+                ? <div className="h-full rounded-full" style={{ background: `repeating-linear-gradient(-55deg, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"}, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 12px)`, backgroundSize: "28px 100%", animation: "progress-stripe .8s linear infinite" }} />
+                : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor, ...(isProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />}
+            </div>
+            {isActive && estTime && (
+              <div className="flex items-center gap-1.5 mt-2.5 py-1.5 px-2.5 rounded-md w-fit" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.07)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)"}` }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span className="text-[11px] desktop:text-[12px] font-medium" style={{ color: dark ? "rgba(196,125,142,.85)" : "rgba(160,80,100,.75)" }}>Est. {estTime}</span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Completed info banner */}
       {o.status === "Completed" && (
@@ -264,9 +324,11 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
           <div className="text-[12px]" style={{ color: dark ? "#fbbf24" : "#d97706" }}>
             {/duplicate/i.test(o.lastError) ? "A similar order is already active for this link. This order will start automatically once the other completes."
               : /balance|fund/i.test(o.lastError) ? "Temporarily delayed — our team has been notified and this will be resolved shortly."
-              : /incorrect service|invalid service/i.test(o.lastError) ? "This service is temporarily unavailable. You'll be refunded if it can't be fulfilled."
-              : /link|url/i.test(o.lastError) ? "The link provided appears to be invalid or unsupported." + linkHint(o.platform, o.service)
-              : /quantity.*less|minimum/i.test(o.lastError) ? "The quantity couldn't be processed. Please contact support if this persists."
+              : /incorrect service|invalid service|service replaced/i.test(o.lastError) ? "This service is temporarily unavailable. You'll be refunded if it can't be fulfilled."
+              : o.lastError === "wrong_service_type" ? "The link type didn't match this service. You'll be refunded if it can't be fulfilled."
+              : o.lastError === "missing_comments" ? "This service needs custom comments. You'll be refunded if it can't be fulfilled."
+              : /link|url|wrong_platform|needs_post|needs_profile/i.test(o.lastError) ? "There's an issue with the link for this order. You'll be refunded if it can't be fulfilled."
+              : /quantity.*less|minim/i.test(o.lastError) ? "The quantity couldn't be processed. Please contact support if this persists."
               : /timeout|timed.?out/i.test(o.lastError) ? "There was a temporary connection issue. Your order will be retried automatically."
               : "Your order hit a temporary issue and will be retried automatically. Contact support if it stays pending."}
           </div>
@@ -276,44 +338,54 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
       {/* Cancellation reason */}
       {(o.status === "Cancelled" || o.status === "Failed" || o.status === "Rejected") && (() => {
         const err = o.lastError || "";
-        let msg, guide = false;
+        let msg, guide = false, isNeutral = false;
         if (err === "user_cancelled") {
-          msg = "You cancelled this order. Your wallet has been refunded.";
+          msg = "You cancelled this order and your balance has been restored.";
+          isNeutral = true;
         } else if (err === "admin_cancelled") {
-          msg = "This order was cancelled by our team. Your wallet has been refunded.";
+          msg = "Our team cancelled this order and refunded your wallet. Reach out to support if you have questions.";
+          isNeutral = true;
         } else if (err === "dispatch_failed") {
-          msg = "This order couldn't be placed and was automatically refunded.";
+          msg = "We couldn't place this order so we refunded you automatically.";
         } else if (err === "needs_post_link") {
-          msg = "This service works on posts and videos — you'll need to paste a link to the specific post, not your profile.";
+          msg = "This service needs a link to a specific post or video, not your profile. Try again with the right link!";
           guide = true;
         } else if (err === "needs_profile_link") {
-          msg = "This service works on profiles — paste your profile link instead of a link to a specific post or video.";
+          msg = "This service needs your profile link, not a post or video. Try again with your profile URL!";
           guide = true;
         } else if (err === "wrong_platform_link") {
-          msg = "The link you shared isn't from the right platform for this service. Double-check you're copying from the correct app.";
+          msg = "Looks like the link is from a different platform. Make sure you're copying from the right app.";
           guide = true;
+        } else if (err === "wrong_service_type") {
+          msg = "The link type didn't match this service — for example, a followers service needs a profile link, not a post. Try again with the right link!";
+          guide = true;
+        } else if (err === "missing_comments") {
+          msg = "This service needs custom comments but none were included. Try placing the order again with your comments.";
         } else if (/duplicate/i.test(err)) {
-          msg = "A similar order was already active for this link.";
+          msg = "There was already an active order for this link, so this one was skipped.";
         } else if (/incorrect service|invalid service|service replaced/i.test(err)) {
           msg = "This service was temporarily unavailable. You've been refunded.";
         } else if (/quantity.*less|minim/i.test(err)) {
           msg = "The quantity was below the minimum for this service.";
         } else if (/link|url/i.test(err)) {
-          msg = "Something about this link didn't work for this service. Make sure you're copying the right type of link.";
+          msg = "Something about this link didn't work. Make sure you're copying the right type of link.";
           guide = true;
         } else if (/timeout|timed.?out/i.test(err)) {
-          msg = "This order failed after repeated connection issues. You've been refunded.";
+          msg = "There was a connection issue and the order couldn't go through. You've been refunded.";
         } else if (/balance|fund/i.test(err)) {
-          msg = "Cancelled due to a temporary provider issue. You've been refunded.";
+          msg = "This got held up on our end, but you've been refunded. Try placing it again.";
         } else {
-          msg = "This order didn't go through and you've been refunded. If this keeps happening, make sure you're using the right link.";
+          msg = "This order didn't go through and you've been refunded. If this keeps happening, double-check your link or reach out to support.";
           guide = true;
         }
+        const bg = isNeutral ? (dark ? "rgba(161,161,170,.06)" : "rgba(113,113,122,.04)") : (dark ? "rgba(252,165,165,.06)" : "rgba(220,38,38,.04)");
+        const brd = isNeutral ? (dark ? "rgba(161,161,170,.15)" : "rgba(113,113,122,.1)") : (dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.1)");
+        const clr = isNeutral ? (dark ? "#a1a1aa" : "#71717a") : (dark ? "#fca5a5" : "#dc2626");
         return (
-        <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(252,165,165,.06)" : "rgba(220,38,38,.04)", border: `1px solid ${dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.1)"}` }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-          <div className="text-[12px]" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>
-            {msg}{guide && <>{" "}<a href="/blog/how-to-find-the-right-link" target="_blank" style={{ color: dark ? "#fca5a5" : "#dc2626", textDecoration: "underline", fontWeight: 600 }}>Learn more</a></>}
+        <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: bg, border: `1px solid ${brd}` }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={clr} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">{isNeutral ? <><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></> : <><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></>}</svg>
+          <div className="text-[12px]" style={{ color: clr }}>
+            {msg}{guide && <>{" "}<a href="/blog/how-to-find-the-right-link" target="_blank" style={{ color: clr, textDecoration: "underline", fontWeight: 600 }}>Learn more</a></>}
           </div>
         </div>);
       })()}
@@ -322,7 +394,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
       <div className="grid grid-cols-2 desktop:grid-cols-4 gap-2 mb-3">
         <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
           <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Order No</div>
-          <div className="m text-sm font-semibold break-all" style={{ color: t.text }}>{o.id || "—"}</div>
+          <CopyId value={o.id} dark={dark} />
         </div>
         <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
           <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Status</div>

@@ -1,43 +1,58 @@
-import { sendEmail, sendWelcomeEmail, walletCreditEmail, leaderboardRewardEmail, batchPlacementEmail, batchCompletionEmail, sendWinbackEmail } from '@/lib/email';
+import { sendEmail, sendWelcomeEmail, sendPasswordResetEmail, walletCreditEmail, accountDeletionEmail, leaderboardRewardEmail, batchPlacementEmail, batchCompletionEmail, sendWinbackEmail, sendNudgeIdleFunds, sendNudgeComeback, sendNudgeLapsed, sendNudgeIdleBalance, gradualDeliveryAnnouncementEmail } from '@/lib/email';
+import prisma from '@/lib/prisma';
 
-export async function GET() {
-  const EMAIL = 'addohnine@gmail.com';
+export async function GET(req) {
+  if (process.env.NODE_ENV !== 'development') return Response.json({ error: 'Dev only' }, { status: 403 });
+  const EMAIL = 'adonaijonathancrypto@gmail.com';
   const NAME = 'Adonai';
+  const only = new URL(req.url).searchParams.get('only');
   const results = [];
 
-  try {
-    await sendWelcomeEmail(NAME, EMAIL);
-    results.push('Welcome ✓');
-  } catch (e) { results.push(`Welcome ✗ ${e.message}`); }
+  const ALL = {
+    welcome:       () => sendWelcomeEmail(NAME, EMAIL),
+    reset:         () => sendPasswordResetEmail(EMAIL, NAME, 'https://nitro.ng/reset?token=test123'),
+    wallet:        () => walletCreditEmail(NAME, 5000, 'Deposit via Flutterwave').then(h => sendEmail(EMAIL, '₦5,000 credited to your Nitro wallet', h)),
+    deletion:      () => accountDeletionEmail(NAME, 30).then(h => sendEmail(EMAIL, 'Your account is scheduled for deletion', h)),
+    leaderboard:   () => leaderboardRewardEmail(NAME, 2500).then(h => sendEmail(EMAIL, 'You earned a leaderboard reward!', h)),
+    'batch-place': () => batchPlacementEmail(NAME, 'BTH-1234', 10, 8, 2, 45000).then(h => sendEmail(EMAIL, 'Batch order placed', h)),
+    'batch-done':  () => batchCompletionEmail(NAME, 'BTH-1234', 7, 1, 0, 2500).then(h => sendEmail(EMAIL, 'Batch order complete', h)),
+    winback:       () => sendWinbackEmail(NAME, EMAIL),
+    'nudge-funds': () => sendNudgeIdleFunds(NAME, EMAIL, 12500),
+    'nudge-back':  () => sendNudgeComeback(NAME, EMAIL),
+    'nudge-lapsed':() => sendNudgeLapsed(NAME, EMAIL),
+    'nudge-idle':  () => sendNudgeIdleBalance(NAME, EMAIL, 8750),
+    'gradual':     () => gradualDeliveryAnnouncementEmail(NAME).then(h => sendEmail(EMAIL, "We've upgraded how your orders are delivered", h)),
+  };
 
-  try {
-    const html = await walletCreditEmail(NAME, 5000, 'Deposit via Flutterwave');
-    await sendEmail(EMAIL, '₦5,000 credited to your Nitro wallet', html);
-    results.push('Wallet credit ✓');
-  } catch (e) { results.push(`Wallet credit ✗ ${e.message}`); }
-
-  try {
-    const html = await leaderboardRewardEmail(NAME, 2500);
-    await sendEmail(EMAIL, 'You earned a leaderboard reward!', html);
-    results.push('Leaderboard reward ✓');
-  } catch (e) { results.push(`Leaderboard ✗ ${e.message}`); }
-
-  try {
-    const html = await batchPlacementEmail(NAME, 'BTH-1234', 10, 8, 2, 45000);
-    await sendEmail(EMAIL, 'Batch order placed', html);
-    results.push('Batch placement ✓');
-  } catch (e) { results.push(`Batch placement ✗ ${e.message}`); }
-
-  try {
-    const html = await batchCompletionEmail(NAME, 'BTH-1234', 7, 1, 0, 2500);
-    await sendEmail(EMAIL, 'Batch order complete', html);
-    results.push('Batch completion ✓');
-  } catch (e) { results.push(`Batch completion ✗ ${e.message}`); }
-
-  try {
-    await sendWinbackEmail(NAME, EMAIL);
-    results.push('Winback ✓');
-  } catch (e) { results.push(`Winback ✗ ${e.message}`); }
+  const toRun = only ? { [only]: ALL[only] } : ALL;
+  for (const [key, fn] of Object.entries(toRun)) {
+    if (!fn) { results.push(`${key} ✗ unknown`); continue; }
+    try { await fn(); results.push(`${key} ✓`); } catch (e) { results.push(`${key} ✗ ${e.message}`); }
+  }
 
   return Response.json({ sent: results });
+}
+
+export async function POST(req) {
+  if (process.env.NODE_ENV !== 'development') return Response.json({ error: 'Dev only' }, { status: 403 });
+  const { blast } = await req.json();
+  if (blast !== 'gradual-delivery') return Response.json({ error: 'Unknown blast template' }, { status: 400 });
+
+  const subject = "We've upgraded how your orders are delivered";
+  const users = await prisma.user.findMany({
+    where: { status: 'Active', notifEmail: true, emailVerified: true },
+    select: { email: true, name: true },
+  });
+
+  const template = await gradualDeliveryAnnouncementEmail('{{NAME}}');
+  let sent = 0, failed = 0;
+  for (const u of users) {
+    try {
+      const html = template.replace('{{NAME}}', u.name || 'there');
+      await sendEmail(u.email, subject, html);
+      sent++;
+    } catch { failed++; }
+  }
+
+  return Response.json({ total: users.length, sent, failed });
 }

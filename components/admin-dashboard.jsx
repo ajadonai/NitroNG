@@ -78,11 +78,11 @@ function AdminOverview({ data, dark, t, setActive }) {
       {/* Stat cards */}
       <div className="adm-stats">
         {[
-          ["Today's Revenue", fN(stats.revenue || 0), t.green, `${stats.revenueChange || 0}% vs yesterday`],
+          ["Today's Revenue", fN(stats.revenue || 0), t.green, stats.revenueChange == null ? 'New today' : `${stats.revenueChange}% vs yesterday`],
           ["Total Users", String(stats.users || 0), t.blue, `${stats.newUsersToday || 0} today`],
           ["Total Orders", String(stats.orders || 0), t.accent, `${stats.ordersToday || 0} today`],
           ["Processing", String(stats.processing || 0), t.amber, "Est. 1-2 hrs"],
-          ["Deposits (Today)", fN(stats.deposits || 0), t.green, `${stats.depositsChange || 0}% vs yesterday`],
+          ["Deposits (Today)", fN(stats.deposits || 0), t.green, stats.depositsChange == null ? 'New today' : `${stats.depositsChange}% vs yesterday`],
         ].map(([label, val, color, sub]) => (
           <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
             <div className="dash-stat-dot" style={{ background: color }} />
@@ -128,10 +128,7 @@ function AdminOverview({ data, dark, t, setActive }) {
                           <span style={{ color: t.textMuted }}>{item.created ? fD(item.created) : ""}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {item.orders.some(o => ["Pending","Processing"].includes(o.status)) && <span className="inline-block w-[5px] h-[5px] rounded-full" style={{ background: item.orders.some(o => o.status === "Processing") ? (dark ? "#a5b4fc" : "#6366f1") : (dark ? "#fcd34d" : "#d97706") }} />}
-                        <span className="text-[14px] font-semibold" style={{ color: item.orders.every(o => o.status === "Cancelled") ? (dark ? "#fca5a5" : "#dc2626") : item.orders.some(o => o.status === "Partial") ? (dark ? "#fbbf24" : "#d97706") : t.green }}>{fN(totalCharge)}</span>
-                      </div>
+                      <span className="text-[14px] font-semibold shrink-0" style={{ color: item.orders.every(o => o.status === "Cancelled") ? (dark ? "#fca5a5" : "#dc2626") : item.orders.some(o => o.status === "Partial") ? (dark ? "#fbbf24" : "#d97706") : t.green }}>{fN(totalCharge)}</span>
                     </div>
                   );
                 }
@@ -147,10 +144,7 @@ function AdminOverview({ data, dark, t, setActive }) {
                         <span style={{ color: t.textMuted }}>{o.created ? fD(o.created) : ""}</span>
                       </div>
                     </div>
-                    <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                      <div className="text-[14px] font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : o.status === "Partial" ? (dark ? "#fbbf24" : "#d97706") : t.green }}>{fN(o.charge || 0)}</div>
-                      <span className="text-[11px] font-semibold py-0.5 px-2 rounded-[5px] whitespace-nowrap" style={{ background: o.status === "Completed" ? (dark ? "rgba(110,231,183,.1)" : "#ecfdf5") : o.status === "Processing" ? (dark ? "rgba(165,180,252,.1)" : "#eef2ff") : (o.status === "Failed" || o.status === "Cancelled" || o.status === "Rejected" || o.status === "Partial") ? (dark ? "rgba(252,165,165,.1)" : "#fef2f2") : (dark ? "rgba(252,211,77,.1)" : "#fffbeb"), color: o.status === "Completed" ? t.green : o.status === "Processing" ? t.blue : (o.status === "Failed" || o.status === "Cancelled" || o.status === "Rejected" || o.status === "Partial") ? t.red : t.amber }}>{o.status}</span>
-                    </div>
+                    <span className="text-[14px] font-semibold shrink-0" style={{ color: o.status === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : o.status === "Partial" ? (dark ? "#fbbf24" : "#d97706") : t.green }}>{fN(o.charge || 0)}</span>
                   </div>
                 );
               }) : null;

@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin } from '@/lib/admin';
+import { watBounds } from '@/lib/format';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('finance');
@@ -12,11 +13,11 @@ export async function GET(req) {
     const fromParam = url.searchParams.get('from');
     const toParam = url.searchParams.get('to');
 
-    const now = new Date();
+    const { now, todayStart } = watBounds();
     let since, until;
     if (fromParam) {
-      since = new Date(fromParam);
-      if (toParam) { until = new Date(toParam); until.setHours(23, 59, 59, 999); }
+      since = new Date(new Date(fromParam).getTime() - 60 * 60 * 1000);
+      if (toParam) { until = new Date(new Date(toParam).getTime() + 23 * 60 * 60 * 1000 - 1); }
     } else if (range === '24h') since = new Date(now - 24 * 60 * 60 * 1000);
     else if (range === '7d') since = new Date(now - 7 * 24 * 60 * 60 * 1000);
     else if (range === '90d') since = new Date(now - 90 * 24 * 60 * 60 * 1000);

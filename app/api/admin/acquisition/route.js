@@ -25,7 +25,7 @@ export async function GET(req) {
       prisma.$queryRaw`
         SELECT u."signupSource" AS slug, COUNT(o.id)::int AS orders, COALESCE(SUM(o.charge),0)::int AS revenue
         FROM orders o JOIN users u ON o."userId" = u.id
-        WHERE u."signupSource" = ANY(${slugs}) AND u."deletedAt" IS NULL AND o."deletedAt" IS NULL AND o.status = 'Completed'
+        WHERE u."signupSource" = ANY(${slugs}) AND u."deletedAt" IS NULL AND o."deletedAt" IS NULL AND o.status NOT IN ('Cancelled')
         GROUP BY u."signupSource"
       `,
       prisma.linkClick.groupBy({ by: ['linkId'], where: { linkId: { in: linkIds } }, _count: true }),

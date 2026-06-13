@@ -22,9 +22,11 @@ export async function GET(req) {
       ],
     } : {};
 
-    const [totalCount, activeCount] = await Promise.all([
+    const [totalCount, activeCount, totalOrderCount, balanceAgg] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { status: 'Active' } }),
+      prisma.order.count({ where: { status: { not: 'Cancelled' }, deletedAt: null } }),
+      prisma.user.aggregate({ _sum: { balance: true } }),
     ]);
     const users = await prisma.user.findMany({
       where: searchWhere,
@@ -64,6 +66,8 @@ export async function GET(req) {
       })),
       totalCount,
       activeCount,
+      totalOrderCount,
+      totalBalance: (balanceAgg._sum.balance || 0) / 100,
       nextCursor,
       hasMore,
     });

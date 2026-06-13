@@ -100,7 +100,7 @@ export async function POST(req) {
 
       try {
         const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true } });
-        if (u) sendEvent('AddPaymentInfo', { eventId: generateEventId(), email: u.email, customData: { value: amountKobo / 100, currency: 'NGN' } });
+        if (u) sendEvent('AddPaymentInfo', { eventId: generateEventId(), email: u.email, externalId: tx.userId, customData: { value: amountKobo / 100, currency: 'NGN' } });
       } catch {}
 
       // Deferred referral bonus

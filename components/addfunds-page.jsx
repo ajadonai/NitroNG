@@ -22,8 +22,12 @@ function fNShort(v) { const a = Math.abs(v); if (a >= 1e8) return `₦${(a/1e6).
 function txIcon(type) { return (TX_META[type] || TX_META.order).icon; }
 function txLabel(type) { return (TX_META[type] || { label: type }).label; }
 function txDesc(tx) {
+  if (tx.type === "order" && tx.reference) {
+    const platform = tx.description?.match(/— (\S+)/)?.[1];
+    const id = tx.reference.startsWith("BULK-") ? `Bulk ${tx.reference}` : tx.reference;
+    return platform ? `${id} · ${platform}` : id;
+  }
   if (tx.description && tx.description !== tx.reference) return tx.description.replace(/\s*\[[^\]]+\]\s*$/, "");
-  if (tx.type === "order" && tx.reference) return tx.reference.startsWith("BULK-") ? `Bulk order ${tx.reference}` : `Order ${tx.reference}`;
   if (tx.type === "refund") return tx.reference ? `Refund for ${tx.reference.replace(/^(ADM-)?REF-/, "")}` : "Order refund";
   if (tx.type === "deposit") return tx.reference || "Wallet top-up";
   if (tx.type === "referral") return "Referral commission";
@@ -57,6 +61,9 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
   const [mobileStep, setMobileStep] = useState(1);
   const [gateways, setGateways] = useState([]);
   const [gatewaysLoading, setGatewaysLoading] = useState(true);
+  const [confirmModal, setConfirmModal] = useState(null);
+  const [senderName, setSenderName] = useState("");
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const toastShown = useRef(false);
   useEffect(() => {
@@ -386,18 +393,21 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
             <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-lg border-[3px] mb-2.5" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)", borderColor: dark ? "#0e1225" : "#f3f0ec" }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
             </div>
-            <div className="flex items-baseline gap-2">
+            <div className="flex items-baseline justify-between">
               <div className="text-[11px] uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>Current Balance</div>
-              <div className="text-[10px] font-medium" style={{ color: dark ? "#6ee7b7" : "#059669" }}>Available now</div>
+              <div className="text-[28px] font-bold" style={{ color: t.green }}>{fN(balance)}</div>
             </div>
-            <div className="text-[28px] font-bold mt-0.5" style={{ color: t.green }}>{fN(balance)}</div>
             {lastFunded && <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>Last funded {fD(lastFunded.date, true)}</div>}
-            {pendingDeposits.length > 0 && (
-              <div className="flex items-center gap-1.5 mt-2 py-1.5 px-2.5 rounded-lg text-[11px]" style={{ background: dark ? "rgba(252,211,77,.06)" : "rgba(217,119,6,.04)", border: `1px solid ${dark ? "rgba(252,211,77,.14)" : "rgba(217,119,6,.1)"}`, color: dark ? "#fcd34d" : "#d97706" }}>
-                <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: dark ? "#fcd34d" : "#d97706" }} />
-                {pendingDeposits.length} pending deposit{pendingDeposits.length > 1 ? "s" : ""}{pendingTotal > 0 ? ` · ${fN(pendingTotal)}` : ""} awaiting confirmation
-              </div>
-            )}
+            {pendingDeposits.length > 0 && (() => {
+              const awaitingTx = pendingDeposits.find(tx => tx.awaitingConfirmation);
+              return (
+                <div className="flex items-center gap-1.5 mt-2 py-2.5 px-2.5 rounded-lg text-[12px]" style={{ background: dark ? "rgba(252,211,77,.06)" : "rgba(217,119,6,.04)", border: `1px solid ${dark ? "rgba(252,211,77,.14)" : "rgba(217,119,6,.1)"}`, color: dark ? "#fcd34d" : "#d97706" }}>
+                  <div className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ background: dark ? "#fcd34d" : "#d97706" }} />
+                  <span className="flex-1">{pendingDeposits.length} pending deposit{pendingDeposits.length > 1 ? "s" : ""}{pendingTotal > 0 ? ` · ${fN(pendingTotal)}` : ""} awaiting confirmation</span>
+                  {awaitingTx && <button onClick={() => { setConfirmModal(awaitingTx); setSenderName(""); }} className="py-0.5 px-2 rounded-md text-[11px] font-semibold cursor-pointer shrink-0 border-none transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,211,77,.15)" : "rgba(217,119,6,.12)", color: dark ? "#fcd34d" : "#d97706" }}>I've paid</button>}
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -472,17 +482,20 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
                 <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 shadow-md border-[2.5px] mb-2" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)", borderColor: dark ? "#0e1225" : "#f3f0ec" }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                 </div>
-                <div className="flex items-baseline gap-1.5">
+                <div className="flex items-baseline justify-between">
                   <div className="text-[11px] uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>Current Balance</div>
-                  <div className="text-[10px] font-medium" style={{ color: dark ? "#6ee7b7" : "#059669" }}>Available</div>
+                  <div className="text-[22px] font-semibold" style={{ color: t.green }}>{fN(balance)}</div>
                 </div>
-                <div className="m text-[22px] font-semibold" style={{ color: t.green }}>{fN(balance)}</div>
-                {pendingDeposits.length > 0 && (
-                  <div className="flex items-center gap-1.5 mt-1.5 text-[11px]" style={{ color: dark ? "#fcd34d" : "#d97706" }}>
-                    <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: dark ? "#fcd34d" : "#d97706" }} />
-                    {pendingDeposits.length} pending{pendingTotal > 0 ? ` · ${fN(pendingTotal)}` : ""}
-                  </div>
-                )}
+                {pendingDeposits.length > 0 && (() => {
+                  const awaitingTx = pendingDeposits.find(tx => tx.awaitingConfirmation);
+                  return (
+                    <div className="flex items-center gap-1.5 mt-1.5 py-2 px-2 rounded-lg text-[11px]" style={{ background: dark ? "rgba(252,211,77,.06)" : "rgba(217,119,6,.04)", border: `1px solid ${dark ? "rgba(252,211,77,.14)" : "rgba(217,119,6,.1)"}`, color: dark ? "#fcd34d" : "#d97706" }}>
+                      <div className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ background: dark ? "#fcd34d" : "#d97706" }} />
+                      <span className="flex-1">{pendingDeposits.length} pending{pendingTotal > 0 ? ` · ${fN(pendingTotal)}` : ""}</span>
+                      {awaitingTx && <button onClick={() => { setConfirmModal(awaitingTx); setSenderName(""); }} className="py-0.5 px-2 rounded-md text-[11px] font-semibold cursor-pointer shrink-0 border-none" style={{ background: dark ? "rgba(252,211,77,.15)" : "rgba(217,119,6,.12)", color: dark ? "#fcd34d" : "#d97706" }}>I've paid</button>}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -698,7 +711,37 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
       )}
 
       {/* ═══ WALLET HISTORY ═══ */}
-      <WalletHistory txs={txs} walletSummary={walletSummary} dark={dark} t={t} onRefresh={onRefresh} />
+      <WalletHistory txs={txs} walletSummary={walletSummary} dark={dark} t={t} onRefresh={onRefresh} setConfirmModal={setConfirmModal} setSenderName={setSenderName} />
+
+      {/* ═══ CONFIRM PAYMENT MODAL ═══ */}
+      {confirmModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4" onClick={() => !confirmLoading && setConfirmModal(null)}>
+          <div className="w-full max-w-[380px] rounded-2xl overflow-hidden" style={{ background: dark ? "#141821" : "#fff", border: `0.5px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
+            <div className="h-1.5" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }} />
+            <div className="p-5">
+              <div className="text-base font-semibold mb-1" style={{ color: t.text }}>Confirm Payment</div>
+              <div className="text-[13px] mb-4" style={{ color: t.textMuted }}>You're confirming a deposit of <span className="font-semibold" style={{ color: t.text }}>{fN(confirmModal.amount)}</span></div>
+              <label className="text-[12px] font-medium mb-1.5 block" style={{ color: t.textMuted }}>Account name you sent from</label>
+              <input value={senderName} onChange={e => setSenderName(e.target.value)} placeholder="e.g. John Doe" autoFocus className="w-full py-2.5 px-3 rounded-lg text-sm outline-none" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.text, fontFamily: "inherit" }} />
+              <button onClick={async () => {
+                if (!senderName.trim()) return;
+                setConfirmLoading(true);
+                try {
+                  const r = await fetch("/api/payments/manual", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: confirmModal.reference, senderRef: senderName.trim() }) });
+                  if (r.ok) { toast.success("Payment confirmed", "Your deposit is now awaiting admin verification."); setConfirmModal(null); onRefresh?.(); }
+                  else { const d = await r.json().catch(() => ({})); toast.error("Failed", d.error || "Something went wrong"); }
+                } catch { toast.error("Network error", "Check your connection"); }
+                setConfirmLoading(false);
+              }} disabled={confirmLoading || senderName.trim().length < 2} className="w-full py-2.5 mt-3 rounded-lg border-none text-white text-sm font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ fontFamily: "inherit", opacity: confirmLoading || senderName.trim().length < 2 ? .5 : 1, background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}>{confirmLoading ? "Confirming..." : "Confirm Payment"}</button>
+              <button onClick={async () => {
+                setConfirmLoading(true);
+                try { await fetch("/api/payments/manual", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: confirmModal.reference }) }); } catch {}
+                setConfirmModal(null); setConfirmLoading(false); onRefresh?.();
+              }} disabled={confirmLoading} className="w-full py-2 mt-2 rounded-lg bg-transparent text-[13px] font-medium cursor-pointer border-none" style={{ color: dark ? "#fca5a5" : "#dc2626", fontFamily: "inherit", opacity: confirmLoading ? .5 : 1 }}>Cancel this deposit</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -707,7 +750,7 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
 /* ═══════════════════════════════════════════ */
 /* ═══ WALLET HISTORY                      ═══ */
 /* ═══════════════════════════════════════════ */
-function WalletHistory({ txs, walletSummary, dark, t, onRefresh }) {
+function WalletHistory({ txs, walletSummary, dark, t, onRefresh, setConfirmModal, setSenderName }) {
   const [filter, setFilter] = useState("all");
   const [dateRange, setDateRange] = useState(null);
   const [page, setPage] = useState(1);
@@ -780,7 +823,6 @@ function WalletHistory({ txs, walletSummary, dark, t, onRefresh }) {
               </div>
               <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{tx.date ? fD(tx.date, true) : ""}</div>
             </div>
-            {tx.status === "Pending" && tx.method === "manual" && tx.reference && <button onClick={async () => { try { await fetch("/api/payments/manual", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: tx.reference }) }); } catch {} onRefresh?.(); }} className="py-1 px-2.5 rounded-md bg-transparent text-[11px] font-semibold cursor-pointer shrink-0 transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${dark ? "rgba(252,165,165,.25)" : "rgba(220,38,38,.2)"}`, color: dark ? "#fca5a5" : "#dc2626", fontFamily: "inherit" }}>Cancel</button>}
           </div>
         )) : (
           <div className="p-10 text-center text-[15px]" style={{ color: t.textMuted }}>
