@@ -6,14 +6,159 @@ import { PlatformIcon } from "./platform-icon";
 import { fN, fD, fT } from "../lib/format";
 import { FilterDropdown } from "./date-range-picker";
 
+const DRIP_CONFIG = {
+  followers:  { batchSize: 500,  intervalHours: 2 },
+  views:      { batchSize: 5000, intervalHours: 1 },
+  likes:      { batchSize: 500,  intervalHours: 1 },
+  comments:   { batchSize: 50,   intervalHours: 0.5 },
+  engagement: { batchSize: 1500, intervalHours: 1 },
+  reviews:    { batchSize: 10,   intervalHours: 2 },
+};
+
+function estimateDelivery(serviceType, quantity, remains) {
+  const cfg = DRIP_CONFIG[(serviceType || '').toLowerCase()];
+  if (!cfg) return null;
+  if (remains != null && remains <= 0) return null;
+  const left = remains != null && remains < quantity ? remains : quantity;
+  const batches = Math.floor(left / cfg.batchSize);
+  if (batches < 2) {
+    if (cfg.intervalHours < 1) return `< ${Math.round(cfg.intervalHours * 60)} minutes`;
+    return `< ${cfg.intervalHours} ${cfg.intervalHours === 1 ? 'hour' : 'hours'}`;
+  }
+  const totalHours = (batches - 1) * cfg.intervalHours;
+  if (totalHours < 1) return `~${Math.round(totalHours * 60)} minutes`;
+  const rounded = Math.round(totalHours);
+  if (rounded >= 24) { const d = Math.round(rounded / 24); return `~${d} ${d === 1 ? 'day' : 'days'}`; }
+  return `~${rounded} ${rounded === 1 ? 'hour' : 'hours'}`;
+}
+
 function Spinner({ size = 14, color = "currentColor" }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="animate-spin"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="3" strokeLinecap="round" opacity=".25" /><path d="M12 2a10 10 0 0 1 10 10" stroke={color} strokeWidth="3" strokeLinecap="round" /></svg>;
 }
 
+function CopyId({ value, dark, mono = true, size = "sm" }) {
+  const [copied, setCopied] = useState(false);
+  if (!value) return null;
+  const fs = size === "sm" ? "text-[13px]" : "text-sm";
+  return (
+    <span
+      className={`${fs} font-semibold cursor-pointer inline-flex items-center gap-1 transition-opacity hover:opacity-70`}
+      style={{ color: copied ? (dark ? "#4ade80" : "#16a34a") : (dark ? "#e5e0db" : "#1a1a1a"), fontFamily: mono ? "var(--font-mono, monospace)" : "inherit" }}
+      title="Click to copy"
+      onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(String(value)); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+    >
+      {value}
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: copied ? 1 : 0.4 }}>
+        {copied ? <><polyline points="20 6 9 17 4 12"/></> : <><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></>}
+      </svg>
+    </span>
+  );
+}
+
+
+function CopyAllIds({ ids, dark }) {
+  const [copied, setCopied] = useState(false);
+  if (!ids || ids.length === 0) return null;
+  return (
+    <button
+      onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(ids.join(", ")); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+      className="text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1 px-2.5 transition-all duration-200 hover:-translate-y-px"
+      style={{ background: copied ? (dark ? "rgba(74,222,128,.15)" : "rgba(22,163,74,.1)") : (dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)"), color: copied ? (dark ? "#4ade80" : "#16a34a") : (dark ? "#60a5fa" : "#2563eb") }}
+    >{copied ? "Copied!" : `Copy all ${ids.length} IDs`}</button>
+  );
+}
+
+function DripSection({ dispatches, dark, t }) {
+  const [openDays, setOpenDays] = useState({});
+  const allIds = dispatches.filter(d => d.apiOrderId).map(d => d.apiOrderId);
+  const doneCount = dispatches.filter(d => d.status === "completed" || d.status === "partial").length;
+  const days = {};
+  for (const d of dispatches) {
+    const day = d.day || 1;
+    if (!days[day]) days[day] = [];
+    days[day].push(d);
+  }
+  const dayKeys = Object.keys(days).sort((a, b) => a - b);
+  const toggleDay = (day) => setOpenDays(prev => ({ ...prev, [day]: !prev[day] }));
+  const statusLabel = (s) => s === "completed" ? "Completed" : s === "processing" ? "Processing" : s === "failed" ? "Failed" : s === "partial" ? "Partial" : "Pending";
+
+  return (
+    <div className="mt-2 mb-2 rounded-lg overflow-hidden" style={{ border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.14)"}` }}>
+      <div className="flex items-center justify-between py-1.5 px-2.5" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.accent }}>Drip · {doneCount}/{dispatches.length} batches · {dayKeys.length} days</span>
+        <CopyAllIds ids={allIds} dark={dark} />
+      </div>
+      {dayKeys.map(day => {
+        const batches = days[day];
+        const dayIds = batches.filter(d => d.apiOrderId).map(d => d.apiOrderId);
+        const dayDone = batches.filter(d => d.status === "completed" || d.status === "partial").length;
+        const isOpen = openDays[day];
+        const dayDate = batches[0]?.scheduled ? new Date(batches[0].scheduled).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+        return (
+          <div key={day}>
+            <button onClick={() => toggleDay(day)} className="w-full flex items-center gap-2 py-1.5 px-2.5 text-[11px] cursor-pointer bg-transparent border-none" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}`, color: t.text }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transition-transform" style={{ transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}><polyline points="9 18 15 12 9 6"/></svg>
+              <span className="font-semibold">Day {day}</span>
+              {dayDate && <span style={{ color: t.textMuted }}>{dayDate}</span>}
+              <span className="py-0.5 px-1.5 rounded text-[10px] font-semibold" style={{ background: dayDone === batches.length ? (dark ? "#0a2416" : "#ecfdf5") : (dark ? "rgba(250,204,21,.08)" : "#fffbeb"), color: dayDone === batches.length ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fcd34d" : "#d97706") }}>{dayDone}/{batches.length}</span>
+              <span className="ml-auto flex items-center gap-1.5">
+                {dayIds.length > 0 && <CopyAllIds ids={dayIds} dark={dark} />}
+              </span>
+            </button>
+            {isOpen && (
+              <div style={{ background: dark ? "rgba(0,0,0,.15)" : "rgba(0,0,0,.02)" }}>
+                {batches.map((d, i) => {
+                  const bDone = d.status === "completed";
+                  const bProcessing = d.status === "processing" || d.status === "dispatching";
+                  const bPartial = d.status === "partial";
+                  const bFailed = d.status === "failed";
+                  const bPending = d.status === "pending";
+                  const barColor = bDone ? (dark ? "#6ee7b7" : "#059669") : bPartial ? (dark ? "#fbbf24" : "#d97706") : bFailed ? (dark ? "#fca5a5" : "#dc2626") : "#c47d8e";
+                  return (
+                  <div key={d.id || i} className="py-2 px-2.5 pl-7" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)"}` }}>
+                    <div className="flex items-center gap-2 text-[11px]">
+                      <span className="shrink-0 w-5 text-center font-semibold" style={{ color: t.textMuted }}>#{d.batch}</span>
+                      <span className="shrink-0 w-12 font-semibold" style={{ color: t.text }}>{d.qty?.toLocaleString()}</span>
+                      <span className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold" style={{ background: sBg(statusLabel(d.status), dark), color: sClr(statusLabel(d.status), dark) }}>{d.status}</span>
+                      {d.apiOrderId ? <CopyId value={d.apiOrderId} dark={dark} size="sm" /> : <span style={{ color: t.textMuted }}>—</span>}
+                      <span className="ml-auto shrink-0" style={{ color: t.textMuted }}>{d.scheduled ? new Date(d.scheduled).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}</span>
+                    </div>
+                    {!bPending && (
+                      <div className="mt-1.5 ml-7 h-1 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)" }}>
+                        <div className="h-full rounded-full" style={{ width: bProcessing ? "60%" : bDone ? "100%" : bPartial ? `${d.qty && d.remains != null ? Math.round(((d.qty - d.remains) / d.qty) * 100) : 50}%` : "100%", background: barColor, ...(bProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />
+                      </div>
+                    )}
+                  </div>);
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function sClr(s, dk) { return s === "Completed" ? (dk ? "#6ee7b7" : "#059669") : s === "Processing" ? (dk ? "#a5b4fc" : "#4f46e5") : s === "Pending" ? (dk ? "#fcd34d" : "#d97706") : s === "Partial" ? (dk ? "#fdba74" : "#ea580c") : (s === "Failed" || s === "Rejected") ? (dk ? "#fca5a5" : "#dc2626") : s === "Cancelled" ? (dk ? "#a1a1aa" : "#71717a") : (dk ? "#555250" : "#8a8785"); }
 function sBg(s, dk) { return s === "Completed" ? (dk ? "#0a2416" : "#ecfdf5") : s === "Processing" ? (dk ? "#0f1629" : "#eef2ff") : s === "Pending" ? (dk ? "#1c1608" : "#fffbeb") : s === "Partial" ? (dk ? "#1c1008" : "#fff7ed") : (s === "Failed" || s === "Rejected") ? (dk ? "#1f0a0a" : "#fef2f2") : s === "Cancelled" ? (dk ? "#1a1a1a" : "#f5f5f5") : (dk ? "#141414" : "#f5f5f5"); }
 function sBrd(s, dk) { return s === "Completed" ? (dk ? "#166534" : "#a7f3d0") : s === "Processing" ? (dk ? "#3730a3" : "#c7d2fe") : s === "Pending" ? (dk ? "#92400e" : "#fde68a") : s === "Partial" ? (dk ? "#9a3412" : "#fed7aa") : (s === "Failed" || s === "Rejected") ? (dk ? "#991b1b" : "#fecaca") : s === "Cancelled" ? (dk ? "#404040" : "#d4d4d4") : (dk ? "#404040" : "#d4d4d4"); }
+
+function errInfo(err, retryCount) {
+  if (err === "user_cancelled") return { label: "Cancelled by User", tone: "neutral" };
+  if (err === "admin_cancelled") return { label: "Cancelled by Admin", tone: "neutral" };
+  if (err === "dispatch_failed") return { label: "Dispatch Failed", detail: "Order couldn't reach the provider and was auto-refunded", tone: "warn" };
+  if (err === "needs_post_link") return { label: "Wrong Link Type", detail: "Customer sent a profile link — this service needs a post/video link", tone: "warn" };
+  if (err === "needs_profile_link") return { label: "Wrong Link Type", detail: "Customer sent a post link — this service needs a profile link", tone: "warn" };
+  if (err === "wrong_platform_link") return { label: "Wrong Platform", detail: "Link is from a different platform than the service", tone: "warn" };
+  if (err === "wrong_service_type") return { label: "Service Mismatch", detail: "Service type doesn't match the link (e.g. followers service with a post link)", tone: "warn" };
+  if (err === "missing_comments") return { label: "Missing Input", detail: "This service requires custom comments but none were provided", tone: "warn" };
+  if (/incorrect service|invalid service|service replaced/i.test(err)) return { label: "Service Unavailable", detail: "Provider rejected or removed this service", tone: "error" };
+  if (/quantity.*less|minim/i.test(err)) return { label: "Quantity Too Low", detail: err, tone: "warn" };
+  if (/duplicate/i.test(err)) return { label: "Duplicate Order", detail: "Provider already has an active order for this link", tone: "warn" };
+  if (/^\[TIMEOUT\]/.test(err)) return { label: `Timeout${retryCount > 0 ? ` · ${retryCount}/5 retries` : ""}`, detail: "Provider didn't respond in time — will retry", tone: "warn" };
+  if (/^\[DUPLICATE\]/.test(err)) return { label: "Needs Manual Review", detail: err.replace("[DUPLICATE] ", ""), tone: "error" };
+  return { label: `Provider Error${retryCount > 0 ? ` · ${retryCount} retries` : ""}`, detail: err, tone: "error" };
+}
 
 function Badge({ status, dark }) {
   return <span className="text-[13px] font-semibold py-0.5 px-2 rounded-[5px] border-[0.5px] whitespace-nowrap inline-block" style={{ background: sBg(status, dark), color: sClr(status, dark), borderColor: sBrd(status, dark) }}>{status}</span>;
@@ -156,6 +301,25 @@ export default function AdminOrdersPage({ dark, t }) {
   useEffect(() => {
     if (expandedBatchOrder) { const o = orders.find(x => x.id === expandedBatchOrder); autoCheck(o); }
   }, [expandedBatchOrder]);
+
+  const [refundPrompt, setRefundPrompt] = useState(null);
+  const [refundType, setRefundType] = useState('full');
+  const [refundAmount, setRefundAmount] = useState('');
+  const [refundSending, setRefundSending] = useState(false);
+  const openRefund = (o) => { setRefundPrompt(o); setRefundType('full'); setRefundAmount(''); };
+  const doRefund = async () => {
+    if (!refundPrompt) return;
+    if (refundType === 'partial' && (!refundAmount || Number(refundAmount) <= 0)) return;
+    setRefundSending(true);
+    try {
+      const res = await fetch("/api/admin/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "refund", orderId: refundPrompt.id, refundType, ...(refundType === 'partial' && { amount: Number(refundAmount) }) }) });
+      const data = await res.json();
+      if (!res.ok) { toast.error("Refund failed", data.error || "Something went wrong"); return; }
+      toast.success(refundPrompt.id, data.message || "Refund processed");
+      setRefundPrompt(null);
+      fetchOrders(search);
+    } catch { toast.error("Refund failed", "Check your connection"); } finally { setRefundSending(false); }
+  };
 
   const [ticketPrompt, setTicketPrompt] = useState(null);
   const [ticketMsg, setTicketMsg] = useState("");
@@ -300,8 +464,10 @@ export default function AdminOrdersPage({ dark, t }) {
                               const isComplete = o.status === "Completed";
                               const delivered = isCancelled ? 0 : isComplete ? qty : hasData ? Math.max(0, qty - Math.max(0, o.remains)) : 0;
                               const pct = isCancelled ? 0 : isComplete ? 100 : hasData ? Math.min(100, Math.round((delivered / qty) * 100)) : 0;
-                              const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : "#c47d8e";
+                              const isPartial = o.status === "Partial";
+                              const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : isPartial ? (dark ? "#fbbf24" : "#d97706") : "#c47d8e";
                               const waiting = !isCancelled && !hasData && !isComplete && (o.status === "Pending" || o.status === "Processing");
+                              const isProcessing = !isComplete && !isPartial && !isCancelled && !waiting && pct > 0 && pct < 100;
                               return (
                                 <div className="mb-2.5 py-1.5 px-2.5 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
                                   <div className="flex items-center justify-between text-[11px] mb-1">
@@ -310,30 +476,33 @@ export default function AdminOrdersPage({ dark, t }) {
                                   </div>
                                   <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
                                     {waiting
-                                      ? <div className="h-full w-1/3 rounded-full" style={{ background: `${barColor}40`, animation: "progress-pulse 1.8s ease-in-out infinite" }} />
-                                      : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor }} />}
+                                      ? <div className="h-full rounded-full" style={{ background: `repeating-linear-gradient(-55deg, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"}, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 12px)`, backgroundSize: "28px 100%", animation: "progress-stripe .8s linear infinite" }} />
+                                      : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor, ...(isProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />}
                                   </div>
                                 </div>
                               );
                             })()}
 
-                            {/* Provider error */}
-                            {o.lastError && (
-                              <div className="mb-2.5 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)", border: `1px solid ${dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.12)"}` }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            {/* Error / cancel info */}
+                            {o.lastError && (() => {
+                              const ei = errInfo(o.lastError, o.retryCount);
+                              const colors = { neutral: { bg: dark ? "rgba(161,161,170,.08)" : "rgba(113,113,122,.04)", brd: dark ? "rgba(161,161,170,.18)" : "rgba(113,113,122,.12)", clr: dark ? "#a1a1aa" : "#71717a" }, warn: { bg: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.04)", brd: dark ? "rgba(251,191,36,.18)" : "rgba(217,119,6,.12)", clr: dark ? "#fbbf24" : "#d97706" }, error: { bg: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)", brd: dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.12)", clr: dark ? "#fca5a5" : "#dc2626" } }[ei.tone];
+                              return (
+                              <div className="mb-2.5 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: colors.bg, border: `1px solid ${colors.brd}` }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.clr} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                                 <div className="min-w-0">
-                                  <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-0.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Provider Error{o.retryCount > 0 ? ` · ${o.retryCount} retries` : ""}</div>
-                                  <div className="text-[12px] break-all" style={{ color: dark ? "rgba(252,165,165,.8)" : "rgba(220,38,38,.7)", fontFamily: "var(--font-mono, monospace)" }}>{o.lastError}</div>
+                                  <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-0.5" style={{ color: colors.clr }}>{ei.label}</div>
+                                  {ei.detail && <div className="text-[12px] break-all" style={{ color: colors.clr, opacity: .8 }}>{ei.detail}</div>}
                                 </div>
-                              </div>
-                            )}
+                              </div>);
+                            })()}
 
                             {/* Info grid */}
                             {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); return (
                             <div className="grid grid-cols-2 desktop:grid-cols-4 gap-1.5 mb-2.5">
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Order No</div>
-                                <div className="m text-[13px] font-semibold break-all" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.id || "—"}</div>
+                                <CopyId value={o.id} dark={dark} size="sm" />
                               </div>
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Quantity</div>
@@ -349,7 +518,7 @@ export default function AdminOrdersPage({ dark, t }) {
                               </div>
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Profit</div>
-                                <div className="m text-[13px] font-semibold" style={{ color: o.status === "Cancelled" ? t.textMuted : (dark ? "#6ee7b7" : "#059669") }}>{fN(o.status === "Cancelled" ? 0 : netCharge - netCost)}</div>
+                                <div className="m text-[13px] font-semibold" style={{ color: o.status === "Cancelled" ? t.textMuted : netCharge - netCost < 0 ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{o.status === "Cancelled" ? fN(0) : `${netCharge - netCost < 0 ? "-" : ""}${fN(netCharge - netCost)}`}</div>
                               </div>
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Status</div>
@@ -361,24 +530,36 @@ export default function AdminOrdersPage({ dark, t }) {
                               </div>
                               {o.serviceApiId && <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Service ID</div>
-                                <div className="m text-[13px] font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.serviceApiId}</div>
+                                <CopyId value={o.serviceApiId} dark={dark} size="sm" />
                               </div>}
                               {o.apiOrderId && <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Provider Order</div>
-                                <div className="m text-[13px] font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.apiOrderId}</div>
+                                <CopyId value={o.apiOrderId} dark={dark} size="sm" />
                               </div>}
                               {o.startCount != null && <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Start Count</div>
                                 <div className="m text-[13px] font-semibold" style={{ color: t.text }}>{o.startCount.toLocaleString()}</div>
                               </div>}
+                              {(() => { const est = estimateDelivery(o.serviceType, o.quantity, o.remains); if (!est || o.status === "Completed" || o.status === "Cancelled") return null; return (
+                              <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.05)", border: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)"}` }}>
+                                <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Est. Time</div>
+                                <div className="m text-[13px] font-semibold flex items-center justify-center gap-1" style={{ color: dark ? "rgba(196,125,142,.85)" : "rgba(160,80,100,.75)" }}>
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                  {est}
+                                </div>
+                              </div>); })()}
                             </div>
                             ); })()}
+
+                            {/* Drip dispatches */}
+                            {o.dripDispatches && <DripSection dispatches={o.dripDispatches} dark={dark} t={t} />}
 
                             {/* Actions */}
                             <div className="flex gap-1.5">
                               <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[62px] py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={12} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
                               {o.status !== "Cancelled" && o.status !== "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? This may issue a refund.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={!!actionLoading} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>}
                               {o.status === "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Refill Order", message: `Request a refill for order ${o.id}?`, confirmLabel: "Refill" }); if (ok) doAction(o.id, "refill"); }} disabled={!!actionLoading} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>Refill</button>}
+                              {(o.status === "Completed" || o.status === "Partial") && <button onClick={() => openRefund(o)} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(52,211,153,.12)" : "rgba(5,150,105,.08)", color: dark ? "#34d399" : "#059669" }}>Refund</button>}
                               <button onClick={() => { setTicketMsg(`Hi ${o.user || "there"}, we noticed an issue with your order ${o.id}. `); setTicketPrompt({ userId: o.userId, orderId: o.id }); }} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(224,164,88,.12)" : "rgba(224,164,88,.08)", color: dark ? "#e0a458" : "#b45309" }}>Ticket</button>
                             </div>
                           </div>
@@ -444,8 +625,10 @@ export default function AdminOrdersPage({ dark, t }) {
                     const isComplete = o.status === "Completed";
                     const delivered = isCancelled ? 0 : isComplete ? qty : hasData ? Math.max(0, qty - Math.max(0, o.remains)) : 0;
                     const pct = isCancelled ? 0 : isComplete ? 100 : hasData ? Math.min(100, Math.round((delivered / qty) * 100)) : 0;
-                    const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : "#c47d8e";
+                    const isPartial = o.status === "Partial";
+                    const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : isPartial ? (dark ? "#fbbf24" : "#d97706") : "#c47d8e";
                     const waiting = !isCancelled && !hasData && !isComplete && (o.status === "Pending" || o.status === "Processing");
+                    const isProcessing = !isComplete && !isPartial && !isCancelled && !waiting && pct > 0 && pct < 100;
                     return (
                       <div className="mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
                         <div className="flex items-center justify-between text-[12px] mb-1.5">
@@ -454,30 +637,33 @@ export default function AdminOrdersPage({ dark, t }) {
                         </div>
                         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
                           {waiting
-                            ? <div className="h-full w-1/3 rounded-full" style={{ background: `${barColor}40`, animation: "progress-pulse 1.8s ease-in-out infinite" }} />
-                            : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor }} />}
+                            ? <div className="h-full rounded-full" style={{ background: `repeating-linear-gradient(-55deg, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"}, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 12px)`, backgroundSize: "28px 100%", animation: "progress-stripe .8s linear infinite" }} />
+                            : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor, ...(isProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />}
                         </div>
                       </div>
                     );
                   })()}
 
-                  {/* Provider error */}
-                  {o.lastError && (
-                    <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)", border: `1px solid ${dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.12)"}` }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  {/* Error / cancel info */}
+                  {o.lastError && (() => {
+                    const ei = errInfo(o.lastError, o.retryCount);
+                    const colors = { neutral: { bg: dark ? "rgba(161,161,170,.08)" : "rgba(113,113,122,.04)", brd: dark ? "rgba(161,161,170,.18)" : "rgba(113,113,122,.12)", clr: dark ? "#a1a1aa" : "#71717a" }, warn: { bg: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.04)", brd: dark ? "rgba(251,191,36,.18)" : "rgba(217,119,6,.12)", clr: dark ? "#fbbf24" : "#d97706" }, error: { bg: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)", brd: dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.12)", clr: dark ? "#fca5a5" : "#dc2626" } }[ei.tone];
+                    return (
+                    <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: colors.bg, border: `1px solid ${colors.brd}` }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.clr} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                       <div className="min-w-0">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-0.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Provider Error{o.retryCount > 0 ? ` · ${o.retryCount} retries` : ""}</div>
-                        <div className="text-[12px] break-all" style={{ color: dark ? "rgba(252,165,165,.8)" : "rgba(220,38,38,.7)", fontFamily: "var(--font-mono, monospace)" }}>{o.lastError}</div>
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-0.5" style={{ color: colors.clr }}>{ei.label}</div>
+                        {ei.detail && <div className="text-[12px] break-all" style={{ color: colors.clr, opacity: .8 }}>{ei.detail}</div>}
                       </div>
-                    </div>
-                  )}
+                    </div>);
+                  })()}
 
                   {/* Info grid */}
                   {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); return (
                   <div className="grid grid-cols-2 desktop:grid-cols-4 gap-2 mb-3">
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Order No</div>
-                      <div className="m text-sm font-semibold break-all" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.id || "—"}</div>
+                      <CopyId value={o.id} dark={dark} />
                     </div>
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Quantity</div>
@@ -493,7 +679,7 @@ export default function AdminOrdersPage({ dark, t }) {
                     </div>
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Profit</div>
-                      <div className="m text-sm font-semibold" style={{ color: o.status === "Cancelled" ? t.textMuted : (dark ? "#6ee7b7" : "#059669") }}>{fN(o.status === "Cancelled" ? 0 : netCharge - netCost)}</div>
+                      <div className="m text-sm font-semibold" style={{ color: o.status === "Cancelled" ? t.textMuted : netCharge - netCost < 0 ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{o.status === "Cancelled" ? fN(0) : `${netCharge - netCost < 0 ? "-" : ""}${fN(netCharge - netCost)}`}</div>
                     </div>
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Status</div>
@@ -505,24 +691,36 @@ export default function AdminOrdersPage({ dark, t }) {
                     </div>
                     {o.serviceApiId && <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Service ID</div>
-                      <div className="m text-sm font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.serviceApiId}</div>
+                      <CopyId value={o.serviceApiId} dark={dark} />
                     </div>}
                     {o.apiOrderId && <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Provider Order</div>
-                      <div className="m text-sm font-semibold" style={{ color: t.text, fontFamily: "var(--font-mono, monospace)" }}>{o.apiOrderId}</div>
+                      <CopyId value={o.apiOrderId} dark={dark} />
                     </div>}
                     {o.startCount != null && <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Start Count</div>
                       <div className="m text-sm font-semibold" style={{ color: t.text }}>{o.startCount.toLocaleString()}</div>
                     </div>}
+                    {(() => { const est = estimateDelivery(o.serviceType, o.quantity, o.remains); if (!est || o.status === "Completed" || o.status === "Cancelled") return null; return (
+                    <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                      <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Est. Time</div>
+                      <div className="m text-sm font-semibold flex items-center justify-center gap-1" style={{ color: t.text }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        {est}
+                      </div>
+                    </div>); })()}
                   </div>
                   ); })()}
+
+                  {/* Drip dispatches */}
+                  {o.dripDispatches && <DripSection dispatches={o.dripDispatches} dark={dark} t={t} />}
 
                   {/* Actions */}
                   <div className="flex gap-2">
                     <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[72px] py-2 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
                     {o.status !== "Cancelled" && o.status !== "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? This may issue a refund.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={!!actionLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>}
                     {o.status === "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Refill Order", message: `Request a refill for order ${o.id}?`, confirmLabel: "Refill" }); if (ok) doAction(o.id, "refill"); }} disabled={!!actionLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>Refill</button>}
+                    {(o.status === "Completed" || o.status === "Partial") && <button onClick={() => openRefund(o)} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(52,211,153,.12)" : "rgba(5,150,105,.08)", color: dark ? "#34d399" : "#059669" }}>Refund</button>}
                     <button onClick={() => { setTicketMsg(`Hi ${o.user || "there"}, we noticed an issue with your order ${o.id}. `); setTicketPrompt({ userId: o.userId, orderId: o.id }); }} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(224,164,88,.12)" : "rgba(224,164,88,.08)", color: dark ? "#e0a458" : "#b45309" }}>Ticket</button>
                   </div>
                 </div>
@@ -572,6 +770,40 @@ export default function AdminOrdersPage({ dark, t }) {
           </div>
         )}
       </div>
+
+      {refundPrompt && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => setRefundPrompt(null)}>
+          <div className="w-full max-w-[400px] mx-4 rounded-xl p-5" style={{ background: dark ? "#1e1e1e" : "#fff", border: `1px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
+            <div className="text-[15px] font-semibold mb-1" style={{ color: t.text }}>Refund order {refundPrompt.id}</div>
+            <div className="text-[12px] mb-4" style={{ color: t.textMuted }}>Customer: {refundPrompt.user} · Charged: {fN(refundPrompt.charge)}</div>
+
+            <div className="flex gap-2 mb-4">
+              {['full', 'partial'].map(rt => (
+                <button key={rt} onClick={() => setRefundType(rt)} className="flex-1 py-2 rounded-lg text-sm font-semibold cursor-pointer border transition-all duration-150" style={{ background: refundType === rt ? (dark ? "rgba(52,211,153,.15)" : "rgba(5,150,105,.1)") : "transparent", borderColor: refundType === rt ? (dark ? "#34d399" : "#059669") : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"), color: refundType === rt ? (dark ? "#34d399" : "#059669") : t.textMuted }}>{rt === 'full' ? 'Full Refund' : 'Partial'}</button>
+              ))}
+            </div>
+
+            {refundType === 'full' && (
+              <div className="py-3 px-3 rounded-lg mb-4 text-center" style={{ background: dark ? "rgba(52,211,153,.08)" : "rgba(5,150,105,.05)", border: `1px solid ${dark ? "rgba(52,211,153,.2)" : "rgba(5,150,105,.15)"}` }}>
+                <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Refund Amount</div>
+                <div className="m text-lg font-bold" style={{ color: dark ? "#34d399" : "#059669" }}>{fN(refundPrompt.charge)}</div>
+              </div>
+            )}
+
+            {refundType === 'partial' && (
+              <div className="mb-4">
+                <label className="text-[11px] uppercase tracking-[1px] block mb-1.5" style={{ color: t.textMuted }}>Amount (₦)</label>
+                <input type="number" value={refundAmount} onChange={e => setRefundAmount(e.target.value)} min="1" max={refundPrompt.charge} step="any" className="w-full rounded-lg py-2.5 px-3 text-sm outline-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.text }} placeholder={`Max ₦${refundPrompt.charge.toLocaleString()}`} autoFocus />
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setRefundPrompt(null)} className="py-2 px-4 rounded-lg text-sm font-medium cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textSoft }}>Cancel</button>
+              <button onClick={doRefund} disabled={refundSending || (refundType === 'partial' && (!refundAmount || Number(refundAmount) <= 0))} className="py-2 px-4 rounded-lg text-sm font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(52,211,153,.2)" : "rgba(5,150,105,.12)", color: dark ? "#34d399" : "#059669", opacity: refundSending || (refundType === 'partial' && (!refundAmount || Number(refundAmount) <= 0)) ? .5 : 1 }}>{refundSending ? "Processing..." : "Confirm Refund"}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {ticketPrompt && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => { setTicketPrompt(null); setTicketMsg(""); }}>

@@ -177,6 +177,7 @@ export async function POST(req) {
     sendEvent('AddPaymentInfo', {
       eventId,
       email: session.email,
+      externalId: session.id,
       clientIp: hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip'),
       userAgent: hdrs.get('user-agent'),
       fbp, fbc,

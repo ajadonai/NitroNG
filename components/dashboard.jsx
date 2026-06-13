@@ -42,7 +42,7 @@ const I = {
   guide: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>,
   services: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
   referrals: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>,
-  support: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,
+  support: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
   settings: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
   earn: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M15.5 9.5c0-1.38-1.57-2.5-3.5-2.5s-3.5 1.12-3.5 2.5S10.07 12 12 12s3.5 1.12 3.5 2.5-1.57 2.5-3.5 2.5-3.5-1.12-3.5-2.5"/></svg>,
   leaderboard: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg>,
@@ -56,10 +56,6 @@ const NAV_ITEMS = [
   { id: "services", label: "New Order" },
   { id: "orders", label: "History" },
   { id: "add-funds", label: "Wallet" },
-  { id: "audit", label: "Audit", soon: true },
-  { id: "cleanup", label: "Cleanup", soon: true },
-  { id: "earn", label: "Earn", soon: true },
-  { id: "leaderboard", label: "Leaderboard", soon: true },
   { id: "guide", label: "Blog" },
   { id: "referrals", label: "Referrals" },
   { id: "support", label: "Support" },
@@ -74,10 +70,6 @@ const BOTTOM_TABS = [
   { id: "more", label: "More" },
 ];
 const MORE_ITEMS = [
-  { id: "audit", label: "Audit", soon: true },
-  { id: "cleanup", label: "Cleanup", soon: true },
-  { id: "earn", label: "Earn", soon: true },
-  { id: "leaderboard", label: "Leaderboard", soon: true },
   { id: "referrals", label: "Referrals" },
   { id: "guide", label: "Blog" },
   { id: "support", label: "Support" },
@@ -853,6 +845,8 @@ function DashboardInner({ initialData }) {
     return () => window.removeEventListener("nitro-order-tour", handler);
   }, []);
 
+  useEffect(() => { if (isSupport) setUnreadTickets([]); }, [isSupport]);
+
 
   /* Theme — provided by ThemeProvider */
 
@@ -1190,14 +1184,20 @@ function DashboardInner({ initialData }) {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
             <span className="m text-[12px] font-semibold" style={{ color: t.green }}>₦{Math.round(user?.balance || 0).toLocaleString()}</span>
           </button>
-          {/* Theme toggle */}
-          <button onClick={toggleTheme} className="dash-theme-toggle" aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} style={{ background: dark ? "rgba(99,102,241,.28)" : "rgba(0,0,0,.12)", border: `0.5px solid ${dark ? "rgba(99,102,241,.24)" : "rgba(0,0,0,.14)"}` }}>
+          {/* Theme toggle — desktop only */}
+          <button onClick={toggleTheme} className="dash-theme-toggle max-desktop:hidden" aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} style={{ background: dark ? "rgba(99,102,241,.28)" : "rgba(0,0,0,.12)", border: `0.5px solid ${dark ? "rgba(99,102,241,.24)" : "rgba(0,0,0,.14)"}` }}>
             <div className="dash-theme-thumb" style={{ background: dark ? "#1e1b4b" : "#fff", left: dark ? 23 : 3, boxShadow: dark ? "0 0 6px rgba(99,102,241,.3)" : "0 1px 4px rgba(0,0,0,.15)" }}>
               {dark
                 ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
                 : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
               }
             </div>
+          </button>
+          {/* Support — mobile/tablet only (replaces theme toggle) */}
+          <button onClick={() => { setActive("support"); setLeftOpen(false); }} className="hidden max-desktop:flex items-center gap-1 h-[30px] px-2.5 rounded-[8px] cursor-pointer border-none relative" aria-label="Support" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", color: t.accent }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span className="text-[11px] font-semibold">Help</span>
+            {unreadTickets.length > 0 && <div className="dash-bell-badge" style={{ top: -3, right: -3 }}>{unreadTickets.length > 10 ? "10+" : unreadTickets.length}</div>}
           </button>
           {/* Notification bell */}
           <div ref={notifRef} className="relative">
@@ -1224,14 +1224,17 @@ function DashboardInner({ initialData }) {
             <>
               {NAV_ITEMS.map((item, i) => {
                 const processingCount = item.id === "orders" ? orders.filter(o => o.status === "Processing" || o.status === "Pending").length : 0;
+                const isSupportItem = item.id === "support";
+                const isActive = active === item.id;
                 return (
                   <Fragment key={item.id}>
                     {(item.id === "leaderboard" || item.id === "audit") && <div className="dash-sidebar-divider max-desktop:hidden my-1" style={{ background: t.sidebarBorder }} />}
-                    <button data-nav={item.id} onClick={() => { if (item.soon) return; setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: active === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", color: item.soon ? t.textMuted : (active === item.id ? t.accent : t.textSoft), fontWeight: active === item.id ? 600 : 450, opacity: item.soon ? 0.5 : 1, cursor: item.soon ? "default" : "pointer" }}>
-                      <span className="shrink-0" style={{ opacity: active === item.id ? 1 : .55, color: active === item.id ? t.accent : t.textMuted }}>{I[item.id]}</span>
+                    <button data-nav={item.id} onClick={() => { if (item.soon) return; setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: isActive ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : isSupportItem ? (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)") : "transparent", color: item.soon ? t.textMuted : (isActive ? t.accent : isSupportItem ? t.accent : t.textSoft), fontWeight: isActive || isSupportItem ? 600 : 450, opacity: item.soon ? 0.5 : 1, cursor: item.soon ? "default" : "pointer" }}>
+                      <span className="shrink-0" style={{ opacity: isActive || isSupportItem ? 1 : .55, color: isActive || isSupportItem ? t.accent : t.textMuted }}>{I[item.id]}</span>
                       {item.label}
                       {item.soon && <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent, opacity: 1 }}>Soon</span>}
                       {processingCount > 0 && <span className="m dash-nav-badge">{processingCount > 99 ? "99+" : processingCount}</span>}
+                      {isSupportItem && unreadTickets.length > 0 && <span className="m dash-nav-badge">{unreadTickets.length > 99 ? "99+" : unreadTickets.length}</span>}
                     </button>
                   </Fragment>
                 );

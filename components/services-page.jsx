@@ -1,6 +1,8 @@
 'use client';
+import { useEffect } from 'react';
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
+import { trackViewContent } from './capi-tracker';
 
 export default function ServicesOverview({ platforms }) {
   return <ThemeProvider><ServicesInner platforms={platforms} /></ThemeProvider>;
@@ -25,6 +27,7 @@ function ServicesInner({ platforms }) {
   const { dark, t } = useTheme();
   const accent = "#c47d8e";
   const border = dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)";
+  useEffect(() => { trackViewContent({ content_name: 'services', content_type: 'catalog' }); }, []);
 
   return (
     <>

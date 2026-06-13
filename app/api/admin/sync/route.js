@@ -211,6 +211,67 @@ export async function POST(req) {
         }
       }
 
+      // 1b. Check status of drip parent orders (no direct apiOrderId — sync via dispatches)
+      const dripParents = await prisma.order.findMany({
+        where: {
+          status: { in: ['Processing', 'Pending', 'In progress'] },
+          apiOrderId: null,
+          deletedAt: null,
+          dripDispatches: { some: { apiOrderId: { not: null } } },
+        },
+        include: { service: { select: { provider: true } } },
+        take: 100,
+        orderBy: { createdAt: 'asc' },
+      });
+
+      for (const order of dripParents) {
+        try {
+          const provider = order.service?.provider || 'mtp';
+          if (!isProviderConfigured(provider)) { stats.errors++; continue; }
+          stats.checked++;
+
+          const dispatches = await prisma.dripDispatch.findMany({
+            where: { orderId: order.id, apiOrderId: { not: null }, status: { notIn: ['completed', 'partial', 'cancelled'] } },
+            select: { id: true, apiOrderId: true, quantity: true, status: true, startCount: true },
+          });
+          if (dispatches.length === 0) continue;
+
+          for (const d of dispatches) {
+            try {
+              const result = await checkOrder(provider, d.apiOrderId);
+              const sMap = { 'Completed': 'completed', 'In progress': 'processing', 'Processing': 'processing', 'Pending': 'pending', 'Partial': 'partial', 'Canceled': 'cancelled', 'Refunded': 'cancelled' };
+              const newSt = sMap[result.status] || d.status;
+              const upd = {};
+              if (newSt !== d.status) upd.status = newSt;
+              if (result.remains != null) upd.remains = Number(result.remains);
+              if (result.start_count != null && !d.startCount) upd.startCount = Number(result.start_count);
+              if (['completed', 'partial', 'cancelled'].includes(newSt)) upd.completedAt = new Date();
+              if (Object.keys(upd).length > 0) await prisma.dripDispatch.update({ where: { id: d.id }, data: upd });
+            } catch {}
+            await new Promise(r => setTimeout(r, 200));
+          }
+
+          const allDispatches = await prisma.dripDispatch.findMany({
+            where: { orderId: order.id },
+            select: { status: true, remains: true, quantity: true, startCount: true },
+          });
+          const allDone = allDispatches.length > 0 && allDispatches.every(d => ['completed', 'partial', 'cancelled'].includes(d.status));
+          const totalRemains = allDispatches.reduce((s, d) => s + (d.remains ?? d.quantity), 0);
+          const parentUpd = { remains: totalRemains };
+          if (allDone) {
+            parentUpd.status = totalRemains > 0 ? 'Partial' : 'Completed';
+            parentUpd.completedAt = new Date();
+            stats.updated++;
+          }
+          const first = allDispatches[0];
+          if (first?.startCount != null && !order.startCount) parentUpd.startCount = first.startCount;
+          await prisma.order.update({ where: { id: order.id }, data: parentUpd });
+        } catch (err) {
+          stats.errors++;
+          log.warn(`Sync drip order ${order.orderId}`, err.message);
+        }
+      }
+
       // 2. Dispatch pending orders that haven't been placed with a provider yet
       const undispatched = await prisma.order.findMany({
         where: {

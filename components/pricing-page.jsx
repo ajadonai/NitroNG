@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
+import { trackViewContent } from './capi-tracker';
 
 export default function PricingView({ platforms }) {
   return <ThemeProvider><PricingInner platforms={platforms} /></ThemeProvider>;
@@ -36,6 +37,7 @@ function PricingInner({ platforms }) {
 
   const selected = platforms.find(p => p.platform === active);
 
+  useEffect(() => { trackViewContent({ content_name: 'pricing', content_type: 'pricing' }); }, []);
   useEffect(() => {
     if (active && detailRef.current) {
       setTimeout(() => detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);

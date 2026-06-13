@@ -23,15 +23,21 @@ export async function GET(req) {
       ];
     }
 
+    let hasDripTable = true;
+    const include = {
+      user: { select: { name: true, email: true } },
+      service: { select: { name: true, category: true, provider: true, apiId: true } },
+      tier: { select: { tier: true, group: { select: { name: true, platform: true, type: true } } } },
+    };
+    try {
+      await prisma.dripDispatch.findFirst({ take: 1 });
+      include.dripDispatches = { select: { id: true, day: true, batch: true, quantity: true, status: true, apiOrderId: true, scheduledAt: true, dispatchedAt: true, completedAt: true, lastError: true }, orderBy: { scheduledAt: 'asc' } };
+    } catch { hasDripTable = false; }
+
     const orders = await prisma.order.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      take: 300,
-      include: {
-        user: { select: { name: true, email: true } },
-        service: { select: { name: true, category: true, provider: true, apiId: true } },
-        tier: { select: { tier: true, group: { select: { name: true, platform: true } } } },
-      },
+      include,
     });
 
     return Response.json({
@@ -55,10 +61,13 @@ export async function GET(req) {
         startCount: o.startCount,
         status: o.status,
         apiOrderId: o.apiOrderId,
+        dripDays: o.dripDays || null,
+        dripDispatches: o.dripDispatches?.length > 0 ? o.dripDispatches.map(d => ({ id: d.id, day: d.day, batch: d.batch, qty: d.quantity, status: d.status, apiOrderId: d.apiOrderId, scheduled: d.scheduledAt?.toISOString(), dispatched: d.dispatchedAt?.toISOString(), completed: d.completedAt?.toISOString(), error: d.lastError })) : null,
         batchId: o.batchId || null,
         lastError: o.lastError || null,
         retryCount: o.retryCount || 0,
         created: o.createdAt.toISOString(),
+        serviceType: o.tier?.group?.type || null,
       })),
     });
   } catch (err) {
@@ -72,7 +81,8 @@ export async function POST(req) {
   if (error) return error;
 
   try {
-    const { action, orderId } = await req.json();
+    const body = await req.json();
+    const { action, orderId } = body;
 
     if (!orderId) return Response.json({ error: 'Order ID required' }, { status: 400 });
 
@@ -228,7 +238,88 @@ export async function POST(req) {
           return Response.json({ success: true, status: order.status, message: e.message });
         }
       }
-      return Response.json({ success: true, status: order.status, message: `No ${providerLabel} tracking` });
+      // Drip order — sync each dispatch with provider, then rollup parent
+      const dispatches = await prisma.dripDispatch.findMany({
+        where: { orderId: order.id, apiOrderId: { not: null }, status: { notIn: ['completed', 'partial', 'cancelled'] } },
+        select: { id: true, apiOrderId: true, quantity: true, status: true, startCount: true },
+      });
+      if (dispatches.length === 0) return Response.json({ success: true, status: order.status, message: `No ${providerLabel} tracking` });
+      for (const d of dispatches) {
+        try {
+          const s = await checkOrder(provider, d.apiOrderId);
+          const sMap = { 'Completed': 'completed', 'In progress': 'processing', 'Processing': 'processing', 'Pending': 'pending', 'Partial': 'partial', 'Canceled': 'cancelled', 'Refunded': 'cancelled' };
+          const newSt = sMap[s.status] || d.status;
+          const upd = {};
+          if (newSt !== d.status) upd.status = newSt;
+          if (s.remains != null) upd.remains = Number(s.remains);
+          if (s.start_count != null && !d.startCount) upd.startCount = Number(s.start_count);
+          if (['completed', 'partial', 'cancelled'].includes(newSt)) upd.completedAt = new Date();
+          if (Object.keys(upd).length > 0) await prisma.dripDispatch.update({ where: { id: d.id }, data: upd });
+        } catch {}
+      }
+      const allDispatches = await prisma.dripDispatch.findMany({ where: { orderId: order.id }, select: { status: true, remains: true, quantity: true, startCount: true }, orderBy: [{ day: 'asc' }, { batch: 'asc' }] });
+      const allDone = allDispatches.length > 0 && allDispatches.every(d => ['completed', 'partial', 'cancelled'].includes(d.status));
+      const totalRemains = allDispatches.reduce((s, d) => s + (d.remains ?? d.quantity), 0);
+      const parentUpd = { remains: totalRemains };
+      if (allDone) {
+        parentUpd.status = totalRemains > 0 ? 'Partial' : 'Completed';
+        parentUpd.completedAt = new Date();
+      }
+      const first = allDispatches[0];
+      if (first?.startCount != null && !order.startCount) parentUpd.startCount = first.startCount;
+      await prisma.order.update({ where: { id: order.id }, data: parentUpd });
+      await logActivity(admin.name, `Synced drip order ${orderId}: ${parentUpd.status || order.status}`, 'order');
+      return Response.json({ success: true, status: parentUpd.status || order.status, remains: totalRemains });
+    }
+
+    if (action === 'refund') {
+      const { refundType, amount } = body;
+      if (!refundType || !['full', 'partial'].includes(refundType)) {
+        return Response.json({ error: 'Refund type must be "full" or "partial"' }, { status: 400 });
+      }
+
+      const existing = await prisma.transaction.aggregate({
+        where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
+        _sum: { amount: true },
+      });
+      const alreadyRefunded = existing._sum.amount || 0;
+      const maxRefundable = Math.max(0, order.charge - alreadyRefunded);
+
+      if (maxRefundable <= 0) return Response.json({ error: 'Order already fully refunded' }, { status: 400 });
+
+      let refundAmount;
+      if (refundType === 'full') {
+        refundAmount = maxRefundable;
+      } else {
+        refundAmount = Math.round((amount || 0) * 100);
+        if (refundAmount <= 0) return Response.json({ error: 'Amount must be greater than zero' }, { status: 400 });
+        if (refundAmount > maxRefundable) return Response.json({ error: `Amount exceeds maximum refundable (₦${(maxRefundable / 100).toLocaleString()})` }, { status: 400 });
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({ where: { id: order.userId }, data: { balance: { increment: refundAmount } } });
+        await tx.transaction.create({
+          data: {
+            userId: order.userId, type: 'refund', amount: refundAmount,
+            method: 'wallet', status: 'Completed',
+            reference: `ADM-REF-${order.orderId || order.id}`,
+            note: `Admin refund — ${refundType}${refundType === 'partial' ? ` (₦${(refundAmount / 100).toLocaleString()})` : ''}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} previously refunded)` : ''}`,
+          },
+        });
+        await tx.order.update({ where: { id: order.id }, data: { refundedAt: new Date() } });
+      });
+
+      try {
+        const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true, notifEmail: true, notifOrders: true } });
+        if (user?.email && user.notifEmail !== false && user.notifOrders !== false) {
+          const amt = refundAmount / 100;
+          walletCreditEmail(user.name || 'there', amt, 'Refund processed for your order').then(html => sendEmail(user.email, `₦${amt.toLocaleString()} refunded to your Nitro wallet`, html)).catch(() => {});
+        }
+      } catch {}
+
+      const refundMsg = `₦${(refundAmount / 100).toLocaleString()}`;
+      await logActivity(admin.name, `Refunded ${refundMsg} for order ${orderId} (${refundType})`, 'order');
+      return Response.json({ success: true, message: `${refundMsg} refunded to customer` });
     }
 
     if (action === 'retry') {

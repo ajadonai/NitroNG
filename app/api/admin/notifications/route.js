@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
-import { sendEmail, emailWrap } from '@/lib/email';
+import { sendEmail, emailWrap, gradualDeliveryAnnouncementEmail } from '@/lib/email';
 import { escapeHtml } from '@/lib/validate';
 
 async function getHistory() {
@@ -42,17 +42,17 @@ export async function POST(req) {
   if (!canPerformAction(admin, 'notifications.send')) return Response.json({ error: 'Not authorized to send notifications' }, { status: 403 });
 
   try {
-    const { subject, message, target, clearHistory } = await req.json();
+    const { subject, message, target, clearHistory, template } = await req.json();
 
     if (clearHistory) {
       await saveHistory([]);
       return Response.json({ success: true });
     }
 
-    if (!message?.trim()) return Response.json({ error: 'Message required' }, { status: 400 });
+    if (!template && !message?.trim()) return Response.json({ error: 'Message required' }, { status: 400 });
 
-    const subj = subject?.trim().slice(0, 200) || 'Notification from Nitro';
-    const msg = message.trim().slice(0, 5000);
+    const subj = subject?.trim().slice(0, 200) || (template === 'gradual-delivery' ? "We've upgraded how your orders are delivered" : 'Notification from Nitro');
+    const msg = message?.trim().slice(0, 5000) || subj;
 
     // Get target users
     let whereClause = { status: 'Active' };
@@ -72,14 +72,18 @@ export async function POST(req) {
       return Response.json({ error: 'No users match the target' }, { status: 400 });
     }
 
-    // Build email HTML using branded wrapper
-    const html = await emailWrap({
-      label: 'Announcement',
-      labelBg: 'rgba(196,125,142,.12)',
-      labelColor: '#c47d8e',
-      title: subj,
-      body: `<p style="font-size:15px;color:#444;line-height:1.7;white-space:pre-wrap;margin:0;">${escapeHtml(msg)}</p>`,
-    });
+    // Build email HTML
+    const TEMPLATES = { 'gradual-delivery': gradualDeliveryAnnouncementEmail };
+    const templateFn = template ? TEMPLATES[template] : null;
+    const html = templateFn
+      ? await templateFn('{{NAME}}')
+      : await emailWrap({
+          label: 'Announcement',
+          labelBg: 'rgba(196,125,142,.12)',
+          labelColor: '#c47d8e',
+          title: subj,
+          body: `<p style="font-size:15px;color:#444;line-height:1.7;white-space:pre-wrap;margin:0;">${escapeHtml(msg)}</p>`,
+        });
 
     // Save to history immediately as "sending"
     const historyId = Date.now().toString();
@@ -109,7 +113,7 @@ export async function POST(req) {
       for (let i = 0; i < users.length; i += batchSize) {
         const batch = users.slice(i, i + batchSize);
         const results = await Promise.allSettled(
-          batch.map(u => sendEmail(u.email, subj, html))
+          batch.map(u => sendEmail(u.email, subj, html.replace('{{NAME}}', u.name || 'there')))
         );
         results.forEach(r => {
           if (r.status === 'fulfilled' && r.value?.success) sent++;
