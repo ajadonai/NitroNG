@@ -116,20 +116,42 @@ export async function PATCH(req) {
           return Response.json({ success: true, status: order.status, message: e.message });
         }
       }
-      // Drip order — pull startCount from first dispatch, return current remains
-      const firstDispatch = await prisma.dripDispatch.findFirst({
-        where: { orderId: order.id },
-        orderBy: [{ day: 'asc' }, { batch: 'asc' }],
-        select: { startCount: true },
+      // Drip order — sync each dispatch with provider, then rollup parent
+      const dispatches = await prisma.dripDispatch.findMany({
+        where: { orderId: order.id, apiOrderId: { not: null }, status: { notIn: ['completed', 'partial', 'cancelled'] } },
+        select: { id: true, apiOrderId: true, quantity: true, status: true, startCount: true },
       });
-      if (firstDispatch?.startCount != null && order.startCount == null) {
-        await prisma.order.update({ where: { id: order.id }, data: { startCount: firstDispatch.startCount } });
+      const provider = order.service?.provider || 'mtp';
+      for (const d of dispatches) {
+        try {
+          const s = await checkOrder(provider, d.apiOrderId);
+          const sMap = { 'Completed': 'completed', 'In progress': 'processing', 'Processing': 'processing', 'Pending': 'pending', 'Partial': 'partial', 'Canceled': 'cancelled', 'Refunded': 'cancelled' };
+          const newSt = sMap[s.status] || d.status;
+          const upd = {};
+          if (newSt !== d.status) upd.status = newSt;
+          if (s.remains != null) upd.remains = Number(s.remains);
+          if (s.start_count != null && !d.startCount) upd.startCount = Number(s.start_count);
+          if (['completed', 'partial', 'cancelled'].includes(newSt) && !d.completedAt) upd.completedAt = new Date();
+          if (Object.keys(upd).length > 0) await prisma.dripDispatch.update({ where: { id: d.id }, data: upd });
+        } catch {}
       }
+      // Rollup parent
+      const allDispatches = await prisma.dripDispatch.findMany({ where: { orderId: order.id }, select: { status: true, remains: true, quantity: true, startCount: true, day: true, batch: true }, orderBy: [{ day: 'asc' }, { batch: 'asc' }] });
+      const allDone = allDispatches.length > 0 && allDispatches.every(d => ['completed', 'partial', 'cancelled'].includes(d.status));
+      const totalRemains = allDispatches.reduce((s, d) => s + (d.remains ?? d.quantity), 0);
+      const parentUpd = { remains: totalRemains };
+      if (allDone) {
+        parentUpd.status = totalRemains > 0 ? 'Partial' : 'Completed';
+        parentUpd.completedAt = new Date();
+      }
+      const first = allDispatches[0];
+      if (first?.startCount != null && order.startCount == null) parentUpd.startCount = first.startCount;
+      await prisma.order.update({ where: { id: order.id }, data: parentUpd });
       return Response.json({
         success: true,
-        status: order.status,
-        remains: order.remains,
-        startCount: firstDispatch?.startCount ?? order.startCount,
+        status: parentUpd.status || order.status,
+        remains: totalRemains,
+        startCount: first?.startCount ?? order.startCount,
       });
     }
 
