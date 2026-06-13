@@ -217,7 +217,7 @@ export async function POST(req) {
           status: { in: ['Processing', 'Pending', 'In progress'] },
           apiOrderId: null,
           deletedAt: null,
-          dispatches: { some: { apiOrderId: { not: null } } },
+          dripDispatches: { some: { apiOrderId: { not: null } } },
         },
         include: { service: { select: { provider: true } } },
         take: 100,
