@@ -834,7 +834,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       });
       const data = await res.json();
       if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong"); setOrderLoading(false); return; }
-      setOrderSuccess({ ...data.order, queued: data.queued, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", speed: selTier?.speed || null, tier: selTier?.tier || null, link: link.trim(), balanceAfter: data.order?.charge != null && user?.balance != null ? Math.max(0, (user.balance - (data.order.charge * 100)) / 100) : null });
+      setOrderSuccess({ ...data.order, queued: data.queued, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", speed: selTier?.speed || null, tier: selTier?.tier || null, link: link.trim(), balanceAfter: data.order?.charge != null && user?.balance != null ? Math.max(0, user.balance - data.order.charge) : null });
       if (typeof window.fbq === "function") fbq("track", "Purchase", { value: data.order?.charge || 0, currency: "NGN", content_name: selSvc?.name || "Order", content_category: platform || "unknown" }, { eventID: data.eventId });
       setLink("");
       if (onOrderSuccess) onOrderSuccess();
