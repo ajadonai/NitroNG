@@ -13,6 +13,7 @@ import Script from 'next/script';
 import SentryInit from '@/components/sentry-init';
 import CookieBanner from '@/components/cookie-banner';
 import CAPIPageView from '@/components/capi-tracker';
+import ZohoASAP from '@/components/zoho-asap';
 
 export const metadata = {
   title: {
@@ -215,6 +216,7 @@ export default function RootLayout({ children }) {
         <CookieBanner />
         <CAPIPageView />
         <main id="main-content">{children}</main>
+        <ZohoASAP />
       </body>
     </html>
   );
