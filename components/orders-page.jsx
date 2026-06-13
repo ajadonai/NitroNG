@@ -120,8 +120,10 @@ function ProgressBar({ order, dark, detailed }) {
   const isComplete = order.status === "Completed";
   const delivered = isComplete ? qty : hasData ? Math.max(0, qty - Math.max(0, order.remains)) : 0;
   const pct = isComplete ? 100 : hasData ? Math.min(100, Math.round((delivered / qty) * 100)) : 0;
-  const color = isComplete ? (dark ? "#6ee7b7" : "#059669") : "#c47d8e";
+  const isPartial = order.status === "Partial";
+  const color = isComplete ? (dark ? "#6ee7b7" : "#059669") : isPartial ? (dark ? "#fbbf24" : "#d97706") : "#c47d8e";
   const waiting = !hasData && !isComplete && (order.status === "Pending" || order.status === "Processing");
+  const isProcessing = !isComplete && !isPartial && !waiting && pct > 0 && pct < 100;
   if (detailed) {
     return (
       <div>
@@ -131,17 +133,17 @@ function ProgressBar({ order, dark, detailed }) {
         </div>
         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
           {waiting
-            ? <div className="h-full w-1/3 rounded-full" style={{ background: `${color}40`, animation: "progress-pulse 1.8s ease-in-out infinite" }} />
-            : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: color }} />}
+            ? <div className="h-full rounded-full" style={{ background: `repeating-linear-gradient(-55deg, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"}, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 12px)`, backgroundSize: "28px 100%", animation: "progress-stripe .8s linear infinite" }} />
+            : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: color, ...(isProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />}
         </div>
       </div>
     );
   }
   return (
-    <div className="w-full h-[3px] rounded-full overflow-hidden mt-1.5" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)" }}>
+    <div className="w-full h-1 rounded-full overflow-hidden mt-1.5" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)" }}>
       {waiting
-        ? <div className="h-full w-1/4 rounded-full" style={{ background: `${color}40`, animation: "progress-pulse 1.8s ease-in-out infinite" }} />
-        : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: color }} />}
+        ? <div className="h-full rounded-full" style={{ background: `repeating-linear-gradient(-55deg, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"}, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 12px)`, backgroundSize: "28px 100%", animation: "progress-stripe .8s linear infinite" }} />
+        : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: color, ...(isProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />}
     </div>
   );
 }
@@ -221,7 +223,8 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
   const isComplete = o.status === "Completed";
   const delivered = isCancelled ? 0 : isComplete ? qty : hasData ? Math.max(0, qty - Math.max(0, o.remains)) : 0;
   const pct = isCancelled ? 0 : isComplete ? 100 : hasData ? Math.min(100, Math.round((delivered / qty) * 100)) : 0;
-  const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : "#c47d8e";
+  const isPartial = o.status === "Partial";
+  const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : isPartial ? (dark ? "#fbbf24" : "#d97706") : "#c47d8e";
   const waiting = !isCancelled && !hasData && !isComplete && (o.status === "Pending" || o.status === "Processing");
   const py = compact ? "py-3 px-3 desktop:py-3.5 desktop:px-4" : "py-3.5 px-3.5 desktop:py-4 desktop:px-[18px]";
   const reportIssueButton = (
@@ -270,6 +273,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
       {(() => {
         const estTime = estimateDelivery(o.serviceType, qty, o.remains);
         const isActive = !isCancelled && !isComplete && o.status !== "Partial";
+        const isProcessing = isActive && !waiting && pct > 0 && pct < 100;
         return (
           <div className="mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
             <div className="flex items-center justify-between text-[12px] mb-1.5">
@@ -278,8 +282,8 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
             </div>
             <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
               {waiting
-                ? <div className="h-full w-1/3 rounded-full" style={{ background: `${barColor}40`, animation: "progress-pulse 1.8s ease-in-out infinite" }} />
-                : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor }} />}
+                ? <div className="h-full rounded-full" style={{ background: `repeating-linear-gradient(-55deg, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"}, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 12px)`, backgroundSize: "28px 100%", animation: "progress-stripe .8s linear infinite" }} />
+                : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor, ...(isProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />}
             </div>
             {isActive && estTime && (
               <div className="flex items-center gap-1.5 mt-2.5 py-1.5 px-2.5 rounded-md w-fit" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.07)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)"}` }}>
