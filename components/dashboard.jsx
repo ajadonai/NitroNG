@@ -845,6 +845,8 @@ function DashboardInner({ initialData }) {
     return () => window.removeEventListener("nitro-order-tour", handler);
   }, []);
 
+  useEffect(() => { if (isSupport) setUnreadTickets([]); }, [isSupport]);
+
 
   /* Theme — provided by ThemeProvider */
 
@@ -1192,9 +1194,10 @@ function DashboardInner({ initialData }) {
             </div>
           </button>
           {/* Support — mobile/tablet only (replaces theme toggle) */}
-          <button onClick={() => { setActive("support"); setLeftOpen(false); }} className="hidden max-desktop:flex items-center gap-1 h-[30px] px-2.5 rounded-[8px] cursor-pointer border-none" aria-label="Support" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", color: t.accent }}>
+          <button onClick={() => { setActive("support"); setLeftOpen(false); }} className="hidden max-desktop:flex items-center gap-1 h-[30px] px-2.5 rounded-[8px] cursor-pointer border-none relative" aria-label="Support" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", color: t.accent }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             <span className="text-[11px] font-semibold">Help</span>
+            {unreadTickets.length > 0 && <div className="dash-bell-badge" style={{ top: -3, right: -3 }}>{unreadTickets.length > 10 ? "10+" : unreadTickets.length}</div>}
           </button>
           {/* Notification bell */}
           <div ref={notifRef} className="relative">
@@ -1231,7 +1234,7 @@ function DashboardInner({ initialData }) {
                       {item.label}
                       {item.soon && <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent, opacity: 1 }}>Soon</span>}
                       {processingCount > 0 && <span className="m dash-nav-badge">{processingCount > 99 ? "99+" : processingCount}</span>}
-                      {isSupportItem && unreadTickets > 0 && <span className="m dash-nav-badge">{unreadTickets > 99 ? "99+" : unreadTickets}</span>}
+                      {isSupportItem && unreadTickets.length > 0 && <span className="m dash-nav-badge">{unreadTickets.length > 99 ? "99+" : unreadTickets.length}</span>}
                     </button>
                   </Fragment>
                 );

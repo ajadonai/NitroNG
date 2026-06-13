@@ -133,7 +133,7 @@ function ProgressBar({ order, dark, detailed }) {
         </div>
         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
           {waiting
-            ? <div className="h-full w-1/3 rounded-full" style={{ background: color, animation: "progress-pulse 2.8s ease-in-out infinite" }} />
+            ? <div className="h-full rounded-full" style={{ background: `repeating-linear-gradient(-55deg, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"}, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 12px)`, backgroundSize: "28px 100%", animation: "progress-stripe .8s linear infinite" }} />
             : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: color, ...(isProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />}
         </div>
       </div>
@@ -142,7 +142,7 @@ function ProgressBar({ order, dark, detailed }) {
   return (
     <div className="w-full h-1 rounded-full overflow-hidden mt-1.5" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)" }}>
       {waiting
-        ? <div className="h-full w-1/4 rounded-full" style={{ background: color, animation: "progress-pulse 2.8s ease-in-out infinite" }} />
+        ? <div className="h-full rounded-full" style={{ background: `repeating-linear-gradient(-55deg, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"}, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 12px)`, backgroundSize: "28px 100%", animation: "progress-stripe .8s linear infinite" }} />
         : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: color, ...(isProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />}
     </div>
   );
@@ -282,7 +282,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
             </div>
             <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
               {waiting
-                ? <div className="h-full w-1/3 rounded-full" style={{ background: barColor, animation: "progress-pulse 2.8s ease-in-out infinite" }} />
+                ? <div className="h-full rounded-full" style={{ background: `repeating-linear-gradient(-55deg, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"}, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 12px)`, backgroundSize: "28px 100%", animation: "progress-stripe .8s linear infinite" }} />
                 : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor, ...(isProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />}
             </div>
             {isActive && estTime && (
