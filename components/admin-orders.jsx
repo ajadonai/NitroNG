@@ -107,15 +107,29 @@ function DripSection({ dispatches, dark, t }) {
             </button>
             {isOpen && (
               <div style={{ background: dark ? "rgba(0,0,0,.15)" : "rgba(0,0,0,.02)" }}>
-                {batches.map((d, i) => (
-                  <div key={d.id || i} className="flex items-center gap-2 py-2 px-2.5 pl-7 text-[11px]" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)"}` }}>
-                    <span className="shrink-0 w-5 text-center font-semibold" style={{ color: t.textMuted }}>#{d.batch}</span>
-                    <span className="shrink-0 w-12 font-semibold" style={{ color: t.text }}>{d.qty?.toLocaleString()}</span>
-                    <span className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold" style={{ background: sBg(statusLabel(d.status), dark), color: sClr(statusLabel(d.status), dark) }}>{d.status}</span>
-                    {d.apiOrderId ? <CopyId value={d.apiOrderId} dark={dark} size="sm" /> : <span style={{ color: t.textMuted }}>—</span>}
-                    <span className="ml-auto shrink-0" style={{ color: t.textMuted }}>{d.scheduled ? new Date(d.scheduled).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}</span>
-                  </div>
-                ))}
+                {batches.map((d, i) => {
+                  const bDone = d.status === "completed";
+                  const bProcessing = d.status === "processing" || d.status === "dispatching";
+                  const bPartial = d.status === "partial";
+                  const bFailed = d.status === "failed";
+                  const bPending = d.status === "pending";
+                  const barColor = bDone ? (dark ? "#6ee7b7" : "#059669") : bPartial ? (dark ? "#fbbf24" : "#d97706") : bFailed ? (dark ? "#fca5a5" : "#dc2626") : "#c47d8e";
+                  return (
+                  <div key={d.id || i} className="py-2 px-2.5 pl-7" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)"}` }}>
+                    <div className="flex items-center gap-2 text-[11px]">
+                      <span className="shrink-0 w-5 text-center font-semibold" style={{ color: t.textMuted }}>#{d.batch}</span>
+                      <span className="shrink-0 w-12 font-semibold" style={{ color: t.text }}>{d.qty?.toLocaleString()}</span>
+                      <span className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold" style={{ background: sBg(statusLabel(d.status), dark), color: sClr(statusLabel(d.status), dark) }}>{d.status}</span>
+                      {d.apiOrderId ? <CopyId value={d.apiOrderId} dark={dark} size="sm" /> : <span style={{ color: t.textMuted }}>—</span>}
+                      <span className="ml-auto shrink-0" style={{ color: t.textMuted }}>{d.scheduled ? new Date(d.scheduled).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}</span>
+                    </div>
+                    {!bPending && (
+                      <div className="mt-1.5 ml-7 h-1 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)" }}>
+                        <div className="h-full rounded-full" style={{ width: bProcessing ? "60%" : bDone ? "100%" : bPartial ? `${d.qty && d.remains != null ? Math.round(((d.qty - d.remains) / d.qty) * 100) : 50}%` : "100%", background: barColor, ...(bProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />
+                      </div>
+                    )}
+                  </div>);
+                })}
               </div>
             )}
           </div>
@@ -450,8 +464,10 @@ export default function AdminOrdersPage({ dark, t }) {
                               const isComplete = o.status === "Completed";
                               const delivered = isCancelled ? 0 : isComplete ? qty : hasData ? Math.max(0, qty - Math.max(0, o.remains)) : 0;
                               const pct = isCancelled ? 0 : isComplete ? 100 : hasData ? Math.min(100, Math.round((delivered / qty) * 100)) : 0;
-                              const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : "#c47d8e";
+                              const isPartial = o.status === "Partial";
+                              const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : isPartial ? (dark ? "#fbbf24" : "#d97706") : "#c47d8e";
                               const waiting = !isCancelled && !hasData && !isComplete && (o.status === "Pending" || o.status === "Processing");
+                              const isProcessing = !isComplete && !isPartial && !isCancelled && !waiting && pct > 0 && pct < 100;
                               return (
                                 <div className="mb-2.5 py-1.5 px-2.5 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
                                   <div className="flex items-center justify-between text-[11px] mb-1">
@@ -460,8 +476,8 @@ export default function AdminOrdersPage({ dark, t }) {
                                   </div>
                                   <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
                                     {waiting
-                                      ? <div className="h-full w-1/3 rounded-full" style={{ background: `${barColor}40`, animation: "progress-pulse 1.8s ease-in-out infinite" }} />
-                                      : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor }} />}
+                                      ? <div className="h-full w-1/3 rounded-full" style={{ background: barColor, animation: "progress-pulse 2.8s ease-in-out infinite" }} />
+                                      : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor, ...(isProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />}
                                   </div>
                                 </div>
                               );
@@ -609,8 +625,10 @@ export default function AdminOrdersPage({ dark, t }) {
                     const isComplete = o.status === "Completed";
                     const delivered = isCancelled ? 0 : isComplete ? qty : hasData ? Math.max(0, qty - Math.max(0, o.remains)) : 0;
                     const pct = isCancelled ? 0 : isComplete ? 100 : hasData ? Math.min(100, Math.round((delivered / qty) * 100)) : 0;
-                    const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : "#c47d8e";
+                    const isPartial = o.status === "Partial";
+                    const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : isPartial ? (dark ? "#fbbf24" : "#d97706") : "#c47d8e";
                     const waiting = !isCancelled && !hasData && !isComplete && (o.status === "Pending" || o.status === "Processing");
+                    const isProcessing = !isComplete && !isPartial && !isCancelled && !waiting && pct > 0 && pct < 100;
                     return (
                       <div className="mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
                         <div className="flex items-center justify-between text-[12px] mb-1.5">
@@ -619,8 +637,8 @@ export default function AdminOrdersPage({ dark, t }) {
                         </div>
                         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
                           {waiting
-                            ? <div className="h-full w-1/3 rounded-full" style={{ background: `${barColor}40`, animation: "progress-pulse 1.8s ease-in-out infinite" }} />
-                            : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor }} />}
+                            ? <div className="h-full w-1/3 rounded-full" style={{ background: barColor, animation: "progress-pulse 2.8s ease-in-out infinite" }} />
+                            : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor, ...(isProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />}
                         </div>
                       </div>
                     );

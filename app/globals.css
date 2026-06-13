@@ -642,7 +642,7 @@
 /* Cookie banner keyframes */
 @keyframes cookieSlideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 @keyframes cookieSlideDown { from { transform: translateY(0); opacity: 1; } to { transform: translateY(100%); opacity: 0; } }
-@keyframes progress-pulse { 0%, 100% { transform: translateX(-100%); opacity: .4; } 50% { transform: translateX(200%); opacity: .8; } }
+@keyframes progress-pulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
 
 @keyframes cta-pulse { 0%, 100% { box-shadow: 0 6px 24px rgba(196,125,142,.4); } 50% { box-shadow: 0 6px 32px rgba(196,125,142,.65); } }
 .hero-cta-pulse { animation: cta-pulse 2s ease-in-out infinite; }
