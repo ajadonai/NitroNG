@@ -24,10 +24,9 @@ export async function GET() {
     let orders = [];
     try {
       orders = await prisma.order.findMany({
-        where: { userId: user.id },
+        where: { userId: user.id, deletedAt: null },
         orderBy: { createdAt: 'desc' },
-        take: 200,
-        include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, speed: true, group: { select: { name: true, platform: true } } } } },
+        include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, speed: true, refill: true, refillDays: true, group: { select: { name: true, platform: true, type: true } } } } },
       });
     } catch (e) { log.error('Dashboard', 'Orders query failed', { error: e.message }); }
 
@@ -192,6 +191,7 @@ export async function GET() {
       },
       orders: orders.map(o => ({
         id: o.orderId || o.id,
+        internalId: o.id,
         service: o.tier?.group?.name || o.service?.name || o.serviceId,
         platform: o.tier?.group?.platform || o.service?.category || 'unknown',
         tier: o.tier?.tier || null,
@@ -205,7 +205,12 @@ export async function GET() {
         apiOrderId: o.apiOrderId || null,
         lastError: o.lastError || null,
         retryCount: o.retryCount || 0,
+        refill: o.tier?.refill || false,
+        refillDays: o.tier?.refillDays || 0,
+        completedAt: o.completedAt?.toISOString() || null,
         created: o.createdAt.toISOString(),
+        serviceType: o.tier?.group?.type || null,
+        dripDays: o.dripDays || null,
       })),
       transactions: transactions.map(tx => ({
         id: tx.id, type: tx.type,

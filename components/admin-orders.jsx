@@ -6,6 +6,32 @@ import { PlatformIcon } from "./platform-icon";
 import { fN, fD, fT } from "../lib/format";
 import { FilterDropdown } from "./date-range-picker";
 
+const DRIP_CONFIG = {
+  followers:  { batchSize: 500,  intervalHours: 2 },
+  views:      { batchSize: 5000, intervalHours: 1 },
+  likes:      { batchSize: 500,  intervalHours: 1 },
+  comments:   { batchSize: 50,   intervalHours: 0.5 },
+  engagement: { batchSize: 1500, intervalHours: 1 },
+  reviews:    { batchSize: 10,   intervalHours: 2 },
+};
+
+function estimateDelivery(serviceType, quantity, remains) {
+  const cfg = DRIP_CONFIG[(serviceType || '').toLowerCase()];
+  if (!cfg) return null;
+  if (remains != null && remains <= 0) return null;
+  const left = remains != null && remains < quantity ? remains : quantity;
+  const batches = Math.floor(left / cfg.batchSize);
+  if (batches < 2) {
+    if (cfg.intervalHours < 1) return `< ${Math.round(cfg.intervalHours * 60)} minutes`;
+    return `< ${cfg.intervalHours} ${cfg.intervalHours === 1 ? 'hour' : 'hours'}`;
+  }
+  const totalHours = (batches - 1) * cfg.intervalHours;
+  if (totalHours < 1) return `~${Math.round(totalHours * 60)} minutes`;
+  const rounded = Math.round(totalHours);
+  if (rounded >= 24) { const d = Math.round(rounded / 24); return `~${d} ${d === 1 ? 'day' : 'days'}`; }
+  return `~${rounded} ${rounded === 1 ? 'hour' : 'hours'}`;
+}
+
 function Spinner({ size = 14, color = "currentColor" }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="animate-spin"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="3" strokeLinecap="round" opacity=".25" /><path d="M12 2a10 10 0 0 1 10 10" stroke={color} strokeWidth="3" strokeLinecap="round" /></svg>;
 }
@@ -498,6 +524,14 @@ export default function AdminOrdersPage({ dark, t }) {
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Start Count</div>
                                 <div className="m text-[13px] font-semibold" style={{ color: t.text }}>{o.startCount.toLocaleString()}</div>
                               </div>}
+                              {(() => { const est = estimateDelivery(o.serviceType, o.quantity, o.remains); if (!est || o.status === "Completed" || o.status === "Cancelled") return null; return (
+                              <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.05)", border: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)"}` }}>
+                                <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Est. Time</div>
+                                <div className="m text-[13px] font-semibold flex items-center justify-center gap-1" style={{ color: dark ? "rgba(196,125,142,.85)" : "rgba(160,80,100,.75)" }}>
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                  {est}
+                                </div>
+                              </div>); })()}
                             </div>
                             ); })()}
 
@@ -649,6 +683,14 @@ export default function AdminOrdersPage({ dark, t }) {
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Start Count</div>
                       <div className="m text-sm font-semibold" style={{ color: t.text }}>{o.startCount.toLocaleString()}</div>
                     </div>}
+                    {(() => { const est = estimateDelivery(o.serviceType, o.quantity, o.remains); if (!est || o.status === "Completed" || o.status === "Cancelled") return null; return (
+                    <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
+                      <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Est. Time</div>
+                      <div className="m text-sm font-semibold flex items-center justify-center gap-1" style={{ color: t.text }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        {est}
+                      </div>
+                    </div>); })()}
                   </div>
                   ); })()}
 

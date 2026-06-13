@@ -7,7 +7,7 @@ import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { sendEmail, batchPlacementEmail } from '@/lib/email';
 import { cleanLink } from '@/lib/clean-link';
-import { calculateIntradayDrip, INTRADAY_THRESHOLD } from '@/lib/drip-feed';
+import { calculateIntradayDrip, getDripConfig } from '@/lib/drip-feed';
 import { sendEvent, generateEventId, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
 
@@ -469,7 +469,9 @@ export async function POST(req) {
         }
       }
 
-      const dripSchedule = process.env.NODE_ENV !== 'development' && tier.group?.tags?.includes('drip') && qty >= INTRADAY_THRESHOLD && qty < 3000 ? calculateIntradayDrip(qty, service.min || 50, new Date()) : null;
+      const bulkGroupType = (tier.group?.type || '').toLowerCase();
+      const bulkDripCfg = getDripConfig(bulkGroupType);
+      const dripSchedule = process.env.NODE_ENV !== 'development' && tier.group?.tags?.includes('drip') && bulkDripCfg && qty >= bulkDripCfg.threshold ? calculateIntradayDrip(qty, service.min || 50, new Date(), bulkGroupType) : null;
       resolved.push({ tier, service, link: trimmedLink, qty, charge, cost, tierName, comments, dripSchedule });
     }
 

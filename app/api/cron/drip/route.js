@@ -140,12 +140,12 @@ export async function GET(req) {
     // ═══ 3. ROLL UP PROGRESS + STATUS ═══
     const dripOrders = await prisma.order.findMany({
       where: {
-        dripDays: { not: null },
+        dripDispatches: { some: {} },
         status: { in: ['Pending', 'Processing'] },
         deletedAt: null,
       },
       include: {
-        dripDispatches: { select: { status: true, quantity: true, remains: true } },
+        dripDispatches: { select: { status: true, quantity: true, remains: true, startCount: true, day: true, batch: true }, orderBy: { scheduledAt: 'asc' } },
       },
       take: 50,
     });
@@ -162,6 +162,9 @@ export async function GET(req) {
         return sum + d.quantity;
       }, 0);
 
+      const firstDispatch = all.find(d => d.day === 1 && d.batch === 1) || all[0];
+      const firstStartCount = firstDispatch?.startCount != null ? firstDispatch.startCount : undefined;
+
       const allDone = all.every(d => ['completed', 'partial', 'failed'].includes(d.status));
 
       if (allDone) {
@@ -171,14 +174,13 @@ export async function GET(req) {
 
         await prisma.order.update({
           where: { id: order.id },
-          data: { status: newStatus, remains: totalRemains, completedAt: new Date() },
+          data: { status: newStatus, remains: totalRemains, completedAt: new Date(), ...(firstStartCount !== undefined && order.startCount == null && { startCount: firstStartCount }) },
         });
         stats.rolledUp++;
       } else {
-        // Update remains for live progress even while still in progress
         await prisma.order.update({
           where: { id: order.id },
-          data: { remains: totalRemains },
+          data: { remains: totalRemains, ...(firstStartCount !== undefined && order.startCount == null && { startCount: firstStartCount }) },
         });
       }
     }

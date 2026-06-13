@@ -5,7 +5,7 @@ import { placeOrder, checkOrder } from '@/lib/smm';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { cleanLink } from '@/lib/clean-link';
-import { calculateIntradayDrip, calculateMultiDayDrip, INTRADAY_THRESHOLD } from '@/lib/drip-feed';
+import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig } from '@/lib/drip-feed';
 import { sendEvent, generateEventId, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
 
@@ -44,8 +44,7 @@ export async function GET(req) {
     const orders = await prisma.order.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      take: 200,
-      include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, speed: true, refill: true, refillDays: true, group: { select: { name: true } } } } },
+      include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, speed: true, refill: true, refillDays: true, group: { select: { name: true, type: true } } } } },
     });
 
     return Response.json({
@@ -70,6 +69,8 @@ export async function GET(req) {
         refillDays: o.tier?.refillDays || 0,
         completedAt: o.completedAt?.toISOString() || null,
         created: o.createdAt.toISOString(),
+        serviceType: o.tier?.group?.type || null,
+        dripDays: o.dripDays || null,
       })),
     });
   } catch (err) {
@@ -88,7 +89,7 @@ export async function PATCH(req) {
 
     const order = await prisma.order.findFirst({
       where: { OR: [{ orderId }, { id: orderId }], userId: session.id, deletedAt: null },
-      include: { service: true, tier: { select: { sellPer1k: true, tier: true, group: { select: { name: true, tags: true } } } } },
+      include: { service: true, tier: { select: { sellPer1k: true, tier: true, group: { select: { name: true, tags: true, type: true } } } } },
     });
     if (!order) return Response.json({ error: 'Order not found' }, { status: 404 });
 
@@ -115,7 +116,21 @@ export async function PATCH(req) {
           return Response.json({ success: true, status: order.status, message: e.message });
         }
       }
-      return Response.json({ success: true, status: order.status });
+      // Drip order — pull startCount from first dispatch, return current remains
+      const firstDispatch = await prisma.dripDispatch.findFirst({
+        where: { orderId: order.id },
+        orderBy: [{ day: 'asc' }, { batch: 'asc' }],
+        select: { startCount: true },
+      });
+      if (firstDispatch?.startCount != null && order.startCount == null) {
+        await prisma.order.update({ where: { id: order.id }, data: { startCount: firstDispatch.startCount } });
+      }
+      return Response.json({
+        success: true,
+        status: order.status,
+        remains: order.remains,
+        startCount: firstDispatch?.startCount ?? order.startCount,
+      });
     }
 
     if (action === 'cancel') {
@@ -224,9 +239,11 @@ export async function PATCH(req) {
 
       // Calculate drip for reorder (Layer 1 only — no multi-day on reorders)
       const reorderProviderMin = order.service.min || 50;
+      const reorderGroupType = order.tier?.group?.type || '';
+      const reorderDripCfg = getDripConfig(reorderGroupType);
       let reorderDripSchedule = null;
-      if (process.env.NODE_ENV !== 'development' && order.tier?.group?.tags?.includes('drip') && order.quantity >= INTRADAY_THRESHOLD && order.quantity < 3000) {
-        const intraday = calculateIntradayDrip(order.quantity, reorderProviderMin, new Date());
+      if (process.env.NODE_ENV !== 'development' && order.tier?.group?.tags?.includes('drip') && reorderDripCfg && order.quantity >= reorderDripCfg.threshold) {
+        const intraday = calculateIntradayDrip(order.quantity, reorderProviderMin, new Date(), reorderGroupType);
         if (intraday) {
           reorderDripSchedule = { dispatches: intraday.dispatches.map(d => ({ ...d, day: 1 })) };
         }
@@ -566,20 +583,23 @@ export async function POST(req) {
     const orderId = await nextOrderId();
 
     // Calculate drip schedule if needed
-    const DAILY_CAP = { followers: 5000, likes: 15000, views: 75000, plays: 75000, comments: 1000, reviews: 1000, engagement: 15000 };
+    const DAILY_CAP = { followers: 5000, likes: 10000, views: 75000, plays: 75000, comments: 1000, reviews: 100, engagement: 15000 };
+    const MIN_DAYS_FLOOR = { followers: 3, views: 1, plays: 1, likes: 2, comments: 3, reviews: 3, engagement: 2 };
     const groupType = (tier?.group?.type || "").toLowerCase();
     const dailyCap = DAILY_CAP[groupType] || 15000;
+    const daysFloor = MIN_DAYS_FLOOR[groupType] || 3;
     const maxDripDays = qty <= 5000 ? 5 : qty <= 10000 ? 7 : qty <= 25000 ? 12 : qty <= 50000 ? 18 : qty <= 100000 ? 25 : 30;
-    const minDripDays = Math.min(Math.max(3, Math.ceil(qty / dailyCap)), maxDripDays);
+    const minDripDays = Math.min(Math.max(daysFloor, Math.ceil(qty / dailyCap)), maxDripDays);
     const skipDrip = rawDripDays === 0 || process.env.NODE_ENV === 'development';
     const validDripDays = rawDripDays && rawDripDays > 0 ? Math.min(maxDripDays, Math.max(minDripDays, Math.floor(Number(rawDripDays)))) : null;
     const providerMin = service.min || 50;
     let dripSchedule = null;
     const dripEligible = tier?.group?.tags?.includes('drip');
+    const dripCfg = getDripConfig(groupType);
     if (dripEligible && validDripDays) {
-      dripSchedule = calculateMultiDayDrip(qty, validDripDays, providerMin, new Date());
-    } else if (dripEligible && !skipDrip && qty >= INTRADAY_THRESHOLD && qty < 3000) {
-      const intraday = calculateIntradayDrip(qty, providerMin, new Date());
+      dripSchedule = calculateMultiDayDrip(qty, validDripDays, providerMin, new Date(), groupType);
+    } else if (dripEligible && !skipDrip && dripCfg && qty >= dripCfg.threshold) {
+      const intraday = calculateIntradayDrip(qty, providerMin, new Date(), groupType);
       if (intraday) {
         dripSchedule = { dispatches: intraday.dispatches.map(d => ({ ...d, day: 1 })) };
       }
