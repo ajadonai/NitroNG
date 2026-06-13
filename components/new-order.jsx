@@ -281,11 +281,12 @@ function saveCart(rows) {
 /* ═══════════════════════════════════════════ */
 function shortPrice(n) { return n >= 1e6 ? (n / 1e6).toFixed(n % 1e6 === 0 ? 0 : 1).replace(/\.0$/, "") + "M" : n >= 1e3 ? (n / 1e3).toFixed(n % 1e3 === 0 ? 0 : 1).replace(/\.0$/, "") + "k" : String(n); }
 const MULTIDAY_THRESHOLD = 3000;
-const DAILY_CAP = { followers: 5000, likes: 15000, views: 75000, plays: 75000, comments: 1000, reviews: 1000, engagement: 15000 };
+const DAILY_CAP = { followers: 5000, likes: 10000, views: 75000, plays: 75000, comments: 1000, reviews: 100, engagement: 15000 };
 const DEFAULT_DAILY_CAP = 15000;
 function safeDailyCap(type) { return DAILY_CAP[(type || "").toLowerCase()] || DEFAULT_DAILY_CAP; }
 function maxDripDays(qty) { return qty <= 5000 ? 5 : qty <= 10000 ? 7 : qty <= 25000 ? 12 : qty <= 50000 ? 18 : qty <= 100000 ? 25 : 30; }
-function minDripDays(qty, type) { return Math.max(3, Math.ceil(qty / safeDailyCap(type))); }
+const MIN_DAYS_FLOOR = { followers: 3, views: 1, plays: 1, likes: 2, comments: 3, reviews: 3, engagement: 2 };
+function minDripDays(qty, type) { const floor = MIN_DAYS_FLOOR[(type || "").toLowerCase()] || 3; return Math.max(floor, Math.ceil(qty / safeDailyCap(type))); }
 
 export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp }) {
   const minQty = selTier?.min || 100;

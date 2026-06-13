@@ -24,6 +24,32 @@ function CopyId({ value, dark, mono = true }) {
   );
 }
 
+const DRIP_CONFIG = {
+  followers:  { batchSize: 500,  intervalHours: 2 },
+  views:      { batchSize: 5000, intervalHours: 1 },
+  likes:      { batchSize: 500,  intervalHours: 1 },
+  comments:   { batchSize: 50,   intervalHours: 0.5 },
+  engagement: { batchSize: 1500, intervalHours: 1 },
+  reviews:    { batchSize: 10,   intervalHours: 2 },
+};
+
+function estimateDelivery(serviceType, quantity, remains) {
+  const cfg = DRIP_CONFIG[(serviceType || '').toLowerCase()];
+  if (!cfg) return null;
+  if (remains != null && remains <= 0) return null;
+  const left = remains != null && remains < quantity ? remains : quantity;
+  const batches = Math.floor(left / cfg.batchSize);
+  if (batches < 2) {
+    if (cfg.intervalHours < 1) return `< ${Math.round(cfg.intervalHours * 60)} minutes`;
+    return `< ${cfg.intervalHours} ${cfg.intervalHours === 1 ? 'hour' : 'hours'}`;
+  }
+  const totalHours = (batches - 1) * cfg.intervalHours;
+  if (totalHours < 1) return `~${Math.round(totalHours * 60)} minutes`;
+  const rounded = Math.round(totalHours);
+  if (rounded >= 24) { const d = Math.round(rounded / 24); return `~${d} ${d === 1 ? 'day' : 'days'}`; }
+  return `~${rounded} ${rounded === 1 ? 'hour' : 'hours'}`;
+}
+
 const LINK_EXAMPLES = {
   instagram: { profile: "instagram.com/username", post: "instagram.com/p/ABC123 or /reel/ABC123" },
   tiktok: { profile: "tiktok.com/@username", post: "tiktok.com/@username/video/123..." },
@@ -241,17 +267,29 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
       )}
 
       {/* Delivery progress */}
-      <div className="mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
-        <div className="flex items-center justify-between text-[12px] mb-1.5">
-          <span style={{ color: t.textMuted }}>{isCancelled ? "Cancelled" : waiting ? "Waiting to start" : "Delivered"}</span>
-          {!waiting && <span className="m font-semibold" style={{ color: barColor }}>{delivered.toLocaleString()} / {qty.toLocaleString()}</span>}
-        </div>
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
-          {waiting
-            ? <div className="h-full w-1/3 rounded-full" style={{ background: `${barColor}40`, animation: "progress-pulse 1.8s ease-in-out infinite" }} />
-            : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor }} />}
-        </div>
-      </div>
+      {(() => {
+        const estTime = estimateDelivery(o.serviceType, qty, o.remains);
+        const isActive = !isCancelled && !isComplete && o.status !== "Partial";
+        return (
+          <div className="mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
+            <div className="flex items-center justify-between text-[12px] mb-1.5">
+              <span style={{ color: t.textMuted }}>{isCancelled ? "Cancelled" : waiting ? "Waiting to start" : "Delivered"}</span>
+              {!waiting && <span className="m font-semibold" style={{ color: barColor }}>{delivered.toLocaleString()} / {qty.toLocaleString()}</span>}
+            </div>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
+              {waiting
+                ? <div className="h-full w-1/3 rounded-full" style={{ background: `${barColor}40`, animation: "progress-pulse 1.8s ease-in-out infinite" }} />
+                : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor }} />}
+            </div>
+            {isActive && estTime && (
+              <div className="flex items-center gap-1.5 mt-2.5 py-1.5 px-2.5 rounded-md w-fit" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.07)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)"}` }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span className="text-[11px] desktop:text-[12px] font-medium" style={{ color: dark ? "rgba(196,125,142,.85)" : "rgba(160,80,100,.75)" }}>Est. {estTime}</span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Completed info banner */}
       {o.status === "Completed" && (

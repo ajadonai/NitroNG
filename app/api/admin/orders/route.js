@@ -27,7 +27,7 @@ export async function GET(req) {
     const include = {
       user: { select: { name: true, email: true } },
       service: { select: { name: true, category: true, provider: true, apiId: true } },
-      tier: { select: { tier: true, group: { select: { name: true, platform: true } } } },
+      tier: { select: { tier: true, group: { select: { name: true, platform: true, type: true } } } },
     };
     try {
       await prisma.dripDispatch.findFirst({ take: 1 });
@@ -37,7 +37,6 @@ export async function GET(req) {
     const orders = await prisma.order.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      take: 300,
       include,
     });
 
@@ -68,6 +67,7 @@ export async function GET(req) {
         lastError: o.lastError || null,
         retryCount: o.retryCount || 0,
         created: o.createdAt.toISOString(),
+        serviceType: o.tier?.group?.type || null,
       })),
     });
   } catch (err) {
