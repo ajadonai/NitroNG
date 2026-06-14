@@ -18,7 +18,10 @@ export async function GET() {
     });
 
     return Response.json({
-      alerts: alerts.map(a => ({ id: a.id, message: a.message, type: a.type })),
+      alerts: alerts.map(a => ({
+        id: a.id, message: a.message, type: a.type,
+        ...(a.actionLabel && a.actionHref ? { action: { label: a.actionLabel, href: a.actionHref } } : {}),
+      })),
     });
   } catch {
     return Response.json({ alerts: [] });

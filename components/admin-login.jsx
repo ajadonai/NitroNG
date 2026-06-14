@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import InlineAlert from "./inline-alert";
 
 const QUOTES = [
   { text: "Move fast. Break nothing. Ship everything.", author: "The Nitro Way" },
@@ -144,7 +145,7 @@ export default function AdminLogin(){
             <h2 className="text-[22px] font-semibold text-center mb-1" style={{color:t.text}}>Command Center</h2>
             <p className="text-[15px] text-center mb-6 font-medium" style={{color:t.textSoft}}>Authorized operators only.</p>
 
-            <div className="min-h-9 mb-1 flex items-center">{error?<div className="w-full py-2 px-3 rounded-lg text-[13px] leading-[1.2]" style={{background:dark?"rgba(220,38,38,.18)":"#fef2f2",border:`1px solid ${dark?"rgba(220,38,38,.28)":"#fecaca"}`,color:t.red}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {error}</div>:null}</div>
+            <div className="min-h-9 mb-1 flex items-center">{error?<InlineAlert type="error" dark={dark} className="w-full">{error}</InlineAlert>:null}</div>
 
             <label className="block text-[11px] font-semibold mb-[5px] uppercase tracking-[1.5px]" style={{color:t.textSoft}}>Email Address</label>
             <input value={email} onChange={e=>{setEmail(e.target.value.trim().toLowerCase());setError("");}} placeholder="admin@nitro.ng" type="email" autoComplete="email" className="w-full py-3 px-3.5 rounded-xl text-[15px] outline-none mb-4 font-[inherit]" style={{background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text}}/>

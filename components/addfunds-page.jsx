@@ -560,8 +560,8 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
 
       {/* ═══ CRYPTO PAYMENT MODAL ═══ */}
       {cryptoModal && (
-        <div onClick={() => { if (cryptoStatus === "Completed" || cryptoStatus === "Cancelled") setCryptoModal(null); }} onKeyDown={e=>{if(e.key==='Escape'&&(cryptoStatus==="Completed"||cryptoStatus==="Cancelled"))setCryptoModal(null)}} className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,.5)" }}>
-          <div role="dialog" aria-modal="true" aria-label="Crypto payment" onClick={e => e.stopPropagation()} className="w-full max-w-[400px] rounded-2xl p-6" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.12)"}`, boxShadow: "0 20px 60px rgba(0,0,0,.38)" }}>
+        <div onClick={() => { if (cryptoStatus === "Completed" || cryptoStatus === "Cancelled") setCryptoModal(null); }} onKeyDown={e=>{if(e.key==='Escape'&&(cryptoStatus==="Completed"||cryptoStatus==="Cancelled"))setCryptoModal(null)}} className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" style={{ background: "rgba(0,0,0,.45)" }}>
+          <div role="dialog" aria-modal="true" aria-label="Crypto payment" onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl p-6 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             {cryptoStatus === "Completed" ? (
               <>
                 <div className="text-center py-5">
@@ -621,8 +621,8 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
 
       {/* ═══ MANUAL BANK TRANSFER MODAL ═══ */}
       {manualModal && (
-        <div onClick={() => { if (manualDone) setManualModal(null); }} onKeyDown={e=>{if(e.key==='Escape'&&manualDone)setManualModal(null)}} className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,.5)" }}>
-          <div role="dialog" aria-modal="true" aria-label="Bank transfer" onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl p-6" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.12)"}`, boxShadow: "0 20px 60px rgba(0,0,0,.38)" }}>
+        <div onClick={() => { if (manualDone) setManualModal(null); }} onKeyDown={e=>{if(e.key==='Escape'&&manualDone)setManualModal(null)}} className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" style={{ background: "rgba(0,0,0,.45)" }}>
+          <div role="dialog" aria-modal="true" aria-label="Bank transfer" onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl p-6 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             {manualDone ? (
               <>
                 <div className="text-center py-5">
@@ -715,8 +715,8 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
 
       {/* ═══ CONFIRM PAYMENT MODAL ═══ */}
       {confirmModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4" onClick={() => !confirmLoading && setConfirmModal(null)}>
-          <div className="w-full max-w-[380px] rounded-2xl overflow-hidden" style={{ background: dark ? "#141821" : "#fff", border: `0.5px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => !confirmLoading && setConfirmModal(null)} style={{ background: "rgba(0,0,0,.45)" }}>
+          <div className="w-full max-w-[420px] rounded-2xl overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }} onClick={e => e.stopPropagation()}>
             <div className="h-1.5" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }} />
             <div className="p-5">
               <div className="text-base font-semibold mb-1" style={{ color: t.text }}>Confirm Payment</div>

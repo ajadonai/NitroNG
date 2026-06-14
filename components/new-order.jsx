@@ -4,6 +4,7 @@ import { trackViewContent } from "./capi-tracker";
 import { fN } from "../lib/format";
 import { useToast } from "./toast";
 import { SegPill } from "./seg-pill";
+import InlineAlert from "./inline-alert";
 
 /* ═══════════════════════════════════════════ */
 /* ═══ PLATFORM DATA — 35 platforms        ═══ */
@@ -1027,7 +1028,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       <div className="flex gap-0 mb-3.5 border-b border-solid" data-tour="no-platform-tabs" style={{ borderBottomColor: t.cardBorder }}>
         {PLATFORM_GROUPS.map(g => (
           <button key={g.label} onClick={() => { setPlatGroup(g.label); const first = g.platforms.find(p => (platformCounts[p.id] || 0) > 0); if (first) setPlatform(first.id); }} className={`py-1.5 px-3 text-xs md:py-[7px] md:px-3.5 md:text-[13px] desktop:py-2 desktop:px-4 desktop:text-sm font-medium cursor-pointer border-none border-b-2 border-b-transparent -mb-px bg-transparent font-[inherit] transition-colors duration-150${platGroup === g.label ? " !font-semibold" : ""}`} style={{ color: platGroup === g.label ? t.accent : t.textMuted, borderBottomColor: platGroup === g.label ? t.accent : "transparent" }}>
-            {g.label.replace(" Platforms", "").replace("SEO & ", "")}
+            {g.label.replace(" Platforms", "")}
           </button>
         ))}
       </div>
@@ -1118,8 +1119,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {/* Order modal — single mode only */}
       {orderMode === "single" && (orderModal || orderSuccess) && hasOrder && (
-        <div className="no-modal-overlay flex fixed inset-0 bg-black/40 z-50 items-end justify-center px-3.5 pb-[70px] desktop:items-center desktop:p-6" onClick={() => { setOrderModal(false); setOrderSuccess(null); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null)}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!orderSuccess&&!orderLoading){submitOrder()}}}>
-          <div role="dialog" aria-modal="true" aria-label="Order summary" className="w-full rounded-[14px] overflow-y-auto shadow-[0_20px_60px_rgba(0,0,0,.38)] border border-solid max-h-[calc(100dvh-84px)] desktop:max-w-[420px] desktop:max-h-[90vh] desktop:rounded-2xl" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#ffffff", borderColor: t.cardBorder }}>
+        <div className="no-modal-overlay flex fixed inset-0 z-50 items-end justify-center px-3.5 pb-[70px] desktop:items-center desktop:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { setOrderModal(false); setOrderSuccess(null); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null)}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!orderSuccess&&!orderLoading){submitOrder()}}} style={{ background: "rgba(0,0,0,.45)" }}>
+          <div role="dialog" aria-modal="true" aria-label="Order summary" className="w-full rounded-2xl overflow-y-auto border border-solid max-h-[calc(100dvh-84px)] desktop:max-w-[420px] desktop:max-h-[90vh] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             {orderSuccess ? (
               <div className="p-5 max-md:p-4">
                 {/* Header — platform icon + title + check */}
@@ -1498,16 +1499,14 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
 
       {/* Error banners */}
       {!bulkSuccess && bulkError && (
-        <div className="mx-[18px] max-md:mx-3.5 mt-3 py-3 px-3.5 rounded-[10px] border border-solid flex items-start gap-3" style={{ background: bulkError.type === "balance" ? (dark ? "rgba(250,204,21,.12)" : "rgba(250,204,21,.14)") : (dark ? "rgba(239,68,68,.12)" : "rgba(239,68,68,.12)"), borderColor: bulkError.type === "balance" ? (dark ? "rgba(250,204,21,.28)" : "rgba(250,204,21,.38)") : (dark ? "rgba(239,68,68,.28)" : "rgba(239,68,68,.28)") }}>
-          <span className="text-sm shrink-0 mt-px">{bulkError.type === "balance" ? "!" : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}</span>
-          <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-medium mb-0.5" style={{ color: bulkError.type === "balance" ? (dark ? "#fcd34d" : "#b45309") : (dark ? "#fca5a5" : "#dc2626") }}>{bulkError.type === "balance" ? "Insufficient balance" : "Connection error"}</div>
-            <div className="text-[11.5px]" style={{ color: t.textMuted }}>{bulkError.type === "balance" ? `You need ₦${(bulkError.needed || 0).toLocaleString()} more to place these orders.` : bulkError.message}</div>
+        <div className="mx-[18px] max-md:mx-3.5 mt-3">
+          <InlineAlert type={bulkError.type === "balance" ? "warning" : "error"} dark={dark} onDismiss={() => setBulkError(null)}>
+            <div className="font-semibold mb-0.5">{bulkError.type === "balance" ? "Insufficient balance" : "Connection error"}</div>
+            <div className="text-[11.5px] font-normal" style={{ color: t.textMuted }}>{bulkError.type === "balance" ? `You need ₦${(bulkError.needed || 0).toLocaleString()} more to place these orders.` : bulkError.message}</div>
             {bulkError.type === "balance" && onTopUp && (
-              <button onClick={() => { setBulkError(null); onClose(); onTopUp(); }} className="mt-2 py-1.5 px-3 rounded-lg border-none text-[12px] font-semibold cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(250,204,21,.19)" : "rgba(250,204,21,.24)", color: dark ? "#fcd34d" : "#b45309" }}>Top up wallet</button>
+              <button onClick={() => { setBulkError(null); onClose(); onTopUp(); }} className="mt-2 py-1.5 px-3 rounded-lg text-[12px] font-semibold cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.08)", color: dark ? "#fbbf24" : "#d97706", border: `1px solid ${dark ? "rgba(251,191,36,.28)" : "rgba(217,119,6,.2)"}` }}>Top up wallet</button>
             )}
-          </div>
-          <button onClick={() => setBulkError(null)} className="bg-transparent border-none text-xs cursor-pointer p-1 shrink-0" style={{ color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </InlineAlert>
         </div>
       )}
 
