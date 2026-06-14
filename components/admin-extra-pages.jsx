@@ -6,6 +6,7 @@ import { fN, fD } from "../lib/format";
 import { SegPill } from "./seg-pill";
 import { FilterDropdown } from "./date-range-picker";
 import { Avatar } from "./avatar";
+import InlineAlert from "./inline-alert";
 
 
 const ROLE_COLORS = { superadmin: "#c47d8e", admin: "#a5b4fc", support: "#6ee7b7", finance: "#fcd34d" };
@@ -702,7 +703,7 @@ export function AdminCouponsPage({ dark, t }) {
           When a user shares their referral code and someone signs up with it, both receive wallet credit after the new user verifies their email.
         </div>
 
-        {refMsg && <div className="py-2 px-3.5 rounded-lg mb-3 text-[13px]" style={{ background: refMsg.ok ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: refMsg.ok ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{refMsg.ok ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} {refMsg.text}</div>}
+        {refMsg && <InlineAlert type={refMsg.ok ? "success" : "error"} dark={dark} className="mb-3">{refMsg.text}</InlineAlert>}
 
         <div className="flex items-center justify-between py-3" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
           <div><div className="text-sm font-medium" style={{ color: t.text }}>Referral program</div><div className="text-xs mt-0.5" style={{ color: t.textSoft }}>Enable or disable the entire system</div></div>
@@ -828,7 +829,7 @@ export function AdminCouponsPage({ dark, t }) {
           Users earn tiers based on total lifetime spend. Each tier grants an automatic discount on future orders.
         </div>
 
-        {loyaltyMsg && <div className="py-2 px-3.5 rounded-lg mb-3 text-[13px]" style={{ background: loyaltyMsg.ok ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: loyaltyMsg.ok ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{loyaltyMsg.ok ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} {loyaltyMsg.text}</div>}
+        {loyaltyMsg && <InlineAlert type={loyaltyMsg.ok ? "success" : "error"} dark={dark} className="mb-3">{loyaltyMsg.text}</InlineAlert>}
 
         <div className="flex items-center justify-between py-3 mb-4" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
           <div><div className="text-sm font-medium" style={{ color: t.text }}>Loyalty program</div><div className="text-xs mt-0.5" style={{ color: t.textSoft }}>Enable automatic tier-based discounts</div></div>
@@ -1194,11 +1195,7 @@ export function AdminAPIPage({ dark, t }) {
               </div>
               <div className="set-card-body">
 
-              {pResult && (
-                <div className="mt-2.5 py-2 px-3 rounded-lg text-[13px]" style={{ background: pResult.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: pResult.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>
-                  {pResult.type === "success" ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} {pResult.message}
-                </div>
-              )}
+              {pResult && <InlineAlert type={pResult.type} dark={dark} className="mt-2.5">{pResult.message}</InlineAlert>}
 
               <div className="grid grid-cols-3 gap-3 text-[13px]">
                 <div><span style={{ color: t.textMuted }}>Env var:</span> <span style={{ color: t.textSoft }}>{p.envKey}</span></div>

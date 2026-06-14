@@ -41,17 +41,17 @@ export function ConfirmProvider({ children, dark }) {
       {children}
       {dialog && (
         <div
-          className="fixed inset-0 z-[300] backdrop-blur-[4px] flex items-center justify-center animate-[confirmFadeIn_.2s_ease]"
-          style={{ background: "rgba(0,0,0,.5)" }}
+          className="fixed inset-0 z-[300] backdrop-blur-[4px] flex items-center justify-center p-4 animate-[modalFadeIn_.2s_ease]"
+          style={{ background: "rgba(0,0,0,.45)" }}
           onClick={handleCancel}
         >
           <div
-            className="w-[90%] max-w-[420px] rounded-2xl pt-7 px-6 pb-[22px] text-center animate-[confirmBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]"
+            className="w-[90%] max-w-[420px] rounded-2xl pt-7 px-6 pb-[22px] text-center animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]"
             onClick={e => e.stopPropagation()}
             style={{
               background: dark ? "#0e1120" : "#fff",
-              border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}`,
-              boxShadow: dark ? "0 20px 60px rgba(0,0,0,.5)" : "0 20px 60px rgba(0,0,0,.12)",
+              border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`,
+              boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)",
             }}
           >
             {/* Icon */}
@@ -91,7 +91,7 @@ export function ConfirmProvider({ children, dark }) {
                   className="m w-full py-2.5 px-3.5 rounded-lg text-[15px] text-center outline-none tracking-[2px]"
                   style={{
                     background: dark ? "#0a0d1a" : "#f9f8f6",
-                    border: `1px solid ${input === dialog.requireType ? (dark ? "#6ee7b7" : "#059669") : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)")}`,
+                    border: `1px solid ${input === dialog.requireType ? (dark ? "#6ee7b7" : "#059669") : (dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)")}`,
                     color: dark ? "#f5f3f0" : "#1a1917",
                   }}
                   autoFocus
@@ -107,7 +107,7 @@ export function ConfirmProvider({ children, dark }) {
                 style={{
                   background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)",
                   color: dark ? "#a09b95" : "#555250",
-                  border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}`,
+                  border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`,
                 }}
               >Cancel</button>
               <button
@@ -116,6 +116,7 @@ export function ConfirmProvider({ children, dark }) {
                 className="flex-1 py-3 rounded-[10px] text-[15px] font-semibold cursor-pointer transition-[filter,transform] duration-150 hover:brightness-110 active:scale-[.97]"
                 style={{
                   background: dialog.danger ? (canConfirm ? "#dc2626" : (dark ? "#555" : "#ccc")) : (canConfirm ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "#555" : "#ccc")),
+                  border: `1px solid ${dialog.danger ? (dark ? "rgba(252,165,165,.3)" : "rgba(220,38,38,.3)") : (dark ? "rgba(196,125,142,.4)" : "rgba(196,125,142,.3)")}`,
                   color: canConfirm ? "#fff" : (dark ? "#888" : "#999"),
                   opacity: canConfirm ? 1 : .5,
                 }}

@@ -382,15 +382,17 @@ model TicketReply {
 // ──────────────────────────────────────
 
 model Alert {
-  id        String    @id @default(cuid())
-  message   String
-  type      String    @default("info")
-  target    String    @default("both")
-  active    Boolean   @default(true)
-  createdBy String
-  expiresAt DateTime?
-  deletedAt  DateTime?
-  createdAt DateTime  @default(now())
+  id          String    @id @default(cuid())
+  message     String
+  type        String    @default("info")
+  target      String    @default("both")
+  active      Boolean   @default(true)
+  createdBy   String
+  actionLabel String?
+  actionHref  String?
+  expiresAt   DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
 
   @@index([active])
   @@index([target])

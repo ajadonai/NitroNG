@@ -5,6 +5,7 @@ import { ThemeProvider, useTheme } from "./shared-nav";
 import { SITE } from "../lib/site";
 import AnnouncementBanner from "./announcement-banner";
 import { trackViewContent } from "./capi-tracker";
+import InlineAlert from "./inline-alert";
 
 const AuthModal = dynamic(() => import("./auth-modal"), { ssr: false });
 const BelowFold = dynamic(() => import('./landing-below-fold'), { ssr: true });
@@ -263,8 +264,8 @@ function LandingInner(){
                 <button onClick={heroAuth==="login"?heroLoginSubmit:heroAuth==="forgot"?heroForgotSubmit:(heroSignupStep===2?heroSignupFinalSubmit:heroSignupSubmit)} disabled={heroLoading} className="w-full py-3.5 px-0 rounded-xl text-base font-semibold mb-3.5 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{background:heroLoading?"#999":t.btnPrimary,color:"#fff",opacity:heroLoading?.7:1,boxShadow:heroLoading?"none":"0 4px 16px rgba(196,125,142,.38)"}}>{heroLoading&&<span style={{width:16,height:16,border:"2px solid rgba(255,255,255,.38)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .6s linear infinite"}}/>}{heroAuth==="login"?(heroLoading?"Logging in...":"Log In"):heroAuth==="forgot"?(heroLoading?"Sending...":"Send Reset Link"):(heroSignupStep===2?(heroLoading?"Creating...":"Create Account"):(heroLoading?"Please wait...":"Continue →"))}</button>
                 {heroAuth==="signup"&&heroSignupStep===2&&<button onClick={()=>{setHeroSignupStep(1);setHeroError("")}} className="w-full py-2 px-0 bg-transparent text-sm font-medium mb-2" style={{color:t.textSoft}}>← Back to Step 1</button>}
                 <div className="text-center text-[13px]" style={{color:t.textMuted}}>{heroAuth==="signup"&&heroSignupStep===1?"Takes 30 seconds. ":""}{heroAuth==="login"?"Don't have an account? ":heroAuth==="forgot"?"Remember your password? ":"Already have an account? "}<button onClick={()=>{setHeroAuth(heroAuth==="forgot"?"login":heroAuth==="login"?"signup":"login");setHeroSignupStep(1);setHeroError("")}} className="bg-transparent font-semibold text-[13px]" style={{color:t.accent}}>{heroAuth==="forgot"?"Log In":heroAuth==="login"?"Sign Up Free":"Log In"}</button></div>
-                {heroError&&<div className="mt-3 py-2 px-3 rounded-lg text-[13px] text-center" style={{background:dark?"rgba(220,38,38,.18)":"#fef2f2",border:`1px solid ${dark?"rgba(220,38,38,.28)":"#fecaca"}`,color:dark?"#fca5a5":"#dc2626"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {heroError}</div>}
-                {heroSuccess&&<div className="mt-3 py-2 px-3 rounded-lg text-[13px] text-center" style={{background:dark?"rgba(110,231,183,.14)":"#ecfdf5",border:`1px solid ${dark?"rgba(110,231,183,.24)":"rgba(5,150,105,.19)"}`,color:dark?"#6ee7b7":"#059669"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> {heroSuccess}</div>}
+                {heroError&&<InlineAlert type="error" dark={dark} className="mt-3">{heroError}</InlineAlert>}
+                {heroSuccess&&<InlineAlert type="success" dark={dark} className="mt-3">{heroSuccess}</InlineAlert>}
               </div>
             </div>
           </div>

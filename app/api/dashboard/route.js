@@ -225,6 +225,7 @@ export async function GET() {
       walletSummary,
       alerts: alerts.map(a => ({
         id: a.id, message: a.message, type: a.type,
+        ...(a.actionLabel && a.actionHref ? { action: { label: a.actionLabel, href: a.actionHref } } : {}),
       })),
       currentTosVersion,
       unreadTickets: unreadTickets.map(tk => ({

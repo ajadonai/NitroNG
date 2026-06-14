@@ -1,7 +1,7 @@
 'use client';
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
-import { SITE } from "../lib/site";
+
 
 export default function Refund(){
   return <ThemeProvider><RefundInner/></ThemeProvider>;
@@ -10,20 +10,19 @@ export default function Refund(){
 function RefundInner(){
   const {t}=useTheme();
   const sections=[
-    ["Overview","Nitro is committed to delivering every order to your satisfaction. This refund policy outlines the circumstances under which you may be eligible for a refund or wallet credit. All refunds are processed to your Nitro wallet balance unless otherwise stated."],
-    ["Eligible Refunds","You may request a refund in the following cases: the order was not delivered at all within the stated delivery time, the order was only partially delivered (you will be refunded for the undelivered portion), you were charged incorrectly due to a system error, or the service delivered was fundamentally different from what was described."],
-    ["Non-Refundable Cases","Refunds will not be issued in the following situations: natural follower or engagement drops after successful delivery (services with refill guarantees will be refilled instead), orders where the provided link was incorrect or the account was set to private, orders for accounts that were deleted, suspended, or changed username after the order was placed, or dissatisfaction with the speed of delivery when delivery is still within the stated timeframe."],
-    ["Refill Guarantee","Services marked with a refill guarantee will automatically be replenished if followers, likes, or other engagement drops within the stated guarantee period (typically 30 days). Refill requests are processed automatically and do not require a support ticket. Refills are not available for services not marked with a refill guarantee."],
-    ["How to Request a Refund","To request a refund, open a support ticket from your dashboard with the subject line \"Refund Request\" and include your order ID. Our team will review your request within 24-48 hours. If approved, the refund will be credited to your Nitro wallet immediately."],
-    ["Wallet Balance Refunds","All refunds are credited to your Nitro wallet balance. We do not process refunds directly to payment methods (cards, bank accounts). Wallet balances can be used for future orders on the platform."],
-    ["Deposit Refunds","Deposits to your wallet are non-refundable once credited. If a deposit fails or is not credited to your account, please contact support with your payment reference for investigation. Failed deposits that were debited from your bank will be resolved with the payment processor."],
-    ["Processing Time","Refund requests are typically reviewed within 24-48 hours. Once approved, wallet credits are applied instantly. For disputed transactions involving payment processors, resolution may take 5-10 business days."],
-    ["Contact",`For refund-related questions, open a support ticket from your dashboard or contact us at ${SITE.email.general}`],
+    ["Overview","All refunds on Nitro are credited to your Nitro wallet balance. We do not process refunds to bank accounts, cards, or any external payment method. Your wallet balance can be used for any future order on the platform."],
+    ["Automatic Refunds","You are refunded automatically in the following cases: you cancel a pending order before processing begins (full refund), our provider cancels or fails to place your order (full refund), or your order is only partially delivered (you are refunded for the undelivered portion). These refunds are instant and require no action from you."],
+    ["Cancellation by You","You can cancel an order from your dashboard if it has not yet been sent to our provider for processing. Once an order is sent to a provider, it cannot be cancelled by you — contact us on WhatsApp if you need help. Orders using scheduled (drip) delivery cannot be cancelled after placement."],
+    ["Refunds by Nitro","Our team may issue a full or partial refund to your wallet in cases such as: a billing or system error, a service that was fundamentally different from what was described, or an order that failed to deliver within a reasonable timeframe. To request a review, message us on WhatsApp with your order ID."],
+    ["Non-Refundable Cases","Refunds are not available in the following situations: natural follower or engagement drops after successful delivery (use the refill feature if your service is eligible), orders where the link you provided was incorrect or the account was set to private, orders for accounts that were deleted, suspended, or changed username after placement, dissatisfaction with delivery speed while delivery is still in progress, or wallet deposits that have already been credited to your account."],
+    ["Refills","Some services include a refill guarantee. If you lose followers or engagement after delivery, you can request a refill from your dashboard — at no extra cost. Refills are only available on completed orders with an eligible service, and must be requested within the refill window (shown on your order). Refills are not available on services without a refill guarantee."],
+    ["Failed Deposits","If a deposit fails or is debited from your bank but not credited to your Nitro wallet, contact us on WhatsApp with your payment reference. We will investigate and resolve the issue with the payment processor."],
+    ["Contact","For refund-related questions, message us on WhatsApp — we typically respond within minutes."],
   ];
-  return <LegalLayout label="Policy" title="Refund" titleAccent="Policy" date="March 23, 2026" sections={sections} emailField={SITE.email.general} relatedLinks={[["Terms of Service","/terms"],["Privacy Policy","/privacy"],["Cookie Policy","/cookie"]]}/>;
+  return <LegalLayout label="Policy" title="Refund" titleAccent="Policy" date="June 14, 2026" sections={sections} relatedLinks={[["Terms of Service","/terms"],["Privacy Policy","/privacy"],["Cookie Policy","/cookie"]]}/>;
 }
 
-function LegalLayout({label,title,titleAccent,date,sections,emailField,relatedLinks}){
+function LegalLayout({label,title,titleAccent,date,sections,relatedLinks}){
   const {t}=useTheme();
   return(
     <div className="min-h-dvh flex flex-col font-[Plus Jakarta Sans,system-ui,sans-serif] transition-[background] duration-500" style={{background:t.bg}}>
@@ -43,7 +42,7 @@ function LegalLayout({label,title,titleAccent,date,sections,emailField,relatedLi
                 <div className="flex-1">
                   <h2 className="text-[17px] font-semibold mb-2.5 -tracking-[.2px]" style={{color:t.text}}>{sTitle}</h2>
                   <p className="text-[15px] leading-[1.85]" style={{color:t.soft,fontWeight:500}}>
-                    {emailField&&content.includes(emailField)?<>{content.split(emailField)[0]}<a href={`mailto:${emailField}`} style={{color:t.accent}}>{emailField}</a>{content.split(emailField)[1]||""}</>:content}
+                    {content}
                   </p>
                 </div>
               </div>

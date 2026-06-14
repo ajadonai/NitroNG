@@ -357,33 +357,32 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via }) {
     <div
       onClick={onClose}
       onKeyDown={e=>{if(e.key==='Escape')onClose()}}
-      className="fixed inset-0 z-100 backdrop-blur-[8px] flex items-center justify-center p-4 animate-[fi_0.2s_ease]"
-      style={{ background: t.overlay }}
+      className="fixed inset-0 z-100 backdrop-blur-[4px] flex items-center justify-center p-4 animate-[modalFadeIn_.2s_ease]"
+      style={{ background: "rgba(0,0,0,.45)" }}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={mode === 'login' ? 'Log in' : 'Create account'}
         onClick={(e) => e.stopPropagation()}
-        className="auth-card w-full max-w-[440px] max-h-[90dvh] overflow-y-auto overflow-x-hidden rounded-[20px] px-8 py-9 max-md:py-6 relative backdrop-blur-[20px]"
+        className="auth-card w-full max-w-[440px] max-h-[90dvh] overflow-y-auto overflow-x-hidden rounded-2xl px-8 py-9 max-md:py-6 relative backdrop-blur-[20px] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]"
         style={{
-          background: dark
-            ? 'rgba(17,22,40,0.98)'
-            : 'rgba(255,255,255,0.98)',
-          border: `1px solid ${t.surfaceBorder}`,
+          background: dark ? '#0e1120' : '#fff',
+          border: `1px solid ${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}`,
           boxShadow: dark
-            ? '0 20px 60px rgba(0,0,0,0.5)'
-            : '0 20px 60px rgba(0,0,0,0.1)',
+            ? '0 20px 60px rgba(0,0,0,.4)'
+            : '0 20px 60px rgba(0,0,0,.1)',
         }}
       >
         {/* Close button */}
         <button
           onClick={onClose}
-          className="auth-close absolute top-3.5 right-3.5 w-8 h-8 rounded-[10px] flex items-center justify-center text-base font-semibold leading-none"
+          className="auth-close absolute top-3.5 right-3.5 w-8 h-8 rounded-lg flex items-center justify-center text-base font-semibold leading-none"
           style={{
             background: dark
               ? 'rgba(255,255,255,.09)'
               : 'rgba(0,0,0,.04)',
+            border: `1px solid ${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}`,
             color: dark ? '#c47d8e' : '#1c1b19',
           }}
         >

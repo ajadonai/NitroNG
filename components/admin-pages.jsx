@@ -5,6 +5,7 @@ import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
 import { SegPill } from "./seg-pill";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
+import InlineAlert from "./inline-alert";
 
 const localDate = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
@@ -270,11 +271,11 @@ export function AdminPaymentsPage({ dark, t }) {
         </>
       )}
       {configuring && (
-        <div onClick={() => setConfiguring(null)} onKeyDown={e=>{if(e.key==='Escape')setConfiguring(null)}} className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-[4px]">
-          <div role="dialog" aria-modal="true" aria-label="Configure gateway" onClick={e => e.stopPropagation()} className="w-full max-w-[440px] rounded-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,.38)]" style={{ background: dark ? "#111728" : "#fff", border: `1px solid ${t.cardBorder}` }}>
+        <div onClick={() => setConfiguring(null)} onKeyDown={e=>{if(e.key==='Escape')setConfiguring(null)}} className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" style={{ background: "rgba(0,0,0,.45)" }}>
+          <div role="dialog" aria-modal="true" aria-label="Configure gateway" onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl p-6 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             <div className="flex justify-between items-center mb-4">
               <div className="text-base font-semibold" style={{ color: t.text }}>Configure {configuring.name}</div>
-              <button onClick={() => setConfiguring(null)} className="bg-none border-none text-lg cursor-pointer" style={{ color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <button onClick={() => setConfiguring(null)} className="bg-transparent w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer" style={{ color: t.textMuted, border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}` }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div className="text-[13px] mb-4 leading-normal" style={{ color: t.textMuted }}>{configuring.id === "manual" ? "Enter your bank details. Users will see these when selecting bank transfer." : configuring.id === "crypto" ? "API key is set via environment variable. You can leave this blank." : "Enter your API keys. Leave blank to keep existing keys. Current keys are masked for security."}</div>
             {Object.entries(configFields).map(([key]) => {
@@ -304,11 +305,11 @@ export function AdminPaymentsPage({ dark, t }) {
 
       {/* Add Gateway modal */}
       {addModal && (
-        <div onClick={() => setAddModal(false)} onKeyDown={e=>{if(e.key==='Escape')setAddModal(false)}} className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-[4px]">
-          <div role="dialog" aria-modal="true" aria-label="Add payment gateway" onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,.38)]" style={{ background: dark ? "#111728" : "#fff", border: `1px solid ${t.cardBorder}` }}>
+        <div onClick={() => setAddModal(false)} onKeyDown={e=>{if(e.key==='Escape')setAddModal(false)}} className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" style={{ background: "rgba(0,0,0,.45)" }}>
+          <div role="dialog" aria-modal="true" aria-label="Add payment gateway" onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl p-6 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             <div className="flex justify-between items-center mb-4">
               <div className="text-base font-semibold" style={{ color: t.text }}>Add Payment Gateway</div>
-              <button onClick={() => setAddModal(false)} className="bg-none border-none text-lg cursor-pointer" style={{ color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <button onClick={() => setAddModal(false)} className="bg-transparent w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer" style={{ color: t.textMuted, border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}` }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div className="mb-3.5">
               <label className="block text-[13px] font-semibold mb-1 uppercase tracking-wide" style={{ color: t.textMuted }}>Gateway ID</label>
@@ -536,9 +537,11 @@ export function AdminAlertsPage({ dark, t }) {
   const confirm = useConfirm();
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(null); // which slot is creating: "everyone"|"landing"|"users"|"admin"
+  const [creating, setCreating] = useState(null);
   const [newMsg, setNewMsg] = useState("");
   const [newType, setNewType] = useState("info");
+  const [newActionLabel, setNewActionLabel] = useState("");
+  const [newActionHref, setNewActionHref] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -549,16 +552,20 @@ export function AdminAlertsPage({ dark, t }) {
     if (!newMsg.trim() || saving) return;
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", message: newMsg, type: newType, target }) });
+      const body = { action: "create", message: newMsg, type: newType, target };
+      if (newActionLabel.trim() && newActionHref.trim()) {
+        body.actionLabel = newActionLabel;
+        body.actionHref = newActionHref;
+      }
+      const res = await fetch("/api/admin/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json();
       if (res.ok && data.alert) {
-        // Auto-pause: if everyone → pause ALL, otherwise pause same-target only
         setAlerts(prev => [data.alert, ...prev.map(a => {
           if (target === "everyone") return { ...a, active: false };
           if (a.target === target) return { ...a, active: false };
           return a;
         })]);
-        setNewMsg(""); setCreating(null); setNewType("info");
+        setNewMsg(""); setCreating(null); setNewType("info"); setNewActionLabel(""); setNewActionHref("");
       }
     } catch {}
     setSaving(false);
@@ -632,7 +639,10 @@ export function AdminAlertsPage({ dark, t }) {
               }}>
                 <span className="shrink-0" style={{ color: typeColors[active.type] }}>{typeIcons[active.type] || typeIcons.info}</span>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium" style={{ color: t.text }}>{active.message}</div>
+                  <div className="text-sm font-medium" style={{ color: t.text }}>
+                    {active.message.split(/(\*[^*]+\*)/).map((p, i) => p.startsWith('*') && p.endsWith('*') ? <strong key={i}>{p.slice(1, -1)}</strong> : p)}
+                    {active.actionLabel && active.actionHref && <span className="text-xs font-semibold ml-1.5" style={{ color: typeColors[active.type] }}>{active.actionLabel}</span>}
+                  </div>
                   <div className="flex items-center gap-2 mt-1.5">
                     <span className="text-[11px] font-semibold py-0.5 px-2 rounded-md" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.06)", color: dark ? "#6ee7b7" : "#059669" }}>Live</span>
                     {active.created && <span className="text-[11px]" style={{ color: t.textMuted }}>{fD(active.created)}</span>}
@@ -642,14 +652,14 @@ export function AdminAlertsPage({ dark, t }) {
               <div className={`flex gap-1.5 flex-wrap ${history.length > 0 ? "mb-3" : ""}`}>
                 <button onClick={() => toggleAlert(active.id, true, target)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(251,191,36,.24)" : "rgba(217,119,6,.19)", color: dark ? "#fbbf24" : "#d97706" }}>Pause</button>
                 <button onClick={async () => { const ok = await confirm({ title: "Delete Alert", message: `Delete "${active.message?.slice(0, 50)}..."?`, confirmLabel: "Delete", danger: true }); if (ok) deleteAlert(active.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
-                <button onClick={() => { setCreating(target); setNewMsg(""); setNewType("info"); }} className="adm-btn-sm ml-auto" style={{ borderColor: t.cardBorder, color: t.accent }}>+ New</button>
+                <button onClick={() => { setCreating(target); setNewMsg(""); setNewType("info"); setNewActionLabel(""); setNewActionHref(""); }} className="adm-btn-sm ml-auto" style={{ borderColor: t.cardBorder, color: t.accent }}>+ New</button>
               </div>
             </>
           ) : (
             <div className="flex items-center gap-2 mb-3">
               <div className="w-1.5 h-1.5 rounded-full" style={{ background: t.textMuted }} />
               <span className="text-[13px]" style={{ color: t.textMuted }}>No active alert</span>
-              <button onClick={() => { setCreating(target); setNewMsg(""); setNewType("info"); }} className="adm-btn-primary ml-auto text-xs py-1.5 px-3.5">+ Create</button>
+              <button onClick={() => { setCreating(target); setNewMsg(""); setNewType("info"); setNewActionLabel(""); setNewActionHref(""); }} className="adm-btn-primary ml-auto text-xs py-1.5 px-3.5">+ Create</button>
             </div>
           )}
 
@@ -661,7 +671,12 @@ export function AdminAlertsPage({ dark, t }) {
                   Current alert will be auto-paused when you create a new one.
                 </div>
               )}
-              <textarea value={newMsg} onChange={e => setNewMsg(e.target.value)} placeholder="What do you want to announce?" rows={3} className="w-full py-2.5 px-3.5 rounded-lg border text-sm outline-none resize-y font-[inherit] box-border mb-3" style={{ borderColor: t.cardBorder, background: inputBg, color: t.text }} />
+              <textarea value={newMsg} onChange={e => setNewMsg(e.target.value)} placeholder="What do you want to announce?" rows={3} className="w-full py-2.5 px-3.5 rounded-lg border text-sm outline-none resize-y font-[inherit] box-border mb-1.5" style={{ borderColor: t.cardBorder, background: inputBg, color: t.text }} />
+              <div className="text-[11px] mb-3" style={{ color: t.textMuted }}>Wrap text in <code className="py-0.5 px-1 rounded text-[10px]" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>*asterisks*</code> for <strong>bold</strong></div>
+              <div className="flex gap-2 mb-3">
+                <input value={newActionLabel} onChange={e => setNewActionLabel(e.target.value)} placeholder="Link text (optional)" className="flex-1 py-2 px-3 rounded-lg border text-[13px] outline-none font-[inherit] box-border" style={{ borderColor: t.cardBorder, background: inputBg, color: t.text }} />
+                <input value={newActionHref} onChange={e => setNewActionHref(e.target.value)} placeholder="URL, e.g. /services" className="flex-[2] py-2 px-3 rounded-lg border text-[13px] outline-none font-[inherit] box-border" style={{ borderColor: t.cardBorder, background: inputBg, color: t.text }} />
+              </div>
               <div className="flex gap-1.5 mb-3">
                 {[["info", "Info"], ["success", "Success"], ["warning", "Warning"], ["urgent", "Urgent"]].map(([ty, label]) => (
                   <button key={ty} onClick={() => setNewType(ty)} className="flex-1 py-2 rounded-lg text-xs font-semibold cursor-pointer border font-[inherit] transition-transform duration-150 hover:-translate-y-px flex items-center justify-center gap-1.5" style={{
@@ -869,7 +884,6 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
   const cardBg = dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)";
   const cardBorder = `0.5px solid ${t.cardBorder}`;
   const admInputStyle = { borderColor: t.cardBorder, background: dark ? "#131728" : "#fff", color: t.text };
-  const msgStyle = (msg) => ({ background: msg.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: msg.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") });
 
   return (
     <>
@@ -886,7 +900,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
           <div className="w-[56px] h-[56px] max-md:w-12 max-md:h-12 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg border-[3px] -mt-8 max-md:-mt-7 mb-3" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)", borderColor: dark ? "#0e1225" : "#f3f0ec" }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
-          {profileMsg && <div className="py-2 px-3 rounded-lg mb-3 text-sm" style={msgStyle(profileMsg)}>{profileMsg.type === "success" ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} {profileMsg.text}</div>}
+          {profileMsg && <InlineAlert type={profileMsg.type} dark={dark} className="mb-3">{profileMsg.text}</InlineAlert>}
           {profileEditing ? (
             <>
               <div className="mb-3">
@@ -970,7 +984,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
             <div className="set-card-desc" style={{ color: t.textMuted }}>Update your admin password regularly.</div>
           </div>
           <div className="set-card-body">
-          {admPwMsg && <div className="py-2 px-3 rounded-lg mb-3 text-sm" style={msgStyle(admPwMsg)}>{admPwMsg.type === "success" ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} {admPwMsg.text}</div>}
+          {admPwMsg && <InlineAlert type={admPwMsg.type} dark={dark} className="mb-3">{admPwMsg.text}</InlineAlert>}
           <div className="mb-3">
             <label className="text-sm block mb-1" style={{ color: t.textMuted }}>Current Password</label>
             <input type="password" value={admCurPw} onChange={e => setAdmCurPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg text-[15px] outline-none border" style={admInputStyle} />
@@ -994,7 +1008,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
             <div className="set-card-desc" style={{ color: t.textMuted }}>Shown across the site — landing page, support, legal pages, and account notices</div>
           </div>
           <div className="set-card-body">
-          {emailMsg && <div className="py-2 px-3 rounded-lg mb-3 text-sm" style={msgStyle(emailMsg)}>{emailMsg.type === "success" ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} {emailMsg.text}</div>}
+          {emailMsg && <InlineAlert type={emailMsg.type} dark={dark} className="mb-3">{emailMsg.text}</InlineAlert>}
           {[
             ["site_email_general", "General Email", "info@nitro.ng", "Main contact email shown on landing page and legal pages"],
             ["site_email_support", "Support Email", "support@nitro.ng", "Support-specific email shown on support, tickets, and banned account pages"],
@@ -1016,7 +1030,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
             <div className="set-card-desc" style={{ color: t.textMuted }}>Shown in sidebar, landing page footer, and support page. Leave blank to hide.</div>
           </div>
           <div className="set-card-body">
-          {socialMsg && <div className="py-2 px-3 rounded-lg mb-3 text-sm" style={msgStyle(socialMsg)}>{socialMsg.type === "success" ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} {socialMsg.text}</div>}
+          {socialMsg && <InlineAlert type={socialMsg.type} dark={dark} className="mb-3">{socialMsg.text}</InlineAlert>}
           {[
             ["social_instagram", "Instagram Handle", "Nitro.ng", "Handle, @handle, or full URL — all work"],
             ["social_twitter", "X / Twitter Handle", "TheNitroNG", "Handle, @handle, or full URL — all work"],
