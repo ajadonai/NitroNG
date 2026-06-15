@@ -482,6 +482,48 @@ Blog posts with zero comments look dead. Genuine comment sections take months to
 
 ---
 
+## Product 7: Marketers & Agency Panel
+
+*Added June 2026*
+
+### What it is
+
+Dedicated portal at `nitro.ng/m/` for outbound sales reps (Marketers) and wholesale resellers (Agencies). Three-tier hierarchy: Super Admin (Trip) → Team Leads → Marketers. Marketers earn recurring commission on every order from users they recruit — forever, not just the first order.
+
+### Two roles, one panel
+
+- **Marketer** — Cold DMs on X/IG, recruits new Nitro customers, earns 5-10% commission (tiered by volume) on every order their clients place. Team Leads manage and assign tracking links.
+- **Agency/Reseller** — Buys at wholesale (10-20% off retail), resells to own clients. Bulk CSV ordering, multi-client management, profit tracking, white-label PDF reports.
+
+### Commission tiers
+
+| Tier | Threshold | Commission pot |
+|---|---|---|
+| Starter | 0–29 active referred users | 5% |
+| Growth | 30–99 | 7% |
+| Pro | 100+ | 10% |
+
+Pot splits 40% Team Lead / 60% Marketer (configurable by admin). Commission frozen at creation — rate changes don't rewrite history.
+
+### Key features
+
+- Tracking links (`nitro.ng/?via=slug`) with per-link analytics
+- 7-day hold before commission becomes payable + refund clawback
+- Fraud prevention (self-referral block, IP cluster flags, min order threshold)
+- Payout system (bank transfer or wallet credit, min ₦5,000)
+- Admin: approve/suspend leads, set rates, process payouts, view ROI
+- X Premium renewal queue (Nitro pays per active marketer)
+
+### Full spec
+
+Complete playbook with DM scripts, team ops, commission math, and a 15-section engineering integration spec (Appendix A) lives at `/docs/MARKETER_PLAYBOOK.md`. Architecture sketch at `/docs/phase3-marketers-agency.md`.
+
+### Status
+
+Fully specced. Not yet built — awaiting go-ahead.
+
+---
+
 ## Engineering: TypeScript Migration
 
 *Added May 2026*
@@ -697,7 +739,7 @@ Interactive drip feed mockup at `/app/mockup/page.jsx` — demonstrates the pare
 
 ### Status
 
-Design complete. Implementation partially started (cron scaffolding exists). Currently under maintenance — drip dispatch has known issues being debugged. Awaiting stable fix before full rollout.
+✅ **Shipped.** Drip feed is live in production. Parent-child order model, multi-day and intraday drip, cron-based batch dispatch, admin UI with expandable child rows all implemented.
 
 ---
 
