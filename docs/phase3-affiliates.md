@@ -14,12 +14,12 @@
 
 Two distinct roles share the same panel at `marketers.nitro.ng`, with different feature sets unlocked based on tier:
 
-1. **Marketer** — Outbound sales reps who find and recruit new Nitro customers
+1. **Pit Crew** — Outbound sales reps who find and recruit new Nitro customers
 2. **Agency/Reseller** — Businesses that buy services at wholesale to resell to their own clients
 
 ---
 
-## Role 1: Marketer (Outbound Sales)
+## Role 1: Pit Crew (Outbound Sales)
 
 ### What they do
 - Cold DMs, emails, pitch to influencers, musicians, artists, brands, crypto lords
@@ -30,13 +30,13 @@ Two distinct roles share the same panel at `marketers.nitro.ng`, with different 
 ### Panel features
 
 **My Clients**
-- List of users they've recruited (linked via unique marketer signup URL)
+- List of users they've recruited (linked via unique Pit Crew member signup URL)
 - Each client shows: name, signup date, total lifetime spend, last order date
 - Sort/filter by spend, activity, signup date
 
 **Earnings Dashboard**
-- Ongoing % commission on client orders (e.g. 5-10%, configurable per marketer)
-- Different from referral system: referrals = one-time bonus, marketer = recurring commission forever
+- Ongoing % commission on client orders (e.g. 5-10%, configurable per Pit Crew member)
+- Different from referral system: referrals = one-time bonus, Pit Crew member = recurring commission forever
 - Breakdown: this month, last month, all time
 - Per-client earnings breakdown
 
@@ -46,7 +46,7 @@ Two distinct roles share the same panel at `marketers.nitro.ng`, with different 
 - Payout history with status tracking
 
 **Outreach Tools**
-- Custom signup URL: `nitro.ng/ref/marketer-code`
+- Custom signup URL: `nitro.ng/ref/member-code`
 - Trackable links with UTM parameters
 - Landing page templates they can customize and share
 - QR code generator for their signup link
@@ -56,7 +56,7 @@ Two distinct roles share the same panel at `marketers.nitro.ng`, with different 
 - Conversion rate (link clicks → signups → first order)
 - Top clients by spend
 - Monthly trends (new signups, total client spend, commission earned)
-- Leaderboard ranking vs other marketers
+- Leaderboard ranking vs other Pit Crew members
 
 **Reseller Access**
 - Can also place orders at discounted wholesale rates
@@ -133,9 +133,9 @@ Two distinct roles share the same panel at `marketers.nitro.ng`, with different 
 ```
 User {
   ...existing fields
-  role        String   @default("user")  // "user" | "marketer" | "agency" | "admin"
-  affiliateId  String?  // links recruited users to their marketer
-  commissionRate Float? // marketer's commission percentage
+  role        String   @default("user")  // "user" | "Pit Crew member" | "agency" | "admin"
+  affiliateId  String?  // links recruited users to their Pit Crew member
+  commissionRate Float? // Pit Crew member's commission percentage
   wholesaleDiscount Float? // agency's discount percentage
 }
 ```
@@ -144,7 +144,7 @@ User {
 ```
 AffiliateCommission {
   id          String
-  affiliateId  String   // the marketer who earns
+  affiliateId  String   // the Pit Crew member who earns
   clientId    String   // the user who placed the order
   orderId     String   // the order that triggered commission
   amount      Int      // commission amount in kobo
@@ -175,8 +175,8 @@ AgencyClient {
 ```javascript
 // middleware.js addition
 if (hostname === 'marketers.nitro.ng') {
-  // Check if user has marketer/agency role
-  // Route to /marketer-dashboard layout
+  // Check if user has Pit Crew member/agency role
+  // Route to /Pit Crew member-dashboard layout
 }
 ```
 
@@ -184,10 +184,10 @@ if (hostname === 'marketers.nitro.ng') {
 
 ## Admin controls
 
-### Marketer management (admin panel)
-- Approve/reject marketer applications
-- Set commission rate per marketer
-- View all marketers with their client counts and earnings
+### Pit Crew management (admin panel)
+- Approve/reject Pit Crew member applications
+- Set commission rate per Pit Crew member
+- View all Pit Crew members with their client counts and earnings
 - Adjust commission rates
 - Process payout requests
 
@@ -200,12 +200,12 @@ if (hostname === 'marketers.nitro.ng') {
 
 ## Rollout plan
 
-### Phase 3a: Marketer MVP
-1. Marketer role + signup flow
-2. Custom referral link with marketer tracking
+### Phase 3a: Pit Crew MVP
+1. Pit Crew role + signup flow
+2. Custom referral link with Pit Crew member tracking
 3. Recurring commission calculation (cron job)
-4. Basic marketer dashboard: clients, earnings, link
-5. Admin: approve marketers, set rates
+4. Basic Pit Crew member dashboard: clients, earnings, link
+5. Admin: approve Pit Crew members, set rates
 
 ### Phase 3b: Agency features
 1. Agency role + wholesale pricing
@@ -218,13 +218,13 @@ if (hostname === 'marketers.nitro.ng') {
 2. White-label reports
 3. Outreach templates
 4. API access for agencies
-5. Marketer leaderboard
+5. Pit Crew leaderboard
 
 ---
 
 ## Revenue impact
 
-- **Marketers** = free sales team. They only cost commission (5-10%), which comes from orders that wouldn't exist without them
+- **Pit Crew members** = free sales team. They only cost commission (5-10%), which comes from orders that wouldn't exist without them
 - **Agencies** = high-volume recurring revenue. Lower margin per order but significantly higher volume
 - **Both** drive organic growth without ad spend
 
@@ -241,9 +241,9 @@ if (hostname === 'marketers.nitro.ng') {
 
 ## Notes
 
-- Marketer ≠ referral. Referrals are one-time bonuses for casual users. Marketers are structured sales partners with recurring commissions.
-- Both roles can coexist: a marketer who recruits enough volume can upgrade to agency tier for wholesale pricing.
-- Anti-abuse: marketers cannot recruit themselves or existing users. Commission only on genuinely new signups that place orders.
+- Pit Crew ≠ referral. Referrals are one-time bonuses for casual users. Pit Crew members are structured sales partners with recurring commissions.
+- Both roles can coexist: a Pit Crew member who recruits enough volume can upgrade to agency tier for wholesale pricing.
+- Anti-abuse: Pit Crew members cannot recruit themselves or existing users. Commission only on genuinely new signups that place orders.
 
 ---
 
