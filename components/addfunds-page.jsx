@@ -281,11 +281,6 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
           <div>
             <div className="text-[13px] font-semibold" style={{ color: t.accent }}>Welcome bonus</div>
             <div className="text-[12.5px] mt-0.5" style={{ color: t.textSoft, lineHeight: 1.45 }}>Your first deposit earns up to ₦3,000 free. The more you add, the bigger the bonus.</div>
-            <div className="flex gap-1.5 flex-wrap mt-1.5">
-              {[['₦2,500+', '₦500'], ['₦5,000+', '₦1,200'], ['₦10,000+', '₦3,000']].map(([dep, bon]) => (
-                <span key={dep} className="text-[10px] font-semibold py-0.5 px-2 rounded-md" style={{ background: dark ? 'rgba(196,125,142,.15)' : 'rgba(196,125,142,.08)', color: t.accent }}>{dep} → {bon}</span>
-              ))}
-            </div>
           </div>
         </div>
       )}
