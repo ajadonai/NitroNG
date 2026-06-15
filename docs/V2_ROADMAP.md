@@ -482,18 +482,20 @@ Blog posts with zero comments look dead. Genuine comment sections take months to
 
 ---
 
-## Product 7: Marketers & Agency Panel
+## Product 7: Affiliate Portal
 
-*Added June 2026*
+*Added June 2026 · Updated June 2026 with locked-in decisions*
 
 ### What it is
 
-Dedicated portal at `nitro.ng/m/` for outbound sales reps (Marketers) and wholesale resellers (Agencies). Three-tier hierarchy: Super Admin (Trip) → Team Leads → Marketers. Marketers earn recurring commission on every order from users they recruit — forever, not just the first order.
+Affiliate marketing portal at `nitro.ng/m/`. Three-tier hierarchy: Super Admin (Trip) → Team Leads → Affiliates. Affiliates earn recurring commission on every order from users they recruit — forever, not just the first order.
 
-### Two roles, one panel
+**Agency/Reseller is explicitly out of scope.** That's a different product (wholesale pricing, bulk ordering, white-label reports). This is pure affiliate marketing — recruit users, earn commission.
 
-- **Marketer** — Cold DMs on X/IG, recruits new Nitro customers, earns 5-10% commission (tiered by volume) on every order their clients place. Team Leads manage and assign tracking links.
-- **Agency/Reseller** — Buys at wholesale (10-20% off retail), resells to own clients. Bulk CSV ordering, multi-client management, profit tracking, white-label PDF reports.
+### Two roles
+
+- **Team Lead** — Approved by Trip. Creates and assigns tracking links, recruits and manages affiliates, sees full team performance, earns 40% of commission pot.
+- **Affiliate** — Invited by a Team Lead. Runs outreach using assigned link, sees own stats only, earns 60% of commission pot.
 
 ### Commission tiers
 
@@ -503,24 +505,61 @@ Dedicated portal at `nitro.ng/m/` for outbound sales reps (Marketers) and wholes
 | Growth | 30–99 | 7% |
 | Pro | 100+ | 10% |
 
-Pot splits 40% Team Lead / 60% Marketer (configurable by admin). Commission frozen at creation — rate changes don't rewrite history.
+**"Active" = placed at least 1 completed order in the last 30 days.** Tiers recalculate daily via cron. Tiers go up AND down — if referred users go dormant, the affiliate's tier drops. This is intentional: affiliates must keep their recruits ordering.
 
-### Key features
+Pot splits 40% Team Lead / 60% Affiliate (configurable by admin). If a lead uses a link themselves (no affiliate assigned), they get 100%. Commission frozen at creation — rate changes don't rewrite history.
 
-- Tracking links (`nitro.ng/?via=slug`) with per-link analytics
-- 7-day hold before commission becomes payable + refund clawback
-- Fraud prevention (self-referral block, IP cluster flags, min order threshold)
-- Payout system (bank transfer or wallet credit, min ₦5,000)
-- Admin: approve/suspend leads, set rates, process payouts, view ROI
-- X Premium renewal queue (Nitro pays per active marketer)
+### Commission rules (locked in)
+
+- **Partial orders:** Commission proportional to delivered amount, not full charge. Affiliates see "Partial — commission adjusted" on their dashboard.
+- **Drip orders:** Commission fires when the parent order hits Completed — based on final delivered figures, not per-batch.
+- **Bonus credit:** No commission on welcome bonus or coupon bonus credit. Commission calculated on real ₦ the user paid only (`order.charge - bonusPortionUsed`).
+- **Cancelled orders:** Commission voided if order is cancelled during 7-day hold. Already-released commissions are not clawed back.
+- **Existing `?via=` links:** Admin-created tracking links (no `affiliateId`) never generate commission. The commission cron checks `affiliateId IS NOT NULL` before creating any commission row.
+
+### Fraud prevention (locked in)
+
+- Self-referral: block by email match AND IP/device fingerprint (not email-only)
+- Same-IP cluster: flag >5 signups from same /24 IP range via same affiliate in 24h
+- Minimum order value: skip commission on orders below ₦1,000
+- 7-day hold on all commissions before they become payable
+- Refund clawback: auto-void held commissions on cancelled orders
+- Admin override: Trip can void any commission at any time
+
+### Payouts (v1 = manual)
+
+Manual bank transfer by admin. UI shows payout request form + history. Auto-payout toggle exists in UI but labeled "Coming soon" — automated Flutterwave payouts deferred until the affiliate program proves itself.
+
+### Signup info collected
+
+**Team Lead application:** Full name, email, phone (WhatsApp), X handle, "Why do you want to be an affiliate?" (short text), bank details (account name, bank, account number).
+
+**Affiliate (invited by lead):** Full name, email, phone, X handle, bank details.
+
+### Dashboard caching & notifications
+
+- `/m/` dashboard data cached, refreshed every 5 minutes
+- Commission emails batched as daily digest, not per-order
+- Real-time bell notifications for: application approved, commission earned (daily batch), payout processed
+
+### Portal routes
+
+| Route | Team Lead | Affiliate |
+|---|---|---|
+| `/m/` | Dashboard + stats + tier progress | Dashboard + stats + tier progress |
+| `/m/links` | Create/assign tracking links (max 5) | Read-only: sees assigned link |
+| `/m/team` | Invite affiliates, view team performance | N/A |
+| `/m/commissions` | Full commission history with filters | Own commissions only |
+| `/m/payouts` | Request payout + history | Request payout + history |
+| `/m/settings` | Bank details, password, X handle | Bank details, password, X handle |
 
 ### Full spec
 
-Complete playbook with DM scripts, team ops, commission math, and a 15-section engineering integration spec (Appendix A) lives at `/docs/MARKETER_PLAYBOOK.md`. Architecture sketch at `/docs/phase3-marketers-agency.md`.
+Playbook with DM scripts, team ops, commission math, and 15-section engineering integration spec (Appendix A) at `/docs/AFFILIATE_PLAYBOOK.md`. Legacy architecture sketch at `/docs/phase3-affiliates.md`.
 
 ### Status
 
-Fully specced. Not yet built — awaiting go-ahead.
+Fully specced. All blockers resolved. Schema design next, then scaffold build.
 
 ---
 
@@ -823,6 +862,25 @@ To save future-us from re-litigating bad ideas:
 - ✗ **Storing user social account credentials at Nitro.** Architectural non-starter for legal and trust reasons.
 - ✗ **Using fabricated social proof stats on the public audit page** ("47,000 audits run!" when launching). Replace with testimonials, partner logos, or real numbers when they exist.
 - ✗ **Bundle pricing decided in design phase.** Validate before launch.
+
+---
+
+## User Profile Enrichment
+
+*Added June 2026*
+
+### What it is
+
+Collect more info from Nitro users beyond name + email. Priority fields: WhatsApp number, Instagram/TikTok/X handles, business type (creator/brand/agency/personal). Enables better support (WhatsApp outreach), personalized recommendations, and richer data for the affiliate system (know what kind of users affiliates are recruiting).
+
+### When to collect
+
+- **Progressive, not at signup.** Don't add friction to registration. Collect via a one-time "Complete your profile" prompt on the dashboard after first order or first deposit. Dismissible but reappears once per session until filled.
+- **WhatsApp number** is highest priority — unlocks direct support and campaign notifications.
+
+### Status
+
+Not yet built — add to v2 engineering queue.
 
 ---
 
