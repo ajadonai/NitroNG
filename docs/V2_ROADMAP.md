@@ -37,7 +37,7 @@ Free tier shows enough to be useful (account header, health score, 2 of 4 metric
 ### Who it's for
 
 - **Primary:** Nigerian creators (musicians, comedians, fashion, food) who want to understand their account performance but can't afford or trust Western tools like Hootsuite or HypeAuditor
-- **Secondary:** Nigerian agencies and marketers preparing pitches and competitive research
+- **Secondary:** Nigerian agencies and Pit Crew members preparing pitches and competitive research
 - **Tertiary:** Existing Nitro panel users wanting to measure the impact of orders they place
 
 ### Why this works as a wedge
@@ -488,14 +488,14 @@ Blog posts with zero comments look dead. Genuine comment sections take months to
 
 ### What it is
 
-Affiliate marketing portal at `nitro.ng/m/`. Three-tier hierarchy: Super Admin (Trip) → Team Leads → Affiliates. Affiliates earn recurring commission on every order from users they recruit — forever, not just the first order.
+Affiliate marketing portal at `nitro.ng/m/`. Three-tier hierarchy: Super Admin (Trip) → Crew Chiefs → Pit Crew. Pit Crew members earn recurring commission on every order from users they recruit — forever, not just the first order.
 
 **Agency/Reseller is explicitly out of scope.** That's a different product (wholesale pricing, bulk ordering, white-label reports). This is pure affiliate marketing — recruit users, earn commission.
 
 ### Two roles
 
-- **Team Lead** — Approved by Trip. Creates and assigns tracking links, recruits and manages affiliates, sees full team performance, earns 40% of commission pot.
-- **Affiliate** — Invited by a Team Lead. Runs outreach using assigned link, sees own stats only, earns 60% of commission pot.
+- **Crew Chief** — Approved by Trip. Creates and assigns tracking links, recruits and manages Pit Crew members, sees full team performance, earns 40% of commission pot.
+- **Pit Crew** — Invited by a Crew Chief. Runs outreach using assigned link, sees own stats only, earns 60% of commission pot.
 
 ### Commission tiers
 
@@ -505,13 +505,13 @@ Affiliate marketing portal at `nitro.ng/m/`. Three-tier hierarchy: Super Admin (
 | Growth | 30–99 | 7% |
 | Pro | 100+ | 10% |
 
-**"Active" = placed at least 1 completed order in the last 30 days.** Tiers recalculate daily via cron. Tiers go up AND down — if referred users go dormant, the affiliate's tier drops. This is intentional: affiliates must keep their recruits ordering.
+**"Active" = placed at least 1 completed order in the last 30 days.** Tiers recalculate daily via cron. Tiers go up AND down — if referred users go dormant, the Pit Crew member's tier drops. This is intentional: Pit Crew members must keep their recruits ordering.
 
-Pot splits 40% Team Lead / 60% Affiliate (configurable by admin). If a lead uses a link themselves (no affiliate assigned), they get 100%. Commission frozen at creation — rate changes don't rewrite history.
+Pot splits 40% Crew Chief / 60% Pit Crew (configurable by admin). If a Crew Chief uses a link themselves (no Pit Crew member assigned), they get 100%. Commission frozen at creation — rate changes don't rewrite history.
 
 ### Commission rules (locked in)
 
-- **Partial orders:** Commission proportional to delivered amount, not full charge. Affiliates see "Partial — commission adjusted" on their dashboard.
+- **Partial orders:** Commission proportional to delivered amount, not full charge. Pit Crew members see "Partial — commission adjusted" on their dashboard.
 - **Drip orders:** Commission fires when the parent order hits Completed — based on final delivered figures, not per-batch.
 - **Bonus credit:** No commission on welcome bonus or coupon bonus credit. Commission calculated on real ₦ the user paid only (`order.charge - bonusPortionUsed`).
 - **Cancelled orders:** Commission voided if order is cancelled during 7-day hold. Already-released commissions are not clawed back.
@@ -520,7 +520,7 @@ Pot splits 40% Team Lead / 60% Affiliate (configurable by admin). If a lead uses
 ### Fraud prevention (locked in)
 
 - Self-referral: block by email match AND IP/device fingerprint (not email-only)
-- Same-IP cluster: flag >5 signups from same /24 IP range via same affiliate in 24h
+- Same-IP cluster: flag >5 signups from same /24 IP range via same Pit Crew member in 24h
 - Minimum order value: skip commission on orders below ₦1,000
 - 7-day hold on all commissions before they become payable
 - Refund clawback: auto-void held commissions on cancelled orders
@@ -532,9 +532,9 @@ Manual bank transfer by admin. UI shows payout request form + history. Auto-payo
 
 ### Signup info collected
 
-**Team Lead application:** Full name, email, phone (WhatsApp), X handle, "Why do you want to be an affiliate?" (short text), bank details (account name, bank, account number).
+**Crew Chief application:** Full name, email, phone (WhatsApp), X handle, "Why do you want to be an affiliate?" (short text), bank details (account name, bank, account number).
 
-**Affiliate (invited by lead):** Full name, email, phone, X handle, bank details.
+**Pit Crew (invited by Crew Chief):** Full name, email, phone, X handle, bank details.
 
 ### Dashboard caching & notifications
 
@@ -544,11 +544,11 @@ Manual bank transfer by admin. UI shows payout request form + history. Auto-payo
 
 ### Portal routes
 
-| Route | Team Lead | Affiliate |
+| Route | Crew Chief | Pit Crew |
 |---|---|---|
 | `/m/` | Dashboard + stats + tier progress | Dashboard + stats + tier progress |
 | `/m/links` | Create/assign tracking links (max 5) | Read-only: sees assigned link |
-| `/m/team` | Invite affiliates, view team performance | N/A |
+| `/m/team` | Invite Pit Crew members, view team performance | N/A |
 | `/m/commissions` | Full commission history with filters | Own commissions only |
 | `/m/payouts` | Request payout + history | Request payout + history |
 | `/m/settings` | Bank details, password, X handle | Bank details, password, X handle |
