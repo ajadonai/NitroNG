@@ -564,8 +564,8 @@ export default function PulseDashboard({ secretKey }) {
   };
 
   return (
-    <div ref={containerRef} style={{
-      height: '100dvh',
+    <div ref={containerRef} className="pulse-container" style={{
+      minHeight: '100dvh',
       background: '#080b14',
       color: '#f5f3f0',
       fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif",
@@ -573,7 +573,7 @@ export default function PulseDashboard({ secretKey }) {
       display: 'flex',
       flexDirection: 'column',
       gap: 8,
-      overflow: 'hidden',
+      overflow: 'auto',
       animation: 'pulse-bg 20s ease infinite',
     }}>
       <RefreshBar secondsAgo={secondsAgo} />
@@ -599,7 +599,7 @@ export default function PulseDashboard({ secretKey }) {
             <span style={{ color: error ? '#fca5a5' : '#10b981', fontWeight: 600, letterSpacing: 1, fontSize: 11 }}>LIVE</span>
           </div>
           <span className="m" style={{ color: '#555', fontSize: 11 }}>{secondsAgo}s</span>
-          <button onClick={toggleFullscreen} style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 6, padding: '4px 6px', cursor: 'pointer', display: 'flex', alignItems: 'center' }} title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
+          <button onClick={toggleFullscreen} className="pulse-fs-btn" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 6, padding: '4px 6px', cursor: 'pointer', display: 'flex', alignItems: 'center' }} title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
             {isFullscreen ? (
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a8580" strokeWidth="2" strokeLinecap="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
             ) : (
@@ -610,7 +610,7 @@ export default function PulseDashboard({ secretKey }) {
       </div>
 
       {/* Row 1: Hero counter + metrics */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr repeat(5, 1fr)', gap: 12, flexShrink: 0 }}>
+      <div className="pulse-row1" style={{ display: 'grid', gridTemplateColumns: '1.2fr repeat(5, 1fr)', gap: 12, flexShrink: 0 }}>
         <HeroCounter total={data.totalUsers} today={data.newUsersToday} />
         <MetricCard label="Revenue" value={Math.round(data.revenueToday)} formatter={fmtNaira} color="#10b981"
           sub={<>{changeBadge(data.revenueChange)} vs yesterday</>}
@@ -635,7 +635,7 @@ export default function PulseDashboard({ secretKey }) {
       </div>
 
       {/* Row 2: Sparklines */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, flexShrink: 0 }}>
+      <div className="pulse-row2" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, flexShrink: 0 }}>
         <Sparkline label="New Users" data={data.chartData.map(d => d.newUsers)} color="#a5b4fc" area />
         <Sparkline label="Revenue" data={data.chartData.map(d => d.revenue)} color="#10b981" area />
         <Sparkline label="Profit" data={data.chartData.map(d => d.profit)} color="#34d399" area />
@@ -644,7 +644,7 @@ export default function PulseDashboard({ secretKey }) {
       </div>
 
       {/* Row 2.5: Month-to-date + User Activity */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, flexShrink: 0 }}>
+      <div className="pulse-row25" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, flexShrink: 0 }}>
         <div style={{
           background: 'rgba(255,255,255,.03)',
           border: '1px solid rgba(255,255,255,.07)',
@@ -652,7 +652,7 @@ export default function PulseDashboard({ secretKey }) {
           padding: '10px 16px',
         }}>
           <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 8 }}>Month to Date</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+          <div className="pulse-mtd-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
             {[
               { label: 'Revenue', value: fmtNaira(Math.round(data.monthRevenue)), color: '#10b981' },
               { label: 'Cost', value: fmtNaira(Math.round(data.monthCost)), color: '#fca5a5' },
@@ -689,7 +689,7 @@ export default function PulseDashboard({ secretKey }) {
           padding: '10px 16px',
         }}>
           <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 8 }}>User Activity</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+          <div className="pulse-ua-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
             {[
               { label: 'Total Users', value: fmtNum(data.totalUsers), color: '#a5b4fc' },
               { label: 'New This Month', value: fmtNum(data.monthNewUsers), color: '#6ee7b7' },
@@ -721,7 +721,7 @@ export default function PulseDashboard({ secretKey }) {
       </div>
 
       {/* Row 3: Breakdowns */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr', gap: 8, flex: 1, minHeight: 0 }}>
+      <div className="pulse-row3" style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr', gap: 8, flex: 1, minHeight: 0 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{
             background: 'rgba(255,255,255,.03)',
@@ -805,6 +805,19 @@ export default function PulseDashboard({ secretKey }) {
         @keyframes pulse-dot-sm {
           0%, 100% { r: 3; }
           50% { r: 4; }
+        }
+        @media (max-width: 768px) {
+          .pulse-container { overflow: auto !important; padding: 12px 10px !important; gap: 10px !important; }
+          .pulse-fs-btn { display: none !important; }
+          .pulse-row1 { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+          .pulse-row1 > :first-child { grid-column: 1 / -1; }
+          .pulse-row2 { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+          .pulse-row2 > :last-child { grid-column: 1 / -1; }
+          .pulse-row25 { grid-template-columns: 1fr !important; }
+          .pulse-mtd-grid { grid-template-columns: repeat(3, 1fr) !important; }
+          .pulse-ua-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .pulse-row3 { grid-template-columns: 1fr !important; flex: none !important; }
+          .pulse-row3 > * { min-height: 200px; }
         }
       `}</style>
     </div>
