@@ -37,6 +37,26 @@ function txDesc(tx) {
 
 const PRESETS = [1000, 2000, 5000, 10000, 20000, 50000];
 
+const BONUS_PRESETS = [
+  { amount: 2500,  bonus: 500 },
+  { amount: 5000,  bonus: 1200, tag: 'Best value' },
+  { amount: 10000, bonus: 3000 },
+];
+
+function bonusForNaira(naira) {
+  if (naira >= 10000) return 3000;
+  if (naira >= 5000) return 1200;
+  if (naira >= 2500) return 500;
+  return 0;
+}
+
+function nextBonusTier(naira) {
+  if (naira < 2500) return { min: 2500, bonus: 500 };
+  if (naira < 5000) return { min: 5000, bonus: 1200 };
+  if (naira < 10000) return { min: 10000, bonus: 3000 };
+  return null;
+}
+
 const ACCEPTED_TYPES = [
   { label: "Cards", short: "Cards", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },
   { label: "Bank Transfer", short: "Transfer", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg> },
@@ -64,6 +84,11 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
   const [confirmModal, setConfirmModal] = useState(null);
   const [senderName, setSenderName] = useState("");
   const [confirmLoading, setConfirmLoading] = useState(false);
+
+  const bonusInit = useRef(false);
+  useEffect(() => {
+    if (user?.welcomeBonusEligible && !bonusInit.current) { bonusInit.current = true; setAmount('5000'); }
+  }, [user?.welcomeBonusEligible]);
 
   const toastShown = useRef(false);
   useEffect(() => {
@@ -255,34 +280,82 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
           <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0 }}>🎁</span>
           <div>
             <div className="text-[13px] font-semibold" style={{ color: t.accent }}>Welcome bonus</div>
-            <div className="text-[12.5px] mt-0.5" style={{ color: t.textSoft, lineHeight: 1.45 }}>Add ₦2,500 or more now and we'll top you up with ₦500 free. One-time welcome bonus.</div>
+            <div className="text-[12.5px] mt-0.5" style={{ color: t.textSoft, lineHeight: 1.45 }}>Your first deposit earns up to ₦3,000 free. The more you add, the bigger the bonus.</div>
+            <div className="flex gap-1.5 flex-wrap mt-1.5">
+              {[['₦2,500+', '₦500'], ['₦5,000+', '₦1,200'], ['₦10,000+', '₦3,000']].map(([dep, bon]) => (
+                <span key={dep} className="text-[10px] font-semibold py-0.5 px-2 rounded-md" style={{ background: dark ? 'rgba(196,125,142,.15)' : 'rgba(196,125,142,.08)', color: t.accent }}>{dep} → {bon}</span>
+              ))}
+            </div>
           </div>
         </div>
       )}
-      <div className="text-sm font-semibold uppercase tracking-[1px] mb-2.5" style={{ color: t.textSoft }}>Amount to deposit</div>
+      {welcomeEligible && (
+        <>
+          <div className="grid grid-cols-3 gap-2.5 max-md:gap-2 mb-3">
+            {BONUS_PRESETS.map(p => {
+              const sel = numAmount === p.amount;
+              const total = p.amount + p.bonus;
+              return (
+                <button key={p.amount} onClick={() => setAmount(String(p.amount))} className="m relative pt-[18px] pb-3 max-md:pt-4 max-md:pb-2.5 rounded-[12px] text-center cursor-pointer transition-[border-color,background-color,box-shadow,transform] duration-150 hover:translate-y-[-1px]" style={{ border: `1.5px solid ${sel ? t.accent : (p.tag ? (dark ? 'rgba(196,125,142,.25)' : 'rgba(196,125,142,.18)') : t.cardBorder)}`, background: sel ? (dark ? 'rgba(196,125,142,.14)' : 'rgba(196,125,142,.08)') : 'transparent', boxShadow: sel ? '0 0 14px rgba(196,125,142,.12)' : 'none' }}>
+                  {p.tag && <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-bold py-0.5 px-2.5 rounded-full text-white whitespace-nowrap" style={{ background: 'linear-gradient(135deg,#c47d8e,#a3586b)', boxShadow: '0 2px 8px rgba(196,125,142,.3)', letterSpacing: .3 }}>{p.tag}</span>}
+                  <div className="text-lg max-md:text-base font-extrabold" style={{ color: sel ? t.accent : t.text, letterSpacing: -.3 }}>₦{p.amount.toLocaleString()}</div>
+                  <div className="inline-flex items-center gap-1 mt-1 py-0.5 px-2 rounded-md text-[11px] max-md:text-[10px] font-bold" style={{ background: sel ? (dark ? 'rgba(110,231,183,.15)' : 'rgba(5,150,105,.1)') : (dark ? 'rgba(110,231,183,.07)' : 'rgba(5,150,105,.05)'), color: sel ? (dark ? '#6ee7b7' : '#059669') : (dark ? 'rgba(110,231,183,.6)' : 'rgba(5,150,105,.5)') }}>+₦{p.bonus.toLocaleString()} free</div>
+                  <div className="text-[10px] max-md:text-[9px] mt-1" style={{ color: t.textMuted }}>₦{total.toLocaleString()} to spend</div>
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-3 mb-3 max-md:mb-2.5">
+            <div className="flex-1 h-px" style={{ background: t.cardBorder }} />
+            <span className="text-[10px] font-semibold uppercase tracking-[1.2px]" style={{ color: t.textMuted }}>or enter amount</span>
+            <div className="flex-1 h-px" style={{ background: t.cardBorder }} />
+          </div>
+        </>
+      )}
+      {!welcomeEligible && <div className="text-sm font-semibold uppercase tracking-[1px] mb-2.5" style={{ color: t.textSoft }}>Amount to deposit</div>}
       <div className="flex items-center gap-1 py-3.5 px-[18px] max-desktop:py-3 max-desktop:px-4 max-md:py-3 max-md:px-3.5 rounded-xl mb-4 max-md:mb-3" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${amount ? t.accent : t.cardBorder}` }}>
         <span className="m text-[26px] max-desktop:text-[22px] max-md:text-xl font-semibold" style={{ color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.4)" }}>₦</span>
         <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" className="m border-none text-[30px] max-desktop:text-[26px] max-md:text-2xl font-semibold w-full outline-none bg-transparent placeholder:opacity-[.12]" style={{ color: t.text }} />
       </div>
-      <div className="grid grid-cols-3 gap-2 max-md:gap-1.5 mb-3">
-        {PRESETS.map(p => (
-          <button key={p} onClick={() => setAmount(String(p))} className="m py-[13px] max-desktop:py-[11px] max-md:py-2.5 rounded-[10px] text-base max-desktop:text-[15px] max-md:text-sm font-semibold text-center cursor-pointer transition-[border-color,background-color,color,transform] duration-150 hover:translate-y-[-1px]" style={{ border: `1px solid ${numAmount === p ? t.accent : t.cardBorder}`, background: numAmount === p ? (dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)") : "transparent", color: numAmount === p ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.45)") }}>
-            ₦{p >= 1000 ? `${p / 1000}K` : p}
-          </button>
-        ))}
-      </div>
-      {welcomeEligible && numAmount >= 2500 && (
-        <div className="flex items-center gap-2 mt-1 mb-1 py-2 px-3 rounded-lg" style={{ background: dark ? 'rgba(110,231,183,.08)' : 'rgba(5,150,105,.05)', border: `1px solid ${dark ? 'rgba(110,231,183,.15)' : 'rgba(5,150,105,.12)'}` }}>
-          <span style={{ fontSize: 14 }}>🎁</span>
-          <span className="text-[12.5px] font-semibold" style={{ color: dark ? '#6ee7b7' : '#059669' }}>+₦500 welcome bonus will be added</span>
+      {!welcomeEligible && (
+        <div className="grid grid-cols-3 gap-2 max-md:gap-1.5 mb-3">
+          {PRESETS.map(p => (
+            <button key={p} onClick={() => setAmount(String(p))} className="m py-[13px] max-desktop:py-[11px] max-md:py-2.5 rounded-[10px] text-base max-desktop:text-[15px] max-md:text-sm font-semibold text-center cursor-pointer transition-[border-color,background-color,color,transform] duration-150 hover:translate-y-[-1px]" style={{ border: `1px solid ${numAmount === p ? t.accent : t.cardBorder}`, background: numAmount === p ? (dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)") : "transparent", color: numAmount === p ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.45)") }}>
+              ₦{p >= 1000 ? `${p / 1000}K` : p}
+            </button>
+          ))}
         </div>
       )}
-      {welcomeEligible && numAmount > 0 && numAmount < 2500 && numAmount >= 500 && (
-        <div className="flex items-center gap-2 mt-1 mb-1 py-2 px-3 rounded-lg" style={{ background: dark ? 'rgba(196,125,142,.08)' : 'rgba(196,125,142,.05)', border: `1px solid ${dark ? 'rgba(196,125,142,.15)' : 'rgba(196,125,142,.1)'}` }}>
-          <span style={{ fontSize: 14 }}>💡</span>
-          <span className="text-[12.5px] font-medium" style={{ color: t.textSoft }}>Add ₦{(2500 - numAmount).toLocaleString()} more to unlock your ₦500 welcome bonus</span>
-        </div>
-      )}
+      {welcomeEligible && numAmount >= 2500 && (() => {
+        const wb = bonusForNaira(numAmount);
+        return (
+          <div className="flex items-center gap-2 mt-1 mb-1 py-2 px-3 rounded-lg" style={{ background: dark ? 'rgba(110,231,183,.06)' : 'rgba(5,150,105,.04)', border: `1px solid ${dark ? 'rgba(110,231,183,.14)' : 'rgba(5,150,105,.1)'}` }}>
+            <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(110,231,183,.12)' : 'rgba(5,150,105,.08)' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={dark ? '#6ee7b7' : '#059669'} strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <span className="text-[12.5px] font-semibold" style={{ color: dark ? '#6ee7b7' : '#059669' }}>+₦{wb.toLocaleString()} welcome bonus will be added</span>
+          </div>
+        );
+      })()}
+      {welcomeEligible && numAmount >= 500 && (() => {
+        const nt = nextBonusTier(numAmount);
+        if (!nt) return null;
+        const diff = nt.min - numAmount;
+        const cur = bonusForNaira(numAmount);
+        return (
+          <div className="flex items-center gap-2 mt-1 mb-1 py-2 px-3 rounded-lg" style={{ background: dark ? 'rgba(196,125,142,.06)' : 'rgba(196,125,142,.04)', border: `1px solid ${dark ? 'rgba(196,125,142,.14)' : 'rgba(196,125,142,.1)'}` }}>
+            <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(196,125,142,.14)' : 'rgba(196,125,142,.08)' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            </div>
+            <span className="text-[12.5px] font-medium" style={{ color: t.textSoft }}>
+              {cur > 0
+                ? <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer" style={{ color: t.accent, borderBottom: `1.5px dashed ${t.accent}`, paddingBottom: 1, font: 'inherit', fontSize: 'inherit' }}>Add ₦{diff.toLocaleString()} more</button> and get <strong style={{ color: t.accent }}>₦{nt.bonus.toLocaleString()} free</strong> instead of ₦{cur.toLocaleString()}.</>
+                : <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer" style={{ color: t.accent, borderBottom: `1.5px dashed ${t.accent}`, paddingBottom: 1, font: 'inherit', fontSize: 'inherit' }}>Add ₦{diff.toLocaleString()} more</button> to unlock your <strong style={{ color: t.accent }}>₦{nt.bonus.toLocaleString()} welcome bonus</strong>.</>
+              }
+            </span>
+          </div>
+        );
+      })()}
       <div className="min-h-6 mt-2.5 flex items-center">
         {numAmount > 0 && numAmount < 500 ? (
           <div className="text-sm font-medium flex items-center gap-1.5" style={{ color: dark ? "#fcd34d" : "#d97706" }}>
@@ -428,16 +501,21 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
           {/* RIGHT — Summary + Method + Pay */}
           <div className="w-[280px] shrink-0 flex">
             <div className="flex-1 flex flex-col rounded-[14px] p-[22px]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+              {(() => { const wb = welcomeEligible && valid ? bonusForNaira(numAmount) : 0; return (<>
               <div className="flex justify-between mb-3.5 text-[15px]"><span style={{ color: t.textMuted }}>Deposit</span><span style={{ color: valid ? t.text : t.textMuted, fontWeight: 600 }}>{valid ? fN(numAmount) : "₦0"}</span></div>
               <div className="flex justify-between mb-3.5 text-[15px]"><span style={{ color: t.textMuted }}>Fee</span><span style={{ color: t.green, fontWeight: 600 }}>Free</span></div>
               {couponApplied && discount > 0 && (
                 <div className="flex justify-between mb-3.5 text-[15px]"><span style={{ color: t.textMuted }}>Coupon bonus</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+{fN(discount / 100)}</span></div>
               )}
+              {wb > 0 && (
+                <div className="flex justify-between mb-3.5 text-[15px]"><span style={{ color: t.textMuted }}>Welcome bonus</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+₦{wb.toLocaleString()}</span></div>
+              )}
               <div className="h-px my-1 mb-3.5" style={{ background: t.cardBorder }} />
               <div className="flex justify-between items-baseline mb-7">
-                <span className="text-[11px] font-semibold uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>{couponApplied && discount > 0 ? "Wallet credit" : "Total"}</span>
-                <span className="text-[28px] font-bold" style={{ color: valid ? t.accent : t.textMuted }}>{valid ? fN(numAmount + (discount > 0 ? discount / 100 : 0)) : "—"}</span>
+                <span className="text-[11px] font-semibold uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>{(couponApplied && discount > 0) || wb > 0 ? "Wallet credit" : "Total"}</span>
+                <span className="text-[28px] font-bold" style={{ color: valid ? t.accent : t.textMuted }}>{valid ? fN(numAmount + (discount > 0 ? discount / 100 : 0) + wb) : "—"}</span>
               </div>
+              </>); })()}
 
               <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1.5" style={{ color: t.textMuted }}>Payment method</div>
               {gatewaysLoading ? (
@@ -519,15 +597,20 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
 
             {/* Summary + Payment method — single card */}
             <div className="rounded-xl py-3.5 px-4 mb-2.5" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+              {(() => { const wb = welcomeEligible ? bonusForNaira(numAmount) : 0; return (<>
               <div className="flex justify-between mb-2.5 text-sm"><span style={{ color: t.textMuted }}>Deposit</span><span style={{ color: t.text, fontWeight: 600 }}>{fN(numAmount)}</span></div>
               <div className="flex justify-between mb-2.5 text-sm"><span style={{ color: t.textMuted }}>Fee</span><span style={{ color: t.green, fontWeight: 600 }}>Free</span></div>
               {couponApplied && discount > 0 && (
                 <div className="flex justify-between mb-2.5 text-sm"><span style={{ color: t.textMuted }}>Coupon ({couponApplied.code})</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+{fN(discount / 100)} bonus</span></div>
               )}
+              {wb > 0 && (
+                <div className="flex justify-between mb-2.5 text-sm"><span style={{ color: t.textMuted }}>Welcome bonus</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+₦{wb.toLocaleString()}</span></div>
+              )}
               <div className="flex justify-between items-center mb-3">
-                <span className="text-[11px] font-semibold uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>{couponApplied && discount > 0 ? "Wallet credit" : "Total"}</span>
-                <span className="text-lg font-semibold" style={{ color: t.accent }}>{fN(numAmount + (discount > 0 ? discount / 100 : 0))}</span>
+                <span className="text-[11px] font-semibold uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>{(couponApplied && discount > 0) || wb > 0 ? "Wallet credit" : "Total"}</span>
+                <span className="text-lg font-semibold" style={{ color: t.accent }}>{fN(numAmount + (discount > 0 ? discount / 100 : 0) + wb)}</span>
               </div>
+              </>); })()}
               <div className="h-px mb-3" style={{ background: t.cardBorder }} />
               <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1.5" style={{ color: t.textMuted }}>Payment method</div>
               {gateways.length > 0 ? (

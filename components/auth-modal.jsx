@@ -640,7 +640,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via }) {
         {/* ====== SIGNUP STEP 1 ====== */}
         {mode === 'signup' && step === 1 && (
           <>
-            <div className="text-center mb-3"><span className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-[12px] font-semibold" style={{background:dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.1)",color:t.accent}}>🎁 Fund ₦2,500, get ₦500 free — your welcome bonus</span></div>
+            <div className="text-center mb-3"><span className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-[12px] font-semibold" style={{background:dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.1)",color:t.accent}}>🎁 Get up to ₦3,000 free on your first deposit</span></div>
             {/* Google button */}
             <button
               onClick={() => {
