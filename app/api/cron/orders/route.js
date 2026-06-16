@@ -111,6 +111,11 @@ export async function GET(req) {
             }
           }
 
+          if (newStatus === 'Cancelled' && order.protected) {
+            log.warn('Protected order', `Skipping auto-cancel for ${order.orderId} (provider said cancelled)`);
+            continue;
+          }
+
           if (newStatus === 'Cancelled') {
             // Atomic: status update + refund in one transaction so neither can succeed alone
             await prisma.$transaction(async (tx) => {
