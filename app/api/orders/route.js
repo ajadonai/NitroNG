@@ -6,7 +6,7 @@ import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { cleanLink } from '@/lib/clean-link';
 import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig } from '@/lib/drip-feed';
-import { sendEvent, generateEventId, parseFbCookies } from '@/lib/meta-capi';
+import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
 
 async function nextOrderId(tx) {
@@ -792,7 +792,7 @@ export async function POST(req) {
       }
     }
 
-    const eventId = generateEventId();
+    const eventId = `purchase_${orderId}`;
     const hdrs2 = await getHeaders();
     const { fbp, fbc } = parseFbCookies(hdrs2.get('cookie'));
     sendEvent('Purchase', {
