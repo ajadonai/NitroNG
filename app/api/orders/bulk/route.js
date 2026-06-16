@@ -8,7 +8,7 @@ import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { sendEmail, batchPlacementEmail } from '@/lib/email';
 import { cleanLink } from '@/lib/clean-link';
 import { calculateIntradayDrip, getDripConfig } from '@/lib/drip-feed';
-import { sendEvent, generateEventId, parseFbCookies } from '@/lib/meta-capi';
+import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
 
 async function nextOrderIds(tx, count) {
@@ -645,7 +645,7 @@ export async function POST(req) {
       }
     }
 
-    const eventId = generateEventId();
+    const eventId = batchId ? `purchase_${batchId}` : `purchase_${result.createdOrders[0]?.orderId || Date.now()}`;
     const hdrs = await getHeaders();
     const { fbp, fbc } = parseFbCookies(hdrs.get('cookie'));
     sendEvent('Purchase', {
