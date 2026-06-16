@@ -58,6 +58,7 @@ const NAV_ITEMS = [
   { id: "add-funds", label: "Wallet" },
   { id: "guide", label: "Blog" },
   { id: "referrals", label: "Referrals" },
+  { id: "support", label: "Support" },
   { id: "settings", label: "Settings" },
 ];
 
@@ -71,6 +72,7 @@ const BOTTOM_TABS = [
 const MORE_ITEMS = [
   { id: "referrals", label: "Referrals" },
   { id: "guide", label: "Blog" },
+  { id: "support", label: "Support" },
   { id: "settings", label: "Settings" },
   { id: "logout", label: "Log Out" },
 ];
