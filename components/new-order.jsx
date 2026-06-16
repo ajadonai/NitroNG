@@ -95,8 +95,9 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion }) 
             </button>
           );
         })}
-        <button onClick={e => { e.stopPropagation(); setTipOpen(!tipOpen); }} className="shrink-0 bg-transparent border-none cursor-pointer p-0 ml-0.5" style={{ color: dark ? "#8a8580" : "#918b85" }} aria-label="What do the tiers mean?">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <button onClick={e => { e.stopPropagation(); setTipOpen(!tipOpen); }} className="shrink-0 bg-transparent border-none cursor-pointer py-0.5 px-1.5 rounded-full flex items-center gap-1 text-[10px] desktop:text-[11px] font-medium" style={{ color: dark ? "#a09890" : "#807a74", background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)" }} aria-label="What do the tiers mean?">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          {tipOpen ? "Close" : "Which tier?"}
         </button>
       </div>
       {tipOpen && (

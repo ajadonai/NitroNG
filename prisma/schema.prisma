@@ -252,6 +252,7 @@ model Order {
   remains         Int?
   startCount      Int?
   comments        String?  @db.Text
+  protected       Boolean  @default(false)
   retryCount      Int      @default(0)
   lastError       String?
   dripDays        Int?
