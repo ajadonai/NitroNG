@@ -703,7 +703,7 @@ export default function PulseDashboard({ secretKey }) {
             ))}
           </div>
           {data.totalUsers > 0 && (() => {
-            const repeatUsers = Math.max(0, data.monthActiveUsers - data.monthNewUsers);
+            const repeatUsers = data.monthRepeatUsers || 0;
             const repeatPct = data.monthActiveUsers > 0 ? Math.round((repeatUsers / data.monthActiveUsers) * 100) : 0;
             return (
               <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
