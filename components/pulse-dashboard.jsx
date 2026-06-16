@@ -594,6 +594,7 @@ export default function PulseDashboard({ secretKey }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             {[
               { label: 'Revenue', value: fmtNaira(Math.round(data.monthRevenue)), color: '#10b981' },
+              { label: 'Deposits', value: fmtNaira(Math.round(data.monthDeposits)), color: '#e0a458' },
               { label: 'Cost', value: fmtNaira(Math.round(data.monthCost)), color: '#fca5a5' },
               { label: 'Profit', value: (data.monthProfit < 0 ? '-' : '') + fmtNaira(Math.abs(Math.round(data.monthProfit))), color: data.monthProfit < 0 ? '#fca5a5' : '#34d399' },
               { label: 'Orders', value: fmtNum(data.monthOrders), color: '#c47d8e' },
