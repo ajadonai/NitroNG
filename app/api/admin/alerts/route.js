@@ -20,6 +20,8 @@ export async function GET() {
         target: a.target,
         active: a.active,
         createdBy: a.createdBy,
+        actionLabel: a.actionLabel || null,
+        actionHref: a.actionHref || null,
         expiresAt: a.expiresAt?.toISOString() || null,
         created: a.createdAt.toISOString(),
       })),
@@ -35,7 +37,7 @@ export async function POST(req) {
   if (error) return error;
 
   try {
-    const { action, id, message, type, target, active, expiresAt } = await req.json();
+    const { action, id, message, type, target, active, expiresAt, actionLabel, actionHref } = await req.json();
 
     if (action === 'create') {
       if (!message?.trim()) return Response.json({ error: 'Message required' }, { status: 400 });
@@ -58,11 +60,13 @@ export async function POST(req) {
           target: tgt,
           active: true,
           createdBy: admin.name,
+          actionLabel: actionLabel?.trim() || null,
+          actionHref: actionHref?.trim() || null,
           expiresAt: expiresAt ? new Date(expiresAt) : null,
         },
       });
       await logActivity(admin.name, `Created ${tgt} alert: "${message.trim().slice(0, 50)}"`, 'alert');
-      return Response.json({ success: true, alert: { id: alert.id, message: alert.message, type: alert.type, target: alert.target, active: alert.active, created: alert.createdAt.toISOString() } });
+      return Response.json({ success: true, alert: { id: alert.id, message: alert.message, type: alert.type, target: alert.target, active: alert.active, actionLabel: alert.actionLabel, actionHref: alert.actionHref, created: alert.createdAt.toISOString() } });
     }
 
     if (action === 'update') {
@@ -72,6 +76,8 @@ export async function POST(req) {
       if (type !== undefined) data.type = type;
       if (target !== undefined) data.target = target;
       if (active !== undefined) data.active = active;
+      if (actionLabel !== undefined) data.actionLabel = actionLabel?.trim() || null;
+      if (actionHref !== undefined) data.actionHref = actionHref?.trim() || null;
       if (expiresAt !== undefined) data.expiresAt = expiresAt ? new Date(expiresAt) : null;
 
       await prisma.alert.update({ where: { id }, data });

@@ -179,6 +179,9 @@ export async function POST(req) {
             await prisma.order.update({ where: { id: order.id }, data: remainsUpdate });
           }
           if (newStatus !== order.status) {
+            if (newStatus === 'Cancelled' && order.protected) {
+              return Response.json({ success: true, status: order.status, remains: liveRemains, message: `Provider says cancelled but order is protected — use explicit Cancel to override` });
+            }
             if (newStatus === 'Cancelled' && order.status !== 'Cancelled' && order.charge > 0) {
               await prisma.$transaction(async (tx) => {
                 const claimed = await tx.order.updateMany({

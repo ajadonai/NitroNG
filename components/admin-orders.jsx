@@ -96,7 +96,7 @@ function DripSection({ dispatches, dark, t }) {
         const dayDate = batches[0]?.scheduled ? new Date(batches[0].scheduled).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
         return (
           <div key={day}>
-            <button onClick={() => toggleDay(day)} className="w-full flex items-center gap-2 py-1.5 px-2.5 text-[11px] cursor-pointer bg-transparent border-none" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}`, color: t.text }}>
+            <div onClick={() => toggleDay(day)} className="w-full flex items-center gap-2 py-1.5 px-2.5 text-[11px] cursor-pointer" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}`, color: t.text }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transition-transform" style={{ transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}><polyline points="9 18 15 12 9 6"/></svg>
               <span className="font-semibold">Day {day}</span>
               {dayDate && <span style={{ color: t.textMuted }}>{dayDate}</span>}
@@ -104,7 +104,7 @@ function DripSection({ dispatches, dark, t }) {
               <span className="ml-auto flex items-center gap-1.5">
                 {dayIds.length > 0 && <CopyAllIds ids={dayIds} dark={dark} />}
               </span>
-            </button>
+            </div>
             {isOpen && (
               <div style={{ background: dark ? "rgba(0,0,0,.15)" : "rgba(0,0,0,.02)" }}>
                 {batches.map((d, i) => {

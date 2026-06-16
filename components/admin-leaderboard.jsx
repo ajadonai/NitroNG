@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { fN, fD } from "../lib/format";
 import { SegPill } from "./seg-pill";
 import { FilterDropdown } from "./date-range-picker";
+import InlineAlert from "./inline-alert";
 
 const TABS = [
   { id: "spenders", label: "Top Spenders" },
@@ -115,12 +116,10 @@ export default function AdminLeaderboardPage({ dark, t }) {
   const gradBtn = { background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff" };
   const presetBtnCls = "flex-1 py-[5px] rounded-md text-xs cursor-pointer font-[inherit]";
   const presetBtn = (on) => ({ border: `1px solid ${on ? t.accent : t.cardBorder}`, background: on ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: on ? t.accent : t.textMuted });
-  const msgBoxCls = "py-2 px-3 rounded-lg mb-3 text-[13px]";
-  const msgBox = (type) => ({ background: type === "success" ? (dark ? "rgba(110,231,183,.14)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.14)" : "#fef2f2"), color: type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626"), border: `1px solid ${type === "success" ? (dark ? "rgba(110,231,183,.28)" : "#a7f3d0") : (dark ? "rgba(220,38,38,.28)" : "#fecaca")}` });
-  const modalOvrCls = "fixed inset-0 z-50 flex items-center justify-center p-6";
-  const modalOvr = { background: "rgba(0,0,0,.4)" };
-  const modalBoxCls = "rounded-2xl p-6 w-full max-w-[420px]";
-  const modalBox = { background: dark ? "#0e1120" : "#fff", border: `1px solid ${t.cardBorder}`, boxShadow: "0 20px 60px rgba(0,0,0,.38)" };
+  const modalOvrCls = "fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]";
+  const modalOvr = { background: "rgba(0,0,0,.45)" };
+  const modalBoxCls = "rounded-2xl p-6 w-full max-w-[420px] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]";
+  const modalBox = { background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" };
   const accentHdr = { background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.10)" };
   const cardBg = { background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)" };
 
@@ -296,7 +295,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
               <label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Note (optional)</label>
               <input value={rewardNote} onChange={e => setRewardNote(e.target.value)} placeholder="Leaderboard reward — Top spender" className={inpCls} style={{ ...inp, fontSize: 14 }} />
             </div>
-            {rewardMsg && <div className={msgBoxCls} style={msgBox(rewardMsg.type)}>{rewardMsg.text}</div>}
+            {rewardMsg && <InlineAlert type={rewardMsg.type} dark={dark} className="mb-3">{rewardMsg.text}</InlineAlert>}
             <div className="flex max-md:flex-col gap-2">
               <button onClick={() => setRewardModal(null)} className="py-2.5 px-5 rounded-lg text-sm font-medium cursor-pointer font-[inherit] bg-transparent transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               <button onClick={doReward} disabled={!rewardAmount || Number(rewardAmount) <= 0 || rewardLoading} className="flex-1 py-2.5 rounded-lg border-none text-sm cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ ...gradBtn, opacity: !rewardAmount || Number(rewardAmount) <= 0 || rewardLoading ? .5 : 1 }}>{rewardLoading ? "Sending..." : `Send ${rewardAmount ? fN(Number(rewardAmount)) : "₦0"}`}</button>
@@ -335,7 +334,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
                 </div>
               </div>
             )}
-            {massMsg && <div className={msgBoxCls} style={msgBox(massMsg.type)}>{massMsg.text}</div>}
+            {massMsg && <InlineAlert type={massMsg.type} dark={dark} className="mb-3">{massMsg.text}</InlineAlert>}
             <div className="flex max-md:flex-col gap-2">
               <button onClick={() => setMassModal(false)} disabled={massLoading} className="py-2.5 px-5 rounded-lg text-sm font-medium cursor-pointer font-[inherit] bg-transparent transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               <button onClick={doMassReward} disabled={!massAmount || Number(massAmount) <= 0 || massLoading} className="flex-1 py-2.5 rounded-lg border-none text-sm cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ ...gradBtn, opacity: !massAmount || Number(massAmount) <= 0 || massLoading ? .5 : 1 }}>{massLoading ? "Processing..." : `Send to ${selected.size} users`}</button>

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { SegPill } from './seg-pill';
+import InlineAlert from "./inline-alert";
 
 const BANNER_COLORS = [
   { hex: '#10b981', label: 'Green' },
@@ -95,7 +96,7 @@ function PromotionForm({ dark, t, type, initial, onSave, onCancel }) {
 
   return (
     <>
-      {error && <div className="py-2.5 px-4 rounded-lg text-sm mb-3.5 flex justify-between items-center" style={{ background: dark ? "rgba(220,38,38,.18)" : "#fef2f2", border: `1px solid ${dark ? "rgba(220,38,38,.28)" : "#fecaca"}`, color: dark ? "#fca5a5" : "#dc2626" }}><span>{error}</span><button onClick={() => setError("")} className="bg-transparent border-none cursor-pointer" style={{ color: "inherit" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>}
+      {error && <InlineAlert type="error" dark={dark} onDismiss={() => setError("")} className="mb-3.5">{error}</InlineAlert>}
 
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div><label className={labelCls} style={{ color: t.textMuted }}>Name</label><input value={form.name} onChange={e => set('name', e.target.value)} placeholder={isRecurring ? 'NITRO TUESDAY' : 'SUMMER SALE'} className={inputCls} style={inputStyle} /></div>
@@ -190,15 +191,15 @@ function PromotionForm({ dark, t, type, initial, onSave, onCancel }) {
 
 function DeleteModal({ dark, t, onDelete, onCancel }) {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,.5)', backdropFilter: 'blur(4px)' }} onClick={onCancel}>
-      <div onClick={e => e.stopPropagation()} className="w-full max-w-md rounded-2xl overflow-hidden" style={{ background: dark ? '#111628' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.1)'}` }}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" style={{ background: 'rgba(0,0,0,.45)' }} onClick={onCancel}>
+      <div onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? '#0e1120' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}`, boxShadow: dark ? '0 20px 60px rgba(0,0,0,.4)' : '0 20px 60px rgba(0,0,0,.1)' }}>
         <div className="px-6 pt-5 pb-4">
           <h3 className="text-lg font-semibold mb-1" style={{ color: t.text }}>Delete Promotion</h3>
           <p className="text-sm mb-4" style={{ color: t.textMuted }}>If this promotion has linked orders it will be ended instead. Otherwise it will be permanently deleted.</p>
         </div>
-        <div className="flex gap-2 px-6 py-4" style={{ borderTop: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)'}` }}>
-          <button onClick={onDelete} className="px-4 py-2 rounded-lg text-sm font-semibold text-white cursor-pointer border-none" style={{ background: '#dc2626' }}>Delete</button>
-          <button onClick={onCancel} className="adm-btn-sm" style={{ borderColor: dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.1)', color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <div className="flex gap-2 px-6 py-4" style={{ borderTop: `1px solid ${dark ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.08)'}` }}>
+          <button onClick={onDelete} className="px-4 py-2 rounded-lg text-sm font-semibold text-white cursor-pointer" style={{ background: '#dc2626', border: `1px solid ${dark ? 'rgba(252,165,165,.3)' : 'rgba(220,38,38,.3)'}` }}>Delete</button>
+          <button onClick={onCancel} className="adm-btn-sm" style={{ borderColor: dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)', color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
       </div>
     </div>

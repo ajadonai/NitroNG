@@ -61,6 +61,7 @@ export function ToastProvider({ children, dark }) {
 
   const renderToast = (t) => {
     const tt = TYPES[t.type];
+    const col = dark ? tt.colD : tt.colL;
     const isBottom = t.position === "bottom";
     const animClass = t.leaving
       ? (isBottom ? "toast-exit-bottom" : "toast-exit")
@@ -69,14 +70,14 @@ export function ToastProvider({ children, dark }) {
     return (
       <div
         key={t.id}
-        className={`rounded-[14px] overflow-hidden pointer-events-auto backdrop-blur-[20px] shadow-[0_8px_32px_rgba(0,0,0,.25),0_2px_8px_rgba(0,0,0,.1)] ${animClass}`}
+        className={`rounded-xl overflow-hidden pointer-events-auto backdrop-blur-[20px] shadow-[0_4px_20px_rgba(0,0,0,.1),0_1px_4px_rgba(0,0,0,.04)] ${animClass}`}
         style={{
           background: dark ? tt.bgD : tt.bgL,
-          border: `1.5px solid ${dark ? tt.brdD : tt.brdL}`,
+          border: `1px solid ${dark ? tt.brdD : tt.brdL}`,
         }}
       >
-        <div className="flex gap-2.5 items-center py-3 px-3.5 md:py-3.5 md:px-4">
-          <div className="shrink-0" style={{ color: dark ? tt.colD : tt.colL }}>{tt.icon}</div>
+        <div className="flex gap-3 items-center py-3.5 px-4">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: `${col}20`, color: col }}>{tt.icon}</div>
           <div className="flex-1 min-w-0">
             <div className="text-sm md:text-[15px] font-semibold" style={{ color: dark ? "#f5f3f0" : "#1a1917" }}>{t.title}</div>
             {t.desc && <div className="text-[13px] md:text-sm mt-0.5" style={{ color: dark ? "#a09b95" : "#555250" }}>{t.desc}</div>}
@@ -93,12 +94,12 @@ export function ToastProvider({ children, dark }) {
           )}
           <button
             onClick={() => removeToast(t.id)}
-            className="bg-transparent text-base p-0.5 shrink-0 opacity-50 hover:opacity-90 transition-opacity duration-150 cursor-pointer"
+            className="bg-transparent text-base p-0.5 shrink-0 opacity-40 hover:opacity-80 transition-opacity duration-150 cursor-pointer"
             style={{ color: dark ? "#8a8580" : "#757170" }}
           ><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
-        <div className="h-0.5 relative">
-          <div className="h-full opacity-30 toast-progress-bar" style={{ background: dark ? tt.colD : tt.colL, animationDuration: `${t.duration}ms` }} />
+        <div className="h-[3px] relative overflow-hidden mx-4 mb-3 rounded-full" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }}>
+          <div className="h-full rounded-full toast-progress-bar" style={{ background: col, opacity: 0.5, animationDuration: `${t.duration}ms` }} />
         </div>
       </div>
     );

@@ -57,6 +57,9 @@ export async function POST(req) {
 
       // Update if status changed
       if (newStatus !== order.status) {
+        if (newStatus === 'Cancelled' && order.protected) {
+          return Response.json({ status: order.status, remains: providerStatus.remains, startCount: providerStatus.start_count, charge: order.charge / 100 });
+        }
         if (newStatus === 'Cancelled' && order.status !== 'Cancelled' && order.charge > 0) {
           await prisma.$transaction(async (tx) => {
             const claimed = await tx.order.updateMany({

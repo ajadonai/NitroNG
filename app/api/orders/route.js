@@ -156,6 +156,9 @@ export async function PATCH(req) {
     }
 
     if (action === 'cancel') {
+      if (order.protected) {
+        return Response.json({ error: 'This order is protected and can only be cancelled by an admin.' }, { status: 400 });
+      }
       if (order.apiOrderId) {
         return Response.json({ error: 'This order has already been sent to our providers and cannot be cancelled. Please contact support if you need help.' }, { status: 400 });
       }

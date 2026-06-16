@@ -10,27 +10,27 @@ const ICONS = {
 
 const STYLES = {
   info: {
-    bgD: "rgba(196,125,142,.18)", bgL: "rgba(196,125,142,.1)",
+    bgD: "rgba(196,125,142,.12)", bgL: "rgba(196,125,142,.07)",
     solidD: "#2a1a22", solidL: "#fdf6f8",
-    brdD: "rgba(196,125,142,.45)", brdL: "rgba(196,125,142,.3)",
+    brdD: "rgba(196,125,142,.3)", brdL: "rgba(196,125,142,.2)",
     colD: "#e0a0b0", colL: "#8b5e6b",
   },
   warning: {
-    bgD: "rgba(251,191,36,.18)", bgL: "rgba(217,119,6,.1)",
+    bgD: "rgba(251,191,36,.12)", bgL: "rgba(217,119,6,.07)",
     solidD: "#2a2210", solidL: "#fefbf0",
-    brdD: "rgba(251,191,36,.5)", brdL: "rgba(217,119,6,.35)",
+    brdD: "rgba(251,191,36,.3)", brdL: "rgba(217,119,6,.2)",
     colD: "#fcd34d", colL: "#d97706",
   },
   success: {
-    bgD: "rgba(110,231,183,.15)", bgL: "rgba(5,150,105,.08)",
+    bgD: "rgba(110,231,183,.12)", bgL: "rgba(5,150,105,.07)",
     solidD: "#122a1e", solidL: "#f3fff9",
-    brdD: "rgba(110,231,183,.45)", brdL: "rgba(5,150,105,.3)",
+    brdD: "rgba(110,231,183,.3)", brdL: "rgba(5,150,105,.2)",
     colD: "#6ee7b7", colL: "#059669",
   },
   urgent: {
-    bgD: "rgba(252,165,165,.18)", bgL: "rgba(220,38,38,.1)",
+    bgD: "rgba(252,165,165,.12)", bgL: "rgba(220,38,38,.07)",
     solidD: "#2a1414", solidL: "#fff5f5",
-    brdD: "rgba(252,165,165,.5)", brdL: "rgba(220,38,38,.35)",
+    brdD: "rgba(252,165,165,.3)", brdL: "rgba(220,38,38,.2)",
     colD: "#fca5a5", colL: "#dc2626",
   },
 };
@@ -94,8 +94,8 @@ export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", o
         boxShadow: mode === "landing" ? (dark ? "0 2px 12px rgba(0,0,0,.3)" : "0 2px 12px rgba(0,0,0,.06)") : "none",
       }}
     >
-      <div className="flex items-center gap-2 md:gap-2.5 py-[9px] px-4 pr-9 md:py-2.5 md:pl-6 md:pr-11 justify-center relative">
-        <div className="shrink-0" style={{ color: dark ? s.colD : s.colL }}>
+      <div className="flex items-center gap-2.5 py-2.5 px-4 pl-5 pr-10 justify-center relative">
+        <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: `${dark ? s.colD : s.colL}18` }}>
           {icon(dark ? s.colD : s.colL)}
         </div>
         <div className="text-[13px] md:text-sm font-medium" style={{ color: dark ? "#f5f3f0" : "#1a1917" }}>
@@ -116,9 +116,9 @@ export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", o
         </div>
         <button
           onClick={() => dismiss(alert)}
-          className="bg-transparent cursor-pointer py-1.5 px-2.5 text-sm opacity-50 hover:opacity-80 absolute right-2 top-1/2 -translate-y-1/2"
-          style={{ color: dark ? "#8a8580" : "#999" }}
-        ><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          className="bg-transparent border-none cursor-pointer p-1.5 opacity-50 hover:opacity-80 absolute right-2 top-1/2 -translate-y-1/2"
+          style={{ color: dark ? "#8a8580" : "#757170" }}
+        ><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
     </div>
   );

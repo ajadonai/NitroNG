@@ -43,7 +43,10 @@ export async function GET() {
         },
         orderBy: { createdAt: 'desc' },
         take: 3,
-      })).map(a => ({ id: a.id, message: a.message, type: a.type }));
+      })).map(a => ({
+        id: a.id, message: a.message, type: a.type,
+        ...(a.actionLabel && a.actionHref ? { action: { label: a.actionLabel, href: a.actionHref } } : {}),
+      }));
     } catch {}
 
     return ok({
