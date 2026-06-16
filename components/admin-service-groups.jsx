@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { calculateTierPrice, formatNaira, DEFAULT_USD_RATE } from "../lib/markup";
 import { useConfirm } from "./confirm-dialog";
 import { FilterDropdown } from "./date-range-picker";
+import InlineAlert from "./inline-alert";
 
 function LinkServiceInline({ tierId, services, dark, t, inputStyle, markupSettings, onLink }) {
   const [open, setOpen] = useState(false);
@@ -224,7 +225,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
         </div>
       )}
 
-      {error && <div className="py-2.5 px-4 rounded-lg text-sm mt-4 flex justify-between items-center" style={{ background: dark ? "rgba(220,38,38,.18)" : "#fef2f2", border: `1px solid ${dark ? "rgba(220,38,38,.28)" : "#fecaca"}`, color: dark ? "#fca5a5" : "#dc2626" }}><span>{error}</span><button onClick={() => setError("")} className="bg-transparent border-none cursor-pointer" style={{ color: "inherit" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>}
+      {error && <InlineAlert type="error" dark={dark} onDismiss={() => setError("")} className="mt-4">{error}</InlineAlert>}
 
       {/* New group form */}
       {showNew && (

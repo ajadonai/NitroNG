@@ -37,7 +37,7 @@ Free tier shows enough to be useful (account header, health score, 2 of 4 metric
 ### Who it's for
 
 - **Primary:** Nigerian creators (musicians, comedians, fashion, food) who want to understand their account performance but can't afford or trust Western tools like Hootsuite or HypeAuditor
-- **Secondary:** Nigerian agencies and marketers preparing pitches and competitive research
+- **Secondary:** Nigerian agencies and Pit Crew members preparing pitches and competitive research
 - **Tertiary:** Existing Nitro panel users wanting to measure the impact of orders they place
 
 ### Why this works as a wedge
@@ -482,6 +482,87 @@ Blog posts with zero comments look dead. Genuine comment sections take months to
 
 ---
 
+## Product 7: Affiliate Portal
+
+*Added June 2026 · Updated June 2026 with locked-in decisions*
+
+### What it is
+
+Affiliate marketing portal at `nitro.ng/m/`. Three-tier hierarchy: Super Admin (Trip) → Crew Chiefs → Pit Crew. Pit Crew members earn recurring commission on every order from users they recruit — forever, not just the first order.
+
+**Agency/Reseller is explicitly out of scope.** That's a different product (wholesale pricing, bulk ordering, white-label reports). This is pure affiliate marketing — recruit users, earn commission.
+
+### Two roles
+
+- **Crew Chief** — Approved by Trip. Creates and assigns tracking links, recruits and manages Pit Crew members, sees full team performance, earns 40% of commission pot.
+- **Pit Crew** — Invited by a Crew Chief. Runs outreach using assigned link, sees own stats only, earns 60% of commission pot.
+
+### Commission tiers
+
+| Tier | Threshold | Commission pot |
+|---|---|---|
+| Starter | 0–29 active referred users | 5% |
+| Growth | 30–99 | 7% |
+| Pro | 100+ | 10% |
+
+**"Active" = placed at least 1 completed order in the last 30 days.** Tiers recalculate daily via cron. Tiers go up AND down — if referred users go dormant, the Pit Crew member's tier drops. This is intentional: Pit Crew members must keep their recruits ordering.
+
+Pot splits 40% Crew Chief / 60% Pit Crew (configurable by admin). If a Crew Chief uses a link themselves (no Pit Crew member assigned), they get 100%. Commission frozen at creation — rate changes don't rewrite history.
+
+### Commission rules (locked in)
+
+- **Partial orders:** Commission proportional to delivered amount, not full charge. Pit Crew members see "Partial — commission adjusted" on their dashboard.
+- **Drip orders:** Commission fires when the parent order hits Completed — based on final delivered figures, not per-batch.
+- **Bonus credit:** No commission on welcome bonus or coupon bonus credit. Commission calculated on real ₦ the user paid only (`order.charge - bonusPortionUsed`).
+- **Cancelled orders:** Commission voided if order is cancelled during 7-day hold. Already-released commissions are not clawed back.
+- **Existing `?via=` links:** Admin-created tracking links (no `affiliateId`) never generate commission. The commission cron checks `affiliateId IS NOT NULL` before creating any commission row.
+
+### Fraud prevention (locked in)
+
+- Self-referral: block by email match AND IP/device fingerprint (not email-only)
+- Same-IP cluster: flag >5 signups from same /24 IP range via same Pit Crew member in 24h
+- Minimum order value: skip commission on orders below ₦1,000
+- 7-day hold on all commissions before they become payable
+- Refund clawback: auto-void held commissions on cancelled orders
+- Admin override: Trip can void any commission at any time
+
+### Payouts (v1 = manual)
+
+Manual bank transfer by admin. UI shows payout request form + history. Auto-payout toggle exists in UI but labeled "Coming soon" — automated Flutterwave payouts deferred until the affiliate program proves itself.
+
+### Signup info collected
+
+**Crew Chief application:** Full name, email, phone (WhatsApp), X handle, "Why do you want to be an affiliate?" (short text), bank details (account name, bank, account number).
+
+**Pit Crew (invited by Crew Chief):** Full name, email, phone, X handle, bank details.
+
+### Dashboard caching & notifications
+
+- `/m/` dashboard data cached, refreshed every 5 minutes
+- Commission emails batched as daily digest, not per-order
+- Real-time bell notifications for: application approved, commission earned (daily batch), payout processed
+
+### Portal routes
+
+| Route | Crew Chief | Pit Crew |
+|---|---|---|
+| `/m/` | Dashboard + stats + tier progress | Dashboard + stats + tier progress |
+| `/m/links` | Create/assign tracking links (max 5) | Read-only: sees assigned link |
+| `/m/team` | Invite Pit Crew members, view team performance | N/A |
+| `/m/commissions` | Full commission history with filters | Own commissions only |
+| `/m/payouts` | Request payout + history | Request payout + history |
+| `/m/settings` | Bank details, password, X handle | Bank details, password, X handle |
+
+### Full spec
+
+Playbook with DM scripts, team ops, commission math, and 15-section engineering integration spec (Appendix A) at `/docs/AFFILIATE_PLAYBOOK.md`. Legacy architecture sketch at `/docs/phase3-affiliates.md`.
+
+### Status
+
+Fully specced. All blockers resolved. Schema design next, then scaffold build.
+
+---
+
 ## Engineering: TypeScript Migration
 
 *Added May 2026*
@@ -697,7 +778,7 @@ Interactive drip feed mockup at `/app/mockup/page.jsx` — demonstrates the pare
 
 ### Status
 
-Design complete. Implementation partially started (cron scaffolding exists). Currently under maintenance — drip dispatch has known issues being debugged. Awaiting stable fix before full rollout.
+✅ **Shipped.** Drip feed is live in production. Parent-child order model, multi-day and intraday drip, cron-based batch dispatch, admin UI with expandable child rows all implemented.
 
 ---
 
@@ -781,6 +862,25 @@ To save future-us from re-litigating bad ideas:
 - ✗ **Storing user social account credentials at Nitro.** Architectural non-starter for legal and trust reasons.
 - ✗ **Using fabricated social proof stats on the public audit page** ("47,000 audits run!" when launching). Replace with testimonials, partner logos, or real numbers when they exist.
 - ✗ **Bundle pricing decided in design phase.** Validate before launch.
+
+---
+
+## User Profile Enrichment
+
+*Added June 2026*
+
+### What it is
+
+Collect more info from Nitro users beyond name + email. Priority fields: WhatsApp number, Instagram/TikTok/X handles, business type (creator/brand/agency/personal). Enables better support (WhatsApp outreach), personalized recommendations, and richer data for the affiliate system (know what kind of users affiliates are recruiting).
+
+### When to collect
+
+- **Progressive, not at signup.** Don't add friction to registration. Collect via a one-time "Complete your profile" prompt on the dashboard after first order or first deposit. Dismissible but reappears once per session until filled.
+- **WhatsApp number** is highest priority — unlocks direct support and campaign notifications.
+
+### Status
+
+Not yet built — add to v2 engineering queue.
 
 ---
 
