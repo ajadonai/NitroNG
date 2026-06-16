@@ -231,76 +231,8 @@ function HBarChart({ items, label }) {
 }
 
 // ─── Donut chart ────────────────────────────────────────────────
-function DonutChart({ items, label, inline, compact }) {
-  if (!items || items.length === 0) return null;
-  const total = items.reduce((s, i) => s + i.count, 0) || 1;
-  const r = compact ? 24 : inline ? 30 : 40;
-  const svgSize = compact ? 56 : inline ? 72 : 100;
-  const circ = 2 * Math.PI * r;
-  let offset = 0;
-
-  const statusColors = {
-    Completed: '#6ee7b7', Processing: '#a5b4fc', Pending: '#fcd34d',
-    Partial: '#fdba74', Failed: '#fca5a5', Cancelled: '#a1a1aa', Rejected: '#fca5a5',
-  };
-
-  const content = (
-    <>
-      <div style={{ fontSize: 10, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: compact ? 8 : inline ? 10 : 16 }}>{label}</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 12 : inline ? 16 : 24, justifyContent: 'center' }}>
-        <div style={{ position: 'relative', flexShrink: 0 }}>
-          <svg width={svgSize} height={svgSize} viewBox={`0 0 ${svgSize} ${svgSize}`}>
-            {items.map((item) => {
-              const pct = item.count / total;
-              const dash = circ * pct;
-              const gap = items.length > 1 ? 2 : 0;
-              const seg = (
-                <circle key={item.status} cx={svgSize/2} cy={svgSize/2} r={r} fill="none"
-                  stroke={statusColors[item.status] || '#555'}
-                  strokeWidth={compact ? 5 : inline ? 6 : 8}
-                  strokeDasharray={`${Math.max(dash - gap, 0)} ${circ - dash + gap}`}
-                  strokeDashoffset={-offset}
-                  style={{ transition: 'stroke-dasharray .8s ease, stroke-dashoffset .8s ease', filter: `drop-shadow(0 0 4px ${statusColors[item.status] || '#555'}44)` }}
-                  transform={`rotate(-90 ${svgSize/2} ${svgSize/2})`}
-                />
-              );
-              offset += dash;
-              return seg;
-            })}
-          </svg>
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <span className="m" style={{ fontSize: compact ? 11 : inline ? 14 : 18, fontWeight: 700, color: '#f5f3f0' }}>{total.toLocaleString()}</span>
-            {!compact && <span style={{ fontSize: inline ? 8 : 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1 }}>orders</span>}
-          </div>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 3 : inline ? 5 : 8 }}>
-          {items.slice(0, 6).map(item => (
-            <div key={item.status} style={{ display: 'flex', alignItems: 'center', gap: compact ? 6 : 8, fontSize: compact ? 10 : inline ? 11 : 12 }}>
-              <div style={{ width: compact ? 5 : inline ? 6 : 8, height: compact ? 5 : inline ? 6 : 8, borderRadius: '50%', background: statusColors[item.status] || '#555', flexShrink: 0, boxShadow: `0 0 6px ${statusColors[item.status] || '#555'}44` }} />
-              <span style={{ color: '#ccc', minWidth: compact ? 52 : inline ? 60 : 72 }}>{item.status}</span>
-              <span className="m" style={{ color: '#8a8580', fontSize: compact ? 9 : inline ? 10 : 11 }}>{Math.round((item.count / total) * 100)}%</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </>
-  );
-
-  if (inline) return content;
-
-  return (
-    <div style={{
-      background: 'rgba(255,255,255,.03)',
-      border: '1px solid rgba(255,255,255,.07)',
-      borderRadius: 16,
-      padding: '16px 20px',
-      height: '100%',
-      display: 'flex', flexDirection: 'column',
-    }}>
-      {content}
-    </div>
-  );
-}
+const METHOD_LABEL = { manual: 'Bank', flutterwave: 'FW', crypto: 'Crypto', admin: 'Admin' };
+const METHOD_COLOR = { manual: '#a5b4fc', crypto: '#fcd34d', admin: '#f0abfc' };
 
 function DepositFeed({ deposits }) {
   if (!deposits || deposits.length === 0) return (
@@ -331,26 +263,36 @@ function DepositFeed({ deposits }) {
         Recent Deposits
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        {deposits.map((tx, i) => (
-          <div key={tx.id} style={{
-            display: 'flex', alignItems: 'center', gap: 10, padding: '0 4px',
-            borderTop: i > 0 ? '1px solid rgba(255,255,255,.04)' : 'none',
-            animation: `pulse-feed-in .5s ease ${i * 40}ms both`,
-          }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: '#e0a458', boxShadow: '0 0 6px rgba(224,164,88,.4)' }} />
-            <div style={{ flex: 1, fontSize: 12, color: '#f5f3f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
-              {tx.user?.split('@')[0]}
+        {deposits.map((tx, i) => {
+          const mColor = METHOD_COLOR[tx.method] || '#e0a458';
+          return (
+            <div key={tx.id} style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '0 4px',
+              borderTop: i > 0 ? '1px solid rgba(255,255,255,.04)' : 'none',
+              animation: `pulse-feed-in .5s ease ${i * 40}ms both`,
+            }}>
+              <div style={{ fontSize: 9, fontWeight: 600, color: mColor, width: 40, letterSpacing: 0.5, flexShrink: 0 }}>{METHOD_LABEL[tx.method] || tx.method?.charAt(0).toUpperCase() + tx.method?.slice(1) || '—'}</div>
+              <div style={{ flex: 1, fontSize: 11, color: '#f5f3f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
+                {tx.user?.split('@')[0]}
+              </div>
+              <div className="m" style={{ fontSize: 11, color: '#e0a458', whiteSpace: 'nowrap', fontWeight: 600, width: 52, textAlign: 'right', flexShrink: 0 }}>{fmtNaira(tx.amount)}</div>
+              <div style={{ fontSize: 10, color: '#555', whiteSpace: 'nowrap', width: 44, textAlign: 'right', flexShrink: 0 }}>{timeAgo(tx.created)}</div>
             </div>
-            <div className="m" style={{ fontSize: 11, color: '#e0a458', whiteSpace: 'nowrap', fontWeight: 600 }}>{fmtNaira(tx.amount)}</div>
-            <div style={{ fontSize: 10, color: '#555', whiteSpace: 'nowrap', minWidth: 40, textAlign: 'right' }}>{timeAgo(tx.created)}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
 }
 
 // ─── Live feed ──────────────────────────────────────────────────
+function cancelLabel(reason) {
+  if (!reason) return 'by provider';
+  if (reason === 'user_cancelled') return 'by user';
+  if (reason === 'admin_cancelled') return 'by admin';
+  return 'by provider';
+}
+
 function LiveFeed({ orders }) {
   if (!orders || orders.length === 0) return null;
   const statusColors = {
@@ -375,20 +317,24 @@ function LiveFeed({ orders }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         {orders.map((o, i) => (
           <div key={o.id + o.created} style={{
-            display: 'flex', alignItems: 'center', gap: 10, padding: '0 4px',
+            display: 'flex', alignItems: 'center', gap: 8, padding: '0 4px',
             animation: `pulse-feed-in .5s ease ${i * 40}ms both`,
             borderTop: i > 0 ? '1px solid rgba(255,255,255,.04)' : 'none',
           }}>
-            <div style={{
-              width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-              background: statusColors[o.status] || '#555',
-              boxShadow: `0 0 6px ${statusColors[o.status] || '#555'}66`,
-            }} />
-            <div style={{ flex: 1, fontSize: 12, color: '#f5f3f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
-              {o.service}
+            <div style={{ width: 40, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{
+                width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                background: statusColors[o.status] || '#555',
+                boxShadow: `0 0 6px ${statusColors[o.status] || '#555'}66`,
+              }} />
+              <span style={{ fontSize: 9, color: statusColors[o.status] || '#555', fontWeight: 600, letterSpacing: 0.3 }}>{o.status?.slice(0, 4)}</span>
             </div>
-            <div className="m" style={{ fontSize: 11, color: '#c47d8e', whiteSpace: 'nowrap', fontWeight: 600 }}>{fmtNaira(o.charge)}</div>
-            <div style={{ fontSize: 10, color: '#555', whiteSpace: 'nowrap', minWidth: 40, textAlign: 'right' }}>{timeAgo(o.created)}</div>
+            <div style={{ flex: 1, fontSize: 11, color: '#f5f3f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
+              {o.service}
+              {o.status === 'Cancelled' && <span style={{ fontSize: 9, color: '#a1a1aa', fontWeight: 400, marginLeft: 4 }}>({cancelLabel(o.cancelReason)})</span>}
+            </div>
+            <div className="m" style={{ fontSize: 11, color: '#c47d8e', whiteSpace: 'nowrap', fontWeight: 600, width: 52, textAlign: 'right', flexShrink: 0 }}>{fmtNaira(o.charge)}</div>
+            <div style={{ fontSize: 10, color: '#555', whiteSpace: 'nowrap', width: 44, textAlign: 'right', flexShrink: 0 }}>{timeAgo(o.created)}</div>
           </div>
         ))}
       </div>
@@ -524,9 +470,9 @@ export default function PulseDashboard({ secretKey }) {
   if (!data) {
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#080b14', fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif" }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ position: 'relative', width: 64, height: 64, margin: '0 auto 20px' }}>
-            <svg width="64" height="64" viewBox="0 0 1601 1785" style={{ animation: 'pulse-logo-in 1.2s ease both', opacity: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ position: 'relative', width: 80, height: 80, marginBottom: 20 }}>
+            <svg width="80" height="80" viewBox="0 0 1601 1785" style={{ animation: 'pulse-logo-in 1.2s ease both', opacity: 0 }}>
               <path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"
                 fill="url(#pulse-load-grad)" />
               <defs>
@@ -537,7 +483,7 @@ export default function PulseDashboard({ secretKey }) {
               </defs>
             </svg>
             <div style={{
-              position: 'absolute', inset: -8,
+              position: 'absolute', inset: -17,
               border: '2px solid transparent',
               borderTopColor: '#c47d8e',
               borderRightColor: '#a5b4fc',
@@ -584,33 +530,32 @@ export default function PulseDashboard({ secretKey }) {
           <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg,#c47d8e,#8b5e6b)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="11" height="12" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg>
           </div>
-          <div>
-            <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, fontWeight: 700, margin: 0, lineHeight: 1 }}>Pulse</h1>
-          </div>
+          <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, fontWeight: 700, margin: 0, lineHeight: 1 }}>Pulse</h1>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12 }}>
           {error && <span style={{ color: '#fca5a5', animation: 'pulse-blink 1s infinite' }}>Connection lost</span>}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{
-              width: 8, height: 8, borderRadius: '50%',
-              background: error ? '#fca5a5' : '#10b981',
-              animation: error ? 'none' : 'pulse-dot 2s ease-in-out infinite',
-            }} />
-            <span style={{ color: error ? '#fca5a5' : '#10b981', fontWeight: 600, letterSpacing: 1, fontSize: 11 }}>LIVE</span>
+          {data.processing > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(224,164,88,.08)', border: '1px solid rgba(224,164,88,.15)', borderRadius: 6, padding: '3px 8px' }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#e0a458" strokeWidth="2.5" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+              <span className="m" style={{ fontSize: 11, color: '#e0a458', fontWeight: 600 }}>{data.processing}</span>
+            </div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: error ? '#fca5a5' : '#10b981', animation: error ? 'none' : 'pulse-dot 2s ease-in-out infinite' }} />
+            <span style={{ color: error ? '#fca5a5' : '#10b981', fontWeight: 600, letterSpacing: 1, fontSize: 10 }}>LIVE</span>
           </div>
-          <span className="m" style={{ color: '#555', fontSize: 11 }}>{secondsAgo}s</span>
+          <span className="m" style={{ color: '#555', fontSize: 10 }}>{secondsAgo}s</span>
           <button onClick={toggleFullscreen} className="pulse-fs-btn" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 6, padding: '4px 6px', cursor: 'pointer', display: 'flex', alignItems: 'center' }} title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
-            {isFullscreen ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a8580" strokeWidth="2" strokeLinecap="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a8580" strokeWidth="2" strokeLinecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-            )}
+            {isFullscreen
+              ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a8580" strokeWidth="2" strokeLinecap="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+              : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a8580" strokeWidth="2" strokeLinecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            }
           </button>
         </div>
       </div>
 
-      {/* Row 1: Hero counter + metrics */}
-      <div className="pulse-row1" style={{ display: 'grid', gridTemplateColumns: '1.2fr repeat(5, 1fr)', gap: 12, flexShrink: 0 }}>
+      {/* Row 1: Hero + 4 metrics */}
+      <div className="pulse-row1" style={{ display: 'grid', gridTemplateColumns: '1.2fr repeat(4, 1fr)', gap: 10, flexShrink: 0 }}>
         <HeroCounter total={data.totalUsers} today={data.newUsersToday} />
         <MetricCard label="Revenue" value={Math.round(data.revenueToday)} formatter={fmtNaira} color="#10b981"
           sub={<>{changeBadge(data.revenueChange)} vs yesterday</>}
@@ -628,53 +573,41 @@ export default function PulseDashboard({ secretKey }) {
           sub={<>{changeBadge(data.depositsChange)} vs yesterday</>}
           icon={<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#e0a458" strokeWidth="2.5" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>}
         />
-        <MetricCard label="Processing" value={data.processing} color="#e0a458"
-          sub="active orders"
-          icon={<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#e0a458" strokeWidth="2.5" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>}
-        />
       </div>
 
+      <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent)', margin: '2px 0' }} />
+
       {/* Row 2: Sparklines */}
-      <div className="pulse-row2" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, flexShrink: 0 }}>
-        <Sparkline label="New Users" data={data.chartData.map(d => d.newUsers)} color="#a5b4fc" area />
+      <div className="pulse-row2" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, flexShrink: 0 }}>
         <Sparkline label="Revenue" data={data.chartData.map(d => d.revenue)} color="#10b981" area />
-        <Sparkline label="Profit" data={data.chartData.map(d => d.profit)} color="#34d399" area />
         <Sparkline label="Orders" data={data.chartData.map(d => d.orders)} color="#c47d8e" area />
         <Sparkline label="Deposits" data={data.chartData.map(d => d.deposits)} color="#e0a458" area />
       </div>
 
-      {/* Row 2.5: Month-to-date + User Activity */}
-      <div className="pulse-row25" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, flexShrink: 0 }}>
-        <div style={{
-          background: 'rgba(255,255,255,.03)',
-          border: '1px solid rgba(255,255,255,.07)',
-          borderRadius: 12,
-          padding: '10px 16px',
-        }}>
+      <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent)', margin: '2px 0' }} />
+
+      {/* Row 3: Month summary + Users & Funnel + Quick stats */}
+      <div className="pulse-row3-summary" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, flexShrink: 0 }}>
+        {/* Month to Date */}
+        <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 12, padding: '10px 14px' }}>
           <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 8 }}>Month to Date</div>
-          <div className="pulse-mtd-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             {[
               { label: 'Revenue', value: fmtNaira(Math.round(data.monthRevenue)), color: '#10b981' },
               { label: 'Cost', value: fmtNaira(Math.round(data.monthCost)), color: '#fca5a5' },
               { label: 'Profit', value: (data.monthProfit < 0 ? '-' : '') + fmtNaira(Math.abs(Math.round(data.monthProfit))), color: data.monthProfit < 0 ? '#fca5a5' : '#34d399' },
               { label: 'Orders', value: fmtNum(data.monthOrders), color: '#c47d8e' },
-              { label: 'Deposits', value: fmtNaira(Math.round(data.monthDeposits)), color: '#e0a458' },
             ].map(s => (
-              <div key={s.label} style={{ textAlign: 'center' }}>
-                <div className="m" style={{ fontSize: 15, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
-                <div style={{ fontSize: 9, color: '#8a8580', marginTop: 2 }}>{s.label}</div>
+              <div key={s.label}>
+                <div className="m" style={{ fontSize: 14, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
+                <div style={{ fontSize: 9, color: '#8a8580', marginTop: 1 }}>{s.label}</div>
               </div>
             ))}
           </div>
           {data.monthRevenue > 0 && (
-            <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%', borderRadius: 2,
-                  background: data.monthProfit < 0 ? 'linear-gradient(90deg, #fca5a5, #f87171)' : 'linear-gradient(90deg, #34d399, #10b981)',
-                  width: `${Math.max(0, Math.min(100, Math.abs((data.monthProfit / data.monthRevenue) * 100)))}%`,
-                  transition: 'width 1s ease',
-                }} />
+                <div style={{ height: '100%', borderRadius: 2, background: data.monthProfit < 0 ? 'linear-gradient(90deg, #fca5a5, #f87171)' : 'linear-gradient(90deg, #34d399, #10b981)', width: `${Math.max(0, Math.min(100, Math.abs((data.monthProfit / data.monthRevenue) * 100)))}%`, transition: 'width 1s ease' }} />
               </div>
               <span className="m" style={{ fontSize: 10, color: data.monthProfit < 0 ? '#fca5a5' : '#34d399', fontWeight: 600, whiteSpace: 'nowrap' }}>
                 {Math.round((data.monthProfit / data.monthRevenue) * 100)}% margin
@@ -682,57 +615,77 @@ export default function PulseDashboard({ secretKey }) {
             </div>
           )}
         </div>
-        <div style={{
-          background: 'rgba(255,255,255,.03)',
-          border: '1px solid rgba(255,255,255,.07)',
-          borderRadius: 12,
-          padding: '10px 16px',
-        }}>
-          <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 8 }}>User Activity</div>
-          <div className="pulse-ua-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+
+        {/* Users & Conversion Funnel */}
+        <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 12, padding: '10px 14px' }}>
+          <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 8 }}>Users & Conversion</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             {[
-              { label: 'Total Users', value: fmtNum(data.totalUsers), color: '#a5b4fc' },
               { label: 'New This Month', value: fmtNum(data.monthNewUsers), color: '#6ee7b7' },
               { label: 'Active Orderers', value: fmtNum(data.monthActiveUsers), color: '#c47d8e' },
+              { label: 'Depositors', value: fmtNum(data.monthDepositors || 0), color: '#e0a458' },
               { label: 'Idle w/ Balance', value: fmtNum(data.idleUsersWithBalance), color: '#fcd34d' },
             ].map(s => (
-              <div key={s.label} style={{ textAlign: 'center' }}>
-                <div className="m" style={{ fontSize: 15, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
-                <div style={{ fontSize: 9, color: '#8a8580', marginTop: 2 }}>{s.label}</div>
+              <div key={s.label}>
+                <div className="m" style={{ fontSize: 14, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
+                <div style={{ fontSize: 9, color: '#8a8580', marginTop: 1 }}>{s.label}</div>
               </div>
             ))}
           </div>
-          {data.totalUsers > 0 && (() => {
+          {data.monthActiveUsers > 0 && (() => {
             const repeatUsers = data.monthRepeatUsers || 0;
-            const repeatPct = data.monthActiveUsers > 0 ? Math.round((repeatUsers / data.monthActiveUsers) * 100) : 0;
+            const repeatPct = Math.round((repeatUsers / data.monthActiveUsers) * 100);
             return (
-              <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.05)', overflow: 'hidden', display: 'flex' }}>
                   <div style={{ height: '100%', background: '#c47d8e', width: `${repeatPct}%`, transition: 'width 1s ease' }} />
                   <div style={{ height: '100%', background: '#6ee7b7', width: `${100 - repeatPct}%`, transition: 'width 1s ease' }} />
                 </div>
-                <span className="m" style={{ fontSize: 10, color: '#c47d8e', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                  {repeatPct}% repeat
-                </span>
+                <span className="m" style={{ fontSize: 10, color: '#c47d8e', fontWeight: 600, whiteSpace: 'nowrap' }}>{repeatPct}% repeat</span>
               </div>
             );
           })()}
         </div>
+
+        {/* Quick Stats */}
+        <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 12, padding: '10px 14px' }}>
+          <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 8 }}>Key Metrics</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            {(() => {
+              const aov = data.monthOrders > 0 ? Math.round(data.monthRevenue / data.monthOrders) : 0;
+              const totalStatus = (data.byStatus || []).reduce((s, i) => s + i.count, 0);
+              const cancelled = (data.byStatus || []).reduce((s, i) => ['Cancelled', 'Failed', 'Rejected'].includes(i.status) ? s + i.count : s, 0);
+              const cancelRate = totalStatus > 0 ? Math.round((cancelled / totalStatus) * 100) : 0;
+              const convRate = data.monthNewUsers > 0 ? Math.round((data.monthActiveUsers / data.monthNewUsers) * 100) : 0;
+              const avgDeposit = (data.monthDepositors || 0) > 0 ? Math.round(data.monthDeposits / data.monthDepositors) : 0;
+              const payoutTotal = data.monthPayouts ? Object.values(data.monthPayouts).reduce((s, v) => s + v, 0) : 0;
+              const outflows = payoutTotal + (data.welcomeBonus?.total || 0);
+              return [
+                { label: 'Avg Order', value: fmtNaira(aov), color: '#a5b4fc' },
+                { label: 'Avg Deposit', value: fmtNaira(avgDeposit), color: '#e0a458' },
+                { label: 'Conversion', value: convRate + '%', color: convRate > 20 ? '#6ee7b7' : '#fcd34d' },
+                { label: 'Cancel Rate', value: cancelRate + '%', color: cancelRate > 10 ? '#fca5a5' : '#6ee7b7' },
+                { label: 'Outflows', value: fmtNaira(Math.round(outflows)), color: '#fca5a5' },
+                { label: 'Welcome Bonuses', value: fmtNaira(data.welcomeBonus?.total || 0), color: '#6ee7b7' },
+              ];
+            })().map(s => (
+              <div key={s.label}>
+                <div className="m" style={{ fontSize: 14, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
+                <div style={{ fontSize: 9, color: '#8a8580', marginTop: 1 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Row 3: Breakdowns */}
-      <div className="pulse-row3" style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr', gap: 8, flex: 1, minHeight: 0 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{
-            background: 'rgba(255,255,255,.03)',
-            border: '1px solid rgba(255,255,255,.07)',
-            borderRadius: 12,
-            padding: '12px 16px',
-            flex: 7,
-            display: 'flex', flexDirection: 'column',
-          }}>
+      <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent)', margin: '2px 0' }} />
+
+      {/* Row 4: Platforms + Status | Live Feed | Deposits */}
+      <div className="pulse-row4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, flex: 1, minHeight: 0 }}>
+        <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: 8 }}>
+          <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column' }}>
             <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 10 }}>Top Platforms</div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8 }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6 }}>
               {(data.topPlatforms || []).map((item, i) => {
                 const maxVal = Math.max(...data.topPlatforms.map(p => p.orders), 1);
                 const totalOrders = data.topPlatforms.reduce((s, p) => s + p.orders, 0);
@@ -740,12 +693,12 @@ export default function PulseDashboard({ secretKey }) {
                 const colors = ['#c47d8e', '#a5b4fc', '#e0a458', '#6ee7b7', '#fca5a5'];
                 return (
                   <div key={item.name}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 3 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 2 }}>
                       <span style={{ color: '#f5f3f0', fontWeight: 500 }}>{item.name}</span>
                       <span className="m" style={{ color: colors[i % colors.length], fontSize: 10 }}>{pct}%</span>
                     </div>
-                    <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', borderRadius: 3, background: `linear-gradient(90deg, ${colors[i % colors.length]}, ${colors[i % colors.length]}88)`, width: `${(item.orders / maxVal) * 100}%`, transition: 'width 1s ease', boxShadow: `0 0 12px ${colors[i % colors.length]}33` }} />
+                    <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', borderRadius: 2, background: `linear-gradient(90deg, ${colors[i % colors.length]}, ${colors[i % colors.length]}88)`, width: `${(item.orders / maxVal) * 100}%`, transition: 'width 1s ease' }} />
                     </div>
                   </div>
                 );
@@ -753,26 +706,46 @@ export default function PulseDashboard({ secretKey }) {
             </div>
           </div>
           {(() => {
+            const statusColors = {
+              Completed: '#6ee7b7', Processing: '#a5b4fc', Pending: '#fcd34d',
+              Partial: '#fdba74', Cancelled: '#a1a1aa',
+            };
+            const items = (data.byStatus || []).reduce((acc, s) => {
+              if (s.status === 'Failed' || s.status === 'Rejected') {
+                const existing = acc.find(a => a.status === 'Cancelled');
+                if (existing) existing.count += s.count;
+                else acc.push({ status: 'Cancelled', count: s.count });
+              } else acc.push({ ...s });
+              return acc;
+            }, []);
+            const total = items.reduce((s, i) => s + i.count, 0) || 1;
             return (
-              <div style={{
-                background: 'rgba(255,255,255,.03)',
-                border: '1px solid rgba(255,255,255,.07)',
-                borderRadius: 12,
-                padding: '10px 14px',
-                flex: 3,
-              }}>
-                <DonutChart items={(data.byStatus || []).reduce((acc, s) => {
-                  if (s.status === 'Failed' || s.status === 'Rejected') {
-                    const existing = acc.find(a => a.status === 'Cancelled');
-                    if (existing) existing.count += s.count;
-                    else acc.push({ status: 'Cancelled', count: s.count });
-                  } else acc.push({ ...s });
-                  return acc;
-                }, [])} label="Order Status" inline />
+              <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 12, padding: '10px 14px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600 }}>Order Status</div>
+                  <div className="m" style={{ fontSize: 11, color: '#f5f3f0', fontWeight: 700 }}>{total.toLocaleString()}</div>
+                </div>
+                <div style={{ height: 8, borderRadius: 4, overflow: 'hidden', display: 'flex', background: 'rgba(255,255,255,.05)', marginBottom: 8 }}>
+                  {items.map(item => (
+                    <div key={item.status} style={{
+                      width: `${(item.count / total) * 100}%`,
+                      background: statusColors[item.status] || '#555',
+                      transition: 'width 1s ease',
+                    }} />
+                  ))}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px 12px' }}>
+                  {items.map(item => (
+                    <div key={item.status} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: statusColors[item.status] || '#555', boxShadow: `0 0 4px ${statusColors[item.status] || '#555'}44` }} />
+                      <span style={{ color: '#ddd', fontWeight: 500 }}>{item.status}</span>
+                      <span className="m" style={{ color: statusColors[item.status] || '#8a8580', fontSize: 10, fontWeight: 600 }}>{Math.round((item.count / total) * 100)}%</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             );
           })()}
-          <PayoutFeed payouts={data.recentPayouts} monthPayouts={data.monthPayouts} />
         </div>
         <LiveFeed orders={data.recentOrders} />
         <DepositFeed deposits={data.recentDeposits} />
@@ -811,13 +784,10 @@ export default function PulseDashboard({ secretKey }) {
           .pulse-fs-btn { display: none !important; }
           .pulse-row1 { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
           .pulse-row1 > :first-child { grid-column: 1 / -1; }
-          .pulse-row2 { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-          .pulse-row2 > :last-child { grid-column: 1 / -1; }
-          .pulse-row25 { grid-template-columns: 1fr !important; }
-          .pulse-mtd-grid { grid-template-columns: repeat(3, 1fr) !important; }
-          .pulse-ua-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          .pulse-row3 { grid-template-columns: 1fr !important; flex: none !important; }
-          .pulse-row3 > * { min-height: 200px; }
+          .pulse-row2 { grid-template-columns: 1fr !important; gap: 8px !important; }
+          .pulse-row3-summary { grid-template-columns: 1fr !important; }
+          .pulse-row4 { grid-template-columns: 1fr !important; flex: none !important; }
+          .pulse-row4 > * { min-height: 200px; }
         }
       `}</style>
     </div>

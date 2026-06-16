@@ -42,6 +42,8 @@ export async function GET(req) {
       payoutRows,
       recentPayouts,
       partialToday, partialYesterday, partialMonth,
+      welcomeBonusResult,
+      monthDepositorsResult,
     ] = await Promise.all([
       prisma.user.count({ where: { emailVerified: true } }),
       prisma.user.count({ where: { createdAt: { gte: todayStart }, emailVerified: true } }),
@@ -82,7 +84,7 @@ export async function GET(req) {
       prisma.order.findMany({
         where: { deletedAt: null },
         orderBy: { createdAt: 'desc' },
-        take: 15,
+        take: 10,
         include: {
           user: { select: { name: true, email: true } },
           service: { select: { name: true, category: true } },
@@ -92,7 +94,7 @@ export async function GET(req) {
       prisma.transaction.findMany({
         where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed' },
         orderBy: { createdAt: 'desc' },
-        take: 15,
+        take: 10,
         include: { user: { select: { name: true, email: true } } },
       }),
       prisma.order.findMany({
@@ -134,13 +136,24 @@ export async function GET(req) {
       prisma.transaction.findMany({
         where: { type: { in: ['admin_gift', 'referral', 'bonus', 'game_reward', 'video_reward'] }, status: 'Completed' },
         orderBy: { createdAt: 'desc' },
-        take: 15,
+        take: 10,
         include: { user: { select: { name: true, email: true } } },
       }),
       // Partial order adjustments
       prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
       prisma.order.findMany({ where: { createdAt: { gte: yesterdayStart, lt: yesterdaySameTime }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
       prisma.order.findMany({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
+      prisma.$queryRaw`
+        SELECT COUNT(*)::int AS count, COALESCE(SUM(amount), 0)::int AS total
+        FROM transactions
+        WHERE status = 'Completed' AND "createdAt" >= ${monthStart}
+          AND type = 'bonus' AND note ILIKE '%Welcome bonus%'
+      `,
+      prisma.$queryRaw`
+        SELECT COUNT(DISTINCT "userId")::int AS count
+        FROM transactions
+        WHERE type IN ('deposit', 'admin_credit') AND status = 'Completed' AND "createdAt" >= ${monthStart}
+      `,
     ]);
 
     const pctChange = (today, yesterday) => {
@@ -265,6 +278,7 @@ export async function GET(req) {
         user: o.user?.name || o.user?.email || 'Unknown',
         charge: (o.charge || 0) / 100,
         status: o.status,
+        cancelReason: o.status === 'Cancelled' ? (o.lastError || null) : null,
         created: o.createdAt.toISOString(),
       })),
       recentDeposits: recentDeposits.map(tx => ({
@@ -286,6 +300,8 @@ export async function GET(req) {
         reference: tx.reference || '',
         created: tx.createdAt.toISOString(),
       })),
+      welcomeBonus: { count: welcomeBonusResult[0]?.count || 0, total: (welcomeBonusResult[0]?.total || 0) / 100 },
+      monthDepositors: monthDepositorsResult[0]?.count || 0,
       generatedAt: now.toISOString(),
     });
   } catch (err) {
