@@ -839,6 +839,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong"); setOrderLoading(false); return; }
       setOrderSuccess({ ...data.order, queued: data.queued, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", speed: selTier?.speed || null, tier: selTier?.tier || null, link: link.trim(), balanceAfter: data.order?.charge != null && user?.balance != null ? Math.max(0, user.balance - data.order.charge) : null });
       if (typeof window.fbq === "function") fbq("track", "Purchase", { value: data.order?.charge || 0, currency: "NGN", content_name: selSvc?.name || "Order", content_category: platform || "unknown" }, { eventID: data.eventId });
+      if (typeof window.gtag === "function") gtag("event", "conversion", { send_to: "AW-18121451903/9P3HCL_TlaMcEP_S_cBD", transaction_id: data.order?.id || "" });
       setLink("");
       if (onOrderSuccess) onOrderSuccess();
     } catch (err) {
@@ -948,6 +949,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       sessionStorage.removeItem("nitro_bulk_pending_key");
       setBulkSuccess({ ...data, rows: cartRows.map(r => ({ ...r })) });
       if (typeof window.fbq === "function") fbq("track", "Purchase", { value: data.totalCharge || 0, currency: "NGN", content_name: "Bulk Order", num_items: data.total || cartRows.length }, { eventID: data.eventId });
+      if (typeof window.gtag === "function") gtag("event", "conversion", { send_to: "AW-18121451903/9P3HCL_TlaMcEP_S_cBD", transaction_id: data.batchId || "" });
       setCartRows([]);
       localStorage.removeItem(CART_KEY);
       if (onOrderSuccess) onOrderSuccess();
