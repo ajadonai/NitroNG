@@ -263,7 +263,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
               <a href={SITE.status} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between no-underline py-0.5">
                 <div className="flex items-center gap-2.5">
                   <div className="w-2 h-2 rounded-full bg-[#34d399] shrink-0" />
-                  <span className="text-sm font-medium" style={{ color: t.text }}>All systems operational</span>
+                  <span className="text-sm font-medium whitespace-nowrap" style={{ color: t.text }}>All systems operational</span>
                 </div>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               </a>

@@ -58,7 +58,7 @@ export async function POST(req) {
     const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (existing) {
       if (existing.status === 'PendingDeletion') {
-        return error('This email is associated with an account scheduled for deletion. Contact support@nitro.ng to reinstate it.');
+        return error('Account pending deletion. Contact support@nitro.ng.');
       }
       return error('An account with this email already exists');
     }

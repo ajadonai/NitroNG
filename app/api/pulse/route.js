@@ -37,6 +37,7 @@ export async function GET(req) {
       chartOrders, chartDeposits, chartUsers,
       recentOrders, recentDeposits,
       monthOrdererIds,
+      monthRepeatResult,
       idleUsers,
       payoutRows,
       recentPayouts,
@@ -99,6 +100,15 @@ export async function GET(req) {
         select: { userId: true },
         distinct: ['userId'],
       }),
+      prisma.$queryRaw`
+        SELECT COUNT(DISTINCT o."userId")::int AS count
+        FROM orders o
+        WHERE o."createdAt" >= ${monthStart} AND o."deletedAt" IS NULL
+          AND EXISTS (
+            SELECT 1 FROM orders p
+            WHERE p."userId" = o."userId" AND p."createdAt" < ${monthStart} AND p."deletedAt" IS NULL
+          )
+      `,
       prisma.user.count({
         where: { emailVerified: true, balance: { gt: 0 }, orders: { none: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null } } },
       }),
@@ -243,6 +253,7 @@ export async function GET(req) {
       monthDeposits: (monthDepositsAgg._sum.amount || 0) / 100,
       monthNewUsers,
       monthActiveUsers: monthOrdererIds.length,
+      monthRepeatUsers: monthRepeatResult[0]?.count || 0,
       idleUsersWithBalance: idleUsers,
       chartData,
       topPlatforms,
