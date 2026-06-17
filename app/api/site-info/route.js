@@ -19,8 +19,22 @@ export async function GET() {
 
     const USER_BASE = 1145;
     const ORDER_BASE = 19961;
+    const PROCESSING_BASE = 20;
     const displayUsers = userCount + USER_BASE;
     const displayOrders = orderCount + ORDER_BASE;
+
+    let deliveryRate, processingCount;
+    try {
+      const [statusBreakdown, liveProcessing] = await Promise.all([
+        prisma.order.groupBy({ by: ['status'], where: { deletedAt: null, status: { in: ['Completed', 'Partial', 'Cancelled'] } }, _count: true }),
+        prisma.order.count({ where: { status: 'Processing', deletedAt: null } }),
+      ]);
+      const counts = {};
+      statusBreakdown.forEach(s => { counts[s.status] = s._count; });
+      const denom = (counts.Completed || 0) + (counts.Partial || 0) + (counts.Cancelled || 0);
+      if (denom > 0) deliveryRate = Math.max(90, Math.round(((counts.Completed || 0) / denom) * 100));
+      processingCount = liveProcessing + PROCESSING_BASE;
+    } catch {}
 
     let promo = null;
     try {
@@ -55,6 +69,8 @@ export async function GET() {
         orders: displayOrders >= 1000000 ? `${(displayOrders / 1000000).toFixed(1)}M+` : displayOrders >= 1000 ? `${Math.floor(displayOrders / 1000)}K+` : `${displayOrders}+`,
         platforms: platformCount || 0,
         services: serviceCount || 0,
+        ...(deliveryRate != null ? { deliveryRate } : {}),
+        ...(processingCount != null ? { processing: processingCount } : {}),
       },
       promo,
       alerts,

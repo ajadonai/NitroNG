@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { applyWelcomeBonus } from '@/lib/welcome-bonus';
-import { sendEvent, generateEventId } from '@/lib/meta-capi';
+import { sendEvent } from '@/lib/meta-capi';
 
 export async function POST(req) {
   try {
@@ -100,7 +100,7 @@ export async function POST(req) {
 
       try {
         const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true } });
-        if (u) sendEvent('AddPaymentInfo', { eventId: generateEventId(), email: u.email, externalId: tx.userId, customData: { value: amountKobo / 100, currency: 'NGN' } });
+        if (u) sendEvent('AddPaymentInfo', { eventId: `apinfo_${reference}`, email: u.email, externalId: tx.userId, customData: { value: amountKobo / 100, currency: 'NGN' } });
       } catch {}
 
       // Deferred referral bonus

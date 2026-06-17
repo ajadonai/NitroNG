@@ -26,6 +26,13 @@ export async function GET(req) {
     const expiredManual = expiredAbandoned + expiredUnprocessed;
     if (expiredManual > 0) log.info('Cleanup', `Deleted ${expiredAbandoned} abandoned + ${expiredUnprocessed} unprocessed manual deposits`);
 
+    // Clear expired password reset tokens
+    const { count: clearedTokens } = await prisma.user.updateMany({
+      where: { resetToken: { not: null }, resetExpires: { lt: new Date() } },
+      data: { resetToken: null, resetExpires: null },
+    });
+    if (clearedTokens > 0) log.info('Cleanup', `Cleared ${clearedTokens} expired reset tokens`);
+
     // ═══ PERMANENT DELETION — users past their 30-day deletion window ═══
     const pendingUsers = await prisma.user.findMany({
       where: {
@@ -76,6 +83,7 @@ export async function GET(req) {
     return Response.json({
       permanentlyDeleted: permDeleted,
       expiredManualDeposits: expiredManual,
+      clearedResetTokens: clearedTokens,
     });
   } catch (err) {
     log.error('Cleanup', err.message);

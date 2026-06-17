@@ -6,7 +6,7 @@ import { generateReferralCode } from '@/lib/utils';
 import { sendWelcomeEmail } from '@/lib/email';
 import { isDisposableEmail } from '@/lib/validate';
 import { cookies, headers } from 'next/headers';
-import { sendEvent, generateEventId, parseFbCookies } from '@/lib/meta-capi';
+import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 
 export async function GET(req) {
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -168,7 +168,7 @@ export async function GET(req) {
     }
 
     if (isNewUser) {
-      const eventId = generateEventId();
+      const eventId = `reg_${user.id}`;
       const hdrs2 = await headers();
       const { fbp, fbc } = parseFbCookies(hdrs2.get('cookie'));
       sendEvent('CompleteRegistration', {

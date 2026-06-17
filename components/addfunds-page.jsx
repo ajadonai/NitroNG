@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
+import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 
 const TX_META = {
@@ -36,26 +37,6 @@ function txDesc(tx) {
 }
 
 const PRESETS = [1000, 2000, 5000, 10000, 20000, 50000];
-
-const BONUS_PRESETS = [
-  { amount: 2500,  bonus: 500 },
-  { amount: 5000,  bonus: 1200, tag: 'Best value' },
-  { amount: 10000, bonus: 3000 },
-];
-
-function bonusForNaira(naira) {
-  if (naira >= 10000) return 3000;
-  if (naira >= 5000) return 1200;
-  if (naira >= 2500) return 500;
-  return 0;
-}
-
-function nextBonusTier(naira) {
-  if (naira < 2500) return { min: 2500, bonus: 500 };
-  if (naira < 5000) return { min: 5000, bonus: 1200 };
-  if (naira < 10000) return { min: 10000, bonus: 3000 };
-  return null;
-}
 
 const ACCEPTED_TYPES = [
   { label: "Cards", short: "Cards", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },
@@ -276,8 +257,10 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
   const amountInput = (
     <>
       {welcomeEligible && (
-        <div className="flex items-start gap-3 rounded-xl p-3.5 mb-4" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.06)', border: `1px solid ${dark ? 'rgba(196,125,142,.2)' : 'rgba(196,125,142,.15)'}` }}>
-          <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0 }}>🎁</span>
+        <div className="flex items-center gap-3 rounded-xl p-3.5 mb-4" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.06)', border: `1px solid ${dark ? 'rgba(196,125,142,.2)' : 'rgba(196,125,142,.15)'}` }}>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(196,125,142,.18)' : 'rgba(196,125,142,.12)' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
+          </div>
           <div>
             <div className="text-[13px] font-semibold" style={{ color: t.accent }}>Welcome bonus</div>
             <div className="text-[12.5px] mt-0.5" style={{ color: t.textSoft, lineHeight: 1.45 }}>Your first deposit earns up to ₦3,000 free. The more you add, the bigger the bonus.</div>

@@ -8,7 +8,7 @@ import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { sendEmail, batchPlacementEmail } from '@/lib/email';
 import { cleanLink } from '@/lib/clean-link';
 import { calculateIntradayDrip, getDripConfig } from '@/lib/drip-feed';
-import { sendEvent, generateEventId, parseFbCookies } from '@/lib/meta-capi';
+import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
 
 async function nextOrderIds(tx, count) {
@@ -44,7 +44,7 @@ async function nextBatchId() {
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-const NITRO_MINS = { followers: 100, likes: 50, views: 500, comments: 10, engagement: 50, plays: 500, reviews: 10 };
+const NITRO_MINS = { followers: 100, likes: 100, views: 500, comments: 10, engagement: 50, plays: 500, reviews: 10 };
 
 async function dispatchBatch(createdOrders, userId, batchId, totalCharge) {
   let placed = 0;
@@ -645,7 +645,7 @@ export async function POST(req) {
       }
     }
 
-    const eventId = generateEventId();
+    const eventId = batchId ? `purchase_${batchId}` : `purchase_${result.createdOrders[0]?.orderId || Date.now()}`;
     const hdrs = await getHeaders();
     const { fbp, fbc } = parseFbCookies(hdrs.get('cookie'));
     sendEvent('Purchase', {

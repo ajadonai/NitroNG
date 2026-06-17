@@ -6,7 +6,7 @@ import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { cleanLink } from '@/lib/clean-link';
 import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig } from '@/lib/drip-feed';
-import { sendEvent, generateEventId, parseFbCookies } from '@/lib/meta-capi';
+import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
 
 async function nextOrderId(tx) {
@@ -438,7 +438,7 @@ export async function POST(req) {
       }
       tierName = `${tier.group.name} (${tier.tier})`;
       // Nitro minimum order floors
-      const NITRO_MINS = { followers: 100, likes: 50, views: 500, comments: 10, engagement: 50, plays: 500, reviews: 10 };
+      const NITRO_MINS = { followers: 100, likes: 100, views: 500, comments: 10, engagement: 50, plays: 500, reviews: 10 };
       const nitroMin = NITRO_MINS[tier.group.type?.toLowerCase()] || 50;
       const effectiveMin = Math.max(service.min, nitroMin);
       qty = Math.floor(Number(quantity));
@@ -792,7 +792,7 @@ export async function POST(req) {
       }
     }
 
-    const eventId = generateEventId();
+    const eventId = `purchase_${orderId}`;
     const hdrs2 = await getHeaders();
     const { fbp, fbc } = parseFbCookies(hdrs2.get('cookie'));
     sendEvent('Purchase', {

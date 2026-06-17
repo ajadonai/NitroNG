@@ -54,7 +54,7 @@ export async function GET(req, { params }) {
     const country = hdrs.get('x-vercel-ip-country') || null;
     const city = hdrs.get('x-vercel-ip-city') ? decodeURIComponent(hdrs.get('x-vercel-ip-city')) : null;
 
-    const UAParser = (await import('ua-parser-js')).default;
+    const UAParser = (await import('ua-parser-js')).UAParser;
     const parser = new UAParser(ua);
     const device = parser.getDevice();
     const browserInfo = parser.getBrowser();

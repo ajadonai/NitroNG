@@ -88,8 +88,8 @@ export default function AdminUsersPage({ dark, t }) {
   };
 
   const handleBan = async (user) => {
-    if (user.status === "PendingDeletion") {
-      const ok = await confirm({ title: "Reinstate Account", message: `Reinstate ${user.deletedName || user.name}'s account (${user.deletedEmail || user.email})? They will be able to log in again.`, confirmLabel: "Reinstate", danger: false });
+    if (user.status === "PendingDeletion" || user.status === "Deleted") {
+      const ok = await confirm({ title: "Restore Account", message: `Restore ${user.deletedName || user.name}'s account (${user.deletedEmail || user.email})? They will be able to log in again.`, confirmLabel: "Restore", danger: false });
       if (ok) doAction(user.id, "reinstate");
     } else {
       const ok = await confirm({ title: user.status === "Active" ? "Ban User" : "Activate User", message: user.status === "Active" ? `Are you sure you want to ban ${user.name} (${user.email})? They will lose access to their account.` : `Reactivate ${user.name}'s account?`, confirmLabel: user.status === "Active" ? "Ban User" : "Activate", danger: user.status === "Active" });
@@ -259,7 +259,7 @@ export default function AdminUsersPage({ dark, t }) {
                   <div className="flex gap-1.5 shrink-0 max-md:w-full max-md:mt-1 max-md:pl-[38px] flex-wrap">
                     <button onClick={() => viewTransactions(u)} className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${txUser?.id === u.id ? t.accent : t.cardBorder}`, background: txUser?.id === u.id ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.06)") : "none", color: txUser?.id === u.id ? t.accent : t.textSoft }}>Txns</button>
                     {!isDeleted && <button onClick={() => setCreditId(creditId === u.id ? null : u.id)} className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${creditId === u.id ? t.accent : t.cardBorder}`, background: creditId === u.id ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.06)") : "none", color: t.accent }}>Credit</button>}
-                    {!isDeleted && <button onClick={() => handleBan(u)} className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${u.status === "PendingDeletion" ? (dark ? "rgba(110,231,183,.28)" : "rgba(5,150,105,.24)") : (dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)")}`, background: "none", color: u.status === "PendingDeletion" ? t.green : (u.status === "Active" ? (dark ? "#fca5a5" : "#dc2626") : t.green) }}>{u.status === "PendingDeletion" ? "Reinstate" : (u.status === "Active" ? "Ban" : "Activate")}</button>}
+                    <button onClick={() => handleBan(u)} className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${isDeleted ? (dark ? "rgba(110,231,183,.28)" : "rgba(5,150,105,.24)") : (dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)")}`, background: "none", color: isDeleted ? t.green : (u.status === "Active" ? (dark ? "#fca5a5" : "#dc2626") : t.green) }}>{isDeleted ? "Restore" : (u.status === "Active" ? "Ban" : "Activate")}</button>
                     {!isDeleted && <button onClick={() => { setTicketMsg(`Hi ${u.name || "there"}, `); setTicketPrompt(u); }} className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${dark ? "rgba(224,164,88,.28)" : "rgba(224,164,88,.24)"}`, background: "none", color: dark ? "#e0a458" : "#b45309" }}>Ticket</button>}
                   </div>
                 </div>
