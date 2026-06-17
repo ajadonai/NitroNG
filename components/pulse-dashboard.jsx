@@ -513,7 +513,7 @@ export default function PulseDashboard({ secretKey }) {
 
   return (
     <div ref={containerRef} className="pulse-container" style={{
-      minHeight: '100dvh',
+      height: '100dvh',
       background: '#080b14',
       color: '#f5f3f0',
       fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif",
@@ -521,7 +521,7 @@ export default function PulseDashboard({ secretKey }) {
       display: 'flex',
       flexDirection: 'column',
       gap: 8,
-      overflow: 'auto',
+      overflow: 'hidden',
       animation: 'pulse-bg 20s ease infinite',
     }}>
       <RefreshBar secondsAgo={secondsAgo} />
@@ -787,7 +787,7 @@ export default function PulseDashboard({ secretKey }) {
         .pulse-feed-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 2px; }
         .pulse-feed-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.2); }
         @media (max-width: 768px) {
-          .pulse-container { overflow: auto !important; padding: 12px 10px !important; gap: 10px !important; }
+          .pulse-container { height: auto !important; min-height: 100dvh !important; overflow: auto !important; padding: 12px 10px !important; gap: 10px !important; }
           .pulse-fs-btn { display: none !important; }
           .pulse-row1 { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
           .pulse-row1 > :first-child { grid-column: 1 / -1; }
