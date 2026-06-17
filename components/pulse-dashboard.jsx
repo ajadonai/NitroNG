@@ -263,12 +263,12 @@ function DepositFeed({ deposits }) {
         Recent Deposits
         <span className="m" style={{ marginLeft: 'auto', fontSize: 9, color: '#555', fontWeight: 500 }}>{deposits.length}</span>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }} className="pulse-feed-scroll">
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} className="pulse-feed-scroll">
         {deposits.map((tx, i) => {
           const mColor = METHOD_COLOR[tx.method] || '#e0a458';
           return (
             <div key={tx.id} style={{
-              display: 'flex', alignItems: 'center', gap: 8, padding: '3px 4px',
+              display: 'flex', alignItems: 'center', gap: 8, padding: '0 4px',
               borderTop: i > 0 ? '1px solid rgba(255,255,255,.04)' : 'none',
               animation: i < 20 ? `pulse-feed-in .5s ease ${i * 40}ms both` : undefined,
             }}>
@@ -316,10 +316,10 @@ function LiveFeed({ orders }) {
         Live Feed
         <span className="m" style={{ marginLeft: 'auto', fontSize: 9, color: '#555', fontWeight: 500 }}>{orders.length}</span>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }} className="pulse-feed-scroll">
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} className="pulse-feed-scroll">
         {orders.map((o, i) => (
           <div key={o.id + o.created} style={{
-            display: 'flex', alignItems: 'center', gap: 8, padding: '3px 4px',
+            display: 'flex', alignItems: 'center', gap: 8, padding: '0 4px',
             animation: i < 20 ? `pulse-feed-in .5s ease ${i * 40}ms both` : undefined,
             borderTop: i > 0 ? '1px solid rgba(255,255,255,.04)' : 'none',
           }}>
