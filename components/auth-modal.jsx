@@ -55,7 +55,7 @@ function PwStrength({ pw, t }) {
   );
 }
 
-function AuthModal({ dark, t, mode, setMode, onClose, prefill, via }) {
+function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: resetTokenProp }) {
   const [method, setMethod] = useState('email');
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
@@ -76,16 +76,8 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via }) {
   const [refCode, setRefCode] = useState('');
   const [agree, setAgree] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
-  const [resetToken, setResetToken] = useState('');
+  const [resetToken, setResetToken] = useState(resetTokenProp || '');
   const [resetDone, setResetDone] = useState(false);
-
-  useEffect(() => {
-    if (mode === 'reset') {
-      const p = new URLSearchParams(window.location.search);
-      const tok = p.get('reset');
-      if (tok) setResetToken(tok);
-    }
-  }, [mode]);
 
   useEffect(() => {
     setAuthLoading(false);
