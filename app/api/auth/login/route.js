@@ -35,7 +35,7 @@ export async function POST(req) {
       return error('Invalid email or password', 401);
     }
     if (user.status === 'PendingDeletion') {
-      return Response.json({ error: 'This account is scheduled for deletion. Contact support@nitro.ng to reinstate it.', banned: false }, { status: 403 });
+      return Response.json({ error: 'Account pending deletion. Contact support@nitro.ng.', banned: false }, { status: 403 });
     }
 
     const valid = await bcrypt.compare(password, user.password);

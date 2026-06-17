@@ -53,7 +53,7 @@ export async function POST(req) {
     });
     if (recent) return Response.json({ ok: true, deduped: true });
 
-    const UAParser = (await import('ua-parser-js')).default;
+    const UAParser = (await import('ua-parser-js')).UAParser;
     const parser = new UAParser(ua);
     const device = parser.getDevice();
     const browserInfo = parser.getBrowser();

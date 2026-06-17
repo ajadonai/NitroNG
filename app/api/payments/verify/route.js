@@ -2,7 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { applyWelcomeBonus } from '@/lib/welcome-bonus';
-import { sendEvent, generateEventId, parseFbCookies } from '@/lib/meta-capi';
+import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
 
 async function getGatewayKeys(gatewayId) {
@@ -171,7 +171,7 @@ export async function POST(req) {
       }
     } catch (err) { log.error('Deferred referral', err.message); }
 
-    const eventId = generateEventId();
+    const eventId = `apinfo_${reference}`;
     const hdrs = await getHeaders();
     const { fbp, fbc } = parseFbCookies(hdrs.get('cookie'));
     sendEvent('AddPaymentInfo', {
