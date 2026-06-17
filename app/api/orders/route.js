@@ -438,7 +438,7 @@ export async function POST(req) {
       }
       tierName = `${tier.group.name} (${tier.tier})`;
       // Nitro minimum order floors
-      const NITRO_MINS = { followers: 100, likes: 50, views: 500, comments: 10, engagement: 50, plays: 500, reviews: 10 };
+      const NITRO_MINS = { followers: 100, likes: 100, views: 500, comments: 10, engagement: 50, plays: 500, reviews: 10 };
       const nitroMin = NITRO_MINS[tier.group.type?.toLowerCase()] || 50;
       const effectiveMin = Math.max(service.min, nitroMin);
       qty = Math.floor(Number(quantity));

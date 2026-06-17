@@ -40,7 +40,7 @@ export async function GET(req) {
     // Nitro minimum order floors (overrides provider min if lower)
     const NITRO_MINS = {
       followers: 100,
-      likes: 50,
+      likes: 100,
       views: 500,
       comments: 10,
       engagement: 50,   // shares, saves, retweets, reposts

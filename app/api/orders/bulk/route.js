@@ -44,7 +44,7 @@ async function nextBatchId() {
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-const NITRO_MINS = { followers: 100, likes: 50, views: 500, comments: 10, engagement: 50, plays: 500, reviews: 10 };
+const NITRO_MINS = { followers: 100, likes: 100, views: 500, comments: 10, engagement: 50, plays: 500, reviews: 10 };
 
 async function dispatchBatch(createdOrders, userId, batchId, totalCharge) {
   let placed = 0;
