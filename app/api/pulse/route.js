@@ -84,7 +84,7 @@ export async function GET(req) {
       prisma.order.findMany({
         where: { deletedAt: null },
         orderBy: { createdAt: 'desc' },
-        take: 10,
+        take: 15,
         include: {
           user: { select: { name: true, email: true } },
           service: { select: { name: true, category: true } },
@@ -94,7 +94,7 @@ export async function GET(req) {
       prisma.transaction.findMany({
         where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed' },
         orderBy: { createdAt: 'desc' },
-        take: 10,
+        take: 15,
         include: { user: { select: { name: true, email: true } } },
       }),
       prisma.order.findMany({

@@ -261,15 +261,16 @@ function DepositFeed({ deposits }) {
       <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 6, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#e0a458', animation: 'pulse-dot 2s ease-in-out infinite' }} />
         Recent Deposits
+        <span className="m" style={{ marginLeft: 'auto', fontSize: 9, color: '#555', fontWeight: 500 }}>{deposits.length}</span>
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} className="pulse-feed-scroll">
         {deposits.map((tx, i) => {
           const mColor = METHOD_COLOR[tx.method] || '#e0a458';
           return (
             <div key={tx.id} style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '0 4px',
               borderTop: i > 0 ? '1px solid rgba(255,255,255,.04)' : 'none',
-              animation: `pulse-feed-in .5s ease ${i * 40}ms both`,
+              animation: i < 20 ? `pulse-feed-in .5s ease ${i * 40}ms both` : undefined,
             }}>
               <div style={{ fontSize: 9, fontWeight: 600, color: mColor, width: 40, letterSpacing: 0.5, flexShrink: 0 }}>{METHOD_LABEL[tx.method] || tx.method?.charAt(0).toUpperCase() + tx.method?.slice(1) || '—'}</div>
               <div style={{ flex: 1, fontSize: 11, color: '#f5f3f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
@@ -313,12 +314,13 @@ function LiveFeed({ orders }) {
       <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 6, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', animation: 'pulse-dot 2s ease-in-out infinite' }} />
         Live Feed
+        <span className="m" style={{ marginLeft: 'auto', fontSize: 9, color: '#555', fontWeight: 500 }}>{orders.length}</span>
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} className="pulse-feed-scroll">
         {orders.map((o, i) => (
           <div key={o.id + o.created} style={{
             display: 'flex', alignItems: 'center', gap: 8, padding: '0 4px',
-            animation: `pulse-feed-in .5s ease ${i * 40}ms both`,
+            animation: i < 20 ? `pulse-feed-in .5s ease ${i * 40}ms both` : undefined,
             borderTop: i > 0 ? '1px solid rgba(255,255,255,.04)' : 'none',
           }}>
             <div style={{ width: 40, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -511,7 +513,7 @@ export default function PulseDashboard({ secretKey }) {
 
   return (
     <div ref={containerRef} className="pulse-container" style={{
-      minHeight: '100dvh',
+      height: '100dvh',
       background: '#080b14',
       color: '#f5f3f0',
       fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif",
@@ -519,7 +521,7 @@ export default function PulseDashboard({ secretKey }) {
       display: 'flex',
       flexDirection: 'column',
       gap: 8,
-      overflow: 'auto',
+      overflow: 'hidden',
       animation: 'pulse-bg 20s ease infinite',
     }}>
       <RefreshBar secondsAgo={secondsAgo} />
@@ -780,8 +782,12 @@ export default function PulseDashboard({ secretKey }) {
           0%, 100% { r: 3; }
           50% { r: 4; }
         }
+        .pulse-feed-scroll::-webkit-scrollbar { width: 4px; }
+        .pulse-feed-scroll::-webkit-scrollbar-track { background: transparent; }
+        .pulse-feed-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 2px; }
+        .pulse-feed-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.2); }
         @media (max-width: 768px) {
-          .pulse-container { overflow: auto !important; padding: 12px 10px !important; gap: 10px !important; }
+          .pulse-container { height: auto !important; min-height: 100dvh !important; overflow: auto !important; padding: 12px 10px !important; gap: 10px !important; }
           .pulse-fs-btn { display: none !important; }
           .pulse-row1 { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
           .pulse-row1 > :first-child { grid-column: 1 / -1; }
