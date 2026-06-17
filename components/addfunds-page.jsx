@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
+import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 
 const TX_META = {
@@ -36,26 +37,6 @@ function txDesc(tx) {
 }
 
 const PRESETS = [1000, 2000, 5000, 10000, 20000, 50000];
-
-const BONUS_PRESETS = [
-  { amount: 2500,  bonus: 500 },
-  { amount: 5000,  bonus: 1200, tag: 'Best value' },
-  { amount: 10000, bonus: 3000 },
-];
-
-function bonusForNaira(naira) {
-  if (naira >= 10000) return 3000;
-  if (naira >= 5000) return 1200;
-  if (naira >= 2500) return 500;
-  return 0;
-}
-
-function nextBonusTier(naira) {
-  if (naira < 2500) return { min: 2500, bonus: 500 };
-  if (naira < 5000) return { min: 5000, bonus: 1200 };
-  if (naira < 10000) return { min: 10000, bonus: 3000 };
-  return null;
-}
 
 const ACCEPTED_TYPES = [
   { label: "Cards", short: "Cards", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },

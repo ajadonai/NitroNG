@@ -1352,7 +1352,7 @@ function DashboardInner({ initialData }) {
       </div>
 
       {/* ═══ TOUR GUIDE ═══ */}
-      {showOrderTour && <OrderTour dark={dark} onComplete={() => setShowOrderTour(false)} setSelSvc={setNoSelSvc} setSelTier={setNoSelTier} setQty={setNoQty} />}
+      {showOrderTour && <OrderTour dark={dark} onComplete={() => setShowOrderTour(false)} setSelSvc={setNoSelSvc} setSelTier={setNoSelTier} setQty={setNoQty} user={user} onTopUp={() => setActive("add-funds")} />}
 
       {/* ═══ MOBILE BOTTOM NAV ═══ */}
       {moreOpen && <div className="dash-more-overlay" onClick={() => setMoreOpen(false)} />}
