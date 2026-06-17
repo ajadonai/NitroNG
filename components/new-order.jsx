@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback, forwardRef } from "react";
 import { trackViewContent } from "./capi-tracker";
 import { fN } from "../lib/format";
+import { BONUS_PRESETS, bonusForNaira } from "../lib/welcome-bonus";
 import { useToast } from "./toast";
 import { SegPill } from "./seg-pill";
 import InlineAlert from "./inline-alert";
@@ -291,7 +292,7 @@ function maxDripDays(qty) { return qty <= 5000 ? 5 : qty <= 10000 ? 7 : qty <= 2
 const MIN_DAYS_FLOOR = { followers: 3, views: 1, plays: 1, likes: 2, comments: 3, reviews: 3, engagement: 2 };
 function minDripDays(qty, type) { const floor = MIN_DAYS_FLOOR[(type || "").toLowerCase()] || 3; return Math.max(floor, Math.ceil(qty / safeDailyCap(type))); }
 
-export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp }) {
+export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible }) {
   const minQty = selTier?.min || 100;
   const maxQty = selTier?.max || 50000;
   const qtyNum = Number(qty) || 0;
@@ -513,10 +514,29 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           </div>
         </div>
           {balance != null && qtyNum > 0 && price > balance ? (
+            welcomeBonusEligible ? (
+            <div className="rounded-xl p-3.5" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.18)" : "rgba(5,150,105,.12)"}` }}>
+              <div className="text-[13px] font-semibold mb-1" style={{ color: t.text }}>Almost there — add funds to place this order</div>
+              <div className="text-[11.5px] mb-2.5" style={{ color: t.textMuted }}>Your first deposit gets up to ₦3,000 free to spend.</div>
+              {(() => {
+                const needed = price - balance;
+                const tier = BONUS_PRESETS.find(p => p.amount >= needed) || BONUS_PRESETS[BONUS_PRESETS.length - 1];
+                const bonus = bonusForNaira(tier.amount);
+                return (
+                  <div className="inline-flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg mb-3 text-[12px] font-semibold" style={{ background: dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.07)", color: dark ? "#6ee7b7" : "#059669" }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    Deposit ₦{tier.amount.toLocaleString()} → ₦{(tier.amount + bonus).toLocaleString()} to spend
+                  </div>
+                );
+              })()}
+              <button onClick={onTopUp} className="w-full py-2.5 rounded-[10px] border-none text-[14px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(5,150,105,.3)]" style={{ background: dark ? "#059669" : "#059669", color: "#fff" }}>Add funds & claim bonus</button>
+            </div>
+            ) : (
             <button onClick={onTopUp} data-tour="no-submit-btn" className="w-full py-2.5 rounded-lg border border-solid text-[15px] font-semibold cursor-pointer flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(250,204,21,.08)" : "rgba(250,204,21,.1)", borderColor: dark ? "rgba(250,204,21,.25)" : "rgba(250,204,21,.35)", color: dark ? "#fcd34d" : "#b45309" }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               Insufficient balance · Top up
             </button>
+            )
           ) : (
             <button onClick={() => { if (dripOn && showMultiDay) { setDripStep(2); } else { onSubmit(dripOn && showMultiDay ? clampedDays : undefined); } }} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer) || (comments || "").trim()) && !commentShort && !orderLoading ? 1 : .5 }}>{orderLoading ? "Placing..." : dripOn && showMultiDay ? "Next" : "Place Order"}</button>
           )}
@@ -1192,7 +1212,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 </div>
               </div>
             ) : (
-              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => setOrderModal(false)} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} />
+              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => setOrderModal(false)} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} welcomeBonusEligible={user?.welcomeBonusEligible} />
             )}
           </div>
         </div>

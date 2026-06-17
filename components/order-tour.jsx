@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from "react";
+import { BONUS_PRESETS } from "../lib/welcome-bonus";
 
 const STEPS = [
   { target: "no-platform-tabs", findFirst: ".no-plat-icon-on, .no-mob-plat-on, .no-plat-icon-btn:first-child, .no-mob-plat-btn:first-child", noScroll: true, title: "Pick a platform", desc: "Choose which platform you want to grow. Instagram, TikTok, YouTube — we support 35+.", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> },
@@ -29,7 +30,8 @@ function waitForEl(selector, cb, onTimeout, maxWait = 3000) {
   check();
 }
 
-export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, setQty }) {
+export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, setQty, user, onTopUp }) {
+  const eligible = user?.welcomeBonusEligible;
   const saved = (() => {
     try { const s = localStorage.getItem("nitro-order-tour-progress"); return s ? JSON.parse(s) : null; } catch { return null; }
   })();
@@ -76,6 +78,9 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
     if (fromIdx < STEPS.length - 1) {
       showSkip("Skipping step...");
       setTimeout(() => setStep(fromIdx + 1), 500);
+    } else if (eligible) {
+      showSkip("Almost done...");
+      setTimeout(() => setPhase("deposit"), 500);
     } else {
       showSkip("Finishing tour...");
       setTimeout(() => finish(), 500);
@@ -114,7 +119,10 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
 
   const next = () => {
     const nextIdx = step + 1;
-    if (nextIdx >= STEPS.length) { finish(); return; }
+    if (nextIdx >= STEPS.length) {
+      if (eligible) { setPhase("deposit"); } else { finish(); }
+      return;
+    }
     goToStep(nextIdx);
   };
 
@@ -181,12 +189,16 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
   if (!visible) return null;
 
   const accent = "#c47d8e";
+  const green = dark ? "#6ee7b7" : "#059669";
+  const greenBg = dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)";
+  const greenBorder = dark ? "rgba(110,231,183,.2)" : "rgba(5,150,105,.15)";
   const bg = dark ? "#161b2e" : "#ffffff";
   const border = dark ? "rgba(196,125,142,.22)" : "rgba(0,0,0,.1)";
   const text = dark ? "#f5f3f0" : "#1c1b19";
   const sub = dark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.5)";
   const skipC = dark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.3)";
   const dotOff = dark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
+  const totalDots = STEPS.length + (eligible ? 1 : 0);
   const pad = 10;
   const sr = spotRect;
 
@@ -241,7 +253,7 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
             {phase === "touring" && sr && <rect x={sr.x - pad} y={sr.y - pad} width={sr.w + pad * 2} height={sr.h + pad * 2} rx="14" fill="black" />}
           </mask>
         </defs>
-        <rect width="100%" height="100%" fill={phase === "welcome" ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0.45)"} mask="url(#orderTourMask)" />
+        <rect width="100%" height="100%" fill={phase === "welcome" || phase === "deposit" ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0.45)"} mask="url(#orderTourMask)" />
         {phase === "touring" && sr && <>
           {/* Soft accent glow behind spotlight */}
           <rect x={sr.x - pad} y={sr.y - pad} width={sr.w + pad * 2} height={sr.h + pad * 2} rx="14" fill="none" stroke={accent} strokeWidth="2" opacity="0.6" />
@@ -264,7 +276,13 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
           </div>
           <div className="text-lg font-bold mb-1" style={{ color: text }}>Ready to place an order?</div>
-          <div className="text-[13px] leading-[1.6] mb-6" style={{ color: sub }}>Quick walkthrough — takes about 15 seconds.</div>
+          <div className="text-[13px] leading-[1.6] mb-3" style={{ color: sub }}>Quick walkthrough — takes about 15 seconds.</div>
+          {eligible && (
+            <div className="flex items-center gap-2 rounded-lg py-2 px-3 mb-3" style={{ background: greenBg, border: `1px solid ${greenBorder}` }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
+              <span className="text-[12px] font-semibold" style={{ color: green }}>Up to ₦3,000 free on your first deposit</span>
+            </div>
+          )}
           <div className="flex flex-col gap-2.5">
             <button onClick={startTour} className="py-3 px-0 rounded-xl text-sm font-semibold border-none cursor-pointer font-[inherit] w-full transition-all duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.35)]" style={{ background: accent, color: "#fff" }}>Show me how</button>
             <button onClick={finish} className="py-2.5 px-0 rounded-xl text-[13px] font-medium bg-transparent cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ color: skipC, border: "none" }}>I already know</button>
@@ -293,7 +311,7 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
           {/* Progress dots + actions */}
           <div className="flex items-center justify-between">
             <div className="flex gap-[5px]">
-              {STEPS.map((_, i) => (
+              {Array.from({ length: totalDots }, (_, i) => (
                 <div key={i} className="h-[5px] rounded-full transition-all duration-300" style={{
                   width: i === step ? 18 : 5,
                   background: i === step ? accent : i < step ? (dark ? "rgba(196,125,142,0.35)" : "rgba(196,125,142,0.25)") : dotOff,
@@ -303,9 +321,42 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
             <div className="flex items-center gap-3">
               <button onClick={finish} className="bg-transparent border-none text-[11px] font-medium cursor-pointer font-[inherit] p-0 transition-all duration-200 hover:opacity-70" style={{ color: skipC }}>Skip</button>
               <button onClick={next} className="py-2 px-5 rounded-[10px] text-xs font-semibold border-none cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_14px_rgba(196,125,142,.3)]" style={{ background: accent, color: "#fff" }}>
-                {step === STEPS.length - 1 ? "Got it!" : "Next"}
+                {step === STEPS.length - 1 && !eligible ? "Got it!" : "Next"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* DEPOSIT CARD — bonus-eligible users only */}
+      {phase === "deposit" && (
+        <div className="fixed z-[101] top-1/2 left-1/2 text-center rounded-2xl pt-8 px-7 pb-7 max-w-[370px] w-[calc(100%-32px)]" style={{
+          transform: "translate(-50%, -50%)",
+          background: bg, border: `1px solid ${border}`,
+          boxShadow: dark ? "0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(196,125,142,.08)" : "0 16px 48px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,.04)",
+          animation: "otWelcomeFadeIn 0.35s cubic-bezier(.4,0,.2,1)",
+        }}>
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4" style={{ background: greenBg, color: green }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </div>
+          <div className="text-lg font-bold mb-1" style={{ color: text }}>Add funds to begin</div>
+          <div className="text-[13px] leading-[1.6] mb-4" style={{ color: sub }}>Top up to place your order — your first deposit gets free credit to spend. The more you add, the bigger the bonus.</div>
+
+          <div className="flex gap-2 justify-center mb-5">
+            {BONUS_PRESETS.map((p, i) => (
+              <div key={p.amount} className="py-2 px-3 rounded-lg text-center" style={{
+                background: i === 1 ? (dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)") : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)"),
+                border: `1px solid ${i === 1 ? greenBorder : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)")}`,
+              }}>
+                <div className="text-[13px] font-bold" style={{ color: i === 1 ? green : text }}>₦{p.amount.toLocaleString()}</div>
+                <div className="text-[11px] font-semibold mt-0.5" style={{ color: i === 1 ? green : sub }}>+₦{p.bonus.toLocaleString()}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-2.5">
+            <button onClick={() => { finish(); onTopUp?.(); }} className="py-3 px-0 rounded-xl text-sm font-semibold border-none cursor-pointer font-[inherit] w-full transition-all duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(5,150,105,.3)]" style={{ background: dark ? "#059669" : "#059669", color: "#fff" }}>Add funds →</button>
+            <button onClick={finish} className="py-2.5 px-0 rounded-xl text-[13px] font-medium bg-transparent cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ color: skipC, border: "none" }}>Maybe later</button>
           </div>
         </div>
       )}
