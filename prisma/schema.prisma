@@ -274,7 +274,8 @@ model Order {
   tier              ServiceTier?       @relation(fields: [tierId], references: [id])
   platformCampaign  PlatformCampaign?  @relation(fields: [platformCampaignId], references: [id])
   recurringCampaign RecurringCampaign? @relation(fields: [recurringCampaignId], references: [id])
-  dripDispatches    DripDispatch[]
+  dripDispatches        DripDispatch[]
+  affiliateCommissions  AffiliateCommission[]
 
   @@index([userId])
   @@index([userId, batchId])
@@ -660,15 +661,19 @@ model RecurringCampaign {
 // ──────────────────────────────────────
 
 model AcquisitionLink {
-  id        String      @id @default(cuid())
-  name      String
-  slug      String      @unique
-  enabled    Boolean     @default(true)
-  archivedAt DateTime?
-  createdAt  DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  clicks    LinkClick[]
+  id          String      @id @default(cuid())
+  name        String
+  slug        String      @unique
+  enabled     Boolean     @default(true)
+  affiliateId String?
+  archivedAt  DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  clicks      LinkClick[]
+  affiliate   CrewMember? @relation(fields: [affiliateId], references: [id])
+  commissions AffiliateCommission[]
 
+  @@index([affiliateId])
   @@map("acquisition_links")
 }
 
@@ -690,6 +695,109 @@ model LinkClick {
   @@index([linkId, ipHash])
   @@index([createdAt])
   @@map("link_clicks")
+}
+
+// ──────────────────────────────────────
+// Pit Crew (Affiliate Portal)
+// ──────────────────────────────────────
+
+model CrewMember {
+  id               String   @id @default(cuid())
+  role             String   @default("crew") // "chief" | "crew"
+  status           String   @default("pending") // "pending" | "approved" | "suspended" | "rejected"
+  name             String
+  email            String   @unique
+  password         String
+  phone            String?
+  xHandle          String?
+  whyApply         String?  @db.Text
+  bankAccountName  String?
+  bankName         String?
+  bankAccountNo    String?
+  tier             String   @default("starter") // "starter" | "growth" | "pro"
+  commissionRate   Int      @default(5) // current rate %
+  totalEarned      Int      @default(0) // kobo
+  totalPaid        Int      @default(0) // kobo
+  leadId           String?
+  inviteToken      String?  @unique
+  inviteExpiresAt  DateTime?
+  approvedAt       DateTime?
+  suspendedAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  lead             CrewMember?  @relation("CrewHierarchy", fields: [leadId], references: [id])
+  crew             CrewMember[] @relation("CrewHierarchy")
+  links            AcquisitionLink[]
+  commissions      AffiliateCommission[] @relation("CommissionMember")
+  leadCommissions  AffiliateCommission[] @relation("CommissionLead")
+  payouts          AffiliatePayout[]
+  sessions         CrewSession[]
+
+  @@index([leadId])
+  @@index([status])
+  @@index([role, status])
+  @@map("crew_members")
+}
+
+model CrewSession {
+  id        String   @id @default(cuid())
+  memberId  String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  member CrewMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([token])
+  @@map("crew_sessions")
+}
+
+model AffiliateCommission {
+  id              String   @id @default(cuid())
+  orderId         String
+  linkId          String
+  memberId        String
+  leadId          String?
+  orderCharge     Int      // kobo — the order.charge that earned this commission
+  commissionRate  Int      // % at time of creation
+  leadSplit       Int      // % at time of creation
+  leadAmount      Int      // kobo — chief's cut
+  marketerAmount  Int      // kobo — crew member's cut
+  status          String   @default("held") // "held" | "approved" | "voided"
+  releasesAt      DateTime
+  voidedAt        DateTime?
+  voidReason      String?
+  createdAt       DateTime @default(now())
+
+  order  Order           @relation(fields: [orderId], references: [id])
+  link   AcquisitionLink @relation(fields: [linkId], references: [id])
+  member CrewMember      @relation("CommissionMember", fields: [memberId], references: [id])
+  lead   CrewMember?     @relation("CommissionLead", fields: [leadId], references: [id])
+
+  @@unique([orderId, memberId])
+  @@index([memberId, status])
+  @@index([leadId, status])
+  @@index([status, releasesAt])
+  @@index([orderId])
+  @@map("affiliate_commissions")
+}
+
+model AffiliatePayout {
+  id          String    @id @default(cuid())
+  memberId    String
+  amount      Int       // kobo
+  status      String    @default("pending") // "pending" | "processing" | "completed" | "rejected"
+  reference   String?
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  member CrewMember @relation(fields: [memberId], references: [id])
+
+  @@index([memberId])
+  @@index([status])
+  @@map("affiliate_payouts")
 }
 
 // ──────────────────────────────────────
