@@ -16,4 +16,11 @@ Sentry.init({
     /app:\/\/uxa\//,
     /app:\/\/JSBridgeCallback/,
   ],
+  beforeSend(event) {
+    const frames = event.exception?.values?.[0]?.stacktrace?.frames;
+    if (frames?.some(f => /^app:\/\//.test(f.filename) && !/^\/?_next\//.test(f.filename))) return null;
+    const msg = event.exception?.values?.map(v => v.value).join(" ") || "";
+    if (/Java object is gone|Object Not Found Matching Id|webkit\.messageHandlers|Can't find variable: FileReader/.test(msg)) return null;
+    return event;
+  },
 });
