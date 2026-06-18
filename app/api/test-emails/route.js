@@ -1,11 +1,12 @@
-import { sendEmail, sendWelcomeEmail, sendPasswordResetEmail, walletCreditEmail, accountDeletionEmail, leaderboardRewardEmail, batchPlacementEmail, batchCompletionEmail, sendWinbackEmail, sendNudgeIdleFunds, sendNudgeComeback, sendNudgeLapsed, sendNudgeIdleBalance, gradualDeliveryAnnouncementEmail } from '@/lib/email';
+import { sendEmail, sendWelcomeEmail, sendPasswordResetEmail, walletCreditEmail, accountDeletionEmail, leaderboardRewardEmail, batchPlacementEmail, batchCompletionEmail, sendWinbackEmail, sendNudgeIdleFunds, sendNudgeComeback, sendNudgeLapsed, sendNudgeIdleBalance, gradualDeliveryAnnouncementEmail, sendAdActivationDay1, sendAdActivationDay3, sendAdActivationDay6 } from '@/lib/email';
 import prisma from '@/lib/prisma';
 
 export async function GET(req) {
   if (process.env.NODE_ENV !== 'development') return Response.json({ error: 'Dev only' }, { status: 403 });
-  const EMAIL = 'adonaijonathancrypto@gmail.com';
-  const NAME = 'Adonai';
-  const only = new URL(req.url).searchParams.get('only');
+  const url = new URL(req.url);
+  const EMAIL = url.searchParams.get('to') || 'adonaijonathancrypto@gmail.com';
+  const NAME = 'Trip';
+  const only = url.searchParams.get('only');
   const results = [];
 
   const ALL = {
@@ -16,12 +17,14 @@ export async function GET(req) {
     leaderboard:   () => leaderboardRewardEmail(NAME, 2500).then(h => sendEmail(EMAIL, 'You earned a leaderboard reward!', h)),
     'batch-place': () => batchPlacementEmail(NAME, 'BTH-1234', 10, 8, 2, 45000).then(h => sendEmail(EMAIL, 'Batch order placed', h)),
     'batch-done':  () => batchCompletionEmail(NAME, 'BTH-1234', 7, 1, 0, 2500).then(h => sendEmail(EMAIL, 'Batch order complete', h)),
-    winback:       () => sendWinbackEmail(NAME, EMAIL),
     'nudge-funds': () => sendNudgeIdleFunds(NAME, EMAIL, 12500),
     'nudge-back':  () => sendNudgeComeback(NAME, EMAIL),
     'nudge-lapsed':() => sendNudgeLapsed(NAME, EMAIL),
     'nudge-idle':  () => sendNudgeIdleBalance(NAME, EMAIL, 8750),
     'gradual':     () => gradualDeliveryAnnouncementEmail(NAME).then(h => sendEmail(EMAIL, "We've upgraded how your orders are delivered", h)),
+    'act-day1':    () => sendAdActivationDay1(NAME, EMAIL),
+    'act-day3':    () => sendAdActivationDay3(NAME, EMAIL),
+    'act-day6':    () => sendAdActivationDay6(NAME, EMAIL),
   };
 
   const toRun = only ? { [only]: ALL[only] } : ALL;
