@@ -3,7 +3,7 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getBalance } from '@/lib/smm';
-import { sendEmail, emailWrap, emailRow, emailDataBox, sendWinbackEmail, sendNudgeIdleFunds, sendNudgeComeback, sendNudgeLapsed, sendNudgeIdleBalance } from '@/lib/email';
+import { sendEmail, emailWrap, emailRow, emailDataBox, sendNudgeIdleFunds, sendNudgeComeback, sendNudgeLapsed, sendNudgeIdleBalance, sendAdActivationDay1, sendAdActivationDay3, sendAdActivationDay6 } from '@/lib/email';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -117,41 +117,46 @@ export async function GET(req) {
     results.logRetention = { error: err.message };
   }
 
-  // ═══ WIN-BACK: email inactive new users after 7 days ═══
-  try {
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-
-    let winbackSent = 0;
-    let winbackFailed = 0;
-    const batch = await prisma.user.findMany({
-      where: {
-        status: 'Active',
-        emailVerified: true,
-        notifPromo: true,
-        winbackSentAt: null,
-        createdAt: { gte: thirtyDaysAgo, lte: sevenDaysAgo },
-        orders: { none: {} },
-      },
-      select: { id: true, name: true, email: true },
-      take: 50,
-    });
-    for (const user of batch) {
-      try {
-        await sendWinbackEmail(user.name || 'there', user.email);
-        await prisma.user.update({ where: { id: user.id }, data: { winbackSentAt: new Date() } });
-        winbackSent++;
-      } catch (e) {
-        log.warn('Winback', `Failed to send to ${user.email}: ${e.message}`);
-        await prisma.user.update({ where: { id: user.id }, data: { winbackSentAt: new Date(0) } }).catch(() => {});
-        winbackFailed++;
+  // ═══ AD ACTIVATION: 3-touch sequence for ad signups who haven't deposited ═══
+  const AD_SOURCES = ['alabi-ad'];
+  const activationTouches = [
+    { day: 1, field: 'adActivationDay1SentAt', send: sendAdActivationDay1, label: 'Day1' },
+    { day: 3, field: 'adActivationDay3SentAt', send: sendAdActivationDay3, label: 'Day3' },
+    { day: 6, field: 'adActivationDay6SentAt', send: sendAdActivationDay6, label: 'Day6' },
+  ];
+  for (const touch of activationTouches) {
+    try {
+      const windowStart = new Date(Date.now() - (touch.day + 1) * 24 * 60 * 60 * 1000);
+      const windowEnd = new Date(Date.now() - touch.day * 24 * 60 * 60 * 1000);
+      let sent = 0;
+      const batch = await prisma.user.findMany({
+        where: {
+          status: 'Active',
+          notifPromo: true,
+          [touch.field]: null,
+          signupSource: { in: AD_SOURCES },
+          createdAt: { gte: windowStart, lte: windowEnd },
+          transactions: { none: { type: 'deposit', status: 'Completed' } },
+        },
+        select: { id: true, name: true, email: true },
+        take: 50,
+      });
+      for (const user of batch) {
+        try {
+          await touch.send(user.name || 'there', user.email);
+          await prisma.user.update({ where: { id: user.id }, data: { [touch.field]: new Date() } });
+          sent++;
+        } catch (e) {
+          log.warn(`AdActivation${touch.label}`, `Failed: ${user.email}: ${e.message}`);
+          await prisma.user.update({ where: { id: user.id }, data: { [touch.field]: new Date(0) } }).catch(() => {});
+        }
       }
+      if (sent > 0) log.info(`AdActivation${touch.label}`, `Sent ${sent} of ${batch.length}`);
+      results[`adActivation${touch.label}`] = { sent, total: batch.length };
+    } catch (err) {
+      log.error(`AdActivation${touch.label}`, err.message);
+      results[`adActivation${touch.label}`] = { error: err.message };
     }
-    if (winbackSent > 0 || winbackFailed > 0) log.info('Winback', `Sent ${winbackSent}, failed ${winbackFailed} of ${batch.length}`);
-    results.winback = { sent: winbackSent, failed: winbackFailed, total: batch.length };
-  } catch (err) {
-    log.error('Winback', err.message);
-    results.winback = { error: err.message };
   }
 
   // ═══ NUDGE: funded wallet but never ordered (7+ days) ═══
@@ -172,7 +177,7 @@ export async function GET(req) {
     });
     for (const user of idleFundsBatch) {
       try {
-        await sendNudgeIdleFunds(user.name || 'there', user.email, user.balance / 100);
+        await sendNudgeIdleFunds(user.name || 'there', user.email, user.balance / 100, user.id);
         await prisma.user.update({ where: { id: user.id }, data: { nudgeIdleFundsSentAt: new Date() } });
         idleFundsSent++;
       } catch (e) {
@@ -203,7 +208,7 @@ export async function GET(req) {
     const oneTimers = comebackBatch.filter(u => u._count.orders === 1);
     for (const user of oneTimers) {
       try {
-        await sendNudgeComeback(user.name || 'there', user.email);
+        await sendNudgeComeback(user.name || 'there', user.email, user.id);
         await prisma.user.update({ where: { id: user.id }, data: { nudgeComebackSentAt: new Date() } });
         comebackSent++;
       } catch (e) {
@@ -237,7 +242,7 @@ export async function GET(req) {
     const multiOrderLapsed = lapsedBatch.filter(u => u._count.orders >= 2);
     for (const user of multiOrderLapsed) {
       try {
-        await sendNudgeLapsed(user.name || 'there', user.email);
+        await sendNudgeLapsed(user.name || 'there', user.email, user.id);
         await prisma.user.update({ where: { id: user.id }, data: { nudgeLapsedSentAt: new Date() } });
         lapsedSent++;
       } catch (e) {
@@ -271,7 +276,7 @@ export async function GET(req) {
     });
     for (const user of idleBalBatch) {
       try {
-        await sendNudgeIdleBalance(user.name || 'there', user.email, user.balance / 100);
+        await sendNudgeIdleBalance(user.name || 'there', user.email, user.balance / 100, user.id);
         await prisma.user.update({ where: { id: user.id }, data: { nudgeIdleBalanceSentAt: new Date() } });
         idleBalSent++;
       } catch (e) {
@@ -335,9 +340,9 @@ export async function GET(req) {
             label: 'System Alert', labelBg: 'rgba(245,158,11,.12)', labelColor: '#f59e0b',
             title: 'Low Provider Balance',
             body: `
-              <p style="font-size:14px;color:#666;margin:0 0 16px;">The following providers have low balances:</p>
-              ${emailDataBox(alerts.map(a => emailRow(a.provider, `$${a.balance.toFixed(2)} (min $${a.threshold})`, '#ef4444')).join(''))}
-              <p style="font-size:13px;color:#888;margin:0;">Please top up to avoid order failures.</p>`,
+              <p class="em-t" style="font-size:15px;line-height:1.7;color:#555;margin:0 0 16px;">The following providers have low balances:</p>
+              ${emailDataBox(alerts.map(a => emailRow(a.provider, `$${a.balance.toFixed(2)} (min $${a.threshold})`, '#ef4444')).join(''), '#f59e0b')}
+              <p class="em-m" style="font-size:13px;color:#9a948d;margin:0;">Please top up to avoid order failures.</p>`,
           });
           sendEmail(adminEmail, 'Low Provider Balance Alert', html).catch(err => log.warn('Balance alert email', err.message));
         } catch (emailErr) { log.warn('Balance alert email', emailErr.message); }
