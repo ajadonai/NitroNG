@@ -94,5 +94,12 @@ export async function GET(req) {
     };
   }
 
-  return Response.json({ generatedAt: now.toISOString(), windows });
+  const result = { generatedAt: now.toISOString(), windows };
+  const pretty = new URL(req.url).searchParams.has("pretty");
+  if (pretty) {
+    return new Response(JSON.stringify(result, null, 2), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  return Response.json(result);
 }
