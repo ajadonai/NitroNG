@@ -1,5 +1,9 @@
+import { redirect } from "next/navigation";
+import { getCrewSession } from "@/lib/crew";
 import ApplyPage from "@/components/m/apply-page";
 
-export default function Apply() {
+export default async function Apply() {
+  const member = await getCrewSession();
+  if (member) redirect("/m");
   return <ApplyPage />;
 }

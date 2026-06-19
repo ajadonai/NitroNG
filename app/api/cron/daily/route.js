@@ -177,7 +177,7 @@ export async function GET(req) {
     });
     for (const user of idleFundsBatch) {
       try {
-        await sendNudgeIdleFunds(user.name || 'there', user.email, user.balance / 100, user.id);
+        await sendNudgeIdleFunds(user.name || 'there', user.email, user.balance / 100);
         await prisma.user.update({ where: { id: user.id }, data: { nudgeIdleFundsSentAt: new Date() } });
         idleFundsSent++;
       } catch (e) {
@@ -208,7 +208,7 @@ export async function GET(req) {
     const oneTimers = comebackBatch.filter(u => u._count.orders === 1);
     for (const user of oneTimers) {
       try {
-        await sendNudgeComeback(user.name || 'there', user.email, user.id);
+        await sendNudgeComeback(user.name || 'there', user.email);
         await prisma.user.update({ where: { id: user.id }, data: { nudgeComebackSentAt: new Date() } });
         comebackSent++;
       } catch (e) {
@@ -242,7 +242,7 @@ export async function GET(req) {
     const multiOrderLapsed = lapsedBatch.filter(u => u._count.orders >= 2);
     for (const user of multiOrderLapsed) {
       try {
-        await sendNudgeLapsed(user.name || 'there', user.email, user.id);
+        await sendNudgeLapsed(user.name || 'there', user.email);
         await prisma.user.update({ where: { id: user.id }, data: { nudgeLapsedSentAt: new Date() } });
         lapsedSent++;
       } catch (e) {
@@ -276,7 +276,7 @@ export async function GET(req) {
     });
     for (const user of idleBalBatch) {
       try {
-        await sendNudgeIdleBalance(user.name || 'there', user.email, user.balance / 100, user.id);
+        await sendNudgeIdleBalance(user.name || 'there', user.email, user.balance / 100);
         await prisma.user.update({ where: { id: user.id }, data: { nudgeIdleBalanceSentAt: new Date() } });
         idleBalSent++;
       } catch (e) {

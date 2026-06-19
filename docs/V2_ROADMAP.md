@@ -884,6 +884,34 @@ Not yet built — add to v2 engineering queue.
 
 ---
 
+## Product 7: WhatsApp Automation (activation + support)
+
+*Added June 2026*
+
+### What it is
+
+Programmatic WhatsApp messaging via the WhatsApp Business API (Meta Cloud API or a BSP like Twilio/Infobip). Two use cases:
+
+1. **Activation drip** — mirror the email activation sequence (Day 1/3/6 for ad signups who haven't deposited) on WhatsApp for users who have a phone number on file. Higher open rates than email, catches users where they already are.
+2. **Transactional notifications** — order completion, deposit confirmation, refund alerts via WhatsApp as an opt-in channel alongside email.
+
+### Prerequisites
+
+- WhatsApp Business API account (requires Meta Business verification)
+- Pre-approved message templates for each outbound message (Meta reviews, 1-2 day turnaround)
+- Per-conversation cost (~$0.02-0.04 per message, varies by BSP)
+- User phone numbers collected (see Product 6: User Profile Enrichment above)
+
+### Why it's v2
+
+The email activation sequence ships first to validate whether the 3-touch cadence moves the ad-cohort deposit rate. If it works via email, WhatsApp adds a higher-engagement channel on top. If it doesn't, the problem is the message, not the medium.
+
+### Status
+
+Not yet built. Ship email activation first, measure for 1-2 weeks, then evaluate.
+
+---
+
 ## When to revisit this doc
 
 Revisit when any of these become true:

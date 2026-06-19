@@ -46,7 +46,7 @@ const ACCEPTED_TYPES = [
 ];
 
 const GW_META = {
-  flutterwave: { desc: "Card, bank transfer", speed: "Instant" },
+  flutterwave: { desc: "Card, bank transfer", speed: "Fast" },
   crypto: { desc: "USDT via TRC-20", speed: "5–30 min" },
   manual: { desc: "Direct bank transfer", speed: "15–60 min" },
 };
