@@ -39,7 +39,7 @@ function ServicesInner({ platforms }) {
           <div className="mb-10">
             <span className="text-xs font-semibold tracking-[2px] uppercase block mb-3" style={{ color: accent }}>Services</span>
             <h1 className="text-[clamp(28px,5vw,40px)] font-semibold mb-2 leading-tight" style={{ color: t.text }}>Grow on <span className="serif italic font-medium text-[clamp(32px,5.5vw,44px)]" style={{ color: accent }}>Every</span> Platform</h1>
-            <p className="text-[15px] leading-relaxed max-w-[520px]" style={{ color: t.textSoft }}>Real engagement across {platforms.length}+ platforms. Multiple quality tiers, instant delivery, and refill guarantees on most services.</p>
+            <p className="text-[15px] leading-relaxed max-w-[520px]" style={{ color: t.textSoft }}>Real engagement across {platforms.length}+ platforms. Multiple quality tiers, fast delivery, and refill protection on most services.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -63,7 +63,7 @@ function ServicesInner({ platforms }) {
           {/* CTA */}
           <div className="mt-12 p-6 rounded-[14px] text-center" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.14)"}` }}>
             <p className="text-[15px] mb-1 font-semibold" style={{ color: t.text }}>See full pricing for every service</p>
-            <p className="text-sm mb-4" style={{ color: t.textSoft }}>Compare tiers, check refill guarantees, and find the best option for your budget.</p>
+            <p className="text-sm mb-4" style={{ color: t.textSoft }}>Compare tiers, check refill coverage, and find the best option for your budget.</p>
             <a href="/pricing" className="inline-flex items-center gap-2 py-3 px-7 rounded-[10px] bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-sm font-semibold no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]">View pricing</a>
           </div>
 

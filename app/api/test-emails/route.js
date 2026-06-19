@@ -12,16 +12,16 @@ export async function GET(req) {
   const ALL = {
     welcome:       () => sendWelcomeEmail(NAME, EMAIL),
     reset:         () => sendPasswordResetEmail(EMAIL, NAME, 'https://nitro.ng/reset?token=test123'),
-    wallet:        () => walletCreditEmail(NAME, 5000, 'Deposit via Flutterwave').then(h => sendEmail(EMAIL, '₦5,000 credited to your Nitro wallet', h)),
-    deletion:      () => accountDeletionEmail(NAME, 30).then(h => sendEmail(EMAIL, 'Your account is scheduled for deletion', h)),
-    leaderboard:   () => leaderboardRewardEmail(NAME, 2500).then(h => sendEmail(EMAIL, 'You earned a leaderboard reward!', h)),
-    'batch-place': () => batchPlacementEmail(NAME, 'BTH-1234', 10, 8, 2, 45000).then(h => sendEmail(EMAIL, 'Batch order placed', h)),
-    'batch-done':  () => batchCompletionEmail(NAME, 'BTH-1234', 7, 1, 0, 2500).then(h => sendEmail(EMAIL, 'Batch order complete', h)),
+    wallet:        () => sendEmail(EMAIL, '₦5,000 credited to your Nitro wallet', walletCreditEmail(NAME, 5000, 'Deposit via Flutterwave')),
+    deletion:      () => sendEmail(EMAIL, 'Your account is scheduled for deletion', accountDeletionEmail(NAME, 30)),
+    leaderboard:   () => sendEmail(EMAIL, 'You earned a leaderboard reward!', leaderboardRewardEmail(NAME, 2500)),
+    'batch-place': () => sendEmail(EMAIL, 'Batch order placed', batchPlacementEmail(NAME, 'BTH-1234', 10, 8, 2, 45000)),
+    'batch-done':  () => sendEmail(EMAIL, 'Batch order complete', batchCompletionEmail(NAME, 'BTH-1234', 7, 1, 0, 2500)),
     'nudge-funds': () => sendNudgeIdleFunds(NAME, EMAIL, 12500),
     'nudge-back':  () => sendNudgeComeback(NAME, EMAIL),
     'nudge-lapsed':() => sendNudgeLapsed(NAME, EMAIL),
     'nudge-idle':  () => sendNudgeIdleBalance(NAME, EMAIL, 8750),
-    'gradual':     () => gradualDeliveryAnnouncementEmail(NAME).then(h => sendEmail(EMAIL, "We've upgraded how your orders are delivered", h)),
+    'gradual':     () => sendEmail(EMAIL, "We've upgraded how your orders are delivered", gradualDeliveryAnnouncementEmail(NAME)),
     'act-day1':    () => sendAdActivationDay1(NAME, EMAIL),
     'act-day3':    () => sendAdActivationDay3(NAME, EMAIL),
     'act-day6':    () => sendAdActivationDay6(NAME, EMAIL),
@@ -47,7 +47,7 @@ export async function POST(req) {
     select: { email: true, name: true },
   });
 
-  const template = await gradualDeliveryAnnouncementEmail('{{NAME}}');
+  const template = gradualDeliveryAnnouncementEmail('{{NAME}}');
   let sent = 0, failed = 0;
   for (const u of users) {
     try {

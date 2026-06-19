@@ -71,6 +71,9 @@ model User {
   nudgeComebackSentAt    DateTime?
   nudgeLapsedSentAt      DateTime?
   nudgeIdleBalanceSentAt DateTime?
+  adActivationDay1SentAt DateTime?
+  adActivationDay3SentAt DateTime?
+  adActivationDay6SentAt DateTime?
   status        String   @default("Active")
   deletedAt     DateTime?
   deletedName   String?
