@@ -254,7 +254,7 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs, socialLi
                 { step: "3", title: "Pick a platform", desc: "Choose Instagram, TikTok, X, or any platform you want to grow on." },
                 { step: "4", title: "Choose a service & tier", desc: "Pick what you need — followers, likes, views — then select Budget, Standard, or Premium quality." },
                 { step: "5", title: "Paste your link", desc: "Drop your profile or post link and set the quantity you want." },
-                { step: "6", title: "Place your order", desc: "Confirm and your order starts processing. Delivery begins within minutes." },
+                { step: "6", title: "Place your order", desc: "Confirm and your order starts processing. Track delivery in real time from your dashboard." },
                 { step: "7", title: "Track delivery", desc: "Watch your order progress in real time from your dashboard." },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-3">

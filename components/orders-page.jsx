@@ -25,12 +25,12 @@ function CopyId({ value, dark, mono = true }) {
 }
 
 const DRIP_CONFIG = {
-  followers:  { batchSize: 500,  intervalHours: 2 },
-  views:      { batchSize: 5000, intervalHours: 1 },
-  likes:      { batchSize: 500,  intervalHours: 1 },
-  comments:   { batchSize: 50,   intervalHours: 0.5 },
-  engagement: { batchSize: 1500, intervalHours: 1 },
-  reviews:    { batchSize: 10,   intervalHours: 2 },
+  followers:  { batchSize: 200,  intervalHours: 2 },
+  views:      { batchSize: 2000, intervalHours: 1 },
+  likes:      { batchSize: 200,  intervalHours: 1 },
+  comments:   { batchSize: 20,   intervalHours: 0.5 },
+  engagement: { batchSize: 500,  intervalHours: 1 },
+  reviews:    { batchSize: 5,    intervalHours: 2 },
 };
 
 function estimateDelivery(serviceType, quantity, remains) {
