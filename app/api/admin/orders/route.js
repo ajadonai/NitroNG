@@ -109,7 +109,7 @@ export async function POST(req) {
       const result = await prisma.$transaction(async (tx) => {
         const claimed = await tx.order.updateMany({
           where: { id: order.id, status: { not: 'Cancelled' } },
-          data: { status: isPartial ? 'Partial' : 'Cancelled', lastError: 'admin_cancelled', refundedAt: new Date() },
+          data: { status: isPartial ? 'Partial' : 'Cancelled', lastError: body.note ? `admin_cancelled: ${body.note}` : 'admin_cancelled', refundedAt: new Date() },
         });
         if (claimed.count === 0) return { ok: false };
 
@@ -149,8 +149,9 @@ export async function POST(req) {
       }
 
       const refundMsg = result.refundAmount > 0 ? ` — ₦${(result.refundAmount / 100).toLocaleString()} refunded` : '';
-      await logActivity(admin.name, `Cancelled order ${orderId} (${providerLabel})${refundMsg}`, 'order');
-      return Response.json({ success: true, message: result.refundAmount > 0 ? `Order cancelled${refundMsg}` : 'Order cancelled' });
+      const noteMsg = body.note ? ` — ${body.note}` : '';
+      await logActivity(admin.name, `Cancelled order ${orderId} (${providerLabel})${refundMsg}${noteMsg}`, 'order');
+      return Response.json({ success: true, status: isPartial ? 'Partial' : 'Cancelled', message: result.refundAmount > 0 ? `Order cancelled${refundMsg}` : 'Order cancelled' });
     }
 
     if (action === 'refill') {
