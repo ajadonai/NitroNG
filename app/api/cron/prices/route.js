@@ -31,7 +31,8 @@ export async function GET(req) {
         dripMaps[pid] = new Set();
         typeMaps[pid] = {};
         for (const s of svcs) {
-          rateMaps[pid][String(s.service)] = Math.round(parseFloat(s.rate) * 100);
+          const isPackage = s.type && s.type.toLowerCase().includes('package');
+          rateMaps[pid][String(s.service)] = Math.round(parseFloat(s.rate) * 100 * (isPackage ? 1000 : 1));
           if (s.dripfeed === true || s.dripfeed === 'true') dripMaps[pid].add(String(s.service));
           if (s.type) typeMaps[pid][String(s.service)] = s.type;
         }
@@ -66,8 +67,8 @@ export async function GET(req) {
       if (rateMap && s.apiId && liveCost === undefined) {
         deadServices.push({ serviceId: s.id, name: s.name, apiId: s.apiId, provider: pid, category: s.category });
       }
-      const cost = liveCost !== undefined ? liveCost : s.costPer1k;
-      const costChanged = liveCost !== undefined && liveCost !== s.costPer1k;
+      const cost = liveCost !== undefined ? liveCost : Number(s.costPer1k);
+      const costChanged = liveCost !== undefined && liveCost !== Number(s.costPer1k);
       if (costChanged) stats.updated++;
 
       const costKobo = cost * usdRate;
@@ -76,7 +77,7 @@ export async function GET(req) {
         for (const t of s.tiers) {
           const ng = t.group?.nigerian || false;
           const newSell = calculateTierPrice(cost, t.tier, ms, ng);
-          if (newSell !== t.sellPer1k) {
+          if (newSell !== Number(t.sellPer1k)) {
             ops.push(prisma.serviceTier.update({ where: { id: t.id }, data: { sellPer1k: newSell } }));
             stats.repriced++;
           }
@@ -86,10 +87,10 @@ export async function GET(req) {
         }
       }
 
-      const baseNewSell = s.tiers.length === 0 ? calculateTierPrice(cost, 'Standard', ms, false) : s.sellPer1k;
-      if (costChanged || (s.tiers.length === 0 && baseNewSell !== s.sellPer1k)) {
+      const baseNewSell = s.tiers.length === 0 ? calculateTierPrice(cost, 'Standard', ms, false) : Number(s.sellPer1k);
+      if (costChanged || (s.tiers.length === 0 && baseNewSell !== Number(s.sellPer1k))) {
         ops.push(prisma.service.update({ where: { id: s.id }, data: { ...(costChanged ? { costPer1k: liveCost } : {}), ...(s.tiers.length === 0 ? { sellPer1k: baseNewSell } : {}) } }));
-        if (s.tiers.length === 0 && baseNewSell !== s.sellPer1k) stats.repriced++;
+        if (s.tiers.length === 0 && baseNewSell !== Number(s.sellPer1k)) stats.repriced++;
       } else if (costChanged) {
         ops.push(prisma.service.update({ where: { id: s.id }, data: { costPer1k: liveCost } }));
       }

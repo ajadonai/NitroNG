@@ -84,9 +84,9 @@ export async function GET(req) {
             labelColor: '#f59e0b',
             title: 'Low Provider Balance',
             body: `
-              <p style="font-size:14px;color:#666;margin:0 0 16px;">The following providers have low balances:</p>
-              ${emailDataBox(alerts.map(a => emailRow(a.provider, `$${a.balance.toFixed(2)} (min $${a.threshold})`, '#ef4444')).join(''))}
-              <p style="font-size:13px;color:#888;margin:0;">Please top up to avoid order failures.</p>`,
+              <p class="em-t" style="font-size:15px;line-height:1.7;color:#555;margin:0 0 16px;">The following providers have low balances:</p>
+              ${emailDataBox(alerts.map(a => emailRow(a.provider, `$${a.balance.toFixed(2)} (min $${a.threshold})`, '#ef4444')).join(''), '#f59e0b')}
+              <p class="em-m" style="font-size:13px;color:#9a948d;margin:0;">Please top up to avoid order failures.</p>`,
           });
           sendEmail(adminEmail, 'Low Provider Balance Alert', html).catch(err => log.warn('Balance alert email', err.message));
         } catch (emailErr) {

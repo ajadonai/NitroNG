@@ -484,9 +484,9 @@ async function refundOrder(order, amount = null, emailOnly = false) {
         labelColor: '#22c55e',
         title: isPartial ? 'Partial Refund Processed' : 'Order Refund Processed',
         body: `
-          <p style="font-size:14px;color:#666;margin:0 0 20px;">Your wallet has been credited.</p>
-          ${emailDataBox(rows)}
-          <p style="font-size:13px;color:#888;margin:0 0 20px;">The refund has been automatically credited to your Nitro wallet. No action needed.</p>
+          <p class="em-t" style="font-size:15px;line-height:1.7;color:#555;margin:0 0 20px;">Your wallet has been credited.</p>
+          ${emailDataBox(rows, '#22c55e')}
+          <p class="em-t" style="font-size:13px;line-height:1.7;color:#888;margin:0 0 22px;">The refund has been automatically credited to your Nitro wallet. No action needed.</p>
           ${emailCTA('https://nitro.ng/dashboard', 'View Dashboard')}`,
       });
       sendEmail(user.email, subject, html).catch(err => log.warn(`Refund email ${order.orderId}`, err.message));

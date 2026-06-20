@@ -25,7 +25,7 @@ function AboutInner() {
             <span className="text-xs font-semibold tracking-[2px] uppercase block mb-3" style={{ color: accent }}>About</span>
             <h1 className="text-[clamp(28px,5vw,44px)] font-semibold mb-4 leading-tight" style={{ color: t.text }}>Built in Lagos, <span className="serif italic font-medium text-[clamp(32px,5.5vw,48px)]" style={{ color: accent }}>for Nigeria</span></h1>
             <p className="text-[15px] leading-[1.7] max-w-[600px] mx-auto" style={{ color: t.textSoft }}>
-              Nitro is a registered Nigerian company helping creators and businesses grow their social media presence — with Naira pricing, instant delivery, and real support.
+              Nitro is a registered Nigerian company helping creators and businesses grow their social media presence — with Naira pricing, fast delivery, and real support.
             </p>
           </div>
 
@@ -74,8 +74,8 @@ function AboutInner() {
               {[
                 ['Naira-native', 'No dollar conversion. No exchange rate surprises. Every price you see is in Naira.'],
                 ['Never need your password', 'We only use your public profile link. Your accounts stay under your control.'],
-                ['Refund guarantee', 'If we can\'t deliver, your wallet gets credited instantly. No chasing support for days.'],
-                ['Real support', '24/7 in-app chat and WhatsApp. We respond in minutes, not "2-3 business days."'],
+                ['Automatic refunds', 'If we can\'t deliver, your wallet gets credited automatically. No chasing support for days.'],
+                ['Real support', 'Reach us on WhatsApp anytime. We respond in minutes, not "2-3 business days."'],
                 ['Multiple quality tiers', 'Budget, Standard, and Premium options. You choose the quality and price point that fits.'],
                 ['Registered business', 'RC 9514845. We\'re a real company, not a WhatsApp-only operation.'],
               ].map(([title, desc]) => (

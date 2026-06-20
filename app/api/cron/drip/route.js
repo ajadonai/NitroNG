@@ -120,14 +120,26 @@ export async function GET(req) {
         const providerStatus = await checkOrder(provider, dispatch.apiOrderId);
 
         const newStatus = normalizeStatus(providerStatus.status);
-        if (!newStatus || newStatus === 'processing') continue;
+        const liveRemains = providerStatus.remains != null ? Number(providerStatus.remains) : null;
+        const liveStartCount = providerStatus.start_count != null ? Number(providerStatus.start_count) : null;
+
+        if (!newStatus || newStatus === 'processing') {
+          if (liveRemains != null && liveRemains !== dispatch.remains) {
+            await prisma.dripDispatch.update({
+              where: { id: dispatch.id },
+              data: { remains: liveRemains, ...(liveStartCount != null && dispatch.startCount == null ? { startCount: liveStartCount } : {}) },
+            });
+            stats.synced++;
+          }
+          continue;
+        }
 
         await prisma.dripDispatch.update({
           where: { id: dispatch.id },
           data: {
             status: newStatus,
-            remains: providerStatus.remains != null ? Number(providerStatus.remains) : undefined,
-            startCount: providerStatus.start_count != null ? Number(providerStatus.start_count) : undefined,
+            remains: liveRemains ?? undefined,
+            startCount: liveStartCount ?? undefined,
             completedAt: ['completed', 'partial'].includes(newStatus) ? new Date() : undefined,
           },
         });

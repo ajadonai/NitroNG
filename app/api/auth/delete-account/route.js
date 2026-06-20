@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getCurrentUser, clearUserCookie } from '@/lib/auth';
-import { sendEmail, accountDeletionEmail } from '@/lib/email';
+import { sendEmail, accountDeletionEmail, emailWrap, emailDataBox, emailRow } from '@/lib/email';
 import { cancelOrder, isProviderConfigured } from '@/lib/smm';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import bcrypt from 'bcryptjs';
@@ -79,33 +79,25 @@ export async function POST(req) {
     ]);
 
     // Send data dump email to accounts@nitro.ng
-    const adminHtml = `
-      <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 20px;">
-        <table width="48" height="48" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto 24px;">
-          <tr><td align="center" valign="middle" width="48" height="48" style="border-radius: 14px;"><img src="https://nitro.ng/icon-192.png" width="48" height="48" alt="Nitro" style="display:block;border-radius:14px;" /></td></tr>
-        </table>
-        <h1 style="font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center; margin-bottom: 4px;">Account Deletion Requested</h1>
-        <p style="font-size: 14px; color: #999; text-align: center; margin-bottom: 24px;">Scheduled for permanent deletion on ${deletionDate.toLocaleDateString('en-NG', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-        <div style="background: #f5f3f0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-          <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
-            <tr><td style="color: #999; padding: 6px 0;">Name</td><td style="text-align: right; padding: 6px 0; font-weight: 600; color: #1a1a1a;">${user.name}</td></tr>
-            <tr><td style="color: #999; padding: 6px 0;">Email</td><td style="text-align: right; padding: 6px 0; font-weight: 600; color: #1a1a1a;">${user.email}</td></tr>
-            <tr><td style="color: #999; padding: 6px 0;">Balance</td><td style="text-align: right; padding: 6px 0; font-weight: 600; color: #059669;">₦${(user.balance / 100).toLocaleString()}</td></tr>
-            <tr><td style="color: #999; padding: 6px 0;">Total Orders</td><td style="text-align: right; padding: 6px 0; font-weight: 600; color: #1a1a1a;">${orderCount}</td></tr>
-            <tr><td style="color: #999; padding: 6px 0;">Active Orders</td><td style="text-align: right; padding: 6px 0; font-weight: 600; color: ${activeOrderCount > 0 ? '#dc2626' : '#1a1a1a'};">${activeOrderCount}${activeOrderCount > 0 ? ' (cancelled + refunded)' : ''}</td></tr>
-            <tr><td style="color: #999; padding: 6px 0;">Refunded</td><td style="text-align: right; padding: 6px 0; font-weight: 600; color: ${totalRefund > 0 ? '#dc2626' : '#1a1a1a'};">₦${(totalRefund / 100).toLocaleString()}</td></tr>
-            <tr><td style="color: #999; padding: 6px 0;">Total Spent</td><td style="text-align: right; padding: 6px 0; font-weight: 600; color: #1a1a1a;">₦${((totalSpent._sum.amount || 0) / 100).toLocaleString()}</td></tr>
-            <tr><td style="color: #999; padding: 6px 0;">Referral Code</td><td style="text-align: right; padding: 6px 0; font-family: monospace; font-size: 12px; color: #666;">${user.referralCode || 'None'}</td></tr>
-            <tr><td style="color: #999; padding: 6px 0;">User ID</td><td style="text-align: right; padding: 6px 0; font-family: monospace; font-size: 12px; color: #666;">${user.id}</td></tr>
-            <tr><td style="color: #999; padding: 6px 0;">Signed Up</td><td style="text-align: right; padding: 6px 0; color: #1a1a1a;">${user.createdAt.toLocaleDateString('en-NG')}</td></tr>
-          </table>
-        </div>
-        <p style="font-size: 13px; color: #999; text-align: center;">To reinstate this account, update the user status back to "Active" in the admin panel before ${deletionDate.toLocaleDateString('en-NG', { year: 'numeric', month: 'long', day: 'numeric' })}.</p>
-        <div style="margin-top: 30px; padding-top: 16px; border-top: 1px solid #eee; text-align: center;">
-          <p style="font-size: 12px; color: #bbb;">Nitro — Account Management</p>
-        </div>
-      </div>
-    `;
+    const rows = emailRow('Name', user.name)
+      + emailRow('Email', user.email)
+      + emailRow('Balance', '₦' + (user.balance / 100).toLocaleString(), '#059669')
+      + emailRow('Total Orders', orderCount)
+      + emailRow('Active Orders', activeOrderCount + (activeOrderCount > 0 ? ' (cancelled + refunded)' : ''), activeOrderCount > 0 ? '#dc2626' : '#333')
+      + emailRow('Refunded', '₦' + (totalRefund / 100).toLocaleString(), totalRefund > 0 ? '#dc2626' : '#333')
+      + emailRow('Total Spent', '₦' + ((totalSpent._sum.amount || 0) / 100).toLocaleString())
+      + emailRow('Referral Code', user.referralCode || 'None')
+      + emailRow('User ID', user.id)
+      + emailRow('Signed Up', user.createdAt.toLocaleDateString('en-NG'));
+    const adminHtml = await emailWrap({
+      label: 'Account', labelColor: '#dc2626',
+      title: 'Account Deletion Requested',
+      body: `
+        <p class="em-t" style="font-size:15px;line-height:1.7;color:#555;margin:0 0 24px;">Scheduled for permanent deletion on ${deletionDate.toLocaleDateString('en-NG', { year: 'numeric', month: 'long', day: 'numeric' })}.</p>
+        ${emailDataBox(rows, '#dc2626')}
+        <p class="em-m" style="font-size:13px;color:#9a948d;text-align:center;margin:0;">To reinstate this account, update the user status back to "Active" in the admin panel before ${deletionDate.toLocaleDateString('en-NG', { year: 'numeric', month: 'long', day: 'numeric' })}.</p>
+      `,
+    });
 
     // Send to accounts@nitro.ng
     sendEmail('accounts@nitro.ng', `Account Deletion: ${user.name} (${user.email})`, adminHtml).catch(err =>
