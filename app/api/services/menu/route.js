@@ -84,7 +84,7 @@ export async function GET(req) {
             id: t.id,
             tier: t.tier,
             price: Number(t.sellPer1k) / 100,
-            min: Math.max(t.service?.min || 100, nitroMin),
+            min: Math.min(Math.max(t.service?.min || 100, nitroMin), t.service?.max || 100000),
             max: t.service?.max || 100000,
             refill: t.refill,
             speed: t.speed,
