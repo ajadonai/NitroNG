@@ -295,9 +295,11 @@ function minDripDays(qty, type) { const floor = MIN_DAYS_FLOOR[(type || "").toLo
 export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible }) {
   const minQty = selTier?.min || 100;
   const maxQty = selTier?.max || 50000;
+  const isPackage = minQty === maxQty;
+  useEffect(() => { if (isPackage && String(qty) !== String(minQty)) setQty(String(minQty)); }, [isPackage, minQty]);
   const qtyNum = Number(qty) || 0;
   const qtyOutOfRange = qty !== "" && qtyNum > 0 && (qtyNum < minQty || qtyNum > maxQty);
-  const basePrice = selTier ? Math.round((qtyNum / 1000) * selTier.price) : 0;
+  const basePrice = selTier ? Math.round((qtyNum / 1000) * (selTier.pricePer1k || selTier.price)) : 0;
   const discountAmount = loyaltyDiscount > 0 ? Math.round(basePrice * (loyaltyDiscount / 100)) : 0;
   const afterLoyalty = Math.max(0, basePrice - discountAmount);
   const promoDiscountAmt = activePromotion ? Math.round(afterLoyalty * (activePromotion.discountPercent / 100)) : 0;
@@ -419,6 +421,18 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
         </div>}
       </div>
 
+      {/* ── Package note (verified comments etc.) ── */}
+      {selTier && isPackage && selSvc?.type === "verified-comments" && (
+        <div className="mx-5 max-md:mx-3.5 mt-3 rounded-lg py-2 px-3 flex items-start gap-2" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)", border: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={dark ? "#d4949f" : "#a0616e"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <div className="text-[11px] leading-[1.5]" style={{ color: dark ? "#a09890" : "#6e6a65" }}>
+            {selTier.tier === "Budget" && "Delivers 1 comment from smaller verified profiles."}
+            {selTier.tier === "Standard" && "Delivers 3 comments from mid-tier verified accounts."}
+            {selTier.tier === "Premium" && "Delivers 5 comments from top-tier, high-follower verified accounts."}
+          </div>
+        </div>
+      )}
+
       {/* ── Form fields ── */}
       <div className="p-5 max-md:p-3.5">
       {selTier && <>
@@ -481,8 +495,9 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
         <div className="mb-3">
           <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>Quantity</label>
           <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${qtyOutOfRange ? (dark ? "rgba(220,38,38,.4)" : "rgba(220,38,38,.38)") : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)")}`, background: dark ? "#131728" : "#fff" }}>
-            <input type="number" aria-label="Quantity" disabled={orderLoading} value={qty} onChange={e => setQty(e.target.value === "" ? "" : e.target.value)} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
-            <span className="inline-flex items-center px-3 text-[11px] font-semibold shrink-0 select-none whitespace-nowrap" style={{ borderLeft: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>max<br/>{fQty(maxQty)}</span>
+            <input type="number" aria-label="Quantity" disabled={orderLoading || isPackage} value={qty} onChange={e => setQty(e.target.value === "" ? "" : e.target.value)} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
+            {!isPackage && <span className="inline-flex items-center px-3 text-[11px] font-semibold shrink-0 select-none whitespace-nowrap" style={{ borderLeft: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>max<br/>{fQty(maxQty)}</span>}
+            {isPackage && <span className="inline-flex items-center px-3 text-[11px] font-semibold shrink-0 select-none whitespace-nowrap" style={{ borderLeft: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>fixed</span>}
           </div>
           {qtyOutOfRange && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{qtyNum < minQty ? `Minimum: ${minQty.toLocaleString()}` : `Maximum: ${maxQty.toLocaleString()}`}</div>}
         </div>
@@ -722,31 +737,36 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     return menuData.groups
       .filter(g => normPlatform(g.platform) === platform)
       .filter(g => !search || g.name.toLowerCase().includes(search.toLowerCase()))
-      .map(g => ({
-        id: g.id,
-        name: g.name,
-        type: g.type?.toLowerCase() || "standard",
-        ng: g.nigerian,
-        description: g.description || null,
-        tiers: g.tiers.map(tier => ({
-          id: tier.id,
-          tier: tier.tier,
-          price: tier.price,
-          per: "1K",
-          refill: tier.refill ? "Yes" : "No",
-          speed: tier.speed || "0-2 hrs",
-          min: tier.min,
-          max: tier.max,
-          provider: tier.provider || "mtp",
-          tags: tier.tags || [],
-        })),
-      }));
+      .map(g => {
+        const pkg = g.tiers.length > 0 && g.tiers.every(t => t.min === t.max);
+        return {
+          id: g.id,
+          name: g.name,
+          type: g.type?.toLowerCase() || "standard",
+          ng: g.nigerian,
+          description: g.description || null,
+          isPackage: pkg,
+          tiers: g.tiers.map(tier => ({
+            id: tier.id,
+            tier: tier.tier,
+            price: pkg ? Math.round(tier.price / 1000) : tier.price,
+            pricePer1k: tier.price,
+            per: pkg ? "order" : "1K",
+            refill: tier.refill ? "Yes" : "No",
+            speed: tier.speed || "0-2 hrs",
+            min: tier.min,
+            max: tier.max,
+            provider: tier.provider || "mtp",
+            tags: tier.tags || [],
+          })),
+        };
+      });
   })();
 
   const types = [...new Set(services.map(s => s.type))];
   const filtered = filterType === "all" ? services : services.filter(s => s.type === filterType);
   const hasOrder = selSvc && selTier;
-  const price = selTier ? Math.round(((Number(qty) || 0) / 1000) * selTier.price) : 0;
+  const price = selTier ? Math.round(((Number(qty) || 0) / 1000) * (selTier.pricePer1k || selTier.price)) : 0;
   const activePlat = PLATFORMS.find(p => p.id === platform);
 
   useEffect(() => { setSelSvc(null); setSelTier(null); setFilterType("all"); setOrderModal(false); setOrderSuccess(null); setSearch(""); setLink(""); setComments(""); setQty(""); }, [platform]);
@@ -796,7 +816,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       svcId: svc?.id, tierId: tier.id, tier: tier.tier,
       name: svcName, platform, link: "", qty: tier.min || 1000,
       min: tier.min || 100, max: tier.max || 50000,
-      storedPricePer1k: tier.price || 0,
+      storedPricePer1k: tier.pricePer1k || tier.price || 0,
       needsComments: needsComments || needsReview,
       needsMentions, needsPoll, comments: "", commentsOpen: false,
       expanded: true,
