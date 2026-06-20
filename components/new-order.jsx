@@ -381,7 +381,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const commentShort = needsComments && commentLines > 0 && commentLines < minCommentLines;
 
   const isMultiPostSvc = /last\s+\d+\s*(tweet|post|video|reel|photo)/i.test(svcName);
-  const isProfileSvc = /follow|subscri|member/i.test(svcName) || isMultiPostSvc;
+  const isProfileSvc = /follow|subscri|member|profile visit/i.test(svcName) || isMultiPostSvc;
   const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays/i.test(svcName) && !isProfileSvc;
   const linkTip = getLinkTip(platform, isProfileSvc, isPostSvc);
 
