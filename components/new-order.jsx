@@ -739,7 +739,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       .filter(g => normPlatform(g.platform) === platform)
       .filter(g => !search || g.name.toLowerCase().includes(search.toLowerCase()))
       .map(g => {
-        const pkg = g.tiers.length > 0 && g.tiers.every(t => t.min === t.max);
+        const pkg = (g.type || "").toLowerCase() === "verified-comments";
         return {
           id: g.id,
           name: g.name,
