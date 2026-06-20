@@ -23,7 +23,7 @@ export async function GET() {
         name: s.name,
         category: s.category,
         platform: s.category.toLowerCase().replace('twitter/x', 'twitter'),
-        rate: s.sellPer1k / 100,
+        rate: Number(s.sellPer1k) / 100,
         min: s.min,
         max: s.max,
         refill: s.refill,
