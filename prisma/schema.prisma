@@ -168,8 +168,8 @@ model Service {
   name      String
   category  String
   provider  String  @default("mtp") // 'mtp' | 'jap' | 'dao'
-  costPer1k Int
-  sellPer1k Int
+  costPer1k BigInt
+  sellPer1k BigInt
   markup    Int     @default(54)
   min       Int     @default(100)
   max       Int     @default(50000)
@@ -217,7 +217,7 @@ model ServiceTier {
   groupId   String
   serviceId String?
   tier      String  @default("Standard")
-  sellPer1k Int
+  sellPer1k BigInt
   refill     Boolean @default(false)
   refillDays Int     @default(0)
   speed      String  @default("0-2 hrs")

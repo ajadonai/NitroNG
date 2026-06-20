@@ -133,11 +133,12 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
   const lowestPrice = Math.min(...svc.tiers.map(ti => ti.price));
   const lowestPer = svc.tiers.find(ti => ti.price === lowestPrice)?.per || "1K";
   const activeTier = isSel && selTier ? selTier : null;
+  const accent = svc.isPackage ? { light: "#1d4ed8", dark: "#60a5fa", bgL: "#eff6ff", bgD: "rgba(59,130,246,.12)", selBgL: "#dbeafe", selBgD: "#111d3a", shadow: "59,130,246" } : svc.ng ? { light: "#16a34a", dark: "#4ade80", bgL: "#e8f5ee", bgD: "rgba(30,80,60,.24)", selBgL: "#d0f0db", selBgD: "#122a1c", shadow: "22,163,74" } : null;
   return (
-    <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => onPickService(svc)} className={`no-svc-card rounded-xl desktop:rounded-[14px] py-3 px-3.5 md:py-3.5 md:px-4 desktop:py-4 desktop:px-5 cursor-pointer border border-solid transition-all duration-150 ease-in-out hover:border-[rgba(196,125,142,.19)]${isSel ? " relative z-[1]" : ""}`} style={{ borderColor: isSel ? (svc.ng ? (dark ? "#4ade80" : "#16a34a") : t.accent) : t.cardBorder, borderLeftWidth: isSel ? 4 : svc.ng ? 3 : undefined, borderLeftColor: isSel ? (svc.ng ? (dark ? "#4ade80" : "#16a34a") : "#c47d8e") : svc.ng ? "#4ade80" : undefined, background: isSel ? (svc.ng ? (dark ? "#122a1c" : "#d0f0db") : (dark ? "#2a1828" : "#f5e4e8")) : svc.ng ? (dark ? "rgba(30,80,60,.24)" : "#e8f5ee") : t.cardBg, opacity: selSvc && !isSel ? (dark ? .3 : .45) : 1, transform: isSel ? "scale(1.01)" : "scale(1)", boxShadow: isSel ? (svc.ng ? "0 4px 20px rgba(22,163,74,.31), 0 0 0 1.5px rgba(22,163,74,.28)" : "0 4px 20px rgba(196,125,142,.38), 0 0 0 1.5px rgba(196,125,142,.31)") : undefined }}>
+    <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => onPickService(svc)} className={`no-svc-card rounded-xl desktop:rounded-[14px] py-3 px-3.5 md:py-3.5 md:px-4 desktop:py-4 desktop:px-5 cursor-pointer border border-solid transition-all duration-150 ease-in-out hover:border-[rgba(196,125,142,.19)]${isSel ? " relative z-[1]" : ""}`} style={{ borderColor: isSel ? (accent ? (dark ? accent.dark : accent.light) : t.accent) : t.cardBorder, borderLeftWidth: isSel ? 4 : accent ? 3 : undefined, borderLeftColor: isSel ? (accent ? (dark ? accent.dark : accent.light) : "#c47d8e") : accent ? (dark ? accent.dark : accent.light) : undefined, background: isSel ? (accent ? (dark ? accent.selBgD : accent.selBgL) : (dark ? "#2a1828" : "#f5e4e8")) : accent ? (dark ? accent.bgD : accent.bgL) : t.cardBg, opacity: selSvc && !isSel ? (dark ? .3 : .45) : 1, transform: isSel ? "scale(1.01)" : "scale(1)", boxShadow: isSel ? (accent ? `0 4px 20px rgba(${accent.shadow},.31), 0 0 0 1.5px rgba(${accent.shadow},.28)` : "0 4px 20px rgba(196,125,142,.38), 0 0 0 1.5px rgba(196,125,142,.31)") : undefined }}>
       <div className="flex items-center justify-between gap-3 max-md:flex-wrap max-md:gap-1.5">
         <div className="flex-1 min-w-0 max-md:basis-[60%]">
-          <div className="text-sm md:text-[15px] desktop:text-base font-semibold mb-1" style={{ color: svc.ng ? (dark ? "#5dcaa5" : "#0F6E56") : t.text }}>{svc.name}</div>
+          <div className="text-sm md:text-[15px] desktop:text-base font-semibold mb-1" style={{ color: accent ? (dark ? accent.dark : accent.light) : t.text }}>{svc.name}</div>
           {svc.description && <div className="text-[11px] mb-1.5 leading-snug" style={{ color: t.textMuted }}>{svc.description}</div>}
         </div>
         {!isSel && (
@@ -295,9 +296,11 @@ function minDripDays(qty, type) { const floor = MIN_DAYS_FLOOR[(type || "").toLo
 export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible }) {
   const minQty = selTier?.min || 100;
   const maxQty = selTier?.max || 50000;
+  const isPackage = minQty === maxQty;
+  useEffect(() => { if (isPackage && String(qty) !== String(minQty)) setQty(String(minQty)); }, [isPackage, minQty]);
   const qtyNum = Number(qty) || 0;
   const qtyOutOfRange = qty !== "" && qtyNum > 0 && (qtyNum < minQty || qtyNum > maxQty);
-  const basePrice = selTier ? Math.round((qtyNum / 1000) * selTier.price) : 0;
+  const basePrice = selTier ? Math.round((qtyNum / 1000) * (selTier.pricePer1k || selTier.price)) : 0;
   const discountAmount = loyaltyDiscount > 0 ? Math.round(basePrice * (loyaltyDiscount / 100)) : 0;
   const afterLoyalty = Math.max(0, basePrice - discountAmount);
   const promoDiscountAmt = activePromotion ? Math.round(afterLoyalty * (activePromotion.discountPercent / 100)) : 0;
@@ -419,6 +422,18 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
         </div>}
       </div>
 
+      {/* ── Package note (verified comments etc.) ── */}
+      {selTier && isPackage && selSvc?.type === "verified-comments" && (
+        <div className="mx-5 max-md:mx-3.5 mt-3 rounded-lg py-2 px-3 flex items-start gap-2" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)", border: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={dark ? "#d4949f" : "#a0616e"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <div className="text-[11px] leading-[1.5]" style={{ color: dark ? "#a09890" : "#6e6a65" }}>
+            {selTier.tier === "Budget" && "Delivers 1 comment from smaller verified profiles."}
+            {selTier.tier === "Standard" && "Delivers 3 comments from mid-tier verified accounts."}
+            {selTier.tier === "Premium" && "Delivers 5 comments from top-tier, high-follower verified accounts."}
+          </div>
+        </div>
+      )}
+
       {/* ── Form fields ── */}
       <div className="p-5 max-md:p-3.5">
       {selTier && <>
@@ -481,8 +496,9 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
         <div className="mb-3">
           <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>Quantity</label>
           <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${qtyOutOfRange ? (dark ? "rgba(220,38,38,.4)" : "rgba(220,38,38,.38)") : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)")}`, background: dark ? "#131728" : "#fff" }}>
-            <input type="number" aria-label="Quantity" disabled={orderLoading} value={qty} onChange={e => setQty(e.target.value === "" ? "" : e.target.value)} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
-            <span className="inline-flex items-center px-3 text-[11px] font-semibold shrink-0 select-none whitespace-nowrap" style={{ borderLeft: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>max<br/>{fQty(maxQty)}</span>
+            <input type="number" aria-label="Quantity" disabled={orderLoading || isPackage} value={qty} onChange={e => setQty(e.target.value === "" ? "" : e.target.value)} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
+            {!isPackage && <span className="inline-flex items-center px-3 text-[11px] font-semibold shrink-0 select-none whitespace-nowrap" style={{ borderLeft: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>max<br/>{fQty(maxQty)}</span>}
+            {isPackage && <span className="inline-flex items-center px-3 text-[11px] font-semibold shrink-0 select-none whitespace-nowrap" style={{ borderLeft: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>fixed</span>}
           </div>
           {qtyOutOfRange && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{qtyNum < minQty ? `Minimum: ${minQty.toLocaleString()}` : `Maximum: ${maxQty.toLocaleString()}`}</div>}
         </div>
@@ -722,31 +738,36 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     return menuData.groups
       .filter(g => normPlatform(g.platform) === platform)
       .filter(g => !search || g.name.toLowerCase().includes(search.toLowerCase()))
-      .map(g => ({
-        id: g.id,
-        name: g.name,
-        type: g.type?.toLowerCase() || "standard",
-        ng: g.nigerian,
-        description: g.description || null,
-        tiers: g.tiers.map(tier => ({
-          id: tier.id,
-          tier: tier.tier,
-          price: tier.price,
-          per: "1K",
-          refill: tier.refill ? "Yes" : "No",
-          speed: tier.speed || "0-2 hrs",
-          min: tier.min,
-          max: tier.max,
-          provider: tier.provider || "mtp",
-          tags: tier.tags || [],
-        })),
-      }));
+      .map(g => {
+        const pkg = (g.type || "").toLowerCase() === "verified-comments";
+        return {
+          id: g.id,
+          name: g.name,
+          type: g.type?.toLowerCase() || "standard",
+          ng: g.nigerian,
+          description: g.description || null,
+          isPackage: pkg,
+          tiers: g.tiers.map(tier => ({
+            id: tier.id,
+            tier: tier.tier,
+            price: pkg ? Math.round(tier.price / 1000) : tier.price,
+            pricePer1k: tier.price,
+            per: pkg ? "order" : "1K",
+            refill: tier.refill ? "Yes" : "No",
+            speed: tier.speed || "0-2 hrs",
+            min: tier.min,
+            max: tier.max,
+            provider: tier.provider || "mtp",
+            tags: tier.tags || [],
+          })),
+        };
+      });
   })();
 
   const types = [...new Set(services.map(s => s.type))];
   const filtered = filterType === "all" ? services : services.filter(s => s.type === filterType);
   const hasOrder = selSvc && selTier;
-  const price = selTier ? Math.round(((Number(qty) || 0) / 1000) * selTier.price) : 0;
+  const price = selTier ? Math.round(((Number(qty) || 0) / 1000) * (selTier.pricePer1k || selTier.price)) : 0;
   const activePlat = PLATFORMS.find(p => p.id === platform);
 
   useEffect(() => { setSelSvc(null); setSelTier(null); setFilterType("all"); setOrderModal(false); setOrderSuccess(null); setSearch(""); setLink(""); setComments(""); setQty(""); }, [platform]);
@@ -796,7 +817,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       svcId: svc?.id, tierId: tier.id, tier: tier.tier,
       name: svcName, platform, link: "", qty: tier.min || 1000,
       min: tier.min || 100, max: tier.max || 50000,
-      storedPricePer1k: tier.price || 0,
+      storedPricePer1k: tier.pricePer1k || tier.price || 0,
       needsComments: needsComments || needsReview,
       needsMentions, needsPoll, comments: "", commentsOpen: false,
       expanded: true,

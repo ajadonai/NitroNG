@@ -146,7 +146,7 @@ export async function POST(req) {
         const markupSettings = {};
         const settings = await prisma.setting.findMany({ where: { key: { startsWith: 'markup_' } } });
         settings.forEach(s => { markupSettings[s.key] = s.value; });
-        finalSellPer1k = calculateTierPrice(service.costPer1k, tier || 'Standard', markupSettings);
+        finalSellPer1k = calculateTierPrice(Number(service.costPer1k), tier || 'Standard', markupSettings);
       }
 
       const maxSort = await prisma.serviceTier.aggregate({ where: { groupId }, _max: { sortOrder: true } });
@@ -219,15 +219,14 @@ export async function POST(req) {
       let skipped = 0;
       const ops = [];
 
-      const INT4_MAX = 2147483647;
       for (const t of allTiers) {
-        if (!t.service || !t.service.costPer1k || t.service.costPer1k <= 0) {
+        if (!t.service || !t.service.costPer1k || Number(t.service.costPer1k) <= 0) {
           skipped++;
           continue;
         }
         const isNigerian = !!t.group?.nigerian;
-        const newSell = Math.min(calculateTierPrice(t.service.costPer1k, t.tier, ms, isNigerian), INT4_MAX);
-        if (newSell > 0 && newSell !== t.sellPer1k) {
+        const newSell = calculateTierPrice(Number(t.service.costPer1k), t.tier, ms, isNigerian);
+        if (newSell > 0 && newSell !== Number(t.sellPer1k)) {
           ops.push(prisma.serviceTier.update({ where: { id: t.id }, data: { sellPer1k: newSell } }));
           updated++;
         }

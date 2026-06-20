@@ -23,7 +23,7 @@ export async function GET() {
       if (!g.tiers.length) continue;
       const p = g.platform;
       if (!platformMap[p]) platformMap[p] = { platform: p, services: [], minPrice: Infinity, count: 0 };
-      const price = g.tiers[0].sellPer1k;
+      const price = Number(g.tiers[0].sellPer1k);
       // Extract type from group name (e.g. "Instagram Followers" → "Followers")
       let type = g.name.replace(new RegExp(`^(${p}|X/Twitter|Twitter/X)\\s*`, 'i'), '').trim() || g.type || g.name;
       // Skip geo/Nigerian/combo variants and niche services for the landing cards

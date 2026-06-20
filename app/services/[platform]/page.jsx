@@ -58,8 +58,8 @@ async function getPlatformData(platformName) {
     if (!services.find(s => s.type === type)) {
       services.push({
         type,
-        minPrice: g.tiers[0].sellPer1k / 100,
-        maxPrice: g.tiers[g.tiers.length - 1].sellPer1k / 100,
+        minPrice: Number(g.tiers[0].sellPer1k) / 100,
+        maxPrice: Number(g.tiers[g.tiers.length - 1].sellPer1k) / 100,
         tiers: g.tiers.length,
         refill: g.tiers.some(t => t.refill),
       });

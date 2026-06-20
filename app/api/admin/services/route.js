@@ -25,8 +25,8 @@ export async function GET() {
         apiId: s.apiId,
         name: s.name,
         category: s.category,
-        costPer1k: Math.round(s.costPer1k * usdRate) / 100,
-        sellPer1k: s.sellPer1k / 100,
+        costPer1k: Math.round(Number(s.costPer1k) * usdRate) / 100,
+        sellPer1k: Number(s.sellPer1k) / 100,
         markup: s.markup,
         min: s.min,
         max: s.max,
@@ -118,7 +118,7 @@ export async function POST(req) {
 
     if (action === 'markup') {
       const m = Math.max(0, Math.min(999, Number(body.markup)));
-      const newSell = Math.round(service.costPer1k * (1 + m / 100));
+      const newSell = Math.round(Number(service.costPer1k) * (1 + m / 100));
       await prisma.service.update({ where: { id: serviceId }, data: { markup: m, sellPer1k: newSell } });
       await logActivity(admin.name, `Updated markup for ${service.name} to ${m}%`, 'service');
       return Response.json({ success: true, markup: m, sellPer1k: newSell / 100 });
