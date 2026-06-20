@@ -306,8 +306,8 @@ export async function PATCH(req) {
       const usdRate = Number(usdRateSetting?.value || 1600);
 
       const orderData = completed.map(o => {
-        const charge = Math.round((o.tier.sellPer1k / 1000) * o.quantity / 100) * 100;
-        const cost = Math.round((o.service.costPer1k * usdRate / 1000) * o.quantity / 100) * 100;
+        const charge = Math.round((Number(o.tier.sellPer1k) / 1000) * o.quantity / 100) * 100;
+        const cost = Math.round((Number(o.service.costPer1k) * usdRate / 1000) * o.quantity / 100) * 100;
         return { original: o, charge: Math.max(100, charge), cost };
       });
       const totalCharge = orderData.reduce((s, d) => s + d.charge, 0);
@@ -444,12 +444,12 @@ export async function POST(req) {
       }
 
       const clientPrice = row.expectedPrice ? row.expectedPrice * 100 : null;
-      if (clientPrice && tier.sellPer1k > clientPrice && (tier.sellPer1k - clientPrice) / clientPrice > 0.05) {
-        driftRows.push({ row: i + 1, clientPrice, serverPrice: tier.sellPer1k });
+      if (clientPrice && Number(tier.sellPer1k) > clientPrice && (Number(tier.sellPer1k) - clientPrice) / clientPrice > 0.05) {
+        driftRows.push({ row: i + 1, clientPrice, serverPrice: Number(tier.sellPer1k) });
       }
 
-      const charge = Math.round((tier.sellPer1k / 1000) * qty / 100) * 100;
-      const cost = Math.round((service.costPer1k * usdRate / 1000) * qty / 100) * 100;
+      const charge = Math.round((Number(tier.sellPer1k) / 1000) * qty / 100) * 100;
+      const cost = Math.round((Number(service.costPer1k) * usdRate / 1000) * qty / 100) * 100;
       if (!charge || charge <= 0) {
         return Response.json({ error: `Row ${i + 1}: service pricing not configured` }, { status: 400 });
       }

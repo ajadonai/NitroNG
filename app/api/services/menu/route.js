@@ -83,8 +83,8 @@ export async function GET(req) {
           tiers: g.tiers.filter(t => t.service || t.serviceId).map(t => ({
             id: t.id,
             tier: t.tier,
-            price: t.sellPer1k / 100,
-            min: Math.max(t.service?.min || 100, nitroMin),
+            price: Number(t.sellPer1k) / 100,
+            min: Math.min(Math.max(t.service?.min || 100, nitroMin), t.service?.max || 100000),
             max: t.service?.max || 100000,
             refill: t.refill,
             speed: t.speed,

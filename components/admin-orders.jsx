@@ -302,6 +302,23 @@ export default function AdminOrdersPage({ dark, t }) {
     if (expandedBatchOrder) { const o = orders.find(x => x.id === expandedBatchOrder); autoCheck(o); }
   }, [expandedBatchOrder]);
 
+  const [cancelPrompt, setCancelPrompt] = useState(null);
+  const [cancelNote, setCancelNote] = useState('');
+  const [cancelSending, setCancelSending] = useState(false);
+  const openCancel = (o) => { setCancelPrompt(o); setCancelNote(''); };
+  const doCancel = async () => {
+    if (!cancelPrompt) return;
+    setCancelSending(true);
+    try {
+      const res = await fetch("/api/admin/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "cancel", orderId: cancelPrompt.id, note: cancelNote.trim() }) });
+      const data = await res.json();
+      if (!res.ok) { toast.error("Cancel failed", data.error || "Something went wrong"); return; }
+      toast.success(cancelPrompt.id, data.message || "Order cancelled");
+      setCancelPrompt(null);
+      if (data.status) setOrders(prev => prev.map(o => o.id === cancelPrompt.id ? { ...o, status: data.status } : o));
+    } catch { toast.error("Request failed", "Check your connection"); } finally { setCancelSending(false); }
+  };
+
   const [refundPrompt, setRefundPrompt] = useState(null);
   const [refundType, setRefundType] = useState('full');
   const [refundAmount, setRefundAmount] = useState('');
@@ -557,7 +574,7 @@ export default function AdminOrdersPage({ dark, t }) {
                             {/* Actions */}
                             <div className="flex gap-1.5">
                               <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[62px] py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={12} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
-                              {o.status !== "Cancelled" && o.status !== "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? This may issue a refund.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={!!actionLoading} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>}
+                              {o.status !== "Cancelled" && o.status !== "Completed" && <button onClick={() => openCancel(o)} disabled={!!actionLoading} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>}
                               {o.status === "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Refill Order", message: `Request a refill for order ${o.id}?`, confirmLabel: "Refill" }); if (ok) doAction(o.id, "refill"); }} disabled={!!actionLoading} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>Refill</button>}
                               {(o.status === "Completed" || o.status === "Partial") && <button onClick={() => openRefund(o)} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(52,211,153,.12)" : "rgba(5,150,105,.08)", color: dark ? "#34d399" : "#059669" }}>Refund</button>}
                               <button onClick={() => { setTicketMsg(`Hi ${o.user || "there"}, we noticed an issue with your order ${o.id}. `); setTicketPrompt({ userId: o.userId, orderId: o.id }); }} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(224,164,88,.12)" : "rgba(224,164,88,.08)", color: dark ? "#e0a458" : "#b45309" }}>Ticket</button>
@@ -718,7 +735,7 @@ export default function AdminOrdersPage({ dark, t }) {
                   {/* Actions */}
                   <div className="flex gap-2">
                     <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[72px] py-2 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
-                    {o.status !== "Cancelled" && o.status !== "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? This may issue a refund.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={!!actionLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>}
+                    {o.status !== "Cancelled" && o.status !== "Completed" && <button onClick={() => openCancel(o)} disabled={!!actionLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>}
                     {o.status === "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Refill Order", message: `Request a refill for order ${o.id}?`, confirmLabel: "Refill" }); if (ok) doAction(o.id, "refill"); }} disabled={!!actionLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>Refill</button>}
                     {(o.status === "Completed" || o.status === "Partial") && <button onClick={() => openRefund(o)} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(52,211,153,.12)" : "rgba(5,150,105,.08)", color: dark ? "#34d399" : "#059669" }}>Refund</button>}
                     <button onClick={() => { setTicketMsg(`Hi ${o.user || "there"}, we noticed an issue with your order ${o.id}. `); setTicketPrompt({ userId: o.userId, orderId: o.id }); }} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(224,164,88,.12)" : "rgba(224,164,88,.08)", color: dark ? "#e0a458" : "#b45309" }}>Ticket</button>
@@ -770,6 +787,23 @@ export default function AdminOrdersPage({ dark, t }) {
           </div>
         )}
       </div>
+
+      {cancelPrompt && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => setCancelPrompt(null)}>
+          <div className="w-full max-w-[400px] mx-4 rounded-xl p-5" style={{ background: dark ? "#1e1e1e" : "#fff", border: `1px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
+            <div className="text-[15px] font-semibold mb-1" style={{ color: t.text }}>Cancel order {cancelPrompt.id}</div>
+            <div className="text-[12px] mb-4" style={{ color: t.textMuted }}>Customer: {cancelPrompt.user} · Charged: {fN(cancelPrompt.charge)}</div>
+            <div className="mb-4">
+              <label className="text-[11px] uppercase tracking-[1px] block mb-1.5" style={{ color: t.textMuted }}>Reason (optional)</label>
+              <textarea value={cancelNote} onChange={e => setCancelNote(e.target.value)} rows={3} className="w-full rounded-lg py-2.5 px-3 text-sm outline-none resize-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.text, fontFamily: "inherit" }} placeholder="e.g. Wrong link format, user requested..." autoFocus />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setCancelPrompt(null)} className="py-2 px-4 rounded-lg text-sm font-medium cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textSoft }}>Back</button>
+              <button onClick={doCancel} disabled={cancelSending} className="py-2 px-4 rounded-lg text-sm font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.12)", color: dark ? "#fca5a5" : "#dc2626", opacity: cancelSending ? .5 : 1 }}>{cancelSending ? "Cancelling..." : "Cancel Order"}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {refundPrompt && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => setRefundPrompt(null)}>

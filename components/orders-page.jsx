@@ -25,12 +25,12 @@ function CopyId({ value, dark, mono = true }) {
 }
 
 const DRIP_CONFIG = {
-  followers:  { batchSize: 500,  intervalHours: 2 },
-  views:      { batchSize: 5000, intervalHours: 1 },
-  likes:      { batchSize: 500,  intervalHours: 1 },
-  comments:   { batchSize: 50,   intervalHours: 0.5 },
-  engagement: { batchSize: 1500, intervalHours: 1 },
-  reviews:    { batchSize: 10,   intervalHours: 2 },
+  followers:  { batchSize: 200,  intervalHours: 2 },
+  views:      { batchSize: 2000, intervalHours: 1 },
+  likes:      { batchSize: 200,  intervalHours: 1 },
+  comments:   { batchSize: 20,   intervalHours: 0.5 },
+  engagement: { batchSize: 500,  intervalHours: 1 },
+  reviews:    { batchSize: 5,    intervalHours: 2 },
 };
 
 function estimateDelivery(serviceType, quantity, remains) {
@@ -320,8 +320,11 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         if (err === "user_cancelled") {
           msg = "You cancelled this order and your balance has been restored.";
           isNeutral = true;
-        } else if (err === "admin_cancelled") {
-          msg = "Our team cancelled this order and refunded your wallet. Reach out to support if you have questions.";
+        } else if (err === "admin_cancelled" || err.startsWith("admin_cancelled:")) {
+          const reason = err.startsWith("admin_cancelled: ") ? err.slice("admin_cancelled: ".length).trim() : "";
+          msg = reason
+            ? `Our team cancelled this order: ${reason}. Your wallet has been refunded.`
+            : "Our team cancelled this order and refunded your wallet. Reach out to support if you have questions.";
           isNeutral = true;
         } else if (err === "dispatch_failed") {
           msg = "We couldn't place this order so we refunded you automatically.";

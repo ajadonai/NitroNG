@@ -15,6 +15,9 @@ const ALLOWED_KEYS = new Set([
   'social_instagram', 'social_twitter',
   'social_whatsapp_support', 'social_telegram_support',
   'notification_history',
+  'affiliate_enabled', 'affiliate_starter_rate', 'affiliate_growth_rate', 'affiliate_pro_rate',
+  'affiliate_lead_split', 'affiliate_growth_threshold', 'affiliate_pro_threshold',
+  'affiliate_hold_days', 'affiliate_min_payout', 'affiliate_min_order', 'affiliate_max_links',
 ]);
 
 export async function GET() {

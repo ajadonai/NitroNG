@@ -26,7 +26,7 @@ export async function generateMetadata({ params }) {
 
   return {
     title: `${meta.name} Growth Services | Fastest Delivery in Nigeria`,
-    description: `Promote your ${meta.name} with ${meta.desc}. Instant results, Naira pricing, and satisfaction guarantees. Get started in seconds.`,
+    description: `Promote your ${meta.name} with ${meta.desc}. Fast results, Naira pricing, and refill coverage. Get started in seconds.`,
     alternates: { canonical: `https://nitro.ng/services/${platform}` },
     openGraph: {
       title: `${meta.name} Growth Services | The Nitro NG`,
@@ -58,8 +58,8 @@ async function getPlatformData(platformName) {
     if (!services.find(s => s.type === type)) {
       services.push({
         type,
-        minPrice: g.tiers[0].sellPer1k / 100,
-        maxPrice: g.tiers[g.tiers.length - 1].sellPer1k / 100,
+        minPrice: Number(g.tiers[0].sellPer1k) / 100,
+        maxPrice: Number(g.tiers[g.tiers.length - 1].sellPer1k) / 100,
         tiers: g.tiers.length,
         refill: g.tiers.some(t => t.refill),
       });

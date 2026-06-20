@@ -204,9 +204,9 @@ export async function PATCH(req) {
       const usdRate = Number(usdRateSetting?.value || 1600);
 
       // Recalculate charge from current tier/service price (not the old order's charge)
-      const currentSellPer1k = order.tier?.sellPer1k || order.service.sellPer1k;
+      const currentSellPer1k = Number(order.tier?.sellPer1k || order.service.sellPer1k);
       let charge = Math.round((currentSellPer1k / 1000) * order.quantity / 100) * 100;
-      const cost = Math.round((order.service.costPer1k * usdRate / 1000) * order.quantity / 100) * 100;
+      const cost = Math.round((Number(order.service.costPer1k) * usdRate / 1000) * order.quantity / 100) * 100;
 
       if (!charge || charge <= 0) {
         return Response.json({ error: 'Service pricing not configured' }, { status: 400 });
@@ -448,8 +448,8 @@ export async function POST(req) {
       if (qty < effectiveMin || qty > service.max) {
         return Response.json({ error: `Quantity must be between ${effectiveMin.toLocaleString()} and ${service.max.toLocaleString()}` }, { status: 400 });
       }
-      charge = Math.round((tier.sellPer1k / 1000) * qty / 100) * 100;
-      cost = Math.round((service.costPer1k * usdRate / 1000) * qty / 100) * 100;
+      charge = Math.round((Number(tier.sellPer1k) / 1000) * qty / 100) * 100;
+      cost = Math.round((Number(service.costPer1k) * usdRate / 1000) * qty / 100) * 100;
     } else {
       // Legacy flow: direct serviceId
       service = await prisma.service.findUnique({ where: { id: serviceId } });
@@ -463,8 +463,8 @@ export async function POST(req) {
       if (qty < service.min || qty > service.max) {
         return Response.json({ error: `Quantity must be between ${service.min.toLocaleString()} and ${service.max.toLocaleString()}` }, { status: 400 });
       }
-      charge = Math.round((service.sellPer1k / 1000) * qty / 100) * 100;
-      cost = Math.round((service.costPer1k * usdRate / 1000) * qty / 100) * 100;
+      charge = Math.round((Number(service.sellPer1k) / 1000) * qty / 100) * 100;
+      cost = Math.round((Number(service.costPer1k) * usdRate / 1000) * qty / 100) * 100;
       tierName = service.name;
     }
 

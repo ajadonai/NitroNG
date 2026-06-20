@@ -11,10 +11,7 @@ Sentry.init({
     /webkit\.messageHandlers/,
   ],
   denyUrls: [
-    /app:\/\/autofill_contact_enhanced/,
-    /app:\/\/navigation_performance_logger/,
-    /app:\/\/uxa\//,
-    /app:\/\/JSBridgeCallback/,
+    /^app:\/\//,
   ],
   beforeSend(event) {
     const frames = event.exception?.values?.[0]?.stacktrace?.frames;
