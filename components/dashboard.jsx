@@ -1124,6 +1124,7 @@ function DashboardInner({ initialData }) {
       case "settings":
         return <SettingsPage user={user} dark={dark} t={t} themeMode={themeMode} setThemeMode={setThemeMode} setDark={setDark} />;
       case "support":
+        if (socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setActive("overview"); return null; }
         return <SupportPage dark={dark} t={t} />;
       case "add-funds":
         return <AddFundsPage user={user} txs={enrichedTxs} walletSummary={walletSummary} dark={dark} t={t} paymentStatus={paymentStatus} setPaymentStatus={setPaymentStatus} onPlaceOrder={() => setActive("services")} onRefresh={refreshDashboard} />;
@@ -1368,7 +1369,7 @@ function DashboardInner({ initialData }) {
               );
             }
             return (
-              <button key={item.id} onClick={() => { if (item.soon) return; setActive(item.id); setMoreOpen(false); }} className="dash-more-item" style={{ background: active === item.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)"), color: item.soon ? (dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)") : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.6)")), fontWeight: active === item.id ? 600 : 500, cursor: item.soon ? "default" : "pointer", borderColor: item.soon ? "transparent" : undefined }}>
+              <button key={item.id} onClick={() => { if (item.soon) return; if (item.id === "support" && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setMoreOpen(false); return; } setActive(item.id); setMoreOpen(false); }} className="dash-more-item" style={{ background: active === item.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)"), color: item.soon ? (dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)") : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.6)")), fontWeight: active === item.id ? 600 : 500, cursor: item.soon ? "default" : "pointer", borderColor: item.soon ? "transparent" : undefined }}>
                 <div className="dash-more-item-icon" style={{ background: item.soon ? (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)") : (active === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)")), color: item.soon ? (dark ? "rgba(255,255,255,.3)" : "rgba(0,0,0,.3)") : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)")) }}>{I[item.id]}</div>
                 {item.label}
                 {item.soon && <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>Soon</span>}

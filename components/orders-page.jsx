@@ -320,8 +320,11 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         if (err === "user_cancelled") {
           msg = "You cancelled this order and your balance has been restored.";
           isNeutral = true;
-        } else if (err === "admin_cancelled") {
-          msg = "Our team cancelled this order and refunded your wallet. Reach out to support if you have questions.";
+        } else if (err === "admin_cancelled" || err.startsWith("admin_cancelled:")) {
+          const reason = err.startsWith("admin_cancelled: ") ? err.slice("admin_cancelled: ".length).trim() : "";
+          msg = reason
+            ? `Our team cancelled this order: ${reason}. Your wallet has been refunded.`
+            : "Our team cancelled this order and refunded your wallet. Reach out to support if you have questions.";
           isNeutral = true;
         } else if (err === "dispatch_failed") {
           msg = "We couldn't place this order so we refunded you automatically.";
