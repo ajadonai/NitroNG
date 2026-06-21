@@ -338,7 +338,7 @@ export async function GET(req) {
     try {
       const stale = await prisma.order.findMany({
         where: {
-          status: { in: ['Pending', 'Dispatching'] }, apiOrderId: null, deletedAt: null,
+          status: 'Pending', apiOrderId: null, deletedAt: null,
           OR: [
             { retryCount: { gte: 5 }, createdAt: { lt: new Date(Date.now() - 6 * 60 * 60 * 1000) } },
             { createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
@@ -351,7 +351,7 @@ export async function GET(req) {
         try {
           await prisma.$transaction(async (tx) => {
             const claimed = await tx.order.updateMany({
-              where: { id: order.id, status: { in: ['Pending', 'Dispatching'] }, apiOrderId: null },
+              where: { id: order.id, status: 'Pending', apiOrderId: null },
               data: { status: 'Cancelled', lastError: 'dispatch_failed', refundedAt: new Date() },
             });
             if (claimed.count === 0) return;
