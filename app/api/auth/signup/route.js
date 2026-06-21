@@ -34,6 +34,8 @@ export async function POST(req) {
     if (firstName) { const fnCheck = checkName(firstName); if (fnCheck.blocked) return error(fnCheck.reason); }
     if (lastName) { const lnCheck = checkName(lastName); if (lnCheck.blocked) return error(lnCheck.reason); }
 
+    const cleanedPhone = (phone || '').replace(/\D/g, '').replace(/^234/, '').replace(/^0+/, '');
+    if (!cleanedPhone || !/^[789]\d{9}$/.test(cleanedPhone)) return error('Please enter a valid Nigerian phone number');
     if (!validateEmail(email)) return error('Please enter a valid email address');
     if (isDisposableEmail(email)) return error('Disposable email addresses aren\'t allowed. Please use a permanent email.');
 
