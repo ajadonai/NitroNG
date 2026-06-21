@@ -218,9 +218,9 @@ export default function AdminOrdersPage({ dark, t }) {
   }, [search, fetchOrders]);
 
   const needsDispatch = (o) => {
-    if (o.status === 'Cancelled' || o.status === 'Completed') return false;
+    if (!['Pending', 'Processing'].includes(o.status)) return false;
     // Non-drip order with no provider ID
-    if (!o.dripDispatches && !o.apiOrderId && ['Pending', 'Processing'].includes(o.status)) return true;
+    if (!o.dripDispatches && !o.apiOrderId) return true;
     // Drip order with stuck/failed/ghost batches
     if (o.dripDispatches?.some(d => d.status === 'dispatching' || d.status === 'failed' || (d.error && /\[GHOST\]|\[RETRY_FAILED\]/.test(d.error)))) return true;
     return false;
