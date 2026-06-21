@@ -104,21 +104,6 @@ export default function AdminUsersPage({ dark, t }) {
     if (ok) doAction(user.id, "credit", creditAmt, creditType);
   };
 
-  const [ticketPrompt, setTicketPrompt] = useState(null);
-  const [ticketMsg, setTicketMsg] = useState("");
-  const [ticketSending, setTicketSending] = useState(false);
-  const createTicket = async () => {
-    if (!ticketPrompt || !ticketMsg.trim()) return;
-    setTicketSending(true);
-    try {
-      const res = await fetch("/api/admin/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create-for-user", userId: ticketPrompt.id, message: ticketMsg.trim() }) });
-      const data = await res.json();
-      if (!res.ok) { toast.error("Failed", data.error || "Could not create ticket"); return; }
-      toast.success("Ticket created", data.ticketId);
-      setTicketPrompt(null);
-      setTicketMsg("");
-    } catch { toast.error("Failed", "Check your connection"); } finally { setTicketSending(false); }
-  };
 
   const viewTransactions = async (user) => {
     if (txUser?.id === user.id) { setTxUser(null); setTxList([]); setTxPage(1); return; }
@@ -260,7 +245,7 @@ export default function AdminUsersPage({ dark, t }) {
                     <button onClick={() => viewTransactions(u)} className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${txUser?.id === u.id ? t.accent : t.cardBorder}`, background: txUser?.id === u.id ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.06)") : "none", color: txUser?.id === u.id ? t.accent : t.textSoft }}>Txns</button>
                     {!isDeleted && <button onClick={() => setCreditId(creditId === u.id ? null : u.id)} className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${creditId === u.id ? t.accent : t.cardBorder}`, background: creditId === u.id ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.06)") : "none", color: t.accent }}>Credit</button>}
                     <button onClick={() => handleBan(u)} className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${isDeleted ? (dark ? "rgba(110,231,183,.28)" : "rgba(5,150,105,.24)") : (dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)")}`, background: "none", color: isDeleted ? t.green : (u.status === "Active" ? (dark ? "#fca5a5" : "#dc2626") : t.green) }}>{isDeleted ? "Restore" : (u.status === "Active" ? "Ban" : "Activate")}</button>
-                    {!isDeleted && <button onClick={() => { setTicketMsg(`Hi ${u.name || "there"}, `); setTicketPrompt(u); }} className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${dark ? "rgba(224,164,88,.28)" : "rgba(224,164,88,.24)"}`, background: "none", color: dark ? "#e0a458" : "#b45309" }}>Ticket</button>}
+                    {!isDeleted && (u.phone ? <a href={`https://wa.me/${u.phone.replace(/\D/g,"")}?text=${encodeURIComponent(`Hi ${(u.name||"").split(" ")[0]||"there"}, this is Nitro Support.\n\n`)}`} target="_blank" rel="noopener noreferrer" className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] no-underline transition-all duration-200 hover:-translate-y-px inline-flex items-center gap-1" style={{ border: `1px solid ${dark ? "rgba(37,211,102,.28)" : "rgba(37,211,102,.24)"}`, background: "none", color: "#25d366" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>WhatsApp</a> : <button onClick={() => toast.info("No WhatsApp", `${u.name} hasn't added their number yet`)} className="py-1.5 px-2.5 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px inline-flex items-center gap-1 opacity-60" style={{ border: `1px solid ${dark ? "rgba(37,211,102,.28)" : "rgba(37,211,102,.24)"}`, background: "none", color: "#25d366" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>WhatsApp</button>)}
                   </div>
                 </div>
 
@@ -348,19 +333,6 @@ export default function AdminUsersPage({ dark, t }) {
           <div className="flex gap-1">
             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="py-1.5 px-3 rounded-lg text-[12px] font-medium cursor-pointer font-[inherit]" style={{ border: `1px solid ${t.cardBorder}`, background: "none", color: t.textSoft, opacity: page === 1 ? .4 : 1 }}>← Prev</button>
             <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="py-1.5 px-3 rounded-lg text-[12px] font-medium cursor-pointer font-[inherit]" style={{ border: `1px solid ${t.cardBorder}`, background: "none", color: t.textSoft, opacity: page >= totalPages ? .4 : 1 }}>Next →</button>
-          </div>
-        </div>
-      )}
-      {ticketPrompt && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => { setTicketPrompt(null); setTicketMsg(""); }}>
-          <div className="w-full max-w-[420px] mx-4 rounded-xl p-5" style={{ background: dark ? "#1e1e1e" : "#fff", border: `1px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
-            <div className="text-[15px] font-semibold mb-1" style={{ color: t.text }}>Create ticket for {ticketPrompt.name || "user"}</div>
-            <div className="text-[12px] mb-3" style={{ color: t.textMuted }}>{ticketPrompt.email} — this will appear as a support message in their dashboard.</div>
-            <textarea value={ticketMsg} onChange={e => setTicketMsg(e.target.value)} rows={4} className="w-full rounded-lg py-2.5 px-3 text-sm resize-none outline-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.text }} placeholder="Type your message..." autoFocus />
-            <div className="flex justify-end gap-2 mt-3">
-              <button onClick={() => { setTicketPrompt(null); setTicketMsg(""); }} className="py-2 px-4 rounded-lg text-sm font-medium cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textSoft }}>Cancel</button>
-              <button onClick={createTicket} disabled={!ticketMsg.trim() || ticketSending} className="py-2 px-4 rounded-lg text-sm font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(224,164,88,.2)" : "rgba(224,164,88,.12)", color: dark ? "#e0a458" : "#b45309", opacity: !ticketMsg.trim() || ticketSending ? .5 : 1 }}>{ticketSending ? "Creating..." : "Create Ticket"}</button>
-            </div>
           </div>
         </div>
       )}

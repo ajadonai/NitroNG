@@ -72,6 +72,13 @@ export async function POST(req) {
       data.notifReadIds = JSON.stringify(merged.slice(-500));
     }
 
+    // Phone number update
+    if (typeof body.phone === 'string') {
+      const cleaned = body.phone.replace(/\D/g, '');
+      if (cleaned.length < 10 || cleaned.length > 15) return error('Enter a valid phone number', 400);
+      data.phone = body.phone.startsWith('+') ? body.phone : `+234${cleaned}`;
+    }
+
     // Clear all — set timestamp
     if (body.clearAll === true) {
       data.notifClearedAt = new Date();
@@ -87,6 +94,7 @@ export async function POST(req) {
     return ok({ message: 'Updated', ...data });
   } catch (err) {
     log.error('Notifications POST', err);
+    if (err?.code === 'P2002') return error('This phone number is already registered', 400);
     return error('Failed to update', 500);
   }
 }

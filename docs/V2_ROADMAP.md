@@ -841,6 +841,72 @@ Concept defined. No implementation yet. Awaiting account rank system design and 
 
 ---
 
+## Product 8: Bounties (Tasks for Credits)
+
+*Added June 2026*
+
+### What it is
+
+Users complete real-world tasks that increase Nitro's visibility and brand presence across platforms. In return, they earn wallet credit. Tasks are things like leaving a Google review, posting on Trustpilot, writing a Reddit post, making a tweet, creating a YouTube video, or sharing Nitro on their story. Each completed bounty pays a fixed credit reward after admin verification.
+
+### Why
+
+Nitro needs organic visibility beyond paid ads. User-generated reviews, social mentions, and platform posts create compounding SEO and trust signals that ads cannot buy. Google reviews improve local search ranking. Trustpilot builds credibility for new visitors. Reddit and Twitter posts generate backlinks and social proof. YouTube videos create evergreen discovery. Paying users to do this is cheaper than equivalent ad spend and produces more authentic content.
+
+### How it works
+
+1. Admin creates bounty types in the admin panel (e.g. "Google Review", "Tweet about Nitro", "YouTube Review Video")
+2. Each bounty type has: title, description, instructions, reward amount, verification method, max claims per user, active/inactive toggle
+3. User visits the Bounties page in the dashboard, sees available bounties
+4. User claims a bounty, completes the task, submits proof (screenshot URL or link to the post)
+5. Admin reviews submissions, approves or rejects
+6. On approval, reward is credited to the user's wallet as bonus credit (non-withdrawable, spend-only)
+
+### Bounty types (starting set)
+
+| Bounty | Reward (hypothesis) | Verification | Notes |
+|--------|---------------------|--------------|-------|
+| Google Review (5-star) | ₦500 | Admin reviews screenshot | One-time per user |
+| Trustpilot Review | ₦500 | Admin checks Trustpilot page | One-time per user |
+| Tweet about Nitro | ₦200 | Link to tweet, admin checks it's live | Repeatable monthly |
+| Instagram Story mention | ₦150 | Screenshot of live story | Repeatable weekly |
+| Reddit post (relevant sub) | ₦300 | Link to post, admin checks | One-time per sub |
+| YouTube video review | ₦1,000-₦2,000 | Link to video, min 60s | One-time per user, higher reward for quality |
+| TikTok video mention | ₦300 | Link to video | Repeatable monthly |
+| Blog post / article | ₦1,000 | Link to published post | One-time per user |
+
+Reward amounts are starting hypotheses. Adjust based on actual ROI of each channel.
+
+### Key decisions
+
+| Decision | What was chosen | Why |
+|---|---|---|
+| Reward type | Bonus credit (non-withdrawable) | Users must spend rewards on Nitro services, driving orders. Prevents gaming for cash extraction. |
+| Verification | Manual admin review (v1) | Automated verification is fragile (deleted posts, fake screenshots). Start manual, automate later if volume justifies. |
+| Repeatability | Per-bounty config | Some tasks make sense once (Google review), others monthly (tweets). Admin sets per bounty type. |
+| Where it lives | Dashboard tab, same level as Services/Orders | Visible but not intrusive. Users discover it organically. |
+
+### Fraud prevention
+
+- One Google/Trustpilot review per user (deduplicate by user ID)
+- Admin can reject low-effort or fake submissions
+- Minimum account age before bounties are available (e.g. 7 days, configurable)
+- Rate limit: max N bounty submissions per day per user
+- Admin can ban a user from bounties without banning their account
+
+### Admin UI
+
+- Bounty type management: CRUD for bounty types with reward, instructions, verification notes, max claims
+- Submission queue: pending submissions with proof links, approve/reject buttons, notes field
+- Stats: total rewards paid, submissions by type, approval rate
+- Toggle: enable/disable entire bounties feature
+
+### Status
+
+Concept defined. Not yet built. Awaiting go-ahead.
+
+---
+
 ## Feature: Changelog (What's New)
 
 Public-facing release notes page visible to logged-in users. Simple list of entries (date + short description) showing platform updates, new features, and fixes. Stored in the database with an admin UI to create/edit entries — no deploys needed to publish updates. Could live as a dashboard tab or standalone page. Keep it lightweight: no comments, no reactions, just a chronological feed.

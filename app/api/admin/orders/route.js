@@ -25,7 +25,7 @@ export async function GET(req) {
 
     let hasDripTable = true;
     const include = {
-      user: { select: { name: true, email: true } },
+      user: { select: { name: true, email: true, phone: true } },
       service: { select: { name: true, category: true, provider: true, apiId: true } },
       tier: { select: { tier: true, group: { select: { name: true, platform: true, type: true } } } },
     };
@@ -47,6 +47,7 @@ export async function GET(req) {
         userId: o.userId,
         user: o.user?.name || 'Unknown',
         email: o.user?.email || '',
+        phone: o.user?.phone || null,
         service: o.tier?.group?.name || o.service?.name || o.serviceId,
         tier: o.tier?.tier || null,
         platform: o.tier?.group?.platform || o.service?.category || 'unknown',
