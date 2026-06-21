@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
+Allow: /api/cron/cohort-stats
 Disallow: /api/
 Disallow: /admin/
 Disallow: /dashboard/
