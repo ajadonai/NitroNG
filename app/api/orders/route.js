@@ -336,13 +336,21 @@ export async function PATCH(req) {
           else extra.comments = order.comments;
         }
 
+        const reorderApiType = (order.service.apiType || '').toLowerCase();
+        if (reorderApiType === 'subscriptions') {
+          const match = order.link.match(/instagram\.com\/([^/?#]+)/);
+          if (match) extra.username = match[1];
+        }
+
         if (reorderDripSchedule) {
           await prisma.order.update({ where: { id: newOrder.id }, data: { status: 'Processing' } });
           const first = await prisma.dripDispatch.findFirst({ where: { orderId: newOrder.id, day: 1, batch: 1 } });
           if (first) {
             try {
+              const batchExtra = { ...extra };
+              if (reorderApiType === 'subscriptions') { batchExtra.min = first.quantity; batchExtra.max = first.quantity; }
               await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'dispatching', dispatchedAt: new Date() } });
-              const provResult = await placeOrder(provider, order.service.apiId, order.link, first.quantity, extra);
+              const provResult = await placeOrder(provider, order.service.apiId, order.link, first.quantity, batchExtra);
               const batchApiId = provResult.order ? String(provResult.order) : null;
               if (batchApiId) {
                 await prisma.dripDispatch.update({ where: { id: first.id }, data: { apiOrderId: batchApiId, status: 'processing' } });
@@ -358,6 +366,7 @@ export async function PATCH(req) {
           }
         } else {
           try {
+            if (reorderApiType === 'subscriptions') { extra.min = order.quantity; extra.max = order.quantity; }
             const result = await placeOrder(provider, order.service.apiId, order.link, order.quantity, extra);
             apiOrderId = result.order ? String(result.order) : null;
             if (apiOrderId) {
@@ -703,14 +712,21 @@ export async function POST(req) {
         else extra.comments = safeComments;
       }
 
+      if (apiType === 'subscriptions') {
+        const match = trimmedLink.match(/instagram\.com\/([^/?#]+)/);
+        if (match) extra.username = match[1];
+      }
+
       if (dripSchedule) {
         // Drip: dispatch batch 1 immediately, cron handles the rest
         await prisma.order.update({ where: { id: result.id }, data: { status: 'Processing', dispatchedAt: new Date() } });
         const first = await prisma.dripDispatch.findFirst({ where: { orderId: result.id, day: 1, batch: 1 } });
         if (first) {
           try {
+            const batchExtra = { ...extra };
+            if (apiType === 'subscriptions') { batchExtra.min = first.quantity; batchExtra.max = first.quantity; }
             await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'dispatching', dispatchedAt: new Date() } });
-            const provResult = await placeOrder(provider, service.apiId, trimmedLink, first.quantity, extra);
+            const provResult = await placeOrder(provider, service.apiId, trimmedLink, first.quantity, batchExtra);
             const batchApiId = provResult.order ? String(provResult.order) : null;
             if (batchApiId) {
               await prisma.dripDispatch.update({ where: { id: first.id }, data: { apiOrderId: batchApiId, status: 'processing' } });
@@ -739,6 +755,7 @@ export async function POST(req) {
       } else {
         // Direct dispatch (no drip)
         try {
+          if (apiType === 'subscriptions') { extra.min = qty; extra.max = qty; }
           await prisma.order.update({ where: { id: result.id }, data: { dispatchedAt: new Date() } });
           const provResult = await placeOrder(provider, service.apiId, trimmedLink, qty, extra);
           apiOrderId = provResult.order ? String(provResult.order) : null;
