@@ -346,52 +346,92 @@ export async function POST(req) {
       if (!fullOrder) return Response.json({ error: 'Order not found' }, { status: 404 });
       if (fullOrder.status === 'Cancelled') return Response.json({ error: 'Order is cancelled' }, { status: 400 });
 
-      // For drip orders, dispatch the next pending/stuck batch
-      const stuckBatch = await prisma.dripDispatch.findFirst({
-        where: { orderId: fullOrder.id, status: { in: ['pending', 'dispatching', 'failed'] } },
-        orderBy: { batch: 'asc' },
-      });
+      // Check if this is a drip order
+      const hasDrip = await prisma.dripDispatch.findFirst({ where: { orderId: fullOrder.id }, select: { id: true } });
 
-      if (stuckBatch) {
-        const { placeOrder } = await import('@/lib/smm');
-        const service = fullOrder.service;
-        const prov = service.provider || 'mtp';
-        const apiType = (service.apiType || '').toLowerCase();
-        const extra = {};
-        if (fullOrder.comments) {
-          if (apiType.includes('mention')) extra.usernames = fullOrder.comments;
-          else if (apiType === 'poll') extra.answer_number = fullOrder.comments;
-          else extra.comments = fullOrder.comments;
-        }
-        if (apiType === 'subscriptions') {
-          const match = fullOrder.link.match(/instagram\.com\/([^/?#]+)/);
-          if (match) extra.username = match[1];
-          extra.min = stuckBatch.quantity;
-          extra.max = stuckBatch.quantity;
-        }
-
-        const result = await placeOrder(prov, service.apiId, fullOrder.link, stuckBatch.quantity, extra);
-        const batchApiId = result.order ? String(result.order) : null;
-        if (!batchApiId) return Response.json({ error: 'Provider returned no order ID' }, { status: 502 });
-
-        await prisma.dripDispatch.update({
-          where: { id: stuckBatch.id },
-          data: { apiOrderId: batchApiId, status: 'processing', lastError: null, dispatchedAt: new Date() },
+      if (hasDrip) {
+        // Find the earliest failed/pending batch (ordered by day then batch)
+        const candidate = await prisma.dripDispatch.findFirst({
+          where: { orderId: fullOrder.id, status: { in: ['pending', 'failed'] } },
+          orderBy: [{ day: 'asc' }, { batch: 'asc' }, { scheduledAt: 'asc' }],
         });
-        await prisma.order.update({
-          where: { id: fullOrder.id },
-          data: { status: 'Processing', dripDelivered: { increment: 1 } },
+        if (!candidate) return Response.json({ error: 'No pending or failed batch to dispatch' }, { status: 400 });
+
+        // Atomic claim — prevent race with cron or another admin
+        const claimed = await prisma.dripDispatch.updateMany({
+          where: { id: candidate.id, status: candidate.status },
+          data: { status: 'dispatching', dispatchedAt: new Date() },
         });
-        await logActivity(admin.name, `Manually dispatched ${orderId} batch ${stuckBatch.batch} → ${batchApiId}`, 'order');
-        return Response.json({ success: true, apiOrderId: batchApiId, batch: stuckBatch.batch, message: `Batch ${stuckBatch.batch} dispatched: ${batchApiId}` });
+        if (claimed.count === 0) return Response.json({ error: 'Batch was claimed by another process' }, { status: 409 });
+
+        try {
+          const { placeOrder } = await import('@/lib/smm');
+          const service = fullOrder.service;
+          const prov = service.provider || 'mtp';
+          const apiType = (service.apiType || '').toLowerCase();
+          const extra = {};
+          if (fullOrder.comments) {
+            if (apiType === 'seo') extra.keywords = fullOrder.comments;
+            else if (apiType.includes('mention')) extra.usernames = fullOrder.comments;
+            else if (apiType === 'poll') extra.answer_number = fullOrder.comments;
+            else extra.comments = fullOrder.comments;
+          }
+          if (apiType === 'subscriptions') {
+            const match = fullOrder.link.match(/instagram\.com\/([^/?#]+)/);
+            if (match) extra.username = match[1];
+            extra.min = candidate.quantity;
+            extra.max = candidate.quantity;
+          }
+
+          const result = await placeOrder(prov, service.apiId, fullOrder.link, candidate.quantity, extra);
+          const batchApiId = result.order ? String(result.order) : null;
+          if (!batchApiId) {
+            await prisma.dripDispatch.update({ where: { id: candidate.id }, data: { status: 'failed', lastError: 'Provider returned no order ID' } });
+            return Response.json({ error: 'Provider returned no order ID' }, { status: 502 });
+          }
+
+          await prisma.dripDispatch.update({
+            where: { id: candidate.id },
+            data: { apiOrderId: batchApiId, status: 'processing', lastError: null },
+          });
+          await prisma.order.update({
+            where: { id: fullOrder.id },
+            data: { status: 'Processing', dripDelivered: { increment: 1 } },
+          });
+          await logActivity(admin.name, `Manually dispatched ${orderId} day ${candidate.day} batch ${candidate.batch} → ${batchApiId}`, 'order');
+          return Response.json({ success: true, apiOrderId: batchApiId, batch: candidate.batch, day: candidate.day, message: `Day ${candidate.day} batch ${candidate.batch} dispatched: ${batchApiId}` });
+        } catch (err) {
+          await prisma.dripDispatch.update({ where: { id: candidate.id }, data: { status: 'failed', lastError: err.message.slice(0, 500) } });
+          return Response.json({ error: `Dispatch failed: ${err.message}` }, { status: 502 });
+        }
       }
 
-      // Non-drip order
+      // Non-drip order — atomic claim to prevent race with cron or another admin
       if (fullOrder.apiOrderId) return Response.json({ error: 'Order already dispatched' }, { status: 400 });
-      const apiOrderId = await placeWithProvider({ id: fullOrder.id, service: fullOrder.service, tier: fullOrder.tier, link: fullOrder.link, quantity: fullOrder.quantity, comments: fullOrder.comments });
-      if (!apiOrderId) return Response.json({ error: 'Provider returned no order ID' }, { status: 502 });
-      await logActivity(admin.name, `Manually dispatched ${orderId} → ${apiOrderId}`, 'order');
-      return Response.json({ success: true, apiOrderId, status: 'Processing', message: `Dispatched: ${apiOrderId}` });
+      const claimed = await prisma.order.updateMany({
+        where: {
+          id: fullOrder.id, apiOrderId: null,
+          OR: [
+            { status: 'Pending' },
+            { status: 'Dispatching', dispatchedAt: { lte: new Date(Date.now() - 5 * 60 * 1000) } },
+          ],
+        },
+        data: { status: 'Dispatching', dispatchedAt: new Date() },
+      });
+      if (claimed.count === 0) return Response.json({ error: 'Order was claimed by another process or is still in flight' }, { status: 409 });
+      try {
+        const apiOrderId = await placeWithProvider({ id: fullOrder.id, service: fullOrder.service, tier: fullOrder.tier, link: fullOrder.link, quantity: fullOrder.quantity, comments: fullOrder.comments });
+        if (!apiOrderId) {
+          await prisma.order.update({ where: { id: fullOrder.id }, data: { status: 'Pending', dispatchedAt: null } });
+          return Response.json({ error: 'Provider returned no order ID' }, { status: 502 });
+        }
+        await logActivity(admin.name, `Manually dispatched ${orderId} → ${apiOrderId}`, 'order');
+        return Response.json({ success: true, apiOrderId, status: 'Processing', message: `Dispatched: ${apiOrderId}` });
+      } catch (err) {
+        const isTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(err.message);
+        await prisma.order.update({ where: { id: fullOrder.id }, data: { status: isTimeout ? 'Dispatching' : 'Pending', dispatchedAt: isTimeout ? undefined : null, lastError: (isTimeout ? '[TIMEOUT] ' : '') + err.message.slice(0, 450) } });
+        return Response.json({ error: `Dispatch failed: ${err.message}` }, { status: 502 });
+      }
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
