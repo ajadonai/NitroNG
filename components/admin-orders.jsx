@@ -217,7 +217,17 @@ export default function AdminOrdersPage({ dark, t }) {
     return () => clearTimeout(searchTimer.current);
   }, [search, fetchOrders]);
 
+  const needsDispatch = (o) => {
+    if (o.status === 'Cancelled' || o.status === 'Completed') return false;
+    // Non-drip order with no provider ID
+    if (!o.dripDispatches && !o.apiOrderId && ['Pending', 'Processing'].includes(o.status)) return true;
+    // Drip order with stuck/failed/ghost batches
+    if (o.dripDispatches?.some(d => d.status === 'dispatching' || d.status === 'failed' || (d.error && /\[GHOST\]|\[RETRY_FAILED\]/.test(d.error)))) return true;
+    return false;
+  };
+
   const filtered = orders.filter(o => {
+    if (filter === "needs_dispatch") return needsDispatch(o);
     if (filter !== "all" && o.status !== filter) return false;
     return true;
   });
@@ -225,7 +235,7 @@ export default function AdminOrdersPage({ dark, t }) {
   const grouped = groupOrders(filtered);
   const totalPages = Math.ceil(grouped.length / perPage);
   const paged = grouped.slice((page - 1) * perPage, page * perPage);
-  const counts = { all: orders.length };
+  const counts = { all: orders.length, needs_dispatch: orders.filter(needsDispatch).length };
   ["Completed", "Processing", "Pending", "Partial", "Cancelled"].forEach(s => { counts[s] = orders.filter(o => o.status === s).length; });
 
   const [syncing, setSyncing] = useState(false);
@@ -256,8 +266,13 @@ export default function AdminOrdersPage({ dark, t }) {
       if (data.status) {
         setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: data.status, ...(data.remains != null && { remains: data.remains }), ...(data.startCount != null && { startCount: Number(data.startCount) }) } : o));
       }
-      const label = action === "check" ? `Status: ${data.status || "unknown"}${data.remains != null ? ` · ${data.remains} remaining` : ""}` : action === "cancel" ? "Order cancelled" : "Refill requested";
-      toast.success(orderId, label);
+      if (action === "dispatch") {
+        toast.success(orderId, data.message || "Dispatched");
+        fetchOrders(search);
+      } else {
+        const label = action === "check" ? `Status: ${data.status || "unknown"}${data.remains != null ? ` · ${data.remains} remaining` : ""}` : action === "cancel" ? "Order cancelled" : "Refill requested";
+        toast.success(orderId, label);
+      }
     } catch { toast.error("Request failed", "Check your connection"); } finally { setActionLoading(null); }
   };
 
@@ -377,9 +392,11 @@ export default function AdminOrdersPage({ dark, t }) {
           {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
         </div>
         <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(1); }} options={
-          ["all", "Completed", "Processing", "Pending", "Partial", "Cancelled", "Failed", "Rejected"].map(f => ({
-            value: f, label: f === "all" ? "All" : f,
-          }))
+          [
+            { value: "all", label: "All" },
+            { value: "needs_dispatch", label: `Needs Dispatch${counts.needs_dispatch ? ` (${counts.needs_dispatch})` : ""}` },
+            ...["Completed", "Processing", "Pending", "Partial", "Cancelled", "Failed", "Rejected"].map(f => ({ value: f, label: f })),
+          ]
         } />
       </div>
 
@@ -573,6 +590,7 @@ export default function AdminOrdersPage({ dark, t }) {
 
                             {/* Actions */}
                             <div className="flex gap-1.5">
+                              {needsDispatch(o) && <button onClick={async () => { const ok = await confirm({ title: "Manual Dispatch", message: `Dispatch order ${o.id} to provider now?`, confirmLabel: "Dispatch" }); if (ok) doAction(o.id, "dispatch"); }} disabled={!!actionLoading} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(250,204,21,.12)" : "rgba(217,119,6,.08)", color: dark ? "#fcd34d" : "#d97706" }}>{actionLoading === o.id ? <Spinner size={12} color={dark ? "#fcd34d" : "#d97706"} /> : "Dispatch"}</button>}
                               <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[62px] py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={12} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
                               {o.status !== "Cancelled" && o.status !== "Completed" && <button onClick={() => openCancel(o)} disabled={!!actionLoading} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>}
                               {o.status === "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Refill Order", message: `Request a refill for order ${o.id}?`, confirmLabel: "Refill" }); if (ok) doAction(o.id, "refill"); }} disabled={!!actionLoading} className="m py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>Refill</button>}
@@ -734,6 +752,7 @@ export default function AdminOrdersPage({ dark, t }) {
 
                   {/* Actions */}
                   <div className="flex gap-2">
+                    {needsDispatch(o) && <button onClick={async () => { const ok = await confirm({ title: "Manual Dispatch", message: `Dispatch order ${o.id} to provider now?`, confirmLabel: "Dispatch" }); if (ok) doAction(o.id, "dispatch"); }} disabled={!!actionLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(250,204,21,.12)" : "rgba(217,119,6,.08)", color: dark ? "#fcd34d" : "#d97706" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#fcd34d" : "#d97706"} /> : "Dispatch"}</button>}
                     <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m w-[72px] py-2 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", color: dark ? "#60a5fa" : "#2563eb" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check"}</button>
                     {o.status !== "Cancelled" && o.status !== "Completed" && <button onClick={() => openCancel(o)} disabled={!!actionLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>}
                     {o.status === "Completed" && <button onClick={async () => { const ok = await confirm({ title: "Refill Order", message: `Request a refill for order ${o.id}?`, confirmLabel: "Refill" }); if (ok) doAction(o.id, "refill"); }} disabled={!!actionLoading} className="m py-2 px-4 rounded-lg text-xs desktop:text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>Refill</button>}

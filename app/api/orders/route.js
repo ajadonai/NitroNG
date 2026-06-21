@@ -655,7 +655,7 @@ export async function POST(req) {
           quantity: qty,
           charge,
           cost,
-          comments: comments?.trim().slice(0, 5000) || null,
+          comments: comments ? comments.split('\n').map(l => l.trim().replace(/^[""“”]+|[""“”]+$/g, '').trim()).filter(Boolean).join('\n').slice(0, 5000) : null,
           loyaltyDiscount,
           campaignDiscount: promoDiscount,
           campaignPercent: promoPercent,

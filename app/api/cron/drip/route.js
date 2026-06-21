@@ -29,7 +29,91 @@ export async function GET(req) {
     });
     if (expired.count > 0) stats.expired = expired.count;
 
-    // ═══ 1. DISPATCH DUE BATCHES ═══
+    // ═══ 1. RETRY TIMED-OUT BATCHES (dispatching >5 min) ═══
+    stats.timeoutRetried = 0;
+    stats.ghostDetected = 0;
+    const stuckDispatching = await prisma.dripDispatch.findMany({
+      where: {
+        status: 'dispatching',
+        dispatchedAt: { lte: new Date(Date.now() - 5 * 60 * 1000) },
+      },
+      include: { order: { include: { service: true } } },
+      take: 10,
+      orderBy: { dispatchedAt: 'asc' },
+    });
+
+    for (const dispatch of stuckDispatching) {
+      const order = dispatch.order;
+      if (!order || order.status === 'Cancelled' || order.deletedAt) continue;
+
+      const service = order.service;
+      const provider = service.provider || 'mtp';
+      const apiType = (service.apiType || '').toLowerCase();
+      const extra = {};
+
+      if (order.comments) {
+        if (apiType.includes('mention')) extra.usernames = order.comments;
+        else if (apiType === 'poll') extra.answer_number = order.comments;
+        else extra.comments = order.comments;
+      }
+      if (apiType === 'subscriptions') {
+        const match = order.link.match(/instagram\.com\/([^/?#]+)/);
+        if (match) extra.username = match[1];
+        extra.min = dispatch.quantity;
+        extra.max = dispatch.quantity;
+      }
+
+      try {
+        const result = await placeOrder(provider, service.apiId, order.link, dispatch.quantity, extra);
+        const apiOrderId = result.order ? String(result.order) : null;
+
+        if (apiOrderId) {
+          // First attempt truly failed — this is a fresh order
+          await prisma.dripDispatch.update({
+            where: { id: dispatch.id },
+            data: { apiOrderId, status: 'processing', lastError: null },
+          });
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { dripDelivered: { increment: 1 }, status: 'Processing' },
+          });
+          log.info('Drip retry', `${order.orderId} batch ${dispatch.batch}: recovered after timeout`);
+          stats.timeoutRetried++;
+        }
+      } catch (err) {
+        const isDuplicate = /duplicate|active order/i.test(err.message);
+
+        if (isDuplicate) {
+          // First timed-out dispatch went through — ghost detected
+          log.warn('Drip retry', `${order.orderId} batch ${dispatch.batch}: ghost detected`);
+          await prisma.dripDispatch.update({
+            where: { id: dispatch.id },
+            data: { status: 'processing', lastError: '[GHOST] Provider has this order — find ID in dashboard' },
+          });
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { dripDelivered: { increment: 1 }, status: 'Processing' },
+          });
+          prisma.adminIssue.create({
+            data: { type: 'ghost_dispatch', title: `${order.orderId} batch ${dispatch.batch}: ghost order on provider`, message: `Retry got "active order on same link". The timed-out dispatch went through. Find the order ID in provider dashboard.\nLink: ${order.link}`, metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, link: order.link, provider, serviceApiId: service.apiId }) },
+          }).catch(() => {});
+          stats.ghostDetected++;
+        } else {
+          // Retry also failed — give up and flag admin
+          log.error('Drip retry', `${order.orderId} batch ${dispatch.batch}: retry failed — ${err.message}`);
+          await prisma.dripDispatch.update({
+            where: { id: dispatch.id },
+            data: { status: 'failed', lastError: '[RETRY_FAILED] ' + err.message.slice(0, 450) },
+          });
+          prisma.adminIssue.create({
+            data: { type: 'ghost_dispatch', title: `${order.orderId} batch ${dispatch.batch} failed after retry`, message: `Both initial dispatch and retry failed. Manual dispatch needed.\nError: ${err.message}\nLink: ${order.link}`, metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, link: order.link, provider, serviceApiId: service.apiId }) },
+          }).catch(() => {});
+          stats.dispatchFailed++;
+        }
+      }
+    }
+
+    // ═══ 2. DISPATCH DUE BATCHES ═══
     const due = await prisma.dripDispatch.findMany({
       where: {
         status: 'pending',
@@ -100,33 +184,14 @@ export async function GET(req) {
         }
       } catch (err) {
         const isTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(err.message);
-        const isDuplicate = /duplicate|active order/i.test(err.message);
 
-        if (isDuplicate) {
-          // Provider already has an order for this link — a previous timed-out dispatch went through
-          log.warn('Drip dispatch', `${order.orderId} batch ${dispatch.batch}: duplicate detected, flagging for admin`);
-          await prisma.dripDispatch.update({
-            where: { id: dispatch.id },
-            data: { status: 'processing', lastError: '[GHOST] Provider has this order — find MTP ID in dashboard' },
-          });
-          await prisma.order.update({
-            where: { id: order.id },
-            data: { dripDelivered: { increment: 1 }, status: 'Processing' },
-          });
-          prisma.adminIssue.create({
-            data: { type: 'ghost_dispatch', title: `${order.orderId} batch ${dispatch.batch} may be a ghost order`, message: `Provider said "${err.message}". A previous timed-out dispatch likely went through. Check provider dashboard for link: ${order.link}`, metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, link: order.link, provider: order.service?.provider || 'mtp', serviceApiId: order.service?.apiId }) },
-          }).catch(() => {});
-          stats.dispatched++;
-        } else if (isTimeout) {
-          // Timeout — provider may or may not have the order. Keep as dispatching to block retries.
-          log.warn('Drip dispatch', `${order.orderId} batch ${dispatch.batch}: timeout — holding as dispatching`);
+        if (isTimeout) {
+          // Hold as dispatching — section 1 retries it next cycle after 5 min cooldown
+          log.warn('Drip dispatch', `${order.orderId} batch ${dispatch.batch}: timeout — will retry next cycle`);
           await prisma.dripDispatch.update({
             where: { id: dispatch.id },
             data: { status: 'dispatching', lastError: '[TIMEOUT] ' + err.message.slice(0, 450) },
           });
-          prisma.adminIssue.create({
-            data: { type: 'ghost_dispatch', title: `${order.orderId} batch ${dispatch.batch} timed out — check provider`, message: `Dispatch timed out. Provider may have created the order. Check dashboard before retrying. Link: ${order.link}`, metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, link: order.link, provider: order.service?.provider || 'mtp', serviceApiId: order.service?.apiId }) },
-          }).catch(() => {});
           stats.dispatchFailed++;
         } else {
           log.error('Drip dispatch', `${order.orderId} batch ${dispatch.batch}: ${err.message}`);
@@ -139,7 +204,7 @@ export async function GET(req) {
       }
     }
 
-    // ═══ 2. SYNC DISPATCHED BATCHES ═══
+    // ═══ 3. SYNC DISPATCHED BATCHES ═══
     const processing = await prisma.dripDispatch.findMany({
       where: {
         status: 'processing',
@@ -187,7 +252,7 @@ export async function GET(req) {
       }
     }
 
-    // ═══ 3. ROLL UP PROGRESS + STATUS ═══
+    // ═══ 4. ROLL UP PROGRESS + STATUS ═══
     const dripOrders = await prisma.order.findMany({
       where: {
         dripDispatches: { some: {} },

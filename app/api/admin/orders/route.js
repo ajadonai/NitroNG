@@ -336,6 +336,63 @@ export async function POST(req) {
       return Response.json({ success: true });
     }
 
+    if (action === 'dispatch') {
+      const { placeWithProvider } = await import('@/lib/bulk-dispatch');
+      const fullOrder = await prisma.order.findFirst({
+        where: { OR: [{ orderId }, { id: orderId }], deletedAt: null },
+        include: { service: true, tier: { include: { group: true } } },
+      });
+      if (!fullOrder) return Response.json({ error: 'Order not found' }, { status: 404 });
+      if (fullOrder.status === 'Cancelled') return Response.json({ error: 'Order is cancelled' }, { status: 400 });
+
+      // For drip orders, dispatch the next pending/stuck batch
+      const stuckBatch = await prisma.dripDispatch.findFirst({
+        where: { orderId: fullOrder.id, status: { in: ['pending', 'dispatching', 'failed'] } },
+        orderBy: { batch: 'asc' },
+      });
+
+      if (stuckBatch) {
+        const { placeOrder } = await import('@/lib/smm');
+        const service = fullOrder.service;
+        const prov = service.provider || 'mtp';
+        const apiType = (service.apiType || '').toLowerCase();
+        const extra = {};
+        if (fullOrder.comments) {
+          if (apiType.includes('mention')) extra.usernames = fullOrder.comments;
+          else if (apiType === 'poll') extra.answer_number = fullOrder.comments;
+          else extra.comments = fullOrder.comments;
+        }
+        if (apiType === 'subscriptions') {
+          const match = fullOrder.link.match(/instagram\.com\/([^/?#]+)/);
+          if (match) extra.username = match[1];
+          extra.min = stuckBatch.quantity;
+          extra.max = stuckBatch.quantity;
+        }
+
+        const result = await placeOrder(prov, service.apiId, fullOrder.link, stuckBatch.quantity, extra);
+        const batchApiId = result.order ? String(result.order) : null;
+        if (!batchApiId) return Response.json({ error: 'Provider returned no order ID' }, { status: 502 });
+
+        await prisma.dripDispatch.update({
+          where: { id: stuckBatch.id },
+          data: { apiOrderId: batchApiId, status: 'processing', lastError: null, dispatchedAt: new Date() },
+        });
+        await prisma.order.update({
+          where: { id: fullOrder.id },
+          data: { status: 'Processing', dripDelivered: { increment: 1 } },
+        });
+        await logActivity(admin.name, `Manually dispatched ${orderId} batch ${stuckBatch.batch} → ${batchApiId}`, 'order');
+        return Response.json({ success: true, apiOrderId: batchApiId, batch: stuckBatch.batch, message: `Batch ${stuckBatch.batch} dispatched: ${batchApiId}` });
+      }
+
+      // Non-drip order
+      if (fullOrder.apiOrderId) return Response.json({ error: 'Order already dispatched' }, { status: 400 });
+      const apiOrderId = await placeWithProvider({ id: fullOrder.id, service: fullOrder.service, tier: fullOrder.tier, link: fullOrder.link, quantity: fullOrder.quantity, comments: fullOrder.comments });
+      if (!apiOrderId) return Response.json({ error: 'Provider returned no order ID' }, { status: 502 });
+      await logActivity(admin.name, `Manually dispatched ${orderId} → ${apiOrderId}`, 'order');
+      return Response.json({ success: true, apiOrderId, status: 'Processing', message: `Dispatched: ${apiOrderId}` });
+    }
+
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
     log.error('Admin Orders POST', err.message);
