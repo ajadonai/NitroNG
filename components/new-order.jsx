@@ -370,11 +370,13 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const isCustomComment = apiType.includes("custom comment") || apiType.includes("comment replies");
   const isMention = apiType.includes("mention");
   const isPoll = apiType === "poll";
+  const isSeo = apiType === "seo";
   const isReview = svcName.includes("review") && !svcName.includes("review like");
   const needsComments = isCustomComment || isReview;
   const showComments = isComment || isReview;
   const needsUsernames = isMention;
   const needsAnswer = isPoll;
+  const needsKeywords = isSeo;
 
   const commentLines = (comments || "").split("\n").filter(l => l.trim()).length;
   const minCommentLines = isCustomComment ? Math.max(selTier?.min || 10, 10) : 0;
@@ -493,6 +495,13 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>Select which poll answer to vote for</div>
           </div>
         )}
+        {needsKeywords && (
+          <div className="mb-3.5">
+            <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>Search Keywords <span className="font-normal normal-case tracking-normal text-[11px]">(required, one per line)</span></label>
+            <textarea disabled={orderLoading} placeholder={"best nigerian services\nnigeria social media growth\nbuy instagram followers nigeria"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={3} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
+            <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>{(comments || "").split("\n").filter(l => l.trim()).length || 0} keywords entered</div>
+          </div>
+        )}
         <div className="mb-3">
           <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>Quantity</label>
           <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${qtyOutOfRange ? (dark ? "rgba(220,38,38,.4)" : "rgba(220,38,38,.38)") : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)")}`, background: dark ? "#131728" : "#fff" }}>
@@ -554,7 +563,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             </button>
             )
           ) : (
-            <button onClick={() => { if (dripOn && showMultiDay) { setDripStep(2); } else { onSubmit(dripOn && showMultiDay ? clampedDays : undefined); } }} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer) || (comments || "").trim()) && !commentShort && !orderLoading ? 1 : .5 }}>{orderLoading ? "Placing..." : dripOn && showMultiDay ? "Next" : "Place Order"}</button>
+            <button onClick={() => { if (dripOn && showMultiDay) { setDripStep(2); } else { onSubmit(dripOn && showMultiDay ? clampedDays : undefined); } }} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames || needsKeywords) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer || needsKeywords) || (comments || "").trim()) && !commentShort && !orderLoading ? 1 : .5 }}>{orderLoading ? "Placing..." : dripOn && showMultiDay ? "Next" : "Place Order"}</button>
           )}
         </>) : (<>
           {/* Step 2: Drip config — replaces entire form body */}
@@ -810,6 +819,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     const needsComments = at.includes("custom comment") || at.includes("comment replies");
     const needsMentions = at.includes("mention");
     const needsPoll = at === "poll";
+    const needsKeywordsBulk = at === "seo";
     const needsReview = svcName.toLowerCase().includes("review") && !svcName.toLowerCase().includes("review like");
 
     setCartRows(prev => [...prev, {
@@ -819,7 +829,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       min: tier.min || 100, max: tier.max || 50000,
       storedPricePer1k: tier.pricePer1k || tier.price || 0,
       needsComments: needsComments || needsReview,
-      needsMentions, needsPoll, comments: "", commentsOpen: false,
+      needsMentions, needsPoll, needsKeywords: needsKeywordsBulk, comments: "", commentsOpen: false,
       expanded: true,
     }]);
 
@@ -926,10 +936,10 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       scrollToRow(dupIdx);
       return;
     }
-    const needsComments = cartRows.findIndex(r => (r.needsComments || r.needsMentions || r.needsPoll) && !r.comments.trim());
+    const needsComments = cartRows.findIndex(r => (r.needsComments || r.needsMentions || r.needsPoll || r.needsKeywords) && !r.comments.trim());
     if (needsComments >= 0) {
       const r = cartRows[needsComments];
-      const label = r.needsPoll ? "a poll answer" : r.needsMentions ? "usernames" : "comments";
+      const label = r.needsKeywords ? "keywords" : r.needsPoll ? "a poll answer" : r.needsMentions ? "usernames" : "comments";
       toast.error(`Missing ${label}`, `Row ${needsComments + 1} needs ${label}`);
       scrollToRow(needsComments);
       return;

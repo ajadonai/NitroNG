@@ -331,7 +331,8 @@ export async function PATCH(req) {
         const extra = {};
         if (order.comments) {
           const at = (order.service.apiType || '').toLowerCase();
-          if (at.includes('mention')) extra.usernames = order.comments;
+          if (at === 'seo') extra.keywords = order.comments;
+          else if (at.includes('mention')) extra.usernames = order.comments;
           else if (at === 'poll') extra.answer_number = order.comments;
           else extra.comments = order.comments;
         }
@@ -361,7 +362,9 @@ export async function PATCH(req) {
               }
             } catch (err) {
               log.error('Reorder drip batch 1', err.message);
-              await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'pending', lastError: err.message.slice(0, 500), dispatchedAt: null } }).catch(() => {});
+              const rmsg = err.message || '';
+              const rIsTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(rmsg);
+              await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: rIsTimeout ? 'failed' : 'pending', lastError: (rIsTimeout ? '[TIMEOUT] ' : '') + rmsg.slice(0, 450), dispatchedAt: rIsTimeout ? undefined : null } }).catch(() => {});
             }
           }
         } else {
@@ -374,7 +377,9 @@ export async function PATCH(req) {
             }
           } catch (err) {
             log.error('Reorder', err.message);
-            try { await prisma.order.update({ where: { id: newOrder.id }, data: { lastError: err.message.slice(0, 500) } }); } catch {}
+            const rmsg2 = err.message || '';
+            const rIsTimeout2 = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(rmsg2);
+            try { await prisma.order.update({ where: { id: newOrder.id }, data: { lastError: (rIsTimeout2 ? '[TIMEOUT] ' : '') + rmsg2.slice(0, 450), ...(rIsTimeout2 ? { status: 'Dispatching' } : {}) } }); } catch {}
           }
         }
       }
@@ -550,8 +555,9 @@ export async function POST(req) {
     const needsCommentText = apiType.includes('custom comment') || apiType.includes('comment replies');
     const needsUsernames = apiType.includes('mention');
     const needsAnswer = apiType === 'poll';
-    if ((needsCommentText || needsUsernames || needsAnswer) && !comments?.trim()) {
-      const label = needsUsernames ? 'Usernames are' : needsAnswer ? 'An answer selection is' : 'Comments are';
+    const needsKeywords = apiType === 'seo';
+    if ((needsCommentText || needsUsernames || needsAnswer || needsKeywords) && !comments?.trim()) {
+      const label = needsKeywords ? 'Keywords are' : needsUsernames ? 'Usernames are' : needsAnswer ? 'An answer selection is' : 'Comments are';
       return Response.json({ error: `${label} required for this service` }, { status: 400 });
     }
     if (needsCommentText && comments) {
@@ -706,8 +712,9 @@ export async function POST(req) {
       const provider = service.provider || 'mtp';
       const extra = {};
       if (comments) {
-        const safeComments = comments.trim().slice(0, 5000);
-        if (needsUsernames) extra.usernames = safeComments;
+        const safeComments = comments.split('\n').map(l => l.trim().replace(/^[""""]+|[""""]+$/g, '').trim()).filter(Boolean).join('\n').slice(0, 5000);
+        if (needsKeywords) extra.keywords = safeComments;
+        else if (needsUsernames) extra.usernames = safeComments;
         else if (needsAnswer) extra.answer_number = safeComments;
         else extra.comments = safeComments;
       }
@@ -749,7 +756,8 @@ export async function POST(req) {
                 return Response.json({ error: 'This service is temporarily unavailable. You have been refunded.' }, { status: 409 });
               } catch (refundErr) { log.error('Drip auto-refund', refundErr.message); }
             }
-            try { await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'pending', lastError: msg.slice(0, 500), dispatchedAt: null } }); } catch {}
+            const isTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(msg);
+            try { await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: isTimeout ? 'failed' : 'pending', lastError: (isTimeout ? '[TIMEOUT] ' : '') + msg.slice(0, 450), dispatchedAt: isTimeout ? undefined : null } }); } catch {}
           }
         }
       } else {
@@ -804,7 +812,8 @@ export async function POST(req) {
             return Response.json({ error: 'This service is temporarily unavailable. You have been refunded.' }, { status: 409 });
           } catch (refundErr) { log.error('Order auto-refund', refundErr.message); }
         }
-          try { await prisma.order.update({ where: { id: result.id }, data: { lastError: msg.slice(0, 500) } }); } catch {}
+          const isTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(msg);
+          try { await prisma.order.update({ where: { id: result.id }, data: { lastError: (isTimeout ? '[TIMEOUT] ' : '') + msg.slice(0, 450), ...(isTimeout ? { status: 'Dispatching' } : {}) } }); } catch {}
         }
       }
     }
