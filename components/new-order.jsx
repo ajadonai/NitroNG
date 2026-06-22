@@ -216,11 +216,11 @@ const LINK_HINTS = {
 };
 
 const LINK_EXAMPLES = {
-  instagram: { profile: ["instagram.com/username", "@username"], post: ["instagram.com/p/ABC123", "instagram.com/reel/ABC123", "ig.me/abc123"] },
+  instagram: { profile: ["instagram.com/username"], channel: ["instagram.com/channel/ABC123"], post: ["instagram.com/p/ABC123", "instagram.com/reel/ABC123", "ig.me/abc123"] },
   tiktok: { profile: ["tiktok.com/@username", "@username"], post: ["tiktok.com/@user/video/123...", "vm.tiktok.com/ABC123"] },
   twitter: { profile: ["x.com/username", "twitter.com/username"], post: ["x.com/username/status/123...", "t.co/abc123"] },
   youtube: { profile: ["youtube.com/@channel", "youtube.com/c/name"], post: ["youtube.com/watch?v=ABC123", "youtu.be/ABC123", "youtube.com/shorts/ABC123"] },
-  facebook: { profile: ["facebook.com/pagename", "fb.com/pagename"], post: ["facebook.com/share/r/ABC123", "facebook.com/user/posts/123...", "fb.watch/abc123"] },
+  facebook: { profile: ["facebook.com/pagename", "fb.com/pagename"], channel: ["facebook.com/groups/groupname"], post: ["facebook.com/share/r/ABC123", "facebook.com/user/posts/123...", "fb.watch/abc123"] },
   threads: { profile: ["threads.net/@username"], post: ["threads.net/@username/post/ABC123"] },
   telegram: { profile: ["t.me/channelname"], post: ["t.me/channelname/123"] },
   linkedin: { profile: ["linkedin.com/in/username", "linkedin.com/company/name"], post: ["linkedin.com/posts/user_title-123..."] },
@@ -229,7 +229,7 @@ const LINK_EXAMPLES = {
   reddit: { profile: ["reddit.com/r/community"], post: ["reddit.com/r/community/comments/..."] },
   twitch: { profile: ["twitch.tv/username"], post: ["twitch.tv/videos/123..."] },
   kick: { profile: ["kick.com/username"], post: ["kick.com/username/clips/..."] },
-  spotify: { profile: ["open.spotify.com/artist/..."], post: ["open.spotify.com/track/...", "open.spotify.com/album/..."] },
+  spotify: { profile: ["open.spotify.com/artist/..."], post: ["open.spotify.com/track/...", "open.spotify.com/album/...", "open.spotify.com/playlist/..."] },
   soundcloud: { profile: ["soundcloud.com/artist"], post: ["soundcloud.com/artist/track-name"] },
   applemusic: { profile: ["music.apple.com/artist/..."], post: ["music.apple.com/album/.../song"] },
   audiomack: { profile: ["audiomack.com/artist"], post: ["audiomack.com/artist/song/track"] },
@@ -240,7 +240,7 @@ const LINK_EXAMPLES = {
   discord: { profile: ["discord.gg/invite-code"], post: ["discord.com/channels/..."] },
   whatsapp: { profile: ["chat.whatsapp.com/invite-code"], post: ["wa.me/phonenumber"] },
   tumblr: { profile: ["tumblr.com/username"], post: ["tumblr.com/username/post/123..."] },
-  quora: { profile: ["quora.com/profile/username"], post: ["quora.com/question-slug"] },
+  quora: { profile: ["quora.com/profile/username"], post: ["quora.com/.../answer/username"] },
   vimeo: { profile: ["vimeo.com/username"], post: ["vimeo.com/123456789"] },
   google: { profile: ["maps.google.com/place/..."], post: ["g.co/kgs/..."] },
   trustpilot: { profile: ["trustpilot.com/review/domain.com"], post: ["trustpilot.com/review/domain.com"] },
@@ -381,10 +381,11 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const commentShort = needsComments && commentLines > 0 && commentLines < minCommentLines;
 
   const isMultiPostSvc = /last\s+\d+\s*(tweet|post|video|reel|photo)/i.test(svcName);
-  const isProfileSvc = /follow|subscri|member|profile visit/i.test(svcName) || isMultiPostSvc;
-  const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays/i.test(svcName) && !isProfileSvc;
+  const isChannelSvc = /(channel|group)\s*(member|join|subscriber)/i.test(svcName);
+  const isProfileSvc = (/follow|subscri|member|profile visit/i.test(svcName) || isMultiPostSvc) && !isChannelSvc;
+  const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays/i.test(svcName) && !isProfileSvc && !isChannelSvc;
 
-  const linkPlaceholder = (LINK_EXAMPLES[platform] ? (isPostSvc ? LINK_EXAMPLES[platform].post?.[0] : isProfileSvc ? LINK_EXAMPLES[platform].profile?.[0] : null) : null) || LINK_HINTS[platform] || `${platform}.com/...`;
+  const linkPlaceholder = (LINK_EXAMPLES[platform] ? (isPostSvc ? LINK_EXAMPLES[platform].post?.[0] : isChannelSvc ? (LINK_EXAMPLES[platform].channel?.[0] || LINK_EXAMPLES[platform].profile?.[0]) : isProfileSvc ? LINK_EXAMPLES[platform].profile?.[0] : null) : null) || LINK_HINTS[platform] || `${platform}.com/...`;
   const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
 
   const plat = PLATFORMS.find(pl => pl.id === platform);
@@ -444,9 +445,9 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             <input type="url" inputMode="url" aria-label={linkLabel} disabled={orderLoading} placeholder={linkPlaceholder} value={link} onChange={e => validateLink(e.target.value)} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
           </div>
           {linkError && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626" }}>{linkError}</div>}
-          {!linkError && LINK_EXAMPLES[platform] && (isProfileSvc || isPostSvc) && (() => {
-              const type = isProfileSvc ? "profile" : "post";
-              const examples = LINK_EXAMPLES[platform][type];
+          {!linkError && LINK_EXAMPLES[platform] && (isProfileSvc || isPostSvc || isChannelSvc) && (() => {
+              const type = isChannelSvc ? "channel" : isProfileSvc ? "profile" : "post";
+              const examples = LINK_EXAMPLES[platform][type] || LINK_EXAMPLES[platform].profile;
               if (!examples || !examples.length) return null;
               return <div className="mt-1.5">
                 <button type="button" onClick={() => setLinkHelpOpen(o => !o)} className="flex items-center gap-1.5 border-0 cursor-pointer p-0 mb-0" style={{ background: "transparent", color: dark ? "#d4949f" : "#a0616e" }}>
