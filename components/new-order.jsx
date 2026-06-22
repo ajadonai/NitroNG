@@ -215,47 +215,39 @@ const LINK_HINTS = {
   playstore: "play.google.com/store/apps/...",
 };
 
-const LINK_TIPS = {
-  instagram: { profile: "instagram.com/username", post: "instagram.com/p/ABC123 or /reel/ABC123" },
-  tiktok: { profile: "tiktok.com/@username", post: "tiktok.com/@username/video/123..." },
-  twitter: { profile: "x.com/username", post: "x.com/username/status/123..." },
-  youtube: { profile: "youtube.com/@channel", post: "youtube.com/watch?v=ABC123" },
-  facebook: { profile: "facebook.com/pagename", post: "facebook.com/share/r/ABC123 or /posts/123..." },
-  threads: { profile: "threads.net/@username", post: "threads.net/@username/post/ABC123" },
-  telegram: { profile: "t.me/channelname", post: "t.me/channelname/123" },
-  linkedin: { profile: "linkedin.com/in/username", post: "linkedin.com/posts/..." },
-  snapchat: { profile: "snapchat.com/add/username", post: "snapchat.com/spotlight/..." },
-  pinterest: { profile: "pinterest.com/username", post: "pinterest.com/pin/123..." },
-  reddit: { profile: "reddit.com/r/community", post: "reddit.com/r/community/comments/..." },
-  twitch: { profile: "twitch.tv/username", post: "twitch.tv/videos/123..." },
-  kick: { profile: "kick.com/username", post: "kick.com/username/clips/..." },
-  spotify: { profile: "open.spotify.com/artist/...", post: "open.spotify.com/track/..." },
-  soundcloud: { profile: "soundcloud.com/artist", post: "soundcloud.com/artist/track-name" },
-  applemusic: { profile: "music.apple.com/artist/...", post: "music.apple.com/album/.../song" },
-  audiomack: { profile: "audiomack.com/artist", post: "audiomack.com/artist/song/track" },
-  boomplay: { profile: "boomplay.com/artists/...", post: "boomplay.com/songs/..." },
-  deezer: { profile: "deezer.com/artist/...", post: "deezer.com/track/..." },
-  shazam: { profile: "shazam.com/artist/...", post: "shazam.com/track/..." },
-  mixcloud: { profile: "mixcloud.com/username", post: "mixcloud.com/username/mix-name" },
-  discord: { profile: "discord.gg/invite-code", post: "discord.com/channels/..." },
-  whatsapp: { profile: "chat.whatsapp.com/invite-code", post: "wa.me/phonenumber" },
-  tumblr: { profile: "tumblr.com/username", post: "tumblr.com/username/post/123..." },
-  quora: { profile: "quora.com/profile/username", post: "quora.com/question-slug" },
-  vimeo: { profile: "vimeo.com/username", post: "vimeo.com/123456789" },
-  google: { profile: "maps.google.com/place/...", post: "g.co/kgs/..." },
-  trustpilot: { profile: "trustpilot.com/review/domain.com", post: "trustpilot.com/review/domain.com" },
-  onlyfans: { profile: "onlyfans.com/username", post: "onlyfans.com/username" },
-  clubhouse: { profile: "clubhouse.com/@username", post: "clubhouse.com/room/..." },
-  kwai: { profile: "kwai.com/@username", post: "kwai.com/video/..." },
+const LINK_EXAMPLES = {
+  instagram: { profile: ["instagram.com/username", "@username"], post: ["instagram.com/p/ABC123", "instagram.com/reel/ABC123", "ig.me/abc123"] },
+  tiktok: { profile: ["tiktok.com/@username", "@username"], post: ["tiktok.com/@user/video/123...", "vm.tiktok.com/ABC123"] },
+  twitter: { profile: ["x.com/username", "twitter.com/username"], post: ["x.com/username/status/123...", "t.co/abc123"] },
+  youtube: { profile: ["youtube.com/@channel", "youtube.com/c/name"], post: ["youtube.com/watch?v=ABC123", "youtu.be/ABC123", "youtube.com/shorts/ABC123"] },
+  facebook: { profile: ["facebook.com/pagename", "fb.com/pagename"], post: ["facebook.com/share/r/ABC123", "facebook.com/user/posts/123...", "fb.watch/abc123"] },
+  threads: { profile: ["threads.net/@username"], post: ["threads.net/@username/post/ABC123"] },
+  telegram: { profile: ["t.me/channelname"], post: ["t.me/channelname/123"] },
+  linkedin: { profile: ["linkedin.com/in/username", "linkedin.com/company/name"], post: ["linkedin.com/posts/user_title-123..."] },
+  snapchat: { profile: ["snapchat.com/add/username"], post: ["snapchat.com/spotlight/ABC123"] },
+  pinterest: { profile: ["pinterest.com/username"], post: ["pinterest.com/pin/123..."] },
+  reddit: { profile: ["reddit.com/r/community"], post: ["reddit.com/r/community/comments/..."] },
+  twitch: { profile: ["twitch.tv/username"], post: ["twitch.tv/videos/123..."] },
+  kick: { profile: ["kick.com/username"], post: ["kick.com/username/clips/..."] },
+  spotify: { profile: ["open.spotify.com/artist/..."], post: ["open.spotify.com/track/...", "open.spotify.com/album/..."] },
+  soundcloud: { profile: ["soundcloud.com/artist"], post: ["soundcloud.com/artist/track-name"] },
+  applemusic: { profile: ["music.apple.com/artist/..."], post: ["music.apple.com/album/.../song"] },
+  audiomack: { profile: ["audiomack.com/artist"], post: ["audiomack.com/artist/song/track"] },
+  boomplay: { profile: ["boomplay.com/artists/..."], post: ["boomplay.com/songs/..."] },
+  deezer: { profile: ["deezer.com/artist/..."], post: ["deezer.com/track/..."] },
+  shazam: { profile: ["shazam.com/artist/..."], post: ["shazam.com/track/..."] },
+  mixcloud: { profile: ["mixcloud.com/username"], post: ["mixcloud.com/username/mix-name"] },
+  discord: { profile: ["discord.gg/invite-code"], post: ["discord.com/channels/..."] },
+  whatsapp: { profile: ["chat.whatsapp.com/invite-code"], post: ["wa.me/phonenumber"] },
+  tumblr: { profile: ["tumblr.com/username"], post: ["tumblr.com/username/post/123..."] },
+  quora: { profile: ["quora.com/profile/username"], post: ["quora.com/question-slug"] },
+  vimeo: { profile: ["vimeo.com/username"], post: ["vimeo.com/123456789"] },
+  google: { profile: ["maps.google.com/place/..."], post: ["g.co/kgs/..."] },
+  trustpilot: { profile: ["trustpilot.com/review/domain.com"], post: ["trustpilot.com/review/domain.com"] },
+  onlyfans: { profile: ["onlyfans.com/username"], post: ["onlyfans.com/username"] },
+  clubhouse: { profile: ["clubhouse.com/@username"], post: ["clubhouse.com/room/..."] },
+  kwai: { profile: ["kwai.com/@username"], post: ["kwai.com/video/..."] },
 };
-
-function getLinkTip(platform, isProfile, isPost) {
-  const tips = LINK_TIPS[platform];
-  if (!tips) return null;
-  if (isProfile) return "Profile link — e.g. " + tips.profile;
-  if (isPost) return "Post link — e.g. " + tips.post;
-  return null;
-}
 
 function isValidLink(link) {
   const v = link.trim();
@@ -309,7 +301,6 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const s = selTier ? TS[selTier.tier] : null;
   const [linkError, setLinkError] = useState("");
   const [linkHelpOpen, setLinkHelpOpen] = useState(false);
-  const linkHelpRef = useRef(null);
   const [dripOn, setDripOn] = useState(false);
   const [dripStep, setDripStep] = useState(1);
   const [dripDays, setDripDays] = useState(3);
@@ -322,12 +313,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const dripCap = safeDailyCap(selSvc?.type);
   const dripZone = perDay <= dripCap * 0.5 ? "safe" : perDay <= dripCap ? "moderate" : "hot";
 
-  useEffect(() => {
-    if (!linkHelpOpen) return;
-    const close = (e) => { if (linkHelpRef.current && !linkHelpRef.current.contains(e.target)) setLinkHelpOpen(false); };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [linkHelpOpen]);
+  useEffect(() => { if (!linkHelpOpen) return; const onKey = (e) => { if (e.key === "Escape") setLinkHelpOpen(false); }; document.addEventListener("keydown", onKey); return () => document.removeEventListener("keydown", onKey); }, [linkHelpOpen]);
 
   /* Link validation */
   const POST_LINK_PATTERNS = {
@@ -397,9 +383,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const isMultiPostSvc = /last\s+\d+\s*(tweet|post|video|reel|photo)/i.test(svcName);
   const isProfileSvc = /follow|subscri|member|profile visit/i.test(svcName) || isMultiPostSvc;
   const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays/i.test(svcName) && !isProfileSvc;
-  const linkTip = getLinkTip(platform, isProfileSvc, isPostSvc);
 
-  const linkPlaceholder = (LINK_TIPS[platform] ? (isPostSvc ? LINK_TIPS[platform].post : isProfileSvc ? LINK_TIPS[platform].profile : null) : null) || LINK_HINTS[platform] || `${platform}.com/...`;
+  const linkPlaceholder = (LINK_EXAMPLES[platform] ? (isPostSvc ? LINK_EXAMPLES[platform].post?.[0] : isProfileSvc ? LINK_EXAMPLES[platform].profile?.[0] : null) : null) || LINK_HINTS[platform] || `${platform}.com/...`;
   const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
 
   const plat = PLATFORMS.find(pl => pl.id === platform);
@@ -459,25 +444,18 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             <input type="url" inputMode="url" aria-label={linkLabel} disabled={orderLoading} placeholder={linkPlaceholder} value={link} onChange={e => validateLink(e.target.value)} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
           </div>
           {linkError && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626" }}>{linkError}</div>}
-          {!linkError && LINK_TIPS[platform] && (isProfileSvc || isPostSvc) && (() => {
-              const yes = isProfileSvc ? "profile" : "post";
-              const no = isProfileSvc ? "post" : "profile";
-              return <div ref={linkHelpRef} className="relative mt-1.5 rounded-lg overflow-hidden" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>
-                <button type="button" onClick={() => setLinkHelpOpen(o => !o)} className="w-full flex items-center gap-2 py-[7px] px-2.5 border-0 cursor-pointer" style={{ background: "transparent", color: dark ? "#d4949f" : "#a0616e" }}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                  <span className="text-[11px] font-semibold flex-1 text-left">Paste the right link format</span>
-                  <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-[2px] px-[6px] rounded-full" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)", color: dark ? "#d4949f" : "#a0616e" }}>Learn more</span>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ transform: linkHelpOpen ? "rotate(180deg)" : "none", transition: "transform .15s" }}><polyline points="6 9 12 15 18 9"/></svg>
+          {!linkError && LINK_EXAMPLES[platform] && (isProfileSvc || isPostSvc) && (() => {
+              const type = isProfileSvc ? "profile" : "post";
+              const examples = LINK_EXAMPLES[platform][type];
+              if (!examples || !examples.length) return null;
+              return <div className="mt-1.5">
+                <button type="button" onClick={() => setLinkHelpOpen(o => !o)} className="flex items-center gap-1.5 border-0 cursor-pointer p-0 mb-0" style={{ background: "transparent", color: dark ? "#d4949f" : "#a0616e" }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <span className="text-[11px] font-medium">We accept these formats</span>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ transform: linkHelpOpen ? "rotate(180deg)" : "none", transition: "transform .15s" }}><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
-                {linkHelpOpen && <div className="px-2.5 pb-2 flex flex-col gap-1.5">
-                  {LINK_TIPS[platform][yes] && <div className="flex items-center gap-2 py-1.5 px-2 rounded-md" style={{ background: dark ? "rgba(74,222,128,.08)" : "rgba(22,163,74,.06)", border: `0.5px solid ${dark ? "rgba(74,222,128,.15)" : "rgba(22,163,74,.1)"}` }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={dark ? "#4ade80" : "#16a34a"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
-                    <span className="text-[11px] font-semibold" style={{ fontFamily: "'JetBrains Mono', monospace", color: dark ? "#4ade80" : "#16a34a" }}>{LINK_TIPS[platform][yes]}</span>
-                  </div>}
-                  {LINK_TIPS[platform][no] && <div className="flex items-center gap-2 py-1 px-2 rounded-md" style={{ opacity: 0.6 }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={dark ? "#f87171" : "#dc2626"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    <span className="text-[11px] line-through" style={{ fontFamily: "'JetBrains Mono', monospace", color: t.textMuted }}>{LINK_TIPS[platform][no]}</span>
-                  </div>}
+                {linkHelpOpen && <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {examples.map((ex, i) => <span key={i} className="text-[11px] py-[3px] px-2 rounded-md" style={{ fontFamily: "'JetBrains Mono', monospace", background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textSoft }}>{ex}</span>)}
                 </div>}
               </div>;
             })()}
