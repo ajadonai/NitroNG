@@ -507,7 +507,7 @@ export async function POST(req) {
           tiktok: /\/(video|photo|v)\//i,
           'twitter/x': /\/status\//i,
           youtube: /\/(watch|shorts|live)\b|youtu\.be\//i,
-          facebook: /\/(posts|videos|watch|reel|photo|story)\b/i,
+          facebook: /\/(posts|videos|watch|reel|photo|story|share)\b/i,
           threads: /\/post\//i,
           telegram: /\/\d+\s*$/,
         };

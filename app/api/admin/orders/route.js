@@ -396,7 +396,7 @@ export async function POST(req) {
           });
           await prisma.order.update({
             where: { id: fullOrder.id },
-            data: { status: 'Processing', dripDelivered: { increment: 1 } },
+            data: { status: 'Processing', dripDelivered: { increment: 1 }, lastError: null },
           });
           await logActivity(admin.name, `Manually dispatched ${orderId} day ${candidate.day} batch ${candidate.batch} → ${batchApiId}`, 'order');
           return Response.json({ success: true, apiOrderId: batchApiId, batch: candidate.batch, day: candidate.day, message: `Day ${candidate.day} batch ${candidate.batch} dispatched: ${batchApiId}` });
