@@ -332,17 +332,29 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   /* Link validation */
   const POST_LINK_PATTERNS = {
     twitter: /\/(status|i\/status)\//i,
-    instagram: /\/(p|reel|reels|stories|tv)\//i,
-    tiktok: /\/(video|photo|v)\//i,
+    instagram: /\/(p|reel|reels|stories|tv|share)\//i,
+    tiktok: /\/(video|photo|v|t)\//i,
     youtube: /\/(watch|shorts|live)\b|youtu\.be\//i,
-    facebook: /\/(posts|videos|watch|photos|reel|share)\//i,
+    facebook: /\/(posts|videos|watch|photos|photo|reel|share|story\.php|permalink\.php)\b/i,
     threads: /\/post\//i,
-    linkedin: /\/(posts|pulse)\//i,
+    linkedin: /\/(posts|pulse|feed\/update)\//i,
     snapchat: /\/spotlight\//i,
     pinterest: /\/pin\//i,
     reddit: /\/comments\//i,
     twitch: /\/videos\//i,
     kick: /\/clips\//i,
+    telegram: /\/\d+\s*$/,
+    spotify: /\/(track|album|playlist|episode)\//i,
+    bluesky: /\/post\//i,
+    tumblr: /\/post\/\d/i,
+    vimeo: /\/\d{5,}/,
+    quora: /\/(answer|unanswered)\//i,
+    deezer: /\/(track|album|playlist)\//i,
+    tidal: /\/(track|album|playlist)\//i,
+    audiomack: /\/(song|album|playlist)\//i,
+    boomplay: /\/(songs|albums|playlists)\//i,
+    applemusic: /\/(album|song|music-video)\//i,
+    shazam: /\/(track|song)\//i,
   };
   const SHORT_POST_DOMAINS = /^(vt|vm)\.tiktok\.com$|^t\.co$|^(fb\.watch|fb\.me)$|^ig\.me$|^youtu\.be$/i;
   const validateLink = (val) => {

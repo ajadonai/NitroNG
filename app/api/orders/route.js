@@ -503,13 +503,30 @@ export async function POST(req) {
 
       if (isUrl) {
         const postPatterns = {
-          instagram: /\/(p|reel|reels|tv|stories)\//i,
-          tiktok: /\/(video|photo|v)\//i,
-          'twitter/x': /\/status\//i,
+          instagram: /\/(p|reel|reels|tv|stories|share)\//i,
+          tiktok: /\/(video|photo|v|t)\//i,
+          'twitter/x': /\/(status|i\/status)\//i,
           youtube: /\/(watch|shorts|live)\b|youtu\.be\//i,
-          facebook: /\/(posts|videos|watch|reel|photo|story|share)\b/i,
+          facebook: /\/(posts|videos|watch|photos|photo|reel|share|story\.php|permalink\.php)\b/i,
           threads: /\/post\//i,
           telegram: /\/\d+\s*$/,
+          linkedin: /\/(posts|pulse|feed\/update)\//i,
+          snapchat: /\/spotlight\//i,
+          pinterest: /\/pin\//i,
+          reddit: /\/comments\//i,
+          twitch: /\/videos\//i,
+          kick: /\/clips\//i,
+          spotify: /\/(track|album|playlist|episode)\//i,
+          bluesky: /\/post\//i,
+          tumblr: /\/post\/\d/i,
+          vimeo: /\/\d{5,}/,
+          quora: /\/(answer|unanswered)\//i,
+          deezer: /\/(track|album|playlist)\//i,
+          tidal: /\/(track|album|playlist)\//i,
+          audiomack: /\/(song|album|playlist)\//i,
+          boomplay: /\/(songs|albums|playlists)\//i,
+          applemusic: /\/(album|song|music-video)\//i,
+          shazam: /\/(track|song)\//i,
         };
 
         // Shortened/redirect URLs are always post/content links
