@@ -382,7 +382,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
 
   const isMultiPostSvc = /last\s+\d+\s*(tweet|post|video|reel|photo)/i.test(svcName);
   const isChannelSvc = /(channel|group)\s*(member|join|subscriber)/i.test(svcName);
-  const isProfileSvc = (/follow|subscri|member|profile visit/i.test(svcName) || isMultiPostSvc) && !isChannelSvc;
+  const isAutoSvc = /\bauto\b/i.test(svcName);
+  const isProfileSvc = (/follow|subscri|member|profile visit/i.test(svcName) || isMultiPostSvc || isAutoSvc) && !isChannelSvc;
   const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays/i.test(svcName) && !isProfileSvc && !isChannelSvc;
 
   const linkPlaceholder = (LINK_EXAMPLES[platform] ? (isPostSvc ? LINK_EXAMPLES[platform].post?.[0] : isChannelSvc ? (LINK_EXAMPLES[platform].channel?.[0] || LINK_EXAMPLES[platform].profile?.[0]) : isProfileSvc ? LINK_EXAMPLES[platform].profile?.[0] : null) : null) || LINK_HINTS[platform] || `${platform}.com/...`;
