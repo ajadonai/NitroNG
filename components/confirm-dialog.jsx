@@ -41,7 +41,7 @@ export function ConfirmProvider({ children, dark }) {
       {children}
       {dialog && (
         <div
-          className="fixed inset-0 z-[300] backdrop-blur-[4px] flex items-center justify-center p-4 animate-[modalFadeIn_.2s_ease]"
+          className="fixed inset-0 z-[1100] backdrop-blur-[4px] flex items-center justify-center p-4 animate-[modalFadeIn_.2s_ease]"
           style={{ background: "rgba(0,0,0,.45)" }}
           onClick={handleCancel}
         >

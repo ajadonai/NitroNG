@@ -9,10 +9,16 @@ export async function GET(req) {
 
   try {
     const url = new URL(req.url);
-    const cursor = url.searchParams.get('cursor');
-    const limit = Math.min(Number(url.searchParams.get('limit')) || 50, 200);
-    const search = url.searchParams.get('search')?.trim();
+    const page = Math.max(1, Number(url.searchParams.get('page')) || 1);
+    const perPage = Math.min(Math.max(1, Number(url.searchParams.get('perPage')) || 15), 50);
+    const search = url.searchParams.get('search')?.trim() || '';
+    const status = url.searchParams.get('status') || '';
+    const sortKey = url.searchParams.get('sort') || 'joined';
+    const sortDir = url.searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc';
+    const quick = url.searchParams.get('quick') || '';
+    const isExport = url.searchParams.get('export') === 'true';
 
+    // --- Where clauses ---
     const searchWhere = search ? {
       OR: [
         { name: { contains: search, mode: 'insensitive' } },
@@ -22,32 +28,89 @@ export async function GET(req) {
       ],
     } : {};
 
-    const [totalCount, activeCount, totalOrderCount, balanceAgg] = await Promise.all([
+    const statusWhere = status === 'active' ? { status: 'Active' }
+      : status === 'suspended' ? { status: 'Suspended' }
+      : status === 'pending' ? { status: 'PendingDeletion' }
+      : status === 'deleted' ? { status: 'Deleted' }
+      : {};
+
+    const quickWhere = quick === 'funded' ? { balance: { gt: 0 } }
+      : quick === 'buyers' ? { orders: { some: { status: { not: 'Cancelled' }, deletedAt: null } } }
+      : {};
+
+    // baseWhere = search + quick (used for tab counts)
+    const baseWhere = { AND: [searchWhere, quickWhere].filter(w => Object.keys(w).length > 0) };
+    // fullWhere = search + quick + status tab (used for user list + filteredCount)
+    const fullWhere = { AND: [searchWhere, quickWhere, statusWhere].filter(w => Object.keys(w).length > 0) };
+
+    // --- Sort ---
+    const orderBy = sortKey === 'name' ? { name: sortDir }
+      : sortKey === 'balance' ? { balance: sortDir }
+      : sortKey === 'orders' ? { orders: { _count: sortDir } }
+      : { createdAt: sortDir };
+
+    // --- Dates for stats ---
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // --- Select fields ---
+    const userSelect = {
+      id: true, name: true, firstName: true, lastName: true, phone: true,
+      email: true, balance: true, status: true,
+      emailVerified: true, referralCode: true, createdAt: true,
+      deletedAt: true, deletedName: true, deletedEmail: true,
+      _count: { select: { orders: { where: { status: { not: 'Cancelled' }, deletedAt: null } } } },
+    };
+
+    // --- Parallel queries ---
+    const [
+      filteredCount,
+      tabCountsRaw,
+      totalUsers,
+      activeUsers,
+      balanceAgg,
+      totalOrders,
+      newThisWeek,
+      ordersThisMonth,
+      fundedWallets,
+      users,
+    ] = await Promise.all([
+      prisma.user.count({ where: fullWhere }),
+      prisma.user.groupBy({ by: ['status'], where: baseWhere, _count: { _all: true } }),
       prisma.user.count(),
       prisma.user.count({ where: { status: 'Active' } }),
-      prisma.order.count({ where: { status: { not: 'Cancelled' }, deletedAt: null } }),
       prisma.user.aggregate({ _sum: { balance: true } }),
+      prisma.order.count({ where: { status: { not: 'Cancelled' }, deletedAt: null } }),
+      prisma.user.count({ where: { createdAt: { gte: startOfWeek } } }),
+      prisma.order.count({ where: { createdAt: { gte: startOfMonth }, status: { not: 'Cancelled' }, deletedAt: null } }),
+      prisma.user.count({ where: { balance: { gt: 0 } } }),
+      prisma.user.findMany({
+        where: fullWhere,
+        orderBy,
+        select: userSelect,
+        ...(isExport ? { take: 10000 } : { skip: (page - 1) * perPage, take: perPage }),
+      }),
     ]);
-    const users = await prisma.user.findMany({
-      where: searchWhere,
-      orderBy: { createdAt: 'desc' },
-      take: limit + 1,
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-      select: {
-        id: true, name: true, firstName: true, lastName: true, phone: true,
-        email: true, balance: true, status: true,
-        emailVerified: true, referralCode: true, createdAt: true,
-        deletedAt: true, deletedName: true, deletedEmail: true,
-        _count: { select: { orders: { where: { status: { not: 'Cancelled' }, deletedAt: null } } } },
-      },
-    });
 
-    const hasMore = users.length > limit;
-    const items = hasMore ? users.slice(0, limit) : users;
-    const nextCursor = hasMore ? items[items.length - 1].id : null;
+    // --- Build tab counts map ---
+    const tabCounts = { all: 0, active: 0, suspended: 0, pending: 0, deleted: 0 };
+    for (const row of tabCountsRaw) {
+      const c = row._count._all;
+      tabCounts.all += c;
+      if (row.status === 'Active') tabCounts.active = c;
+      else if (row.status === 'Suspended') tabCounts.suspended = c;
+      else if (row.status === 'PendingDeletion') tabCounts.pending = c;
+      else if (row.status === 'Deleted') tabCounts.deleted = c;
+    }
+
+    const totalBalance = (balanceAgg._sum.balance || 0) / 100;
+    const totalPages = Math.ceil(filteredCount / perPage);
 
     return Response.json({
-      users: items.map(u => ({
+      users: users.map(u => ({
         id: u.id,
         name: u.name,
         firstName: u.firstName,
@@ -64,12 +127,19 @@ export async function GET(req) {
         deletedName: u.deletedName || null,
         deletedEmail: u.deletedEmail || null,
       })),
-      totalCount,
-      activeCount,
-      totalOrderCount,
-      totalBalance: (balanceAgg._sum.balance || 0) / 100,
-      nextCursor,
-      hasMore,
+      filteredCount,
+      totalPages,
+      page,
+      tabCounts,
+      stats: {
+        totalUsers,
+        activeUsers,
+        totalBalance,
+        totalOrders,
+        newThisWeek,
+        ordersThisMonth,
+        fundedWallets,
+      },
     });
   } catch (err) {
     log.error('Admin Users', err.message);

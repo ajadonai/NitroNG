@@ -74,7 +74,7 @@ export default function UnsubscribeClient({ token }) {
         <img
           src="https://nitro.ng/wordmark-accent.svg"
           alt="Nitro"
-          style={{ height: 28, marginBottom: 28 }}
+          style={{ height: 28, marginBottom: 28, display: 'block', margin: '0 auto 28px' }}
         />
 
         <h1 style={{

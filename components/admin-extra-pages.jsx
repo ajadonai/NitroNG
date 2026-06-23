@@ -2173,3 +2173,303 @@ function IssueRow({ issue, i, total, dark, t, rowBorder, expanded, setExpanded, 
     </div>
   );
 }
+
+/* ═══════════════════════════════════════════ */
+/* ═══ PIT CREW (AFFILIATES)              ═══ */
+/* ═══════════════════════════════════════════ */
+const TIER_COLORS = { starter: "#6B7280", growth: "#3B82F6", pro: "#c47d8e" };
+const STATUS_COLORS_CREW = { pending: "#F59E0B", approved: "#059669", suspended: "#EF4444", rejected: "#6B7280" };
+
+export function AdminCrewPage({ dark, t }) {
+  const [tab, setTab] = useState("members");
+  const [members, setMembers] = useState([]);
+  const [stats, setStats] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
+  const [busy, setBusy] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
+  const [payouts, setPayouts] = useState([]);
+  const [payoutsLoading, setPayoutsLoading] = useState(false);
+  const [payoutFilter, setPayoutFilter] = useState("all");
+  const [refInput, setRefInput] = useState({});
+  const confirm = useConfirm();
+  const toast = useToast();
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/crew");
+      const d = await res.json();
+      if (d.error) return;
+      setMembers(d.members || []);
+      setStats(d.stats || {});
+    } catch { /* */ } finally { setLoading(false); }
+  }, []);
+
+  const loadPayouts = useCallback(async () => {
+    setPayoutsLoading(true);
+    try {
+      const res = await fetch("/api/admin/crew/payouts");
+      const d = await res.json();
+      if (!d.error) setPayouts(d.payouts || []);
+    } catch { /* */ } finally { setPayoutsLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (tab === "payouts" && payouts.length === 0) loadPayouts(); }, [tab, loadPayouts, payouts.length]);
+
+  const act = async (action, memberId, extra = {}) => {
+    setBusy(memberId);
+    try {
+      const res = await fetch("/api/admin/crew", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, memberId, ...extra }),
+      });
+      const d = await res.json();
+      if (d.error) { toast.error(d.error); return; }
+      toast.success(action === "approve" ? "Member approved" : action === "reject" ? "Member rejected" : action === "suspend" ? "Member suspended" : action === "reinstate" ? "Member reinstated" : action === "update-tier" ? "Tier updated" : "Done");
+      await load();
+    } catch { toast.error("Something went wrong"); } finally { setBusy(null); }
+  };
+
+  const payoutAct = async (action, payoutId) => {
+    setBusy(payoutId);
+    try {
+      const res = await fetch("/api/admin/crew/payouts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, payoutId, reference: refInput[payoutId] || "" }),
+      });
+      const d = await res.json();
+      if (d.error) { toast.error(d.error); return; }
+      toast.success(action === "complete" ? "Payout completed" : action === "reject" ? "Payout rejected" : "Payout updated");
+      await loadPayouts();
+      await load();
+    } catch { toast.error("Something went wrong"); } finally { setBusy(null); }
+  };
+
+  const filtered = filter === "all" ? members : members.filter(m => m.status === filter);
+  const pendingCount = members.filter(m => m.status === "pending").length;
+  const filteredPayouts = payoutFilter === "all" ? payouts : payouts.filter(p => p.status === payoutFilter);
+  const pendingPayoutCount = payouts.filter(p => p.status === "pending").length;
+
+  const cardBg = dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)";
+  const cardBd = `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`;
+  const rowBorder = dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)";
+  const PAYOUT_COLORS = { pending: "#F59E0B", processing: "#3B82F6", completed: "#059669", rejected: "#EF4444" };
+
+  return (
+    <>
+      <div className="adm-header">
+        <div className="adm-title" style={{ color: t.text }}>Pit Crew</div>
+        <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage affiliate members, tiers, and payouts</div>
+        <div className="page-divider" style={{ background: t.cardBorder }} />
+      </div>
+
+      {/* Stats row */}
+      <div className="flex gap-3 mb-5 flex-wrap">
+        {[
+          ["Total Members", members.length, t.blue],
+          ["Pending Approval", pendingCount, pendingCount > 0 ? t.amber : t.textMuted],
+          ["Pending Payouts", stats.pendingPayouts || 0, (stats.pendingPayouts || 0) > 0 ? t.amber : t.textMuted],
+          ["Held Commissions", stats.heldCommissions || 0, t.textMuted],
+        ].map(([label, val, color]) => (
+          <div key={label} className="py-2.5 px-4 rounded-[10px]" style={{ background: cardBg, border: cardBd, minWidth: 120 }}>
+            <div className="text-[11px] uppercase tracking-wide mb-0.5" style={{ color: t.textMuted }}>{label}</div>
+            <div className="text-lg font-semibold" style={{ color }}>{val}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Tab switcher */}
+      <div className="flex gap-1 mb-4 p-1 rounded-xl w-fit" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }}>
+        {[["members", "Members"], ["payouts", `Payouts${pendingPayoutCount > 0 ? ` (${pendingPayoutCount})` : ""}`]].map(([id, label]) => (
+          <button key={id} onClick={() => setTab(id)} className="py-1.5 px-4 rounded-lg text-[13px] font-medium border-none cursor-pointer" style={{ background: tab === id ? (dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.15)") : "transparent", color: tab === id ? t.accent : t.textMuted }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* ═══ MEMBERS TAB ═══ */}
+      {tab === "members" && (
+        <>
+          <div className="flex gap-1.5 mb-4">
+            {["all", "pending", "approved", "suspended", "rejected"].map(s => (
+              <button key={s} onClick={() => setFilter(s)} className="py-1.5 px-3 rounded-lg text-[12.5px] font-medium border-none cursor-pointer capitalize" style={{ background: filter === s ? (dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.15)") : "transparent", color: filter === s ? t.accent : t.textMuted }}>
+                {s}{s === "pending" && pendingCount > 0 ? ` (${pendingCount})` : ""}
+              </button>
+            ))}
+          </div>
+
+          <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBd }}>
+            <div className="py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+              <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.textMuted }}>Members ({filtered.length})</div>
+            </div>
+
+            {loading ? (
+              <div className="py-12 text-center text-sm" style={{ color: t.textMuted }}>Loading crew...</div>
+            ) : filtered.length === 0 ? (
+              <div className="py-12 text-center text-sm" style={{ color: t.textMuted }}>No {filter === "all" ? "" : filter} members</div>
+            ) : filtered.map((m, i) => {
+              const expanded = expandedId === m.id;
+              return (
+                <div key={m.id}>
+                  <div className="py-3 px-[18px] flex items-center gap-3 cursor-pointer" style={{ borderBottom: (i < filtered.length - 1 || expanded) ? `1px solid ${rowBorder}` : "none" }} onClick={() => setExpandedId(expanded ? null : m.id)}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[13.5px] font-semibold" style={{ color: t.text }}>{m.name}</span>
+                        <span className="text-[11px] py-[1px] px-[6px] rounded-full font-medium" style={{ background: `${STATUS_COLORS_CREW[m.status]}22`, color: STATUS_COLORS_CREW[m.status] }}>{m.status}</span>
+                        <span className="text-[11px] py-[1px] px-[6px] rounded-full font-medium capitalize" style={{ background: `${TIER_COLORS[m.tier] || "#6B7280"}22`, color: TIER_COLORS[m.tier] || "#6B7280" }}>{m.tier}</span>
+                        {m.role === "chief" && <span className="text-[10px] py-[1px] px-[5px] rounded font-semibold uppercase" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)", color: t.accent }}>Chief</span>}
+                      </div>
+                      <div className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>
+                        {m.email}{m.leadName ? ` · under ${m.leadName}` : ""} · {m.commissionRate}% rate
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN(m.totalEarned)}</div>
+                      <div className="text-[11px]" style={{ color: t.textMuted }}>earned</div>
+                    </div>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform .15s" }}><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+
+                  {expanded && (
+                    <div className="px-[18px] py-3 flex flex-col gap-3" style={{ background: dark ? "rgba(0,0,0,.12)" : "rgba(0,0,0,.02)", borderBottom: `1px solid ${rowBorder}` }}>
+                      <div className="grid grid-cols-4 max-md:grid-cols-2 gap-2.5">
+                        {[
+                          ["Total Paid", fN(m.totalPaid)],
+                          ["Commissions", m.commissions],
+                          ["Links", m.links],
+                          ["Crew Size", m.crewCount],
+                        ].map(([l, v]) => (
+                          <div key={l} className="py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)" }}>
+                            <div className="text-[10.5px] uppercase tracking-wide" style={{ color: t.textMuted }}>{l}</div>
+                            <div className="text-sm font-semibold mt-0.5" style={{ color: t.text }}>{v}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {m.phone && <div className="text-[12px]" style={{ color: t.textMuted }}>Phone: {m.phone}</div>}
+                      <div className="text-[12px]" style={{ color: t.textMuted }}>Joined {fD(m.createdAt)}{m.approvedAt ? ` · Approved ${fD(m.approvedAt)}` : ""}</div>
+
+                      <div className="flex gap-2 flex-wrap mt-1">
+                        {m.status === "pending" && (
+                          <>
+                            <button disabled={busy === m.id} onClick={async () => { const ok = await confirm({ title: "Approve Member", message: `Approve ${m.name}?`, confirmLabel: "Approve" }); if (ok) act("approve", m.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(110,231,183,.3)" : "rgba(5,150,105,.25)", color: dark ? "#6ee7b7" : "#059669" }}>Approve</button>
+                            <button disabled={busy === m.id} onClick={async () => { const ok = await confirm({ title: "Reject Member", message: `Reject ${m.name}? They won't be able to earn commissions.`, confirmLabel: "Reject", danger: true }); if (ok) act("reject", m.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>Reject</button>
+                          </>
+                        )}
+                        {m.status === "approved" && (
+                          <button disabled={busy === m.id} onClick={async () => { const ok = await confirm({ title: "Suspend Member", message: `Suspend ${m.name}? They will lose access to the portal.`, confirmLabel: "Suspend", danger: true }); if (ok) act("suspend", m.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>Suspend</button>
+                        )}
+                        {m.status === "suspended" && (
+                          <button disabled={busy === m.id} onClick={async () => { const ok = await confirm({ title: "Reinstate Member", message: `Reinstate ${m.name}?`, confirmLabel: "Reinstate" }); if (ok) act("reinstate", m.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(110,231,183,.3)" : "rgba(5,150,105,.25)", color: dark ? "#6ee7b7" : "#059669" }}>Reinstate</button>
+                        )}
+                        {m.status === "approved" && m.role !== "chief" && (
+                          <button disabled={busy === m.id} onClick={async () => { const ok = await confirm({ title: "Promote to Chief", message: `Promote ${m.name} to chief? They'll be able to manage a team and tracking links.`, confirmLabel: "Promote" }); if (ok) act("promote-chief", m.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(196,125,142,.35)" : "rgba(196,125,142,.3)", color: t.accent }}>Promote to Chief</button>
+                        )}
+                        {m.status === "approved" && (
+                          <select value={m.tier} onChange={e => act("update-tier", m.id, { tier: e.target.value })} disabled={busy === m.id} className="py-1 px-2 rounded-lg text-[12px] border cursor-pointer bg-transparent outline-none" style={{ borderColor: dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.12)", color: t.text, fontFamily: "inherit" }}>
+                            <option value="starter">Starter (5%)</option>
+                            <option value="growth">Growth (7%)</option>
+                            <option value="pro">Pro (10%)</option>
+                          </select>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* ═══ PAYOUTS TAB ═══ */}
+      {tab === "payouts" && (
+        <>
+          <div className="flex gap-1.5 mb-4">
+            {["all", "pending", "processing", "completed", "rejected"].map(s => (
+              <button key={s} onClick={() => setPayoutFilter(s)} className="py-1.5 px-3 rounded-lg text-[12.5px] font-medium border-none cursor-pointer capitalize" style={{ background: payoutFilter === s ? (dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.15)") : "transparent", color: payoutFilter === s ? t.accent : t.textMuted }}>
+                {s}{s === "pending" && pendingPayoutCount > 0 ? ` (${pendingPayoutCount})` : ""}
+              </button>
+            ))}
+          </div>
+
+          <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBd }}>
+            <div className="py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+              <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.textMuted }}>Payout Requests ({filteredPayouts.length})</div>
+            </div>
+
+            {payoutsLoading ? (
+              <div className="py-12 text-center text-sm" style={{ color: t.textMuted }}>Loading payouts...</div>
+            ) : filteredPayouts.length === 0 ? (
+              <div className="py-12 text-center text-sm" style={{ color: t.textMuted }}>No {payoutFilter === "all" ? "" : payoutFilter} payouts</div>
+            ) : filteredPayouts.map((p, i) => {
+              const expanded = expandedId === p.id;
+              const statusColor = PAYOUT_COLORS[p.status] || "#6B7280";
+              return (
+                <div key={p.id}>
+                  <div className="py-3 px-[18px] flex items-center gap-3 cursor-pointer" style={{ borderBottom: (i < filteredPayouts.length - 1 || expanded) ? `1px solid ${rowBorder}` : "none" }} onClick={() => setExpandedId(expanded ? null : p.id)}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[13.5px] font-semibold" style={{ color: t.text }}>{p.memberName}</span>
+                        <span className="text-[11px] py-[1px] px-[6px] rounded-full font-medium" style={{ background: `${statusColor}22`, color: statusColor }}>{p.status}</span>
+                      </div>
+                      <div className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>
+                        {p.memberEmail} · Requested {fD(p.createdAt)}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-[14px] font-semibold" style={{ color: t.text }}>{fN(p.amount)}</div>
+                    </div>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform .15s" }}><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+
+                  {expanded && (
+                    <div className="px-[18px] py-3 flex flex-col gap-3" style={{ background: dark ? "rgba(0,0,0,.12)" : "rgba(0,0,0,.02)", borderBottom: `1px solid ${rowBorder}` }}>
+                      {/* Bank details */}
+                      <div className="grid grid-cols-3 max-md:grid-cols-1 gap-2.5">
+                        {[
+                          ["Bank", p.bankName || "Not set"],
+                          ["Account No.", p.bankAccountNo || "Not set"],
+                          ["Account Name", p.bankAccountName || "Not set"],
+                        ].map(([l, v]) => (
+                          <div key={l} className="py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)" }}>
+                            <div className="text-[10.5px] uppercase tracking-wide" style={{ color: t.textMuted }}>{l}</div>
+                            <div className="text-[13px] font-semibold mt-0.5" style={{ color: t.text }}>{v}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {p.reference && <div className="text-[12px]" style={{ color: t.textMuted }}>Reference: <span style={{ color: t.text }}>{p.reference}</span></div>}
+                      {p.processedAt && <div className="text-[12px]" style={{ color: t.textMuted }}>Processed {fD(p.processedAt)}</div>}
+
+                      {/* Actions for pending/processing */}
+                      {(p.status === "pending" || p.status === "processing") && (
+                        <div className="flex items-center gap-2 flex-wrap mt-1">
+                          <input
+                            value={refInput[p.id] || ""}
+                            onChange={e => setRefInput(prev => ({ ...prev, [p.id]: e.target.value }))}
+                            placeholder="Transfer reference (optional)"
+                            onClick={e => e.stopPropagation()}
+                            className="py-1.5 px-2.5 rounded-lg text-[12.5px] bg-transparent outline-none flex-1 min-w-[180px]"
+                            style={{ color: t.text, border: `1px solid ${dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.12)"}`, fontFamily: "inherit" }}
+                          />
+                          {p.status === "pending" && (
+                            <button disabled={busy === p.id} onClick={async (e) => { e.stopPropagation(); payoutAct("process", p.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(96,165,250,.3)" : "rgba(59,130,246,.25)", color: dark ? "#93c5fd" : "#2563eb" }}>Mark Processing</button>
+                          )}
+                          <button disabled={busy === p.id} onClick={async (e) => { e.stopPropagation(); const ok = await confirm({ title: "Complete Payout", message: `Mark ${fN(p.amount)} payout to ${p.memberName} as completed? This will update their totalPaid.`, confirmLabel: "Complete" }); if (ok) payoutAct("complete", p.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(110,231,183,.3)" : "rgba(5,150,105,.25)", color: dark ? "#6ee7b7" : "#059669" }}>Complete</button>
+                          <button disabled={busy === p.id} onClick={async (e) => { e.stopPropagation(); const ok = await confirm({ title: "Reject Payout", message: `Reject ${fN(p.amount)} payout to ${p.memberName}? The earned amount will be reversed.`, confirmLabel: "Reject", danger: true }); if (ok) payoutAct("reject", p.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>Reject</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </>
+  );
+}

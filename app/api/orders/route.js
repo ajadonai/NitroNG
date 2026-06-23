@@ -331,9 +331,16 @@ export async function PATCH(req) {
         const extra = {};
         if (order.comments) {
           const at = (order.service.apiType || '').toLowerCase();
-          if (at.includes('mention')) extra.usernames = order.comments;
+          if (at === 'seo') extra.keywords = order.comments;
+          else if (at.includes('mention')) extra.usernames = order.comments;
           else if (at === 'poll') extra.answer_number = order.comments;
           else extra.comments = order.comments;
+        }
+
+        const reorderApiType = (order.service.apiType || '').toLowerCase();
+        if (reorderApiType === 'subscriptions') {
+          const match = order.link.match(/instagram\.com\/([^/?#]+)/);
+          if (match) extra.username = match[1];
         }
 
         if (reorderDripSchedule) {
@@ -341,8 +348,10 @@ export async function PATCH(req) {
           const first = await prisma.dripDispatch.findFirst({ where: { orderId: newOrder.id, day: 1, batch: 1 } });
           if (first) {
             try {
+              const batchExtra = { ...extra };
+              if (reorderApiType === 'subscriptions') { batchExtra.min = first.quantity; batchExtra.max = first.quantity; }
               await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'dispatching', dispatchedAt: new Date() } });
-              const provResult = await placeOrder(provider, order.service.apiId, order.link, first.quantity, extra);
+              const provResult = await placeOrder(provider, order.service.apiId, order.link, first.quantity, batchExtra);
               const batchApiId = provResult.order ? String(provResult.order) : null;
               if (batchApiId) {
                 await prisma.dripDispatch.update({ where: { id: first.id }, data: { apiOrderId: batchApiId, status: 'processing' } });
@@ -353,11 +362,14 @@ export async function PATCH(req) {
               }
             } catch (err) {
               log.error('Reorder drip batch 1', err.message);
-              await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'pending', lastError: err.message.slice(0, 500), dispatchedAt: null } }).catch(() => {});
+              const rmsg = err.message || '';
+              const rIsTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(rmsg);
+              await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: rIsTimeout ? 'failed' : 'pending', lastError: (rIsTimeout ? '[TIMEOUT] ' : '') + rmsg.slice(0, 450), dispatchedAt: rIsTimeout ? undefined : null } }).catch(() => {});
             }
           }
         } else {
           try {
+            if (reorderApiType === 'subscriptions') { extra.min = order.quantity; extra.max = order.quantity; }
             const result = await placeOrder(provider, order.service.apiId, order.link, order.quantity, extra);
             apiOrderId = result.order ? String(result.order) : null;
             if (apiOrderId) {
@@ -365,7 +377,9 @@ export async function PATCH(req) {
             }
           } catch (err) {
             log.error('Reorder', err.message);
-            try { await prisma.order.update({ where: { id: newOrder.id }, data: { lastError: err.message.slice(0, 500) } }); } catch {}
+            const rmsg2 = err.message || '';
+            const rIsTimeout2 = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(rmsg2);
+            try { await prisma.order.update({ where: { id: newOrder.id }, data: { lastError: (rIsTimeout2 ? '[TIMEOUT] ' : '') + rmsg2.slice(0, 450), ...(rIsTimeout2 ? { status: 'Dispatching' } : {}) } }); } catch {}
           }
         }
       }
@@ -489,13 +503,30 @@ export async function POST(req) {
 
       if (isUrl) {
         const postPatterns = {
-          instagram: /\/(p|reel|reels|tv|stories)\//i,
-          tiktok: /\/(video|photo|v)\//i,
-          'twitter/x': /\/status\//i,
+          instagram: /\/(p|reel|reels|tv|stories|share)\//i,
+          tiktok: /\/(video|photo|v|t)\//i,
+          'twitter/x': /\/(status|i\/status)\//i,
           youtube: /\/(watch|shorts|live)\b|youtu\.be\//i,
-          facebook: /\/(posts|videos|watch|reel|photo|story)\b/i,
+          facebook: /\/(posts|videos|watch|photos|photo|reel|share|story\.php|permalink\.php)\b/i,
           threads: /\/post\//i,
           telegram: /\/\d+\s*$/,
+          linkedin: /\/(posts|pulse|feed\/update)\//i,
+          snapchat: /\/spotlight\//i,
+          pinterest: /\/pin\//i,
+          reddit: /\/comments\//i,
+          twitch: /\/videos\//i,
+          kick: /\/clips\//i,
+          spotify: /\/(track|album|playlist|episode)\//i,
+          bluesky: /\/post\//i,
+          tumblr: /\/post\/\d/i,
+          vimeo: /\/\d{5,}/,
+          quora: /\/(answer|unanswered)\//i,
+          deezer: /\/(track|album|playlist)\//i,
+          tidal: /\/(track|album|playlist)\//i,
+          audiomack: /\/(song|album|playlist)\//i,
+          boomplay: /\/(songs|albums|playlists)\//i,
+          applemusic: /\/(album|song|music-video)\//i,
+          shazam: /\/(track|song)\//i,
         };
 
         // Shortened/redirect URLs are always post/content links
@@ -541,8 +572,9 @@ export async function POST(req) {
     const needsCommentText = apiType.includes('custom comment') || apiType.includes('comment replies');
     const needsUsernames = apiType.includes('mention');
     const needsAnswer = apiType === 'poll';
-    if ((needsCommentText || needsUsernames || needsAnswer) && !comments?.trim()) {
-      const label = needsUsernames ? 'Usernames are' : needsAnswer ? 'An answer selection is' : 'Comments are';
+    const needsKeywords = apiType === 'seo';
+    if ((needsCommentText || needsUsernames || needsAnswer || needsKeywords) && !comments?.trim()) {
+      const label = needsKeywords ? 'Keywords are' : needsUsernames ? 'Usernames are' : needsAnswer ? 'An answer selection is' : 'Comments are';
       return Response.json({ error: `${label} required for this service` }, { status: 400 });
     }
     if (needsCommentText && comments) {
@@ -646,7 +678,7 @@ export async function POST(req) {
           quantity: qty,
           charge,
           cost,
-          comments: comments?.trim().slice(0, 5000) || null,
+          comments: comments ? comments.split('\n').map(l => l.trim().replace(/^[""“”]+|[""“”]+$/g, '').trim()).filter(Boolean).join('\n').slice(0, 5000) : null,
           loyaltyDiscount,
           campaignDiscount: promoDiscount,
           campaignPercent: promoPercent,
@@ -697,10 +729,16 @@ export async function POST(req) {
       const provider = service.provider || 'mtp';
       const extra = {};
       if (comments) {
-        const safeComments = comments.trim().slice(0, 5000);
-        if (needsUsernames) extra.usernames = safeComments;
+        const safeComments = comments.split('\n').map(l => l.trim().replace(/^[""""]+|[""""]+$/g, '').trim()).filter(Boolean).join('\n').slice(0, 5000);
+        if (needsKeywords) extra.keywords = safeComments;
+        else if (needsUsernames) extra.usernames = safeComments;
         else if (needsAnswer) extra.answer_number = safeComments;
         else extra.comments = safeComments;
+      }
+
+      if (apiType === 'subscriptions') {
+        const match = trimmedLink.match(/instagram\.com\/([^/?#]+)/);
+        if (match) extra.username = match[1];
       }
 
       if (dripSchedule) {
@@ -709,8 +747,10 @@ export async function POST(req) {
         const first = await prisma.dripDispatch.findFirst({ where: { orderId: result.id, day: 1, batch: 1 } });
         if (first) {
           try {
+            const batchExtra = { ...extra };
+            if (apiType === 'subscriptions') { batchExtra.min = first.quantity; batchExtra.max = first.quantity; }
             await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'dispatching', dispatchedAt: new Date() } });
-            const provResult = await placeOrder(provider, service.apiId, trimmedLink, first.quantity, extra);
+            const provResult = await placeOrder(provider, service.apiId, trimmedLink, first.quantity, batchExtra);
             const batchApiId = provResult.order ? String(provResult.order) : null;
             if (batchApiId) {
               await prisma.dripDispatch.update({ where: { id: first.id }, data: { apiOrderId: batchApiId, status: 'processing' } });
@@ -733,12 +773,14 @@ export async function POST(req) {
                 return Response.json({ error: 'This service is temporarily unavailable. You have been refunded.' }, { status: 409 });
               } catch (refundErr) { log.error('Drip auto-refund', refundErr.message); }
             }
-            try { await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'pending', lastError: msg.slice(0, 500), dispatchedAt: null } }); } catch {}
+            const isTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(msg);
+            try { await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: isTimeout ? 'failed' : 'pending', lastError: (isTimeout ? '[TIMEOUT] ' : '') + msg.slice(0, 450), dispatchedAt: isTimeout ? undefined : null } }); } catch {}
           }
         }
       } else {
         // Direct dispatch (no drip)
         try {
+          if (apiType === 'subscriptions') { extra.min = qty; extra.max = qty; }
           await prisma.order.update({ where: { id: result.id }, data: { dispatchedAt: new Date() } });
           const provResult = await placeOrder(provider, service.apiId, trimmedLink, qty, extra);
           apiOrderId = provResult.order ? String(provResult.order) : null;
@@ -787,7 +829,8 @@ export async function POST(req) {
             return Response.json({ error: 'This service is temporarily unavailable. You have been refunded.' }, { status: 409 });
           } catch (refundErr) { log.error('Order auto-refund', refundErr.message); }
         }
-          try { await prisma.order.update({ where: { id: result.id }, data: { lastError: msg.slice(0, 500) } }); } catch {}
+          const isTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(msg);
+          try { await prisma.order.update({ where: { id: result.id }, data: { lastError: (isTimeout ? '[TIMEOUT] ' : '') + msg.slice(0, 450), ...(isTimeout ? { status: 'Dispatching' } : {}) } }); } catch {}
         }
       }
     }
