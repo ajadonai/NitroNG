@@ -2180,6 +2180,116 @@ function IssueRow({ issue, i, total, dark, t, rowBorder, expanded, setExpanded, 
 const TIER_COLORS = { starter: "#6B7280", growth: "#3B82F6", pro: "#c47d8e" };
 const STATUS_COLORS_CREW = { pending: "#F59E0B", approved: "#059669", suspended: "#EF4444", rejected: "#6B7280" };
 
+export function AdminChangelogPage({ dark, t }) {
+  const confirm = useConfirm();
+  const toast = useToast();
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ date: new Date().toISOString().slice(0, 10), tag: "new", title: "", description: "" });
+  const [saving, setSaving] = useState(false);
+
+  const load = () => fetch("/api/changelog").then(r => r.json()).then(d => { setEntries(d); setLoading(false); }).catch(() => setLoading(false));
+  useEffect(() => { load(); }, []);
+
+  const add = async () => {
+    if (!form.title.trim() || !form.description.trim()) { toast.error("Title and description are required"); return; }
+    setSaving(true);
+    try {
+      const r = await fetch("/api/changelog", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || "Failed"); }
+      toast.success("Entry added");
+      setForm({ date: new Date().toISOString().slice(0, 10), tag: "new", title: "", description: "" });
+      setShowAdd(false);
+      load();
+    } catch (err) { toast.error(err.message); }
+    setSaving(false);
+  };
+
+  const remove = async (id, title) => {
+    const ok = await confirm({ title: "Delete Entry", message: `Delete "${title}" from the changelog?`, confirmLabel: "Delete", danger: true });
+    if (!ok) return;
+    try {
+      const r = await fetch("/api/changelog", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+      if (!r.ok) throw new Error("Failed");
+      toast.success("Entry deleted");
+      load();
+    } catch { toast.error("Failed to delete"); }
+  };
+
+  const tagColors = { new: { bg: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", text: dark ? "#e8acba" : "#a3586b" }, improved: { bg: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", text: dark ? "#93c5fd" : "#2563eb" }, fixed: { bg: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)", text: dark ? "#6ee7b7" : "#059669" } };
+  const inputStyle = { width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)"}`, background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", color: t.text, fontSize: 14, fontFamily: "'Outfit', sans-serif", outline: "none" };
+
+  return (
+    <>
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <div>
+          <div className="text-xl font-semibold" style={{ color: t.text }}>Changelog</div>
+          <div className="text-sm mt-0.5" style={{ color: t.textMuted }}>{entries.length} entries</div>
+        </div>
+        <div className="flex items-center gap-2">
+          <a href="/changelog" target="_blank" rel="noopener noreferrer" className="text-xs font-semibold py-1.5 px-3 rounded-lg no-underline" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textSoft }}>View page</a>
+          <button onClick={() => setShowAdd(!showAdd)} className="text-xs font-semibold py-1.5 px-3 rounded-lg border-none cursor-pointer" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>+ Add entry</button>
+        </div>
+      </div>
+
+      {showAdd && (
+        <div className="rounded-xl p-4 mb-4" style={{ background: dark ? "rgba(255,255,255,.04)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+          <div className="flex gap-3 mb-3">
+            <div className="flex-1">
+              <label className="text-xs font-semibold mb-1 block" style={{ color: t.textMuted }}>Date</label>
+              <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} style={inputStyle} />
+            </div>
+            <div style={{ width: 140 }}>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: t.textMuted }}>Tag</label>
+              <select value={form.tag} onChange={e => setForm({ ...form, tag: e.target.value })} style={{ ...inputStyle, cursor: "pointer" }}>
+                <option value="new">New</option>
+                <option value="improved">Improved</option>
+                <option value="fixed">Fixed</option>
+              </select>
+            </div>
+          </div>
+          <div className="mb-3">
+            <label className="text-xs font-semibold mb-1 block" style={{ color: t.textMuted }}>Title</label>
+            <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. Gradual delivery" style={inputStyle} />
+          </div>
+          <div className="mb-3">
+            <label className="text-xs font-semibold mb-1 block" style={{ color: t.textMuted }}>Description</label>
+            <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="What changed and why it matters to users" rows={3} style={{ ...inputStyle, resize: "vertical" }} />
+          </div>
+          <div className="flex gap-2">
+            <button disabled={saving} onClick={add} className="text-xs font-semibold py-1.5 px-4 rounded-lg border-none cursor-pointer" style={{ background: t.accent, color: "#fff" }}>{saving ? "Saving..." : "Save"}</button>
+            <button onClick={() => setShowAdd(false)} className="text-xs font-semibold py-1.5 px-4 rounded-lg border-none cursor-pointer" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textSoft }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {loading ? <div className="text-sm py-8 text-center" style={{ color: t.textMuted }}>Loading...</div> : (
+        <div className="flex flex-col gap-1.5">
+          {entries.map(e => {
+            const tc = tagColors[e.tag] || tagColors.new;
+            return (
+              <div key={e.id} className="flex items-start gap-3 rounded-xl py-3 px-4" style={{ background: dark ? "rgba(255,255,255,.04)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` }}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-semibold py-0.5 px-2 rounded-md" style={{ background: tc.bg, color: tc.text }}>{e.tag}</span>
+                    <span className="text-xs" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>{e.date}</span>
+                  </div>
+                  <div className="text-sm font-semibold" style={{ color: t.text }}>{e.title}</div>
+                  <div className="text-xs mt-0.5 leading-relaxed" style={{ color: t.textSoft }}>{e.description}</div>
+                </div>
+                <button onClick={() => remove(e.id, e.title)} className="shrink-0 bg-transparent border-none cursor-pointer p-1 rounded-md hover:opacity-70" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+}
+
 export function AdminCrewPage({ dark, t }) {
   const [tab, setTab] = useState("members");
   const [members, setMembers] = useState([]);
