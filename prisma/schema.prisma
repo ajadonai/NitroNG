@@ -41,7 +41,7 @@ model User {
   name          String
   firstName     String?
   lastName      String?
-  phone         String?
+  phone         String?  @unique
   balance       Int      @default(0)
   referralCode  String   @unique @default(cuid())
   referredBy    String?

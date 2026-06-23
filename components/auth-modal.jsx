@@ -75,6 +75,9 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
   const [pw2, setPw2] = useState('');
   const [refCode, setRefCode] = useState('');
   const [agree, setAgree] = useState(false);
+  const [phoneTaken, setPhoneTaken] = useState(false);
+  const [phoneChecking, setPhoneChecking] = useState(false);
+  const phoneCheckTimer = useRef(null);
   const [forgotSent, setForgotSent] = useState(false);
   const [resetToken, setResetToken] = useState(resetTokenProp || '');
   const [resetDone, setResetDone] = useState(false);
@@ -128,6 +131,36 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
       if (emailCheckTimer.current) clearTimeout(emailCheckTimer.current);
     };
   }, [email, mode]);
+
+  useEffect(() => {
+    if (mode !== 'signup' || !phone) {
+      setPhoneTaken(false);
+      return;
+    }
+    const cleaned = phone.replace(/^0+/, '');
+    if (!/^[789]\d{9}$/.test(cleaned)) {
+      setPhoneTaken(false);
+      return;
+    }
+    setPhoneChecking(true);
+    if (phoneCheckTimer.current) clearTimeout(phoneCheckTimer.current);
+    phoneCheckTimer.current = setTimeout(() => {
+      fetch('/api/auth/check-phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: cleaned }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          setPhoneTaken(!d.available);
+          setPhoneChecking(false);
+        })
+        .catch(() => setPhoneChecking(false));
+    }, 600);
+    return () => {
+      if (phoneCheckTimer.current) clearTimeout(phoneCheckTimer.current);
+    };
+  }, [phone, mode]);
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
@@ -271,7 +304,8 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
 
   const validEmail =
     email && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
-  const validPhone = phone && /^[0-9]{10,11}$/.test(phone);
+  const cleanPhone = phone.replace(/^0+/, '');
+  const validPhone = /^[789]\d{9}$/.test(cleanPhone);
   const pwMatch = pw2.length > 0 && pw === pw2;
   const pwMismatch = pw2.length > 0 && pw !== pw2;
 
@@ -786,6 +820,58 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
               ) : null}
             </div>
 
+            {/* WhatsApp number */}
+            <Lbl t={t} htmlFor="signup-phone">
+              WhatsApp Number <span style={{ color: dark ? '#fca5a5' : '#dc2626' }}>*</span>
+            </Lbl>
+            <div className="flex gap-2 mb-1">
+              <div
+                className="px-3 py-3 rounded-xl text-[15px] shrink-0 select-none flex items-center gap-1.5"
+                style={{
+                  background: t.inputBg,
+                  border: `1px solid ${t.inputBorder}`,
+                  color: t.textSoft,
+                }}
+              >
+                <span className="text-base leading-none">🇳🇬</span> +234
+              </div>
+              <input
+                id="signup-phone"
+                value={phone}
+                onChange={(e) =>
+                  setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))
+                }
+                placeholder="8012345678"
+                type="tel"
+                autoComplete="tel"
+                className="flex-1 px-3.5 py-3 rounded-xl text-[15px] outline-none"
+                style={{
+                  background: t.inputBg,
+                  border: `1px solid ${t.inputBorder}`,
+                  color: t.text,
+                }}
+              />
+            </div>
+            <div className="min-h-[16px] mb-1">
+              {phone && !validPhone ? (
+                <span className="text-[11px]" style={{ color: dark ? '#fca5a5' : '#dc2626' }}>
+                  Enter a valid Nigerian number (e.g. 8012345678)
+                </span>
+              ) : phone && validPhone && phoneTaken ? (
+                <span className="text-[11px]" style={{ color: dark ? '#fca5a5' : '#dc2626' }}>
+                  This number is already registered
+                </span>
+              ) : phone && validPhone && phoneChecking ? (
+                <span className="text-[11px]" style={{ color: t.textMuted }}>
+                  Checking...
+                </span>
+              ) : (
+                <span className="text-[11px]" style={{ color: t.textMuted }}>
+                  We'll reach you here for order updates
+                </span>
+              )}
+            </div>
+
             {/* Continue button */}
             <button
               onClick={() => {
@@ -796,6 +882,14 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
                 }
                 if (method === 'email' && (!email || !validEmail)) {
                   setError('Please enter a valid email');
+                  return;
+                }
+                if (!validPhone) {
+                  setError('Please enter a valid Nigerian phone number');
+                  return;
+                }
+                if (phoneTaken) {
+                  setError('This phone number is already registered');
                   return;
                 }
                 setName(`${firstName} ${lastName}`);

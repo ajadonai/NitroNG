@@ -1,12 +1,16 @@
 "use client";
 
 // ── StatCard ──
-export function StatCard({ label, value, caption, captionUp, t }) {
+export function StatCard({ label, value, caption, captionUp, dark, t }) {
   return (
-    <div className="rounded-2xl p-5" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
-      <div className="text-[10.5px] font-semibold tracking-[1px] uppercase" style={{ color: t.muted }}>{label}</div>
-      <div className="m text-[27px] font-semibold mt-[7px] tracking-tight" style={{ color: t.text }}>{value}</div>
-      {caption && <div className="text-[11.5px] mt-[5px]" style={{ color: captionUp ? t.green : t.soft }}>{caption}</div>}
+    <div className="rounded-[14px] overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
+      <div className="py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
+        <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>{label}</div>
+      </div>
+      <div className="py-[14px] px-[18px]">
+        <div className="text-[24px] font-semibold tracking-tight" style={{ color: t.text }}>{value}</div>
+        {caption && <div className="text-[11.5px] mt-[4px]" style={{ color: captionUp ? t.green : t.soft }}>{caption}</div>}
+      </div>
     </div>
   );
 }
@@ -40,32 +44,51 @@ export function StatusBadge({ status, label, dark, t }) {
 // ── TierBadge + TierProgress ──
 const TIER_INFO = { starter: { rate: 5, next: "Growth", nextThreshold: 30 }, growth: { rate: 7, next: "Pro", nextThreshold: 100 }, pro: { rate: 10, next: null, nextThreshold: null } };
 
-export function TierProgress({ tier, activeCount, t }) {
+export function TierProgress({ tier, activeCount, dark, t }) {
   const info = TIER_INFO[tier] || TIER_INFO.starter;
   const maxMarker = 100;
   const pct = Math.min(100, (activeCount / maxMarker) * 100);
-  const starterReached = activeCount >= 0;
   const growthReached = activeCount >= 30;
   const proReached = activeCount >= 100;
   const tierName = tier.charAt(0).toUpperCase() + tier.slice(1);
+  const tiers = [
+    { label: "Starter", rate: "5%", pos: 0, reached: true },
+    { label: "Growth", rate: "7%", pos: 30, reached: growthReached },
+    { label: "Pro", rate: "10%", pos: 100, reached: proReached },
+  ];
 
   return (
-    <div className="rounded-2xl p-5 flex flex-col gap-[13px]" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
-      <div className="flex items-baseline justify-between">
-        <div><span className="serif text-2xl font-semibold" style={{ color: t.text }}>{tierName}</span> <span className="m text-xs" style={{ color: t.muted }}>· {info.rate}% pot</span></div>
-        {info.next && <span className="text-[12.5px]" style={{ color: t.soft }}><b style={{ color: t.accent }}>{activeCount}</b>/{info.nextThreshold} active to <b style={{ color: t.accent }}>{info.next}</b></span>}
+    <div className="rounded-[14px] overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
+      <div className="py-[10px] px-[18px] flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
+        <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>Tier Progress</div>
+        {info.next && (
+          <span className="text-[11.5px]" style={{ color: t.soft }}>
+            <b style={{ color: t.accent }}>{activeCount}</b>/{info.nextThreshold} to {info.next}
+          </span>
+        )}
       </div>
-      <div>
-        <div className="relative h-[9px] rounded-full overflow-visible" style={{ background: t.surfaceBrd }}>
-          <div className="absolute left-0 top-0 bottom-0 rounded-full transition-[width] duration-1000" style={{ width: `${pct}%`, background: t.grad }} />
-          <span className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-[13px] h-[13px] rounded-full z-[2]" style={{ left: "0%", background: starterReached ? t.accent : t.bg, border: `2px solid ${starterReached ? t.accent : t.surfaceBorder}` }} />
-          <span className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-[13px] h-[13px] rounded-full z-[2]" style={{ left: "30%", background: growthReached ? t.accent : t.bg, border: `2px solid ${growthReached ? t.accent : t.surfaceBorder}` }} />
-          <span className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-[13px] h-[13px] rounded-full z-[2]" style={{ left: "100%", background: proReached ? t.accent : t.bg, border: `2px solid ${proReached ? t.accent : t.surfaceBorder}` }} />
+      <div className="py-[18px] px-[18px] flex flex-col gap-5">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: t.grad }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div>
+            <span className="serif text-[20px] font-semibold leading-tight" style={{ color: t.text }}>{tierName}</span>
+            <span className="text-[13px] font-medium ml-2" style={{ color: t.muted }}>{info.rate}% commission</span>
+          </div>
         </div>
-        <div className="relative h-0">
-          <span className="absolute top-[10px] -translate-x-1/2 text-[10px] whitespace-nowrap" style={{ left: "0%", color: t.muted }}>Starter · 5%</span>
-          <span className="absolute top-[10px] -translate-x-1/2 text-[10px] whitespace-nowrap" style={{ left: "30%", color: t.muted }}>Growth · 7%</span>
-          <span className="absolute top-[10px] text-[10px] whitespace-nowrap" style={{ left: "100%", transform: "translateX(-100%)", color: t.muted }}>Pro · 10%</span>
+        <div>
+          <div className="relative h-[6px] rounded-full mx-[6px]" style={{ background: t.surfaceBrd }}>
+            <div className="absolute left-0 top-0 bottom-0 rounded-full transition-[width] duration-1000" style={{ width: `${pct}%`, background: t.grad }} />
+            {tiers.map(({ pos, reached }) => (
+              <span key={pos} className="absolute top-1/2 w-[10px] h-[10px] rounded-full z-[2] border-2" style={{ left: `${pos}%`, transform: "translate(-50%, -50%)", background: reached ? t.accent : t.bg, borderColor: reached ? t.accent : t.surfaceBrd }} />
+            ))}
+          </div>
+          <div className="flex justify-between mt-2 px-0">
+            {tiers.map(({ label, rate, reached }) => (
+              <span key={label} className="text-[10.5px] font-medium" style={{ color: reached ? t.accent : t.muted }}>{label} {rate}</span>
+            ))}
+          </div>
         </div>
       </div>
     </div>

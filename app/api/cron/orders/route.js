@@ -286,13 +286,13 @@ export async function GET(req) {
             await prisma.order.update({
               where: { id: order.id },
               data: {
-                status: 'Pending',
+                status: isTimeout ? 'Dispatching' : 'Pending',
                 retryCount: { increment: 1 },
                 lastError: (isTimeout ? '[TIMEOUT] ' : '') + err.message.slice(0, 500),
               },
             });
             if (isTimeout) {
-              log.warn(`Cron retry ${order.orderId}`, `Timeout — will retry next cycle (${order.retryCount + 1}/5)`);
+              log.warn(`Cron retry ${order.orderId}`, `Timeout — held as Dispatching for manual check`);
             } else {
               log.warn(`Cron retry ${order.orderId}`, err.message);
               if (/incorrect service|invalid service/i.test(err.message)) {
@@ -338,7 +338,7 @@ export async function GET(req) {
     try {
       const stale = await prisma.order.findMany({
         where: {
-          status: { in: ['Pending', 'Dispatching'] }, apiOrderId: null, deletedAt: null,
+          status: 'Pending', apiOrderId: null, deletedAt: null,
           OR: [
             { retryCount: { gte: 5 }, createdAt: { lt: new Date(Date.now() - 6 * 60 * 60 * 1000) } },
             { createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
@@ -351,7 +351,7 @@ export async function GET(req) {
         try {
           await prisma.$transaction(async (tx) => {
             const claimed = await tx.order.updateMany({
-              where: { id: order.id, status: { in: ['Pending', 'Dispatching'] }, apiOrderId: null },
+              where: { id: order.id, status: 'Pending', apiOrderId: null },
               data: { status: 'Cancelled', lastError: 'dispatch_failed', refundedAt: new Date() },
             });
             if (claimed.count === 0) return;

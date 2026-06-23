@@ -61,7 +61,8 @@ async function dispatchBatch(createdOrders, userId, batchId, totalCharge) {
         const extra = {};
         if (o.comments) {
           const at = (o.service.apiType || '').toLowerCase();
-          if (at.includes('mention')) extra.usernames = o.comments;
+          if (at === 'seo') extra.keywords = o.comments;
+          else if (at.includes('mention')) extra.usernames = o.comments;
           else if (at === 'poll') extra.answer_number = o.comments;
           else extra.comments = o.comments;
         }
@@ -94,9 +95,9 @@ async function dispatchBatch(createdOrders, userId, batchId, totalCharge) {
       log.error('Bulk dispatch', `${o.orderId}: ${err.message}`);
       const isTimeout = /timed?\s?out|dispatch_timeout|ETIMEDOUT|ECONNABORTED|ECONNRESET|retries failed/i.test(err.message);
       if (o.hasDrip) {
-        await prisma.dripDispatch.updateMany({ where: { orderId: o.dbId, day: 1, batch: 1, status: 'dispatching' }, data: { status: 'pending', lastError: (isTimeout ? '[TIMEOUT] ' : '') + err.message.slice(0, 500), dispatchedAt: null } }).catch(() => {});
+        await prisma.dripDispatch.updateMany({ where: { orderId: o.dbId, day: 1, batch: 1, status: 'dispatching' }, data: { status: isTimeout ? 'failed' : 'pending', lastError: (isTimeout ? '[TIMEOUT] ' : '') + err.message.slice(0, 500), dispatchedAt: isTimeout ? undefined : null } }).catch(() => {});
       }
-      await prisma.order.update({ where: { id: o.dbId }, data: { lastError: (isTimeout ? '[TIMEOUT] ' : '') + err.message.slice(0, 500), retryCount: { increment: 1 } } }).catch(() => {});
+      await prisma.order.update({ where: { id: o.dbId }, data: { lastError: (isTimeout ? '[TIMEOUT] ' : '') + err.message.slice(0, 500), retryCount: { increment: 1 }, ...(isTimeout && !o.hasDrip ? { status: 'Dispatching' } : {}) } }).catch(() => {});
       consecutiveFails++;
     }
     await new Promise(r => setTimeout(r, 300));
@@ -289,7 +290,7 @@ export async function PATCH(req) {
         } catch (err) {
           log.error('Bulk reorder', `${order.orderId}: ${err.message}`);
           const isTimeout = /timed?\s?out|dispatch_timeout|ETIMEDOUT|ECONNABORTED|ECONNRESET|retries failed/i.test(err.message);
-          await prisma.order.update({ where: { id: order.id }, data: { lastError: (isTimeout ? '[TIMEOUT] ' : '') + err.message.slice(0, 500), retryCount: { increment: 1 } } }).catch(() => {});
+          await prisma.order.update({ where: { id: order.id }, data: { lastError: (isTimeout ? '[TIMEOUT] ' : '') + err.message.slice(0, 500), retryCount: { increment: 1 }, ...(isTimeout ? { status: 'Dispatching' } : {}) } }).catch(() => {});
           consecutiveFails++;
         }
         await new Promise(r => setTimeout(r, 300));
@@ -458,8 +459,8 @@ export async function POST(req) {
       const comments = row.comments?.trim().slice(0, 5000) || null;
 
       const at = (service.apiType || '').toLowerCase();
-      if ((at.includes('custom comment') || at.includes('comment replies') || at.includes('mention') || at === 'poll') && !comments) {
-        return Response.json({ error: `Row ${i + 1}: this service requires ${at.includes('mention') ? 'usernames' : at === 'poll' ? 'an answer selection' : 'comments'}` }, { status: 400 });
+      if ((at.includes('custom comment') || at.includes('comment replies') || at.includes('mention') || at === 'poll' || at === 'seo') && !comments) {
+        return Response.json({ error: `Row ${i + 1}: this service requires ${at === 'seo' ? 'keywords' : at.includes('mention') ? 'usernames' : at === 'poll' ? 'an answer selection' : 'comments'}` }, { status: 400 });
       }
       if ((at.includes('custom comment') || at.includes('comment replies')) && comments) {
         const lineCount = comments.split('\n').filter(l => l.trim()).length;
@@ -604,7 +605,8 @@ export async function POST(req) {
         const extra = {};
         if (o.comments) {
           const at = (o.service.apiType || '').toLowerCase();
-          if (at.includes('mention')) extra.usernames = o.comments;
+          if (at === 'seo') extra.keywords = o.comments;
+          else if (at.includes('mention')) extra.usernames = o.comments;
           else if (at === 'poll') extra.answer_number = o.comments;
           else extra.comments = o.comments;
         }
@@ -625,7 +627,8 @@ export async function POST(req) {
               }
             } catch (err) {
               log.error('Drip batch 1', err.message);
-              await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'pending', lastError: err.message.slice(0, 500), dispatchedAt: null } }).catch(() => {});
+              const bIsTimeout = /timed?\s?out|dispatch_timeout|ETIMEDOUT|ECONNABORTED|ECONNRESET|retries failed/i.test(err.message);
+              await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: bIsTimeout ? 'failed' : 'pending', lastError: (bIsTimeout ? '[TIMEOUT] ' : '') + err.message.slice(0, 450), dispatchedAt: bIsTimeout ? undefined : null } }).catch(() => {});
             }
           }
         } else {
@@ -639,7 +642,8 @@ export async function POST(req) {
             }
           } catch (err) {
             log.error('Order dispatch', err.message);
-            await prisma.order.update({ where: { id: o.dbId }, data: { lastError: err.message.slice(0, 500) } }).catch(() => {});
+            const bIsTimeout2 = /timed?\s?out|dispatch_timeout|ETIMEDOUT|ECONNABORTED|ECONNRESET|retries failed/i.test(err.message);
+            await prisma.order.update({ where: { id: o.dbId }, data: { lastError: (bIsTimeout2 ? '[TIMEOUT] ' : '') + err.message.slice(0, 450), ...(bIsTimeout2 ? { status: 'Dispatching' } : {}) } }).catch(() => {});
           }
         }
       }
