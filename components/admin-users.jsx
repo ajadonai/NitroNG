@@ -216,7 +216,7 @@ export default function AdminUsersPage({ dark, t }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, userId, amount: Number(amount) || 0, subtype }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Request failed'); }
       if (action === 'credit') {
         const amt = Number(amount) || 0;
         setUsers(prev => prev.map(u => u.id === userId ? { ...u, balance: (u.balance || 0) + amt } : u));
@@ -239,8 +239,8 @@ export default function AdminUsersPage({ dark, t }) {
         if (drawerUser?.id === userId) setDrawerUser(prev => ({ ...prev, status: 'Active', name: prev.deletedName || prev.name, email: prev.deletedEmail || prev.email }));
         toast.success('Account restored');
       }
-    } catch {
-      toast.error('Action failed');
+    } catch (err) {
+      toast.error(err.message || 'Action failed');
     }
     setActionLoading(false);
   };

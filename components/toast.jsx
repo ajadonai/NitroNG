@@ -109,12 +109,12 @@ export function ToastProvider({ children, dark }) {
     <ToastContext.Provider value={toast}>
       {children}
       {topToasts.length > 0 && (
-        <div className="fixed right-3 left-3 md:left-auto md:right-5 md:w-[360px] top-3 md:top-16 z-[200] flex flex-col gap-2 pointer-events-none">
+        <div className="fixed right-3 left-3 md:left-auto md:right-5 md:w-[360px] top-3 md:top-16 z-[1200] flex flex-col gap-2 pointer-events-none">
           {topToasts.map(renderToast)}
         </div>
       )}
       {bottomToasts.length > 0 && (
-        <div className="fixed right-3 left-3 md:left-auto md:right-5 md:w-[360px] bottom-[72px] md:bottom-20 z-[200] flex flex-col gap-2 pointer-events-none">
+        <div className="fixed right-3 left-3 md:left-auto md:right-5 md:w-[360px] bottom-[72px] md:bottom-20 z-[1200] flex flex-col gap-2 pointer-events-none">
           {bottomToasts.map(renderToast)}
         </div>
       )}
