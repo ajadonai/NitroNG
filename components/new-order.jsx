@@ -1223,6 +1223,11 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                   <span className="text-xs font-semibold" style={{ color: t.accent }}>#{orderSuccess.id}</span>
                 </div>
 
+                {/* Delivery notice */}
+                <div className="text-[11px] leading-relaxed mb-4 px-1" style={{ color: t.textMuted }}>
+                  Orders are typically delivered within 0 to 6 hours. In some cases, delivery may take up to 24 hours. We are unable to act on delivery speed requests within the first 6 hours of order placement.
+                </div>
+
                 {/* Cross-sell spotlight */}
                 {successCrossSell && <div className="rounded-xl p-3.5 mb-4 flex items-center gap-3 cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: successCrossSell.color + "08", border: `1px solid ${successCrossSell.color}20` }} onClick={() => { setOrderSuccess(null); setOrderModal(false); }}>
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: successCrossSell.color + "15" }}>{successCrossSell.icon}</div>
