@@ -88,7 +88,7 @@ export async function POST(req) {
 
       tgAnswerCallback(cb.id, `Approved ₦${(tx.amount / 100).toLocaleString()}`);
       tgEditMessage(cb.message.message_id, cb.message.text + `\n\n✅ <b>Approved</b> via Telegram`);
-      tgPayment(name, tx.amount, 0, 'Manual');
+      tgPayment(name, tx.amount, 0, 'Manual', 'Telegram');
       log.info('TG Webhook', `Approved manual deposit ${txId} for ${name}`);
 
     } else if (action === 'reject') {
