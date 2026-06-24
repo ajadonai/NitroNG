@@ -850,7 +850,7 @@ export async function POST(req) {
       customData: { value: charge / 100, currency: 'NGN' },
     });
 
-    tgNewOrder(orderId, tierName, qty, charge, session.email);
+    tgNewOrder(orderId, tierName, qty, charge, session.email, link, platform);
 
     return Response.json({
       success: true,
