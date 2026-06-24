@@ -443,7 +443,7 @@ export async function POST(req) {
           userId: session.id,
           link: trimmedLink,
           ...(tierId ? { tierId } : { serviceId }),
-          status: { notIn: ['Cancelled'] },
+          status: { in: ['Pending', 'Processing'] },
           deletedAt: null,
           createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
         },
