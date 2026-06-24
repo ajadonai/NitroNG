@@ -3,6 +3,7 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { placeOrder, checkOrder } from '@/lib/smm';
+import { tgDripTimeout, tgDispatchFailed } from '@/lib/telegram';
 
 // Drip dispatch cron — runs twice per hour (:05 and :35)
 // 1. Dispatches pending drip batches that are due (scheduledAt <= now)
@@ -51,6 +52,7 @@ export async function GET(req) {
       prisma.adminIssue.create({
         data: { type: 'ghost_dispatch', title: `${order.orderId} batch ${dispatch.batch}: timed out — needs manual check`, message: `Dispatch timed out. The provider may or may not have created this order. Check provider dashboard before dispatching again.\nLink: ${order.link}`, metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, day: dispatch.day, link: order.link }) },
       }).catch(() => {});
+      tgDripTimeout(order.orderId, dispatch.batch);
       log.warn('Drip timeout', `${order.orderId} batch ${dispatch.batch}: marked failed after timeout`);
       stats.stuckFailed++;
     }
@@ -129,6 +131,7 @@ export async function GET(req) {
         const isTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(err.message);
 
         if (isTimeout) {
+          tgDripTimeout(order.orderId, dispatch.batch);
           log.warn('Drip dispatch', `${order.orderId} batch ${dispatch.batch}: timeout — marked failed for manual check`);
           await prisma.dripDispatch.update({
             where: { id: dispatch.id },

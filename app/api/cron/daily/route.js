@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getBalance } from '@/lib/smm';
 import { sendEmail, emailWrap, emailRow, emailDataBox, sendNudgeIdleFunds, sendNudgeComeback, sendNudgeLapsed, sendNudgeIdleBalance, sendAdActivationDay1, sendAdActivationDay3, sendAdActivationDay6 } from '@/lib/email';
+import { tgProviderBalance, tgDailySummary } from '@/lib/telegram';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -346,6 +347,7 @@ export async function GET(req) {
           });
           sendEmail(adminEmail, 'Low Provider Balance Alert', html).catch(err => log.warn('Balance alert email', err.message));
         } catch (emailErr) { log.warn('Balance alert email', emailErr.message); }
+        tgProviderBalance(alerts);
         log.warn('Low balance alert', alertText);
       }
     }
@@ -355,6 +357,20 @@ export async function GET(req) {
     log.error('Balance check', err.message);
     results.balance.error = err.message;
   }
+
+  const summary = {};
+  if (results.cleanup?.deleted) summary['Stale users cleaned'] = results.cleanup.deleted;
+  if (results.cleanup?.permanentlyDeleted) summary['Permanently deleted'] = results.cleanup.permanentlyDeleted;
+  if (results.tickets?.closed) summary['Tickets auto-closed'] = results.tickets.closed;
+  const nudgeKeys = ['nudgeIdleFunds', 'nudgeComeback', 'nudgeLapsed', 'nudgeIdleBalance'];
+  const totalNudges = nudgeKeys.reduce((s, k) => s + (results[k]?.sent || 0), 0);
+  if (totalNudges) summary['Nudge emails sent'] = totalNudges;
+  const totalAds = (results.adActivationDay1?.sent || 0) + (results.adActivationDay3?.sent || 0) + (results.adActivationDay6?.sent || 0);
+  if (totalAds) summary['Activation emails'] = totalAds;
+  if (results.balance?.alerts) summary['Low balance alerts'] = results.balance.alerts;
+  const bals = results.balance?.balances || {};
+  Object.entries(bals).forEach(([k, v]) => { if (v.balance != null) summary[`${k.toUpperCase()} bal`] = `$${v.balance.toFixed(2)}`; });
+  if (Object.keys(summary).length) tgDailySummary(summary);
 
   return Response.json({ success: true, ...results });
 }

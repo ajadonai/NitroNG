@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { applyWelcomeBonus } from '@/lib/welcome-bonus';
 import { sendEvent } from '@/lib/meta-capi';
+import { tgPayment } from '@/lib/telegram';
 
 export async function POST(req) {
   try {
@@ -99,8 +100,11 @@ export async function POST(req) {
       log.info('Webhook', `₦${amountKobo / 100} + ₦${couponBonus / 100} bonus credited (ref: ${reference})`);
 
       try {
-        const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true } });
-        if (u) sendEvent('AddPaymentInfo', { eventId: `apinfo_${reference}`, email: u.email, externalId: tx.userId, customData: { value: amountKobo / 100, currency: 'NGN' } });
+        const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true, name: true } });
+        if (u) {
+          sendEvent('AddPaymentInfo', { eventId: `apinfo_${reference}`, email: u.email, externalId: tx.userId, customData: { value: amountKobo / 100, currency: 'NGN' } });
+          tgPayment(u.name || u.email, amountKobo, couponBonus || 0);
+        }
       } catch {}
 
       // Deferred referral bonus
