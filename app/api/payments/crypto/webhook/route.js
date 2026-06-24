@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import crypto from 'crypto';
 import { applyWelcomeBonus } from '@/lib/welcome-bonus';
 import { sendEvent } from '@/lib/meta-capi';
+import { tgPayment } from '@/lib/telegram';
 
 const NP_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 
@@ -94,8 +95,11 @@ export async function POST(req) {
       log.info('NowPayments Webhook', `✓ Credited ${tx.amount / 100} + ₦${couponBonus / 100} bonus to user ${tx.userId}`);
 
       try {
-        const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true } });
-        if (u) sendEvent('AddPaymentInfo', { eventId: `apinfo_${order_id}`, email: u.email, externalId: tx.userId, customData: { value: tx.amount / 100, currency: 'NGN' } });
+        const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true, name: true } });
+        if (u) {
+          sendEvent('AddPaymentInfo', { eventId: `apinfo_${order_id}`, email: u.email, externalId: tx.userId, customData: { value: tx.amount / 100, currency: 'NGN' } });
+          tgPayment(u.name || u.email, tx.amount, couponBonus || 0, 'Crypto');
+        }
       } catch {}
 
       // Deferred referral bonus

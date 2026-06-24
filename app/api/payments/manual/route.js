@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getCurrentUser } from '@/lib/auth';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { tgManualPending } from '@/lib/telegram';
 
 // POST — create a manual transfer request (returns bank details + creates pending tx)
 export async function POST(req) {
@@ -94,6 +95,9 @@ export async function PUT(req) {
         note: tx.note.replace('[awaiting_confirmation]', `[user_confirmed${senderRef ? `:${senderRef}` : ''}]`),
       },
     });
+
+    const u = await prisma.user.findUnique({ where: { id: session.id }, select: { name: true, email: true } });
+    tgManualPending(tx.id, u?.name || 'Unknown', u?.email || '', tx.amount, senderRef);
 
     return Response.json({ success: true });
   } catch (err) {

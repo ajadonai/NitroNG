@@ -7,8 +7,6 @@ import { FilterDropdown } from "./date-range-picker";
 
 const PER_PAGE = 15;
 const TX_PER_PAGE = 15;
-const HUES = ['#c47d8e', '#7d93c4', '#7dc4a0', '#c4a87d', '#a87dc4', '#c47d7d', '#7dc4c4', '#b39ddb'];
-const avColor = (name) => HUES[(name || 'U').charCodeAt(0) % HUES.length];
 const initials = (name) => (name || 'U').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
 const STATUS_MAP = {
@@ -539,7 +537,7 @@ export default function AdminUsersPage({ dark, t }) {
 
               {/* Avatar + name */}
               <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0" style={{ background: avColor(name), color: '#fff' }}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0" style={{ background: '#c47d8e', color: '#fff' }}>
                   {initials(name)}
                 </div>
                 <div className="min-w-0">
@@ -653,7 +651,7 @@ export default function AdminUsersPage({ dark, t }) {
             {/* Header */}
             <div className="p-6 pb-4">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-14 h-14 rounded-full flex items-center justify-center text-[20px] font-bold shrink-0" style={{ background: avColor(displayName(drawerUser)), color: '#fff' }}>
+                <div className="w-14 h-14 rounded-full flex items-center justify-center text-[20px] font-bold shrink-0" style={{ background: '#c47d8e', color: '#fff' }}>
                   {initials(displayName(drawerUser))}
                 </div>
                 <div className="min-w-0">
