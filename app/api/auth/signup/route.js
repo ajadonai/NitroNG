@@ -8,6 +8,7 @@ import { validateEmail, validatePassword, validateName, sanitizeEmail, sanitizeS
 import { headers } from 'next/headers';
 import { sendWelcomeEmail } from '@/lib/email';
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
+import { tgNewUser } from '@/lib/telegram';
 
 export async function POST(req) {
   try {
@@ -114,6 +115,8 @@ export async function POST(req) {
     sendWelcomeEmail(firstName || name, email).catch(err =>
       log.error('Signup', `Welcome email failed: ${err.message}`)
     );
+
+    tgNewUser(derivedName, email, referredBy || via || null);
 
     // Sign JWT and set cookie
     const token = signUserToken(user);

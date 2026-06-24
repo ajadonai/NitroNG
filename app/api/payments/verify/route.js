@@ -3,6 +3,7 @@ import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { applyWelcomeBonus } from '@/lib/welcome-bonus';
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
+import { tgPayment } from '@/lib/telegram';
 import { headers as getHeaders } from 'next/headers';
 
 async function getGatewayKeys(gatewayId) {
@@ -170,6 +171,8 @@ export async function POST(req) {
         }
       }
     } catch (err) { log.error('Deferred referral', err.message); }
+
+    try { tgPayment(session.email, paidAmount, couponBonus || 0, 'Flutterwave'); } catch {}
 
     const eventId = `apinfo_${reference}`;
     const hdrs = await getHeaders();

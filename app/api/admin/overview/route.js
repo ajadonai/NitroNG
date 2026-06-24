@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { requireAdmin, getAdminPages } from '@/lib/admin';
+import { requireAdmin, getAdminPages, canSeeSensitive, maskEmail } from '@/lib/admin';
 import { watBounds } from '@/lib/format';
 
 function humanize(raw, admin) {
@@ -116,13 +116,13 @@ export async function GET() {
       prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
       prisma.user.count({ where: { createdAt: { gte: todayStart }, emailVerified: true } }),
       prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true } }),
-      // Yesterday up to same time of day (for fair % change)
-      prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: yesterdaySameTime }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
-      prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: yesterdaySameTime } }, _sum: { amount: true } }),
+      // Yesterday full day
+      prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
+      prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true } }),
       // Partial adjustments
       prisma.order.findMany({ where: { deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
       prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
-      prisma.order.findMany({ where: { createdAt: { gte: yesterdayStart, lt: yesterdaySameTime }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
+      prisma.order.findMany({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
       // Recent orders (last 5)
       prisma.order.findMany({
         where: { deletedAt: null },
@@ -181,6 +181,8 @@ export async function GET() {
       return Math.round(((today - yesterday) / yesterday) * 100);
     };
 
+    const sensitive = canSeeSensitive(admin);
+
     return Response.json({
       admin: { name: admin.name, role: admin.role, email: admin.email, themePreference: admin.themePreference || 'auto', pages: getAdminPages(admin) },
       revenue: todayRevenue,
@@ -193,8 +195,10 @@ export async function GET() {
       revenueChange: pctChange(todayRevenue, yesterdayRevenue),
       depositsChange: pctChange(todayDeposits, yesterdayDeposits),
       totalRevenue: ((revenueAgg._sum.charge || 0) - adjAll.charge) / 100,
-      totalCost: ((costAgg._sum.cost || 0) - adjAll.cost) / 100,
-      totalProfit: (((revenueAgg._sum.charge || 0) - adjAll.charge) - ((costAgg._sum.cost || 0) - adjAll.cost)) / 100,
+      ...(sensitive ? {
+        totalCost: ((costAgg._sum.cost || 0) - adjAll.cost) / 100,
+        totalProfit: (((revenueAgg._sum.charge || 0) - adjAll.charge) - ((costAgg._sum.cost || 0) - adjAll.cost)) / 100,
+      } : {}),
       totalDeposits: (depositsAgg._sum.amount || 0) / 100,
       unreadTicketCount,
       pendingManualCount,
@@ -203,7 +207,7 @@ export async function GET() {
       openTickets: openTickets.map(tk => ({
         id: tk.ticketId || tk.id,
         subject: tk.subject,
-        user: tk.user?.name || tk.user?.email || 'Unknown',
+        user: tk.user?.name || (sensitive ? tk.user?.email : maskEmail(tk.user?.email)) || 'Unknown',
         created: tk.createdAt.toISOString(),
       })),
       recentOrders: recentOrders.map(o => {
@@ -214,7 +218,7 @@ export async function GET() {
           service: groupName || o.service?.name || o.serviceId,
           tier: groupName && tierLabel ? tierLabel : null,
           platform: o.service?.category || 'unknown',
-          user: o.user?.name || o.user?.email || 'Unknown',
+          user: o.user?.name || (sensitive ? o.user?.email : maskEmail(o.user?.email)) || 'Unknown',
           charge: (o.charge || 0) / 100,
           status: o.status,
           batchId: o.batchId || null,
@@ -224,7 +228,7 @@ export async function GET() {
       recentUsers: recentUsers.map(u => ({
         id: u.id,
         name: u.name,
-        email: u.email,
+        email: sensitive ? u.email : maskEmail(u.email),
         orders: u._count.orders,
         created: u.createdAt.toISOString(),
       })),

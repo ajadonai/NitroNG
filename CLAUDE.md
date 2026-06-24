@@ -66,6 +66,12 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ---
 
+## Weekly changelog reminder
+
+At the start of each session, if it has been 7+ days since the last changelog entry was added, remind Adonai: "It has been a while since the last changelog entry. Want to add any updates from this week?" The changelog is managed via the admin panel (Admin > Marketing > Changelog) or the API at `/api/changelog`. Entries should be user-facing only, written in plain language a Nigerian user would understand. No technical jargon, no internal/admin changes.
+
+---
+
 ## V2 Roadmap (parked — do not build)
 
 V2 includes: **Audit** (account analytics), **Cleanup** (bulk unfollow tool), **Earn** (2048 game + video rewards), **AI Support** (chatbot for tickets), **AI Comments** (blog social proof), a visitor acquisition flow, and a **TypeScript migration**. None of this should be built until Adonai (Trip) gives explicit go-ahead.

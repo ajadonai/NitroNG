@@ -2,6 +2,7 @@ export const maxDuration = 60;
 
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
+import { tgFxUpdate } from '@/lib/telegram';
 
 const API_URL = 'https://open.er-api.com/v6/latest/USD';
 const DEFAULT_BUFFER = 200;
@@ -73,6 +74,7 @@ export async function GET(req) {
       log.warn('FX', `Reprice trigger failed: ${err.message}`);
     }
 
+    tgFxUpdate(currentRate, newRate, roundedMarket, buffer);
     log.info('FX', `Rate updated: ${currentRate} → ${newRate} (market ${Math.round(marketRate)} + ${buffer})`);
     return Response.json({ success: true, previous: currentRate, rate: newRate, market: Math.round(marketRate), buffer, repriceResult });
   } catch (err) {

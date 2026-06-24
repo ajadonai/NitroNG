@@ -818,3 +818,15 @@ model ProviderTopup {
   @@index([createdAt])
   @@map("provider_topups")
 }
+
+model ChangelogEntry {
+  id          String   @id @default(cuid())
+  date        DateTime @db.Date
+  tag         String
+  title       String
+  description String
+  createdAt   DateTime @default(now())
+
+  @@index([date])
+  @@map("changelog_entries")
+}

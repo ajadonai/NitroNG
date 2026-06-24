@@ -3,6 +3,8 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { placeOrder, checkOrder } from '@/lib/smm';
+import { tgDripTimeout, tgDispatchFailed } from '@/lib/telegram';
+import { getDripConfig } from '@/lib/drip-feed';
 
 // Drip dispatch cron — runs twice per hour (:05 and :35)
 // 1. Dispatches pending drip batches that are due (scheduledAt <= now)
@@ -51,6 +53,7 @@ export async function GET(req) {
       prisma.adminIssue.create({
         data: { type: 'ghost_dispatch', title: `${order.orderId} batch ${dispatch.batch}: timed out — needs manual check`, message: `Dispatch timed out. The provider may or may not have created this order. Check provider dashboard before dispatching again.\nLink: ${order.link}`, metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, day: dispatch.day, link: order.link }) },
       }).catch(() => {});
+      tgDripTimeout(order.orderId, dispatch.batch);
       log.warn('Drip timeout', `${order.orderId} batch ${dispatch.batch}: marked failed after timeout`);
       stats.stuckFailed++;
     }
@@ -129,6 +132,7 @@ export async function GET(req) {
         const isTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(err.message);
 
         if (isTimeout) {
+          tgDripTimeout(order.orderId, dispatch.batch);
           log.warn('Drip dispatch', `${order.orderId} batch ${dispatch.batch}: timeout — marked failed for manual check`);
           await prisma.dripDispatch.update({
             where: { id: dispatch.id },
@@ -192,6 +196,30 @@ export async function GET(req) {
           },
         });
         stats.synced++;
+
+        if (['completed', 'partial'].includes(newStatus)) {
+          const pending = await prisma.dripDispatch.findMany({
+            where: { orderId: dispatch.orderId, status: 'pending' },
+            orderBy: { batch: 'asc' },
+          });
+          const nextBatch = pending[0];
+          if (nextBatch && nextBatch.scheduledAt <= new Date()) {
+            const svcName = (dispatch.order.service?.name || '').toLowerCase();
+            const svcType = ['follower', 'view', 'like', 'comment', 'play', 'engagement', 'review']
+              .find(t => svcName.includes(t));
+            const config = getDripConfig(svcType ? svcType + 's' : '');
+            const intervalMs = (config?.intervalHours || 2) * 60 * 60 * 1000;
+            const now = Date.now();
+
+            for (let i = 0; i < pending.length; i++) {
+              const newScheduled = new Date(now + (i + 1) * intervalMs);
+              await prisma.dripDispatch.update({
+                where: { id: pending[i].id },
+                data: { scheduledAt: newScheduled },
+              });
+            }
+          }
+        }
       } catch (err) {
         log.warn('Drip sync', `dispatch ${dispatch.id}: ${err.message}`);
       }

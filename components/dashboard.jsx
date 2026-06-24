@@ -45,6 +45,7 @@ const I = {
   support: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
   settings: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
   earn: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M15.5 9.5c0-1.38-1.57-2.5-3.5-2.5s-3.5 1.12-3.5 2.5S10.07 12 12 12s3.5 1.12 3.5 2.5-1.57 2.5-3.5 2.5-3.5-1.12-3.5-2.5"/></svg>,
+  changelog: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>,
   leaderboard: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg>,
   instagram: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>,
   x: <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,
@@ -57,6 +58,7 @@ const NAV_ITEMS = [
   { id: "orders", label: "History" },
   { id: "add-funds", label: "Wallet" },
   { id: "guide", label: "Blog" },
+  { id: "changelog", label: "What's New", href: "/changelog" },
   { id: "referrals", label: "Referrals" },
   { id: "support", label: "Support" },
   { id: "settings", label: "Settings" },
@@ -72,6 +74,7 @@ const BOTTOM_TABS = [
 const MORE_ITEMS = [
   { id: "referrals", label: "Referrals" },
   { id: "guide", label: "Blog" },
+  { id: "changelog", label: "What's New", href: "/changelog" },
   { id: "support", label: "Support" },
   { id: "settings", label: "Settings" },
   { id: "logout", label: "Log Out" },
@@ -1235,7 +1238,7 @@ function DashboardInner({ initialData }) {
                 return (
                   <Fragment key={item.id}>
                     {(item.id === "leaderboard" || item.id === "audit") && <div className="dash-sidebar-divider max-desktop:hidden my-1" style={{ background: t.sidebarBorder }} />}
-                    <button data-nav={item.id} onClick={() => { if (item.soon) return; if (isSupportItem && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setLeftOpen(false); return; } setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: isActive ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : isSupportItem ? (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)") : "transparent", color: item.soon ? t.textMuted : (isActive ? t.accent : isSupportItem ? t.accent : t.textSoft), fontWeight: isActive || isSupportItem ? 600 : 450, opacity: item.soon ? 0.5 : 1, cursor: item.soon ? "default" : "pointer" }}>
+                    <button data-nav={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (isSupportItem && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setLeftOpen(false); return; } setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: isActive ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : isSupportItem ? (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)") : "transparent", color: item.soon ? t.textMuted : (isActive ? t.accent : isSupportItem ? t.accent : t.textSoft), fontWeight: isActive || isSupportItem ? 600 : 450, opacity: item.soon ? 0.5 : 1, cursor: item.soon ? "default" : "pointer" }}>
                       <span className="shrink-0" style={{ opacity: isActive || isSupportItem ? 1 : .55, color: isActive || isSupportItem ? t.accent : t.textMuted }}>{I[item.id]}</span>
                       {item.label}
                       {item.soon && <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent, opacity: 1 }}>Soon</span>}
@@ -1375,7 +1378,7 @@ function DashboardInner({ initialData }) {
               );
             }
             return (
-              <button key={item.id} onClick={() => { if (item.soon) return; if (item.id === "support" && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setMoreOpen(false); return; } setActive(item.id); setMoreOpen(false); }} className="dash-more-item" style={{ background: active === item.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)"), color: item.soon ? (dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)") : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.6)")), fontWeight: active === item.id ? 600 : 500, cursor: item.soon ? "default" : "pointer", borderColor: item.soon ? "transparent" : undefined }}>
+              <button key={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (item.id === "support" && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setMoreOpen(false); return; } setActive(item.id); setMoreOpen(false); }} className="dash-more-item" style={{ background: active === item.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)"), color: item.soon ? (dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)") : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.6)")), fontWeight: active === item.id ? 600 : 500, cursor: item.soon ? "default" : "pointer", borderColor: item.soon ? "transparent" : undefined }}>
                 <div className="dash-more-item-icon" style={{ background: item.soon ? (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)") : (active === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)")), color: item.soon ? (dark ? "rgba(255,255,255,.3)" : "rgba(0,0,0,.3)") : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)")) }}>{I[item.id]}</div>
                 {item.label}
                 {item.soon && <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>Soon</span>}

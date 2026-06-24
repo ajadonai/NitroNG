@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
-import { requireAdmin, logActivity } from '@/lib/admin';
+import { requireAdmin, logActivity, canSeeSensitive, maskEmail } from '@/lib/admin';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('leaderboard');
@@ -49,11 +49,13 @@ export async function GET(req) {
     });
     rows.forEach(r => { settings[r.key] = r.value; });
 
+    const sensitive = canSeeSensitive(admin);
+
     return Response.json({
       monthKey,
       leaderboard: scores.map(r => ({
         name: r.name,
-        email: r.email,
+        email: sensitive ? r.email : maskEmail(r.email),
         score: r.score,
         moves: r.moves,
         duration: r.duration,
@@ -63,7 +65,7 @@ export async function GET(req) {
       rewards: rewards.map(r => ({
         rank: r.rank,
         name: r.user.name,
-        email: r.user.email,
+        email: sensitive ? r.user.email : maskEmail(r.user.email),
         score: r.score,
         amount: r.amount,
         credited: r.credited,

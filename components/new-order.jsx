@@ -321,7 +321,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
     instagram: /\/(p|reel|reels|stories|tv|share)\//i,
     tiktok: /\/(video|photo|v|t)\//i,
     youtube: /\/(watch|shorts|live)\b|youtu\.be\//i,
-    facebook: /\/(posts|videos|watch|photos|photo|reel|share|story\.php|permalink\.php)\b/i,
+    facebook: /\/(posts|videos|watch|photos|photo|reel|share\/[rpv]|story\.php|permalink\.php)\b/i,
     threads: /\/post\//i,
     linkedin: /\/(posts|pulse|feed\/update)\//i,
     snapchat: /\/spotlight\//i,
@@ -382,7 +382,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
 
   const isMultiPostSvc = /last\s+\d+\s*(tweet|post|video|reel|photo)/i.test(svcName);
   const isChannelSvc = /(channel|group)\s*(member|join|subscriber)/i.test(svcName);
-  const isProfileSvc = (/follow|subscri|member|profile visit/i.test(svcName) || isMultiPostSvc) && !isChannelSvc;
+  const isAutoSvc = /\bauto\b/i.test(svcName);
+  const isProfileSvc = (/follow|subscri|member|profile visit/i.test(svcName) || isMultiPostSvc || isAutoSvc) && !isChannelSvc;
   const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays/i.test(svcName) && !isProfileSvc && !isChannelSvc;
 
   const linkPlaceholder = (LINK_EXAMPLES[platform] ? (isPostSvc ? LINK_EXAMPLES[platform].post?.[0] : isChannelSvc ? (LINK_EXAMPLES[platform].channel?.[0] || LINK_EXAMPLES[platform].profile?.[0]) : isProfileSvc ? LINK_EXAMPLES[platform].profile?.[0] : null) : null) || LINK_HINTS[platform] || `${platform}.com/...`;
@@ -867,17 +868,22 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   }, [services, selSvc]);
 
   /* Place order */
-  const submitOrder = async (dripDaysArg) => {
+  const submitOrder = async (dripDaysArg, confirmDuplicate) => {
     if (!selTier?.id || !link || orderLoading) return;
     setOrderLoading(true);
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tierId: selTier.id, link: `https://${link.trim()}`, quantity: qty, ...(comments?.trim() ? { comments: comments.trim() } : {}), serviceType: selSvc?.type || "", ...(dripDaysArg != null ? { dripDays: dripDaysArg } : {}) }),
+        body: JSON.stringify({ tierId: selTier.id, link: `https://${link.trim()}`, quantity: qty, ...(comments?.trim() ? { comments: comments.trim() } : {}), serviceType: selSvc?.type || "", ...(dripDaysArg != null ? { dripDays: dripDaysArg } : {}), ...(confirmDuplicate ? { confirmDuplicate: true } : {}) }),
         signal: AbortSignal.timeout(30000),
       });
       const data = await res.json();
+      if (data.duplicate) {
+        setOrderLoading(false);
+        if (window.confirm(data.message)) submitOrder(dripDaysArg, true);
+        return;
+      }
       if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong"); setOrderLoading(false); return; }
       setOrderSuccess({ ...data.order, queued: data.queued, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", speed: selTier?.speed || null, tier: selTier?.tier || null, link: link.trim(), balanceAfter: data.order?.charge != null && user?.balance != null ? Math.max(0, user.balance - data.order.charge) : null });
       if (typeof window.fbq === "function") fbq("track", "Purchase", { value: data.order?.charge || 0, currency: "NGN", content_name: selSvc?.name || "Order", content_category: platform || "unknown" }, { eventID: data.eventId });
@@ -1215,6 +1221,11 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 <div className="flex items-center justify-between rounded-lg py-2 px-3 mb-4" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)" }}>
                   <span className="text-[11px] font-medium" style={{ color: t.textMuted }}>Order ID</span>
                   <span className="text-xs font-semibold" style={{ color: t.accent }}>#{orderSuccess.id}</span>
+                </div>
+
+                {/* Delivery notice */}
+                <div className="text-[11px] leading-relaxed mb-4 px-1" style={{ color: t.textMuted }}>
+                  Orders are typically delivered within 0 to 6 hours. In some cases, delivery may take up to 24 hours. We are unable to act on delivery speed requests within the first 6 hours of order placement.
                 </div>
 
                 {/* Cross-sell spotlight */}

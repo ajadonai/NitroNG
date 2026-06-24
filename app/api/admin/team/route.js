@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import bcrypt from 'bcryptjs';
-import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
+import { requireAdmin, logActivity, canPerformAction, canSeeSensitive, maskEmail } from '@/lib/admin';
 
 export async function GET() {
   const { admin, error } = await requireAdmin('team');
@@ -16,9 +16,12 @@ export async function GET() {
       },
     });
 
+    const sensitive = canSeeSensitive(admin);
+
     return Response.json({
       admins: admins.map(a => ({
         ...a,
+        email: sensitive ? a.email : maskEmail(a.email),
         lastActive: a.lastActive.toISOString(),
         joined: a.createdAt.toISOString(),
         customPages: a.customPages ? JSON.parse(a.customPages) : null,

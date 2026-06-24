@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
+import { requireAdmin, logActivity, canPerformAction, canSeeSensitive, maskEmail, maskPhone } from '@/lib/admin';
 import { sendEmail, walletCreditEmail } from '@/lib/email';
 
 export async function GET(req) {
@@ -109,14 +109,16 @@ export async function GET(req) {
     const totalBalance = (balanceAgg._sum.balance || 0) / 100;
     const totalPages = Math.ceil(filteredCount / perPage);
 
+    const sensitive = canSeeSensitive(admin);
+
     return Response.json({
       users: users.map(u => ({
         id: u.id,
         name: u.name,
         firstName: u.firstName,
         lastName: u.lastName,
-        phone: u.phone,
-        email: u.email,
+        phone: sensitive ? u.phone : maskPhone(u.phone),
+        email: sensitive ? u.email : maskEmail(u.email),
         balance: u.balance / 100,
         verified: u.emailVerified,
         orders: u._count.orders,
@@ -125,7 +127,7 @@ export async function GET(req) {
         joined: u.createdAt.toISOString(),
         deletedAt: u.deletedAt?.toISOString() || null,
         deletedName: u.deletedName || null,
-        deletedEmail: u.deletedEmail || null,
+        deletedEmail: sensitive ? (u.deletedEmail || null) : maskEmail(u.deletedEmail),
       })),
       filteredCount,
       totalPages,

@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { requireAdmin, logActivity } from '@/lib/admin';
+import { requireAdmin, logActivity, canSeeSensitive, maskEmail } from '@/lib/admin';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('tickets');
@@ -45,11 +45,13 @@ export async function GET(req) {
       }
     }
 
+    const sensitive = canSeeSensitive(admin);
+
     return Response.json({
       tickets: items.map(tk => ({
         id: tk.ticketId || tk.id,
         user: tk.user?.name || 'Unknown',
-        email: tk.user?.email || '',
+        email: sensitive ? (tk.user?.email || '') : maskEmail(tk.user?.email),
         subject: tk.subject,
         message: tk.message,
         orderId: tk.orderId || '',

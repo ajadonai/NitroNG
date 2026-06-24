@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
+import { requireAdmin, logActivity, canPerformAction, canSeeSensitive } from '@/lib/admin';
 
 const ALLOWED_KEYS = new Set([
   'markup_brackets', 'markup_margin_floor', 'markup_floor_ceiling', 'markup_ng_bonus',
@@ -26,8 +26,12 @@ export async function GET() {
 
   try {
     const rows = await prisma.setting.findMany();
+    const sensitive = canSeeSensitive(admin);
     const settings = {};
-    rows.forEach(r => { settings[r.key] = r.value; });
+    rows.forEach(r => {
+      if (!sensitive && r.key.startsWith('gateway_')) return;
+      settings[r.key] = r.value;
+    });
 
     return Response.json({ settings });
   } catch (err) {
