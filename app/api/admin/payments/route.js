@@ -304,7 +304,7 @@ export async function POST(req) {
 
       const approvedUser = await prisma.user.findUnique({ where: { id: tx.userId }, select: { name: true, email: true } });
       await logActivity(admin.name, `Approved manual deposit ₦${(tx.amount / 100).toLocaleString()} for ${approvedUser?.name || approvedUser?.email || tx.userId}`, 'payment');
-      try { tgPayment(approvedUser?.name || approvedUser?.email || 'Unknown', tx.amount, 0, 'Manual'); } catch {}
+      try { tgPayment(approvedUser?.name || approvedUser?.email || 'Unknown', tx.amount, 0, 'Manual', admin.name); } catch {}
       return Response.json({ success: true });
     }
 
