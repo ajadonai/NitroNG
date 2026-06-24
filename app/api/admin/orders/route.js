@@ -16,6 +16,7 @@ export async function GET(req) {
     if (search) {
       where.OR = [
         { orderId: { contains: search, mode: 'insensitive' } },
+        { apiOrderId: { contains: search, mode: 'insensitive' } },
         { batchId: { contains: search, mode: 'insensitive' } },
         { link: { contains: search, mode: 'insensitive' } },
         { user: { name: { contains: search, mode: 'insensitive' } } },
@@ -32,6 +33,7 @@ export async function GET(req) {
     try {
       await prisma.dripDispatch.findFirst({ take: 1 });
       include.dripDispatches = { select: { id: true, day: true, batch: true, quantity: true, status: true, apiOrderId: true, scheduledAt: true, dispatchedAt: true, completedAt: true, lastError: true }, orderBy: { scheduledAt: 'asc' } };
+      if (search && where.OR) where.OR.push({ dripDispatches: { some: { apiOrderId: { contains: search, mode: 'insensitive' } } } });
     } catch { hasDripTable = false; }
 
     const orders = await prisma.order.findMany({
