@@ -16,10 +16,12 @@ export async function GET(req) {
     if (search) {
       where.OR = [
         { orderId: { contains: search, mode: 'insensitive' } },
+        { providerOrderId: { contains: search, mode: 'insensitive' } },
         { batchId: { contains: search, mode: 'insensitive' } },
         { link: { contains: search, mode: 'insensitive' } },
         { user: { name: { contains: search, mode: 'insensitive' } } },
         { user: { email: { contains: search, mode: 'insensitive' } } },
+        { dripDispatches: { some: { apiOrderId: { contains: search, mode: 'insensitive' } } } },
       ];
     }
 
