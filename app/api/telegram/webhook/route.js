@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { applyWelcomeBonus } from '@/lib/welcome-bonus';
-import { tgAnswerCallback, tgEditMessage } from '@/lib/telegram';
+import { tgAnswerCallback, tgEditMessage, tgPayment } from '@/lib/telegram';
 
 export async function POST(req) {
   const secret = req.headers.get('x-telegram-bot-api-secret-token');
@@ -25,9 +25,16 @@ export async function POST(req) {
 
   try {
     const tx = await prisma.transaction.findUnique({ where: { id: txId } });
-    if (!tx || tx.method !== 'manual' || tx.status !== 'Pending') {
-      tgAnswerCallback(cb.id, 'Already processed');
-      tgEditMessage(cb.message.message_id, cb.message.text + '\n\n⚪ Already processed');
+    if (!tx || tx.method !== 'manual') {
+      tgAnswerCallback(cb.id, 'Transaction not found');
+      return Response.json({ ok: true });
+    }
+    if (tx.status !== 'Pending') {
+      const label = tx.status === 'Completed' ? '✅ Already approved' : tx.status === 'Rejected' ? '❌ Already rejected' : `⚪ Already ${tx.status.toLowerCase()}`;
+      const via = tx.note?.match(/\[(approved|rejected)_by:([^\]]*)\]/);
+      const byWho = via ? ` by ${via[2]}` : '';
+      tgAnswerCallback(cb.id, `${label}${byWho}`);
+      tgEditMessage(cb.message.message_id, cb.message.text + `\n\n${label}${byWho}`);
       return Response.json({ ok: true });
     }
 
@@ -81,6 +88,7 @@ export async function POST(req) {
 
       tgAnswerCallback(cb.id, `Approved ₦${(tx.amount / 100).toLocaleString()}`);
       tgEditMessage(cb.message.message_id, cb.message.text + `\n\n✅ <b>Approved</b> via Telegram`);
+      tgPayment(name, tx.amount, 0, 'Manual');
       log.info('TG Webhook', `Approved manual deposit ${txId} for ${name}`);
 
     } else if (action === 'reject') {

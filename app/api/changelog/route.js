@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import { getCurrentAdmin } from '@/lib/auth';
+import { requireAdmin, logActivity } from '@/lib/admin';
 
 export async function GET() {
   const entries = await prisma.changelogEntry.findMany({ orderBy: { date: 'desc' } });
@@ -13,8 +13,8 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  const admin = await getCurrentAdmin();
-  if (!admin) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  const { admin, error } = await requireAdmin('changelog', true);
+  if (error) return error;
 
   const { date, tag, title, description } = await req.json();
   if (!date || !tag || !title || !description) return Response.json({ error: 'All fields required' }, { status: 400 });
@@ -24,16 +24,18 @@ export async function POST(req) {
     data: { date: new Date(date), tag, title, description },
   });
 
+  await logActivity(admin.name, `Created changelog entry: "${title}"`, 'changelog');
   return Response.json({ id: entry.id, date: entry.date.toISOString().slice(0, 10), tag: entry.tag, title: entry.title, description: entry.description });
 }
 
 export async function DELETE(req) {
-  const admin = await getCurrentAdmin();
-  if (!admin) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  const { admin, error } = await requireAdmin('changelog', true);
+  if (error) return error;
 
   const { id } = await req.json();
   if (!id) return Response.json({ error: 'ID required' }, { status: 400 });
 
   await prisma.changelogEntry.delete({ where: { id } });
+  await logActivity(admin.name, `Deleted changelog entry`, 'changelog');
   return Response.json({ ok: true });
 }

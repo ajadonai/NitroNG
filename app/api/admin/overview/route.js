@@ -207,7 +207,7 @@ export async function GET() {
       openTickets: openTickets.map(tk => ({
         id: tk.ticketId || tk.id,
         subject: tk.subject,
-        user: tk.user?.name || tk.user?.email || 'Unknown',
+        user: tk.user?.name || (sensitive ? tk.user?.email : maskEmail(tk.user?.email)) || 'Unknown',
         created: tk.createdAt.toISOString(),
       })),
       recentOrders: recentOrders.map(o => {
@@ -218,7 +218,7 @@ export async function GET() {
           service: groupName || o.service?.name || o.serviceId,
           tier: groupName && tierLabel ? tierLabel : null,
           platform: o.service?.category || 'unknown',
-          user: o.user?.name || o.user?.email || 'Unknown',
+          user: o.user?.name || (sensitive ? o.user?.email : maskEmail(o.user?.email)) || 'Unknown',
           charge: (o.charge || 0) / 100,
           status: o.status,
           batchId: o.batchId || null,

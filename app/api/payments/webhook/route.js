@@ -103,7 +103,7 @@ export async function POST(req) {
         const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true, name: true } });
         if (u) {
           sendEvent('AddPaymentInfo', { eventId: `apinfo_${reference}`, email: u.email, externalId: tx.userId, customData: { value: amountKobo / 100, currency: 'NGN' } });
-          tgPayment(u.name || u.email, amountKobo, couponBonus || 0);
+          tgPayment(u.name || u.email, amountKobo, couponBonus || 0, 'Flutterwave');
         }
       } catch {}
 
