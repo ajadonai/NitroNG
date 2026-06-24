@@ -5,6 +5,7 @@ import { log } from '@/lib/logger';
 import { checkOrder } from '@/lib/smm';
 import { sendEmail, emailWrap, batchCompletionEmail, emailRow, emailDataBox, emailCTA } from '@/lib/email';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
+import { tgRefund, tgOrderCancelled } from '@/lib/telegram';
 
 // Polls provider APIs for order status updates
 // Auto-refunds failed/cancelled orders
@@ -143,6 +144,7 @@ export async function GET(req) {
             });
             stats.updated++;
             stats.refunded++;
+            tgOrderCancelled(order.orderId, order.charge, providerError || 'provider_cancelled');
             // Fire-and-forget email (non-critical)
             refundOrder(order, null, true).catch(() => {});
           } else if (newStatus === 'Partial' && result.remains) {
@@ -361,6 +363,7 @@ export async function GET(req) {
             });
           });
           stats.autoRefunded++;
+          tgRefund(order.orderId, order.charge, 'dispatch_failed');
           if (order.charge >= 5000) await refundOrder(order, null, true);
         } catch (err) {
           log.warn(`Auto-refund ${order.orderId}`, err.message);
@@ -428,6 +431,12 @@ export async function GET(req) {
     } catch (e) { log.warn('Idempotency cleanup', e.message); }
 
     log.info('Cron orders', `Checked ${stats.checked}, updated ${stats.updated}, refunded ${stats.refunded}, retried ${stats.retried}, autoRefunded ${stats.autoRefunded}, recovered ${stats.recovered}`);
+
+    // Fallback: also trigger drip cron (idempotent) in case its dedicated schedule missed
+    fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://nitro.ng'}/api/cron/drip`, {
+      headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
+    }).catch(() => {});
+
     return Response.json({ success: true, ...stats });
 
   } catch (err) {

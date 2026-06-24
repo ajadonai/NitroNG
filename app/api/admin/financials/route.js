@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { requireAdmin } from '@/lib/admin';
+import { requireAdmin, canSeeSensitive, maskEmail } from '@/lib/admin';
 import { watBounds } from '@/lib/format';
 
 export async function GET(req) {
@@ -168,6 +168,8 @@ export async function GET(req) {
 
     const k = (v) => Math.round((v || 0) / 100); // kobo to naira
 
+    const sensitive = canSeeSensitive(admin);
+
     return Response.json({
       range,
       filters: { platform, tier, provider },
@@ -178,20 +180,24 @@ export async function GET(req) {
         totalDiscounts: k(totalDiscounts),
         netRevenue: k(netRevenue),
         totalRefunds: k(totalRefunds),
-        totalCost: k(totalCost),
-        grossProfit: k(grossProfit),
-        margin: netRevenue > 0 ? Math.round((grossProfit / netRevenue) * 1000) / 10 : 0,
-        profitPerOrder: orderCount > 0 ? k(Math.round(grossProfit / orderCount)) : 0,
+        ...(sensitive ? {
+          totalCost: k(totalCost),
+          grossProfit: k(grossProfit),
+          margin: netRevenue > 0 ? Math.round((grossProfit / netRevenue) * 1000) / 10 : 0,
+          profitPerOrder: orderCount > 0 ? k(Math.round(grossProfit / orderCount)) : 0,
+        } : {}),
         orderCount, refundRate,
       },
       moneyIn: {
         deposits: k(depositsAgg._sum.amount),
         adminCredits: k(adminCreditAgg._sum.amount),
       },
-      moneyOut: {
-        providerCosts: k(totalCost),
-        providerTopups: k(providerTopupAgg._sum.amount),
-      },
+      ...(sensitive ? {
+        moneyOut: {
+          providerCosts: k(totalCost),
+          providerTopups: k(providerTopupAgg._sum.amount),
+        },
+      } : {}),
       walletObligations: {
         refunds: k(totalRefunds),
         couponBonuses: k(couponBonusAgg._sum.amount),
@@ -202,14 +208,16 @@ export async function GET(req) {
         walletBalances: k(walletLiability._sum.balance),
         walletUsers: walletLiability._count || 0,
       },
-      byPlatform: byPlatform.map(p => ({ ...p, revenue: k(p.revenue), cost: k(p.cost), profit: k(p.profit) })).slice(0, 10),
-      byTier: byTier.map(t => ({ ...t, revenue: k(t.revenue), cost: k(t.cost), profit: k(t.profit) })),
-      topSpenders: topSpenders.map(s => ({
-        name: userMap[s.userId]?.name || 'Unknown',
-        email: userMap[s.userId]?.email || '',
-        spent: k((s._sum.charge || 0) - (partialSpenderAdj[s.userId] || 0)),
-        orders: s._count,
-      })),
+      byPlatform: byPlatform.map(p => ({ name: p.name, revenue: k(p.revenue), orders: p.orders, ...(sensitive ? { cost: k(p.cost), profit: k(p.profit), margin: p.margin } : {}) })).slice(0, 10),
+      byTier: byTier.map(t => ({ name: t.name, revenue: k(t.revenue), orders: t.orders, ...(sensitive ? { cost: k(t.cost), profit: k(t.profit), margin: t.margin } : {}) })),
+      topSpenders: topSpenders.map(s => {
+        return {
+          name: userMap[s.userId]?.name || 'Unknown',
+          email: sensitive ? (userMap[s.userId]?.email || '') : maskEmail(userMap[s.userId]?.email),
+          spent: k((s._sum.charge || 0) - (partialSpenderAdj[s.userId] || 0)),
+          orders: s._count,
+        };
+      }),
     });
   } catch (err) {
     log.error('Admin Financials', err.message);

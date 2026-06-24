@@ -8,6 +8,7 @@ import { cleanLink } from '@/lib/clean-link';
 import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig } from '@/lib/drip-feed';
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
+import { tgNewOrder } from '@/lib/telegram';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -848,6 +849,8 @@ export async function POST(req) {
       sourceUrl: hdrs2.get('referer'),
       customData: { value: charge / 100, currency: 'NGN' },
     });
+
+    tgNewOrder(orderId, tierName, qty, charge, session.email);
 
     return Response.json({
       success: true,

@@ -5,6 +5,7 @@ import { sendEmail, accountDeletionEmail, emailWrap, emailDataBox, emailRow } fr
 import { cancelOrder, isProviderConfigured } from '@/lib/smm';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import bcrypt from 'bcryptjs';
+import { tgUserDeleted } from '@/lib/telegram';
 
 export async function POST(req) {
   try {
@@ -110,6 +111,8 @@ export async function POST(req) {
     sendEmail(user.email, 'Your Nitro account is scheduled for deletion', userHtml).catch(err =>
       log.error('DeleteAccount', `User email failed: ${err.message}`)
     );
+
+    tgUserDeleted(user.name, user.email, orderCount, totalSpent._sum.amount || 0);
 
     // Clear session cookie
     await clearUserCookie();

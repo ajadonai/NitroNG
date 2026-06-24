@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { requireAdmin, getAdminPages } from '@/lib/admin';
+import { requireAdmin, getAdminPages, canSeeSensitive, maskEmail } from '@/lib/admin';
 import { watBounds } from '@/lib/format';
 
 function humanize(raw, admin) {
@@ -181,6 +181,8 @@ export async function GET() {
       return Math.round(((today - yesterday) / yesterday) * 100);
     };
 
+    const sensitive = canSeeSensitive(admin);
+
     return Response.json({
       admin: { name: admin.name, role: admin.role, email: admin.email, themePreference: admin.themePreference || 'auto', pages: getAdminPages(admin) },
       revenue: todayRevenue,
@@ -193,8 +195,10 @@ export async function GET() {
       revenueChange: pctChange(todayRevenue, yesterdayRevenue),
       depositsChange: pctChange(todayDeposits, yesterdayDeposits),
       totalRevenue: ((revenueAgg._sum.charge || 0) - adjAll.charge) / 100,
-      totalCost: ((costAgg._sum.cost || 0) - adjAll.cost) / 100,
-      totalProfit: (((revenueAgg._sum.charge || 0) - adjAll.charge) - ((costAgg._sum.cost || 0) - adjAll.cost)) / 100,
+      ...(sensitive ? {
+        totalCost: ((costAgg._sum.cost || 0) - adjAll.cost) / 100,
+        totalProfit: (((revenueAgg._sum.charge || 0) - adjAll.charge) - ((costAgg._sum.cost || 0) - adjAll.cost)) / 100,
+      } : {}),
       totalDeposits: (depositsAgg._sum.amount || 0) / 100,
       unreadTicketCount,
       pendingManualCount,
@@ -203,7 +207,7 @@ export async function GET() {
       openTickets: openTickets.map(tk => ({
         id: tk.ticketId || tk.id,
         subject: tk.subject,
-        user: tk.user?.name || tk.user?.email || 'Unknown',
+        user: tk.user?.name || (sensitive ? tk.user?.email : maskEmail(tk.user?.email)) || 'Unknown',
         created: tk.createdAt.toISOString(),
       })),
       recentOrders: recentOrders.map(o => {
@@ -214,7 +218,7 @@ export async function GET() {
           service: groupName || o.service?.name || o.serviceId,
           tier: groupName && tierLabel ? tierLabel : null,
           platform: o.service?.category || 'unknown',
-          user: o.user?.name || o.user?.email || 'Unknown',
+          user: o.user?.name || (sensitive ? o.user?.email : maskEmail(o.user?.email)) || 'Unknown',
           charge: (o.charge || 0) / 100,
           status: o.status,
           batchId: o.batchId || null,
@@ -224,7 +228,7 @@ export async function GET() {
       recentUsers: recentUsers.map(u => ({
         id: u.id,
         name: u.name,
-        email: u.email,
+        email: sensitive ? u.email : maskEmail(u.email),
         orders: u._count.orders,
         created: u.createdAt.toISOString(),
       })),

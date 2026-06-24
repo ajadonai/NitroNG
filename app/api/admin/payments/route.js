@@ -1,7 +1,8 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
+import { requireAdmin, logActivity, canPerformAction, canSeeSensitive, maskEmail } from '@/lib/admin';
 import { applyWelcomeBonus } from '@/lib/welcome-bonus';
+import { tgPayment } from '@/lib/telegram';
 
 const DEFAULT_GATEWAYS = [
   { id: 'flutterwave', name: 'Flutterwave', desc: 'Cards, Bank Transfer, Mobile Money', enabled: false, priority: 1, fields: { secretKey: '', publicKey: '' } },
@@ -101,6 +102,7 @@ export async function GET(req) {
       hasKeys: Object.values(g.fields).some(v => v && v.length > 4),
     }));
 
+    const sensitive = canSeeSensitive(admin);
     const formatTx = (tx) => {
       const refMatch = tx.note?.match(/\[user_confirmed:?([^\]]*)\]/);
       const approvedMatch = tx.note?.match(/\[approved_by:([^\]]*)\]/);
@@ -109,7 +111,7 @@ export async function GET(req) {
         id: tx.id, amount: tx.amount / 100, reference: tx.reference, method: tx.method,
         status: tx.status, note: tx.note, date: tx.createdAt.toISOString(),
         user: tx.user ? `${tx.user.firstName || tx.user.name || ''} ${tx.user.lastName || ''}`.trim() : 'Unknown',
-        email: tx.user?.email || '',
+        email: sensitive ? (tx.user?.email || '') : maskEmail(tx.user?.email),
         confirmed: tx.note?.includes('[user_confirmed'),
         senderRef: refMatch?.[1] || null,
         actionBy: approvedMatch?.[1] || rejectedMatch?.[1] || null,
@@ -302,6 +304,7 @@ export async function POST(req) {
 
       const approvedUser = await prisma.user.findUnique({ where: { id: tx.userId }, select: { name: true, email: true } });
       await logActivity(admin.name, `Approved manual deposit ₦${(tx.amount / 100).toLocaleString()} for ${approvedUser?.name || approvedUser?.email || tx.userId}`, 'payment');
+      try { tgPayment(approvedUser?.name || approvedUser?.email || 'Unknown', tx.amount, 0, 'Manual'); } catch {}
       return Response.json({ success: true });
     }
 

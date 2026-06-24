@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
+import { requireAdmin, logActivity, canPerformAction, canSeeSensitive, maskEmail } from '@/lib/admin';
 import { sendEmail, leaderboardRewardEmail } from '@/lib/email';
 import { watBounds } from '@/lib/format';
 
@@ -71,11 +71,12 @@ export async function GET(req) {
       include: { user: { select: { name: true, firstName: true, lastName: true, email: true } } },
     });
 
+    const sensitive = canSeeSensitive(admin);
     const formatUser = (u) => ({
       name: u?.name || 'Unknown',
       firstName: u?.firstName || '',
       lastName: u?.lastName || '',
-      email: u?.email || '',
+      email: sensitive ? (u?.email || '') : maskEmail(u?.email),
       initials: getInitials(u),
     });
 
@@ -85,8 +86,7 @@ export async function GET(req) {
         userId: s.userId,
         ...formatUser(userMap[s.userId]),
         spend: (s._sum.charge || 0) / 100,
-        cost: (s._sum.cost || 0) / 100,
-        profit: ((s._sum.charge || 0) - (s._sum.cost || 0)) / 100,
+        ...(sensitive ? { cost: (s._sum.cost || 0) / 100, profit: ((s._sum.charge || 0) - (s._sum.cost || 0)) / 100 } : {}),
         orders: s._count.id,
       })),
       referrers: sortedRefs.map(([userId, count], i) => ({
@@ -101,7 +101,7 @@ export async function GET(req) {
         ...formatUser(userMap[a.userId]),
         orders: a._count.id,
         spend: (a._sum.charge || 0) / 100,
-        profit: ((a._sum.charge || 0) - (a._sum.cost || 0)) / 100,
+        ...(sensitive ? { profit: ((a._sum.charge || 0) - (a._sum.cost || 0)) / 100 } : {}),
       })),
       rewardAnnouncement,
       autoReward,
