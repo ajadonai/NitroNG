@@ -758,6 +758,10 @@ export function OrdersSidebar({ orders, dark, t }) {
         ))}
       </div>
 
+      {activeCount > 0 && <div className="text-[11px] leading-relaxed px-1 mb-4" style={{ color: t.textMuted }}>
+        Orders are typically delivered within 0 to 6 hours. In some cases, delivery may take up to 24 hours. We are unable to act on delivery speed requests within the first 6 hours of order placement.
+      </div>}
+
       <div className="h-px mt-1 mb-4" style={{ background: t.sidebarBorder }} />
 
       <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Recent Activity</div>
