@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { requireAdmin, logActivity } from '@/lib/admin';
+import { requireAdmin, logActivity, canSeeSensitive, maskEmail, maskPhone } from '@/lib/admin';
 import { sendEmail, walletCreditEmail } from '@/lib/email';
 import { checkOrder, cancelOrder, refillOrder, isProviderConfigured, getProviderName } from '@/lib/smm';
 
@@ -40,14 +40,16 @@ export async function GET(req) {
       include,
     });
 
+    const sensitive = canSeeSensitive(admin);
+
     return Response.json({
       orders: orders.map(o => ({
         id: o.orderId || o.id,
         internalId: o.id,
         userId: o.userId,
         user: o.user?.name || 'Unknown',
-        email: o.user?.email || '',
-        phone: o.user?.phone || null,
+        email: sensitive ? (o.user?.email || '') : maskEmail(o.user?.email),
+        phone: sensitive ? (o.user?.phone || null) : maskPhone(o.user?.phone),
         service: o.tier?.group?.name || o.service?.name || o.serviceId,
         tier: o.tier?.tier || null,
         platform: o.tier?.group?.platform || o.service?.category || 'unknown',
@@ -57,7 +59,7 @@ export async function GET(req) {
         link: o.link,
         quantity: o.quantity,
         charge: o.charge / 100,
-        cost: o.cost / 100,
+        ...(sensitive ? { cost: o.cost / 100 } : {}),
         remains: o.remains,
         startCount: o.startCount,
         status: o.status,

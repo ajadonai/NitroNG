@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { requireAdmin } from '@/lib/admin';
+import { requireAdmin, canSeeSensitive, maskEmail } from '@/lib/admin';
 import { watBounds } from '@/lib/format';
 
 export async function GET(req) {
@@ -204,12 +204,15 @@ export async function GET(req) {
       },
       byPlatform: byPlatform.map(p => ({ ...p, revenue: k(p.revenue), cost: k(p.cost), profit: k(p.profit) })).slice(0, 10),
       byTier: byTier.map(t => ({ ...t, revenue: k(t.revenue), cost: k(t.cost), profit: k(t.profit) })),
-      topSpenders: topSpenders.map(s => ({
-        name: userMap[s.userId]?.name || 'Unknown',
-        email: userMap[s.userId]?.email || '',
-        spent: k((s._sum.charge || 0) - (partialSpenderAdj[s.userId] || 0)),
-        orders: s._count,
-      })),
+      topSpenders: topSpenders.map(s => {
+        const sensitive = canSeeSensitive(admin);
+        return {
+          name: userMap[s.userId]?.name || 'Unknown',
+          email: sensitive ? (userMap[s.userId]?.email || '') : maskEmail(userMap[s.userId]?.email),
+          spent: k((s._sum.charge || 0) - (partialSpenderAdj[s.userId] || 0)),
+          orders: s._count,
+        };
+      }),
     });
   } catch (err) {
     log.error('Admin Financials', err.message);
