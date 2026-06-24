@@ -321,7 +321,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
     instagram: /\/(p|reel|reels|stories|tv|share)\//i,
     tiktok: /\/(video|photo|v|t)\//i,
     youtube: /\/(watch|shorts|live)\b|youtu\.be\//i,
-    facebook: /\/(posts|videos|watch|photos|photo|reel|share|story\.php|permalink\.php)\b/i,
+    facebook: /\/(posts|videos|watch|photos|photo|reel|share\/[rpv]|story\.php|permalink\.php)\b/i,
     threads: /\/post\//i,
     linkedin: /\/(posts|pulse|feed\/update)\//i,
     snapchat: /\/spotlight\//i,

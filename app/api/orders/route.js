@@ -530,7 +530,7 @@ export async function POST(req) {
           tiktok: /\/(video|photo|v|t)\//i,
           'twitter/x': /\/(status|i\/status)\//i,
           youtube: /\/(watch|shorts|live)\b|youtu\.be\//i,
-          facebook: /\/(posts|videos|watch|photos|photo|reel|share|story\.php|permalink\.php)\b/i,
+          facebook: /\/(posts|videos|watch|photos|photo|reel|share\/[rpv]|story\.php|permalink\.php)\b/i,
           threads: /\/post\//i,
           telegram: /\/\d+\s*$/,
           linkedin: /\/(posts|pulse|feed\/update)\//i,
