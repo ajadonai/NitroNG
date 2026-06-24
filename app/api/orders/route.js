@@ -410,7 +410,7 @@ export async function POST(req) {
     const session = await getCurrentUser();
     if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
 
-    const { tierId, serviceId, link, quantity, comments, serviceType, dripDays: rawDripDays } = await req.json();
+    const { tierId, serviceId, link, quantity, comments, serviceType, dripDays: rawDripDays, confirmDuplicate } = await req.json();
 
     // Get USD→NGN rate for cost calculation
     const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
@@ -434,6 +434,28 @@ export async function POST(req) {
     const isUsername = /^@?[a-zA-Z0-9._]{1,100}$/.test(trimmedLink);
     if (!isUrl && !isUsername) {
       return Response.json({ error: 'Please enter a valid URL (https://...) or username' }, { status: 400 });
+    }
+
+    // Duplicate order check — warn if same service tier + link in last 24h
+    if (!confirmDuplicate) {
+      const recentDupe = await prisma.order.findFirst({
+        where: {
+          userId: session.id,
+          link: trimmedLink,
+          ...(tierId ? { tierId } : { serviceId }),
+          status: { notIn: ['Cancelled'] },
+          deletedAt: null,
+          createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        },
+        select: { orderId: true, quantity: true, createdAt: true },
+      });
+      if (recentDupe) {
+        return Response.json({
+          duplicate: true,
+          existing: { id: recentDupe.orderId, quantity: recentDupe.quantity, created: recentDupe.createdAt.toISOString() },
+          message: `You already placed an order for this link recently (${recentDupe.orderId}). Are you sure you want to place another?`,
+        }, { status: 409 });
+      }
     }
 
     let service, tier, charge, cost, tierName, qty;
