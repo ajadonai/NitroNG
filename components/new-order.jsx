@@ -868,17 +868,22 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   }, [services, selSvc]);
 
   /* Place order */
-  const submitOrder = async (dripDaysArg) => {
+  const submitOrder = async (dripDaysArg, confirmDuplicate) => {
     if (!selTier?.id || !link || orderLoading) return;
     setOrderLoading(true);
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tierId: selTier.id, link: `https://${link.trim()}`, quantity: qty, ...(comments?.trim() ? { comments: comments.trim() } : {}), serviceType: selSvc?.type || "", ...(dripDaysArg != null ? { dripDays: dripDaysArg } : {}) }),
+        body: JSON.stringify({ tierId: selTier.id, link: `https://${link.trim()}`, quantity: qty, ...(comments?.trim() ? { comments: comments.trim() } : {}), serviceType: selSvc?.type || "", ...(dripDaysArg != null ? { dripDays: dripDaysArg } : {}), ...(confirmDuplicate ? { confirmDuplicate: true } : {}) }),
         signal: AbortSignal.timeout(30000),
       });
       const data = await res.json();
+      if (data.duplicate) {
+        setOrderLoading(false);
+        if (window.confirm(data.message)) submitOrder(dripDaysArg, true);
+        return;
+      }
       if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong"); setOrderLoading(false); return; }
       setOrderSuccess({ ...data.order, queued: data.queued, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", speed: selTier?.speed || null, tier: selTier?.tier || null, link: link.trim(), balanceAfter: data.order?.charge != null && user?.balance != null ? Math.max(0, user.balance - data.order.charge) : null });
       if (typeof window.fbq === "function") fbq("track", "Purchase", { value: data.order?.charge || 0, currency: "NGN", content_name: selSvc?.name || "Order", content_category: platform || "unknown" }, { eventID: data.eventId });
