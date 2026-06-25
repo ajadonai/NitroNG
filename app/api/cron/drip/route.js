@@ -196,7 +196,8 @@ export async function GET(req) {
             const svcName = (dispatch.order.service?.name || '').toLowerCase();
             const svcType = ['follower', 'view', 'like', 'comment', 'play', 'engagement', 'review']
               .find(t => svcName.includes(t));
-            const config = getDripConfig(svcType ? svcType + 's' : '');
+            const svcPlatform = (dispatch.order.service?.category || '').toLowerCase();
+            const config = getDripConfig(svcType ? svcType + 's' : '', svcPlatform);
             const intervalMs = (config?.intervalHours || 2) * 60 * 60 * 1000;
             const now = Date.now();
 

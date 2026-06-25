@@ -266,10 +266,11 @@ export async function PATCH(req) {
       // Calculate drip for reorder (Layer 1 only — no multi-day on reorders)
       const reorderProviderMin = order.service.min || 50;
       const reorderGroupType = order.tier?.group?.type || '';
-      const reorderDripCfg = getDripConfig(reorderGroupType);
+      const reorderPlatform = (order.service?.category || '').toLowerCase();
+      const reorderDripCfg = getDripConfig(reorderGroupType, reorderPlatform);
       let reorderDripSchedule = null;
       if (process.env.NODE_ENV !== 'development' && order.tier?.group?.tags?.includes('drip') && reorderDripCfg && order.quantity >= reorderDripCfg.threshold) {
-        const intraday = calculateIntradayDrip(order.quantity, reorderProviderMin, new Date(), reorderGroupType);
+        const intraday = calculateIntradayDrip(order.quantity, reorderProviderMin, new Date(), reorderGroupType, reorderPlatform);
         if (intraday) {
           reorderDripSchedule = { dispatches: intraday.dispatches.map(d => ({ ...d, day: 1 })) };
         }
@@ -675,11 +676,11 @@ export async function POST(req) {
     const providerMin = service.min || 50;
     let dripSchedule = null;
     const dripEligible = tier?.group?.tags?.includes('drip');
-    const dripCfg = getDripConfig(groupType);
+    const dripCfg = getDripConfig(groupType, platform);
     if (dripEligible && validDripDays) {
-      dripSchedule = calculateMultiDayDrip(qty, validDripDays, providerMin, new Date(), groupType);
+      dripSchedule = calculateMultiDayDrip(qty, validDripDays, providerMin, new Date(), groupType, platform);
     } else if (dripEligible && !skipDrip && dripCfg && qty >= dripCfg.threshold) {
-      const intraday = calculateIntradayDrip(qty, providerMin, new Date(), groupType);
+      const intraday = calculateIntradayDrip(qty, providerMin, new Date(), groupType, platform);
       if (intraday) {
         dripSchedule = { dispatches: intraday.dispatches.map(d => ({ ...d, day: 1 })) };
       }
