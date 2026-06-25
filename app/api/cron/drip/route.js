@@ -180,6 +180,17 @@ export async function GET(req) {
             });
             stats.synced++;
           }
+          // Alert if batch has been processing 6+ hours with no delivery
+          const ageHours = dispatch.dispatchedAt ? (Date.now() - dispatch.dispatchedAt.getTime()) / 3600000 : 0;
+          if (ageHours >= 6 && (liveRemains == null || liveRemains === dispatch.quantity)) {
+            const order = dispatch.order;
+            const already = dispatch.lastError === '[STALE]';
+            if (!already) {
+              await prisma.dripDispatch.update({ where: { id: dispatch.id }, data: { lastError: '[STALE]' } });
+              tgDripTimeout(order.orderId, dispatch.batch, `Stalled ${Math.round(ageHours)}h on provider — no delivery. Check provider dashboard.`);
+              stats.staleAlerted = (stats.staleAlerted || 0) + 1;
+            }
+          }
           continue;
         }
 
