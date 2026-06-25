@@ -78,14 +78,18 @@ async function handleStats(chatId, threadId) {
 }
 
 export async function POST(req) {
-  const secret = req.headers.get('x-telegram-bot-api-secret-token');
-  if (secret !== process.env.CRON_SECRET) {
-    // DEBUG: log secret mismatch
-    reply(process.env.TG_CHAT_ID, 229, `🔴 Secret mismatch: got=${JSON.stringify(secret)} expected=${JSON.stringify(process.env.CRON_SECRET?.slice(0,8))}...`);
-    return Response.json({ ok: true });
-  }
-
   const update = await req.json();
+
+  // DEBUG: log every incoming update type to Timeout topic
+  const keys = Object.keys(update).filter(k => k !== 'update_id');
+  await fetch(`${API}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: process.env.TG_CHAT_ID, message_thread_id: 229, text: `🔵 Webhook hit: ${keys.join(', ')} | secret: ${req.headers.get('x-telegram-bot-api-secret-token') ? 'present' : 'missing'}` }),
+  }).catch(() => {});
+
+  const secret = req.headers.get('x-telegram-bot-api-secret-token');
+  if (secret !== process.env.CRON_SECRET) return Response.json({ ok: true });
 
   if (update.message?.text) {
     const msg = update.message;
