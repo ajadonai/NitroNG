@@ -288,15 +288,13 @@ export async function GET(req) {
             await prisma.order.update({
               where: { id: order.id },
               data: {
-                status: isTimeout ? 'Dispatching' : 'Pending',
+                status: 'Dispatching',
                 retryCount: { increment: 1 },
-                lastError: (isTimeout ? '[TIMEOUT] ' : '') + err.message.slice(0, 500),
+                lastError: err.message.slice(0, 500),
               },
             });
-            if (isTimeout) {
-              log.warn(`Cron retry ${order.orderId}`, `Timeout — held as Dispatching for manual check`);
-            } else {
-              log.warn(`Cron retry ${order.orderId}`, err.message);
+            log.warn(`Cron retry ${order.orderId}`, `Failed — held as Dispatching for manual check`);
+            {
               if (/incorrect service|invalid service/i.test(err.message)) {
                 const svc = order.service;
                 prisma.adminIssue.findFirst({

@@ -17,16 +17,18 @@ export async function POST(req) {
 
     const body = await req.json();
     const titleCase = (s) => s ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : s;
+    const cleanName = (s) => s ? s.replace(/[^a-zA-ZÀ-ÿ]/g, '').slice(0, 50) : s;
     const name = titleCase(sanitizeString(body.name, 100));
-    const firstName = titleCase(sanitizeString(body.firstName, 50));
-    const lastName = titleCase(sanitizeString(body.lastName, 50));
+    const firstName = titleCase(cleanName(sanitizeString(body.firstName, 50)));
+    const lastName = titleCase(cleanName(sanitizeString(body.lastName, 50)));
     const phone = sanitizeString(body.phone, 20);
     const email = sanitizeEmail(body.email);
     const via = sanitizeString(body.via, 60);
     const password = body.password;
     const referralCode = sanitizeString(body.referralCode, 20);
 
-    if (!validateName(name)) return error('Name can only contain letters, spaces, hyphens, and apostrophes');
+    if (!firstName || !lastName) return error('First name and last name are required (letters only, no spaces)');
+    if (!validateName(name)) return error('Name can only contain letters');
     
     // Check name blacklist
     const { checkName } = await import('@/lib/name-filter');

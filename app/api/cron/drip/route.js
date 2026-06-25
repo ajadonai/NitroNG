@@ -3,7 +3,7 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { placeOrder, checkOrder } from '@/lib/smm';
-import { tgDripTimeout, tgDispatchFailed } from '@/lib/telegram';
+import { tgDripTimeout } from '@/lib/telegram';
 import { getDripConfig } from '@/lib/drip-feed';
 
 // Drip dispatch cron — runs twice per hour (:05 and :35)
@@ -38,7 +38,7 @@ export async function GET(req) {
         status: 'dispatching',
         dispatchedAt: { lte: new Date(Date.now() - 5 * 60 * 1000) },
       },
-      include: { order: true },
+      include: { order: { include: { service: true } } },
       take: 10,
       orderBy: { dispatchedAt: 'asc' },
     });
@@ -53,7 +53,7 @@ export async function GET(req) {
       prisma.adminIssue.create({
         data: { type: 'ghost_dispatch', title: `${order.orderId} batch ${dispatch.batch}: timed out — needs manual check`, message: `Dispatch timed out. The provider may or may not have created this order. Check provider dashboard before dispatching again.\nLink: ${order.link}`, metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, day: dispatch.day, link: order.link }) },
       }).catch(() => {});
-      tgDripTimeout(order.orderId, dispatch.batch);
+      tgDripTimeout(order.orderId, dispatch.batch, null, dispatch.apiOrderId, order.service?.provider);
       log.warn('Drip timeout', `${order.orderId} batch ${dispatch.batch}: marked failed after timeout`);
       stats.stuckFailed++;
     }
@@ -129,27 +129,24 @@ export async function GET(req) {
           stats.dispatchFailed++;
         }
       } catch (err) {
-        const isTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(err.message);
+        const msg = err.message || '';
+        const retryable = /active order|wait until order/i.test(msg);
 
-        if (isTimeout) {
-          tgDripTimeout(order.orderId, dispatch.batch);
-          log.warn('Drip dispatch', `${order.orderId} batch ${dispatch.batch}: timeout — marked failed for manual check`);
-          await prisma.dripDispatch.update({
-            where: { id: dispatch.id },
-            data: { status: 'failed', lastError: '[TIMEOUT] ' + err.message.slice(0, 450) },
-          });
+        log.error('Drip dispatch', `${order.orderId} batch ${dispatch.batch}: ${msg}${retryable ? ' (will retry)' : ''}`);
+        await prisma.dripDispatch.update({
+          where: { id: dispatch.id },
+          data: retryable
+            ? { status: 'pending', lastError: null, dispatchedAt: null }
+            : { status: 'failed', lastError: msg.slice(0, 450) },
+        });
+
+        if (!retryable) {
           prisma.adminIssue.create({
-            data: { type: 'ghost_dispatch', title: `${order.orderId} batch ${dispatch.batch}: dispatch timed out`, message: `Provider request timed out. Check provider dashboard before re-dispatching.\nLink: ${order.link}`, metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, day: dispatch.day, link: order.link }) },
+            data: { type: 'ghost_dispatch', title: `${order.orderId} batch ${dispatch.batch}: dispatch failed`, message: `Provider request failed. Check provider dashboard before re-dispatching.\nLink: ${order.link}\nError: ${msg.slice(0, 200)}`, metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, day: dispatch.day, link: order.link }) },
           }).catch(() => {});
-          stats.dispatchFailed++;
-        } else {
-          log.error('Drip dispatch', `${order.orderId} batch ${dispatch.batch}: ${err.message}`);
-          await prisma.dripDispatch.update({
-            where: { id: dispatch.id },
-            data: { status: 'pending', lastError: err.message.slice(0, 500), dispatchedAt: null },
-          });
-          stats.dispatchFailed++;
+          tgDripTimeout(order.orderId, dispatch.batch, null, dispatch.apiOrderId, order.service?.provider);
         }
+        stats.dispatchFailed++;
       }
     }
 
@@ -183,6 +180,17 @@ export async function GET(req) {
             });
             stats.synced++;
           }
+          // Alert if batch has been processing 6+ hours with no delivery
+          const ageHours = dispatch.dispatchedAt ? (Date.now() - dispatch.dispatchedAt.getTime()) / 3600000 : 0;
+          if (ageHours >= 6 && (liveRemains == null || liveRemains === dispatch.quantity)) {
+            const order = dispatch.order;
+            const already = dispatch.lastError === '[STALE]';
+            if (!already) {
+              await prisma.dripDispatch.update({ where: { id: dispatch.id }, data: { lastError: '[STALE]' } });
+              tgDripTimeout(order.orderId, dispatch.batch, `Stalled ${Math.round(ageHours)}h on provider — no delivery. Check provider dashboard.`, dispatch.apiOrderId, order.service?.provider);
+              stats.staleAlerted = (stats.staleAlerted || 0) + 1;
+            }
+          }
           continue;
         }
 
@@ -193,6 +201,7 @@ export async function GET(req) {
             remains: liveRemains ?? undefined,
             startCount: liveStartCount ?? undefined,
             completedAt: ['completed', 'partial'].includes(newStatus) ? new Date() : undefined,
+            lastError: null,
           },
         });
         stats.synced++;
@@ -207,7 +216,8 @@ export async function GET(req) {
             const svcName = (dispatch.order.service?.name || '').toLowerCase();
             const svcType = ['follower', 'view', 'like', 'comment', 'play', 'engagement', 'review']
               .find(t => svcName.includes(t));
-            const config = getDripConfig(svcType ? svcType + 's' : '');
+            const svcPlatform = (dispatch.order.service?.category || '').toLowerCase();
+            const config = getDripConfig(svcType ? svcType + 's' : '', svcPlatform);
             const intervalMs = (config?.intervalHours || 2) * 60 * 60 * 1000;
             const now = Date.now();
 
@@ -256,9 +266,10 @@ export async function GET(req) {
       const hasFailed = all.some(d => d.status === 'failed');
       const allDone = all.every(d => ['completed', 'partial', 'failed'].includes(d.status));
 
-      if (allDone && !hasFailed) {
+      if (allDone) {
         const hasPartial = all.some(d => d.status === 'partial');
-        const newStatus = hasPartial ? 'Partial' : 'Completed';
+        const hasCompleted = all.some(d => d.status === 'completed');
+        const newStatus = hasFailed ? (hasCompleted || hasPartial ? 'Partial' : 'Cancelled') : (hasPartial ? 'Partial' : 'Completed');
 
         await prisma.order.update({
           where: { id: order.id },
