@@ -266,10 +266,11 @@ export async function PATCH(req) {
       // Calculate drip for reorder (Layer 1 only — no multi-day on reorders)
       const reorderProviderMin = order.service.min || 50;
       const reorderGroupType = order.tier?.group?.type || '';
-      const reorderDripCfg = getDripConfig(reorderGroupType);
+      const reorderPlatform = (order.service?.category || '').toLowerCase();
+      const reorderDripCfg = getDripConfig(reorderGroupType, reorderPlatform);
       let reorderDripSchedule = null;
       if (process.env.NODE_ENV !== 'development' && order.tier?.group?.tags?.includes('drip') && reorderDripCfg && order.quantity >= reorderDripCfg.threshold) {
-        const intraday = calculateIntradayDrip(order.quantity, reorderProviderMin, new Date(), reorderGroupType);
+        const intraday = calculateIntradayDrip(order.quantity, reorderProviderMin, new Date(), reorderGroupType, reorderPlatform);
         if (intraday) {
           reorderDripSchedule = { dispatches: intraday.dispatches.map(d => ({ ...d, day: 1 })) };
         }
@@ -666,6 +667,7 @@ export async function POST(req) {
     const DAILY_CAP = { followers: 5000, likes: 10000, views: 75000, plays: 75000, comments: 1000, reviews: 100, engagement: 15000 };
     const MIN_DAYS_FLOOR = { followers: 3, views: 1, plays: 1, likes: 2, comments: 3, reviews: 3, engagement: 2 };
     const groupType = (tier?.group?.type || "").toLowerCase();
+    const platform = (service.category || '').toLowerCase();
     const dailyCap = DAILY_CAP[groupType] || 15000;
     const daysFloor = MIN_DAYS_FLOOR[groupType] || 3;
     const maxDripDays = qty <= 5000 ? 5 : qty <= 10000 ? 7 : qty <= 25000 ? 12 : qty <= 50000 ? 18 : qty <= 100000 ? 25 : 30;
@@ -675,11 +677,11 @@ export async function POST(req) {
     const providerMin = service.min || 50;
     let dripSchedule = null;
     const dripEligible = tier?.group?.tags?.includes('drip');
-    const dripCfg = getDripConfig(groupType);
+    const dripCfg = getDripConfig(groupType, platform);
     if (dripEligible && validDripDays) {
-      dripSchedule = calculateMultiDayDrip(qty, validDripDays, providerMin, new Date(), groupType);
+      dripSchedule = calculateMultiDayDrip(qty, validDripDays, providerMin, new Date(), groupType, platform);
     } else if (dripEligible && !skipDrip && dripCfg && qty >= dripCfg.threshold) {
-      const intraday = calculateIntradayDrip(qty, providerMin, new Date(), groupType);
+      const intraday = calculateIntradayDrip(qty, providerMin, new Date(), groupType, platform);
       if (intraday) {
         dripSchedule = { dispatches: intraday.dispatches.map(d => ({ ...d, day: 1 })) };
       }
@@ -796,8 +798,7 @@ export async function POST(req) {
                 return Response.json({ error: 'This service is temporarily unavailable. You have been refunded.' }, { status: 409 });
               } catch (refundErr) { log.error('Drip auto-refund', refundErr.message); }
             }
-            const isTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(msg);
-            try { await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: isTimeout ? 'failed' : 'pending', lastError: (isTimeout ? '[TIMEOUT] ' : '') + msg.slice(0, 450), dispatchedAt: isTimeout ? undefined : null } }); } catch {}
+            try { await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'failed', lastError: msg.slice(0, 450) } }); } catch {}
           }
         }
       } else {
@@ -852,8 +853,7 @@ export async function POST(req) {
             return Response.json({ error: 'This service is temporarily unavailable. You have been refunded.' }, { status: 409 });
           } catch (refundErr) { log.error('Order auto-refund', refundErr.message); }
         }
-          const isTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(msg);
-          try { await prisma.order.update({ where: { id: result.id }, data: { lastError: (isTimeout ? '[TIMEOUT] ' : '') + msg.slice(0, 450), ...(isTimeout ? { status: 'Dispatching' } : {}) } }); } catch {}
+          try { await prisma.order.update({ where: { id: result.id }, data: { status: 'Dispatching', lastError: msg.slice(0, 450) } }); } catch {}
         }
       }
     }

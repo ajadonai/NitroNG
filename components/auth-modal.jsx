@@ -737,7 +737,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
                   onChange={(e) =>
                     setFirstName(
                       e.target.value
-                        .replace(/[^a-zA-Z\u00C0-\u017F\s'\-\.]/g, '')
+                        .replace(/[^a-zA-Z\u00C0-\u017F]/g, '')
                         .slice(0, 50)
                     )
                   }
@@ -760,7 +760,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
                   onChange={(e) =>
                     setLastName(
                       e.target.value
-                        .replace(/[^a-zA-Z\u00C0-\u017F\s'\-\.]/g, '')
+                        .replace(/[^a-zA-Z\u00C0-\u017F]/g, '')
                         .slice(0, 50)
                     )
                   }

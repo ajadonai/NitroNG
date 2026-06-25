@@ -1,6 +1,5 @@
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { tgCrewApply } from '@/lib/telegram';
 
 export async function POST(req) {
   try {
@@ -30,8 +29,6 @@ export async function POST(req) {
         whyApply: whyApply?.trim() || null,
       },
     });
-
-    tgCrewApply(name.trim(), clean);
 
     return Response.json({ ok: true });
   } catch (e) {

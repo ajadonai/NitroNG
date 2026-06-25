@@ -80,9 +80,11 @@ export async function GET(req) {
     }
 
     const email = googleUser.email.toLowerCase().trim();
-    const firstName = googleUser.given_name || '';
-    const lastName = googleUser.family_name || '';
-    const name = googleUser.name || `${firstName} ${lastName}`.trim();
+    const cleanName = (s) => s ? s.replace(/[^a-zA-ZÀ-ÿ]/g, '') : '';
+    const titleCase = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s;
+    const firstName = titleCase(cleanName(googleUser.given_name || ''));
+    const lastName = titleCase(cleanName(googleUser.family_name || ''));
+    const name = `${firstName} ${lastName}`.trim() || googleUser.name || '';
 
     // Check if user exists
     let user = await prisma.user.findUnique({ where: { email } });
