@@ -3,18 +3,119 @@ import { log } from '@/lib/logger';
 import { applyWelcomeBonus } from '@/lib/welcome-bonus';
 import { tgAnswerCallback, tgEditMessage, tgPayment } from '@/lib/telegram';
 
+export const maxDuration = 60;
+
+const ADMIN_TG_IDS = ['8567146346'];
+const TOKEN = process.env.TG_BOT_TOKEN;
+const API = `https://api.telegram.org/bot${TOKEN}`;
+
+function naira(kobo) { return `₦${(kobo / 100).toLocaleString()}`; }
+
+function reply(chatId, text) {
+  if (!TOKEN) return;
+  fetch(`${API}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML', disable_web_page_preview: true }),
+  }).catch(() => {});
+}
+
+async function handleOrders(chatId) {
+  const today = new Date(); today.setUTCHours(0, 0, 0, 0);
+  const [todayCount, processing, pending] = await Promise.all([
+    prisma.order.count({ where: { createdAt: { gte: today }, deletedAt: null } }),
+    prisma.order.count({ where: { status: 'Processing', deletedAt: null } }),
+    prisma.order.count({ where: { status: 'Pending', deletedAt: null } }),
+  ]);
+  reply(chatId, [
+    '📦 <b>Orders</b>',
+    `  Today: <b>${todayCount}</b>`,
+    `  Processing: <b>${processing}</b>`,
+    `  Pending: <b>${pending}</b>`,
+  ].join('\n'));
+}
+
+async function handleRevenue(chatId) {
+  const today = new Date(); today.setUTCHours(0, 0, 0, 0);
+  const [todayTx, allTimeTx] = await Promise.all([
+    prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: today } }, _sum: { amount: true }, _count: true }),
+    prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed' }, _sum: { amount: true } }),
+  ]);
+  reply(chatId, [
+    '💰 <b>Revenue</b>',
+    `  Today: <b>${naira(todayTx._sum.amount || 0)}</b> (${todayTx._count} deposits)`,
+    `  All time: <b>${naira(allTimeTx._sum.amount || 0)}</b>`,
+  ].join('\n'));
+}
+
+async function handlePending(chatId) {
+  const pending = await prisma.transaction.findMany({
+    where: { method: 'manual', status: 'Pending' },
+    orderBy: { createdAt: 'desc' },
+    take: 10,
+    include: { user: { select: { name: true } } },
+  });
+  if (!pending.length) { reply(chatId, '💳 No pending manual deposits.'); return; }
+  const lines = pending.map(tx => `  ${tx.user?.name || 'Unknown'} — <b>${naira(tx.amount)}</b>`);
+  reply(chatId, ['💳 <b>Pending Manual Deposits</b>', '', ...lines].join('\n'));
+}
+
+async function handleStats(chatId) {
+  const today = new Date(); today.setUTCHours(0, 0, 0, 0);
+  const [users, todayUsers, orders, todayOrders, revenue] = await Promise.all([
+    prisma.user.count(),
+    prisma.user.count({ where: { createdAt: { gte: today } } }),
+    prisma.order.count({ where: { deletedAt: null } }),
+    prisma.order.count({ where: { createdAt: { gte: today }, deletedAt: null } }),
+    prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: today } }, _sum: { amount: true } }),
+  ]);
+  reply(chatId, [
+    '📊 <b>Quick Stats</b>',
+    `  Users: <b>${users.toLocaleString()}</b> (+${todayUsers} today)`,
+    `  Orders: <b>${orders.toLocaleString()}</b> (+${todayOrders} today)`,
+    `  Revenue today: <b>${naira(revenue._sum.amount || 0)}</b>`,
+  ].join('\n'));
+}
+
 export async function POST(req) {
   const secret = req.headers.get('x-telegram-bot-api-secret-token');
   if (secret !== process.env.CRON_SECRET) return Response.json({ ok: true });
 
   const update = await req.json();
+
+  if (update.message?.text) {
+    const msg = update.message;
+    const userId = String(msg.from?.id);
+    if (!ADMIN_TG_IDS.includes(userId)) return Response.json({ ok: true });
+
+    const command = msg.text.trim().split(/[\s@]/)[0].toLowerCase();
+    const chatId = msg.chat.id;
+
+    if (command === '/orders') await handleOrders(chatId);
+    else if (command === '/revenue') await handleRevenue(chatId);
+    else if (command === '/pending') await handlePending(chatId);
+    else if (command === '/stats') await handleStats(chatId);
+    else if (command === '/help') {
+      reply(chatId, [
+        '🔭 <b>WatchTower Commands</b>',
+        '',
+        '/orders — Today\'s order counts',
+        '/revenue — Revenue summary',
+        '/pending — Pending manual deposits',
+        '/stats — Quick overview',
+        '/help — This message',
+      ].join('\n'));
+    }
+
+    return Response.json({ ok: true });
+  }
+
   const cb = update.callback_query;
   if (!cb?.data || !cb.message) return Response.json({ ok: true });
 
   const chatId = cb.message.chat?.id || cb.message.sender_chat?.id;
   if (String(chatId) !== process.env.TG_CHAT_ID) return Response.json({ ok: true });
 
-  const ADMIN_TG_IDS = ['8567146346'];
   if (!ADMIN_TG_IDS.includes(String(cb.from?.id))) {
     tgAnswerCallback(cb.id, 'Not authorised');
     return Response.json({ ok: true });

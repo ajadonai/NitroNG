@@ -5,7 +5,7 @@ import { sendDM, replyInGroup, crewWelcome, crewDmChiefNewLink } from '@/lib/cre
 export const maxDuration = 60;
 
 const HELP_TEXT = [
-  '📖 <b>Crew Bot Commands</b>',
+  '📖 <b>Marshal Commands</b>',
   '',
   '/mystats — Your signups, orders, and tier',
   '/earnings — Your earnings breakdown',
@@ -213,7 +213,7 @@ export async function POST(req) {
       const code = text.split(/\s+/)[1];
       if (!code) {
         await sendDM(chatId, [
-          '👋 <b>Nitro Crew Bot</b>',
+          '👋 <b>Marshal</b>',
           '',
           'Link your account:',
           '1. Go to <b>nitro.ng/m/settings</b>',

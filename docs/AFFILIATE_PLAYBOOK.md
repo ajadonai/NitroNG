@@ -859,6 +859,25 @@ Sent directly to the crew member's Telegram (requires linked account):
 | Inactive (7+ days) | Gentle nudge to get back to outreach |
 | Crew Chief: member linked TG | "{MemberName} just linked their Telegram account" |
 
+### Admin Messaging (not yet built)
+
+Two options for admin-to-crew DMs via Marshal:
+
+**Option A: Slash command in group**
+- `/dm @member Your message here` — sends a personal DM to one linked crew member
+- `/broadcast Your message here` — DMs all linked crew members
+- Only Adonai's Telegram ID is authorized to use these
+- Quick, no context switching, works from phone
+
+**Option B: Admin panel UI**
+- New section in Admin > Crew: "Send Message"
+- Pick individual members or "All linked members"
+- Type message, preview, send
+- Delivery log: who received, who hasn't started the bot yet
+- Supports bulk messaging and scheduling
+
+Option A is faster to build. Option B is more powerful for campaigns and onboarding nudges. Can build both — A first, B later.
+
 ### Account Linking Flow
 
 1. Crew member goes to `nitro.ng/m/settings`
