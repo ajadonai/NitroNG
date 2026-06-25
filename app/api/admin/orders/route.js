@@ -518,7 +518,7 @@ export async function POST(req) {
         await logActivity(admin.name, `Re-dispatched ${orderId}${newLink ? ' (new link)' : ''} → ${apiOrderId || 'no ID'}`, 'order');
         return Response.json({ success: true, status: 'Processing', apiOrderId, message: `Re-dispatched: ${apiOrderId || 'pending'}` });
       } catch (err) {
-        await prisma.order.update({ where: { id: fullOrder.id }, data: { lastError: err.message.slice(0, 500) } });
+        await prisma.order.update({ where: { id: fullOrder.id }, data: { status: 'Cancelled', lastError: err.message.slice(0, 500), dispatchedAt: null } });
         return Response.json({ error: `Provider error: ${err.message}` }, { status: 502 });
       }
     }

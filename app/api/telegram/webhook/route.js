@@ -12,8 +12,8 @@ const API = `https://api.telegram.org/bot${TOKEN}`;
 function naira(kobo) { return `₦${(kobo / 100).toLocaleString()}`; }
 
 function reply(chatId, threadId, text) {
-  if (!TOKEN) return;
-  fetch(`${API}/sendMessage`, {
+  if (!TOKEN) return Promise.resolve();
+  return fetch(`${API}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id: chatId, ...(threadId ? { message_thread_id: threadId } : {}), text, parse_mode: 'HTML', disable_web_page_preview: true }),
@@ -27,7 +27,7 @@ async function handleOrders(chatId, threadId) {
     prisma.order.count({ where: { status: 'Processing', deletedAt: null } }),
     prisma.order.count({ where: { status: 'Pending', deletedAt: null } }),
   ]);
-  reply(chatId, threadId, [
+  await reply(chatId, threadId, [
     '📦 <b>Orders</b>',
     `  Today: <b>${todayCount}</b>`,
     `  Processing: <b>${processing}</b>`,
@@ -41,7 +41,7 @@ async function handleRevenue(chatId, threadId) {
     prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: today } }, _sum: { amount: true }, _count: true }),
     prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed' }, _sum: { amount: true } }),
   ]);
-  reply(chatId, threadId, [
+  await reply(chatId, threadId, [
     '💰 <b>Revenue</b>',
     `  Today: <b>${naira(todayTx._sum.amount || 0)}</b> (${todayTx._count} deposits)`,
     `  All time: <b>${naira(allTimeTx._sum.amount || 0)}</b>`,
@@ -55,9 +55,9 @@ async function handlePending(chatId, threadId) {
     take: 10,
     include: { user: { select: { name: true } } },
   });
-  if (!pending.length) { reply(chatId, threadId, '💳 No pending manual deposits.'); return; }
+  if (!pending.length) { await reply(chatId, threadId, '💳 No pending manual deposits.'); return; }
   const lines = pending.map(tx => `  ${tx.user?.name || 'Unknown'} — <b>${naira(tx.amount)}</b>`);
-  reply(chatId, threadId, ['💳 <b>Pending Manual Deposits</b>', '', ...lines].join('\n'));
+  await reply(chatId, threadId, ['💳 <b>Pending Manual Deposits</b>', '', ...lines].join('\n'));
 }
 
 async function handleStats(chatId, threadId) {
@@ -69,7 +69,7 @@ async function handleStats(chatId, threadId) {
     prisma.order.count({ where: { createdAt: { gte: today }, deletedAt: null } }),
     prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: today } }, _sum: { amount: true } }),
   ]);
-  reply(chatId, threadId, [
+  await reply(chatId, threadId, [
     '📊 <b>Quick Stats</b>',
     `  Users: <b>${users.toLocaleString()}</b> (+${todayUsers} today)`,
     `  Orders: <b>${orders.toLocaleString()}</b> (+${todayOrders} today)`,
@@ -97,7 +97,7 @@ export async function POST(req) {
     else if (command === '/pending') await handlePending(chatId, threadId);
     else if (command === '/stats') await handleStats(chatId, threadId);
     else if (command === '/help') {
-      reply(chatId, threadId, [
+      await reply(chatId, threadId, [
         '🔭 <b>WatchTower Commands</b>',
         '',
         '/orders — Today\'s order counts',
@@ -194,14 +194,15 @@ export async function POST(req) {
 
       await tgAnswerCallback(cb.id, `Approved ₦${(tx.amount / 100).toLocaleString()}`);
       await tgEditMessage(cb.message.message_id, cb.message.text + `\n\n✅ <b>Approved</b> via Telegram`);
-      tgPayment(name, tx.amount, 0, 'Manual', 'Telegram');
+      await tgPayment(name, tx.amount, 0, 'Manual', 'Telegram');
       log.info('TG Webhook', `Approved manual deposit ${txId} for ${name}`);
 
     } else if (action === 'reject') {
-      await prisma.transaction.update({
-        where: { id: txId },
+      const rejected = await prisma.transaction.updateMany({
+        where: { id: txId, status: 'Pending' },
         data: { status: 'Rejected', note: tx.note.replace(/\[user_confirmed[^\]]*\]|\[awaiting_confirmation\]/, '[rejected_by:Telegram]') },
       });
+      if (rejected.count === 0) throw new Error('already_processed');
 
       await prisma.activityLog.create({
         data: { adminName: 'Telegram', action: `Rejected manual deposit ₦${(tx.amount / 100).toLocaleString()} for ${name}`, type: 'payment' },

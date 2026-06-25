@@ -3,7 +3,7 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { placeOrder, checkOrder } from '@/lib/smm';
-import { tgDripTimeout, tgDispatchFailed } from '@/lib/telegram';
+import { tgDripTimeout } from '@/lib/telegram';
 import { getDripConfig } from '@/lib/drip-feed';
 
 // Drip dispatch cron — runs twice per hour (:05 and :35)
@@ -201,6 +201,7 @@ export async function GET(req) {
             remains: liveRemains ?? undefined,
             startCount: liveStartCount ?? undefined,
             completedAt: ['completed', 'partial'].includes(newStatus) ? new Date() : undefined,
+            lastError: null,
           },
         });
         stats.synced++;
@@ -265,9 +266,10 @@ export async function GET(req) {
       const hasFailed = all.some(d => d.status === 'failed');
       const allDone = all.every(d => ['completed', 'partial', 'failed'].includes(d.status));
 
-      if (allDone && !hasFailed) {
+      if (allDone) {
         const hasPartial = all.some(d => d.status === 'partial');
-        const newStatus = hasPartial ? 'Partial' : 'Completed';
+        const hasCompleted = all.some(d => d.status === 'completed');
+        const newStatus = hasFailed ? (hasCompleted || hasPartial ? 'Partial' : 'Cancelled') : (hasPartial ? 'Partial' : 'Completed');
 
         await prisma.order.update({
           where: { id: order.id },

@@ -145,7 +145,7 @@ function sBg(s, dk) { return s === "Completed" ? (dk ? "#0a2416" : "#ecfdf5") : 
 
 function errInfo(err, retryCount) {
   if (err === "user_cancelled") return { label: "Cancelled by User", tone: "neutral" };
-  if (err === "admin_cancelled") return { label: "Cancelled by Admin", tone: "neutral" };
+  if (err?.startsWith?.("admin_cancelled")) return { label: "Cancelled by Admin", tone: "neutral" };
   if (err === "dispatch_failed") return { label: "Dispatch Failed", detail: "Order couldn't reach the provider and was auto-refunded", tone: "warn" };
   if (err === "needs_post_link") return { label: "Wrong Link Type", detail: "Customer sent a profile link — this service needs a post/video link", tone: "warn" };
   if (err === "needs_profile_link") return { label: "Wrong Link Type", detail: "Customer sent a post link — this service needs a profile link", tone: "warn" };
