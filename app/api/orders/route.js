@@ -796,8 +796,7 @@ export async function POST(req) {
                 return Response.json({ error: 'This service is temporarily unavailable. You have been refunded.' }, { status: 409 });
               } catch (refundErr) { log.error('Drip auto-refund', refundErr.message); }
             }
-            const isTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(msg);
-            try { await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: isTimeout ? 'failed' : 'pending', lastError: (isTimeout ? '[TIMEOUT] ' : '') + msg.slice(0, 450), dispatchedAt: isTimeout ? undefined : null } }); } catch {}
+            try { await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'failed', lastError: msg.slice(0, 450) } }); } catch {}
           }
         }
       } else {
@@ -852,8 +851,7 @@ export async function POST(req) {
             return Response.json({ error: 'This service is temporarily unavailable. You have been refunded.' }, { status: 409 });
           } catch (refundErr) { log.error('Order auto-refund', refundErr.message); }
         }
-          const isTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(msg);
-          try { await prisma.order.update({ where: { id: result.id }, data: { lastError: (isTimeout ? '[TIMEOUT] ' : '') + msg.slice(0, 450), ...(isTimeout ? { status: 'Dispatching' } : {}) } }); } catch {}
+          try { await prisma.order.update({ where: { id: result.id }, data: { status: 'Dispatching', lastError: msg.slice(0, 450) } }); } catch {}
         }
       }
     }
