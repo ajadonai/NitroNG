@@ -79,7 +79,11 @@ async function handleStats(chatId, threadId) {
 
 export async function POST(req) {
   const secret = req.headers.get('x-telegram-bot-api-secret-token');
-  if (secret !== process.env.CRON_SECRET) return Response.json({ ok: true });
+  if (secret !== process.env.CRON_SECRET) {
+    // DEBUG: log secret mismatch
+    reply(process.env.TG_CHAT_ID, 229, `🔴 Secret mismatch: got=${JSON.stringify(secret)} expected=${JSON.stringify(process.env.CRON_SECRET?.slice(0,8))}...`);
+    return Response.json({ ok: true });
+  }
 
   const update = await req.json();
 
@@ -112,10 +116,16 @@ export async function POST(req) {
   }
 
   const cb = update.callback_query;
-  if (!cb?.data || !cb.message) return Response.json({ ok: true });
+  if (!cb?.data || !cb.message) {
+    reply(process.env.TG_CHAT_ID, 229, `🟡 No callback data. Keys: ${JSON.stringify(Object.keys(update))}`);
+    return Response.json({ ok: true });
+  }
 
   const chatId = cb.message.chat?.id || cb.message.sender_chat?.id;
-  if (String(chatId) !== process.env.TG_CHAT_ID) return Response.json({ ok: true });
+  if (String(chatId) !== process.env.TG_CHAT_ID) {
+    reply(process.env.TG_CHAT_ID, 229, `🟠 Chat ID mismatch: got=${chatId} env=${process.env.TG_CHAT_ID}`);
+    return Response.json({ ok: true });
+  }
 
   if (!ADMIN_TG_IDS.includes(String(cb.from?.id))) {
     tgAnswerCallback(cb.id, 'Not authorised');
