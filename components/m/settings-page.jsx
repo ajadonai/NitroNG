@@ -44,6 +44,79 @@ function Card({ title, dark, t, children, onSave, saving, success, error }) {
   );
 }
 
+function TelegramCard({ member, t }) {
+  const [loading, setLoading] = useState(false);
+  const [code, setCode] = useState(null);
+  const [error, setError] = useState(null);
+  const linked = member.telegramLinked;
+
+  const generateCode = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/m/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ section: "telegram" }),
+      });
+      const d = await res.json();
+      if (d.error) { setError(d.error); return; }
+      setCode(d.code);
+    } catch {
+      setError("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="rounded-[14px] overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
+      <div className="py-[10px] px-[18px]" style={{ background: "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
+        <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>Telegram</div>
+      </div>
+      <div className="p-[18px] flex flex-col gap-3">
+        {linked ? (
+          <div className="text-[13px] flex items-center gap-2" style={{ color: t.green }}>
+            <span>✓</span> Connected
+          </div>
+        ) : code ? (
+          <>
+            <div className="text-[12.5px]" style={{ color: t.text }}>
+              Send this to <b>@NitroCrewBot</b> in a DM:
+            </div>
+            <div
+              className="py-[9px] px-3 rounded-lg text-[13.5px] font-mono select-all cursor-pointer"
+              style={{ background: t.bg, border: `1px solid ${t.surfaceBrd}`, color: t.text }}
+              onClick={() => navigator.clipboard?.writeText(`/start ${code}`)}
+              title="Click to copy"
+            >
+              /start {code}
+            </div>
+            <div className="text-[11.5px]" style={{ color: t.muted }}>Click to copy. Code expires in 10 minutes.</div>
+          </>
+        ) : (
+          <>
+            <div className="text-[12.5px]" style={{ color: t.muted }}>
+              Link your Telegram to receive updates and use bot commands.
+            </div>
+            {error && <div className="text-[12.5px]" style={{ color: t.red }}>{error}</div>}
+            <div className="flex justify-end mt-1">
+              <button
+                onClick={generateCode}
+                disabled={loading}
+                className="py-[7px] px-4 rounded-lg text-[12.5px] font-semibold border-none cursor-pointer text-white disabled:opacity-50"
+                style={{ background: t.grad, fontFamily: "inherit" }}
+              >
+                {loading ? "Generating..." : "Link Telegram"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Inner({ member }) {
   const { dark, t } = useTheme();
 
@@ -90,6 +163,7 @@ function Inner({ member }) {
 
   return (
     <div className="grid grid-cols-2 max-md:grid-cols-1 gap-4">
+      <TelegramCard member={member} t={t} />
       <Card title="Profile" dark={dark} t={t} saving={profileSaving} error={profileError} success={profileSuccess}
         onSave={() => save("profile", { name, phone, xHandle }, setProfileSaving, setProfileError, setProfileSuccess)}>
         <Field label="Full name" value={name} onChange={setName} t={t} />
