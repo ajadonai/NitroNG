@@ -238,7 +238,7 @@ export async function GET(req) {
         orders: dayMap[key]?.orders || 0,
         revenue: Math.round(dayMap[key]?.revenue || 0),
         profit: Math.round(dayMap[key]?.profit || 0),
-        deposits: Math.round(dayMap[key]?.deposits || 0),
+        deposits: dayMap[key]?.deposits || 0,
         newUsers: dayMap[key]?.newUsers || 0,
       });
       d.setDate(d.getDate() + 1);

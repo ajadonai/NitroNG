@@ -181,7 +181,7 @@ function Sparkline({ data, color, area, height = 40, label }) {
           <animate attributeName="opacity" values="1;.4;1" dur="2s" repeatCount="indefinite" />
         </circle>
       </svg>
-      <div style={{ fontSize: 9, color: '#555', marginTop: 2 }}>30d: {total.toLocaleString()}</div>
+      <div style={{ fontSize: 9, color: '#555', marginTop: 2 }}>30d: {Math.round(total).toLocaleString()}</div>
     </div>
   );
 }
