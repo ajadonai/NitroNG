@@ -75,17 +75,11 @@ export async function GET(req) {
       const order = dispatch.order;
       if (!order || order.status === 'Cancelled' || order.deletedAt) continue;
 
-      // Skip if another batch for this order is in flight or an earlier batch failed
-      const blocked = await prisma.dripDispatch.findFirst({
-        where: {
-          orderId: dispatch.orderId,
-          OR: [
-            { status: { in: ['dispatching', 'processing'] } },
-            { status: 'failed', batch: { lt: dispatch.batch } },
-          ],
-        },
+      // Skip if another batch for this order is already in flight
+      const inFlight = await prisma.dripDispatch.findFirst({
+        where: { orderId: dispatch.orderId, status: { in: ['dispatching', 'processing'] } },
       });
-      if (blocked) continue;
+      if (inFlight) continue;
 
       // Atomic claim to prevent double dispatch
       const claimed = await prisma.dripDispatch.updateMany({
