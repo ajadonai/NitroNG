@@ -121,13 +121,14 @@ export async function POST(req) {
 
   const cb = update.callback_query;
   if (!cb?.data || !cb.message) {
-    reply(process.env.TG_CHAT_ID, 229, `🟡 No callback data. Keys: ${JSON.stringify(Object.keys(update))}`);
     return Response.json({ ok: true });
   }
 
   const chatId = cb.message.chat?.id || cb.message.sender_chat?.id;
-  if (String(chatId) !== process.env.TG_CHAT_ID) {
-    reply(process.env.TG_CHAT_ID, 229, `🟠 Chat ID mismatch: got=${chatId} env=${process.env.TG_CHAT_ID}`);
+  const envChat = process.env.TG_CHAT_ID;
+  reply(envChat, 229, `🟢 CB: chatId=${chatId} env=${envChat} match=${String(chatId) === envChat} from=${cb.from?.id} data=${cb.data}`);
+
+  if (String(chatId) !== envChat) {
     return Response.json({ ok: true });
   }
 
