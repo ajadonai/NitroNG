@@ -211,7 +211,7 @@ export async function GET(req) {
     const dayMap = {};
     chartOrders.forEach(o => {
       const day = toDay(o.createdAt);
-      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, profit: 0, deposits: 0, newUsers: 0 };
+      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, profit: 0, depositsKobo: 0, newUsers: 0 };
       dayMap[day].orders++;
       if (o.status !== 'Cancelled') {
         dayMap[day].revenue += effCharge(o) / 100;
@@ -220,15 +220,16 @@ export async function GET(req) {
     });
     chartDeposits.forEach(tx => {
       const day = toDay(tx.createdAt);
-      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, profit: 0, deposits: 0, newUsers: 0 };
-      dayMap[day].deposits += (tx.amount || 0) / 100;
+      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, profit: 0, depositsKobo: 0, newUsers: 0 };
+      dayMap[day].depositsKobo += (tx.amount || 0);
     });
     chartUsers.forEach(u => {
       const day = toDay(u.createdAt);
-      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, profit: 0, deposits: 0, newUsers: 0 };
+      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, profit: 0, depositsKobo: 0, newUsers: 0 };
       dayMap[day].newUsers++;
     });
 
+    const todayKey = toDay(now);
     const chartData = [];
     const d = new Date(thirtyDaysAgo);
     while (d <= now) {
@@ -238,7 +239,7 @@ export async function GET(req) {
         orders: dayMap[key]?.orders || 0,
         revenue: Math.round(dayMap[key]?.revenue || 0),
         profit: Math.round(dayMap[key]?.profit || 0),
-        deposits: dayMap[key]?.deposits || 0,
+        deposits: key === todayKey ? todayDeposits : Math.round((dayMap[key]?.depositsKobo || 0) / 100),
         newUsers: dayMap[key]?.newUsers || 0,
       });
       d.setDate(d.getDate() + 1);
