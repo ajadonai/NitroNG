@@ -113,7 +113,7 @@ const ExportIcon = () => (
 
 /* ── Main component ───────────────────────────────── */
 
-export default function AdminUsersPage({ dark, t }) {
+export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
   const confirm = useConfirm();
   const toast = useToast();
 
@@ -137,6 +137,13 @@ export default function AdminUsersPage({ dark, t }) {
   const [menuPos, setMenuPos] = useState(null);
   const [drawerUser, setDrawerUser] = useState(null);
   const [drawerCreditOpen, setDrawerCreditOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '' });
+  const canEdit = (() => {
+    const role = currentAdmin?.role;
+    if (['owner', 'superadmin'].includes(role)) return true;
+    try { const ca = JSON.parse(currentAdmin?.customActions || '[]'); return ca.includes('users.edit'); } catch { return false; }
+  })();
 
   const [creditAmt, setCreditAmt] = useState('');
   const [creditType, setCreditType] = useState('credit');
@@ -298,7 +305,28 @@ export default function AdminUsersPage({ dark, t }) {
   const closeDrawer = () => {
     setDrawerUser(null);
     setDrawerCreditOpen(false);
+    setEditing(false);
     setTxList([]);
+  };
+
+  const startEditing = () => {
+    setEditForm({ name: displayName(drawerUser) || '', email: displayEmail(drawerUser) || '', phone: drawerUser.phone || '' });
+    setEditing(true);
+  };
+
+  const saveEdit = async () => {
+    if (!drawerUser) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/admin/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'edit', userId: drawerUser.internalId || drawerUser.id, name: editForm.name, email: editForm.email, phone: editForm.phone }) });
+      const data = await res.json();
+      if (data.error) { toast.error('Error', data.error); return; }
+      toast.success('Updated', data.message);
+      setEditing(false);
+      if (data.updates) setDrawerUser(prev => ({ ...prev, ...data.updates }));
+      fetchUsers();
+    } catch { toast.error('Error', 'Failed to save'); }
+    finally { setActionLoading(false); }
   };
 
   /* ── Export ────────────────────────────────────── */
@@ -650,19 +678,39 @@ export default function AdminUsersPage({ dark, t }) {
 
             {/* Header */}
             <div className="p-6 pb-4">
+              {editing ? (
+                <div className="mb-4 space-y-2.5">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[12px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.accent }}>Edit Profile</span>
+                    <button onClick={() => setEditing(false)} className="text-[12px] font-medium cursor-pointer border-none bg-transparent" style={{ color: t.textMuted }}>Cancel</button>
+                  </div>
+                  {[['name', 'Name'], ['email', 'Email'], ['phone', 'Phone']].map(([key, label]) => (
+                    <div key={key}>
+                      <label className="text-[11px] font-semibold uppercase tracking-[0.3px] mb-1 block" style={{ color: t.textMuted }}>{label}</label>
+                      <input type={key === 'email' ? 'email' : 'text'} value={editForm[key]} onChange={e => setEditForm(f => ({ ...f, [key]: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none font-[inherit]" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.06)' : '#fff', color: t.text }} />
+                    </div>
+                  ))}
+                  <button onClick={saveEdit} disabled={actionLoading} className="w-full py-2.5 rounded-lg text-[13px] font-semibold cursor-pointer font-[inherit] border-none" style={{ background: accentGrad, color: '#fff', opacity: actionLoading ? .5 : 1 }}>{actionLoading ? 'Saving...' : 'Save Changes'}</button>
+                </div>
+              ) : (
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-14 h-14 rounded-full flex items-center justify-center text-[20px] font-bold shrink-0" style={{ background: '#c47d8e', color: '#fff' }}>
                   {initials(displayName(drawerUser))}
                 </div>
-                <div className="min-w-0">
-                  <div className="text-[17px] font-bold truncate" style={{ color: t.text }}>{displayName(drawerUser)}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="text-[17px] font-bold truncate" style={{ color: t.text }}>{displayName(drawerUser)}</div>
+                    {canEdit && <button onClick={startEditing} className="shrink-0 w-6 h-6 rounded flex items-center justify-center cursor-pointer border-none p-0" style={{ background: dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)', color: t.textMuted }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>}
+                  </div>
                   <div className="text-[13px] truncate" style={{ color: t.textMuted }}>{displayEmail(drawerUser)}</div>
+                  {drawerUser.phone && <div className="text-[12px] truncate" style={{ color: t.textMuted }}>{drawerUser.phone}</div>}
                   <div className="flex items-center gap-1.5 mt-1">
                     <span className="w-[7px] h-[7px] rounded-full" style={{ background: statusDot(drawerUser.status, t).color }} />
                     <span className="text-[12px] font-medium" style={{ color: statusDot(drawerUser.status, t).color }}>{statusDot(drawerUser.status, t).label}</span>
                   </div>
                 </div>
               </div>
+              )}
 
               {/* Stat boxes */}
               <div className="grid grid-cols-2 gap-2 mb-4">

@@ -326,7 +326,7 @@ function AdminDashboardInner({ initialData }) {
   const [admin, setAdmin] = useState(() => {
     if (!initialData) return null;
     const d = initialData;
-    return { name: d.admin?.name || "Admin", role: d.admin?.role || "superadmin", email: d.admin?.email || "", pages: d.admin?.pages || "*" };
+    return { name: d.admin?.name || "Admin", role: d.admin?.role || "superadmin", email: d.admin?.email || "", pages: d.admin?.pages || "*", customActions: d.admin?.customActions || null };
   });
   const [data, setData] = useState(() => {
     if (!initialData) return { stats: {}, recentOrders: [], recentUsers: [], openTickets: [], activity: [], unreadTicketCount: 0, pendingManualCount: 0, pendingOrderCount: 0, openIssueCount: 0 };
@@ -358,7 +358,7 @@ function AdminDashboardInner({ initialData }) {
           return;
         }
         const d = await res.json();
-        setAdmin({ name: d.admin?.name || "Admin", role: d.admin?.role || "superadmin", email: d.admin?.email || "", pages: d.admin?.pages || "*" });
+        setAdmin({ name: d.admin?.name || "Admin", role: d.admin?.role || "superadmin", email: d.admin?.email || "", pages: d.admin?.pages || "*", customActions: d.admin?.customActions || null });
         setData({
           stats: d || {},
           recentOrders: d.recentOrders || [],
@@ -542,7 +542,7 @@ function AdminDashboardInner({ initialData }) {
         if (res.status === 401) { window.location.replace("/admin/login"); return; }
         if (res.ok) {
           const d = await res.json();
-          setAdmin(prev => ({ ...prev, name: d.admin?.name || prev.name, role: d.admin?.role || prev.role, pages: d.admin?.pages || prev.pages }));
+          setAdmin(prev => ({ ...prev, name: d.admin?.name || prev.name, role: d.admin?.role || prev.role, pages: d.admin?.pages || prev.pages, customActions: d.admin?.customActions || prev.customActions }));
           setData({
             stats: d || {},
             recentOrders: d.recentOrders || [],
@@ -661,7 +661,7 @@ function AdminDashboardInner({ initialData }) {
     switch (active) {
       case "overview": return <AdminOverview data={data} dark={dark} t={t} setActive={setActive} />;
       case "orders": return <AdminOrdersPage dark={dark} t={t} />;
-      case "users": return <AdminUsersPage dark={dark} t={t} />;
+      case "users": return <AdminUsersPage dark={dark} t={t} admin={admin} />;
       case "leaderboard": return <AdminLeaderboardPage dark={dark} t={t} />;
       case "tickets": return <AdminTicketsPage dark={dark} t={t} adminName={admin?.name || "Admin"} />;
       case "services": return <AdminServicesPage dark={dark} t={t} />;
