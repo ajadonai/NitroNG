@@ -38,7 +38,7 @@ export async function GET(req) {
         status: 'dispatching',
         dispatchedAt: { lte: new Date(Date.now() - 5 * 60 * 1000) },
       },
-      include: { order: true },
+      include: { order: { include: { service: true } } },
       take: 10,
       orderBy: { dispatchedAt: 'asc' },
     });
@@ -53,7 +53,7 @@ export async function GET(req) {
       prisma.adminIssue.create({
         data: { type: 'ghost_dispatch', title: `${order.orderId} batch ${dispatch.batch}: timed out — needs manual check`, message: `Dispatch timed out. The provider may or may not have created this order. Check provider dashboard before dispatching again.\nLink: ${order.link}`, metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, day: dispatch.day, link: order.link }) },
       }).catch(() => {});
-      tgDripTimeout(order.orderId, dispatch.batch);
+      tgDripTimeout(order.orderId, dispatch.batch, null, dispatch.apiOrderId, order.service?.provider);
       log.warn('Drip timeout', `${order.orderId} batch ${dispatch.batch}: marked failed after timeout`);
       stats.stuckFailed++;
     }
@@ -144,7 +144,7 @@ export async function GET(req) {
           prisma.adminIssue.create({
             data: { type: 'ghost_dispatch', title: `${order.orderId} batch ${dispatch.batch}: dispatch failed`, message: `Provider request failed. Check provider dashboard before re-dispatching.\nLink: ${order.link}\nError: ${msg.slice(0, 200)}`, metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, day: dispatch.day, link: order.link }) },
           }).catch(() => {});
-          tgDripTimeout(order.orderId, dispatch.batch);
+          tgDripTimeout(order.orderId, dispatch.batch, null, dispatch.apiOrderId, service.provider);
         }
         stats.dispatchFailed++;
       }
@@ -187,7 +187,7 @@ export async function GET(req) {
             const already = dispatch.lastError === '[STALE]';
             if (!already) {
               await prisma.dripDispatch.update({ where: { id: dispatch.id }, data: { lastError: '[STALE]' } });
-              tgDripTimeout(order.orderId, dispatch.batch, `Stalled ${Math.round(ageHours)}h on provider — no delivery. Check provider dashboard.`);
+              tgDripTimeout(order.orderId, dispatch.batch, `Stalled ${Math.round(ageHours)}h on provider — no delivery. Check provider dashboard.`, dispatch.apiOrderId, order.service?.provider);
               stats.staleAlerted = (stats.staleAlerted || 0) + 1;
             }
           }
