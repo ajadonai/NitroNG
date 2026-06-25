@@ -692,8 +692,8 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
                     </div>
                   ))}
                   <div className="flex gap-2">
-                    <button onClick={() => setEditing(false)} className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold cursor-pointer font-[inherit]" style={{ border: `1px solid ${t.cardBorder}`, background: 'transparent', color: t.textMuted }}>Cancel</button>
                     <button onClick={saveEdit} disabled={actionLoading} className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold cursor-pointer font-[inherit] border-none" style={{ background: accentGrad, color: '#fff', opacity: actionLoading ? .5 : 1 }}>{actionLoading ? 'Saving...' : 'Save Changes'}</button>
+                    <button onClick={() => setEditing(false)} className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold cursor-pointer font-[inherit]" style={{ border: `1px solid ${t.cardBorder}`, background: 'transparent', color: t.textMuted }}>Cancel</button>
                   </div>
                 </div>
               ) : (
