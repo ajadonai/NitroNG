@@ -438,6 +438,91 @@ export async function POST(req) {
       }
     }
 
+    if (action === 'redispatch') {
+      const { link: newLink } = body;
+      const fullOrder = await prisma.order.findFirst({
+        where: { OR: [{ orderId }, { id: orderId }], deletedAt: null },
+        include: { service: true, user: { select: { id: true, balance: true } } },
+      });
+      if (!fullOrder) return Response.json({ error: 'Order not found' }, { status: 404 });
+      if (fullOrder.status !== 'Cancelled') return Response.json({ error: 'Only cancelled orders can be re-dispatched' }, { status: 400 });
+
+      const link = (newLink || '').trim() || fullOrder.link;
+      if (!link) return Response.json({ error: 'No link provided' }, { status: 400 });
+
+      if (fullOrder.user.balance < fullOrder.charge) {
+        return Response.json({ error: `Insufficient balance (has ₦${(fullOrder.user.balance / 100).toLocaleString()}, needs ₦${(fullOrder.charge / 100).toLocaleString()})` }, { status: 400 });
+      }
+
+      const hasDrip = await prisma.dripDispatch.findFirst({ where: { orderId: fullOrder.id }, select: { id: true } });
+
+      await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`UPDATE users SET balance = balance - ${fullOrder.charge} WHERE id = ${fullOrder.user.id}`;
+        await tx.order.update({ where: { id: fullOrder.id }, data: { link, status: 'Processing', apiOrderId: null, lastError: null, dispatchedAt: new Date() } });
+        await tx.transaction.create({ data: { userId: fullOrder.user.id, type: 'charge', amount: fullOrder.charge, method: 'wallet', status: 'Completed', note: `Re-dispatch ${orderId}` } });
+        if (hasDrip) {
+          await tx.dripDispatch.updateMany({ where: { orderId: fullOrder.id, status: { in: ['failed', 'cancelled'] } }, data: { status: 'pending', apiOrderId: null, lastError: null, dispatchedAt: null } });
+        }
+      });
+
+      const { placeOrder } = await import('@/lib/smm');
+      const service = fullOrder.service;
+      const prov = service.provider || 'mtp';
+      const apiType = (service.apiType || '').toLowerCase();
+      const extra = {};
+      if (fullOrder.comments) {
+        if (apiType === 'seo') extra.keywords = fullOrder.comments;
+        else if (apiType.includes('mention')) extra.usernames = fullOrder.comments;
+        else if (apiType === 'poll') extra.answer_number = fullOrder.comments;
+        else extra.comments = fullOrder.comments;
+      }
+      if (apiType === 'subscriptions') {
+        const match = link.match(/instagram\.com\/([^/?#]+)/);
+        if (match) extra.username = match[1];
+      }
+
+      if (hasDrip) {
+        const first = await prisma.dripDispatch.findFirst({
+          where: { orderId: fullOrder.id, status: 'pending' },
+          orderBy: [{ day: 'asc' }, { batch: 'asc' }],
+        });
+        if (first) {
+          try {
+            const batchExtra = { ...extra };
+            if (apiType === 'subscriptions') { batchExtra.min = first.quantity; batchExtra.max = first.quantity; }
+            await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'dispatching', dispatchedAt: new Date() } });
+            const result = await placeOrder(prov, service.apiId, link, first.quantity, batchExtra);
+            const batchApiId = result.order ? String(result.order) : null;
+            if (batchApiId) {
+              await prisma.dripDispatch.update({ where: { id: first.id }, data: { apiOrderId: batchApiId, status: 'processing', lastError: null } });
+              await prisma.order.update({ where: { id: fullOrder.id }, data: { dripDelivered: 1 } });
+            } else {
+              await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'pending', dispatchedAt: null } });
+            }
+            await logActivity(admin.name, `Re-dispatched ${orderId}${newLink ? ' (new link)' : ''} → batch ${first.batch}: ${batchApiId || 'no ID'}`, 'order');
+            return Response.json({ success: true, status: 'Processing', message: `Re-dispatched batch ${first.batch}: ${batchApiId || 'pending'}` });
+          } catch (err) {
+            await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'failed', lastError: err.message.slice(0, 500) } });
+            return Response.json({ error: `Provider error: ${err.message}` }, { status: 502 });
+          }
+        }
+      }
+
+      try {
+        if (apiType === 'subscriptions') { extra.min = fullOrder.quantity; extra.max = fullOrder.quantity; }
+        const result = await placeOrder(prov, service.apiId, link, fullOrder.quantity, extra);
+        const apiOrderId = result.order ? String(result.order) : null;
+        if (apiOrderId) {
+          await prisma.order.update({ where: { id: fullOrder.id }, data: { apiOrderId } });
+        }
+        await logActivity(admin.name, `Re-dispatched ${orderId}${newLink ? ' (new link)' : ''} → ${apiOrderId || 'no ID'}`, 'order');
+        return Response.json({ success: true, status: 'Processing', apiOrderId, message: `Re-dispatched: ${apiOrderId || 'pending'}` });
+      } catch (err) {
+        await prisma.order.update({ where: { id: fullOrder.id }, data: { lastError: err.message.slice(0, 500) } });
+        return Response.json({ error: `Provider error: ${err.message}` }, { status: 502 });
+      }
+    }
+
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err) {
     log.error('Admin Orders POST', err.message);
