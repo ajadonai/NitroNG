@@ -1,8 +1,23 @@
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
-import { sendDM, replyInGroup } from '@/lib/crew-bot';
+import { sendDM, replyInGroup, crewWelcome, crewDmChiefNewLink } from '@/lib/crew-bot';
 
 export const maxDuration = 60;
+
+const HELP_TEXT = [
+  '📖 <b>Crew Bot Commands</b>',
+  '',
+  '/mystats — Your signups, orders, and tier',
+  '/earnings — Your earnings breakdown',
+  '/team — Your team standings',
+  '/top — Weekly leaderboard',
+  '/link — Your referral links',
+  '/unlink — Disconnect your Telegram',
+  '/help — This message',
+  '',
+  'In the group, responses are sent to your DMs.',
+  'Link your account at <b>nitro.ng/m/settings</b>',
+].join('\n');
 
 function getWeekStartUTC() {
   const now = new Date();
@@ -14,6 +29,8 @@ function getWeekStartUTC() {
   monday.setUTCHours(0, 0, 0, 0);
   return new Date(monday.getTime() - 60 * 60 * 1000);
 }
+
+function naira(kobo) { return `₦${(kobo / 100).toLocaleString()}`; }
 
 async function getMemberSlugs(memberId) {
   const links = await prisma.acquisitionLink.findMany({
@@ -59,6 +76,37 @@ async function handleMyStats(member) {
     `  Signups: ${totalSignups}`,
     `  Orders: ${totalOrders}`,
     `  Tier: ${member.tier.charAt(0).toUpperCase() + member.tier.slice(1)}`,
+  ].join('\n');
+}
+
+async function handleEarnings(member) {
+  const isChief = member.role === 'chief';
+  const field = isChief ? 'leadAmount' : 'marketerAmount';
+  const where = isChief ? { leadId: member.id } : { memberId: member.id };
+
+  const [held, approved, paid] = await Promise.all([
+    prisma.affiliateCommission.aggregate({ where: { ...where, status: 'held' }, _sum: { [field]: true } }),
+    prisma.affiliateCommission.aggregate({ where: { ...where, status: 'approved' }, _sum: { [field]: true } }),
+    member.totalPaid,
+  ]);
+
+  const heldAmount = held._sum[field] || 0;
+  const approvedAmount = approved._sum[field] || 0;
+  const pendingPayouts = await prisma.affiliatePayout.aggregate({
+    where: { memberId: member.id, status: { in: ['pending', 'processing'] } },
+    _sum: { amount: true },
+  });
+  const available = Math.max(0, approvedAmount - paid - (pendingPayouts._sum.amount || 0));
+
+  return [
+    '💰 <b>Your Earnings</b>',
+    '',
+    `  Held: <b>${naira(heldAmount)}</b>`,
+    `  Available: <b>${naira(available)}</b>`,
+    `  Total earned: <b>${naira(member.totalEarned)}</b>`,
+    `  Total paid: <b>${naira(paid)}</b>`,
+    '',
+    `  Tier: ${member.tier.charAt(0).toUpperCase() + member.tier.slice(1)} (${member.commissionRate}%)`,
   ].join('\n');
 }
 
@@ -142,6 +190,8 @@ async function handleLink(member) {
   return ['🔗 <b>Your Links</b>', '', ...lines].join('\n');
 }
 
+const COMMANDS = ['/mystats', '/team', '/top', '/link', '/help', '/earnings', '/unlink'];
+
 export async function POST(req) {
   const secret = req.headers.get('x-telegram-bot-api-secret-token');
   if (secret !== process.env.CRON_SECRET) return Response.json({ ok: true });
@@ -169,12 +219,15 @@ export async function POST(req) {
           '1. Go to <b>nitro.ng/m/settings</b>',
           '2. Click <b>Link Telegram</b>',
           '3. Send the code here: <code>/start YOUR_CODE</code>',
+          '',
+          'Type /help to see all commands.',
         ].join('\n'));
         return Response.json({ ok: true });
       }
 
       const member = await prisma.crewMember.findFirst({
         where: { telegramLinkCode: code.toUpperCase(), status: 'approved' },
+        include: { lead: { select: { name: true, telegramUserId: true } } },
       });
       if (!member) {
         await sendDM(chatId, 'Invalid or expired code. Generate a new one at nitro.ng/m/settings.');
@@ -185,14 +238,31 @@ export async function POST(req) {
         where: { id: member.id },
         data: { telegramUserId: userId, telegramLinkCode: null },
       });
-      await sendDM(chatId, `✅ Linked as <b>${member.name}</b>! You'll now receive updates in the crew group.`);
+      await sendDM(chatId, `✅ Linked as <b>${member.name}</b>!\n\nType /help to see what I can do.`);
+
+      const teamName = member.lead?.name || member.name;
+      crewWelcome(member.name, teamName);
+
+      if (member.lead?.telegramUserId) {
+        crewDmChiefNewLink(member.lead.telegramUserId, member.name);
+      }
+
+      return Response.json({ ok: true });
+    }
+
+    // /help — no account needed
+    if (command === '/help') {
+      if (isGroup) {
+        replyInGroup(chatId, msg.message_id, 'Check your DMs 📩');
+        await sendDM(userId, HELP_TEXT);
+      } else {
+        await sendDM(chatId, HELP_TEXT);
+      }
       return Response.json({ ok: true });
     }
 
     // All other commands require a linked account
-    if (!['/mystats', '/team', '/top', '/link'].includes(command)) {
-      return Response.json({ ok: true });
-    }
+    if (!COMMANDS.includes(command)) return Response.json({ ok: true });
 
     const member = await prisma.crewMember.findFirst({
       where: { telegramUserId: userId, status: 'approved' },
@@ -204,8 +274,21 @@ export async function POST(req) {
       return Response.json({ ok: true });
     }
 
+    // /unlink
+    if (command === '/unlink') {
+      await prisma.crewMember.update({
+        where: { id: member.id },
+        data: { telegramUserId: null },
+      });
+      const reply = '🔓 Telegram unlinked. Re-link anytime at nitro.ng/m/settings.';
+      if (isGroup) replyInGroup(chatId, msg.message_id, reply);
+      else await sendDM(chatId, reply);
+      return Response.json({ ok: true });
+    }
+
     let response;
     if (command === '/mystats') response = await handleMyStats(member);
+    else if (command === '/earnings') response = await handleEarnings(member);
     else if (command === '/team') response = await handleTeam(member);
     else if (command === '/top') response = await handleTop();
     else if (command === '/link') response = await handleLink(member);
