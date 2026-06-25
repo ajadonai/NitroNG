@@ -176,6 +176,23 @@ export async function POST(req) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
 
+    if (action === 'edit') {
+      if (!canPerformAction(admin, 'users.edit')) return Response.json({ error: 'Not authorized to edit users' }, { status: 403 });
+      const updates = {};
+      if (body.name !== undefined && body.name.trim()) updates.name = body.name.trim();
+      if (body.email !== undefined && body.email.trim()) {
+        const existing = await prisma.user.findFirst({ where: { email: body.email.trim(), id: { not: userId } } });
+        if (existing) return Response.json({ error: 'Email already in use' }, { status: 409 });
+        updates.email = body.email.trim();
+      }
+      if (body.phone !== undefined) updates.phone = body.phone.trim() || null;
+      if (!Object.keys(updates).length) return Response.json({ error: 'Nothing to update' }, { status: 400 });
+      await prisma.user.update({ where: { id: userId }, data: updates });
+      const changes = Object.entries(updates).map(([k, v]) => `${k}: ${v || '(cleared)'}`).join(', ');
+      await logActivity(admin.name, `Edited ${user.name}: ${changes}`, 'user');
+      return Response.json({ success: true, message: `Updated ${Object.keys(updates).join(', ')}`, updates });
+    }
+
     if (action === 'credit') {
       if (!canPerformAction(admin, 'users.adjustBalance')) return Response.json({ error: 'Not authorized to adjust balances' }, { status: 403 });
       const amountKobo = Math.round(Number(amount) * 100);
