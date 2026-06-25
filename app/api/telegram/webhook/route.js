@@ -112,13 +112,17 @@ export async function POST(req) {
   }
 
   const cb = update.callback_query;
-  if (!cb?.data || !cb.message) return Response.json({ ok: true });
+  if (!cb?.data || !cb.message) {
+    return Response.json({ ok: true });
+  }
 
   const chatId = cb.message.chat?.id || cb.message.sender_chat?.id;
-  if (String(chatId) !== process.env.TG_CHAT_ID) return Response.json({ ok: true });
+  if (String(chatId) !== process.env.TG_CHAT_ID) {
+    return Response.json({ ok: true });
+  }
 
   if (!ADMIN_TG_IDS.includes(String(cb.from?.id))) {
-    tgAnswerCallback(cb.id, 'Not authorised');
+    await tgAnswerCallback(cb.id, 'Not authorised');
     return Response.json({ ok: true });
   }
 
@@ -128,15 +132,15 @@ export async function POST(req) {
   try {
     const tx = await prisma.transaction.findUnique({ where: { id: txId } });
     if (!tx || tx.method !== 'manual') {
-      tgAnswerCallback(cb.id, 'Transaction not found');
+      await tgAnswerCallback(cb.id, 'Transaction not found');
       return Response.json({ ok: true });
     }
     if (tx.status !== 'Pending') {
       const label = tx.status === 'Completed' ? '✅ Already approved' : tx.status === 'Rejected' ? '❌ Already rejected' : `⚪ Already ${tx.status.toLowerCase()}`;
       const via = tx.note?.match(/\[(approved|rejected)_by:([^\]]*)\]/);
       const byWho = via ? ` by ${via[2]}` : '';
-      tgAnswerCallback(cb.id, `${label}${byWho}`);
-      tgEditMessage(cb.message.message_id, cb.message.text + `\n\n${label}${byWho}`);
+      await tgAnswerCallback(cb.id, `${label}${byWho}`);
+      await tgEditMessage(cb.message.message_id, cb.message.text + `\n\n${label}${byWho}`);
       return Response.json({ ok: true });
     }
 
@@ -188,8 +192,8 @@ export async function POST(req) {
         data: { adminName: 'Telegram', action: `Approved manual deposit ₦${(tx.amount / 100).toLocaleString()} for ${name}`, type: 'payment' },
       });
 
-      tgAnswerCallback(cb.id, `Approved ₦${(tx.amount / 100).toLocaleString()}`);
-      tgEditMessage(cb.message.message_id, cb.message.text + `\n\n✅ <b>Approved</b> via Telegram`);
+      await tgAnswerCallback(cb.id, `Approved ₦${(tx.amount / 100).toLocaleString()}`);
+      await tgEditMessage(cb.message.message_id, cb.message.text + `\n\n✅ <b>Approved</b> via Telegram`);
       tgPayment(name, tx.amount, 0, 'Manual', 'Telegram');
       log.info('TG Webhook', `Approved manual deposit ${txId} for ${name}`);
 
@@ -203,13 +207,13 @@ export async function POST(req) {
         data: { adminName: 'Telegram', action: `Rejected manual deposit ₦${(tx.amount / 100).toLocaleString()} for ${name}`, type: 'payment' },
       });
 
-      tgAnswerCallback(cb.id, 'Rejected');
-      tgEditMessage(cb.message.message_id, cb.message.text + `\n\n❌ <b>Rejected</b> via Telegram`);
+      await tgAnswerCallback(cb.id, 'Rejected');
+      await tgEditMessage(cb.message.message_id, cb.message.text + `\n\n❌ <b>Rejected</b> via Telegram`);
       log.info('TG Webhook', `Rejected manual deposit ${txId} for ${name}`);
     }
   } catch (err) {
     log.error('TG Webhook', err.message);
-    tgAnswerCallback(cb.id, 'Error — check admin panel');
+    await tgAnswerCallback(cb.id, 'Error — check admin panel');
   }
 
   return Response.json({ ok: true });
