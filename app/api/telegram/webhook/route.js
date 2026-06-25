@@ -132,12 +132,7 @@ export async function POST(req) {
   try {
     const tx = await prisma.transaction.findUnique({ where: { id: txId } });
     if (!tx || tx.method !== 'manual') {
-      const r = await fetch(`${API}/answerCallbackQuery`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ callback_query_id: cb.id, text: 'Transaction not found' }),
-      });
-      reply(process.env.TG_CHAT_ID, 229, `🔴 answerCB result: ${r.status} ${await r.text()}`);
+      await tgAnswerCallback(cb.id, 'Transaction not found');
       return Response.json({ ok: true });
     }
     if (tx.status !== 'Pending') {
