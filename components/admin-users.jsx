@@ -383,7 +383,9 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
 
   const openMenu = (e, user) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    const menuH = 200;
+    const flipped = rect.bottom + menuH > window.innerHeight;
+    setMenuPos({ ...(flipped ? { bottom: window.innerHeight - rect.top + 4 } : { top: rect.bottom + 4 }), right: window.innerWidth - rect.right });
     setMenuUser(user);
   };
 
@@ -643,7 +645,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
 
       {/* ── Overflow menu ───────────────────────── */}
       {menuUser && menuPos && (
-        <div ref={menuRef} className="fixed z-[1000] rounded-xl py-1.5 shadow-lg" style={{ top: menuPos.top, right: menuPos.right, width: 150, background: dark ? '#1a1e2e' : '#fff', border: `1px solid ${t.cardBorder}` }}>
+        <div ref={menuRef} className="fixed z-[1000] rounded-xl py-1.5 shadow-lg" style={{ ...(menuPos.top != null ? { top: menuPos.top } : { bottom: menuPos.bottom }), right: menuPos.right, width: 150, background: dark ? '#1a1e2e' : '#fff', border: `1px solid ${t.cardBorder}` }}>
           {[
             { label: 'View profile', action: () => openDrawer(menuUser) },
             { label: 'Credit wallet', action: () => openDrawer(menuUser, true) },
@@ -680,9 +682,8 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
             <div className="p-6 pb-4">
               {editing ? (
                 <div className="mb-4 space-y-2.5">
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="mb-1">
                     <span className="text-[12px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.accent }}>Edit Profile</span>
-                    <button onClick={() => setEditing(false)} className="text-[12px] font-medium cursor-pointer border-none bg-transparent" style={{ color: t.textMuted }}>Cancel</button>
                   </div>
                   {[['name', 'Name'], ['email', 'Email'], ['phone', 'Phone']].map(([key, label]) => (
                     <div key={key}>
@@ -690,7 +691,10 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
                       <input type={key === 'email' ? 'email' : 'text'} value={editForm[key]} onChange={e => setEditForm(f => ({ ...f, [key]: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none font-[inherit]" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.06)' : '#fff', color: t.text }} />
                     </div>
                   ))}
-                  <button onClick={saveEdit} disabled={actionLoading} className="w-full py-2.5 rounded-lg text-[13px] font-semibold cursor-pointer font-[inherit] border-none" style={{ background: accentGrad, color: '#fff', opacity: actionLoading ? .5 : 1 }}>{actionLoading ? 'Saving...' : 'Save Changes'}</button>
+                  <div className="flex gap-2">
+                    <button onClick={() => setEditing(false)} className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold cursor-pointer font-[inherit]" style={{ border: `1px solid ${t.cardBorder}`, background: 'transparent', color: t.textMuted }}>Cancel</button>
+                    <button onClick={saveEdit} disabled={actionLoading} className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold cursor-pointer font-[inherit] border-none" style={{ background: accentGrad, color: '#fff', opacity: actionLoading ? .5 : 1 }}>{actionLoading ? 'Saving...' : 'Save Changes'}</button>
+                  </div>
                 </div>
               ) : (
               <div className="flex items-center gap-3 mb-4">
