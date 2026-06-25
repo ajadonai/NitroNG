@@ -129,15 +129,23 @@ export async function GET(req) {
           stats.dispatchFailed++;
         }
       } catch (err) {
-        log.error('Drip dispatch', `${order.orderId} batch ${dispatch.batch}: ${err.message}`);
+        const msg = err.message || '';
+        const retryable = /active order|wait until order/i.test(msg);
+
+        log.error('Drip dispatch', `${order.orderId} batch ${dispatch.batch}: ${msg}${retryable ? ' (will retry)' : ''}`);
         await prisma.dripDispatch.update({
           where: { id: dispatch.id },
-          data: { status: 'failed', lastError: err.message.slice(0, 450) },
+          data: retryable
+            ? { status: 'pending', lastError: null, dispatchedAt: null }
+            : { status: 'failed', lastError: msg.slice(0, 450) },
         });
-        prisma.adminIssue.create({
-          data: { type: 'ghost_dispatch', title: `${order.orderId} batch ${dispatch.batch}: dispatch failed`, message: `Provider request failed. Check provider dashboard before re-dispatching.\nLink: ${order.link}\nError: ${err.message.slice(0, 200)}`, metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, day: dispatch.day, link: order.link }) },
-        }).catch(() => {});
-        tgDripTimeout(order.orderId, dispatch.batch);
+
+        if (!retryable) {
+          prisma.adminIssue.create({
+            data: { type: 'ghost_dispatch', title: `${order.orderId} batch ${dispatch.batch}: dispatch failed`, message: `Provider request failed. Check provider dashboard before re-dispatching.\nLink: ${order.link}\nError: ${msg.slice(0, 200)}`, metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, day: dispatch.day, link: order.link }) },
+          }).catch(() => {});
+          tgDripTimeout(order.orderId, dispatch.batch);
+        }
         stats.dispatchFailed++;
       }
     }
