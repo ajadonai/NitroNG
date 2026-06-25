@@ -725,4 +725,173 @@ Users referred by Pit Crew members participate normally in all reward systems: p
 
 ---
 
+## 13. Team Competition
+
+Teams are organic: each Crew Chief's squad (the Chief + their Pit Crew members) is a team. Competition runs on a weekly cycle with monthly rollups.
+
+### Scoring
+
+All competition metrics are **counts only** — no naira figures are ever shown in the group or leaderboard.
+
+| Metric | What counts |
+| --- | --- |
+| Referral orders | Completed orders from users attributed to any team member |
+| New signups | Users who registered via any team member's link |
+| First purchases | Referred users who place their first-ever order |
+| Repeat buyers | Referred users who place their 5th, 10th, 20th order |
+
+### Competition Cycle
+
+| Period | What happens |
+| --- | --- |
+| **Weekly** | Scoreboard resets every Monday 00:00 WAT. End-of-week winner announced Sunday night. |
+| **Monthly** | Monthly champion = team with most weekly wins that month. Tiebreaker: total referral order count. |
+
+### Lead Changes
+
+Tracked in real time. When Team B overtakes Team A's weekly order count, a lead-change alert fires in the group. Alerts are throttled to max 1 per hour per team pair to avoid spam.
+
+### Team Bonuses
+
+Winning teams receive a bonus at the end of each competition period. Bonus structure is configured by Trip in admin settings and can change per period.
+
+| Setting | Default | Notes |
+| --- | --- | --- |
+| `competition_weekly_bonus` | TBD | Bonus pool for the weekly winning team |
+| `competition_monthly_bonus` | TBD | Bonus pool for the monthly champion team |
+| `competition_bonus_split` | `equal` | How the pool is divided: `equal` (split evenly among team members) or `weighted` (proportional to each member's contribution) |
+| `competition_enabled` | `true` | Master toggle |
+
+Bonus is credited to each qualifying member's affiliate balance as a `bonus` commission entry (separate from order commissions, still subject to minimum payout threshold).
+
+**MVP Bonus:** An individual MVP bonus can optionally be awarded to the top-performing individual across all teams each week. Configured via `competition_mvp_bonus` (default: off).
+
+---
+
+## 14. Telegram Crew Bot
+
+A dedicated Telegram bot for the crew group. Group-based, transparent activity feed, competitive energy. No money figures — counts and names only.
+
+### Bot Requirements
+
+- Separate bot from the admin notification bot (different token, different group)
+- Each crew member links their Telegram user ID to their `/m/` account (settings page or onboarding)
+- Bot posts automated messages to specific group topics
+- Slash commands respond privately via DM (bot must have been /started by the user first)
+
+### Group Topics (5)
+
+**Topic 1: Activity Feed** (automated, high volume)
+- New signup from a crew member's referral: "A referral from **@Member** just signed up"
+- Referral's first purchase: "A referral from **@Member** just made their first purchase"
+- Repeat buyer milestones: "A referral from **@Member** just placed their 10th order"
+- Lead change alerts: "**Team [ChiefName]** just took the lead this week — 34 orders vs **Team [ChiefName]**'s 31"
+
+**Topic 2: Leaderboard** (automated, scheduled)
+- Daily morning recap (9:00 WAT): yesterday's order counts per team, current weekly standings, top 3 individuals
+- Weekly scoreboard (Sunday 22:00 WAT): final team rankings, individual top 5, total crew impact (order count + signup count)
+- Monthly wrap-up (1st of month): winning team, MVPs, all-time records broken
+
+**Topic 3: Wins** (automated, low volume)
+- Weekly team winner announcement
+- MVP of the week (per team + overall)
+- First blood: first referral conversion of the day
+- Streak callouts: "**@Member** has had referral orders every day for 7 days straight"
+- Milestone callouts: "**@Member** just hit 50 total referral orders"
+- Monthly champion announcement
+- Bonus/reward payout confirmations
+
+**Topic 4: Announcements** (admin-only, manual)
+- New challenges or sprint competitions
+- Bonus structure changes
+- New crew member welcome: "Welcome **@NewMember** to **Team [ChiefName]**"
+- Rule changes, platform updates
+- X Premium renewal reminders
+
+**Topic 5: General** (open chat)
+- Crew discussion, tips, strategy, banter
+- No bot posts here
+
+### Slash Commands
+
+All commands check the sender's Telegram ID against linked crew accounts. If sent in the group, the bot replies "Check your DMs" in the group and sends the full response privately.
+
+| Command | Response (DM) |
+| --- | --- |
+| `/mystats` | Your signups, conversions, current streak, rank this week, all-time rank |
+| `/team` | Your team's current standing vs other teams (order count, signup count, rank) |
+| `/top` | This week's full leaderboard — all teams ranked with individual top 3 per team |
+| `/link` | Your assigned referral link(s), ready to copy |
+| `/start` | Initial bot greeting + instructions (required before bot can DM the user) |
+
+### Integration Points
+
+- **Commission cron** (`cron/orders`): when an order completes and generates commission, also fire the Activity Feed notification via the crew bot
+- **Crew member model**: add `telegramUserId` field to `CrewMember` schema for DM delivery
+- **Admin settings**: `crew_bot_token`, `crew_group_id`, topic IDs stored as settings
+- **Webhook route**: separate route at `/api/telegram/crew-webhook` for the crew bot, handles slash commands
+
+### What Is Never Shown in the Group
+
+- Order amounts, charges, or revenue figures
+- Commission amounts or earnings
+- User emails, full names, or personal details
+- Service types or links ordered
+- Provider information
+
+---
+
+## A.16 · Crew Bot — System Integration
+
+### Schema Addition
+
+```
+CrewMember {
+  ...existing fields
+  telegramUserId  String?  // linked TG user ID for DM delivery
+}
+```
+
+### Settings Keys
+
+```
+crew_bot_token
+crew_bot_group_id
+crew_bot_topic_activity     // topic ID for Activity Feed
+crew_bot_topic_leaderboard  // topic ID for Leaderboard
+crew_bot_topic_wins         // topic ID for Wins
+crew_bot_topic_announcements // topic ID for Announcements
+competition_enabled
+competition_weekly_bonus
+competition_monthly_bonus
+competition_bonus_split
+competition_mvp_bonus
+```
+
+### Cron Jobs
+
+**`cron/crew-digest` — daily morning recap (9:00 WAT)**
+- Query yesterday's referral orders and signups per team
+- Post leaderboard to the Leaderboard topic
+
+**`cron/crew-weekly` — weekly wrap-up (Sunday 22:00 WAT)**
+- Final weekly standings, winner announcement
+- Credit bonus to winning team members
+- Reset weekly counters
+- Post to Wins + Leaderboard topics
+
+**`cron/crew-monthly` — monthly wrap-up (1st of month)**
+- Monthly champion, MVPs, records
+- Credit monthly bonus
+- Post to Wins + Leaderboard topics
+
+### Webhook Route
+
+`/api/telegram/crew-webhook` — handles:
+- Slash commands from group or DM
+- Validates sender's `telegramUserId` against `CrewMember` records
+- Group commands: reply "Check your DMs" in group, send full response via `sendMessage` to user's chat ID
+
+---
+
 *NITRO.NG · Confidential Internal Document · Do Not Distribute*

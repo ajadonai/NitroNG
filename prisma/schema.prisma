@@ -721,6 +721,8 @@ model CrewMember {
   commissionRate   Int      @default(5) // current rate %
   totalEarned      Int      @default(0) // kobo
   totalPaid        Int      @default(0) // kobo
+  telegramUserId   String?
+  telegramLinkCode String?
   leadId           String?
   inviteToken      String?  @unique
   inviteExpiresAt  DateTime?
