@@ -69,7 +69,7 @@ function ShellInner({ children, member }) {
       <aside className="crew-sidebar" style={{ background: t.sidebarBg, borderRight: `1px solid ${t.surfaceBrd}`, backdropFilter: "blur(16px)" }}>
         <div className="px-2 pb-[18px] pt-1">
           <div className="sidebar-text">
-            <NitroWordmark height={16} color={t.text} />
+            <span className="h-7 px-3 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span>
             <span className="inline-block text-[9.5px] font-semibold tracking-[1.5px] uppercase py-[2px] px-[7px] rounded-md mt-[5px]" style={{ color: t.accent, background: t.accentLight }}>Pit Crew</span>
           </div>
         </div>
