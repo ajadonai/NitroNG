@@ -11,23 +11,23 @@ const API = `https://api.telegram.org/bot${TOKEN}`;
 
 function naira(kobo) { return `₦${(kobo / 100).toLocaleString()}`; }
 
-function reply(chatId, text) {
+function reply(chatId, threadId, text) {
   if (!TOKEN) return;
   fetch(`${API}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML', disable_web_page_preview: true }),
+    body: JSON.stringify({ chat_id: chatId, ...(threadId ? { message_thread_id: threadId } : {}), text, parse_mode: 'HTML', disable_web_page_preview: true }),
   }).catch(() => {});
 }
 
-async function handleOrders(chatId) {
+async function handleOrders(chatId, threadId) {
   const today = new Date(); today.setUTCHours(0, 0, 0, 0);
   const [todayCount, processing, pending] = await Promise.all([
     prisma.order.count({ where: { createdAt: { gte: today }, deletedAt: null } }),
     prisma.order.count({ where: { status: 'Processing', deletedAt: null } }),
     prisma.order.count({ where: { status: 'Pending', deletedAt: null } }),
   ]);
-  reply(chatId, [
+  reply(chatId, threadId, [
     '📦 <b>Orders</b>',
     `  Today: <b>${todayCount}</b>`,
     `  Processing: <b>${processing}</b>`,
@@ -35,32 +35,32 @@ async function handleOrders(chatId) {
   ].join('\n'));
 }
 
-async function handleRevenue(chatId) {
+async function handleRevenue(chatId, threadId) {
   const today = new Date(); today.setUTCHours(0, 0, 0, 0);
   const [todayTx, allTimeTx] = await Promise.all([
     prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: today } }, _sum: { amount: true }, _count: true }),
     prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed' }, _sum: { amount: true } }),
   ]);
-  reply(chatId, [
+  reply(chatId, threadId, [
     '💰 <b>Revenue</b>',
     `  Today: <b>${naira(todayTx._sum.amount || 0)}</b> (${todayTx._count} deposits)`,
     `  All time: <b>${naira(allTimeTx._sum.amount || 0)}</b>`,
   ].join('\n'));
 }
 
-async function handlePending(chatId) {
+async function handlePending(chatId, threadId) {
   const pending = await prisma.transaction.findMany({
     where: { method: 'manual', status: 'Pending' },
     orderBy: { createdAt: 'desc' },
     take: 10,
     include: { user: { select: { name: true } } },
   });
-  if (!pending.length) { reply(chatId, '💳 No pending manual deposits.'); return; }
+  if (!pending.length) { reply(chatId, threadId, '💳 No pending manual deposits.'); return; }
   const lines = pending.map(tx => `  ${tx.user?.name || 'Unknown'} — <b>${naira(tx.amount)}</b>`);
-  reply(chatId, ['💳 <b>Pending Manual Deposits</b>', '', ...lines].join('\n'));
+  reply(chatId, threadId, ['💳 <b>Pending Manual Deposits</b>', '', ...lines].join('\n'));
 }
 
-async function handleStats(chatId) {
+async function handleStats(chatId, threadId) {
   const today = new Date(); today.setUTCHours(0, 0, 0, 0);
   const [users, todayUsers, orders, todayOrders, revenue] = await Promise.all([
     prisma.user.count(),
@@ -69,7 +69,7 @@ async function handleStats(chatId) {
     prisma.order.count({ where: { createdAt: { gte: today }, deletedAt: null } }),
     prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: today } }, _sum: { amount: true } }),
   ]);
-  reply(chatId, [
+  reply(chatId, threadId, [
     '📊 <b>Quick Stats</b>',
     `  Users: <b>${users.toLocaleString()}</b> (+${todayUsers} today)`,
     `  Orders: <b>${orders.toLocaleString()}</b> (+${todayOrders} today)`,
@@ -90,13 +90,14 @@ export async function POST(req) {
 
     const command = msg.text.trim().split(/[\s@]/)[0].toLowerCase();
     const chatId = msg.chat.id;
+    const threadId = msg.message_thread_id;
 
-    if (command === '/orders') await handleOrders(chatId);
-    else if (command === '/revenue') await handleRevenue(chatId);
-    else if (command === '/pending') await handlePending(chatId);
-    else if (command === '/stats') await handleStats(chatId);
+    if (command === '/orders') await handleOrders(chatId, threadId);
+    else if (command === '/revenue') await handleRevenue(chatId, threadId);
+    else if (command === '/pending') await handlePending(chatId, threadId);
+    else if (command === '/stats') await handleStats(chatId, threadId);
     else if (command === '/help') {
-      reply(chatId, [
+      reply(chatId, threadId, [
         '🔭 <b>WatchTower Commands</b>',
         '',
         '/orders — Today\'s order counts',
