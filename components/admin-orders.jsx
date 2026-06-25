@@ -552,7 +552,7 @@ export default function AdminOrdersPage({ dark, t }) {
                               </div>
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Provider</div>
-                                <div className="m text-[13px] font-bold" style={{ color: t.text }}>{(o.provider || "mtp").toUpperCase()}</div>
+                                <div className="m text-[13px] font-bold" style={{ color: t.text }}>{{ mtp: "MTP", daosmm: "DaoSMM" }[o.provider] || (o.provider || "mtp").toUpperCase()}</div>
                               </div>
                               {o.serviceApiId && <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Service ID</div>
@@ -710,7 +710,7 @@ export default function AdminOrdersPage({ dark, t }) {
                     </div>
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Provider</div>
-                      <div className="m text-sm font-bold" style={{ color: t.text }}>{(o.provider || "mtp").toUpperCase()}</div>
+                      <div className="m text-sm font-bold" style={{ color: t.text }}>{{ mtp: "MTP", daosmm: "DaoSMM" }[o.provider] || (o.provider || "mtp").toUpperCase()}</div>
                     </div>
                     {o.serviceApiId && <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Service ID</div>
