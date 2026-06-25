@@ -129,27 +129,16 @@ export async function GET(req) {
           stats.dispatchFailed++;
         }
       } catch (err) {
-        const isTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(err.message);
-
-        if (isTimeout) {
-          tgDripTimeout(order.orderId, dispatch.batch);
-          log.warn('Drip dispatch', `${order.orderId} batch ${dispatch.batch}: timeout — marked failed for manual check`);
-          await prisma.dripDispatch.update({
-            where: { id: dispatch.id },
-            data: { status: 'failed', lastError: '[TIMEOUT] ' + err.message.slice(0, 450) },
-          });
-          prisma.adminIssue.create({
-            data: { type: 'ghost_dispatch', title: `${order.orderId} batch ${dispatch.batch}: dispatch timed out`, message: `Provider request timed out. Check provider dashboard before re-dispatching.\nLink: ${order.link}`, metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, day: dispatch.day, link: order.link }) },
-          }).catch(() => {});
-          stats.dispatchFailed++;
-        } else {
-          log.error('Drip dispatch', `${order.orderId} batch ${dispatch.batch}: ${err.message}`);
-          await prisma.dripDispatch.update({
-            where: { id: dispatch.id },
-            data: { status: 'pending', lastError: err.message.slice(0, 500), dispatchedAt: null },
-          });
-          stats.dispatchFailed++;
-        }
+        log.error('Drip dispatch', `${order.orderId} batch ${dispatch.batch}: ${err.message}`);
+        await prisma.dripDispatch.update({
+          where: { id: dispatch.id },
+          data: { status: 'failed', lastError: err.message.slice(0, 450) },
+        });
+        prisma.adminIssue.create({
+          data: { type: 'ghost_dispatch', title: `${order.orderId} batch ${dispatch.batch}: dispatch failed`, message: `Provider request failed. Check provider dashboard before re-dispatching.\nLink: ${order.link}\nError: ${err.message.slice(0, 200)}`, metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, day: dispatch.day, link: order.link }) },
+        }).catch(() => {});
+        tgDripTimeout(order.orderId, dispatch.batch);
+        stats.dispatchFailed++;
       }
     }
 
