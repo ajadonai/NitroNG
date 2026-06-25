@@ -667,6 +667,7 @@ export async function POST(req) {
     const DAILY_CAP = { followers: 5000, likes: 10000, views: 75000, plays: 75000, comments: 1000, reviews: 100, engagement: 15000 };
     const MIN_DAYS_FLOOR = { followers: 3, views: 1, plays: 1, likes: 2, comments: 3, reviews: 3, engagement: 2 };
     const groupType = (tier?.group?.type || "").toLowerCase();
+    const platform = (service.category || '').toLowerCase();
     const dailyCap = DAILY_CAP[groupType] || 15000;
     const daysFloor = MIN_DAYS_FLOOR[groupType] || 3;
     const maxDripDays = qty <= 5000 ? 5 : qty <= 10000 ? 7 : qty <= 25000 ? 12 : qty <= 50000 ? 18 : qty <= 100000 ? 25 : 30;
