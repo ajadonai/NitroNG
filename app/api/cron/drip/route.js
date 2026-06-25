@@ -144,7 +144,7 @@ export async function GET(req) {
           prisma.adminIssue.create({
             data: { type: 'ghost_dispatch', title: `${order.orderId} batch ${dispatch.batch}: dispatch failed`, message: `Provider request failed. Check provider dashboard before re-dispatching.\nLink: ${order.link}\nError: ${msg.slice(0, 200)}`, metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, day: dispatch.day, link: order.link }) },
           }).catch(() => {});
-          tgDripTimeout(order.orderId, dispatch.batch, null, dispatch.apiOrderId, service.provider);
+          tgDripTimeout(order.orderId, dispatch.batch, null, dispatch.apiOrderId, order.service?.provider);
         }
         stats.dispatchFailed++;
       }
