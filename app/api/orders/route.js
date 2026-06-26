@@ -9,6 +9,7 @@ import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig } from '@/l
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
 import { tgNewOrder } from '@/lib/telegram';
+import { voidCommissions } from '@/lib/commissions';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -188,6 +189,7 @@ export async function PATCH(req) {
         return true;
       });
       if (!refunded) return Response.json({ error: 'Order already sent to provider' }, { status: 409 });
+      voidCommissions(order.id, 'user_cancelled').catch(() => {});
       return Response.json({ success: true, status: 'Cancelled', refunded: order.charge / 100 });
     }
 

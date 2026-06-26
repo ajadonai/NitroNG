@@ -54,11 +54,22 @@ export async function POST(req) {
     const { action, memberId, ...body } = await req.json();
 
     if (action === "approve") {
+      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
       await prisma.crewMember.update({
         where: { id: memberId },
         data: { status: "approved", approvedAt: new Date() },
       });
-      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
+
+      const hasLink = await prisma.acquisitionLink.findFirst({ where: { affiliateId: memberId } });
+      if (!hasLink) {
+        let slug = (m?.name || 'crew').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const taken = await prisma.acquisitionLink.findUnique({ where: { slug } });
+        if (taken) slug = `${slug}-${Date.now().toString(36).slice(-4)}`;
+        await prisma.acquisitionLink.create({
+          data: { name: `${m?.name || 'Crew'}'s link`, slug, affiliateId: memberId },
+        });
+      }
+
       await logActivity(admin.name, `Approved crew member: ${m?.name || memberId}`);
       return Response.json({ ok: true });
     }

@@ -3,6 +3,7 @@ import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canSeeSensitive, maskEmail, maskPhone } from '@/lib/admin';
 import { sendEmail, walletCreditEmail } from '@/lib/email';
 import { checkOrder, cancelOrder, refillOrder, isProviderConfigured, getProviderName } from '@/lib/smm';
+import { voidCommissions } from '@/lib/commissions';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('orders');
@@ -143,6 +144,8 @@ export async function POST(req) {
         return { ok: true, refundAmount };
       });
       if (!result.ok) return Response.json({ error: 'Order already cancelled' }, { status: 409 });
+
+      voidCommissions(order.id, 'admin_cancelled').catch(() => {});
 
       if (result.refundAmount > 0) {
         try {

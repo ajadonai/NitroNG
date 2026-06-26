@@ -6,6 +6,7 @@ import { checkOrder } from '@/lib/smm';
 import { sendEmail, emailWrap, batchCompletionEmail, emailRow, emailDataBox, emailCTA } from '@/lib/email';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { tgRefund, tgOrderCancelled } from '@/lib/telegram';
+import { createCommission, voidCommissions } from '@/lib/commissions';
 
 // Polls provider APIs for order status updates
 // Auto-refunds failed/cancelled orders
@@ -145,7 +146,7 @@ export async function GET(req) {
             stats.updated++;
             stats.refunded++;
             tgOrderCancelled(order.orderId, order.charge, providerError || 'provider_cancelled');
-            // Fire-and-forget email (non-critical)
+            voidCommissions(order.id, 'order_cancelled').catch(() => {});
             refundOrder(order, null, true).catch(() => {});
           } else if (newStatus === 'Partial' && result.remains) {
             const remains = Number(result.remains) || 0;
@@ -181,6 +182,11 @@ export async function GET(req) {
               stats.refunded++;
               refundOrder(order, refundAmount, true).catch(() => {});
             }
+            const delivered = order.quantity - (Number(result.remains) || 0);
+            if (delivered > 0) {
+              const partialCharge = Math.round((delivered / order.quantity) * order.charge);
+              createCommission(order.id, order.userId, partialCharge).catch(() => {});
+            }
           } else {
             await prisma.order.update({
               where: { id: order.id },
@@ -192,6 +198,9 @@ export async function GET(req) {
               },
             });
             stats.updated++;
+            if (newStatus === 'Completed') {
+              createCommission(order.id, order.userId, order.charge).catch(() => {});
+            }
           }
 
         } catch (err) {
@@ -368,6 +377,7 @@ export async function GET(req) {
           });
           stats.autoRefunded++;
           tgRefund(order.orderId, order.charge, 'dispatch_failed');
+          voidCommissions(order.id, 'dispatch_failed').catch(() => {});
           if (order.charge >= 5000) await refundOrder(order, null, true);
         } catch (err) {
           log.warn(`Auto-refund ${order.orderId}`, err.message);
