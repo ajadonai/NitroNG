@@ -23,7 +23,17 @@ function timeAgo(iso) {
 
 function pageName(path) {
   if (path === '/') return 'Landing Page';
-  if (path === '/dashboard') return 'Dashboard';
+  if (path === '/dashboard') return 'Dashboard Home';
+  if (path === '/dashboard/orders') return 'My Orders';
+  if (path === '/dashboard/addfunds') return 'Adding Funds';
+  if (path === '/dashboard/settings') return 'Settings';
+  if (path === '/dashboard/support') return 'Support';
+  if (path === '/dashboard/referrals') return 'Referrals';
+  if (path === '/dashboard/guide') return 'Guide';
+  if (path === '/dashboard/leaderboard') return 'Leaderboard';
+  if (path === '/dashboard/earn') return 'Earn';
+  if (path === '/dashboard/notifications') return 'Notifications';
+  if (path.startsWith('/dashboard/')) return 'Dashboard: ' + path.split('/').pop();
   if (path === '/login') return 'Login';
   if (path === '/signup') return 'Signup';
   if (path === '/deposit') return 'Deposit';
@@ -46,11 +56,13 @@ function pageName(path) {
 }
 
 function pageIntent(path) {
-  if (path === '/deposit') return { label: 'Depositing', color: '#22c55e' };
+  if (path === '/deposit' || path === '/dashboard/addfunds') return { label: 'Depositing', color: '#22c55e' };
   if (path === '/signup') return { label: 'Signing Up', color: '#c47d8e' };
   if (path === '/login') return { label: 'Logging In', color: '#a5b4fc' };
   if (path.startsWith('/services/')) return { label: 'Shopping', color: '#f59e0b' };
   if (path === '/services' || path === '/pricing') return { label: 'Browsing', color: '#f59e0b' };
+  if (path === '/dashboard/orders') return { label: 'Checking Orders', color: '#a5b4fc' };
+  if (path === '/dashboard/support') return { label: 'Needs Help', color: '#ef4444' };
   return null;
 }
 
