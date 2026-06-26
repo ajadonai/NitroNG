@@ -2,7 +2,7 @@ import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 import crypto from 'crypto';
 import { applyWelcomeBonus } from '@/lib/welcome-bonus';
-import { sendEvent } from '@/lib/meta-capi';
+import { trackDeposit } from '@/lib/meta-capi';
 import { tgPayment } from '@/lib/telegram';
 
 const NP_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
@@ -97,7 +97,7 @@ export async function POST(req) {
       try {
         const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true, name: true } });
         if (u) {
-          sendEvent('AddPaymentInfo', { eventId: `apinfo_${order_id}`, email: u.email, externalId: tx.userId, customData: { value: tx.amount / 100, currency: 'NGN' } });
+          trackDeposit({ email: u.email, userId: tx.userId, reference: order_id, amountKobo: tx.amount });
           tgPayment(u.name || u.email, tx.amount, couponBonus || 0, 'Crypto');
         }
       } catch {}
