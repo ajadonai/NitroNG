@@ -5,6 +5,7 @@ import { log } from '@/lib/logger';
 import { getBalance } from '@/lib/smm';
 import { sendEmail, emailWrap, emailRow, emailDataBox, sendNudgeIdleFunds, sendNudgeComeback, sendNudgeLapsed, sendNudgeIdleBalance, sendAdActivationDay1, sendAdActivationDay3, sendAdActivationDay6 } from '@/lib/email';
 import { tgProviderBalance, tgDailySummary } from '@/lib/telegram';
+import { releaseHeldCommissions } from '@/lib/commissions';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -292,6 +293,56 @@ export async function GET(req) {
     results.nudgeIdleBalance = { error: err.message };
   }
 
+  // ═══ COMMISSIONS: release held affiliate commissions past 7-day hold ═══
+  try {
+    const released = await releaseHeldCommissions();
+    results.commissions = { released };
+    if (released > 0) log.info('Commissions', `Released ${released} held commissions`);
+  } catch (err) {
+    log.error('Commissions', err.message);
+    results.commissions = { error: err.message };
+  }
+
+  // ═══ TIER RECALCULATION: promote/demote crew members by active referred users ═══
+  try {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const TIERS = { starter: { rate: 5, min: 0 }, growth: { rate: 7, min: 30 }, pro: { rate: 10, min: 100 } };
+
+    const members = await prisma.crewMember.findMany({
+      where: { status: 'approved' },
+      select: { id: true, tier: true, commissionRate: true, links: { select: { slug: true } } },
+    });
+
+    let tierChanges = 0;
+    for (const m of members) {
+      const slugs = m.links.map(l => l.slug);
+      if (!slugs.length) continue;
+      const activeUsers = await prisma.user.count({
+        where: {
+          signupSource: { in: slugs },
+          deletedAt: null,
+          orders: { some: { createdAt: { gte: thirtyDaysAgo }, status: { not: 'Cancelled' }, deletedAt: null } },
+        },
+      });
+      let newTier = 'starter';
+      if (activeUsers >= TIERS.pro.min) newTier = 'pro';
+      else if (activeUsers >= TIERS.growth.min) newTier = 'growth';
+
+      if (newTier !== m.tier) {
+        await prisma.crewMember.update({
+          where: { id: m.id },
+          data: { tier: newTier, commissionRate: TIERS[newTier].rate },
+        });
+        tierChanges++;
+      }
+    }
+    results.tierRecalc = { checked: members.length, changed: tierChanges };
+    if (tierChanges > 0) log.info('TierRecalc', `${tierChanges} tier changes from ${members.length} members`);
+  } catch (err) {
+    log.error('TierRecalc', err.message);
+    results.tierRecalc = { error: err.message };
+  }
+
   // ═══ BALANCE: check provider balances + alert if low ═══
   try {
     const LOW_BALANCE_USD = 10;
@@ -367,6 +418,8 @@ export async function GET(req) {
   if (totalNudges) summary['Nudge emails sent'] = totalNudges;
   const totalAds = (results.adActivationDay1?.sent || 0) + (results.adActivationDay3?.sent || 0) + (results.adActivationDay6?.sent || 0);
   if (totalAds) summary['Activation emails'] = totalAds;
+  if (results.commissions?.released) summary['Commissions released'] = results.commissions.released;
+  if (results.tierRecalc?.changed) summary['Tier changes'] = results.tierRecalc.changed;
   if (results.balance?.alerts) summary['Low balance alerts'] = results.balance.alerts;
   const bals = results.balance?.balances || {};
   Object.entries(bals).forEach(([k, v]) => { if (v.balance != null) summary[`${k.toUpperCase()} bal`] = `$${v.balance.toFixed(2)}`; });

@@ -442,7 +442,12 @@ Detailed implementation plan exists. Build order: schema → game engine → API
 
 ## Product 4: AI-Powered Support
 
-*Added May 2026*
+*Added May 2026 · expanded June 2026 → see [`docs/OCTANE_PLAN.md`](./OCTANE_PLAN.md) + working demo at `/demo/octane`*
+
+> **"Octane"** is the working name for this agent. The fuller plan (`docs/OCTANE_PLAN.md`) reframes
+> it as a two-customer play: dogfood it as Nitro's own support first, then productize it as an
+> SMM-facing support agent other panel owners can deploy. A runnable, branded demo model lives at
+> `/demo/octane/index.html`. The section below remains the original framing.
 
 ### What it is
 

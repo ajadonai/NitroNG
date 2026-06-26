@@ -19,7 +19,7 @@ export async function POST(req) {
 
     await prisma.crewMember.create({
       data: {
-        role: "chief",
+        role: "crew",
         status: "pending",
         name: name.trim(),
         email: clean,
