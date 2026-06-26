@@ -258,6 +258,7 @@ model Order {
   protected       Boolean  @default(false)
   retryCount      Int      @default(0)
   lastError       String?
+  queuedBehind    String?
   dripDays        Int?
   dripDelivered   Int      @default(0)
   dispatchedAt    DateTime?

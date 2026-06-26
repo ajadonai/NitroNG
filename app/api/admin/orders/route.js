@@ -70,6 +70,7 @@ export async function GET(req) {
         dripDispatches: o.dripDispatches?.length > 0 ? o.dripDispatches.map(d => ({ id: d.id, day: d.day, batch: d.batch, qty: d.quantity, status: d.status, apiOrderId: d.apiOrderId, scheduled: d.scheduledAt?.toISOString(), dispatched: d.dispatchedAt?.toISOString(), completed: d.completedAt?.toISOString(), error: d.lastError })) : null,
         batchId: o.batchId || null,
         lastError: o.lastError || null,
+        queuedBehind: o.queuedBehind || null,
         retryCount: o.retryCount || 0,
         created: o.createdAt.toISOString(),
         serviceType: o.tier?.group?.type || null,
