@@ -252,13 +252,19 @@ export async function GET(req) {
         if (order.link && order.serviceId) {
           const blocking = await prisma.order.findFirst({
             where: { serviceId: order.serviceId, link: order.link, status: { in: ['Pending', 'Processing', 'In progress'] }, apiOrderId: { not: null }, id: { not: order.id }, deletedAt: null },
+            select: { orderId: true },
           });
-          if (blocking) continue;
+          if (blocking) {
+            if (order.queuedBehind !== blocking.orderId) {
+              await prisma.order.update({ where: { id: order.id }, data: { queuedBehind: blocking.orderId } }).catch(() => {});
+            }
+            continue;
+          }
         }
 
         const claimed = await prisma.order.updateMany({
           where: { id: order.id, status: 'Pending', apiOrderId: null },
-          data: { status: 'Dispatching', dispatchedAt: new Date() },
+          data: { status: 'Dispatching', dispatchedAt: new Date(), queuedBehind: null },
         });
         if (claimed.count === 0) continue;
 

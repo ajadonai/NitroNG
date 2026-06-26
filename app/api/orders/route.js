@@ -72,6 +72,7 @@ export async function GET(req) {
         created: o.createdAt.toISOString(),
         serviceType: o.tier?.group?.type || null,
         dripDays: o.dripDays || null,
+        queuedBehind: o.queuedBehind || null,
       })),
     });
   } catch (err) {
@@ -292,6 +293,7 @@ export async function PATCH(req) {
             platformCampaignId: reorderPromoType === 'platform' ? reorderPromoId : null,
             recurringCampaignId: reorderPromoType === 'recurring' ? reorderPromoId : null,
             status: 'Pending', apiOrderId: null,
+            ...(reorderActiveForLink ? { queuedBehind: reorderActiveForLink.orderId } : {}),
             ...(reorderDripSchedule ? { dripDays: 1 } : {}),
           },
         });
@@ -713,6 +715,7 @@ export async function POST(req) {
           recurringCampaignId: activePromoType === 'recurring' ? activePromoId : null,
           status: 'Pending',
           apiOrderId: null,
+          ...(activeForLink ? { queuedBehind: activeForLink.orderId } : {}),
           ...(dripSchedule ? { dripDays: validDripDays || 1 } : {}),
         },
       });
