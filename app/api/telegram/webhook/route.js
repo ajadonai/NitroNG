@@ -38,13 +38,16 @@ async function handleOrders(chatId, threadId) {
 
 async function handleRevenue(chatId, threadId) {
   const today = new Date(); today.setUTCHours(0, 0, 0, 0);
-  const [todayTx, allTimeTx] = await Promise.all([
+  const monthStart = new Date(today); monthStart.setDate(1);
+  const [todayTx, monthTx, allTimeTx] = await Promise.all([
     prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: today } }, _sum: { amount: true }, _count: true }),
+    prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
     prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed' }, _sum: { amount: true } }),
   ]);
   await reply(chatId, threadId, [
     '💰 <b>Revenue</b>',
     `  Today: <b>${naira(todayTx._sum.amount || 0)}</b> (${todayTx._count} deposits)`,
+    `  This month: <b>${naira(monthTx._sum.amount || 0)}</b>`,
     `  All time: <b>${naira(allTimeTx._sum.amount || 0)}</b>`,
   ].join('\n'));
 }
