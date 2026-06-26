@@ -232,6 +232,66 @@ function Detail({ label, value }) {
   );
 }
 
+const BADGES = [
+  { section: 'User Type', items: [
+    { label: 'Hot', color: '#f59e0b', bg: 'rgba(245,158,11,.12)', desc: 'Has funds + ordered before — ready to buy' },
+    { label: 'Has Funds', color: '#6ee7b7', bg: 'rgba(110,231,183,.12)', desc: 'Deposited but hasn\'t ordered yet' },
+    { label: 'Returning', color: '#a5b4fc', bg: 'rgba(165,180,252,.12)', desc: 'Has ordered before, browsing again' },
+    { label: 'New User', color: '#c47d8e', bg: 'rgba(196,125,142,.12)', desc: 'Signed up, no orders yet' },
+    { label: 'Guest', color: '#8a8580', bg: 'rgba(138,133,128,.12)', desc: 'Not logged in' },
+  ]},
+  { section: 'Activity', items: [
+    { label: 'Shopping', color: '#f59e0b', bg: 'rgba(245,158,11,.18)', desc: 'Viewing a service page' },
+    { label: 'Depositing', color: '#22c55e', bg: 'rgba(34,197,94,.18)', desc: 'On the deposit / add funds page' },
+    { label: 'Signing Up', color: '#c47d8e', bg: 'rgba(196,125,142,.18)', desc: 'On the signup page' },
+    { label: 'Checking Orders', color: '#a5b4fc', bg: 'rgba(165,180,252,.18)', desc: 'Reviewing their orders' },
+    { label: 'Needs Help', color: '#ef4444', bg: 'rgba(239,68,68,.18)', desc: 'On the support page' },
+  ]},
+];
+
+function BadgeGuide() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)',
+          borderRadius: 10, padding: '8px 14px', color: '#8a8580', fontSize: 12,
+          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600,
+          fontFamily: 'inherit', width: '100%',
+        }}
+      >
+        <span style={{ fontSize: 14 }}>?</span>
+        Badge Guide
+        <span style={{ marginLeft: 'auto', transition: 'transform .2s', transform: open ? 'rotate(180deg)' : 'rotate(0)' }}>▾</span>
+      </button>
+      {open && (
+        <div style={{
+          background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderTop: 'none',
+          borderRadius: '0 0 10px 10px', padding: '14px 16px',
+          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px',
+          animation: 'expand-in .2s ease',
+        }}>
+          {BADGES.map(g => (
+            <div key={g.section}>
+              <div style={{ fontSize: 10, color: '#5a5550', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 8 }}>{g.section}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {g.items.map(b => (
+                  <div key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 6, color: b.color, background: b.bg, textTransform: 'uppercase', letterSpacing: .5, flexShrink: 0, minWidth: 60, textAlign: 'center' }}>{b.label}</span>
+                    <span style={{ color: '#8a8580', fontSize: 12 }}>{b.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function LiveDashboard({ secretKey }) {
   const [sessions, setSessions] = useState([]);
   const [count, setCount] = useState(0);
@@ -341,27 +401,8 @@ export default function LiveDashboard({ secretKey }) {
           </div>
         )}
 
-        {/* Legend */}
-        <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 12, padding: '12px 16px', marginBottom: 24 }}>
-          <div style={{ fontSize: 10, color: '#5a5550', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 8 }}>Badge Guide</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', fontSize: 12 }}>
-            {[
-              { label: 'Hot', color: '#f59e0b', bg: 'rgba(245,158,11,.12)', desc: 'Has funds + ordered before — ready to buy' },
-              { label: 'Has Funds', color: '#6ee7b7', bg: 'rgba(110,231,183,.12)', desc: 'Deposited but hasn\'t ordered yet' },
-              { label: 'Returning', color: '#a5b4fc', bg: 'rgba(165,180,252,.12)', desc: 'Has ordered before, back on site' },
-              { label: 'New User', color: '#c47d8e', bg: 'rgba(196,125,142,.12)', desc: 'Signed up, no orders yet' },
-              { label: 'Guest', color: '#8a8580', bg: 'rgba(138,133,128,.12)', desc: 'Not logged in' },
-              { label: 'Shopping', color: '#f59e0b', bg: 'rgba(245,158,11,.18)', desc: 'Viewing a service page' },
-              { label: 'Depositing', color: '#22c55e', bg: 'rgba(34,197,94,.18)', desc: 'On the deposit page' },
-              { label: 'Signing Up', color: '#c47d8e', bg: 'rgba(196,125,142,.18)', desc: 'On the signup page' },
-            ].map(b => (
-              <div key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 6, color: b.color, background: b.bg, textTransform: 'uppercase', letterSpacing: .5 }}>{b.label}</span>
-                <span style={{ color: '#8a8580' }}>{b.desc}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* Legend dropdown */}
+        <BadgeGuide />
 
         {/* Sessions list */}
         {loading ? (
