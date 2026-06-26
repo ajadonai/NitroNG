@@ -144,15 +144,38 @@ export async function POST(req) {
       const via = tx.note?.match(/\[(approved|rejected)_by:([^\]]*)\]/);
       const byWho = via ? ` by ${via[2]}` : '';
       await tgAnswerCallback(cb.id, `${label}${byWho}`);
-      await tgEditMessage(cb.message.message_id, cb.message.text + `\n\n${label}${byWho}`);
+      await tgEditMessage(cb.message.message_id, cb.message.text + `\n\n${label}${byWho}`, { reply_markup: { inline_keyboard: [] } });
       return Response.json({ ok: true });
     }
 
     const user = await prisma.user.findUnique({ where: { id: tx.userId }, select: { name: true, email: true } });
     const name = user?.name || user?.email || 'Unknown';
+    const amt = `₦${(tx.amount / 100).toLocaleString()}`;
     const adminLabel = (ADMIN_TG_NAMES[String(cb.from?.id)] || 'Nitro') + ' (TG)';
 
-    if (action === 'approve') {
+    if (action === 'approve' || action === 'reject') {
+      const verb = action === 'approve' ? 'Approve' : 'Reject';
+      const emoji = action === 'approve' ? '✅' : '❌';
+      await tgAnswerCallback(cb.id, `Confirm ${verb.toLowerCase()}?`);
+      await tgEditMessage(cb.message.message_id,
+        cb.message.text + `\n\n⚠️ <b>${verb} ${amt} for ${name}?</b>`,
+        { reply_markup: { inline_keyboard: [[
+          { text: `${emoji} Yes, ${verb}`, callback_data: `confirm_${action}:${txId}` },
+          { text: '↩ Cancel', callback_data: `undo:${txId}` },
+        ]] } },
+      );
+
+    } else if (action === 'undo') {
+      await tgAnswerCallback(cb.id, 'Cancelled');
+      const originalText = cb.message.text.replace(/\n\n⚠️ .*$/, '');
+      await tgEditMessage(cb.message.message_id, originalText, {
+        reply_markup: { inline_keyboard: [[
+          { text: '✅ Approve', callback_data: `approve:${txId}` },
+          { text: '❌ Reject', callback_data: `reject:${txId}` },
+        ]] },
+      });
+
+    } else if (action === 'confirm_approve') {
       const couponMatch = (tx.note || '').match(/\[coupon:([^\]]+)\]/);
       const couponId = couponMatch?.[1];
 
@@ -194,15 +217,16 @@ export async function POST(req) {
       });
 
       await prisma.activityLog.create({
-        data: { adminName: adminLabel, action: `Approved manual deposit ₦${(tx.amount / 100).toLocaleString()} for ${name}`, type: 'payment' },
+        data: { adminName: adminLabel, action: `Approved manual deposit ${amt} for ${name}`, type: 'payment' },
       });
 
-      await tgAnswerCallback(cb.id, `Approved ₦${(tx.amount / 100).toLocaleString()}`);
-      await tgEditMessage(cb.message.message_id, cb.message.text + `\n\n✅ <b>Approved</b> by ${adminLabel}`);
+      await tgAnswerCallback(cb.id, `Approved ${amt}`);
+      const finalText = cb.message.text.replace(/\n\n⚠️ .*$/, '') + `\n\n✅ <b>Approved</b> by ${adminLabel}`;
+      await tgEditMessage(cb.message.message_id, finalText, { reply_markup: { inline_keyboard: [] } });
       await tgPayment(name, tx.amount, 0, 'Manual', adminLabel);
       log.info('TG Webhook', `Approved manual deposit ${txId} for ${name}`);
 
-    } else if (action === 'reject') {
+    } else if (action === 'confirm_reject') {
       const rejected = await prisma.transaction.updateMany({
         where: { id: txId, status: 'Pending' },
         data: { status: 'Rejected', note: tx.note.replace(/\[user_confirmed[^\]]*\]|\[awaiting_confirmation\]/, `[rejected_by:${adminLabel}]`) },
@@ -210,11 +234,12 @@ export async function POST(req) {
       if (rejected.count === 0) throw new Error('already_processed');
 
       await prisma.activityLog.create({
-        data: { adminName: adminLabel, action: `Rejected manual deposit ₦${(tx.amount / 100).toLocaleString()} for ${name}`, type: 'payment' },
+        data: { adminName: adminLabel, action: `Rejected manual deposit ${amt} for ${name}`, type: 'payment' },
       });
 
       await tgAnswerCallback(cb.id, 'Rejected');
-      await tgEditMessage(cb.message.message_id, cb.message.text + `\n\n❌ <b>Rejected</b> by ${adminLabel}`);
+      const finalText = cb.message.text.replace(/\n\n⚠️ .*$/, '') + `\n\n❌ <b>Rejected</b> by ${adminLabel}`;
+      await tgEditMessage(cb.message.message_id, finalText, { reply_markup: { inline_keyboard: [] } });
       log.info('TG Webhook', `Rejected manual deposit ${txId} for ${name}`);
     }
   } catch (err) {

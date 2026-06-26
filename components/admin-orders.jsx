@@ -389,7 +389,7 @@ export default function AdminOrdersPage({ dark, t }) {
             { value: "all", label: "All" },
             { value: "needs_dispatch", label: `Needs Dispatch${counts.needs_dispatch ? ` (${counts.needs_dispatch})` : ""}` },
             { value: "queued", label: `Queued${counts.queued ? ` (${counts.queued})` : ""}` },
-            ...["Completed", "Processing", "Pending", "Partial", "Cancelled", "Failed", "Rejected"].map(f => ({ value: f, label: f })),
+            ...["Pending", "Processing", "Completed", "Partial", "Cancelled"].map(f => ({ value: f, label: f })),
           ]
         } />
         <button onClick={syncOrders} disabled={syncing} className="py-[7px] px-3 rounded-lg text-[12px] font-semibold cursor-pointer font-[inherit] flex items-center gap-1.5 shrink-0" style={{ border: `1px solid ${t.cardBorder}`, background: 'transparent', color: t.accent, opacity: syncing ? .5 : 1 }}>
