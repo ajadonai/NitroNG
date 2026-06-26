@@ -184,7 +184,7 @@ export async function GET() {
     const sensitive = canSeeSensitive(admin);
 
     return Response.json({
-      admin: { name: admin.name, role: admin.role, email: admin.email, themePreference: admin.themePreference || 'auto', pages: getAdminPages(admin) },
+      admin: { name: admin.name, role: admin.role, email: admin.email, themePreference: admin.themePreference || 'auto', pages: getAdminPages(admin), customActions: admin.customActions || null },
       revenue: todayRevenue,
       users: userCount,
       orders: orderCount,

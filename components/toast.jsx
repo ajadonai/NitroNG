@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback, useMemo, createContext, useContext } from "react";
+import { useState, useCallback, useMemo, useRef, createContext, useContext } from "react";
 
 const ToastContext = createContext(null);
 
@@ -34,6 +34,18 @@ const TYPES = {
 
 export function ToastProvider({ children, dark }) {
   const [toasts, setToasts] = useState([]);
+  const [paused, setPaused] = useState({});
+  const timers = useRef({});
+
+  const removeToast = useCallback((id) => {
+    delete timers.current[id];
+    setToasts(prev => prev.map(t => t.id === id ? { ...t, leaving: true } : t));
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 300);
+  }, []);
+
+  const startTimer = useCallback((id, ms) => {
+    timers.current[id] = { tid: setTimeout(() => removeToast(id), ms), start: Date.now(), remaining: ms };
+  }, [removeToast]);
 
   const addToast = useCallback((type, title, desc, opts = {}) => {
     const id = ++toastId;
@@ -41,13 +53,23 @@ export function ToastProvider({ children, dark }) {
     const position = opts.position || "top";
     const cta = opts.cta || null;
     setToasts(prev => [...prev, { id, type, title, desc, duration, position, cta }]);
-    setTimeout(() => removeToast(id), duration);
+    startTimer(id, duration);
+  }, [startTimer]);
+
+  const pauseToast = useCallback((id) => {
+    const t = timers.current[id];
+    if (!t) return;
+    clearTimeout(t.tid);
+    t.remaining = Math.max(0, t.remaining - (Date.now() - t.start));
+    setPaused(prev => ({ ...prev, [id]: true }));
   }, []);
 
-  const removeToast = (id) => {
-    setToasts(prev => prev.map(t => t.id === id ? { ...t, leaving: true } : t));
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 300);
-  };
+  const resumeToast = useCallback((id) => {
+    const t = timers.current[id];
+    if (!t) return;
+    setPaused(prev => { const n = { ...prev }; delete n[id]; return n; });
+    startTimer(id, t.remaining);
+  }, [startTimer]);
 
   const toast = useMemo(() => ({
     success: (title, desc, opts) => addToast("success", title, desc, opts),
@@ -75,6 +97,8 @@ export function ToastProvider({ children, dark }) {
           background: dark ? tt.bgD : tt.bgL,
           border: `1px solid ${dark ? tt.brdD : tt.brdL}`,
         }}
+        onMouseEnter={() => pauseToast(t.id)}
+        onMouseLeave={() => resumeToast(t.id)}
       >
         <div className="flex gap-3 items-center py-3.5 px-4">
           <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: `${col}20`, color: col }}>{tt.icon}</div>
@@ -99,7 +123,7 @@ export function ToastProvider({ children, dark }) {
           ><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
         <div className="h-[3px] relative overflow-hidden mx-4 mb-3 rounded-full" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }}>
-          <div className="h-full rounded-full toast-progress-bar" style={{ background: col, opacity: 0.5, animationDuration: `${t.duration}ms` }} />
+          <div className="h-full rounded-full toast-progress-bar" style={{ background: col, opacity: 0.5, animationDuration: `${t.duration}ms`, animationPlayState: paused[t.id] ? "paused" : "running" }} />
         </div>
       </div>
     );

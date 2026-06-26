@@ -240,6 +240,8 @@
 /* Unified menu button (hamburger + logo) — mobile/tablet only */
 .dash-menu-btn { display: none; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; padding: 4px 2px; }
 .dash-hamburger-bars { display: flex; flex-direction: column; gap: 4px; width: 16px; flex-shrink: 0; transition: opacity .2s ease; }
+.dash-logo-n { display: none; }
+.dash-logo-wordmark { display: flex; align-items: center; }
 
 /* Static logo — desktop only */
 .dash-logo-static { display: flex; align-items: center; gap: 10px; }
@@ -326,6 +328,8 @@
 
 /* ── MOBILE: 0-767px ── */
 @media (max-width: 767px) {
+  .dash-logo-n { display: flex; }
+  .dash-logo-wordmark { display: none; }
   .adm-header-row { flex-direction: column; gap: 8px; }
   .dash-nav { height: 50px; padding: 0 12px; }
   .dash-nav-name { display: none; }

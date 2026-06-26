@@ -10,6 +10,7 @@ import { cleanLink } from '@/lib/clean-link';
 import { calculateIntradayDrip, getDripConfig } from '@/lib/drip-feed';
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
+import { tgNewOrder } from '@/lib/telegram';
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -343,6 +344,11 @@ export async function PATCH(req) {
         return { createdOrders, totalCharge };
       });
 
+      for (const o of result.createdOrders) {
+        const tierName = o.tier?.group?.name ? `${o.tier.group.name} — ${o.tier.tier}` : o.service?.name || 'Unknown';
+        tgNewOrder(o.orderId, tierName, o.qty, o.charge || 0, session.email, o.link, o.service?.category);
+      }
+
       dispatchBatch(result.createdOrders, session.id, newBatchId, result.totalCharge).catch(e => log.error('Reorder dispatch', e.message));
 
       const newBalance = (await prisma.user.findUnique({ where: { id: session.id }, select: { balance: true } }))?.balance || 0;
@@ -663,6 +669,10 @@ export async function POST(req) {
       sourceUrl: hdrs.get('referer'),
       customData: { value: result.totalCharge / 100, currency: 'NGN' },
     });
+
+    for (const o of result.createdOrders) {
+      tgNewOrder(o.orderId, o.tierName, o.qty, o.finalCharge || o.charge, session.email, o.link, o.service?.category);
+    }
 
     const responseBody = {
       success: true,

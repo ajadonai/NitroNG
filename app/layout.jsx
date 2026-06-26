@@ -13,6 +13,7 @@ import Script from 'next/script';
 import SentryInit from '@/components/sentry-init';
 import CookieBanner from '@/components/cookie-banner';
 import CAPIPageView from '@/components/capi-tracker';
+import Heartbeat from '@/components/heartbeat';
 
 export const metadata = {
   title: {
@@ -216,6 +217,7 @@ export default function RootLayout({ children }) {
         <SentryInit />
         <CookieBanner />
         <CAPIPageView />
+        <Heartbeat />
         <main id="main-content">{children}</main>
       </body>
     </html>

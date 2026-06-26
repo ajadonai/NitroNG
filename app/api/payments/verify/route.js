@@ -2,7 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { applyWelcomeBonus } from '@/lib/welcome-bonus';
-import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
+import { trackDeposit, parseFbCookies } from '@/lib/meta-capi';
 import { tgPayment } from '@/lib/telegram';
 import { headers as getHeaders } from 'next/headers';
 
@@ -177,15 +177,15 @@ export async function POST(req) {
     const eventId = `apinfo_${reference}`;
     const hdrs = await getHeaders();
     const { fbp, fbc } = parseFbCookies(hdrs.get('cookie'));
-    sendEvent('AddPaymentInfo', {
-      eventId,
+    trackDeposit({
       email: session.email,
-      externalId: session.id,
+      userId: session.id,
+      reference,
+      amountKobo: paidAmount,
       clientIp: hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip'),
       userAgent: hdrs.get('user-agent'),
       fbp, fbc,
       sourceUrl: hdrs.get('referer'),
-      customData: { value: paidAmount / 100, currency: 'NGN' },
     });
 
     return Response.json({

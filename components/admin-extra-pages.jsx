@@ -285,6 +285,7 @@ const GRANTABLE_ACTIONS = [
   { id: "payments.approve", label: "Approve/Reject Deposits", g: "Finance" },
   { id: "payments.configure", label: "Configure Gateways", g: "Finance" },
   { id: "finance.topup", label: "Record Provider Top-ups", g: "Finance" },
+  { id: "users.edit", label: "Edit User Profiles", g: "Users" },
   { id: "users.adjustBalance", label: "Credit User Balance", g: "Users" },
   { id: "users.ban", label: "Suspend/Ban Users", g: "Users" },
   { id: "leaderboard.reward", label: "Send Leaderboard Rewards", g: "Marketing" },

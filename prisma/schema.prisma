@@ -821,6 +821,18 @@ model ProviderTopup {
   @@map("provider_topups")
 }
 
+model LiveSession {
+  sessionId String   @id
+  userId    String?
+  page      String
+  ua        String?
+  lastSeen  DateTime @default(now())
+  firstSeen DateTime @default(now())
+
+  @@index([lastSeen])
+  @@map("live_sessions")
+}
+
 model ChangelogEntry {
   id          String   @id @default(cuid())
   date        DateTime @db.Date

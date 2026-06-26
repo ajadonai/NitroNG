@@ -2,6 +2,7 @@ import { fetchWithRetry } from '@/lib/fetch';
 import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { trackDeposit } from '@/lib/meta-capi';
 
 const NP_KEY = process.env.NOWPAYMENTS_API_KEY;
 const NP_URL = 'https://api.nowpayments.io/v1';
@@ -202,6 +203,11 @@ export async function GET(req) {
       if (!credited) {
         return Response.json({ status: 'Completed', reference });
       }
+
+      try {
+        const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true } });
+        if (u) trackDeposit({ email: u.email, userId: tx.userId, reference, amountKobo: tx.amount });
+      } catch {}
 
       // Deferred referral bonus
       try {

@@ -6,6 +6,7 @@ import { tgAnswerCallback, tgEditMessage, tgPayment } from '@/lib/telegram';
 export const maxDuration = 60;
 
 const ADMIN_TG_IDS = ['8567146346'];
+const ADMIN_TG_NAMES = { '8567146346': 'The Nitro NG' };
 const TOKEN = process.env.TG_BOT_TOKEN;
 const API = `https://api.telegram.org/bot${TOKEN}`;
 
@@ -37,13 +38,16 @@ async function handleOrders(chatId, threadId) {
 
 async function handleRevenue(chatId, threadId) {
   const today = new Date(); today.setUTCHours(0, 0, 0, 0);
-  const [todayTx, allTimeTx] = await Promise.all([
+  const monthStart = new Date(today); monthStart.setDate(1);
+  const [todayTx, monthTx, allTimeTx] = await Promise.all([
     prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: today } }, _sum: { amount: true }, _count: true }),
+    prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
     prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed' }, _sum: { amount: true } }),
   ]);
   await reply(chatId, threadId, [
     '💰 <b>Revenue</b>',
     `  Today: <b>${naira(todayTx._sum.amount || 0)}</b> (${todayTx._count} deposits)`,
+    `  This month: <b>${naira(monthTx._sum.amount || 0)}</b>`,
     `  All time: <b>${naira(allTimeTx._sum.amount || 0)}</b>`,
   ].join('\n'));
 }
@@ -146,6 +150,7 @@ export async function POST(req) {
 
     const user = await prisma.user.findUnique({ where: { id: tx.userId }, select: { name: true, email: true } });
     const name = user?.name || user?.email || 'Unknown';
+    const adminLabel = (ADMIN_TG_NAMES[String(cb.from?.id)] || 'Nitro') + ' (TG)';
 
     if (action === 'approve') {
       const couponMatch = (tx.note || '').match(/\[coupon:([^\]]+)\]/);
@@ -154,7 +159,7 @@ export async function POST(req) {
       await prisma.$transaction(async (db) => {
         const claimed = await db.transaction.updateMany({
           where: { id: txId, status: 'Pending' },
-          data: { status: 'Completed', note: tx.note.replace(/\[user_confirmed[^\]]*\]|\[awaiting_confirmation\]/, '[approved_by:Telegram]') },
+          data: { status: 'Completed', note: tx.note.replace(/\[user_confirmed[^\]]*\]|\[awaiting_confirmation\]/, `[approved_by:${adminLabel}]`) },
         });
         if (claimed.count === 0) throw new Error('already_processed');
 
@@ -189,27 +194,27 @@ export async function POST(req) {
       });
 
       await prisma.activityLog.create({
-        data: { adminName: 'Telegram', action: `Approved manual deposit ₦${(tx.amount / 100).toLocaleString()} for ${name}`, type: 'payment' },
+        data: { adminName: adminLabel, action: `Approved manual deposit ₦${(tx.amount / 100).toLocaleString()} for ${name}`, type: 'payment' },
       });
 
       await tgAnswerCallback(cb.id, `Approved ₦${(tx.amount / 100).toLocaleString()}`);
-      await tgEditMessage(cb.message.message_id, cb.message.text + `\n\n✅ <b>Approved</b> via Telegram`);
-      await tgPayment(name, tx.amount, 0, 'Manual', 'Telegram');
+      await tgEditMessage(cb.message.message_id, cb.message.text + `\n\n✅ <b>Approved</b> by ${adminLabel}`);
+      await tgPayment(name, tx.amount, 0, 'Manual', adminLabel);
       log.info('TG Webhook', `Approved manual deposit ${txId} for ${name}`);
 
     } else if (action === 'reject') {
       const rejected = await prisma.transaction.updateMany({
         where: { id: txId, status: 'Pending' },
-        data: { status: 'Rejected', note: tx.note.replace(/\[user_confirmed[^\]]*\]|\[awaiting_confirmation\]/, '[rejected_by:Telegram]') },
+        data: { status: 'Rejected', note: tx.note.replace(/\[user_confirmed[^\]]*\]|\[awaiting_confirmation\]/, `[rejected_by:${adminLabel}]`) },
       });
       if (rejected.count === 0) throw new Error('already_processed');
 
       await prisma.activityLog.create({
-        data: { adminName: 'Telegram', action: `Rejected manual deposit ₦${(tx.amount / 100).toLocaleString()} for ${name}`, type: 'payment' },
+        data: { adminName: adminLabel, action: `Rejected manual deposit ₦${(tx.amount / 100).toLocaleString()} for ${name}`, type: 'payment' },
       });
 
       await tgAnswerCallback(cb.id, 'Rejected');
-      await tgEditMessage(cb.message.message_id, cb.message.text + `\n\n❌ <b>Rejected</b> via Telegram`);
+      await tgEditMessage(cb.message.message_id, cb.message.text + `\n\n❌ <b>Rejected</b> by ${adminLabel}`);
       log.info('TG Webhook', `Rejected manual deposit ${txId} for ${name}`);
     }
   } catch (err) {
