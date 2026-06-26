@@ -386,6 +386,8 @@ export async function PATCH(req) {
         }
       }
 
+      tgNewOrder(newOrderId, order.tier?.group?.name || order.service.name, order.quantity, charge, session.email, order.link, order.service.category);
+
       return Response.json({
         success: true,
         ...(reorderQueued ? { queued: true, message: 'Order queued — will start when your current order for this link completes.' } : {}),
