@@ -22,7 +22,7 @@ export async function GET(req) {
   const stale = new Date(Date.now() - 5 * 60_000);
 
   const [sessions] = await Promise.all([
-    prisma.liveSession.findMany({ where: { lastSeen: { gte: cutoff } }, orderBy: { lastSeen: 'desc' } }),
+    prisma.liveSession.findMany({ where: { lastSeen: { gte: cutoff } }, orderBy: { firstSeen: 'desc' } }),
     prisma.liveSession.deleteMany({ where: { lastSeen: { lt: stale } } }),
   ]);
 
