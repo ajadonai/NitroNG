@@ -107,6 +107,8 @@ export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", o
           {alert.action && (
             <a
               href={alert.action.href || "#"}
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-xs md:text-[13px] font-semibold ml-1.5 hover:underline"
               style={{ color: dark ? s.colD : s.colL }}
             >
