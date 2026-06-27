@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { applyWelcomeBonus } from '@/lib/welcome-bonus';
 import { tgAnswerCallback, tgEditMessage, tgPayment } from '@/lib/telegram';
+import { watBounds } from '@/lib/format';
 
 export const maxDuration = 60;
 
@@ -22,9 +23,9 @@ function reply(chatId, threadId, text) {
 }
 
 async function handleOrders(chatId, threadId) {
-  const today = new Date(); today.setUTCHours(0, 0, 0, 0);
+  const { todayStart } = watBounds();
   const [todayCount, processing, pending] = await Promise.all([
-    prisma.order.count({ where: { createdAt: { gte: today }, deletedAt: null } }),
+    prisma.order.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
     prisma.order.count({ where: { status: 'Processing', deletedAt: null } }),
     prisma.order.count({ where: { status: 'Pending', deletedAt: null } }),
   ]);
@@ -37,18 +38,48 @@ async function handleOrders(chatId, threadId) {
 }
 
 async function handleRevenue(chatId, threadId) {
-  const today = new Date(); today.setUTCHours(0, 0, 0, 0);
-  const monthStart = new Date(today); monthStart.setDate(1);
-  const [todayTx, monthTx, allTimeTx] = await Promise.all([
-    prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: today } }, _sum: { amount: true }, _count: true }),
-    prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
-    prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed' }, _sum: { amount: true } }),
+  const { todayStart, monthStart } = watBounds();
+
+  const partialAdj = (orders) => {
+    let charge = 0;
+    for (const p of orders) charge += Math.round(p.charge * (p.remains / p.quantity));
+    return charge;
+  };
+
+  const [
+    todayOrdersAgg, monthOrdersAgg, allTimeOrdersAgg,
+    todayDepositsAgg, monthDepositsAgg, allTimeDepositsAgg,
+    partialToday, partialMonth, partialAll,
+  ] = await Promise.all([
+    prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true, cost: true } }),
+    prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true, cost: true } }),
+    prisma.order.aggregate({ where: { deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true, cost: true } }),
+    prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true }, _count: true }),
+    prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
+    prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed' }, _sum: { amount: true } }),
+    prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, quantity: true, remains: true } }),
+    prisma.order.findMany({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, quantity: true, remains: true } }),
+    prisma.order.findMany({ where: { deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, quantity: true, remains: true } }),
   ]);
+
+  const todayRev = ((todayOrdersAgg._sum.charge || 0) - partialAdj(partialToday)) / 100;
+  const monthRev = ((monthOrdersAgg._sum.charge || 0) - partialAdj(partialMonth)) / 100;
+  const allTimeRev = ((allTimeOrdersAgg._sum.charge || 0) - partialAdj(partialAll)) / 100;
+  const monthCost = (monthOrdersAgg._sum.cost || 0) / 100;
+  const monthProfit = monthRev - monthCost;
+
   await reply(chatId, threadId, [
-    '💰 <b>Revenue</b>',
-    `  Today: <b>${naira(todayTx._sum.amount || 0)}</b> (${todayTx._count} deposits)`,
-    `  This month: <b>${naira(monthTx._sum.amount || 0)}</b>`,
-    `  All time: <b>${naira(allTimeTx._sum.amount || 0)}</b>`,
+    '💰 <b>Revenue</b> (order charges)',
+    `  Today: <b>${naira(Math.round(todayRev) * 100)}</b>`,
+    `  This month: <b>${naira(Math.round(monthRev) * 100)}</b>`,
+    `  All time: <b>${naira(Math.round(allTimeRev) * 100)}</b>`,
+    '',
+    '🏦 <b>Money In</b> (deposits + credits)',
+    `  Today: <b>${naira(todayDepositsAgg._sum.amount || 0)}</b> (${todayDepositsAgg._count} deposits)`,
+    `  This month: <b>${naira(monthDepositsAgg._sum.amount || 0)}</b>`,
+    `  All time: <b>${naira(allTimeDepositsAgg._sum.amount || 0)}</b>`,
+    '',
+    `📊 Month profit: <b>${naira(Math.round(monthProfit) * 100)}</b>`,
   ].join('\n'));
 }
 
@@ -65,19 +96,22 @@ async function handlePending(chatId, threadId) {
 }
 
 async function handleStats(chatId, threadId) {
-  const today = new Date(); today.setUTCHours(0, 0, 0, 0);
-  const [users, todayUsers, orders, todayOrders, revenue] = await Promise.all([
+  const { todayStart } = watBounds();
+  const [users, todayUsers, orders, todayOrders, todayRevAgg, todayDepositsAgg] = await Promise.all([
     prisma.user.count(),
-    prisma.user.count({ where: { createdAt: { gte: today } } }),
+    prisma.user.count({ where: { createdAt: { gte: todayStart } } }),
     prisma.order.count({ where: { deletedAt: null } }),
-    prisma.order.count({ where: { createdAt: { gte: today }, deletedAt: null } }),
-    prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: today } }, _sum: { amount: true } }),
+    prisma.order.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
+    prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
+    prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true } }),
   ]);
+  const todayRev = (todayRevAgg._sum.charge || 0);
   await reply(chatId, threadId, [
     '📊 <b>Quick Stats</b>',
     `  Users: <b>${users.toLocaleString()}</b> (+${todayUsers} today)`,
     `  Orders: <b>${orders.toLocaleString()}</b> (+${todayOrders} today)`,
-    `  Revenue today: <b>${naira(revenue._sum.amount || 0)}</b>`,
+    `  Revenue today: <b>${naira(todayRev)}</b>`,
+    `  Money in today: <b>${naira(todayDepositsAgg._sum.amount || 0)}</b>`,
   ].join('\n'));
 }
 
@@ -105,7 +139,7 @@ export async function POST(req) {
         '🔭 <b>WatchTower Commands</b>',
         '',
         '/orders — Today\'s order counts',
-        '/revenue — Revenue summary',
+        '/revenue — Revenue + money in',
         '/pending — Pending manual deposits',
         '/stats — Quick overview',
         '/help — This message',
