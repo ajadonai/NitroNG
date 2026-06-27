@@ -44,7 +44,7 @@ async function getInitialPayouts(member) {
 
 export default async function Payouts() {
   const member = await getCrewSession();
-  if (!member) redirect("/m/login");
+  if (!member) redirect("/pit/login");
   const initialData = await getInitialPayouts(member);
   return <PayoutsPage member={memberToClient(member)} initialData={initialData} />;
 }

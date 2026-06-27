@@ -35,8 +35,8 @@ async function getInitialLinks(chiefId) {
 
 export default async function Links() {
   const member = await getCrewSession();
-  if (!member) redirect("/m/login");
-  if (member.role !== "chief") redirect("/m");
+  if (!member) redirect("/pit/login");
+  if (member.role !== "chief") redirect("/pit");
   const initialData = await getInitialLinks(member.id);
   return <LinksPage member={memberToClient(member)} initialData={initialData} />;
 }

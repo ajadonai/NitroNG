@@ -90,6 +90,7 @@ model User {
   gameScores    GameScore[]
   gameRewards   GameReward[]
   videoWatches  VideoWatch[]
+  crewMember    CrewMember?
 
   @@map("users")
 }
@@ -719,9 +720,10 @@ model CrewMember {
   bankName         String?
   bankAccountNo    String?
   tier             String   @default("starter") // "starter" | "growth" | "pro"
-  commissionRate   Int      @default(5) // current rate %
+  commissionRate   Int      @default(30) // % of profit going to crew side
   totalEarned      Int      @default(0) // kobo
   totalPaid        Int      @default(0) // kobo
+  userId           String?  @unique
   telegramUserId   String?
   telegramLinkCode String?
   leadId           String?
@@ -732,6 +734,7 @@ model CrewMember {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  user             User?        @relation(fields: [userId], references: [id])
   lead             CrewMember?  @relation("CrewHierarchy", fields: [leadId], references: [id])
   crew             CrewMember[] @relation("CrewHierarchy")
   links            AcquisitionLink[]
@@ -767,7 +770,8 @@ model AffiliateCommission {
   memberId        String
   leadId          String?
   orderCharge     Int      // kobo — the order.charge that earned this commission
-  commissionRate  Int      // % at time of creation
+  orderCost       Int      @default(0) // kobo — the order.cost at time of commission
+  commissionRate  Int      // % of profit to crew side at time of creation
   leadSplit       Int      // % at time of creation
   leadAmount      Int      // kobo — chief's cut
   marketerAmount  Int      // kobo — crew member's cut

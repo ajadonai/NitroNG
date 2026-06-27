@@ -14,7 +14,7 @@ function timeAgo(d) {
 
 function Inner({ member, initialData }) {
   const { dark, t } = useTheme();
-  const { stats, tier, recentCommissions, links } = initialData;
+  const { stats, tier, tierConfig, recentCommissions, links } = initialData;
   const primarySlug = links?.[0]?.slug;
 
   return (
@@ -28,13 +28,13 @@ function Inner({ member, initialData }) {
         <StatCard label="Link Clicks" value={stats.clicks.toLocaleString()} caption={`${stats.activeReferrals} paid referral${stats.activeReferrals !== 1 ? "s" : ""}`} dark={dark} t={t} />
       </div>
 
-      <TierProgress tier={tier.name} activeCount={stats.activeReferrals} dark={dark} t={t} />
+      <TierProgress tier={tier.name} activeCount={stats.activeReferrals} tierConfig={tierConfig} dark={dark} t={t} />
 
       <div className="rounded-[14px] overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
         <div className="flex items-center justify-between py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
           <span className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>Recent Commissions</span>
           {recentCommissions.length > 0 && (
-            <a href="/m/commissions" className="text-[12px] font-medium no-underline" style={{ color: t.accent }}>View all</a>
+            <a href="/pit/commissions" className="text-[12px] font-medium no-underline" style={{ color: t.accent }}>View all</a>
           )}
         </div>
         {recentCommissions.length === 0 ? (

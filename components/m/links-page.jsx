@@ -19,7 +19,7 @@ function Inner({ member, initialData }) {
   const [copied, setCopied] = useState(null);
 
   const reload = () => {
-    fetch("/api/m/links")
+    fetch("/api/pit/links")
       .then((r) => r.json())
       .then((d) => { if (!d.error) setData(d); })
       .catch(() => {});
@@ -30,7 +30,7 @@ function Inner({ member, initialData }) {
     if (!name.trim()) { setError("Name is required"); return; }
     setCreating(true);
     try {
-      const res = await fetch("/api/m/links", {
+      const res = await fetch("/api/pit/links", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name.trim(), slug: slug.trim() || undefined }),
@@ -49,7 +49,7 @@ function Inner({ member, initialData }) {
   };
 
   const toggleEnabled = async (id, enabled) => {
-    await fetch("/api/m/links", {
+    await fetch("/api/pit/links", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, enabled: !enabled }),
@@ -58,7 +58,7 @@ function Inner({ member, initialData }) {
   };
 
   const archive = async (id) => {
-    await fetch("/api/m/links", {
+    await fetch("/api/pit/links", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),

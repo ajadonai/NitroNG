@@ -4,6 +4,6 @@ import SettingsPage from "@/components/m/settings-page";
 
 export default async function Settings() {
   const member = await getCrewSession();
-  if (!member) redirect("/m/login");
+  if (!member) redirect("/pit/login");
   return <SettingsPage member={memberToClient(member, true)} />;
 }

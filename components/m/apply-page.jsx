@@ -19,7 +19,7 @@ function Inner() {
     e.preventDefault();
     setError(""); setLoading(true);
     try {
-      const res = await fetch("/api/m/auth/apply", {
+      const res = await fetch("/api/pit/auth/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -45,7 +45,7 @@ function Inner() {
       <a href="/" className="flex items-center gap-2.5 no-underline">
         <span className="md:hidden w-7 h-7 rounded-[7px] flex items-center justify-center" style={{ background: t.grad }}>{LOGO_N}</span>
         <span className="max-md:hidden h-7 px-3 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span>
-        <span className="text-[9.5px] font-semibold tracking-[1.5px] uppercase py-[2px] px-[7px] rounded-md" style={{ color: t.accent, background: t.accentLight }}>Pit Crew</span>
+        <span className="text-xs py-0.5 px-1.5 rounded font-semibold" style={{ color: t.accent, background: t.accentLight }}>PIT</span>
       </a>
       <button onClick={toggleTheme} className="w-[44px] h-6 rounded-xl border-none relative cursor-pointer transition-colors duration-300 shrink-0" style={{ background: dark ? t.accent : "rgba(0,0,0,.08)" }}>
         <span className="absolute w-[18px] h-[18px] rounded-full bg-white top-[3px] shadow-[0_1px_4px_rgba(0,0,0,.2)] transition-[left] duration-300" style={{ left: dark ? 23 : 3 }} />
@@ -76,8 +76,8 @@ function Inner() {
             We&apos;ll review your application and reach out once you&apos;re approved. This usually takes less than 24 hours.
           </p>
           <a
-            href="/m/login"
-            onClick={e => { e.preventDefault(); router.push("/m/login"); }}
+            href="/pit/login"
+            onClick={e => { e.preventDefault(); router.push("/pit/login"); }}
             className="inline-flex items-center gap-1.5 text-[14px] font-semibold transition-opacity hover:opacity-80"
             style={{ color: t.accent, textDecoration: "none" }}
           >
@@ -98,7 +98,7 @@ function Inner() {
         className="w-full max-w-[440px] rounded-2xl px-8 py-9 max-md:px-6 max-md:py-7"
         style={{ background: dark ? '#0e1120' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}`, boxShadow: dark ? '0 20px 60px rgba(0,0,0,.4)' : '0 20px 60px rgba(0,0,0,.1)' }}
       >
-        <h1 className="serif text-2xl font-semibold text-center mb-1 italic" style={{ color: t.text }}>Join the Pit Crew</h1>
+        <h1 className="serif text-2xl font-semibold text-center mb-1 italic" style={{ color: t.text }}>Join the Pit</h1>
         <p className="text-[15px] text-center mb-5 font-medium" style={{ color: t.textSoft }}>Refer users to Nitro. Earn real money.</p>
 
         {/* Perks */}
@@ -201,7 +201,7 @@ function Inner() {
 
         <p className="text-[14px] text-center mt-6" style={{ color: t.textSoft }}>
           Already have an account?{" "}
-          <a href="/m/login" onClick={e => { e.preventDefault(); router.push("/m/login"); }} className="font-semibold" style={{ color: t.accent, textDecoration: "none" }}>Sign in</a>
+          <a href="/pit/login" onClick={e => { e.preventDefault(); router.push("/pit/login"); }} className="font-semibold" style={{ color: t.accent, textDecoration: "none" }}>Sign in</a>
         </p>
       </div>
 

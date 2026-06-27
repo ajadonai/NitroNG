@@ -2182,7 +2182,7 @@ function IssueRow({ issue, i, total, dark, t, rowBorder, expanded, setExpanded, 
 }
 
 /* ═══════════════════════════════════════════ */
-/* ═══ PIT CREW (AFFILIATES)              ═══ */
+/* ═══ PIT (AFFILIATES)                   ═══ */
 /* ═══════════════════════════════════════════ */
 const TIER_COLORS = { starter: "#6B7280", growth: "#3B82F6", pro: "#c47d8e" };
 const STATUS_COLORS_CREW = { pending: "#F59E0B", approved: "#059669", suspended: "#EF4444", rejected: "#6B7280" };
@@ -2309,6 +2309,9 @@ export function AdminCrewPage({ dark, t }) {
   const [payoutsLoading, setPayoutsLoading] = useState(false);
   const [payoutFilter, setPayoutFilter] = useState("all");
   const [refInput, setRefInput] = useState({});
+  const [tierCfg, setTierCfg] = useState({ affiliate_starter_rate: "30", affiliate_growth_rate: "40", affiliate_pro_rate: "50", affiliate_growth_threshold: "30", affiliate_pro_threshold: "100", affiliate_lead_split: "40" });
+  const [tierCfgLoading, setTierCfgLoading] = useState(false);
+  const [tierCfgSaving, setTierCfgSaving] = useState(false);
   const confirm = useConfirm();
   const toast = useToast();
 
@@ -2331,8 +2334,32 @@ export function AdminCrewPage({ dark, t }) {
     } catch { /* */ } finally { setPayoutsLoading(false); }
   }, []);
 
+  const loadTierCfg = useCallback(async () => {
+    setTierCfgLoading(true);
+    try {
+      const res = await fetch("/api/admin/settings?keys=affiliate_starter_rate,affiliate_growth_rate,affiliate_pro_rate,affiliate_growth_threshold,affiliate_pro_threshold,affiliate_lead_split");
+      const d = await res.json();
+      if (d.settings) setTierCfg(prev => ({ ...prev, ...d.settings }));
+    } catch { /* */ } finally { setTierCfgLoading(false); }
+  }, []);
+
+  const saveTierCfg = async () => {
+    setTierCfgSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings: tierCfg }),
+      });
+      const d = await res.json();
+      if (d.error) { toast.error(d.error); return; }
+      toast.success("Tier settings saved");
+    } catch { toast.error("Something went wrong"); } finally { setTierCfgSaving(false); }
+  };
+
   useEffect(() => { load(); }, [load]);
   useEffect(() => { if (tab === "payouts" && payouts.length === 0) loadPayouts(); }, [tab, loadPayouts, payouts.length]);
+  useEffect(() => { if (tab === "settings") loadTierCfg(); }, [tab, loadTierCfg]);
 
   const act = async (action, memberId, extra = {}) => {
     setBusy(memberId);
@@ -2344,7 +2371,7 @@ export function AdminCrewPage({ dark, t }) {
       });
       const d = await res.json();
       if (d.error) { toast.error(d.error); return; }
-      toast.success(action === "approve" ? "Member approved" : action === "reject" ? "Member rejected" : action === "suspend" ? "Member suspended" : action === "reinstate" ? "Member reinstated" : action === "update-tier" ? "Tier updated" : "Done");
+      toast.success(action === "approve" ? "Member approved" : action === "reject" ? "Member rejected" : action === "suspend" ? "Member suspended" : action === "reinstate" ? "Member reinstated" : action === "update-tier" ? "Tier updated" : action === "promote-chief" ? "Promoted to chief" : action === "demote-crew" ? "Demoted to crew" : "Done");
       await load();
     } catch { toast.error("Something went wrong"); } finally { setBusy(null); }
   };
@@ -2378,29 +2405,32 @@ export function AdminCrewPage({ dark, t }) {
   return (
     <>
       <div className="adm-header">
-        <div className="adm-title" style={{ color: t.text }}>Pit Crew</div>
-        <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage affiliate members, tiers, and payouts</div>
+        <div className="adm-title" style={{ color: t.text }}>Pit</div>
+        <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage your pit crew, tiers, and payouts</div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
       {/* Stats row */}
-      <div className="flex gap-3 mb-5 flex-wrap">
+      <div className="grid grid-cols-4 max-md:grid-cols-2 gap-3 mb-5">
         {[
-          ["Total Members", members.length, t.blue],
-          ["Pending Approval", pendingCount, pendingCount > 0 ? t.amber : t.textMuted],
-          ["Pending Payouts", stats.pendingPayouts || 0, (stats.pendingPayouts || 0) > 0 ? t.amber : t.textMuted],
-          ["Held Commissions", stats.heldCommissions || 0, t.textMuted],
-        ].map(([label, val, color]) => (
-          <div key={label} className="py-2.5 px-4 rounded-[10px]" style={{ background: cardBg, border: cardBd, minWidth: 120 }}>
-            <div className="text-[11px] uppercase tracking-wide mb-0.5" style={{ color: t.textMuted }}>{label}</div>
-            <div className="text-lg font-semibold" style={{ color }}>{val}</div>
+          ["Members", members.length, t.accent, <svg key="s1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>],
+          ["Pending", pendingCount, pendingCount > 0 ? t.amber : t.textMuted, <svg key="s2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>],
+          ["Payouts", stats.pendingPayouts || 0, (stats.pendingPayouts || 0) > 0 ? t.amber : t.textMuted, <svg key="s3" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>],
+          ["Held", stats.heldCommissions || 0, t.textMuted, <svg key="s4" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>],
+        ].map(([label, val, color, icon]) => (
+          <div key={label} className="py-3.5 px-4 rounded-xl flex items-center gap-3" style={{ background: cardBg, border: cardBd }}>
+            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: `${color}18`, color }}>{icon}</div>
+            <div>
+              <div className="text-[20px] font-bold leading-tight" style={{ color }}>{val}</div>
+              <div className="text-[11px] uppercase tracking-wide mt-0.5" style={{ color: t.textMuted }}>{label}</div>
+            </div>
           </div>
         ))}
       </div>
 
       {/* Tab switcher */}
       <div className="flex gap-1 mb-4 p-1 rounded-xl w-fit" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }}>
-        {[["members", "Members"], ["payouts", `Payouts${pendingPayoutCount > 0 ? ` (${pendingPayoutCount})` : ""}`]].map(([id, label]) => (
+        {[["members", "Members"], ["payouts", `Payouts${pendingPayoutCount > 0 ? ` (${pendingPayoutCount})` : ""}`], ["settings", "Settings"]].map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} className="py-1.5 px-4 rounded-lg text-[13px] font-medium border-none cursor-pointer" style={{ background: tab === id ? (dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.15)") : "transparent", color: tab === id ? t.accent : t.textMuted }}>
             {label}
           </button>
@@ -2429,44 +2459,49 @@ export function AdminCrewPage({ dark, t }) {
               <div className="py-12 text-center text-sm" style={{ color: t.textMuted }}>No {filter === "all" ? "" : filter} members</div>
             ) : filtered.map((m, i) => {
               const expanded = expandedId === m.id;
+              const initials = m.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
               return (
                 <div key={m.id}>
-                  <div className="py-3 px-[18px] flex items-center gap-3 cursor-pointer" style={{ borderBottom: (i < filtered.length - 1 || expanded) ? `1px solid ${rowBorder}` : "none" }} onClick={() => setExpandedId(expanded ? null : m.id)}>
+                  <div className="py-3.5 px-[18px] flex items-center gap-3 cursor-pointer hover:bg-[rgba(196,125,142,.03)] transition-colors" style={{ borderBottom: (i < filtered.length - 1 || expanded) ? `1px solid ${rowBorder}` : "none" }} onClick={() => setExpandedId(expanded ? null : m.id)}>
+                    <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ background: m.status === "approved" ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)", color: m.status === "approved" ? "#fff" : t.textMuted }}>{initials}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[13.5px] font-semibold" style={{ color: t.text }}>{m.name}</span>
-                        <span className="text-[11px] py-[1px] px-[6px] rounded-full font-medium" style={{ background: `${STATUS_COLORS_CREW[m.status]}22`, color: STATUS_COLORS_CREW[m.status] }}>{m.status}</span>
-                        <span className="text-[11px] py-[1px] px-[6px] rounded-full font-medium capitalize" style={{ background: `${TIER_COLORS[m.tier] || "#6B7280"}22`, color: TIER_COLORS[m.tier] || "#6B7280" }}>{m.tier}</span>
                         {m.role === "chief" && <span className="text-[10px] py-[1px] px-[5px] rounded font-semibold uppercase" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)", color: t.accent }}>Chief</span>}
+                        <span className="text-[10.5px] py-[1px] px-[6px] rounded-full font-medium" style={{ background: `${STATUS_COLORS_CREW[m.status]}18`, color: STATUS_COLORS_CREW[m.status] }}>{m.status}</span>
+                        <span className="text-[10.5px] py-[1px] px-[6px] rounded-full font-medium capitalize" style={{ background: `${TIER_COLORS[m.tier] || "#6B7280"}18`, color: TIER_COLORS[m.tier] || "#6B7280" }}>{m.tier} · {m.commissionRate}%</span>
                       </div>
                       <div className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>
-                        {m.email}{m.leadName ? ` · under ${m.leadName}` : ""} · {m.commissionRate}% rate
+                        {m.email}{m.leadName ? ` · under ${m.leadName}` : ""}
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN(m.totalEarned)}</div>
+                      <div className="text-[14px] font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN(m.totalEarned)}</div>
                       <div className="text-[11px]" style={{ color: t.textMuted }}>earned</div>
                     </div>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform .15s" }}><polyline points="6 9 12 15 18 9"/></svg>
                   </div>
 
                   {expanded && (
-                    <div className="px-[18px] py-3 flex flex-col gap-3" style={{ background: dark ? "rgba(0,0,0,.12)" : "rgba(0,0,0,.02)", borderBottom: `1px solid ${rowBorder}` }}>
+                    <div className="px-[18px] py-4 flex flex-col gap-3.5" style={{ background: dark ? "rgba(0,0,0,.15)" : "rgba(0,0,0,.02)", borderBottom: `1px solid ${rowBorder}` }}>
                       <div className="grid grid-cols-4 max-md:grid-cols-2 gap-2.5">
                         {[
-                          ["Total Paid", fN(m.totalPaid)],
-                          ["Commissions", m.commissions],
-                          ["Links", m.links],
-                          ["Crew Size", m.crewCount],
-                        ].map(([l, v]) => (
-                          <div key={l} className="py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)" }}>
-                            <div className="text-[10.5px] uppercase tracking-wide" style={{ color: t.textMuted }}>{l}</div>
-                            <div className="text-sm font-semibold mt-0.5" style={{ color: t.text }}>{v}</div>
+                          ["Total Paid", fN(m.totalPaid), dark ? "#6ee7b7" : "#059669"],
+                          ["Commissions", m.commissions, t.accent],
+                          ["Links", m.links, t.blue],
+                          [m.role === "chief" ? "Team Size" : "Chief", m.role === "chief" ? m.crewCount : (m.leadName || "—"), t.text],
+                        ].map(([l, v, c]) => (
+                          <div key={l} className="py-2.5 px-3 rounded-xl" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.025)", border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}` }}>
+                            <div className="text-[10px] uppercase tracking-wider font-medium" style={{ color: t.textMuted }}>{l}</div>
+                            <div className="text-[15px] font-bold mt-1" style={{ color: c }}>{v}</div>
                           </div>
                         ))}
                       </div>
-                      {m.phone && <div className="text-[12px]" style={{ color: t.textMuted }}>Phone: {m.phone}</div>}
-                      <div className="text-[12px]" style={{ color: t.textMuted }}>Joined {fD(m.createdAt)}{m.approvedAt ? ` · Approved ${fD(m.approvedAt)}` : ""}</div>
+                      <div className="flex items-center gap-4 flex-wrap text-[12px]" style={{ color: t.textMuted }}>
+                        {m.phone && <span>Phone: <span style={{ color: t.text }}>{m.phone}</span></span>}
+                        <span>Joined {fD(m.createdAt)}</span>
+                        {m.approvedAt && <span>Approved {fD(m.approvedAt)}</span>}
+                      </div>
 
                       <div className="flex gap-2 flex-wrap mt-1">
                         {m.status === "pending" && (
@@ -2484,11 +2519,14 @@ export function AdminCrewPage({ dark, t }) {
                         {m.status === "approved" && m.role !== "chief" && (
                           <button disabled={busy === m.id} onClick={async () => { const ok = await confirm({ title: "Promote to Chief", message: `Promote ${m.name} to chief? They'll be able to manage a team and tracking links.`, confirmLabel: "Promote" }); if (ok) act("promote-chief", m.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(196,125,142,.35)" : "rgba(196,125,142,.3)", color: t.accent }}>Promote to Chief</button>
                         )}
+                        {m.status === "approved" && m.role === "chief" && (
+                          <button disabled={busy === m.id} onClick={async () => { const ok = await confirm({ title: "Demote to Crew", message: `Demote ${m.name} back to crew member? They'll lose team management access.`, confirmLabel: "Demote", danger: true }); if (ok) act("demote-crew", m.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>Demote to Crew</button>
+                        )}
                         {m.status === "approved" && (
                           <select value={m.tier} onChange={e => act("update-tier", m.id, { tier: e.target.value })} disabled={busy === m.id} className="py-1 px-2 rounded-lg text-[12px] border cursor-pointer bg-transparent outline-none" style={{ borderColor: dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.12)", color: t.text, fontFamily: "inherit" }}>
-                            <option value="starter">Starter (5%)</option>
-                            <option value="growth">Growth (7%)</option>
-                            <option value="pro">Pro (10%)</option>
+                            <option value="starter">Starter ({tierCfg.affiliate_starter_rate || 30}%)</option>
+                            <option value="growth">Growth ({tierCfg.affiliate_growth_rate || 40}%)</option>
+                            <option value="pro">Pro ({tierCfg.affiliate_pro_rate || 50}%)</option>
                           </select>
                         )}
                       </div>
@@ -2524,26 +2562,28 @@ export function AdminCrewPage({ dark, t }) {
             ) : filteredPayouts.map((p, i) => {
               const expanded = expandedId === p.id;
               const statusColor = PAYOUT_COLORS[p.status] || "#6B7280";
+              const payoutInitials = p.memberName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
               return (
                 <div key={p.id}>
-                  <div className="py-3 px-[18px] flex items-center gap-3 cursor-pointer" style={{ borderBottom: (i < filteredPayouts.length - 1 || expanded) ? `1px solid ${rowBorder}` : "none" }} onClick={() => setExpandedId(expanded ? null : p.id)}>
+                  <div className="py-3.5 px-[18px] flex items-center gap-3 cursor-pointer hover:bg-[rgba(196,125,142,.03)] transition-colors" style={{ borderBottom: (i < filteredPayouts.length - 1 || expanded) ? `1px solid ${rowBorder}` : "none" }} onClick={() => setExpandedId(expanded ? null : p.id)}>
+                    <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[11px] font-bold shrink-0" style={{ background: `${statusColor}18`, color: statusColor }}>{payoutInitials}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[13.5px] font-semibold" style={{ color: t.text }}>{p.memberName}</span>
-                        <span className="text-[11px] py-[1px] px-[6px] rounded-full font-medium" style={{ background: `${statusColor}22`, color: statusColor }}>{p.status}</span>
+                        <span className="text-[10.5px] py-[1px] px-[6px] rounded-full font-medium capitalize" style={{ background: `${statusColor}18`, color: statusColor }}>{p.status}</span>
                       </div>
                       <div className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>
-                        {p.memberEmail} · Requested {fD(p.createdAt)}
+                        {p.memberEmail} · {fD(p.createdAt)}
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="text-[14px] font-semibold" style={{ color: t.text }}>{fN(p.amount)}</div>
+                      <div className="m text-[15px] font-bold" style={{ color: t.text }}>{fN(p.amount)}</div>
                     </div>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform .15s" }}><polyline points="6 9 12 15 18 9"/></svg>
                   </div>
 
                   {expanded && (
-                    <div className="px-[18px] py-3 flex flex-col gap-3" style={{ background: dark ? "rgba(0,0,0,.12)" : "rgba(0,0,0,.02)", borderBottom: `1px solid ${rowBorder}` }}>
+                    <div className="px-[18px] py-4 flex flex-col gap-3.5" style={{ background: dark ? "rgba(0,0,0,.15)" : "rgba(0,0,0,.02)", borderBottom: `1px solid ${rowBorder}` }}>
                       {/* Bank details */}
                       <div className="grid grid-cols-3 max-md:grid-cols-1 gap-2.5">
                         {[
@@ -2551,9 +2591,9 @@ export function AdminCrewPage({ dark, t }) {
                           ["Account No.", p.bankAccountNo || "Not set"],
                           ["Account Name", p.bankAccountName || "Not set"],
                         ].map(([l, v]) => (
-                          <div key={l} className="py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)" }}>
-                            <div className="text-[10.5px] uppercase tracking-wide" style={{ color: t.textMuted }}>{l}</div>
-                            <div className="text-[13px] font-semibold mt-0.5" style={{ color: t.text }}>{v}</div>
+                          <div key={l} className="py-2.5 px-3 rounded-xl" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.025)", border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}` }}>
+                            <div className="text-[10px] uppercase tracking-wider font-medium" style={{ color: t.textMuted }}>{l}</div>
+                            <div className="text-[13px] font-bold mt-1" style={{ color: t.text }}>{v}</div>
                           </div>
                         ))}
                       </div>
@@ -2586,6 +2626,82 @@ export function AdminCrewPage({ dark, t }) {
             })}
           </div>
         </>
+      )}
+
+      {/* ═══ SETTINGS TAB ═══ */}
+      {tab === "settings" && (
+        <div className="flex flex-col gap-5 max-w-[560px]">
+          {tierCfgLoading ? (
+            <div className="py-12 text-center text-sm" style={{ color: t.textMuted }}>Loading settings...</div>
+          ) : (
+            <>
+              <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBd }}>
+                <div className="py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+                  <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.textMuted }}>Profit Split per Tier</div>
+                </div>
+                <div className="p-[18px] flex flex-col gap-4">
+                  <div className="text-[12.5px]" style={{ color: t.textMuted }}>The % of profit that goes to the crew side. Nitro keeps the rest.</div>
+                  {[
+                    ["affiliate_starter_rate", "Starter"],
+                    ["affiliate_growth_rate", "Growth"],
+                    ["affiliate_pro_rate", "Pro"],
+                  ].map(([key, label]) => (
+                    <div key={key} className="flex items-center gap-3">
+                      <label className="text-[13px] font-medium w-[70px] shrink-0" style={{ color: t.text }}>{label}</label>
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <input type="number" min="1" max="100" value={tierCfg[key] || ""} onChange={e => setTierCfg(p => ({ ...p, [key]: e.target.value }))} className="w-[70px] py-1.5 px-2.5 rounded-lg text-[13px] bg-transparent outline-none text-right" style={{ color: t.text, border: `1px solid ${dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.12)"}`, fontFamily: "inherit" }} />
+                        <span className="text-[12px]" style={{ color: t.textMuted }}>% to crew</span>
+                        <span className="text-[12px] ml-auto" style={{ color: t.textMuted }}>{100 - (parseInt(tierCfg[key]) || 0)}% to Nitro</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBd }}>
+                <div className="py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+                  <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.textMuted }}>Tier Thresholds</div>
+                </div>
+                <div className="p-[18px] flex flex-col gap-4">
+                  <div className="text-[12.5px]" style={{ color: t.textMuted }}>Active referrals needed to unlock each tier (recalculated daily).</div>
+                  {[
+                    ["affiliate_growth_threshold", "Growth"],
+                    ["affiliate_pro_threshold", "Pro"],
+                  ].map(([key, label]) => (
+                    <div key={key} className="flex items-center gap-3">
+                      <label className="text-[13px] font-medium w-[70px] shrink-0" style={{ color: t.text }}>{label}</label>
+                      <div className="flex items-center gap-1.5">
+                        <input type="number" min="1" value={tierCfg[key] || ""} onChange={e => setTierCfg(p => ({ ...p, [key]: e.target.value }))} className="w-[70px] py-1.5 px-2.5 rounded-lg text-[13px] bg-transparent outline-none text-right" style={{ color: t.text, border: `1px solid ${dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.12)"}`, fontFamily: "inherit" }} />
+                        <span className="text-[12px]" style={{ color: t.textMuted }}>active referrals</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBd }}>
+                <div className="py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+                  <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.textMuted }}>Chief / Crew Split</div>
+                </div>
+                <div className="p-[18px] flex flex-col gap-3">
+                  <div className="text-[12.5px]" style={{ color: t.textMuted }}>How the crew side&apos;s share is split between chief and crew member.</div>
+                  <div className="flex items-center gap-3">
+                    <label className="text-[13px] font-medium w-[70px] shrink-0" style={{ color: t.text }}>Chief</label>
+                    <div className="flex items-center gap-1.5 flex-1">
+                      <input type="number" min="0" max="100" value={tierCfg.affiliate_lead_split || ""} onChange={e => setTierCfg(p => ({ ...p, affiliate_lead_split: e.target.value }))} className="w-[70px] py-1.5 px-2.5 rounded-lg text-[13px] bg-transparent outline-none text-right" style={{ color: t.text, border: `1px solid ${dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.12)"}`, fontFamily: "inherit" }} />
+                      <span className="text-[12px]" style={{ color: t.textMuted }}>%</span>
+                      <span className="text-[12px] ml-auto" style={{ color: t.textMuted }}>Crew member gets {100 - (parseInt(tierCfg.affiliate_lead_split) || 0)}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button onClick={saveTierCfg} disabled={tierCfgSaving} className="self-start py-2 px-5 rounded-xl text-[13px] font-semibold border-none cursor-pointer text-white disabled:opacity-50" style={{ background: t.accent, fontFamily: "inherit" }}>
+                {tierCfgSaving ? "Saving..." : "Save Settings"}
+              </button>
+            </>
+          )}
+        </div>
       )}
     </>
   );

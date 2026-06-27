@@ -97,8 +97,12 @@ export async function POST(req) {
 
     if (action === "update-tier") {
       const { tier, commissionRate } = body;
-      const TIERS = { starter: 5, growth: 7, pro: 10 };
-      const rate = commissionRate || TIERS[tier] || 5;
+      const tierSettings = await prisma.setting.findMany({
+        where: { key: { in: ['affiliate_starter_rate', 'affiliate_growth_rate', 'affiliate_pro_rate'] } },
+      });
+      const sv = Object.fromEntries(tierSettings.map(r => [r.key, parseInt(r.value)]));
+      const TIERS = { starter: sv.affiliate_starter_rate || 30, growth: sv.affiliate_growth_rate || 40, pro: sv.affiliate_pro_rate || 50 };
+      const rate = commissionRate || TIERS[tier] || 30;
       await prisma.crewMember.update({ where: { id: memberId }, data: { tier, commissionRate: rate } });
       const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
       await logActivity(admin.name, `Updated ${m?.name || memberId} to ${tier} (${rate}%)`);
@@ -109,6 +113,13 @@ export async function POST(req) {
       await prisma.crewMember.update({ where: { id: memberId }, data: { role: "chief" } });
       const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
       await logActivity(admin.name, `Promoted ${m?.name || memberId} to chief`);
+      return Response.json({ ok: true });
+    }
+
+    if (action === "demote-crew") {
+      await prisma.crewMember.update({ where: { id: memberId }, data: { role: "crew" } });
+      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
+      await logActivity(admin.name, `Demoted ${m?.name || memberId} to crew`);
       return Response.json({ ok: true });
     }
 

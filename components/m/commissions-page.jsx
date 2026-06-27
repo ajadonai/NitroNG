@@ -28,7 +28,7 @@ function Inner({ member, initialData }) {
   const load = useCallback((f, p) => {
     setLoading(true);
     setError(null);
-    fetch(`/api/m/commissions?status=${f}&page=${p}`)
+    fetch(`/api/pit/commissions?status=${f}&page=${p}`)
       .then((r) => r.json())
       .then((d) => d.error ? setError(d.error) : setData(d))
       .catch(() => setError("Failed to load commissions"))
@@ -109,7 +109,7 @@ function Inner({ member, initialData }) {
                 <div className="flex items-center gap-3 shrink-0 max-md:w-full max-md:justify-between max-md:mt-1">
                   <div className="text-right">
                     <div className="m text-[13.5px] font-semibold" style={{ color: c.status === "voided" ? t.red : t.green }}>{fN(c.amount)}</div>
-                    <div className="m text-[10.5px] mt-[1px]" style={{ color: t.muted }}>{c.rate}% of {fN(c.orderCharge)}</div>
+                    <div className="m text-[10.5px] mt-[1px]" style={{ color: t.muted }}>{c.rate}% split · {fN(c.orderCharge)}</div>
                   </div>
                   <StatusBadge status={c.status} dark={dark} t={t} />
                 </div>

@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Pit Crew',
+  title: 'Pit',
   robots: { index: false, follow: false },
 };
 

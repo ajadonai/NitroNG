@@ -21,7 +21,7 @@ function Inner({ member, initialData }) {
   const [copied, setCopied] = useState(false);
 
   const reload = () => {
-    fetch("/api/m/team")
+    fetch("/api/pit/team")
       .then((r) => r.json())
       .then((d) => { if (!d.error) setData(d); })
       .catch(() => {});
@@ -32,7 +32,7 @@ function Inner({ member, initialData }) {
     if (!invName.trim() || !invEmail.trim()) { setInvError("Name and email are required"); return; }
     setInviting(true);
     try {
-      const res = await fetch("/api/m/team", {
+      const res = await fetch("/api/pit/team", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: invName.trim(), email: invEmail.trim() }),

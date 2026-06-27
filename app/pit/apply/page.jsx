@@ -4,6 +4,6 @@ import ApplyPage from "@/components/m/apply-page";
 
 export default async function Apply() {
   const member = await getCrewSession();
-  if (member) redirect("/m");
+  if (member) redirect("/pit");
   return <ApplyPage />;
 }

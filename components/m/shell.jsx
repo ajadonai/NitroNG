@@ -16,15 +16,15 @@ const ICONS = {
 };
 
 const SIDEBAR_ITEMS = [
-  { key: "dashboard", label: "Dashboard", href: "/m", icon: ICONS.dashboard },
-  { key: "links", label: "Tracking Links", href: "/m/links", icon: ICONS.links, chiefOnly: true },
-  { key: "team", label: "Team", href: "/m/team", icon: ICONS.team, chiefOnly: true },
-  { key: "commissions", label: "Commissions", href: "/m/commissions", icon: ICONS.commissions },
-  { key: "payouts", label: "Payouts", href: "/m/payouts", icon: ICONS.payouts },
-  { key: "settings", label: "Settings", href: "/m/settings", icon: ICONS.settings },
+  { key: "dashboard", label: "Dashboard", href: "/pit", icon: ICONS.dashboard },
+  { key: "links", label: "Tracking Links", href: "/pit/links", icon: ICONS.links, chiefOnly: true },
+  { key: "team", label: "Team", href: "/pit/team", icon: ICONS.team, chiefOnly: true },
+  { key: "commissions", label: "Commissions", href: "/pit/commissions", icon: ICONS.commissions },
+  { key: "payouts", label: "Payouts", href: "/pit/payouts", icon: ICONS.payouts },
+  { key: "settings", label: "Settings", href: "/pit/settings", icon: ICONS.settings },
 ];
 
-const PAGE_TITLES = { "/m": "Dashboard", "/m/links": "Tracking Links", "/m/team": "Team", "/m/commissions": "Commissions", "/m/payouts": "Payouts", "/m/settings": "Settings" };
+const PAGE_TITLES = { "/pit": "Dashboard", "/pit/links": "Tracking Links", "/pit/team": "Team", "/pit/commissions": "Commissions", "/pit/payouts": "Payouts", "/pit/settings": "Settings" };
 
 function ShellInner({ children, member }) {
   const { dark, toggleTheme, t } = useTheme();
@@ -33,29 +33,29 @@ function ShellInner({ children, member }) {
   const role = member?.role || "crew";
   const isChief = role === "chief";
   const sidebarItems = SIDEBAR_ITEMS.filter(i => !i.chiefOnly || isChief);
-  const title = PAGE_TITLES[pathname] || "Pit Crew";
+  const title = PAGE_TITLES[pathname] || "Pit";
   const initials = (member?.name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
-  const isActive = (href) => href === "/m" ? pathname === "/m" : pathname.startsWith(href);
+  const isActive = (href) => href === "/pit" ? pathname === "/pit" : pathname.startsWith(href);
 
   const handleLogout = async () => {
-    await fetch("/api/m/auth/logout", { method: "POST" });
-    router.push("/m/login");
+    await fetch("/api/pit/auth/logout", { method: "POST" });
+    router.push("/pit/login");
   };
 
   const nav = (href) => { router.push(href); };
 
   const bottomTabs = isChief ? [
-    { key: "dashboard", label: "Home", href: "/m", icon: ICONS.dashboard },
-    { key: "links", label: "Links", href: "/m/links", icon: ICONS.links },
-    { key: "commissions", label: "Earnings", href: "/m/commissions", icon: ICONS.commissions },
-    { key: "payouts", label: "Payouts", href: "/m/payouts", icon: ICONS.payouts },
-    { key: "team", label: "Team", href: "/m/team", icon: ICONS.team },
+    { key: "dashboard", label: "Home", href: "/pit", icon: ICONS.dashboard },
+    { key: "links", label: "Links", href: "/pit/links", icon: ICONS.links },
+    { key: "commissions", label: "Earnings", href: "/pit/commissions", icon: ICONS.commissions },
+    { key: "payouts", label: "Payouts", href: "/pit/payouts", icon: ICONS.payouts },
+    { key: "team", label: "Team", href: "/pit/team", icon: ICONS.team },
   ] : [
-    { key: "dashboard", label: "Home", href: "/m", icon: ICONS.dashboard },
-    { key: "commissions", label: "Earnings", href: "/m/commissions", icon: ICONS.commissions },
-    { key: "payouts", label: "Payouts", href: "/m/payouts", icon: ICONS.payouts },
-    { key: "settings", label: "Settings", href: "/m/settings", icon: ICONS.settings },
+    { key: "dashboard", label: "Home", href: "/pit", icon: ICONS.dashboard },
+    { key: "commissions", label: "Earnings", href: "/pit/commissions", icon: ICONS.commissions },
+    { key: "payouts", label: "Payouts", href: "/pit/payouts", icon: ICONS.payouts },
+    { key: "settings", label: "Settings", href: "/pit/settings", icon: ICONS.settings },
   ];
 
   return (
@@ -63,9 +63,9 @@ function ShellInner({ children, member }) {
       {/* ── Desktop/tablet sidebar ── */}
       <aside className="crew-sidebar" style={{ background: t.sidebarBg, borderRight: `1px solid ${t.surfaceBrd}`, backdropFilter: "blur(16px)" }}>
         <div className="px-2 pb-[18px] pt-1">
-          <div className="sidebar-text">
+          <div className="flex items-center gap-2">
             <span className="h-7 px-3 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span>
-            <span className="inline-block text-[9.5px] font-semibold tracking-[1.5px] uppercase py-[2px] px-[7px] rounded-md mt-[5px]" style={{ color: t.accent, background: t.accentLight }}>Pit Crew</span>
+            <span className="text-xs py-0.5 px-1.5 rounded font-semibold" style={{ background: t.accentLight, color: t.accent }}>PIT</span>
           </div>
         </div>
         <nav className="flex flex-col gap-[2px] mt-[6px]">
@@ -104,7 +104,7 @@ function ShellInner({ children, member }) {
           </div>
           <div className="flex items-center gap-3">
             {isChief && (
-              <a href="/m/settings" onClick={(e) => { e.preventDefault(); nav("/m/settings"); }} className="crew-topbar-settings" style={{ color: isActive("/m/settings") ? t.accent : t.muted }}>
+              <a href="/pit/settings" onClick={(e) => { e.preventDefault(); nav("/pit/settings"); }} className="crew-topbar-settings" style={{ color: isActive("/pit/settings") ? t.accent : t.muted }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               </a>
             )}

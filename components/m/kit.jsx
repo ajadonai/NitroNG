@@ -42,55 +42,107 @@ export function StatusBadge({ status, label, dark, t }) {
   );
 }
 
-// ── TierBadge + TierProgress ──
-const TIER_INFO = { starter: { rate: 5, next: "Growth", nextThreshold: 30 }, growth: { rate: 7, next: "Pro", nextThreshold: 100 }, pro: { rate: 10, next: null, nextThreshold: null } };
+// ── TierProgress ──
+const TIER_ICONS = {
+  starter: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+  growth: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,
+  pro: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M6 3h12l4 6-10 13L2 9z"/></svg>,
+};
+const DEFAULT_TIER_CONFIG = {
+  starter: { rate: 30, min: 0 },
+  growth: { rate: 40, min: 30 },
+  pro: { rate: 50, min: 100 },
+  leadSplit: 40,
+};
 
-export function TierProgress({ tier, activeCount, dark, t }) {
-  const info = TIER_INFO[tier] || TIER_INFO.starter;
-  const maxMarker = 100;
-  const pct = Math.min(100, (activeCount / maxMarker) * 100);
-  const growthReached = activeCount >= 30;
-  const proReached = activeCount >= 100;
+export function TierProgress({ tier, activeCount, tierConfig, dark, t }) {
+  const cfg = tierConfig || DEFAULT_TIER_CONFIG;
   const tierName = tier.charAt(0).toUpperCase() + tier.slice(1);
+  const currentRate = cfg[tier]?.rate || cfg.starter.rate;
+  const growthMin = cfg.growth?.min || 30;
+  const proMin = cfg.pro?.min || 100;
+  const growthReached = activeCount >= growthMin;
+  const proReached = activeCount >= proMin;
+  const maxMarker = proMin;
+  const pct = Math.min(100, (activeCount / maxMarker) * 100);
+
+  const nextTier = tier === "starter" ? "growth" : tier === "growth" ? "pro" : null;
+  const nextMin = nextTier ? cfg[nextTier]?.min : null;
+  const nextRate = nextTier ? cfg[nextTier]?.rate : null;
+
   const tiers = [
-    { label: "Starter", rate: "5%", pos: 0, reached: true },
-    { label: "Growth", rate: "7%", pos: 30, reached: growthReached },
-    { label: "Pro", rate: "10%", pos: 100, reached: proReached },
+    { key: "starter", label: "Starter", rate: cfg.starter?.rate || 30, pos: 0, reached: true },
+    { key: "growth", label: "Growth", rate: cfg.growth?.rate || 40, pos: (growthMin / maxMarker) * 100, reached: growthReached },
+    { key: "pro", label: "Pro", rate: cfg.pro?.rate || 50, pos: 100, reached: proReached },
   ];
 
   return (
-    <div className="rounded-[14px] overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
-      <div className="py-[10px] px-[18px] flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
-        <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>Tier Progress</div>
-        {info.next && (
-          <span className="text-[11.5px]" style={{ color: t.soft }}>
-            <b style={{ color: t.accent }}>{activeCount}</b>/{info.nextThreshold} to {info.next}
-          </span>
-        )}
+    <div className="rounded-2xl overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
+      {/* Current tier banner */}
+      <div className="py-5 px-5 flex items-center gap-4" style={{ background: t.grad }}>
+        <div className="w-11 h-11 rounded-[13px] flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,.2)" }}>
+          {TIER_ICONS[tier] || TIER_ICONS.starter}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline gap-2">
+            <span className="serif text-[22px] font-semibold text-white italic">{tierName}</span>
+            <span className="text-[12px] font-semibold text-white/70 uppercase tracking-wide">Tier</span>
+          </div>
+          <div className="text-[13px] text-white/80 mt-0.5">
+            You earn <b className="m text-white">{currentRate}%</b> of profit on every sale
+          </div>
+        </div>
       </div>
-      <div className="py-[18px] px-[18px] flex flex-col gap-5">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: t.grad }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          </div>
-          <div>
-            <span className="serif text-[20px] font-semibold leading-tight" style={{ color: t.text }}>{tierName}</span>
-            <span className="text-[13px] font-medium ml-2" style={{ color: t.muted }}>{info.rate}% commission</span>
-          </div>
-        </div>
+
+      <div className="py-5 px-5 flex flex-col gap-4">
+        {/* Progress bar */}
         <div>
-          <div className="relative h-[6px] rounded-full mx-[6px]" style={{ background: t.surfaceBrd }}>
+          {nextTier && (
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[12px] font-medium" style={{ color: t.muted }}>Progress to {nextTier.charAt(0).toUpperCase() + nextTier.slice(1)}</span>
+              <span className="m text-[12px] font-semibold" style={{ color: t.accent }}>{activeCount}/{nextMin}</span>
+            </div>
+          )}
+          <div className="relative h-2 rounded-full" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)" }}>
             <div className="absolute left-0 top-0 bottom-0 rounded-full transition-[width] duration-1000" style={{ width: `${pct}%`, background: t.grad }} />
-            {tiers.map(({ pos, reached }) => (
-              <span key={pos} className="absolute top-1/2 w-[10px] h-[10px] rounded-full z-[2] border-2" style={{ left: `${pos}%`, transform: "translate(-50%, -50%)", background: reached ? t.accent : t.bg, borderColor: reached ? t.accent : t.surfaceBrd }} />
-            ))}
-          </div>
-          <div className="flex justify-between mt-2 px-0">
-            {tiers.map(({ label, rate, reached }) => (
-              <span key={label} className="text-[10.5px] font-medium" style={{ color: reached ? t.accent : t.muted }}>{label} {rate}</span>
+            {tiers.map(({ key, pos, reached }) => (
+              <span key={key} className="absolute top-1/2 w-3 h-3 rounded-full z-[2] border-[2.5px]" style={{ left: `${pos}%`, transform: "translate(-50%, -50%)", background: reached ? t.accent : (dark ? "#1a1e2e" : "#fff"), borderColor: reached ? t.accent : (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.12)") }} />
             ))}
           </div>
         </div>
+
+        {/* Tier cards */}
+        <div className="grid grid-cols-3 gap-2">
+          {tiers.map(({ key, label, rate, reached }) => {
+            const isCurrent = key === tier;
+            return (
+              <div key={key} className="rounded-xl py-3 px-2.5 text-center transition-all duration-200" style={{
+                background: isCurrent ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent",
+                border: `1px solid ${isCurrent ? t.accent + "40" : t.surfaceBrd}`,
+              }}>
+                <div className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: reached ? t.accent : t.muted }}>{label}</div>
+                <div className="m text-[18px] font-bold" style={{ color: reached ? t.text : t.muted }}>{rate}%</div>
+                <div className="text-[10px] mt-0.5" style={{ color: t.muted }}>of profit</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Next tier callout */}
+        {nextTier && nextMin && (
+          <div className="flex items-center gap-2.5 rounded-xl py-2.5 px-3.5" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)"}` }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" className="shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12 16 16 12 12 8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            <span className="text-[12px]" style={{ color: t.soft }}>
+              <b className="m" style={{ color: t.accent }}>{Math.max(0, nextMin - activeCount)}</b> more active referrals to unlock <b style={{ color: t.text }}>{nextRate}%</b> profit split
+            </span>
+          </div>
+        )}
+        {tier === "pro" && (
+          <div className="flex items-center gap-2.5 rounded-xl py-2.5 px-3.5" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)"}` }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth="2" className="shrink-0"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <span className="text-[12px]" style={{ color: t.soft }}>Max tier reached — you&apos;re a <b style={{ color: t.green }}>50/50 partner</b> with Nitro</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -152,7 +204,7 @@ export function Skeleton({ w, h = 14, className = "" }) {
 // ── HoldTooltip ──
 export function HoldTooltip({ dark }) {
   return (
-    <span className="inline-flex items-center justify-center w-[15px] h-[15px] rounded-full text-[10px] italic font-bold cursor-help relative group" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)", color: dark ? "#8a8580" : "#757170" }} title="Commissions are held for 7 days to cover refunds. After that they're approved and payable.">
+    <span className="inline-flex items-center justify-center w-[15px] h-[15px] rounded-full text-[10px] italic font-bold cursor-help relative group" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)", color: dark ? "#8a8580" : "#757170" }} title="Earnings are held for 7 days to cover refunds. After that they're approved and payable.">
       i
     </span>
   );

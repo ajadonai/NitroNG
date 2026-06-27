@@ -19,7 +19,7 @@ function Inner({ member, initialData }) {
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const reload = () => {
-    fetch("/api/m/payouts")
+    fetch("/api/pit/payouts")
       .then((r) => r.json())
       .then((d) => { if (!d.error) setData(d); })
       .catch(() => {});
@@ -34,7 +34,7 @@ function Inner({ member, initialData }) {
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/m/payouts", {
+      const res = await fetch("/api/pit/payouts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: num }),
@@ -73,7 +73,7 @@ function Inner({ member, initialData }) {
         </div>
         {data && !data.hasBankDetails && (
           <div className="text-[12px] mt-3" style={{ color: t.accent }}>
-            Add your bank details in <a href="/m/settings" className="font-semibold no-underline" style={{ color: t.accent }}>Settings</a> to request payouts.
+            Add your bank details in <a href="/pit/settings" className="font-semibold no-underline" style={{ color: t.accent }}>Settings</a> to request payouts.
           </div>
         )}
         {data && data.hasBankDetails && data.availableBalance < data.minPayout && data.availableBalance > 0 && (

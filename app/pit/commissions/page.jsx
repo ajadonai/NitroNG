@@ -43,7 +43,7 @@ async function getInitialCommissions(member) {
 
 export default async function Commissions() {
   const member = await getCrewSession();
-  if (!member) redirect("/m/login");
+  if (!member) redirect("/pit/login");
   const initialData = await getInitialCommissions(member);
   return <CommissionsPage member={memberToClient(member)} initialData={initialData} />;
 }
