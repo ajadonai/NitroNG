@@ -22,96 +22,405 @@ function reply(chatId, threadId, text) {
   }).catch(() => {});
 }
 
-async function handleOrders(chatId, threadId) {
-  const { todayStart } = watBounds();
-  const [todayCount, processing, pending] = await Promise.all([
+// ── Shared helpers ──────────────────────────────────────
+const partialAdj = (orders) => {
+  let charge = 0, cost = 0;
+  for (const p of orders) {
+    const ratio = p.remains / p.quantity;
+    charge += Math.round(p.charge * ratio);
+    cost += Math.round((p.cost || 0) * ratio);
+  }
+  return { charge, cost };
+};
+const pct = (a, b) => b === 0 ? (a > 0 ? '🆕' : '—') : `${a >= b ? '+' : ''}${Math.round(((a - b) / b) * 100)}%`;
+const margin = (rev, cost) => rev > 0 ? `${Math.round(((rev - cost) / rev) * 100)}%` : '—';
+const k = (v) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1_000 ? `${(v / 1_000).toFixed(1)}K` : v.toLocaleString();
+
+// ── /stats — full snapshot ──────────────────────────────
+async function handleStats(chatId, threadId) {
+  const { todayStart, yesterdayStart, monthStart } = watBounds();
+
+  const [
+    totalUsers, todayUsers, monthUsers,
+    todayOrderCount, monthOrderCount,
+    todayRevAgg, monthRevAgg,
+    todayCostAgg, monthCostAgg,
+    todayDepositsAgg, monthDepositsAgg,
+    processing,
+    partialTodayOrders, partialMonthOrders,
+  ] = await Promise.all([
+    prisma.user.count({ where: { emailVerified: true } }),
+    prisma.user.count({ where: { createdAt: { gte: todayStart }, emailVerified: true } }),
+    prisma.user.count({ where: { createdAt: { gte: monthStart }, emailVerified: true } }),
     prisma.order.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
+    prisma.order.count({ where: { createdAt: { gte: monthStart }, deletedAt: null } }),
+    prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
+    prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
+    prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
+    prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
+    prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true }, _count: true }),
+    prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true }, _count: true }),
     prisma.order.count({ where: { status: 'Processing', deletedAt: null } }),
-    prisma.order.count({ where: { status: 'Pending', deletedAt: null } }),
+    prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
+    prisma.order.findMany({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
   ]);
+
+  const adjT = partialAdj(partialTodayOrders);
+  const adjM = partialAdj(partialMonthOrders);
+  const todayRev = ((todayRevAgg._sum.charge || 0) - adjT.charge) / 100;
+  const todayCost = ((todayCostAgg._sum.cost || 0) - adjT.cost) / 100;
+  const monthRev = ((monthRevAgg._sum.charge || 0) - adjM.charge) / 100;
+  const monthCost = ((monthCostAgg._sum.cost || 0) - adjM.cost) / 100;
+  const todayDep = (todayDepositsAgg._sum.amount || 0) / 100;
+  const monthDep = (monthDepositsAgg._sum.amount || 0) / 100;
+
   await reply(chatId, threadId, [
-    '📦 <b>Orders</b>',
-    `  Today: <b>${todayCount}</b>`,
-    `  Processing: <b>${processing}</b>`,
-    `  Pending: <b>${pending}</b>`,
+    '📊 <b>Dashboard Snapshot</b>',
+    '',
+    '<b>Today</b>',
+    `  Revenue: <b>${naira(Math.round(todayRev) * 100)}</b>`,
+    `  Profit: <b>${naira(Math.round(todayRev - todayCost) * 100)}</b> (${margin(todayRev, todayCost)} margin)`,
+    `  Money in: <b>${naira(Math.round(todayDep) * 100)}</b> (${todayDepositsAgg._count} deposits)`,
+    `  Orders: <b>${todayOrderCount}</b>  ·  New users: <b>${todayUsers}</b>`,
+    '',
+    '<b>This month</b>',
+    `  Revenue: <b>${naira(Math.round(monthRev) * 100)}</b>`,
+    `  Cost: <b>${naira(Math.round(monthCost) * 100)}</b>`,
+    `  Profit: <b>${naira(Math.round(monthRev - monthCost) * 100)}</b> (${margin(monthRev, monthCost)} margin)`,
+    `  Money in: <b>${naira(Math.round(monthDep) * 100)}</b> (${monthDepositsAgg._count} deposits)`,
+    `  Orders: <b>${monthOrderCount.toLocaleString()}</b>  ·  New users: <b>${monthUsers}</b>`,
+    '',
+    `👥 Total users: <b>${totalUsers.toLocaleString()}</b>  ·  Processing: <b>${processing}</b>`,
   ].join('\n'));
 }
 
+// ── /revenue — revenue + money in breakdown ─────────────
 async function handleRevenue(chatId, threadId) {
-  const { todayStart, monthStart } = watBounds();
-
-  const partialAdj = (orders) => {
-    let charge = 0;
-    for (const p of orders) charge += Math.round(p.charge * (p.remains / p.quantity));
-    return charge;
-  };
+  const { todayStart, yesterdayStart, monthStart } = watBounds();
 
   const [
-    todayOrdersAgg, monthOrdersAgg, allTimeOrdersAgg,
-    todayDepositsAgg, monthDepositsAgg, allTimeDepositsAgg,
-    partialToday, partialMonth, partialAll,
+    todayRevAgg, yesterdayRevAgg, monthRevAgg, allTimeRevAgg,
+    todayCostAgg, monthCostAgg,
+    todayDepAgg, yesterdayDepAgg, monthDepAgg, allTimeDepAgg,
+    partialTodayO, partialYesterdayO, partialMonthO, partialAllO,
   ] = await Promise.all([
-    prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true, cost: true } }),
+    prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
+    prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
     prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true, cost: true } }),
     prisma.order.aggregate({ where: { deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true, cost: true } }),
+    prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
+    prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
     prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true }, _count: true }),
-    prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
+    prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true }, _count: true }),
+    prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true }, _count: true }),
     prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed' }, _sum: { amount: true } }),
-    prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, quantity: true, remains: true } }),
-    prisma.order.findMany({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, quantity: true, remains: true } }),
-    prisma.order.findMany({ where: { deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, quantity: true, remains: true } }),
+    prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
+    prisma.order.findMany({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
+    prisma.order.findMany({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
+    prisma.order.findMany({ where: { deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
   ]);
 
-  const todayRev = ((todayOrdersAgg._sum.charge || 0) - partialAdj(partialToday)) / 100;
-  const monthRev = ((monthOrdersAgg._sum.charge || 0) - partialAdj(partialMonth)) / 100;
-  const allTimeRev = ((allTimeOrdersAgg._sum.charge || 0) - partialAdj(partialAll)) / 100;
-  const monthCost = (monthOrdersAgg._sum.cost || 0) / 100;
-  const monthProfit = monthRev - monthCost;
+  const adjT = partialAdj(partialTodayO);
+  const adjY = partialAdj(partialYesterdayO);
+  const adjM = partialAdj(partialMonthO);
+  const adjA = partialAdj(partialAllO);
+
+  const todayRev = ((todayRevAgg._sum.charge || 0) - adjT.charge) / 100;
+  const yesterdayRev = ((yesterdayRevAgg._sum.charge || 0) - adjY.charge) / 100;
+  const monthRev = ((monthRevAgg._sum.charge || 0) - adjM.charge) / 100;
+  const allTimeRev = ((allTimeRevAgg._sum.charge || 0) - adjA.charge) / 100;
+  const todayDep = (todayDepAgg._sum.amount || 0) / 100;
+  const yesterdayDep = (yesterdayDepAgg._sum.amount || 0) / 100;
+  const monthDep = (monthDepAgg._sum.amount || 0) / 100;
+  const allTimeDep = (allTimeDepAgg._sum.amount || 0) / 100;
 
   await reply(chatId, threadId, [
-    '💰 <b>Revenue</b> (order charges)',
-    `  Today: <b>${naira(Math.round(todayRev) * 100)}</b>`,
+    '💰 <b>Revenue</b> (what users paid for orders)',
+    `  Today: <b>${naira(Math.round(todayRev) * 100)}</b>  ${pct(todayRev, yesterdayRev)} vs yesterday`,
     `  This month: <b>${naira(Math.round(monthRev) * 100)}</b>`,
     `  All time: <b>${naira(Math.round(allTimeRev) * 100)}</b>`,
     '',
-    '🏦 <b>Money In</b> (deposits + credits)',
-    `  Today: <b>${naira(todayDepositsAgg._sum.amount || 0)}</b> (${todayDepositsAgg._count} deposits)`,
-    `  This month: <b>${naira(monthDepositsAgg._sum.amount || 0)}</b>`,
-    `  All time: <b>${naira(allTimeDepositsAgg._sum.amount || 0)}</b>`,
-    '',
-    `📊 Month profit: <b>${naira(Math.round(monthProfit) * 100)}</b>`,
+    '🏦 <b>Money In</b> (deposits + admin credits)',
+    `  Today: <b>${naira(Math.round(todayDep) * 100)}</b> (${todayDepAgg._count} txns)  ${pct(todayDep, yesterdayDep)} vs yesterday`,
+    `  This month: <b>${naira(Math.round(monthDep) * 100)}</b> (${monthDepAgg._count} txns)`,
+    `  All time: <b>${naira(Math.round(allTimeDep) * 100)}</b>`,
   ].join('\n'));
 }
 
+// ── /orders — status breakdown ──────────────────────────
+async function handleOrders(chatId, threadId) {
+  const { todayStart, yesterdayStart, monthStart } = watBounds();
+
+  const [
+    todayCount, yesterdayCount, monthCount,
+    statusGroups,
+    todayByStatus,
+    avgChargeAgg,
+  ] = await Promise.all([
+    prisma.order.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
+    prisma.order.count({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null } }),
+    prisma.order.count({ where: { createdAt: { gte: monthStart }, deletedAt: null } }),
+    prisma.order.groupBy({ by: ['status'], where: { deletedAt: null }, _count: true }),
+    prisma.order.groupBy({ by: ['status'], where: { createdAt: { gte: todayStart }, deletedAt: null }, _count: true }),
+    prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _avg: { charge: true }, _count: true }),
+  ]);
+
+  const get = (arr, s) => arr.find(g => g.status === s)?._count || 0;
+  const avgOrder = avgChargeAgg._avg.charge ? Math.round(avgChargeAgg._avg.charge / 100) : 0;
+
+  await reply(chatId, threadId, [
+    '📦 <b>Orders</b>',
+    '',
+    '<b>Today</b>',
+    `  Total: <b>${todayCount}</b>  ${pct(todayCount, yesterdayCount)} vs yesterday`,
+    `  ✅ Completed: ${get(todayByStatus, 'Completed')}  ·  ⏳ Processing: ${get(todayByStatus, 'Processing')}`,
+    `  🔄 Partial: ${get(todayByStatus, 'Partial')}  ·  ❌ Cancelled: ${get(todayByStatus, 'Cancelled')}`,
+    `  🕐 Pending: ${get(todayByStatus, 'Pending')}`,
+    '',
+    `<b>This month:</b> ${monthCount.toLocaleString()} orders  ·  Avg order: <b>${naira(avgOrder * 100)}</b>`,
+    '',
+    '<b>Active right now</b>',
+    `  ⏳ Processing: <b>${get(statusGroups, 'Processing')}</b>`,
+    `  🕐 Pending: <b>${get(statusGroups, 'Pending')}</b>`,
+    `  🔄 Partial: <b>${get(statusGroups, 'Partial')}</b>`,
+  ].join('\n'));
+}
+
+// ── /profit — profit deep dive ──────────────────────────
+async function handleProfit(chatId, threadId) {
+  const { todayStart, yesterdayStart, monthStart } = watBounds();
+
+  const [
+    todayRevAgg, todayCostAgg,
+    yesterdayRevAgg, yesterdayCostAgg,
+    monthRevAgg, monthCostAgg,
+    allTimeRevAgg, allTimeCostAgg,
+    monthDepAgg, providerTopupAgg,
+    refundAgg,
+    partialTodayO, partialYesterdayO, partialMonthO, partialAllO,
+  ] = await Promise.all([
+    prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
+    prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
+    prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
+    prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
+    prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
+    prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
+    prisma.order.aggregate({ where: { deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
+    prisma.order.aggregate({ where: { deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
+    prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
+    prisma.providerTopup.aggregate({ where: { createdAt: { gte: monthStart } }, _sum: { amount: true } }),
+    prisma.transaction.aggregate({ where: { type: 'refund', status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true }, _count: true }),
+    prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
+    prisma.order.findMany({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
+    prisma.order.findMany({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
+    prisma.order.findMany({ where: { deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
+  ]);
+
+  const adjT = partialAdj(partialTodayO);
+  const adjY = partialAdj(partialYesterdayO);
+  const adjM = partialAdj(partialMonthO);
+  const adjA = partialAdj(partialAllO);
+
+  const tRev = ((todayRevAgg._sum.charge || 0) - adjT.charge) / 100;
+  const tCost = ((todayCostAgg._sum.cost || 0) - adjT.cost) / 100;
+  const yRev = ((yesterdayRevAgg._sum.charge || 0) - adjY.charge) / 100;
+  const yCost = ((yesterdayCostAgg._sum.cost || 0) - adjY.cost) / 100;
+  const mRev = ((monthRevAgg._sum.charge || 0) - adjM.charge) / 100;
+  const mCost = ((monthCostAgg._sum.cost || 0) - adjM.cost) / 100;
+  const aRev = ((allTimeRevAgg._sum.charge || 0) - adjA.charge) / 100;
+  const aCost = ((allTimeCostAgg._sum.cost || 0) - adjA.cost) / 100;
+  const monthDep = (monthDepAgg._sum.amount || 0) / 100;
+  const monthTopups = (providerTopupAgg._sum.amount || 0) / 100;
+  const monthRefunds = (refundAgg._sum.amount || 0) / 100;
+
+  await reply(chatId, threadId, [
+    '📈 <b>Profit Breakdown</b>',
+    '',
+    '<b>Today</b>',
+    `  Revenue: ${naira(Math.round(tRev) * 100)}  ·  Cost: ${naira(Math.round(tCost) * 100)}`,
+    `  Profit: <b>${naira(Math.round(tRev - tCost) * 100)}</b> (${margin(tRev, tCost)} margin)`,
+    `  ${pct(tRev - tCost, yRev - yCost)} vs yesterday`,
+    '',
+    '<b>This month</b>',
+    `  Revenue: ${naira(Math.round(mRev) * 100)}  ·  Cost: ${naira(Math.round(mCost) * 100)}`,
+    `  Profit: <b>${naira(Math.round(mRev - mCost) * 100)}</b> (${margin(mRev, mCost)} margin)`,
+    '',
+    '<b>All time</b>',
+    `  Revenue: ${naira(Math.round(aRev) * 100)}  ·  Cost: ${naira(Math.round(aCost) * 100)}`,
+    `  Profit: <b>${naira(Math.round(aRev - aCost) * 100)}</b> (${margin(aRev, aCost)} margin)`,
+    '',
+    '<b>Cash flow (month)</b>',
+    `  Money in: ${naira(Math.round(monthDep) * 100)}`,
+    `  Provider top-ups: ${naira(Math.round(monthTopups) * 100)}`,
+    `  Net cash: <b>${naira(Math.round(monthDep - monthTopups) * 100)}</b>`,
+    `  Refunds: ${naira(Math.round(monthRefunds) * 100)} (${refundAgg._count || 0})`,
+  ].join('\n'));
+}
+
+// ── /users — user metrics ───────────────────────────────
+async function handleUsers(chatId, threadId) {
+  const { todayStart, monthStart } = watBounds();
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const [
+    totalUsers, todayUsers, monthUsers,
+    activeOrderers,
+    repeatResult,
+    idleWithBalance,
+    monthDepositors,
+    topDepositorsResult,
+  ] = await Promise.all([
+    prisma.user.count({ where: { emailVerified: true } }),
+    prisma.user.count({ where: { createdAt: { gte: todayStart }, emailVerified: true } }),
+    prisma.user.count({ where: { createdAt: { gte: monthStart }, emailVerified: true } }),
+    prisma.order.findMany({ where: { createdAt: { gte: monthStart }, deletedAt: null }, select: { userId: true }, distinct: ['userId'] }),
+    prisma.$queryRaw`
+      SELECT COUNT(DISTINCT o."userId")::int AS count
+      FROM orders o
+      WHERE o."createdAt" >= ${monthStart} AND o."deletedAt" IS NULL
+        AND EXISTS (
+          SELECT 1 FROM orders p
+          WHERE p."userId" = o."userId" AND p."createdAt" < ${monthStart} AND p."deletedAt" IS NULL
+        )
+    `,
+    prisma.user.count({ where: { emailVerified: true, balance: { gt: 0 }, orders: { none: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null } } } }),
+    prisma.$queryRaw`
+      SELECT COUNT(DISTINCT "userId")::int AS count
+      FROM transactions
+      WHERE type IN ('deposit', 'admin_credit') AND status = 'Completed' AND "createdAt" >= ${monthStart}
+    `,
+    prisma.$queryRaw`
+      SELECT u.name, u.email, SUM(t.amount)::int AS total
+      FROM transactions t
+      JOIN users u ON u.id = t."userId"
+      WHERE t.type IN ('deposit', 'admin_credit') AND t.status = 'Completed' AND t."createdAt" >= ${monthStart}
+      GROUP BY u.id, u.name, u.email
+      ORDER BY total DESC
+      LIMIT 5
+    `,
+  ]);
+
+  const repeatCount = repeatResult[0]?.count || 0;
+  const depositorsCount = monthDepositors[0]?.count || 0;
+  const topLines = topDepositorsResult.map((u, i) =>
+    `  ${i + 1}. ${u.name || u.email} — <b>${naira(u.total)}</b>`
+  );
+
+  await reply(chatId, threadId, [
+    '👥 <b>Users</b>',
+    '',
+    '<b>Growth</b>',
+    `  Total: <b>${totalUsers.toLocaleString()}</b>`,
+    `  Today: <b>+${todayUsers}</b>  ·  This month: <b>+${monthUsers}</b>`,
+    '',
+    '<b>Activity (this month)</b>',
+    `  Ordered: <b>${activeOrderers.length}</b> users`,
+    `  Returning: <b>${repeatCount}</b> (ordered before this month too)`,
+    `  Deposited: <b>${depositorsCount}</b> users`,
+    `  Idle w/ balance: <b>${idleWithBalance}</b> (no orders in 30d)`,
+    '',
+    '<b>Top depositors (month)</b>',
+    ...topLines,
+  ].join('\n'));
+}
+
+// ── /top — top platforms + services ─────────────────────
+async function handleTop(chatId, threadId) {
+  const { monthStart } = watBounds();
+
+  const [platformOrders, topServiceGroups] = await Promise.all([
+    prisma.order.findMany({
+      where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } },
+      select: { charge: true, status: true, quantity: true, remains: true, service: { select: { category: true } } },
+    }),
+    prisma.order.groupBy({
+      by: ['serviceId'],
+      where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } },
+      _count: true,
+      _sum: { charge: true },
+      orderBy: { _sum: { charge: 'desc' } },
+      take: 10,
+    }),
+  ]);
+
+  const effCharge = (o) => {
+    if (o.status === 'Partial' && o.remains > 0 && o.quantity > 0)
+      return Math.round(o.charge * (o.quantity - o.remains) / o.quantity);
+    return o.charge || 0;
+  };
+
+  const PLATFORMS = new Set(['instagram', 'youtube', 'tiktok', 'facebook', 'twitter/x', 'telegram', 'spotify', 'twitch', 'snapchat', 'linkedin', 'threads']);
+  const pMap = {};
+  platformOrders.forEach(o => {
+    const cat = (o.service?.category || '').toLowerCase();
+    if (!PLATFORMS.has(cat)) return;
+    const name = cat === 'twitter/x' ? 'Twitter/X' : cat.charAt(0).toUpperCase() + cat.slice(1);
+    if (!pMap[name]) pMap[name] = { orders: 0, revenue: 0 };
+    pMap[name].orders++;
+    pMap[name].revenue += effCharge(o);
+  });
+  const topPlatforms = Object.entries(pMap)
+    .sort((a, b) => b[1].revenue - a[1].revenue)
+    .slice(0, 5);
+
+  const serviceIds = topServiceGroups.map(s => s.serviceId);
+  const [tiers, services] = await Promise.all([
+    prisma.serviceTier.findMany({ where: { serviceId: { in: serviceIds } }, select: { serviceId: true, group: { select: { name: true } } } }),
+    prisma.service.findMany({ where: { id: { in: serviceIds } }, select: { id: true, name: true } }),
+  ]);
+  const groupMap = {};
+  tiers.forEach(t2 => { if (t2.serviceId && !groupMap[t2.serviceId]) groupMap[t2.serviceId] = t2.group?.name; });
+  const svcMap = {};
+  services.forEach(s => { svcMap[s.id] = s.name; });
+
+  const grouped = {};
+  topServiceGroups.forEach(s => {
+    const name = groupMap[s.serviceId] || svcMap[s.serviceId] || s.serviceId;
+    if (!grouped[name]) grouped[name] = { orders: 0, revenue: 0 };
+    grouped[name].orders += s._count;
+    grouped[name].revenue += s._sum.charge || 0;
+  });
+  const topServices = Object.entries(grouped)
+    .sort((a, b) => b[1].revenue - a[1].revenue)
+    .slice(0, 5);
+
+  const platLines = topPlatforms.map(([name, d], i) =>
+    `  ${['🥇','🥈','🥉','4.','5.'][i]} ${name} — <b>${naira(Math.round(d.revenue / 100) * 100)}</b> (${d.orders} orders)`
+  );
+  const svcLines = topServices.map(([name, d], i) =>
+    `  ${i + 1}. ${name} — <b>${naira(Math.round(d.revenue / 100) * 100)}</b> (${d.orders})`
+  );
+
+  await reply(chatId, threadId, [
+    '🏆 <b>Top Performers (this month)</b>',
+    '',
+    '<b>By platform</b>',
+    ...platLines,
+    '',
+    '<b>By service</b>',
+    ...svcLines,
+  ].join('\n'));
+}
+
+// ── /pending — pending manual deposits ──────────────────
 async function handlePending(chatId, threadId) {
   const pending = await prisma.transaction.findMany({
     where: { method: 'manual', status: 'Pending' },
     orderBy: { createdAt: 'desc' },
-    take: 10,
-    include: { user: { select: { name: true } } },
+    take: 15,
+    include: { user: { select: { name: true, email: true } } },
   });
   if (!pending.length) { await reply(chatId, threadId, '💳 No pending manual deposits.'); return; }
-  const lines = pending.map(tx => `  ${tx.user?.name || 'Unknown'} — <b>${naira(tx.amount)}</b>`);
-  await reply(chatId, threadId, ['💳 <b>Pending Manual Deposits</b>', '', ...lines].join('\n'));
-}
-
-async function handleStats(chatId, threadId) {
-  const { todayStart } = watBounds();
-  const [users, todayUsers, orders, todayOrders, todayRevAgg, todayDepositsAgg] = await Promise.all([
-    prisma.user.count(),
-    prisma.user.count({ where: { createdAt: { gte: todayStart } } }),
-    prisma.order.count({ where: { deletedAt: null } }),
-    prisma.order.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
-    prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
-    prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true } }),
-  ]);
-  const todayRev = (todayRevAgg._sum.charge || 0);
+  const lines = pending.map(tx => {
+    const who = tx.user?.name || tx.user?.email || 'Unknown';
+    const ago = Math.round((Date.now() - new Date(tx.createdAt).getTime()) / 60000);
+    const timeStr = ago < 60 ? `${ago}m ago` : ago < 1440 ? `${Math.round(ago / 60)}h ago` : `${Math.round(ago / 1440)}d ago`;
+    return `  ${who} — <b>${naira(tx.amount)}</b> · ${timeStr}`;
+  });
   await reply(chatId, threadId, [
-    '📊 <b>Quick Stats</b>',
-    `  Users: <b>${users.toLocaleString()}</b> (+${todayUsers} today)`,
-    `  Orders: <b>${orders.toLocaleString()}</b> (+${todayOrders} today)`,
-    `  Revenue today: <b>${naira(todayRev)}</b>`,
-    `  Money in today: <b>${naira(todayDepositsAgg._sum.amount || 0)}</b>`,
+    `💳 <b>Pending Manual Deposits</b> (${pending.length})`,
+    '',
+    ...lines,
   ].join('\n'));
 }
 
@@ -130,18 +439,24 @@ export async function POST(req) {
     const chatId = msg.chat.id;
     const threadId = msg.message_thread_id;
 
-    if (command === '/orders') await handleOrders(chatId, threadId);
+    if (command === '/stats') await handleStats(chatId, threadId);
     else if (command === '/revenue') await handleRevenue(chatId, threadId);
+    else if (command === '/orders') await handleOrders(chatId, threadId);
+    else if (command === '/profit') await handleProfit(chatId, threadId);
+    else if (command === '/users') await handleUsers(chatId, threadId);
+    else if (command === '/top') await handleTop(chatId, threadId);
     else if (command === '/pending') await handlePending(chatId, threadId);
-    else if (command === '/stats') await handleStats(chatId, threadId);
     else if (command === '/help') {
       await reply(chatId, threadId, [
         '🔭 <b>WatchTower Commands</b>',
         '',
-        '/orders — Today\'s order counts',
-        '/revenue — Revenue + money in',
+        '/stats — Full dashboard snapshot',
+        '/revenue — Revenue + money in (today / month / all time)',
+        '/orders — Order counts + status breakdown',
+        '/profit — Profit, margins, cost, cash flow',
+        '/users — Signups, active users, top depositors',
+        '/top — Top platforms + services this month',
         '/pending — Pending manual deposits',
-        '/stats — Quick overview',
         '/help — This message',
       ].join('\n'));
     }
