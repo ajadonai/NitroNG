@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 
 // ── StatCard ──
 export function StatCard({ label, value, caption, captionUp, dark, t }) {
@@ -8,7 +9,7 @@ export function StatCard({ label, value, caption, captionUp, dark, t }) {
         <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>{label}</div>
       </div>
       <div className="py-[14px] px-[18px]">
-        <div className="text-[24px] font-semibold tracking-tight" style={{ color: t.text }}>{value}</div>
+        <div className="m text-[24px] font-semibold tracking-tight" style={{ color: t.text }}>{value}</div>
         {caption && <div className="text-[11.5px] mt-[4px]" style={{ color: captionUp ? t.green : t.soft }}>{caption}</div>}
       </div>
     </div>
@@ -96,16 +97,23 @@ export function TierProgress({ tier, activeCount, dark, t }) {
 }
 
 // ── LinkPill ──
-export function LinkPill({ slug, onCopy, t }) {
+export function LinkPill({ slug, dark, t }) {
+  const [copied, setCopied] = useState(false);
   const handleCopy = () => {
     navigator.clipboard.writeText(`https://nitro.ng/?via=${slug}`);
-    onCopy?.();
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <div className="inline-flex items-center gap-2 rounded-[10px] py-[7px] px-[11px] text-[12.5px]" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
-      <span className="m"><span style={{ color: t.text }}>nitro.ng/?</span><span style={{ color: t.accent }}>via={slug}</span></span>
-      <button onClick={handleCopy} className="bg-transparent border-none flex cursor-pointer p-[2px]" style={{ color: t.muted }} title="Copy">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    <div className="flex items-center gap-3 rounded-xl py-3 px-4" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)", border: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)"}` }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" className="shrink-0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      <span className="m text-[13px] flex-1 truncate"><span style={{ color: t.soft }}>nitro.ng/?</span><span style={{ color: t.accent, fontWeight: 600 }}>via={slug}</span></span>
+      <button onClick={handleCopy} className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-[11px] font-semibold border-none cursor-pointer shrink-0 transition-all duration-150" style={{ background: copied ? t.green : t.grad, color: "#fff" }}>
+        {copied
+          ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        }
+        {copied ? "Copied" : "Copy"}
       </button>
     </div>
   );

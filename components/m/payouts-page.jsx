@@ -61,7 +61,7 @@ function Inner({ member, initialData }) {
       <div className="rounded-2xl p-5" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
         <div className="text-[11px] font-semibold tracking-[1px] uppercase" style={{ color: t.muted }}>Available Balance</div>
         <div className="flex items-end justify-between mt-2 flex-wrap gap-3">
-          <span className="text-[32px] max-md:text-[26px] font-semibold tracking-tight" style={{ color: t.text }}>{fN(data?.availableBalance)}</span>
+          <span className="m text-[32px] max-md:text-[26px] font-semibold tracking-tight" style={{ color: t.text }}>{fN(data?.availableBalance)}</span>
           <button
             onClick={() => setShowForm(!showForm)}
             disabled={!canRequest}
@@ -146,7 +146,7 @@ function Inner({ member, initialData }) {
           data.payouts.map((p) => (
             <div key={p.id} className="flex items-center gap-3 px-5 py-[14px]" style={{ borderTop: `1px solid ${t.surfaceBrd}` }}>
               <div className="flex-1 min-w-0">
-                <div className="text-[13.5px] font-semibold" style={{ color: t.text }}>{fN(p.amount)}</div>
+                <div className="m text-[13.5px] font-semibold" style={{ color: t.text }}>{fN(p.amount)}</div>
                 <div className="text-[11.5px] mt-[2px]" style={{ color: t.muted }}>
                   {fmtDate(p.createdAt)}
                   {p.reference && <> · {p.reference}</>}

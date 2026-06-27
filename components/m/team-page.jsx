@@ -206,8 +206,8 @@ function Inner({ member, initialData }) {
                 <div className="text-[11.5px] mt-[1px]" style={{ color: t.muted }}>{m.email}</div>
               </div>
               <div className="flex items-center gap-4 shrink-0 text-[12px] max-md:w-full max-md:mt-1 max-md:pl-11" style={{ color: t.muted }}>
-                <span><b style={{ color: t.text }}>{fN(m.totalEarned)}</b> earned</span>
-                <span><b style={{ color: t.text }}>{m.commissions}</b> sales</span>
+                <span><b className="m" style={{ color: t.text }}>{fN(m.totalEarned)}</b> earned</span>
+                <span><b className="m" style={{ color: t.text }}>{m.commissions}</b> sales</span>
               </div>
             </div>
           ))}

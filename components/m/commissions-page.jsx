@@ -92,7 +92,7 @@ function Inner({ member, initialData }) {
               <div key={c.id} className="flex items-center gap-3 px-5 py-[14px] max-md:flex-wrap" style={{ borderTop: i > 0 ? `1px solid ${t.surfaceBrd}` : undefined }}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[13px] font-medium" style={{ color: t.text }}>{c.orderId}</span>
+                    <span className="m text-[13px] font-medium" style={{ color: t.text }}>{c.orderId}</span>
                     {isChief && c.type === "team" && (
                       <span className="text-[10px] font-semibold py-[1px] px-[6px] rounded-md" style={{ color: t.accent, background: t.accentLight }}>TEAM</span>
                     )}
@@ -108,8 +108,8 @@ function Inner({ member, initialData }) {
                 </div>
                 <div className="flex items-center gap-3 shrink-0 max-md:w-full max-md:justify-between max-md:mt-1">
                   <div className="text-right">
-                    <div className="text-[13.5px] font-semibold" style={{ color: c.status === "voided" ? t.red : t.green }}>{fN(c.amount)}</div>
-                    <div className="text-[10.5px] mt-[1px]" style={{ color: t.muted }}>{c.rate}% of {fN(c.orderCharge)}</div>
+                    <div className="m text-[13.5px] font-semibold" style={{ color: c.status === "voided" ? t.red : t.green }}>{fN(c.amount)}</div>
+                    <div className="m text-[10.5px] mt-[1px]" style={{ color: t.muted }}>{c.rate}% of {fN(c.orderCharge)}</div>
                   </div>
                   <StatusBadge status={c.status} dark={dark} t={t} />
                 </div>
