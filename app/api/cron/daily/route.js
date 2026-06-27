@@ -306,7 +306,15 @@ export async function GET(req) {
   // ═══ TIER RECALCULATION: promote/demote crew members by active referred users ═══
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const TIERS = { starter: { rate: 5, min: 0 }, growth: { rate: 7, min: 30 }, pro: { rate: 10, min: 100 } };
+    const tierSettings = await prisma.setting.findMany({
+      where: { key: { in: ['affiliate_starter_rate', 'affiliate_growth_rate', 'affiliate_pro_rate', 'affiliate_growth_threshold', 'affiliate_pro_threshold'] } },
+    });
+    const s = Object.fromEntries(tierSettings.map(r => [r.key, parseInt(r.value)]));
+    const TIERS = {
+      starter: { rate: s.affiliate_starter_rate || 30, min: 0 },
+      growth:  { rate: s.affiliate_growth_rate || 40, min: s.affiliate_growth_threshold || 30 },
+      pro:     { rate: s.affiliate_pro_rate || 50, min: s.affiliate_pro_threshold || 100 },
+    };
 
     const members = await prisma.crewMember.findMany({
       where: { status: 'approved' },

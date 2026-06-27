@@ -185,7 +185,8 @@ export async function GET(req) {
             const delivered = order.quantity - (Number(result.remains) || 0);
             if (delivered > 0) {
               const partialCharge = Math.round((delivered / order.quantity) * order.charge);
-              createCommission(order.id, order.userId, partialCharge).catch(() => {});
+              const partialCost = Math.round((delivered / order.quantity) * order.cost);
+              createCommission(order.id, order.userId, partialCharge, partialCost).catch(() => {});
             }
           } else {
             await prisma.order.update({
@@ -199,7 +200,7 @@ export async function GET(req) {
             });
             stats.updated++;
             if (newStatus === 'Completed') {
-              createCommission(order.id, order.userId, order.charge).catch(() => {});
+              createCommission(order.id, order.userId, order.charge, order.cost).catch(() => {});
             }
           }
 

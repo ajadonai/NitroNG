@@ -14,17 +14,12 @@ function timeAgo(d) {
 
 function Inner({ member, initialData }) {
   const { dark, t } = useTheme();
-  const { stats, tier, recentCommissions, links } = initialData;
+  const { stats, tier, tierConfig, recentCommissions, links } = initialData;
   const primarySlug = links?.[0]?.slug;
 
   return (
     <div className="flex flex-col gap-5">
-      {primarySlug && (
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-[12px] font-semibold" style={{ color: t.muted }}>Your link</span>
-          <LinkPill slug={primarySlug} t={t} />
-        </div>
-      )}
+      {primarySlug && <LinkPill slug={primarySlug} dark={dark} t={t} />}
 
       <div className="grid grid-cols-2 max-md:grid-cols-1 gap-4">
         <StatCard label="Total Earned" value={fN(stats.totalEarned)} caption={`${stats.conversions} conversion${stats.conversions !== 1 ? "s" : ""}`} dark={dark} t={t} />
@@ -33,13 +28,13 @@ function Inner({ member, initialData }) {
         <StatCard label="Link Clicks" value={stats.clicks.toLocaleString()} caption={`${stats.activeReferrals} paid referral${stats.activeReferrals !== 1 ? "s" : ""}`} dark={dark} t={t} />
       </div>
 
-      <TierProgress tier={tier.name} activeCount={stats.activeReferrals} dark={dark} t={t} />
+      <TierProgress tier={tier.name} activeCount={stats.activeReferrals} tierConfig={tierConfig} dark={dark} t={t} />
 
       <div className="rounded-[14px] overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
         <div className="flex items-center justify-between py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
           <span className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>Recent Commissions</span>
           {recentCommissions.length > 0 && (
-            <a href="/m/commissions" className="text-[12px] font-medium no-underline" style={{ color: t.accent }}>View all</a>
+            <a href="/pit/commissions" className="text-[12px] font-medium no-underline" style={{ color: t.accent }}>View all</a>
           )}
         </div>
         {recentCommissions.length === 0 ? (
@@ -50,7 +45,7 @@ function Inner({ member, initialData }) {
               <div key={c.id} className="flex items-center gap-3 px-[18px] py-3" style={{ borderTop: `1px solid ${t.surfaceBrd}` }}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[13px] font-medium truncate" style={{ color: t.text }}>{c.orderId}</span>
+                    <span className="m text-[13px] font-medium truncate" style={{ color: t.text }}>{c.orderId}</span>
                     {c.type === "team" && (
                       <span className="text-[10px] font-semibold py-[1px] px-[6px] rounded-md" style={{ color: t.accent, background: t.accentLight }}>TEAM</span>
                     )}
@@ -60,7 +55,7 @@ function Inner({ member, initialData }) {
                   </div>
                 </div>
                 <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                  <span className="text-[13.5px] font-semibold" style={{ color: t.green }}>{fN(c.amount)}</span>
+                  <span className="m text-[13.5px] font-semibold" style={{ color: t.green }}>{fN(c.amount)}</span>
                   <StatusBadge status={c.status} dark={dark} t={t} />
                 </div>
               </div>

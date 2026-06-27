@@ -30,10 +30,40 @@ export async function POST(req) {
     }
 
     const hashed = await bcrypt.hash(password, 12);
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email: member.email },
+      select: { id: true },
+    });
+
     await prisma.crewMember.update({
       where: { id: member.id },
-      data: { password: hashed, status: "approved", approvedAt: new Date(), inviteToken: null, inviteExpiresAt: null },
+      data: {
+        password: hashed,
+        status: "approved",
+        approvedAt: new Date(),
+        inviteToken: null,
+        inviteExpiresAt: null,
+        ...(existingUser && !member.userId ? { userId: existingUser.id } : {}),
+      },
     });
+
+    if (!existingUser) {
+      const newUser = await prisma.user.create({
+        data: {
+          name: member.name,
+          email: member.email,
+          password: hashed,
+          phone: member.phone || null,
+        },
+      }).catch(() => null);
+      if (newUser) {
+        await prisma.crewMember.update({
+          where: { id: member.id },
+          data: { userId: newUser.id },
+        }).catch(() => {});
+      }
+    }
 
     const sessionToken = crypto.randomBytes(32).toString("hex");
     await prisma.crewSession.create({

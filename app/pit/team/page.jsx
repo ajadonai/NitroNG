@@ -35,8 +35,8 @@ async function getInitialTeam(leadId) {
 
 export default async function Team() {
   const member = await getCrewSession();
-  if (!member) redirect("/m/login");
-  if (member.role !== "chief") redirect("/m");
+  if (!member) redirect("/pit/login");
+  if (member.role !== "chief") redirect("/pit");
   const initialData = await getInitialTeam(member.id);
   return <TeamPage member={memberToClient(member)} initialData={initialData} />;
 }

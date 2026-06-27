@@ -19,7 +19,7 @@ function Inner({ member, initialData }) {
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const reload = () => {
-    fetch("/api/m/payouts")
+    fetch("/api/pit/payouts")
       .then((r) => r.json())
       .then((d) => { if (!d.error) setData(d); })
       .catch(() => {});
@@ -34,7 +34,7 @@ function Inner({ member, initialData }) {
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/m/payouts", {
+      const res = await fetch("/api/pit/payouts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: num }),
@@ -61,7 +61,7 @@ function Inner({ member, initialData }) {
       <div className="rounded-2xl p-5" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
         <div className="text-[11px] font-semibold tracking-[1px] uppercase" style={{ color: t.muted }}>Available Balance</div>
         <div className="flex items-end justify-between mt-2 flex-wrap gap-3">
-          <span className="text-[32px] max-md:text-[26px] font-semibold tracking-tight" style={{ color: t.text }}>{fN(data?.availableBalance)}</span>
+          <span className="m text-[32px] max-md:text-[26px] font-semibold tracking-tight" style={{ color: t.text }}>{fN(data?.availableBalance)}</span>
           <button
             onClick={() => setShowForm(!showForm)}
             disabled={!canRequest}
@@ -73,7 +73,7 @@ function Inner({ member, initialData }) {
         </div>
         {data && !data.hasBankDetails && (
           <div className="text-[12px] mt-3" style={{ color: t.accent }}>
-            Add your bank details in <a href="/m/settings" className="font-semibold no-underline" style={{ color: t.accent }}>Settings</a> to request payouts.
+            Add your bank details in <a href="/pit/settings" className="font-semibold no-underline" style={{ color: t.accent }}>Settings</a> to request payouts.
           </div>
         )}
         {data && data.hasBankDetails && data.availableBalance < data.minPayout && data.availableBalance > 0 && (
@@ -146,7 +146,7 @@ function Inner({ member, initialData }) {
           data.payouts.map((p) => (
             <div key={p.id} className="flex items-center gap-3 px-5 py-[14px]" style={{ borderTop: `1px solid ${t.surfaceBrd}` }}>
               <div className="flex-1 min-w-0">
-                <div className="text-[13.5px] font-semibold" style={{ color: t.text }}>{fN(p.amount)}</div>
+                <div className="m text-[13.5px] font-semibold" style={{ color: t.text }}>{fN(p.amount)}</div>
                 <div className="text-[11.5px] mt-[2px]" style={{ color: t.muted }}>
                   {fmtDate(p.createdAt)}
                   {p.reference && <> · {p.reference}</>}

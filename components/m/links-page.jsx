@@ -19,7 +19,7 @@ function Inner({ member, initialData }) {
   const [copied, setCopied] = useState(null);
 
   const reload = () => {
-    fetch("/api/m/links")
+    fetch("/api/pit/links")
       .then((r) => r.json())
       .then((d) => { if (!d.error) setData(d); })
       .catch(() => {});
@@ -30,7 +30,7 @@ function Inner({ member, initialData }) {
     if (!name.trim()) { setError("Name is required"); return; }
     setCreating(true);
     try {
-      const res = await fetch("/api/m/links", {
+      const res = await fetch("/api/pit/links", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name.trim(), slug: slug.trim() || undefined }),
@@ -49,7 +49,7 @@ function Inner({ member, initialData }) {
   };
 
   const toggleEnabled = async (id, enabled) => {
-    await fetch("/api/m/links", {
+    await fetch("/api/pit/links", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, enabled: !enabled }),
@@ -58,7 +58,7 @@ function Inner({ member, initialData }) {
   };
 
   const archive = async (id) => {
-    await fetch("/api/m/links", {
+    await fetch("/api/pit/links", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
@@ -180,22 +180,22 @@ function Inner({ member, initialData }) {
                 </div>
               </div>
               <div className="py-[14px] px-[18px]">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-[12.5px]" style={{ color: t.muted }}>nitro.ng/?<span style={{ color: t.accent }}>via={link.slug}</span></span>
+                <div className="flex items-center gap-3 mb-3 rounded-lg py-2.5 px-3" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
+                  <span className="m text-[12.5px] flex-1 truncate"><span style={{ color: t.soft }}>nitro.ng/?</span><span style={{ color: t.accent, fontWeight: 600 }}>via={link.slug}</span></span>
                   <button
                     onClick={() => copyLink(link.slug)}
-                    className="bg-transparent border-none cursor-pointer p-[2px] flex"
-                    style={{ color: copied === link.slug ? t.green : t.muted }}
+                    className="flex items-center gap-1 py-1 px-2.5 rounded-md text-[10px] font-semibold border-none cursor-pointer shrink-0 transition-all duration-150"
+                    style={{ background: copied === link.slug ? t.green : t.grad, color: "#fff" }}
                   >
                     {copied === link.slug
-                      ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
-                      : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      ? <><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>Copied</>
+                      : <><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</>
                     }
                   </button>
                 </div>
                 <div className="flex items-center gap-4 flex-wrap text-[12px]" style={{ color: t.muted }}>
-                  <span><b style={{ color: t.text }}>{link.clicks}</b> clicks</span>
-                  <span><b style={{ color: t.text }}>{link.commissions}</b> conversions</span>
+                  <span><b className="m" style={{ color: t.text }}>{link.clicks}</b> clicks</span>
+                  <span><b className="m" style={{ color: t.text }}>{link.commissions}</b> conversions</span>
                   {link.affiliateName && <span>Assigned to <b style={{ color: t.text }}>{link.affiliateName}</b></span>}
                   <span>{fmtDate(link.createdAt)}</span>
                 </div>

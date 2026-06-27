@@ -54,7 +54,7 @@ function TelegramCard({ member, t }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/m/settings", {
+      const res = await fetch("/api/pit/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ section: "telegram" }),
@@ -145,7 +145,7 @@ function Inner({ member }) {
     setError(null);
     setSuccess(false);
     try {
-      const res = await fetch("/api/m/settings", {
+      const res = await fetch("/api/pit/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ section, ...body }),

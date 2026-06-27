@@ -21,7 +21,7 @@ function Inner({ member, initialData }) {
   const [copied, setCopied] = useState(false);
 
   const reload = () => {
-    fetch("/api/m/team")
+    fetch("/api/pit/team")
       .then((r) => r.json())
       .then((d) => { if (!d.error) setData(d); })
       .catch(() => {});
@@ -32,7 +32,7 @@ function Inner({ member, initialData }) {
     if (!invName.trim() || !invEmail.trim()) { setInvError("Name and email are required"); return; }
     setInviting(true);
     try {
-      const res = await fetch("/api/m/team", {
+      const res = await fetch("/api/pit/team", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: invName.trim(), email: invEmail.trim() }),
@@ -206,8 +206,8 @@ function Inner({ member, initialData }) {
                 <div className="text-[11.5px] mt-[1px]" style={{ color: t.muted }}>{m.email}</div>
               </div>
               <div className="flex items-center gap-4 shrink-0 text-[12px] max-md:w-full max-md:mt-1 max-md:pl-11" style={{ color: t.muted }}>
-                <span><b style={{ color: t.text }}>{fN(m.totalEarned)}</b> earned</span>
-                <span><b style={{ color: t.text }}>{m.commissions}</b> sales</span>
+                <span><b className="m" style={{ color: t.text }}>{fN(m.totalEarned)}</b> earned</span>
+                <span><b className="m" style={{ color: t.text }}>{m.commissions}</b> sales</span>
               </div>
             </div>
           ))}
