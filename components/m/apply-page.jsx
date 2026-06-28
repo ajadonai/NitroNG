@@ -7,7 +7,7 @@ import { NitroWordmark } from "../nitro-logo";
 function Inner() {
   const { dark, toggleTheme, t } = useTheme();
   const router = useRouter();
-  const [form, setForm] = useState({ name: "", email: "", password: "", phone: "", xHandle: "", whyApply: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", phone: "", xHandle: "", telegramHandle: "", whyApply: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -172,6 +172,13 @@ function Inner() {
               X (Twitter) <span className="font-normal normal-case tracking-normal" style={{ color: t.textMuted }}>(optional)</span>
             </label>
             <input value={form.xHandle} onChange={set("xHandle")} placeholder="@yourhandle" className={inputCls} style={inputStyle} />
+          </div>
+
+          <div>
+            <label className={labelCls} style={{ color: t.text }}>
+              Telegram username
+            </label>
+            <input value={form.telegramHandle} onChange={set("telegramHandle")} required placeholder="@yourhandle" className={inputCls} style={inputStyle} />
           </div>
 
           <div>
