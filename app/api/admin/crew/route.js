@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { requireAdmin, logActivity, canSeeSensitive, maskEmail, maskPhone } from "@/lib/admin";
+import { kickFromGroup } from "@/lib/crew-bot";
 
 export async function GET() {
   const { admin, error } = await requireAdmin("crew");
@@ -28,6 +29,8 @@ export async function GET() {
         role: m.role,
         status: m.status,
         tier: m.tier,
+        telegramHandle: m.telegramHandle || null,
+        telegramLinked: !!m.telegramUserId,
         commissionRate: m.commissionRate,
         ...(sensitive ? { totalEarned: m.totalEarned / 100, totalPaid: m.totalPaid / 100 } : {}),
         leadName: m.lead?.name || null,
@@ -75,15 +78,17 @@ export async function POST(req) {
     }
 
     if (action === "reject") {
+      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true, telegramUserId: true } });
       await prisma.crewMember.update({ where: { id: memberId }, data: { status: "rejected" } });
-      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
+      if (m?.telegramUserId) kickFromGroup(m.telegramUserId).catch(() => {});
       await logActivity(admin.name, `Rejected crew member: ${m?.name || memberId}`);
       return Response.json({ ok: true });
     }
 
     if (action === "suspend") {
+      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true, telegramUserId: true } });
       await prisma.crewMember.update({ where: { id: memberId }, data: { status: "suspended", suspendedAt: new Date() } });
-      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
+      if (m?.telegramUserId) kickFromGroup(m.telegramUserId).catch(() => {});
       await logActivity(admin.name, `Suspended crew member: ${m?.name || memberId}`);
       return Response.json({ ok: true });
     }

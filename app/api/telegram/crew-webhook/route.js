@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
-import { sendDM, replyInGroup, crewWelcome, crewDmChiefNewLink } from '@/lib/crew-bot';
+import { sendDM, replyInGroup, crewWelcome, crewDmChiefNewLink, kickFromGroup } from '@/lib/crew-bot';
 
 export const maxDuration = 60;
 
@@ -16,7 +16,7 @@ const HELP_TEXT = [
   '/help — This message',
   '',
   'In the group, responses are sent to your DMs.',
-  'Link your account at <b>nitro.ng/m/settings</b>',
+  'Link your account at <b>nitro.ng/pit/settings</b>',
 ].join('\n');
 
 function getWeekStartUTC() {
@@ -192,12 +192,72 @@ async function handleLink(member) {
 
 const COMMANDS = ['/mystats', '/team', '/top', '/link', '/help', '/earnings', '/unlink'];
 
+async function handleChatMember(update) {
+  const member = update.chat_member;
+  if (!member) return;
+
+  const chat = member.chat;
+  if (String(chat.id) !== process.env.CREW_GROUP_ID) return;
+
+  const newStatus = member.new_chat_member?.status;
+  if (newStatus !== 'member' && newStatus !== 'restricted') return;
+
+  const tgUser = member.new_chat_member?.user;
+  if (!tgUser || tgUser.is_bot) return;
+
+  const tgId = String(tgUser.id);
+  const tgUsername = (tgUser.username || '').toLowerCase();
+
+  // Check if this TG user is already linked to an approved member by ID
+  let crew = await prisma.crewMember.findFirst({
+    where: { telegramUserId: tgId, status: 'approved' },
+  });
+
+  // If not linked by ID, try matching by username
+  if (!crew && tgUsername) {
+    crew = await prisma.crewMember.findFirst({
+      where: { telegramHandle: tgUsername, status: 'approved' },
+    });
+    if (crew) {
+      await prisma.crewMember.update({
+        where: { id: crew.id },
+        data: { telegramUserId: tgId },
+      });
+    }
+  }
+
+  if (!crew) {
+    await kickFromGroup(tgId);
+    await sendDM(tgId, [
+      '🚫 <b>Access Denied</b>',
+      '',
+      'This group is for approved Pit members only.',
+      '',
+      'Apply here: <b>nitro.ng/pit/apply</b>',
+    ].join('\n'));
+    log.info('Crew Guard', `Kicked unrecognised user @${tgUsername || tgId} from crew group`);
+    return;
+  }
+
+  const teamName = crew.leadId
+    ? (await prisma.crewMember.findUnique({ where: { id: crew.leadId }, select: { name: true } }))?.name || crew.name
+    : crew.name;
+  crewWelcome(crew.name, teamName);
+}
+
 export async function POST(req) {
   const secret = req.headers.get('x-telegram-bot-api-secret-token');
   if (secret !== process.env.CRON_SECRET) return Response.json({ ok: true });
 
   try {
     const update = await req.json();
+
+    // Handle group join/leave events
+    if (update.chat_member) {
+      await handleChatMember(update);
+      return Response.json({ ok: true });
+    }
+
     const msg = update.message;
     if (!msg?.text) return Response.json({ ok: true });
 
@@ -216,7 +276,7 @@ export async function POST(req) {
           '👋 <b>Marshal</b>',
           '',
           'Link your account:',
-          '1. Go to <b>nitro.ng/m/settings</b>',
+          '1. Go to <b>nitro.ng/pit/settings</b>',
           '2. Click <b>Link Telegram</b>',
           '3. Send the code here: <code>/start YOUR_CODE</code>',
           '',
@@ -230,7 +290,7 @@ export async function POST(req) {
         include: { lead: { select: { name: true, telegramUserId: true } } },
       });
       if (!member) {
-        await sendDM(chatId, 'Invalid or expired code. Generate a new one at nitro.ng/m/settings.');
+        await sendDM(chatId, 'Invalid or expired code. Generate a new one at nitro.ng/pit/settings.');
         return Response.json({ ok: true });
       }
 
@@ -268,7 +328,7 @@ export async function POST(req) {
       where: { telegramUserId: userId, status: 'approved' },
     });
     if (!member) {
-      const hint = 'Link your account first at <b>nitro.ng/m/settings</b>';
+      const hint = 'Link your account first at <b>nitro.ng/pit/settings</b>';
       if (isGroup) replyInGroup(chatId, msg.message_id, hint);
       else await sendDM(chatId, hint);
       return Response.json({ ok: true });
@@ -280,7 +340,7 @@ export async function POST(req) {
         where: { id: member.id },
         data: { telegramUserId: null },
       });
-      const reply = '🔓 Telegram unlinked. Re-link anytime at nitro.ng/m/settings.';
+      const reply = '🔓 Telegram unlinked. Re-link anytime at nitro.ng/pit/settings.';
       if (isGroup) replyInGroup(chatId, msg.message_id, reply);
       else await sendDM(chatId, reply);
       return Response.json({ ok: true });

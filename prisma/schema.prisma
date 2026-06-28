@@ -715,6 +715,7 @@ model CrewMember {
   password         String
   phone            String?
   xHandle          String?
+  telegramHandle   String?
   whyApply         String?  @db.Text
   bankAccountName  String?
   bankName         String?
