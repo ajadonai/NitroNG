@@ -81,9 +81,11 @@ export async function POST(req) {
     const existing = await prisma.acquisitionLink.findUnique({ where: { slug } });
     if (existing) return Response.json({ error: "That slug is already taken" }, { status: 409 });
 
+    let assigneeName = member.name;
     if (affiliateId) {
       const affiliate = await prisma.crewMember.findUnique({ where: { id: affiliateId } });
       if (!affiliate || affiliate.status !== "approved") return Response.json({ error: "Invalid affiliate" }, { status: 400 });
+      assigneeName = affiliate.name;
     }
 
     const assigneeId = affiliateId || member.id;
@@ -91,7 +93,6 @@ export async function POST(req) {
       data: { name: name.trim(), slug, affiliateId: assigneeId },
     });
 
-    const assigneeName = assigneeId === member.id ? member.name : (await prisma.crewMember.findUnique({ where: { id: assigneeId }, select: { name: true } }))?.name;
     logAction(link.id, member.id, "created", `Created and assigned to ${assigneeName}`).catch(() => {});
 
     return Response.json({ link: { id: link.id, name: link.name, slug: link.slug, enabled: link.enabled, createdAt: link.createdAt.toISOString() } });
