@@ -585,7 +585,12 @@ export function AdminCrewPage({ dark, t }) {
           </div>
           <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBd }}>
             {filteredPayouts.length === 0 ? (
-              <div className="py-12 text-center text-sm" style={{ color: t.textMuted }}>No {payoutFilter === "all" ? "" : payoutFilter} payouts</div>
+              <div className="py-16 flex flex-col items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)" }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                </div>
+                <div className="text-[13px] font-medium" style={{ color: t.textMuted }}>No {payoutFilter === "all" ? "" : payoutFilter + " "}payouts</div>
+              </div>
             ) : filteredPayouts.map((p, i) => {
               const expanded = expandedId === p.id;
               const statusColor = PAYOUT_COLORS[p.status] || "#6B7280";
@@ -634,7 +639,12 @@ export function AdminCrewPage({ dark, t }) {
           <div className="text-[12.5px] font-medium mb-3 mx-0.5" style={{ color: t.textMuted }}>Recent admin activity</div>
           <div className="rounded-2xl overflow-hidden" style={{ background: cardBg, border: cardBd }}>
             {activityLogs.length === 0 ? (
-              <div className="py-12 text-center text-sm" style={{ color: t.textMuted }}>No activity yet</div>
+              <div className="py-16 flex flex-col items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)" }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div className="text-[13px] font-medium" style={{ color: t.textMuted }}>No activity yet</div>
+              </div>
             ) : activityLogs.map((log, i) => (
               <div key={log.id} className="flex items-start gap-3 py-[13px] px-[18px]" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` : "none" }}>
                 <div className="w-[30px] h-[30px] rounded-lg flex items-center justify-center shrink-0 mt-px" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.02)", color: t.textMuted }}>
