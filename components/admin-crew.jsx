@@ -60,24 +60,15 @@ function MemberRow({ m, dark, t, busy, onAction, expanded, onExpand, cardBg, hai
             </div>
           )}
 
-          {/* Info grid */}
-          <div className="grid grid-cols-4 max-md:grid-cols-2 gap-x-[14px] gap-y-2 mb-[15px]">
-            {m.phone && (
-              <div className="flex flex-col gap-1"><span className="text-[9.5px] font-bold tracking-[.5px] uppercase" style={{ color: t.textMuted }}>Phone</span><span className="m text-[13px] font-semibold truncate" style={{ color: t.text }}>{m.phone}</span></div>
-            )}
-            {m.xHandle && (
-              <div className="flex flex-col gap-1"><span className="text-[9.5px] font-bold tracking-[.5px] uppercase" style={{ color: t.textMuted }}>X handle</span><span className="text-[13px] font-semibold truncate" style={{ color: t.text }}>@{m.xHandle}</span></div>
-            )}
-            {m.approvedAt && (
-              <div className="flex flex-col gap-1"><span className="text-[9.5px] font-bold tracking-[.5px] uppercase" style={{ color: t.textMuted }}>Approved</span><span className="text-[13px] font-semibold" style={{ color: t.text }}>{fD(m.approvedAt)}</span></div>
-            )}
-            <div className="flex flex-col gap-1"><span className="text-[9.5px] font-bold tracking-[.5px] uppercase" style={{ color: t.textMuted }}>Links</span><span className="m text-[13px] font-semibold" style={{ color: t.text }}>{m.links}</span></div>
-            {isChief && (
-              <div className="flex flex-col gap-1"><span className="text-[9.5px] font-bold tracking-[.5px] uppercase" style={{ color: t.textMuted }}>Crew</span><span className="m text-[13px] font-semibold" style={{ color: t.text }}>{m.crewCount}</span></div>
-            )}
-            {m.telegramHandle && (
-              <div className="flex flex-col gap-1"><span className="text-[9.5px] font-bold tracking-[.5px] uppercase" style={{ color: t.textMuted }}>Telegram</span><span className="text-[13px] font-semibold truncate" style={{ color: t.text }}>@{m.telegramHandle}</span></div>
-            )}
+          {/* Info grid — always 4 cols, always show all fields */}
+          <div className="grid grid-cols-4 max-md:grid-cols-2 gap-[8px_14px] mb-[15px]">
+            <div className="flex flex-col gap-1 min-w-0"><span className="text-[9.5px] font-bold tracking-[.5px] uppercase" style={{ color: t.textMuted }}>Phone</span><span className="m text-[13px] font-semibold truncate" style={{ color: m.phone ? t.text : t.textMuted }}>{m.phone || "—"}</span></div>
+            <div className="flex flex-col gap-1 min-w-0"><span className="text-[9.5px] font-bold tracking-[.5px] uppercase" style={{ color: t.textMuted }}>X handle</span><span className="text-[13px] font-semibold truncate" style={{ color: m.xHandle ? t.text : t.textMuted }}>{m.xHandle ? `@${m.xHandle}` : "—"}</span></div>
+            <div className="flex flex-col gap-1 min-w-0"><span className="text-[9.5px] font-bold tracking-[.5px] uppercase" style={{ color: t.textMuted }}>Approved</span><span className="text-[13px] font-semibold" style={{ color: m.approvedAt ? t.text : t.textMuted }}>{m.approvedAt ? fD(m.approvedAt) : "—"}</span></div>
+            <div className="flex flex-col gap-1 min-w-0"><span className="text-[9.5px] font-bold tracking-[.5px] uppercase" style={{ color: t.textMuted }}>Links</span><span className="m text-[13px] font-semibold" style={{ color: t.text }}>{m.links}</span></div>
+            {isChief && <div className="flex flex-col gap-1 min-w-0"><span className="text-[9.5px] font-bold tracking-[.5px] uppercase" style={{ color: t.textMuted }}>Crew</span><span className="m text-[13px] font-semibold" style={{ color: t.text }}>{m.crewCount}</span></div>}
+            <div className="flex flex-col gap-1 min-w-0"><span className="text-[9.5px] font-bold tracking-[.5px] uppercase" style={{ color: t.textMuted }}>Telegram</span><span className="text-[13px] font-semibold truncate" style={{ color: m.telegramHandle ? t.text : t.textMuted }}>{m.telegramHandle ? `@${m.telegramHandle}` : "—"}</span></div>
+            <div className="flex flex-col gap-1 min-w-0"><span className="text-[9.5px] font-bold tracking-[.5px] uppercase" style={{ color: t.textMuted }}>Joined</span><span className="text-[13px] font-semibold" style={{ color: t.text }}>{fD(m.createdAt)}</span></div>
           </div>
 
           {/* Actions */}
@@ -89,13 +80,16 @@ function MemberRow({ m, dark, t, busy, onAction, expanded, onExpand, cardBg, hai
               </>
             )}
             {!isPending && whatsappUrl && (
-              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="text-[12.5px] font-semibold py-2 px-[13px] rounded-[9px] cursor-pointer no-underline" style={{ background: cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.textSoft, fontFamily: "inherit" }}>Message on WhatsApp</a>
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-[6px] text-[12.5px] font-semibold py-2 px-[13px] rounded-[9px] cursor-pointer no-underline" style={{ background: cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.textSoft, fontFamily: "inherit" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 0 0 .612.612l4.458-1.495A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.347 0-4.537-.67-6.396-1.827l-.387-.237-2.845.953.953-2.845-.237-.387A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                WhatsApp
+              </a>
             )}
             {m.status === "approved" && isChief && (
-              <button disabled={busy === m.id} onClick={() => onAction("demote-crew", m.id)} className="text-[12.5px] font-semibold py-2 px-[13px] rounded-[9px] cursor-pointer disabled:opacity-50" style={{ background: cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.textSoft, fontFamily: "inherit" }}>Demote to Crew</button>
+              <button disabled={busy === m.id} onClick={() => onAction("demote-crew", m.id)} className="text-[12.5px] font-semibold py-2 px-[13px] rounded-[9px] cursor-pointer disabled:opacity-50" style={{ background: cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.textSoft, fontFamily: "inherit" }}>Demote</button>
             )}
             {m.status === "approved" && !isChief && (
-              <button disabled={busy === m.id} onClick={() => onAction("promote-chief", m.id)} className="text-[12.5px] font-semibold py-2 px-[13px] rounded-[9px] cursor-pointer disabled:opacity-50" style={{ background: cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.textSoft, fontFamily: "inherit" }}>Promote to Chief</button>
+              <button disabled={busy === m.id} onClick={() => onAction("promote-chief", m.id)} className="text-[12.5px] font-semibold py-2 px-[13px] rounded-[9px] cursor-pointer disabled:opacity-50" style={{ background: cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.textSoft, fontFamily: "inherit" }}>Promote</button>
             )}
             {m.status === "approved" && (
               <button disabled={busy === m.id} onClick={() => onAction("suspend", m.id)} className="text-[12.5px] font-semibold py-2 px-[13px] rounded-[9px] cursor-pointer disabled:opacity-50" style={{ background: "transparent", border: `1px solid ${dark ? "rgba(220,38,38,.3)" : "rgba(220,38,38,.2)"}`, color: dark ? "#fca5a5" : "#dc2626", fontFamily: "inherit" }}>Suspend</button>
@@ -349,7 +343,7 @@ export function AdminCrewPage({ dark, t }) {
           {/* Table */}
           <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBd, boxShadow: shadow }}>
             {/* Header */}
-            <div className="grid items-center gap-[14px] px-[18px] h-[42px]" style={{ gridTemplateColumns: "minmax(0,1fr) 96px 64px 110px 38px", borderBottom: `1px solid ${hair}` }}>
+            <div className="grid items-center gap-[14px] px-[18px] h-[42px]" style={{ gridTemplateColumns: "minmax(0,1fr) 96px 64px 110px 38px", background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)", borderBottom: `1px solid ${hair}` }}>
               <span className="text-[10.5px] font-bold tracking-[.6px] uppercase" style={{ color: t.textMuted }}>Member</span>
               <span className="text-[10.5px] font-bold tracking-[.6px] uppercase max-md:hidden" style={{ color: t.textMuted }}>Role</span>
               <span className="text-[10.5px] font-bold tracking-[.6px] uppercase max-md:hidden" style={{ color: t.textMuted }}>Base</span>
