@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import PortalShell from "./shell";
 import { StatusBadge, EmptyState } from "./kit";
 import { useTheme } from "../shared-nav";
 import { fN } from "@/lib/format";
@@ -9,7 +8,7 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function Inner({ member, initialData }) {
+export default function TeamPage({ initialData }) {
   const { dark, t } = useTheme();
   const [data, setData] = useState(initialData);
   const [showInvite, setShowInvite] = useState(false);
@@ -19,12 +18,15 @@ function Inner({ member, initialData }) {
   const [invError, setInvError] = useState(null);
   const [inviteResult, setInviteResult] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const reload = () => {
+    setRefreshing(true);
     fetch("/api/pit/team")
       .then((r) => r.json())
       .then((d) => { if (!d.error) setData(d); })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setRefreshing(false));
   };
 
   const handleInvite = async () => {
@@ -83,6 +85,7 @@ function Inner({ member, initialData }) {
             <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>
               {inviteResult ? "Invite Sent" : "Invite a Crew Member"}
             </div>
+            <div className="text-[11px] mt-[2px]" style={{ color: t.soft }}>{inviteResult ? "Share the link to complete registration" : "Add someone to your crew"}</div>
           </div>
           <div className="p-[18px]">
             {inviteResult ? (
@@ -161,9 +164,10 @@ function Inner({ member, initialData }) {
 
       {/* Pending invites */}
       {pending.length > 0 && (
-        <div className="rounded-[14px] overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
+        <div className="rounded-[14px] overflow-hidden transition-opacity duration-200" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}`, opacity: refreshing ? 0.6 : 1 }}>
           <div className="py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
             <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>Pending ({pending.length})</div>
+            <div className="text-[11px] mt-[2px]" style={{ color: t.soft }}>Awaiting approval or registration</div>
           </div>
           {pending.map((m, i) => (
             <div key={m.id} className="flex items-center gap-3 px-[18px] py-[12px]" style={{ borderTop: i > 0 ? `1px solid ${t.surfaceBrd}` : undefined }}>
@@ -189,9 +193,10 @@ function Inner({ member, initialData }) {
           t={t}
         />
       ) : approved.length > 0 && (
-        <div className="rounded-[14px] overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
+        <div className="rounded-[14px] overflow-hidden transition-opacity duration-200" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}`, opacity: refreshing ? 0.6 : 1 }}>
           <div className="py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
             <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>Active Members ({approved.length})</div>
+            <div className="text-[11px] mt-[2px]" style={{ color: t.soft }}>Your approved crew members</div>
           </div>
           {approved.map((m, i) => (
             <div key={m.id} className="flex items-center gap-3 px-[18px] py-[12px] max-md:flex-wrap" style={{ borderTop: i > 0 ? `1px solid ${t.surfaceBrd}` : undefined }}>
@@ -215,8 +220,4 @@ function Inner({ member, initialData }) {
       )}
     </div>
   );
-}
-
-export default function TeamPage({ member, initialData }) {
-  return <PortalShell member={member}><Inner member={member} initialData={initialData} /></PortalShell>;
 }

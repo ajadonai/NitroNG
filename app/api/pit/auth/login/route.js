@@ -8,11 +8,19 @@ export async function POST(req) {
     const { email, password } = await req.json().catch(() => ({}));
     if (!email || !password) return Response.json({ error: "Email and password required" }, { status: 400 });
 
-    const member = await prisma.crewMember.findUnique({ where: { email: email.toLowerCase().trim() } });
-    if (!member) return Response.json({ error: "Invalid credentials" }, { status: 401 });
+    const clean = email.toLowerCase().trim();
+    const member = await prisma.crewMember.findUnique({ where: { email: clean } });
+
+    if (!member) {
+      const isNitroUser = await prisma.user.findUnique({ where: { email: clean }, select: { id: true } });
+      if (isNitroUser) {
+        return Response.json({ error: "This email has a Nitro account but hasn't joined the Pit yet. Apply to get started." }, { status: 401 });
+      }
+      return Response.json({ error: "No account found with this email" }, { status: 401 });
+    }
 
     const valid = await bcrypt.compare(password, member.password);
-    if (!valid) return Response.json({ error: "Invalid credentials" }, { status: 401 });
+    if (!valid) return Response.json({ error: "Incorrect password or email" }, { status: 401 });
 
     if (member.status === "pending") return Response.json({ error: "pending", message: "Your application is under review" }, { status: 403 });
     if (member.status === "rejected") return Response.json({ error: "rejected", message: "Your application was not approved" }, { status: 403 });

@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { getCrewSession, memberToClient } from "@/lib/crew";
+import { getCrewSession } from "@/lib/crew";
 import prisma from "@/lib/prisma";
 import PayoutsPage from "@/components/m/payouts-page";
 
@@ -39,12 +38,14 @@ async function getInitialPayouts(member) {
     availableBalance: Math.max(0, available) / 100,
     minPayout: MIN_PAYOUT / 100,
     hasBankDetails: !!(member.bankName && member.bankAccountNo && member.bankAccountName),
+    bankName: member.bankName || null,
+    bankAccountNo: member.bankAccountNo || null,
+    bankAccountName: member.bankAccountName || null,
   };
 }
 
 export default async function Payouts() {
   const member = await getCrewSession();
-  if (!member) redirect("/pit/login");
   const initialData = await getInitialPayouts(member);
-  return <PayoutsPage member={memberToClient(member)} initialData={initialData} />;
+  return <PayoutsPage initialData={initialData} />;
 }

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getCrewSession, memberToClient } from "@/lib/crew";
+import { getCrewSession } from "@/lib/crew";
 import prisma from "@/lib/prisma";
 import LinksPage from "@/components/m/links-page";
 
@@ -35,8 +35,7 @@ async function getInitialLinks(chiefId) {
 
 export default async function Links() {
   const member = await getCrewSession();
-  if (!member) redirect("/pit/login");
   if (member.role !== "chief") redirect("/pit");
   const initialData = await getInitialLinks(member.id);
-  return <LinksPage member={memberToClient(member)} initialData={initialData} />;
+  return <LinksPage initialData={initialData} />;
 }

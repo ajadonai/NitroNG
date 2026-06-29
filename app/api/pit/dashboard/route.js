@@ -127,7 +127,7 @@ export async function GET() {
         conversions: totalCommissions,
         activeReferrals: activeReferrals.length,
       },
-      tier: { name: member.tier, rate: member.commissionRate },
+      tier: { name: member.tier, rate: member.role === "chief" ? (sv.affiliate_pro_rate || 50) : member.commissionRate },
       tierConfig,
       recentCommissions: recent,
       links: links.map((l) => ({ slug: l.slug, enabled: l.enabled })),

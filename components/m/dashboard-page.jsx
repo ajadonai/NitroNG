@@ -1,6 +1,5 @@
 "use client";
-import PortalShell from "./shell";
-import { StatCard, TierProgress, LinkPill, StatusBadge } from "./kit";
+import { StatCard, TierProgress, StatusBadge, EmptyState } from "./kit";
 import { useTheme } from "../shared-nav";
 import { fN } from "@/lib/format";
 
@@ -12,33 +11,37 @@ function timeAgo(d) {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
-function Inner({ member, initialData }) {
+export default function DashboardPage({ initialData }) {
   const { dark, t } = useTheme();
-  const { stats, tier, tierConfig, recentCommissions, links } = initialData;
-  const primarySlug = links?.[0]?.slug;
-
+  const { stats, role, tier, tierConfig, recentCommissions, links } = initialData;
   return (
     <div className="flex flex-col gap-5">
-      {primarySlug && <LinkPill slug={primarySlug} dark={dark} t={t} />}
-
-      <div className="grid grid-cols-2 max-md:grid-cols-1 gap-4">
+      <div className="grid grid-cols-4 max-md:grid-cols-2 gap-4">
         <StatCard label="Total Earned" value={fN(stats.totalEarned)} caption={`${stats.conversions} conversion${stats.conversions !== 1 ? "s" : ""}`} dark={dark} t={t} />
         <StatCard label="Pending" value={fN(stats.pending)} caption="Held for 7 days" dark={dark} t={t} />
         <StatCard label="Available" value={fN(stats.availableBalance)} caption="Ready to withdraw" captionUp={stats.availableBalance > 0} dark={dark} t={t} />
         <StatCard label="Link Clicks" value={stats.clicks.toLocaleString()} caption={`${stats.activeReferrals} paid referral${stats.activeReferrals !== 1 ? "s" : ""}`} dark={dark} t={t} />
       </div>
 
-      <TierProgress tier={tier.name} activeCount={stats.activeReferrals} tierConfig={tierConfig} dark={dark} t={t} />
+      {role !== "chief" && <TierProgress tier={tier.name} activeCount={stats.activeReferrals} tierConfig={tierConfig} links={links} dark={dark} t={t} />}
 
       <div className="rounded-[14px] overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
         <div className="flex items-center justify-between py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
-          <span className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>Recent Commissions</span>
+          <div>
+            <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>Recent Commissions</div>
+            <div className="text-[11px] mt-[2px]" style={{ color: t.soft }}>Your latest referral earnings</div>
+          </div>
           {recentCommissions.length > 0 && (
             <a href="/pit/commissions" className="text-[12px] font-medium no-underline" style={{ color: t.accent }}>View all</a>
           )}
         </div>
         {recentCommissions.length === 0 ? (
-          <div className="text-center py-8 text-[13px]" style={{ color: t.muted }}>No commissions yet. Share your link to start earning.</div>
+          <EmptyState
+            title="No commissions yet"
+            subtitle="Share your link to start earning."
+            icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
+            t={t}
+          />
         ) : (
           <div>
             {recentCommissions.map((c) => (
@@ -65,8 +68,4 @@ function Inner({ member, initialData }) {
       </div>
     </div>
   );
-}
-
-export default function DashboardPage({ member, initialData }) {
-  return <PortalShell member={member}><Inner member={member} initialData={initialData} /></PortalShell>;
 }

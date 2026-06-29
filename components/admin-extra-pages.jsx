@@ -2371,7 +2371,7 @@ export function AdminCrewPage({ dark, t }) {
       });
       const d = await res.json();
       if (d.error) { toast.error(d.error); return; }
-      toast.success(action === "approve" ? "Member approved" : action === "reject" ? "Member rejected" : action === "suspend" ? "Member suspended" : action === "reinstate" ? "Member reinstated" : action === "update-tier" ? "Tier updated" : action === "promote-chief" ? "Promoted to chief" : action === "demote-crew" ? "Demoted to crew" : "Done");
+      toast.success(action === "approve" ? "Member approved" : action === "reject" ? "Member rejected" : action === "suspend" ? "Member suspended" : action === "reinstate" ? "Member reinstated" : action === "update-tier" ? "Tier updated" : action === "promote-chief" ? "Promoted to chief" : action === "demote-crew" ? "Demoted to crew" : action === "delete" ? "Member deleted" : "Done");
       await load();
     } catch { toast.error("Something went wrong"); } finally { setBusy(null); }
   };
@@ -2441,7 +2441,7 @@ export function AdminCrewPage({ dark, t }) {
       {tab === "members" && (
         <>
           <div className="flex gap-1.5 mb-4">
-            {["all", "pending", "approved", "suspended", "rejected"].map(s => (
+            {["all", "pending", "approved", "suspended"].map(s => (
               <button key={s} onClick={() => setFilter(s)} className="py-1.5 px-3 rounded-lg text-[12.5px] font-medium border-none cursor-pointer capitalize" style={{ background: filter === s ? (dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.15)") : "transparent", color: filter === s ? t.accent : t.textMuted }}>
                 {s}{s === "pending" && pendingCount > 0 ? ` (${pendingCount})` : ""}
               </button>
@@ -2529,6 +2529,7 @@ export function AdminCrewPage({ dark, t }) {
                             <option value="pro">Pro ({tierCfg.affiliate_pro_rate || 50}%)</option>
                           </select>
                         )}
+                        <button disabled={busy === m.id} onClick={async () => { const ok = await confirm({ title: "Delete Member", message: `Delete ${m.name}? They'll be removed from the crew list. Their commission and payout records will be kept.`, confirmLabel: "Delete", danger: true }); if (ok) act("delete", m.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
                       </div>
                     </div>
                   )}
