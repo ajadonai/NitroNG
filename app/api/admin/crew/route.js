@@ -32,10 +32,10 @@ export async function GET(req) {
 
     const [pendingPayouts, heldCommissions, thirtyDaysAgo] = await Promise.all([
       prisma.affiliatePayout.count({ where: { status: "pending" } }),
-      prisma.affiliateCommission.aggregate({ where: { status: "held" }, _sum: { amount: true } }),
+      prisma.affiliateCommission.aggregate({ where: { status: "held" }, _sum: { marketerAmount: true, leadAmount: true } }),
       Promise.resolve(new Date(Date.now() - 30 * 86400000)),
     ]);
-    const heldAmount = (heldCommissions._sum.amount || 0) / 100;
+    const heldAmount = ((heldCommissions._sum.marketerAmount || 0) + (heldCommissions._sum.leadAmount || 0)) / 100;
     const totalPaidOut = members.reduce((s, m) => s + m.totalPaid, 0) / 100;
 
     const sensitive = canSeeSensitive(admin);
