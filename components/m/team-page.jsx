@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { StatusBadge, EmptyState } from "./kit";
 import { useTheme } from "../shared-nav";
+import { useHeaderAction } from "./shell";
 import { fN } from "@/lib/format";
 
 function fmtDate(d) {
@@ -64,19 +65,20 @@ export default function TeamPage({ initialData }) {
   const approved = members.filter((m) => m.status === "approved");
   const pending = members.filter((m) => m.status === "pending");
 
+  useHeaderAction(useMemo(() => (
+    <button
+      onClick={() => { setShowInvite(true); setInviteResult(null); }}
+      className="flex items-center gap-[7px] py-[11px] px-[18px] rounded-[11px] text-[14px] font-semibold border-none cursor-pointer text-white shrink-0"
+      style={{ background: t.grad, fontFamily: "inherit", boxShadow: "0 4px 14px rgba(196,125,142,.28)" }}
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Invite
+    </button>
+  ), [t.grad]));
+
   return (
     <div className="flex flex-col gap-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="text-[13px]" style={{ color: t.muted }}>{approved.length} active member{approved.length !== 1 ? "s" : ""}</div>
-        <button
-          onClick={() => { setShowInvite(!showInvite); setInviteResult(null); }}
-          className="py-[8px] px-4 rounded-xl text-[13px] font-semibold border-none cursor-pointer text-white transition-transform duration-150 hover:-translate-y-px"
-          style={{ background: t.grad, fontFamily: "inherit" }}
-        >
-          + Invite Member
-        </button>
-      </div>
+      <div className="text-[13px]" style={{ color: t.muted }}>{approved.length} active member{approved.length !== 1 ? "s" : ""}</div>
 
       {/* Invite form / result */}
       {showInvite && (

@@ -3,22 +3,40 @@ import { requireAdmin, logActivity, canSeeSensitive, maskEmail, maskPhone } from
 import { kickFromGroup } from "@/lib/crew-bot";
 import { sendEmail, pitRejectionEmail } from "@/lib/email";
 
-export async function GET() {
+export async function GET(req) {
   const { admin, error } = await requireAdmin("crew");
   if (error) return error;
+
+  const { searchParams } = new URL(req.url);
+
+  if (searchParams.get("view") === "activity") {
+    try {
+      const logs = await prisma.activityLog.findMany({
+        where: { action: { contains: "crew" } },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      });
+      return Response.json({ logs: logs.map(l => ({ id: l.id, adminName: l.adminName, action: l.action, createdAt: l.createdAt.toISOString() })) });
+    } catch { return Response.json({ logs: [] }); }
+  }
 
   try {
     const members = await prisma.crewMember.findMany({
       where: { status: { not: "rejected" }, deletedAt: null },
       orderBy: { createdAt: "desc" },
       include: {
-        lead: { select: { name: true } },
+        lead: { select: { id: true, name: true } },
         _count: { select: { commissions: true, crew: true, links: true, payouts: true } },
       },
     });
 
-    const pendingPayouts = await prisma.affiliatePayout.count({ where: { status: "pending" } });
-    const heldCommissions = await prisma.affiliateCommission.count({ where: { status: "held" } });
+    const [pendingPayouts, heldCommissions, thirtyDaysAgo] = await Promise.all([
+      prisma.affiliatePayout.count({ where: { status: "pending" } }),
+      prisma.affiliateCommission.aggregate({ where: { status: "held" }, _sum: { amount: true } }),
+      Promise.resolve(new Date(Date.now() - 30 * 86400000)),
+    ]);
+    const heldAmount = (heldCommissions._sum.amount || 0) / 100;
+    const totalPaidOut = members.reduce((s, m) => s + m.totalPaid, 0) / 100;
 
     const sensitive = canSeeSensitive(admin);
 
@@ -28,13 +46,16 @@ export async function GET() {
         name: m.name,
         email: sensitive ? m.email : maskEmail(m.email),
         phone: sensitive ? m.phone : maskPhone(m.phone),
+        xHandle: m.xHandle || null,
         role: m.role,
         status: m.status,
         tier: m.tier,
         telegramHandle: m.telegramHandle || null,
         telegramLinked: !!m.telegramUserId,
         commissionRate: m.commissionRate,
+        whyApply: m.whyApply || null,
         ...(sensitive ? { totalEarned: m.totalEarned / 100, totalPaid: m.totalPaid / 100 } : {}),
+        leadId: m.leadId || null,
         leadName: m.lead?.name || null,
         commissions: m._count.commissions,
         crewCount: m._count.crew,
@@ -43,7 +64,7 @@ export async function GET() {
         approvedAt: m.approvedAt?.toISOString() ?? null,
         createdAt: m.createdAt.toISOString(),
       })),
-      stats: { pendingPayouts, heldCommissions },
+      stats: { pendingPayouts, heldAmount, totalPaidOut },
     });
   } catch (e) {
     console.error("Admin crew GET error:", e);
@@ -131,6 +152,24 @@ export async function POST(req) {
       await prisma.crewMember.update({ where: { id: memberId }, data: { role: "crew" } });
       const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
       await logActivity(admin.name, `Demoted ${m?.name || memberId} to crew`);
+      return Response.json({ ok: true });
+    }
+
+    if (action === "assign-team" || action === "move-team") {
+      const { chiefId } = body;
+      if (!chiefId) return Response.json({ error: "Chief ID required" }, { status: 400 });
+      const chief = await prisma.crewMember.findUnique({ where: { id: chiefId }, select: { name: true, role: true } });
+      if (!chief || chief.role !== "chief") return Response.json({ error: "Invalid chief" }, { status: 400 });
+      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
+      await prisma.crewMember.update({ where: { id: memberId }, data: { leadId: chiefId } });
+      await logActivity(admin.name, `${action === "move-team" ? "Moved" : "Assigned"} crew member ${m?.name || memberId} to ${chief.name}'s team`);
+      return Response.json({ ok: true });
+    }
+
+    if (action === "unassign-team") {
+      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
+      await prisma.crewMember.update({ where: { id: memberId }, data: { leadId: null } });
+      await logActivity(admin.name, `Removed crew member ${m?.name || memberId} from their team`);
       return Response.json({ ok: true });
     }
 
