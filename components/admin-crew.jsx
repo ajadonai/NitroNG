@@ -571,7 +571,7 @@ export function AdminCrewPage({ dark, t }) {
       {/* ═══ PAYOUTS TAB ═══ */}
       {tab === "payouts" && (
         <>
-          <div className="flex mb-4">
+          <div className="flex justify-end mb-4">
             <div className="relative flex items-center rounded-[11px] px-[11px]" style={{ background: cardBg, border: cardBd }}>
               <select value={payoutFilter} onChange={e => setPayoutFilter(e.target.value)} className="appearance-none border-none bg-transparent outline-none text-[13px] font-semibold py-[10px] pr-5 cursor-pointer capitalize" style={{ color: t.text, fontFamily: "inherit" }}>
                 <option value="all">All</option>
