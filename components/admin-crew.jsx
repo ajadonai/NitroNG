@@ -23,7 +23,7 @@ function MemberRow({ m, dark, t, busy, onAction, expanded, onExpand, cardBg, hai
     <>
       <div
         className="grid items-center gap-[14px] px-[18px] min-h-[60px] cursor-pointer transition-colors hover:bg-[rgba(196,125,142,.04)]"
-        style={{ gridTemplateColumns: "minmax(0,1fr) 96px 64px 110px 130px 38px", borderTop: `1px solid ${hair}` }}
+        style={{ gridTemplateColumns: "minmax(0,1fr) 96px 64px 110px 38px", borderTop: `1px solid ${hair}` }}
         onClick={onExpand}
       >
         {/* Member cell */}
@@ -46,8 +46,6 @@ function MemberRow({ m, dark, t, busy, onAction, expanded, onExpand, cardBg, hai
         <div className="m text-[13px] max-md:hidden" style={{ color: t.textSoft }}>{m.commissionRate}%</div>
         {/* Earned */}
         <div className="m text-[14px] font-semibold text-right" style={{ color: (m.totalEarned || 0) > 0 ? (dark ? "#6ee7b7" : "#059669") : t.text }}>{fN(m.totalEarned || 0)}</div>
-        {/* Joined */}
-        <div className="text-[12.5px] whitespace-nowrap max-md:hidden" style={{ color: t.textMuted }}>{fD(m.createdAt)}</div>
         {/* Chevron */}
         <div className="justify-self-end transition-transform duration-200" style={{ color: t.textMuted, transform: expanded ? "rotate(180deg)" : "none" }}>{CHEV}</div>
       </div>
@@ -351,12 +349,11 @@ export function AdminCrewPage({ dark, t }) {
           {/* Table */}
           <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBd, boxShadow: shadow }}>
             {/* Header */}
-            <div className="grid items-center gap-[14px] px-[18px] h-[42px]" style={{ gridTemplateColumns: "minmax(0,1fr) 96px 64px 110px 130px 38px", borderBottom: `1px solid ${hair}` }}>
+            <div className="grid items-center gap-[14px] px-[18px] h-[42px]" style={{ gridTemplateColumns: "minmax(0,1fr) 96px 64px 110px 38px", borderBottom: `1px solid ${hair}` }}>
               <span className="text-[10.5px] font-bold tracking-[.6px] uppercase" style={{ color: t.textMuted }}>Member</span>
               <span className="text-[10.5px] font-bold tracking-[.6px] uppercase max-md:hidden" style={{ color: t.textMuted }}>Role</span>
               <span className="text-[10.5px] font-bold tracking-[.6px] uppercase max-md:hidden" style={{ color: t.textMuted }}>Base</span>
               <span className="text-[10.5px] font-bold tracking-[.6px] uppercase text-right" style={{ color: t.textMuted }}>Earned</span>
-              <span className="text-[10.5px] font-bold tracking-[.6px] uppercase max-md:hidden" style={{ color: t.textMuted }}>Joined</span>
               <span />
             </div>
 
