@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Modal } from "./kit";
 import { useTheme } from "../shared-nav";
+import { useToast } from "../toast";
 
 function Field({ label, value, onChange, type = "text", placeholder, t }) {
   return (
@@ -56,7 +57,7 @@ function ProfileCard({ member, dark, t }) {
   );
 }
 
-function SocialsCard({ member, dark, t }) {
+function SocialsCard({ member, dark, t, toast }) {
   const [tgLoading, setTgLoading] = useState(false);
   const [tgLinked, setTgLinked] = useState(member.telegramLinked);
   const [tgHandle, setTgHandle] = useState(member.telegramHandle || null);
@@ -96,6 +97,7 @@ function SocialsCard({ member, dark, t }) {
             setTgLinked(true);
             setTgHandle(s.handle);
             setTgLoading(false);
+            toast.success("Telegram connected");
           } else if (attempts >= 30) {
             clearInterval(poll);
             setTgLoading(false);
@@ -124,6 +126,7 @@ function SocialsCard({ member, dark, t }) {
       if (d.error) { setTgError(d.error); return; }
       setTgLinked(false);
       setTgHandle(null);
+      toast.success("Telegram disconnected");
     } catch {
       setTgError("Something went wrong");
     } finally {
@@ -146,6 +149,7 @@ function SocialsCard({ member, dark, t }) {
       setXHandle(xInput.trim().replace(/^@/, ""));
       setXOpen(false);
       setXInput("");
+      toast.success("Twitter connected");
     } catch {
       setXError("Something went wrong");
     } finally {
@@ -164,6 +168,7 @@ function SocialsCard({ member, dark, t }) {
       const d = await res.json();
       if (d.error) return;
       setXHandle(null);
+      toast.success("Twitter disconnected");
     } catch {} finally {
       setXLoading(false);
     }
@@ -252,6 +257,7 @@ function SocialsCard({ member, dark, t }) {
 
 export default function SettingsPage({ member }) {
   const { dark, t } = useTheme();
+  const toast = useToast();
   const hdr = { background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` };
 
   const [hasBankDetails, setHasBankDetails] = useState(!!(member.bankName && member.bankAccountNo && member.bankAccountName));
@@ -268,7 +274,6 @@ export default function SettingsPage({ member }) {
   const [newPw, setNewPw] = useState("");
   const [pwSaving, setPwSaving] = useState(false);
   const [pwError, setPwError] = useState(null);
-  const [pwSuccess, setPwSuccess] = useState(false);
 
   const openBankModal = () => {
     setBankName(savedBank.name);
@@ -293,6 +298,7 @@ export default function SettingsPage({ member }) {
       setSavedBank({ name: bankName.trim(), no: bankAccountNo.trim(), acct: bankAccountName.trim() });
       setHasBankDetails(true);
       setBankOpen(false);
+      toast.success("Bank details saved");
     } catch {
       setBankError("Something went wrong");
     } finally {
@@ -316,8 +322,7 @@ export default function SettingsPage({ member }) {
       setPwOpen(false);
       setCurrentPw("");
       setNewPw("");
-      setPwSuccess(true);
-      setTimeout(() => setPwSuccess(false), 3000);
+      toast.success("Password updated");
     } catch {
       setPwError("Something went wrong");
     } finally {
@@ -328,7 +333,7 @@ export default function SettingsPage({ member }) {
   return (
     <div className="grid grid-cols-2 max-md:grid-cols-1 gap-4">
       <ProfileCard member={member} dark={dark} t={t} />
-      <SocialsCard member={member} dark={dark} t={t} />
+      <SocialsCard member={member} dark={dark} t={t} toast={toast} />
 
       {/* Payout account card */}
       <div className="rounded-[14px] overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
@@ -362,7 +367,7 @@ export default function SettingsPage({ member }) {
           <div className="text-[11px] mt-[2px]" style={{ color: t.soft }}>Manage your login credentials</div>
         </div>
         <div className="py-[14px] px-[18px] flex items-center justify-between">
-          <div className="text-[12.5px]" style={{ color: t.muted }}>{pwSuccess ? <span style={{ color: t.green }}>Password updated</span> : "Change your login password"}</div>
+          <div className="text-[12.5px]" style={{ color: t.muted }}>Change your login password</div>
           <button onClick={() => { setCurrentPw(""); setNewPw(""); setPwError(null); setPwOpen(true); }} className="text-[11.5px] font-semibold bg-transparent border-none cursor-pointer shrink-0" style={{ color: t.accent, fontFamily: "inherit" }}>Change</button>
         </div>
       </div>

@@ -744,6 +744,7 @@ model CrewMember {
   userId           String?  @unique
   telegramUserId   String?
   telegramLinkCode String?
+  teamName         String?
   leadId           String?
   inviteToken      String?  @unique
   inviteExpiresAt  DateTime?
@@ -817,13 +818,16 @@ model AffiliateCommission {
 }
 
 model AffiliatePayout {
-  id          String    @id @default(cuid())
-  memberId    String
-  amount      Int       // kobo
-  status      String    @default("pending") // "pending" | "processing" | "completed" | "rejected"
-  reference   String?
-  processedAt DateTime?
-  createdAt   DateTime  @default(now())
+  id              String    @id @default(cuid())
+  memberId        String
+  amount          Int       // kobo
+  status          String    @default("pending") // "pending" | "processing" | "completed" | "rejected"
+  reference       String?
+  bankName        String?
+  bankAccountNo   String?
+  bankAccountName String?
+  processedAt     DateTime?
+  createdAt       DateTime  @default(now())
 
   member CrewMember @relation(fields: [memberId], references: [id])
 

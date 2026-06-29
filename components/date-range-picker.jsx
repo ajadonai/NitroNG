@@ -337,7 +337,7 @@ export function DateRangePicker({ dark, t, value, onChange, presets, defaultPres
   );
 }
 
-export function FilterDropdown({ dark, t, value, onChange, options, icon }) {
+export function FilterDropdown({ dark, t, value, onChange, options, icon, alert }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const dropRef = useRef(null);
@@ -365,6 +365,7 @@ export function FilterDropdown({ dark, t, value, onChange, options, icon }) {
 
   return (
     <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
+      {alert && <span style={{ position: "absolute", top: -3, right: -3, width: 8, height: 8, borderRadius: "50%", background: "#f59e0b", zIndex: 2, boxShadow: "0 0 0 2px " + (dark ? "#131728" : "#fff"), animation: "progress-pulse 2.8s ease-in-out infinite" }} />}
       <button onClick={() => setOpen(!open)} style={{
         display: "inline-flex",
         alignItems: "center",

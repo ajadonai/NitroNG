@@ -384,7 +384,7 @@ export default function AdminOrdersPage({ dark, t }) {
           <input aria-label="Search orders" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search order ID, service, or user…" className="w-full py-[9px] pl-9 pr-8 rounded-lg text-[13px] outline-none font-[inherit]" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? '#131728' : '#fff', color: t.text }} />
           {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full cursor-pointer border-none p-0" style={{ background: dark ? 'rgba(255,255,255,.15)' : 'rgba(0,0,0,.1)', color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
         </div>
-        <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(1); }} options={
+        <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(1); }} alert={counts.needs_dispatch > 0} options={
           [
             { value: "all", label: "All" },
             { value: "needs_dispatch", label: `Needs Dispatch${counts.needs_dispatch ? ` (${counts.needs_dispatch})` : ""}` },

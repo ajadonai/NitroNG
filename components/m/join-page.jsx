@@ -10,6 +10,8 @@ function Inner({ token }) {
   const [invite, setInvite] = useState(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [phone, setPhone] = useState("");
+  const [xHandle, setXHandle] = useState("");
   const [error, setError] = useState("");
   const [pageError, setPageError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,7 +39,7 @@ function Inner({ token }) {
       const res = await fetch("/api/pit/auth/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({ token, password, phone: phone.trim() || undefined, xHandle: xHandle.trim().replace(/^@/, "") || undefined }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -102,6 +104,14 @@ function Inner({ token }) {
           <div>
             <label className="block text-[12px] font-medium mb-1.5" style={{ color: t.muted }}>Confirm password</label>
             <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} required placeholder="Re-enter password" className="w-full h-10 px-3 rounded-lg border text-[13.5px] outline-none" style={inputStyle} />
+          </div>
+          <div>
+            <label className="block text-[12px] font-medium mb-1.5" style={{ color: t.muted }}>Phone number</label>
+            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g. 08012345678" className="w-full h-10 px-3 rounded-lg border text-[13.5px] outline-none" style={inputStyle} />
+          </div>
+          <div>
+            <label className="block text-[12px] font-medium mb-1.5" style={{ color: t.muted }}>X (Twitter) handle</label>
+            <input value={xHandle} onChange={e => setXHandle(e.target.value)} placeholder="@yourhandle" className="w-full h-10 px-3 rounded-lg border text-[13.5px] outline-none" style={inputStyle} />
           </div>
           <button type="submit" disabled={loading} className="w-full h-10 rounded-lg border-none text-white text-[13.5px] font-semibold cursor-pointer transition-opacity" style={{ background: t.grad, opacity: loading ? 0.6 : 1, fontFamily: "inherit" }}>
             {loading ? "Joining..." : "Join Crew"}

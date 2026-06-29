@@ -19,7 +19,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { token, password } = await req.json().catch(() => ({}));
+    const { token, password, phone, xHandle } = await req.json().catch(() => ({}));
     if (!token || !password) return Response.json({ error: "Token and password required" }, { status: 400 });
     if (password.length < 6) return Response.json({ error: "Password must be at least 6 characters" }, { status: 400 });
 
@@ -44,6 +44,8 @@ export async function POST(req) {
         approvedAt: new Date(),
         inviteToken: null,
         inviteExpiresAt: null,
+        ...(phone ? { phone } : {}),
+        ...(xHandle ? { xHandle: xHandle.toLowerCase() } : {}),
         ...(existingUser && !member.userId ? { userId: existingUser.id } : {}),
       },
     });

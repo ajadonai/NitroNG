@@ -125,6 +125,7 @@ export async function GET(req) {
                 where: { id: order.id },
                 data: {
                   status: 'Cancelled',
+                  queuedBehind: null,
                   ...(liveRemains != null ? { remains: liveRemains } : {}),
                   ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}),
                   ...(providerError ? { lastError: String(providerError).slice(0, 500) } : {}),
@@ -158,6 +159,7 @@ export async function GET(req) {
                 where: { id: order.id },
                 data: {
                   status: 'Partial',
+                  queuedBehind: null,
                   remains: liveRemains,
                   ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}),
                   ...(refundAmount > 0 ? { refundedAt: new Date() } : {}),
@@ -193,7 +195,7 @@ export async function GET(req) {
               where: { id: order.id },
               data: {
                 status: newStatus,
-                ...(newStatus === 'Completed' ? { completedAt: new Date() } : {}),
+                ...(newStatus === 'Completed' ? { completedAt: new Date(), queuedBehind: null } : {}),
                 ...(liveRemains != null ? { remains: liveRemains } : {}),
                 ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}),
               },
@@ -438,6 +440,15 @@ export async function GET(req) {
         }
       }
     } catch (e) { log.warn('Refund recovery sweep', e.message); }
+
+    // Clear stale queuedBehind on terminal orders (safety net)
+    try {
+      const { count } = await prisma.order.updateMany({
+        where: { queuedBehind: { not: null }, status: { in: ['Completed', 'Cancelled', 'Partial'] } },
+        data: { queuedBehind: null },
+      });
+      if (count > 0) stats.queueCleaned = count;
+    } catch (e) { log.warn('Queue cleanup', e.message); }
 
     // Clean up expired idempotency keys
     try {

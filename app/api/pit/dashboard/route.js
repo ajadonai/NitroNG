@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { getCrewSession } from "@/lib/crew";
+import { getMemberEarnings, getMemberHeld } from "@/lib/commissions";
 
 export async function GET() {
   try {
@@ -10,37 +11,26 @@ export async function GET() {
     const isChief = member.role === "chief";
 
     const [
-      heldCommissions,
-      approvedCommissions,
+      earnings,
+      heldTotal,
       pendingPayouts,
       recentDirect,
       recentLead,
       links,
       clickCount,
     ] = await Promise.all([
-      // Pending (held) earnings
-      prisma.affiliateCommission.aggregate({
-        where: { ...(isChief ? { leadId: id } : { memberId: id }), status: "held" },
-        _sum: { [isChief ? "leadAmount" : "marketerAmount"]: true },
-      }),
-      // Approved but not yet paid (totalEarned on member already tracks this, but we need fresh)
-      prisma.affiliateCommission.aggregate({
-        where: { ...(isChief ? { leadId: id } : { memberId: id }), status: "approved" },
-        _sum: { [isChief ? "leadAmount" : "marketerAmount"]: true },
-      }),
-      // Pending/processing payouts
+      getMemberEarnings(id, member.role),
+      getMemberHeld(id, member.role),
       prisma.affiliatePayout.aggregate({
         where: { memberId: id, status: { in: ["pending", "processing"] } },
         _sum: { amount: true },
       }),
-      // Recent commissions (direct)
       prisma.affiliateCommission.findMany({
         where: { memberId: id },
         orderBy: { createdAt: "desc" },
         take: isChief ? 3 : 6,
         include: { order: { select: { orderId: true, charge: true } }, link: { select: { slug: true } } },
       }),
-      // Recent lead commissions (chief only)
       isChief
         ? prisma.affiliateCommission.findMany({
             where: { leadId: id, memberId: { not: id } },
@@ -53,20 +43,16 @@ export async function GET() {
             },
           })
         : [],
-      // Links
       prisma.acquisitionLink.findMany({
         where: { affiliateId: id, archivedAt: null },
         select: { slug: true, enabled: true },
       }),
-      // Total clicks
       prisma.linkClick.count({
         where: { link: { affiliateId: id, archivedAt: null } },
       }),
     ]);
 
-    const amountField = isChief ? "leadAmount" : "marketerAmount";
-    const heldTotal = heldCommissions._sum[amountField] || 0;
-    const approvedTotal = approvedCommissions._sum[amountField] || 0;
+    const approvedTotal = earnings.totalApproved;
     const pendingPayoutTotal = pendingPayouts._sum.amount || 0;
     const availableBalance = approvedTotal - member.totalPaid - pendingPayoutTotal;
 
@@ -122,6 +108,8 @@ export async function GET() {
         totalEarned: member.totalEarned / 100,
         totalPaid: member.totalPaid / 100,
         pending: heldTotal / 100,
+        directEarned: earnings.directEarned / 100,
+        teamEarned: earnings.teamEarned / 100,
         availableBalance: Math.max(0, availableBalance) / 100,
         clicks: clickCount,
         conversions: totalCommissions,
