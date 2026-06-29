@@ -1,6 +1,22 @@
 import prisma from "@/lib/prisma";
 import { getCrewSession } from "@/lib/crew";
+import { sendDM } from "@/lib/crew-bot";
 import bcrypt from "bcryptjs";
+
+export async function GET(req) {
+  try {
+    const member = await getCrewSession();
+    if (!member) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    const { searchParams } = new URL(req.url);
+    if (searchParams.get("check") === "telegram") {
+      const fresh = await prisma.crewMember.findUnique({ where: { id: member.id }, select: { telegramUserId: true, telegramHandle: true } });
+      return Response.json({ linked: !!fresh?.telegramUserId, handle: fresh?.telegramHandle || null });
+    }
+    return Response.json({ error: "Invalid check" }, { status: 400 });
+  } catch (e) {
+    return Response.json({ error: "Something went wrong" }, { status: 500 });
+  }
+}
 
 export async function PATCH(req) {
   try {
@@ -54,6 +70,35 @@ export async function PATCH(req) {
         data: { telegramLinkCode: code },
       });
       return Response.json({ ok: true, code });
+    }
+
+    if (section === "telegram_disconnect") {
+      if (member.telegramUserId) {
+        sendDM(member.telegramUserId, '🔓 Your Telegram has been disconnected from Nitro. Re-link anytime at nitro.ng/pit/settings.');
+      }
+      await prisma.crewMember.update({
+        where: { id: member.id },
+        data: { telegramUserId: null, telegramHandle: null, telegramLinkCode: null },
+      });
+      return Response.json({ ok: true });
+    }
+
+    if (section === "twitter") {
+      const { handle } = body;
+      if (!handle?.trim()) return Response.json({ error: "Handle is required" }, { status: 400 });
+      await prisma.crewMember.update({
+        where: { id: member.id },
+        data: { xHandle: handle.trim().replace(/^@/, "") },
+      });
+      return Response.json({ ok: true });
+    }
+
+    if (section === "twitter_disconnect") {
+      await prisma.crewMember.update({
+        where: { id: member.id },
+        data: { xHandle: null },
+      });
+      return Response.json({ ok: true });
     }
 
     return Response.json({ error: "Invalid section" }, { status: 400 });

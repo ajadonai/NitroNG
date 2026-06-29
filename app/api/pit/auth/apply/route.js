@@ -4,13 +4,10 @@ import bcrypt from "bcryptjs";
 export async function POST(req) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { name, email, password, phone, xHandle, telegramHandle, whyApply } = body;
+    const { name, email, password, phone, xHandle, whyApply } = body;
 
     if (!name?.trim() || !email?.trim() || !password) {
       return Response.json({ error: "Name, email, and password are required" }, { status: 400 });
-    }
-    if (!telegramHandle?.trim()) {
-      return Response.json({ error: "Telegram username is required" }, { status: 400 });
     }
     if (password.length < 6) return Response.json({ error: "Password must be at least 6 characters" }, { status: 400 });
 
@@ -33,7 +30,6 @@ export async function POST(req) {
       password: hashed,
       phone: existingUser?.phone || phone?.trim() || null,
       xHandle: xHandle?.trim()?.replace(/^@/, "") || null,
-      telegramHandle: telegramHandle?.trim()?.replace(/^@/, "") || null,
       whyApply: whyApply?.trim() || null,
       ...(existingUser ? { userId: existingUser.id } : {}),
     };

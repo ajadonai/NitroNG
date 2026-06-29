@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { requireAdmin, logActivity, canSeeSensitive, maskEmail, maskPhone } from "@/lib/admin";
 import { kickFromGroup } from "@/lib/crew-bot";
+import { sendEmail, pitRejectionEmail } from "@/lib/email";
 
 export async function GET() {
   const { admin, error } = await requireAdmin("crew");
@@ -8,6 +9,7 @@ export async function GET() {
 
   try {
     const members = await prisma.crewMember.findMany({
+      where: { status: { not: "rejected" }, deletedAt: null },
       orderBy: { createdAt: "desc" },
       include: {
         lead: { select: { name: true } },
@@ -78,9 +80,13 @@ export async function POST(req) {
     }
 
     if (action === "reject") {
-      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true, telegramUserId: true } });
+      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true, email: true, telegramUserId: true } });
       await prisma.crewMember.update({ where: { id: memberId }, data: { status: "rejected" } });
       if (m?.telegramUserId) kickFromGroup(m.telegramUserId).catch(() => {});
+      if (m?.email) {
+        const html = pitRejectionEmail(m.name || 'there');
+        sendEmail(m.email, 'Your Pit application update', html).catch(() => {});
+      }
       await logActivity(admin.name, `Rejected crew member: ${m?.name || memberId}`);
       return Response.json({ ok: true });
     }
@@ -125,6 +131,15 @@ export async function POST(req) {
       await prisma.crewMember.update({ where: { id: memberId }, data: { role: "crew" } });
       const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
       await logActivity(admin.name, `Demoted ${m?.name || memberId} to crew`);
+      return Response.json({ ok: true });
+    }
+
+    if (action === "delete") {
+      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true, telegramUserId: true } });
+      await prisma.crewSession.deleteMany({ where: { memberId } });
+      await prisma.crewMember.update({ where: { id: memberId }, data: { deletedAt: new Date() } });
+      if (m?.telegramUserId) kickFromGroup(m.telegramUserId).catch(() => {});
+      await logActivity(admin.name, `Deleted crew member: ${m?.name || memberId}`);
       return Response.json({ ok: true });
     }
 

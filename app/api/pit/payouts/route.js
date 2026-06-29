@@ -48,6 +48,9 @@ export async function GET() {
       availableBalance: Math.max(0, available) / 100,
       minPayout: MIN_PAYOUT / 100,
       hasBankDetails,
+      bankName: member.bankName || null,
+      bankAccountNo: member.bankAccountNo || null,
+      bankAccountName: member.bankAccountName || null,
     });
   } catch (e) {
     console.error("Payouts GET error:", e);

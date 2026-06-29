@@ -10,10 +10,11 @@ export async function GET() {
     const member = await getCrewSession();
     if (!member || member.role !== "chief") return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-    const crewIds = (await prisma.crewMember.findMany({
+    const crew = await prisma.crewMember.findMany({
       where: { leadId: member.id, status: "approved" },
-      select: { id: true },
-    })).map((m) => m.id);
+      select: { id: true, name: true },
+    });
+    const crewIds = crew.map((m) => m.id);
 
     const links = await prisma.acquisitionLink.findMany({
       where: { archivedAt: null, affiliateId: { in: [member.id, ...crewIds] } },
@@ -36,6 +37,7 @@ export async function GET() {
         commissions: l._count.commissions,
         createdAt: l.createdAt.toISOString(),
       })),
+      team: crew.map((m) => ({ id: m.id, name: m.name })),
     });
   } catch (e) {
     console.error("Links GET error:", e);

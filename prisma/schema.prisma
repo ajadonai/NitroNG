@@ -732,6 +732,9 @@ model CrewMember {
   inviteExpiresAt  DateTime?
   approvedAt       DateTime?
   suspendedAt      DateTime?
+  deletedAt        DateTime?
+  resetToken       String?
+  resetExpires     DateTime?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

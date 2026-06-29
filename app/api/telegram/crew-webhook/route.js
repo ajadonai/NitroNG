@@ -294,9 +294,22 @@ export async function POST(req) {
         return Response.json({ ok: true });
       }
 
+      const tgHandle = msg.from?.username?.toLowerCase() || null;
+      if (!tgHandle) {
+        await sendDM(chatId, [
+          '⚠️ <b>Username Required</b>',
+          '',
+          'Your Telegram account doesn\'t have a username set.',
+          '',
+          '1. Go to Telegram <b>Settings → Username</b>',
+          '2. Set a username',
+          '3. Then try connecting again at <b>nitro.ng/pit/settings</b>',
+        ].join('\n'));
+        return Response.json({ ok: true });
+      }
       await prisma.crewMember.update({
         where: { id: member.id },
-        data: { telegramUserId: userId, telegramLinkCode: null },
+        data: { telegramUserId: userId, telegramHandle: tgHandle, telegramLinkCode: null },
       });
       await sendDM(chatId, `✅ Linked as <b>${member.name}</b>!\n\nType /help to see what I can do.`);
 
@@ -338,7 +351,7 @@ export async function POST(req) {
     if (command === '/unlink') {
       await prisma.crewMember.update({
         where: { id: member.id },
-        data: { telegramUserId: null },
+        data: { telegramUserId: null, telegramHandle: null, telegramLinkCode: null },
       });
       const reply = '🔓 Telegram unlinked. Re-link anytime at nitro.ng/pit/settings.';
       if (isGroup) replyInGroup(chatId, msg.message_id, reply);

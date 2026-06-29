@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getCrewSession, memberToClient } from "@/lib/crew";
+import { getCrewSession } from "@/lib/crew";
 import prisma from "@/lib/prisma";
 import TeamPage from "@/components/m/team-page";
 
@@ -35,8 +35,7 @@ async function getInitialTeam(leadId) {
 
 export default async function Team() {
   const member = await getCrewSession();
-  if (!member) redirect("/pit/login");
   if (member.role !== "chief") redirect("/pit");
   const initialData = await getInitialTeam(member.id);
-  return <TeamPage member={memberToClient(member)} initialData={initialData} />;
+  return <TeamPage initialData={initialData} />;
 }

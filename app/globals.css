@@ -98,6 +98,7 @@
 @keyframes spin { 0% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
 @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 @keyframes shimmer { 0% { left: -100%; } 100% { left: 200%; } }
+@keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 @keyframes bulk-pulse { 0% { box-shadow: 0 -8px 24px rgba(0,0,0,.06); } 50% { box-shadow: 0 0 0 6px rgba(196,125,142,.08), 0 -8px 24px rgba(0,0,0,.06); border-color: #c47d8e; } 100% { box-shadow: 0 -8px 24px rgba(0,0,0,.06); } }
 .bulk-pulse { animation: bulk-pulse .7s ease; }
 @keyframes bulk-row-flash { 0%, 100% { box-shadow: none; } 25%, 75% { box-shadow: 0 0 0 3px rgba(196,125,142,.35); } }

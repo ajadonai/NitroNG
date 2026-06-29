@@ -1,6 +1,5 @@
 "use client";
 import { useState, useCallback } from "react";
-import PortalShell from "./shell";
 import { StatusBadge, Skeleton, ErrorBanner, EmptyState } from "./kit";
 import { useTheme } from "../shared-nav";
 import { fN } from "@/lib/format";
@@ -16,7 +15,7 @@ const FILTERS = [
   { key: "voided", label: "Voided" },
 ];
 
-function Inner({ member, initialData }) {
+export default function CommissionsPage({ member, initialData }) {
   const { dark, t } = useTheme();
   const [filter, setFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -73,8 +72,8 @@ function Inner({ member, initialData }) {
         <div className="rounded-2xl" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="flex items-center gap-3 px-5 py-4" style={{ borderTop: i > 1 ? `1px solid ${t.surfaceBrd}` : undefined }}>
-              <div className="flex-1 flex flex-col gap-2"><Skeleton w={140} h={13} /><Skeleton w={90} h={10} /></div>
-              <Skeleton w={70} h={13} />
+              <div className="flex-1 flex flex-col gap-2"><Skeleton w={140} h={13} dark={dark} /><Skeleton w={90} h={10} dark={dark} /></div>
+              <Skeleton w={70} h={13} dark={dark} />
             </div>
           ))}
         </div>
@@ -142,8 +141,4 @@ function Inner({ member, initialData }) {
       )}
     </div>
   );
-}
-
-export default function CommissionsPage({ member, initialData }) {
-  return <PortalShell member={member}><Inner member={member} initialData={initialData} /></PortalShell>;
 }

@@ -1,28 +1,40 @@
 "use client";
-import { useState } from "react";
-import PortalShell from "./shell";
+import { useState, useMemo } from "react";
 import { StatusBadge, EmptyState, ErrorBanner } from "./kit";
 import { useTheme } from "../shared-nav";
+import { useHeaderAction } from "./shell";
 
 function fmtDate(d) {
   return new Date(d).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function Inner({ member, initialData }) {
+export default function LinksPage({ initialData }) {
   const { dark, t } = useTheme();
   const [data, setData] = useState(initialData);
   const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
+  const [affiliateId, setAffiliateId] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useHeaderAction(useMemo(() => (
+    <button
+      onClick={() => setShowCreate(s => !s)}
+      className="py-[8px] px-4 rounded-xl text-[13px] font-semibold border-none cursor-pointer text-white transition-transform duration-150 hover:-translate-y-px shrink-0"
+      style={{ background: t.grad, fontFamily: "inherit" }}
+    >+ New Link</button>
+  ), [t.grad]));
 
   const reload = () => {
+    setRefreshing(true);
     fetch("/api/pit/links")
       .then((r) => r.json())
       .then((d) => { if (!d.error) setData(d); })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setRefreshing(false));
   };
 
   const handleCreate = async () => {
@@ -33,13 +45,14 @@ function Inner({ member, initialData }) {
       const res = await fetch("/api/pit/links", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), slug: slug.trim() || undefined }),
+        body: JSON.stringify({ name: name.trim(), slug: slug.trim() || undefined, affiliateId: affiliateId || undefined }),
       });
       const d = await res.json();
       if (d.error) { setError(d.error); return; }
       setShowCreate(false);
       setName("");
       setSlug("");
+      setAffiliateId("");
       reload();
     } catch {
       setError("Something went wrong");
@@ -76,23 +89,12 @@ function Inner({ member, initialData }) {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Header with create button */}
-      <div className="flex items-center justify-between">
-        <div className="text-[13px]" style={{ color: t.muted }}>{links.length} link{links.length !== 1 ? "s" : ""}</div>
-        <button
-          onClick={() => setShowCreate(!showCreate)}
-          className="py-[8px] px-4 rounded-xl text-[13px] font-semibold border-none cursor-pointer text-white transition-transform duration-150 hover:-translate-y-px"
-          style={{ background: t.grad, fontFamily: "inherit" }}
-        >
-          + New Link
-        </button>
-      </div>
-
       {/* Create form */}
       {showCreate && (
         <div className="rounded-[14px] overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
           <div className="py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
             <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>Create Link</div>
+            <div className="text-[11px] mt-[2px]" style={{ color: t.soft }}>Generate a new tracking link</div>
           </div>
           <div className="p-[18px] flex flex-col gap-3">
             <div>
@@ -118,10 +120,26 @@ function Inner({ member, initialData }) {
                 />
               </div>
             </div>
+            {(data?.team?.length > 0) && (
+              <div>
+                <label className="text-[11.5px] font-medium block mb-1" style={{ color: t.muted }}>Assign to</label>
+                <select
+                  value={affiliateId}
+                  onChange={(e) => setAffiliateId(e.target.value)}
+                  className="w-full py-[9px] px-3 rounded-lg text-[13.5px] bg-transparent outline-none"
+                  style={{ color: t.text, border: `1px solid ${t.surfaceBrd}`, fontFamily: "inherit" }}
+                >
+                  <option value="">Me (default)</option>
+                  {data.team.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             {error && <div className="text-[12.5px]" style={{ color: t.red }}>{error}</div>}
             <div className="flex gap-2 justify-end mt-1">
               <button
-                onClick={() => { setShowCreate(false); setName(""); setSlug(""); setError(null); }}
+                onClick={() => { setShowCreate(false); setName(""); setSlug(""); setAffiliateId(""); setError(null); }}
                 className="py-[7px] px-4 rounded-lg text-[12.5px] font-medium border-none cursor-pointer"
                 style={{ background: "transparent", color: t.muted, fontFamily: "inherit" }}
               >
@@ -149,7 +167,7 @@ function Inner({ member, initialData }) {
           t={t}
         />
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 transition-opacity duration-200" style={{ opacity: refreshing ? 0.6 : 1 }}>
           {links.map((link) => (
             <div key={link.id} className="rounded-[14px] overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
               <div className="py-[10px] px-[18px] flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
@@ -206,8 +224,4 @@ function Inner({ member, initialData }) {
       )}
     </div>
   );
-}
-
-export default function LinksPage({ member, initialData }) {
-  return <PortalShell member={member}><Inner member={member} initialData={initialData} /></PortalShell>;
 }
