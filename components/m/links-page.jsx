@@ -79,8 +79,8 @@ function CreateModal({ open, onClose, onCreated, team, memberId, leadSplit, dark
       if (d.error) { setError(d.error); return; }
       onClose();
       onCreated();
-    } catch {
-      setError("Something went wrong");
+    } catch (err) {
+      setError(`Something went wrong: ${err.message}`);
     } finally {
       setCreating(false);
     }
