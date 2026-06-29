@@ -571,12 +571,17 @@ export function AdminCrewPage({ dark, t }) {
       {/* ═══ PAYOUTS TAB ═══ */}
       {tab === "payouts" && (
         <>
-          <div className="flex gap-1.5 mb-4">
-            {["all", "pending", "processing", "completed", "rejected"].map(s => (
-              <button key={s} onClick={() => setPayoutFilter(s)} className="py-1.5 px-3 rounded-lg text-[12.5px] font-medium border-none cursor-pointer capitalize" style={{ background: payoutFilter === s ? (dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.15)") : "transparent", color: payoutFilter === s ? t.accent : t.textMuted, fontFamily: "inherit" }}>
-                {s}{s === "pending" && pendingPayoutCount > 0 ? ` (${pendingPayoutCount})` : ""}
-              </button>
-            ))}
+          <div className="flex mb-4">
+            <div className="relative flex items-center rounded-[11px] px-[11px]" style={{ background: cardBg, border: cardBd }}>
+              <select value={payoutFilter} onChange={e => setPayoutFilter(e.target.value)} className="appearance-none border-none bg-transparent outline-none text-[13px] font-semibold py-[10px] pr-5 cursor-pointer capitalize" style={{ color: t.text, fontFamily: "inherit" }}>
+                <option value="all">All</option>
+                <option value="pending">Pending{pendingPayoutCount > 0 ? ` (${pendingPayoutCount})` : ""}</option>
+                <option value="processing">Processing</option>
+                <option value="completed">Completed</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              <svg className="absolute right-[11px] pointer-events-none" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
           </div>
           <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBd }}>
             {filteredPayouts.length === 0 ? (
