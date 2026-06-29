@@ -4,13 +4,21 @@ import prisma from "@/lib/prisma";
 import LinksPage from "@/components/m/links-page";
 
 async function getInitialLinks(chiefId) {
-  const crewIds = (await prisma.crewMember.findMany({
-    where: { leadId: chiefId, status: "approved" },
-    select: { id: true },
-  })).map((m) => m.id);
+  const [crew, settings] = await Promise.all([
+    prisma.crewMember.findMany({
+      where: { leadId: chiefId, status: "approved" },
+      select: { id: true, name: true, xHandle: true, telegramHandle: true },
+    }),
+    prisma.setting.findMany({
+      where: { key: { in: ["affiliate_lead_split"] } },
+    }),
+  ]);
+  const sv = Object.fromEntries(settings.map(s => [s.key, parseInt(s.value)]));
+  const leadSplit = sv.affiliate_lead_split || 40;
+  const crewIds = crew.map((m) => m.id);
 
   const links = await prisma.acquisitionLink.findMany({
-    where: { archivedAt: null, affiliateId: { in: [chiefId, ...crewIds] } },
+    where: { archivedAt: null, OR: [{ affiliateId: { in: [chiefId, ...crewIds] } }, { affiliateId: null }] },
     orderBy: { createdAt: "desc" },
     include: {
       _count: { select: { clicks: true, commissions: true } },
@@ -19,6 +27,8 @@ async function getInitialLinks(chiefId) {
   });
 
   return {
+    memberId: chiefId,
+    leadSplit,
     links: links.map((l) => ({
       id: l.id,
       name: l.name,
@@ -30,6 +40,7 @@ async function getInitialLinks(chiefId) {
       commissions: l._count.commissions,
       createdAt: l.createdAt.toISOString(),
     })),
+    team: crew.map((m) => ({ id: m.id, name: m.name, handle: m.xHandle || m.telegramHandle || null })),
   };
 }
 

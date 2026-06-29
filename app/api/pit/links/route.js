@@ -5,7 +5,13 @@ function slugify(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30);
 }
 
-export async function GET() {
+export async function GET(req) {
+  const { searchParams } = new URL(req.url);
+  const checkSlug = searchParams.get("check");
+  if (checkSlug) {
+    const exists = await prisma.acquisitionLink.findUnique({ where: { slug: checkSlug } });
+    return Response.json({ available: !exists });
+  }
   try {
     const member = await getCrewSession();
     if (!member || member.role !== "chief") return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -17,7 +23,7 @@ export async function GET() {
     const crewIds = crew.map((m) => m.id);
 
     const links = await prisma.acquisitionLink.findMany({
-      where: { archivedAt: null, affiliateId: { in: [member.id, ...crewIds] } },
+      where: { archivedAt: null, OR: [{ affiliateId: { in: [member.id, ...crewIds] } }, { affiliateId: null }] },
       orderBy: { createdAt: "desc" },
       include: {
         _count: { select: { clicks: true, commissions: true } },
@@ -65,7 +71,7 @@ export async function POST(req) {
     }
 
     const link = await prisma.acquisitionLink.create({
-      data: { name: name.trim(), slug, affiliateId: affiliateId || member.id },
+      data: { name: name.trim(), slug, affiliateId: affiliateId === "unassigned" ? null : (affiliateId || member.id) },
     });
 
     return Response.json({ link: { id: link.id, name: link.name, slug: link.slug, enabled: link.enabled, createdAt: link.createdAt.toISOString() } });
