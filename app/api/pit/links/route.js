@@ -5,12 +5,28 @@ function slugify(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30);
 }
 
+function logAction(linkId, actorId, action, detail) {
+  return prisma.linkLog.create({ data: { linkId, actorId, action, detail } });
+}
+
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const checkSlug = searchParams.get("check");
   if (checkSlug) {
     const exists = await prisma.acquisitionLink.findUnique({ where: { slug: checkSlug } });
     return Response.json({ available: !exists });
+  }
+  const logsFor = searchParams.get("logs");
+  if (logsFor) {
+    const member = await getCrewSession().catch(() => null);
+    if (!member || member.role !== "chief") return Response.json({ error: "Unauthorized" }, { status: 401 });
+    const logs = await prisma.linkLog.findMany({
+      where: { linkId: logsFor },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: { actor: { select: { id: true, name: true } } },
+    });
+    return Response.json({ logs: logs.map(l => ({ id: l.id, action: l.action, detail: l.detail, actorName: l.actor.name, createdAt: l.createdAt.toISOString() })) });
   }
   try {
     const member = await getCrewSession();
@@ -23,7 +39,7 @@ export async function GET(req) {
     const crewIds = crew.map((m) => m.id);
 
     const links = await prisma.acquisitionLink.findMany({
-      where: { archivedAt: null, OR: [{ affiliateId: { in: [member.id, ...crewIds] } }, { affiliateId: null }] },
+      where: { archivedAt: null, affiliateId: { in: [member.id, ...crewIds] } },
       orderBy: { createdAt: "desc" },
       include: {
         _count: { select: { clicks: true, commissions: true } },
@@ -70,9 +86,13 @@ export async function POST(req) {
       if (!affiliate || affiliate.status !== "approved") return Response.json({ error: "Invalid affiliate" }, { status: 400 });
     }
 
+    const assigneeId = affiliateId || member.id;
     const link = await prisma.acquisitionLink.create({
-      data: { name: name.trim(), slug, affiliateId: affiliateId === "unassigned" ? null : (affiliateId || member.id) },
+      data: { name: name.trim(), slug, affiliateId: assigneeId },
     });
+
+    const assigneeName = assigneeId === member.id ? member.name : (await prisma.crewMember.findUnique({ where: { id: assigneeId }, select: { name: true } }))?.name;
+    logAction(link.id, member.id, "created", `Created and assigned to ${assigneeName}`).catch(() => {});
 
     return Response.json({ link: { id: link.id, name: link.name, slug: link.slug, enabled: link.enabled, createdAt: link.createdAt.toISOString() } });
   } catch (e) {
@@ -101,7 +121,19 @@ export async function PATCH(req) {
 
     if (Object.keys(data).length === 0) return Response.json({ error: "Nothing to update" }, { status: 400 });
 
+    const prev = await prisma.acquisitionLink.findUnique({ where: { id }, include: { affiliate: { select: { name: true } } } });
     await prisma.acquisitionLink.update({ where: { id }, data });
+
+    if (typeof enabled === "boolean") {
+      logAction(id, member.id, enabled ? "resumed" : "paused", `Link ${enabled ? "resumed" : "paused"}`).catch(() => {});
+    }
+    if (affiliateId !== undefined) {
+      prisma.crewMember.findUnique({ where: { id: affiliateId }, select: { name: true } }).then(m => {
+        const newName = m?.name || member.name;
+        logAction(id, member.id, "reassigned", `Reassigned from ${prev?.affiliate?.name || "unknown"} to ${newName}`).catch(() => {});
+      }).catch(() => {});
+    }
+
     return Response.json({ ok: true });
   } catch (e) {
     console.error("Links PATCH error:", e);
@@ -118,6 +150,7 @@ export async function DELETE(req) {
     if (!id) return Response.json({ error: "Link ID required" }, { status: 400 });
 
     await prisma.acquisitionLink.update({ where: { id }, data: { archivedAt: new Date() } });
+    logAction(id, member.id, "deleted", "Link archived").catch(() => {});
     return Response.json({ ok: true });
   } catch (e) {
     console.error("Links DELETE error:", e);

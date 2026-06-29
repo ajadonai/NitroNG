@@ -678,8 +678,25 @@ model AcquisitionLink {
   affiliate   CrewMember? @relation(fields: [affiliateId], references: [id])
   commissions AffiliateCommission[]
 
+  logs        LinkLog[]
+
   @@index([affiliateId])
   @@map("acquisition_links")
+}
+
+model LinkLog {
+  id        String   @id @default(cuid())
+  linkId    String
+  action    String
+  detail    String?
+  actorId   String
+  createdAt DateTime @default(now())
+
+  link  AcquisitionLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  actor CrewMember      @relation(fields: [actorId], references: [id])
+
+  @@index([linkId])
+  @@map("link_logs")
 }
 
 model LinkClick {
@@ -742,6 +759,7 @@ model CrewMember {
   lead             CrewMember?  @relation("CrewHierarchy", fields: [leadId], references: [id])
   crew             CrewMember[] @relation("CrewHierarchy")
   links            AcquisitionLink[]
+  linkLogs         LinkLog[]
   commissions      AffiliateCommission[] @relation("CommissionMember")
   leadCommissions  AffiliateCommission[] @relation("CommissionLead")
   payouts          AffiliatePayout[]

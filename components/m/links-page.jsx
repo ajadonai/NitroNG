@@ -69,8 +69,7 @@ function CreateModal({ open, onClose, onCreated, team, memberId, leadSplit, dark
     setCreating(true);
     try {
       const body = { name: name.trim(), slug: slug.trim() };
-      if (assignee === "unassigned") body.affiliateId = "unassigned";
-      else if (assignee !== "self") body.affiliateId = assignee;
+      if (assignee !== "self") body.affiliateId = assignee;
       const res = await fetch("/api/pit/links", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -94,7 +93,6 @@ function CreateModal({ open, onClose, onCreated, team, memberId, leadSplit, dark
 
   const getSummary = () => {
     if (assignee === "self") return <>You&apos;ll earn the <b style={{ color: t.text, fontWeight: 600 }}>full commission pot</b> on every completed order from this link.</>;
-    if (assignee === "unassigned") return <>No commission is earned until you assign this link to a crew member.</>;
     const member = team.find(m => m.id === assignee);
     return <><b style={{ color: t.text, fontWeight: 600 }}>{member?.name}</b> earns <b style={{ color: t.text, fontWeight: 600 }}>{marketerSplit}%</b> of the pot and <b style={{ color: t.text, fontWeight: 600 }}>you earn {leadSplit}%</b> on every completed order from this link.</>;
   };
@@ -167,8 +165,8 @@ function CreateModal({ open, onClose, onCreated, team, memberId, leadSplit, dark
             <div className="flex items-center gap-[5px] text-[11.5px] font-semibold mt-[7px] min-h-[16px]" style={{
               color: slugStatus === "ok" ? t.green : slugStatus === "taken" ? t.red : t.muted,
             }}>
-              {slugStatus === "ok" && <>✓ nitro.ng/?via={slug} is available</>}
-              {slugStatus === "taken" && <>✕ That slug is taken, try another</>}
+              {slugStatus === "ok" && <>✓ Available</>}
+              {slugStatus === "taken" && <>✕ Unavailable</>}
               {slugStatus === "checking" && <>Checking...</>}
               {slugStatus === "idle" && <>Lowercase letters, numbers and dashes.</>}
             </div>
@@ -235,32 +233,6 @@ function CreateModal({ open, onClose, onCreated, team, memberId, leadSplit, dark
                 </button>
               ))}
 
-              {/* Unassigned */}
-              <button
-                onClick={() => setAssignee("unassigned")}
-                className="w-full flex items-center gap-3 py-[11px] px-[13px] rounded-xl cursor-pointer border-none text-left transition-all duration-150"
-                style={{
-                  background: assignee === "unassigned" ? accentTint : tileBg,
-                  border: `1px solid ${assignee === "unassigned" ? t.accent : t.surfaceBrd}`,
-                  boxShadow: assignee === "unassigned" ? `0 0 0 1px ${t.accent} inset` : "none",
-                  fontFamily: "inherit",
-                }}
-              >
-                <div className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center shrink-0" style={{ background: insetBg, color: t.muted }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13.5px] font-semibold" style={{ color: t.text }}>Leave unassigned</div>
-                  <div className="text-[11.5px]" style={{ color: t.muted }}>Assign it to someone later</div>
-                </div>
-                <span className="text-[10.5px] font-bold tracking-[.3px] py-1 px-[9px] rounded-[7px] shrink-0" style={{
-                  color: assignee === "unassigned" ? t.accent : t.soft,
-                  background: assignee === "unassigned" ? "rgba(196,125,142,.16)" : insetBg,
-                }}>—</span>
-                <div className="w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center shrink-0" style={{ borderColor: assignee === "unassigned" ? t.accent : t.surfaceBrd }}>
-                  {assignee === "unassigned" && <div className="w-[9px] h-[9px] rounded-full" style={{ background: t.accent }} />}
-                </div>
-              </button>
             </div>
           </div>
 
@@ -296,8 +268,18 @@ function CreateModal({ open, onClose, onCreated, team, memberId, leadSplit, dark
 }
 
 /* ── Link Card ── */
-function LinkCard({ link, isSelf, isUnassigned, dark, t, copied, onCopy, onToggle, onArchive, onReassign, team }) {
+const ACTION_LABELS = { created: "Created", reassigned: "Reassigned", paused: "Paused", resumed: "Resumed", deleted: "Deleted" };
+const ACTION_ICONS = {
+  created: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  reassigned: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>,
+  paused: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>,
+  resumed: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>,
+  deleted: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>,
+};
+
+function LinkCard({ link, isSelf, dark, t, copied, onCopy, onToggle, onArchive, onReassign, team, expanded, onExpand }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [logs, setLogs] = useState(null);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -306,6 +288,11 @@ function LinkCard({ link, isSelf, isUnassigned, dark, t, copied, onCopy, onToggl
     document.addEventListener("click", close);
     return () => document.removeEventListener("click", close);
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (!expanded) return;
+    fetch(`/api/pit/links?logs=${link.id}`).then(r => r.json()).then(d => setLogs(d.logs || [])).catch(() => setLogs([]));
+  }, [expanded, link.id]);
 
   const active = link.enabled;
   const rate = link.clicks > 0 ? ((link.commissions / link.clicks) * 100).toFixed(1) : "0";
@@ -330,15 +317,17 @@ function LinkCard({ link, isSelf, isUnassigned, dark, t, copied, onCopy, onToggl
       style={{ background: tint, border: `1px solid ${brd}`, boxShadow: dark ? "none" : "0 1px 2px rgba(0,0,0,.04),0 8px 22px rgba(0,0,0,.05)" }}
     >
       {/* Top row */}
-      <div className="flex items-center gap-[11px]">
+      <div className="flex items-center gap-[11px] cursor-pointer" onClick={onExpand}>
+        <svg className="shrink-0 transition-transform duration-200" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="2" style={{ transform: expanded ? "rotate(90deg)" : "rotate(0deg)" }}><polyline points="9 18 15 12 9 6"/></svg>
         <span className="text-[15.5px] font-semibold tracking-[-0.1px]" style={{ color: t.text }}>{link.name}</span>
-        <span className="flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: active ? t.green : t.muted }}>
-          <span className="w-1.5 h-1.5 rounded-full" style={{ background: active ? t.green : t.muted }} />
-          {active ? "Active" : "Paused"}
-        </span>
         {isSelf && <span className="text-[10px] font-bold tracking-[.4px] uppercase py-[3px] px-2 rounded-md" style={{ color: t.accent, background: "rgba(196,125,142,.16)" }}>Self</span>}
-        {/* Kebab */}
-        <div className="ml-auto relative" ref={menuRef}>
+        <div className="ml-auto flex items-center gap-2 shrink-0">
+          <span className="text-[11px] font-semibold py-[3px] px-[8px] rounded-md" style={{
+            color: active ? t.green : t.muted,
+            background: active ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)") : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"),
+          }}>{active ? "Active" : "Paused"}</span>
+          {/* Kebab */}
+          <div className="relative" ref={menuRef} onClick={e => e.stopPropagation()}>
           <button onClick={() => setMenuOpen(o => !o)} className="w-[30px] h-[30px] rounded-lg border-none flex items-center justify-center cursor-pointer" style={{ background: "transparent", color: t.muted }}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
           </button>
@@ -360,58 +349,66 @@ function LinkCard({ link, isSelf, isUnassigned, dark, t, copied, onCopy, onToggl
               </button>
             </div>
           )}
+          </div>
         </div>
       </div>
 
-      {/* URL line */}
-      <div className={`flex items-center gap-3 my-[15px] max-md:my-3 py-[13px] px-4 max-md:flex-col max-md:items-stretch max-md:gap-[10px] rounded-xl ${dimClass}`} style={{ background: tileBg, border: `1px solid ${t.surfaceBrd}` }}>
-        <span className="m text-[14.5px] flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
-          <span style={{ color: t.soft }}>nitro.ng/?</span><span style={{ color: t.accent, fontWeight: 600 }}>via={link.slug}</span>
-        </span>
-        <button
-          onClick={() => onCopy(link.slug)}
-          className="flex items-center justify-center gap-1.5 text-[12.5px] font-semibold text-white border-none rounded-[9px] py-2 px-[14px] cursor-pointer transition-opacity duration-150 shrink-0 opacity-95 hover:opacity-100"
-          style={{ background: copied === link.slug ? t.green : t.grad, fontFamily: "inherit" }}
-        >
-          {copied === link.slug
-            ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6"><polyline points="20 6 9 17 4 12"/></svg>Copied</>
-            : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</>
-          }
-        </button>
-      </div>
+      {expanded && <>
+        {/* URL line */}
+        <div className={`flex items-center gap-3 mt-4 mb-4 max-md:mt-3 max-md:mb-3 py-[14px] px-[18px] max-md:flex-col max-md:items-stretch max-md:gap-[10px] rounded-xl ${dimClass}`} style={{ background: tileBg, border: `1px solid ${t.surfaceBrd}` }}>
+          <span className="m text-[14.5px] flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+            <span style={{ color: t.soft }}>nitro.ng/?</span><span style={{ color: t.accent, fontWeight: 600 }}>via={link.slug}</span>
+          </span>
+          <button
+            onClick={() => onCopy(link.slug)}
+            className="flex items-center justify-center gap-1.5 text-[12.5px] font-semibold text-white border-none rounded-[9px] py-2 px-[14px] cursor-pointer transition-opacity duration-150 shrink-0 opacity-95 hover:opacity-100"
+            style={{ background: copied === link.slug ? t.green : t.grad, fontFamily: "inherit" }}
+          >
+            {copied === link.slug
+              ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6"><polyline points="20 6 9 17 4 12"/></svg>Copied</>
+              : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</>
+            }
+          </button>
+        </div>
 
-      {/* Stats */}
-      <div className={`grid grid-cols-3 gap-[10px] ${dimClass}`}>
-        {[
-          { n: link.clicks.toLocaleString(), k: "Clicks", color: t.text },
-          { n: link.commissions.toLocaleString(), k: "Conversions", color: t.green },
-          { n: `${rate}%`, k: "Rate", color: t.accent },
-        ].map(s => (
-          <div key={s.k} className="rounded-xl py-[13px] px-[15px]" style={{ background: tileBg, border: `1px solid ${t.surfaceBrd}` }}>
-            <div className="m text-[21px] max-md:text-[17px] font-semibold tracking-[-0.5px] leading-none" style={{ color: s.color }}>{s.n}</div>
-            <div className="text-[11px] font-medium mt-1.5" style={{ color: t.muted }}>{s.k}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center gap-2 mt-[15px] text-[12.5px]" style={{ color: t.muted }}>
-        {isUnassigned ? (
-          <>
-            <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", color: t.muted }}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        {/* Stats */}
+        <div className={`grid grid-cols-3 gap-3 ${dimClass}`}>
+          {[
+            { n: link.clicks.toLocaleString(), k: "Clicks", color: t.text },
+            { n: link.commissions.toLocaleString(), k: "Conversions", color: t.green },
+            { n: `${rate}%`, k: "Rate", color: t.accent },
+          ].map(s => (
+            <div key={s.k} className="rounded-xl py-[13px] px-[15px]" style={{ background: tileBg, border: `1px solid ${t.surfaceBrd}` }}>
+              <div className="m text-[21px] max-md:text-[17px] font-semibold tracking-[-0.5px] leading-none" style={{ color: s.color }}>{s.n}</div>
+              <div className="text-[11px] font-medium mt-1.5" style={{ color: t.muted }}>{s.k}</div>
             </div>
-            <span style={{ color: t.soft, fontWeight: 600 }}>Unassigned</span>
-          </>
-        ) : (
-          <>
-            <span className="w-5 h-5 rounded-md text-white flex items-center justify-center text-[9px] font-bold shrink-0" style={{ background: t.grad }}>{initials(isSelf ? "You" : link.affiliateName)}</span>
-            <span>Assigned to <b style={{ color: t.soft, fontWeight: 600 }}>{isSelf ? "You" : link.affiliateName}</b></span>
-          </>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center gap-2 mt-4 text-[12.5px]" style={{ color: t.muted }}>
+          <span className="w-5 h-5 rounded-md text-white flex items-center justify-center text-[9px] font-bold shrink-0" style={{ background: t.grad }}>{initials(isSelf ? "You" : link.affiliateName)}</span>
+          <span>Assigned to <b style={{ color: t.soft, fontWeight: 600 }}>{isSelf ? "You" : link.affiliateName}</b></span>
+          <span style={{ opacity: .5 }}>·</span>
+          <span>Created {fmtDate(link.createdAt)}</span>
+        </div>
+
+        {/* Activity */}
+        {logs && logs.length > 0 && (
+          <div className="mt-4 pt-3" style={{ borderTop: `1px solid ${t.surfaceBrd}` }}>
+            <div className="text-[11px] font-semibold uppercase tracking-[.5px] mb-2" style={{ color: t.muted }}>Activity</div>
+            <div className="flex flex-col gap-[6px]">
+              {logs.map(log => (
+                <div key={log.id} className="flex items-start gap-2 text-[12px]" style={{ color: t.muted }}>
+                  <span className="mt-px shrink-0" style={{ color: log.action === "reassigned" ? t.accent : t.muted }}>{ACTION_ICONS[log.action] || ACTION_ICONS.created}</span>
+                  <span className="flex-1 min-w-0"><b style={{ color: t.soft, fontWeight: 600 }}>{log.actorName}</b> {log.detail?.toLowerCase() || ACTION_LABELS[log.action]?.toLowerCase() || log.action}</span>
+                  <span className="shrink-0 text-[11px]">{fmtDate(log.createdAt)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
-        <span style={{ opacity: .5 }}>·</span>
-        <span>Created {fmtDate(link.createdAt)}</span>
-      </div>
+      </>}
     </div>
   );
 }
@@ -428,6 +425,7 @@ export default function LinksPage({ initialData }) {
   const [sort, setSort] = useState("new");
   const [reassignLink, setReassignLink] = useState(null);
   const [reassignTo, setReassignTo] = useState("");
+  const [expandedId, setExpandedId] = useState(null);
 
   const memberId = data?.memberId;
   const team = data?.team || [];
@@ -517,14 +515,16 @@ export default function LinksPage({ initialData }) {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search by link, slug or person" className="border-none bg-transparent outline-none text-[14px] py-[11px] w-full" style={{ color: t.text, fontFamily: "inherit" }} />
             </label>
-            <div className="flex gap-[3px] rounded-[11px] p-1" style={{ background: ctrlBg, border: `1px solid ${t.surfaceBrd}`, boxShadow: ctrlShadow }}>
-              {["all", "active", "paused"].map(f => (
-                <button key={f} onClick={() => setFilter(f)} className="text-[12.5px] font-semibold py-[7px] px-[13px] rounded-lg border-none cursor-pointer capitalize transition-colors duration-150" style={{ background: filter === f ? "rgba(196,125,142,.14)" : "transparent", color: filter === f ? t.accent : t.muted, fontFamily: "inherit" }}>{f}</button>
-              ))}
+            <div className="relative flex items-center rounded-[11px] px-[11px] max-md:ml-auto" style={{ background: ctrlBg, border: `1px solid ${t.surfaceBrd}`, boxShadow: ctrlShadow }}>
+              <select value={filter} onChange={e => setFilter(e.target.value)} className="appearance-none border-none bg-transparent outline-none text-[13.5px] font-semibold py-[11px] pr-5 cursor-pointer capitalize" style={{ color: t.text, fontFamily: "inherit" }}>
+                <option value="all">All</option>
+                <option value="active">Active</option>
+                <option value="paused">Paused</option>
+              </select>
+              <svg className="absolute right-[11px] pointer-events-none" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             <div className="relative flex items-center rounded-[11px] px-[11px]" style={{ background: ctrlBg, border: `1px solid ${t.surfaceBrd}`, boxShadow: ctrlShadow }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="2"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
-              <select value={sort} onChange={e => setSort(e.target.value)} className="appearance-none border-none bg-transparent outline-none text-[13.5px] font-semibold py-[11px] pl-2 pr-5 cursor-pointer" style={{ color: t.text, fontFamily: "inherit" }}>
+              <select value={sort} onChange={e => setSort(e.target.value)} className="appearance-none border-none bg-transparent outline-none text-[13.5px] font-semibold py-[11px] pr-5 cursor-pointer" style={{ color: t.text, fontFamily: "inherit" }}>
                 <option value="new">Newest</option>
                 <option value="old">Oldest</option>
                 <option value="clicks">Most clicks</option>
@@ -548,7 +548,6 @@ export default function LinksPage({ initialData }) {
           <select value={reassignTo} onChange={(e) => setReassignTo(e.target.value)} className="w-full py-[9px] px-3 rounded-lg text-[13.5px] bg-transparent outline-none" style={{ color: t.text, border: `1px solid ${t.surfaceBrd}`, fontFamily: "inherit" }}>
             <option value="">Me</option>
             {team.map((m) => (<option key={m.id} value={m.id}>{m.name}</option>))}
-            <option value="unassigned">Unassigned</option>
           </select>
         </div>
         <div className="flex gap-2 justify-end mt-1">
@@ -574,15 +573,16 @@ export default function LinksPage({ initialData }) {
               key={link.id}
               link={link}
               isSelf={link.affiliateId === memberId}
-              isUnassigned={!link.affiliateId}
               dark={dark}
               t={t}
               copied={copied}
               onCopy={copyLink}
               onToggle={toggleEnabled}
               onArchive={archive}
-              onReassign={(l) => { setReassignTo(l.affiliateId === memberId ? "" : l.affiliateId || "unassigned"); setReassignLink(l); }}
+              onReassign={(l) => { setReassignTo(l.affiliateId === memberId ? "" : l.affiliateId); setReassignLink(l); }}
               team={team}
+              expanded={expandedId === link.id}
+              onExpand={() => setExpandedId(expandedId === link.id ? null : link.id)}
             />
           ))}
         </div>

@@ -18,7 +18,7 @@ async function getInitialLinks(chiefId) {
   const crewIds = crew.map((m) => m.id);
 
   const links = await prisma.acquisitionLink.findMany({
-    where: { archivedAt: null, OR: [{ affiliateId: { in: [chiefId, ...crewIds] } }, { affiliateId: null }] },
+    where: { archivedAt: null, affiliateId: { in: [chiefId, ...crewIds] } },
     orderBy: { createdAt: "desc" },
     include: {
       _count: { select: { clicks: true, commissions: true } },
