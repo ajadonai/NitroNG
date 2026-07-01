@@ -6,8 +6,8 @@ import { watBounds } from '@/lib/format';
 
 export const maxDuration = 60;
 
-const ADMIN_TG_IDS = ['8567146346'];
-const ADMIN_TG_NAMES = { '8567146346': 'The Nitro NG' };
+const ADMIN_TG_IDS = ['8567146346', '1935066216'];
+const ADMIN_TG_NAMES = { '8567146346': 'The Nitro NG', '1935066216': 'Soludo' };
 const TOKEN = process.env.TG_BOT_TOKEN;
 const API = `https://api.telegram.org/bot${TOKEN}`;
 
