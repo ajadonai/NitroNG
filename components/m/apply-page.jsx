@@ -18,7 +18,7 @@ function Inner() {
   const { dark, toggleTheme, t } = useTheme();
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ name: "", email: "", password: "", phone: "", xHandle: "", whyApply: "" });
+  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", password: "", phone: "", xHandle: "", whyApply: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -27,11 +27,16 @@ function Inner() {
   const [verifyCode, setVerifyCode] = useState("");
   const [verifying, setVerifying] = useState(false);
 
-  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+  const set = (k) => (e) => {
+    let val = e.target.value;
+    if (k === "firstName" || k === "lastName") val = val.replace(/[^a-zA-ZÀ-ÿ'-]/g, "");
+    setForm(f => ({ ...f, [k]: val }));
+  };
 
   const goStep2 = async () => {
     setError("");
-    if (!form.name.trim()) { setError("Please enter your name"); return; }
+    if (!form.firstName.trim()) { setError("Please enter your first name"); return; }
+    if (!form.lastName.trim()) { setError("Please enter your last name"); return; }
     if (!form.email.trim()) { setError("Please enter your email"); return; }
     if (!form.password || form.password.length < 6) { setError("Password must be at least 6 characters"); return; }
     setLoading(true);
@@ -66,7 +71,12 @@ function Inner() {
       const data = await res.json();
       if (data.error) { setError(data.error); setVerifying(false); return; }
       if (data.verified) {
-        setForm(f => ({ ...f, name: data.name || f.name, phone: data.phone || f.phone }));
+        if (data.name) {
+          const parts = data.name.trim().split(/\s+/);
+          setForm(f => ({ ...f, firstName: parts[0] || f.firstName, lastName: parts.slice(1).join(" ") || f.lastName, phone: data.phone || f.phone }));
+        } else {
+          setForm(f => ({ ...f, phone: data.phone || f.phone }));
+        }
         setStep(2);
       }
     } catch { setError("Something went wrong"); }
@@ -81,7 +91,7 @@ function Inner() {
       const res = await fetch("/api/pit/auth/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, name: `${form.firstName.trim()} ${form.lastName.trim()}` }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -187,9 +197,15 @@ function Inner() {
         {ErrorBar}
 
         <div className="flex flex-col gap-4">
-          <div>
-            <label className={labelCls} style={{ color: t.text }}>Full name</label>
-            <input value={form.name} onChange={set("name")} required placeholder="Your full name" className={inputCls} style={inputStyle} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls} style={{ color: t.text }}>First name</label>
+              <input value={form.firstName} onChange={set("firstName")} required placeholder="First name" maxLength={30} className={inputCls} style={inputStyle} />
+            </div>
+            <div>
+              <label className={labelCls} style={{ color: t.text }}>Last name</label>
+              <input value={form.lastName} onChange={set("lastName")} required placeholder="Last name" maxLength={30} className={inputCls} style={inputStyle} />
+            </div>
           </div>
           <div>
             <label className={labelCls} style={{ color: t.text }}>Email</label>

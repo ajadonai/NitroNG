@@ -26,15 +26,21 @@ export async function GET(req) {
       orderBy: { createdAt: "desc" },
       include: {
         lead: { select: { id: true, name: true } },
-        _count: { select: { commissions: true, crew: true, links: true, payouts: true } },
+        _count: { select: { commissions: true, crew: true, links: { where: { archivedAt: null } }, payouts: true } },
       },
     });
 
-    const [pendingPayouts, heldCommissions, thirtyDaysAgo] = await Promise.all([
+    const memberIds = members.map(m => m.id);
+    const [pendingPayouts, heldCommissions, thirtyDaysAgo, archivedLinkRows] = await Promise.all([
       prisma.affiliatePayout.count({ where: { status: "pending" } }),
       prisma.affiliateCommission.aggregate({ where: { status: "held" }, _sum: { marketerAmount: true, leadAmount: true } }),
       Promise.resolve(new Date(Date.now() - 30 * 86400000)),
+      prisma.acquisitionLink.findMany({ where: { affiliateId: { in: memberIds }, archivedAt: { not: null } }, select: { affiliateId: true, slug: true, name: true, archivedAt: true } }),
     ]);
+    const archivedByMember = {};
+    for (const r of archivedLinkRows) {
+      (archivedByMember[r.affiliateId] ||= []).push({ slug: r.slug, name: r.name, archivedAt: r.archivedAt.toISOString() });
+    }
     const heldAmount = ((heldCommissions._sum.marketerAmount || 0) + (heldCommissions._sum.leadAmount || 0)) / 100;
     const totalPaidOut = members.reduce((s, m) => s + m.totalPaid, 0) / 100;
 
@@ -55,11 +61,13 @@ export async function GET(req) {
         commissionRate: m.commissionRate,
         whyApply: m.whyApply || null,
         ...(sensitive ? { totalEarned: m.totalEarned / 100, totalPaid: m.totalPaid / 100 } : {}),
+        teamName: m.teamName || null,
         leadId: m.leadId || null,
         leadName: m.lead?.name || null,
         commissions: m._count.commissions,
         crewCount: m._count.crew,
         links: m._count.links,
+        archivedLinks: archivedByMember[m.id] || [],
         payouts: m._count.payouts,
         approvedAt: m.approvedAt?.toISOString() ?? null,
         createdAt: m.createdAt.toISOString(),
@@ -80,13 +88,16 @@ export async function POST(req) {
     const { action, memberId, ...body } = await req.json();
 
     if (action === "approve") {
-      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
+      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true, role: true } });
+      const rateKey = m?.role === "chief" ? "affiliate_pro_rate" : "affiliate_starter_rate";
+      const rateRow = await prisma.setting.findUnique({ where: { key: rateKey } });
+      const rate = parseInt(rateRow?.value) || (m?.role === "chief" ? 50 : 30);
       await prisma.crewMember.update({
         where: { id: memberId },
-        data: { status: "approved", approvedAt: new Date() },
+        data: { status: "approved", approvedAt: new Date(), commissionRate: rate },
       });
 
-      const hasLink = await prisma.acquisitionLink.findFirst({ where: { affiliateId: memberId } });
+      const hasLink = await prisma.acquisitionLink.findFirst({ where: { affiliateId: memberId, archivedAt: null } });
       if (!hasLink) {
         let slug = (m?.name || 'crew').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         const taken = await prisma.acquisitionLink.findUnique({ where: { slug } });
@@ -142,7 +153,10 @@ export async function POST(req) {
     }
 
     if (action === "promote-chief") {
-      await prisma.crewMember.update({ where: { id: memberId }, data: { role: "chief" } });
+      const { teamName } = body;
+      const proRateRow = await prisma.setting.findUnique({ where: { key: 'affiliate_pro_rate' } });
+      const proRate = parseInt(proRateRow?.value) || 50;
+      await prisma.crewMember.update({ where: { id: memberId }, data: { role: "chief", tier: "pro", commissionRate: proRate, teamName: teamName?.trim() || null } });
       const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
       await logActivity(admin.name, `Promoted ${m?.name || memberId} to chief`);
       return Response.json({ ok: true });
@@ -152,6 +166,14 @@ export async function POST(req) {
       await prisma.crewMember.update({ where: { id: memberId }, data: { role: "crew" } });
       const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
       await logActivity(admin.name, `Demoted ${m?.name || memberId} to crew`);
+      return Response.json({ ok: true });
+    }
+
+    if (action === "update-team-name") {
+      const { teamName } = body;
+      await prisma.crewMember.update({ where: { id: memberId }, data: { teamName: teamName?.trim() || null } });
+      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
+      await logActivity(admin.name, `Updated team name for ${m?.name || memberId}`);
       return Response.json({ ok: true });
     }
 
@@ -185,6 +207,6 @@ export async function POST(req) {
     return Response.json({ error: "Unknown action" }, { status: 400 });
   } catch (e) {
     console.error("Admin crew POST error:", e);
-    return Response.json({ error: "Something went wrong" }, { status: 500 });
+    return Response.json({ error: e?.message || "Something went wrong" }, { status: 500 });
   }
 }

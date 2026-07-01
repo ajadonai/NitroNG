@@ -9,6 +9,25 @@ function logAction(linkId, actorId, action, detail) {
   return prisma.linkLog.create({ data: { linkId, actorId, action, detail } });
 }
 
+async function getTeamIds(chiefId) {
+  const crew = await prisma.crewMember.findMany({
+    where: { leadId: chiefId, status: "approved" },
+    select: { id: true },
+  });
+  return new Set([chiefId, ...crew.map(m => m.id)]);
+}
+
+async function verifyLinkOwnership(linkId, chiefId) {
+  const link = await prisma.acquisitionLink.findUnique({
+    where: { id: linkId },
+    select: { id: true, affiliateId: true },
+  });
+  if (!link) return null;
+  const teamIds = await getTeamIds(chiefId);
+  if (!teamIds.has(link.affiliateId)) return null;
+  return link;
+}
+
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const checkSlug = searchParams.get("check");
@@ -20,6 +39,8 @@ export async function GET(req) {
   if (logsFor) {
     const member = await getCrewSession().catch(() => null);
     if (!member || member.role !== "chief") return Response.json({ error: "Unauthorized" }, { status: 401 });
+    const owned = await verifyLinkOwnership(logsFor, member.id);
+    if (!owned) return Response.json({ error: "Link not found" }, { status: 404 });
     const logs = await prisma.linkLog.findMany({
       where: { linkId: logsFor },
       orderBy: { createdAt: "desc" },
@@ -78,12 +99,21 @@ export async function POST(req) {
     const slug = customSlug?.trim() ? slugify(customSlug) : slugify(name);
     if (!slug) return Response.json({ error: "Invalid slug" }, { status: 400 });
 
+    const [maxLinksRow, activeCount] = await Promise.all([
+      prisma.setting.findUnique({ where: { key: 'affiliate_max_links_chief' } }),
+      prisma.acquisitionLink.count({ where: { affiliateId: member.id, archivedAt: null } }),
+    ]);
+    const maxLinks = parseInt(maxLinksRow?.value) || 5;
+    if (activeCount >= maxLinks) return Response.json({ error: `Maximum ${maxLinks} active links allowed` }, { status: 400 });
+
     const existing = await prisma.acquisitionLink.findUnique({ where: { slug } });
     if (existing) return Response.json({ error: "That slug is already taken" }, { status: 409 });
 
     let assigneeName = member.name;
-    if (affiliateId) {
-      const affiliate = await prisma.crewMember.findUnique({ where: { id: affiliateId } });
+    if (affiliateId && affiliateId !== member.id) {
+      const teamIds = await getTeamIds(member.id);
+      if (!teamIds.has(affiliateId)) return Response.json({ error: "Can only assign to your own team members" }, { status: 403 });
+      const affiliate = await prisma.crewMember.findUnique({ where: { id: affiliateId }, select: { name: true, status: true } });
       if (!affiliate || affiliate.status !== "approved") return Response.json({ error: "Invalid affiliate" }, { status: 400 });
       assigneeName = affiliate.name;
     }
@@ -110,11 +140,16 @@ export async function PATCH(req) {
     const { id, enabled, affiliateId } = await req.json().catch(() => ({}));
     if (!id) return Response.json({ error: "Link ID required" }, { status: 400 });
 
+    const owned = await verifyLinkOwnership(id, member.id);
+    if (!owned) return Response.json({ error: "Link not found" }, { status: 404 });
+
     const data = {};
     if (typeof enabled === "boolean") data.enabled = enabled;
     if (affiliateId !== undefined) {
       if (affiliateId) {
-        const affiliate = await prisma.crewMember.findUnique({ where: { id: affiliateId } });
+        const teamIds = await getTeamIds(member.id);
+        if (!teamIds.has(affiliateId)) return Response.json({ error: "Can only assign to your own team members" }, { status: 403 });
+        const affiliate = await prisma.crewMember.findUnique({ where: { id: affiliateId }, select: { status: true } });
         if (!affiliate || affiliate.status !== "approved") return Response.json({ error: "Invalid affiliate" }, { status: 400 });
       }
       data.affiliateId = affiliateId || null;
@@ -149,6 +184,9 @@ export async function DELETE(req) {
 
     const { id } = await req.json().catch(() => ({}));
     if (!id) return Response.json({ error: "Link ID required" }, { status: 400 });
+
+    const owned = await verifyLinkOwnership(id, member.id);
+    if (!owned) return Response.json({ error: "Link not found" }, { status: 404 });
 
     await prisma.acquisitionLink.update({ where: { id }, data: { archivedAt: new Date() } });
     logAction(id, member.id, "deleted", "Link archived").catch(() => {});

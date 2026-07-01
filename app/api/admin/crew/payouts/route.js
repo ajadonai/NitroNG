@@ -19,9 +19,9 @@ export async function GET() {
         memberId: p.memberId,
         memberName: p.member.name,
         memberEmail: sensitive ? p.member.email : maskEmail(p.member.email),
-        bankName: p.member.bankName,
-        bankAccountNo: p.member.bankAccountNo,
-        bankAccountName: p.member.bankAccountName,
+        bankName: p.bankName || p.member.bankName,
+        bankAccountNo: p.bankAccountNo || p.member.bankAccountNo,
+        bankAccountName: p.bankAccountName || p.member.bankAccountName,
         amount: p.amount / 100,
         status: p.status,
         reference: p.reference,
@@ -48,28 +48,51 @@ export async function POST(req) {
     if (!payout) return Response.json({ error: "Payout not found" }, { status: 404 });
 
     if (action === "process") {
-      if (payout.status !== "pending") return Response.json({ error: "Payout is not pending" }, { status: 400 });
-      await prisma.affiliatePayout.update({ where: { id: payoutId }, data: { status: "processing" } });
+      const affected = await prisma.$executeRaw`
+        UPDATE affiliate_payouts SET status = 'processing'
+        WHERE id = ${payoutId} AND status = 'pending'
+      `;
+      if (affected === 0) return Response.json({ error: "Payout is not pending" }, { status: 400 });
       await logActivity(admin.name, `Marked payout ${payoutId} as processing for ${payout.member.name}`);
       return Response.json({ ok: true });
     }
 
     if (action === "complete") {
-      if (payout.status !== "pending" && payout.status !== "processing") return Response.json({ error: "Payout must be pending or processing" }, { status: 400 });
-      await prisma.$transaction([
-        prisma.affiliatePayout.update({ where: { id: payoutId }, data: { status: "completed", reference: reference || null, processedAt: new Date() } }),
-        prisma.crewMember.update({ where: { id: payout.memberId }, data: { totalPaid: { increment: payout.amount } } }),
-      ]);
-      await logActivity(admin.name, `Completed payout ${payoutId} for ${payout.member.name} (${(payout.amount / 100).toLocaleString()})`);
+      const now = new Date();
+      const ref = reference || null;
+      const result = await prisma.$transaction(async (tx) => {
+        // Conditional UPDATE — only transitions from pending/processing.
+        // Two concurrent completions: one gets affected=1, the other gets affected=0.
+        const affected = await tx.$executeRaw`
+          UPDATE affiliate_payouts
+          SET status = 'completed', reference = ${ref}, "processedAt" = ${now}
+          WHERE id = ${payoutId} AND status IN ('pending', 'processing')
+        `;
+        if (affected === 0) return { ok: false };
+        await tx.$executeRaw`
+          UPDATE crew_members SET "totalPaid" = "totalPaid" + ${payout.amount}
+          WHERE id = ${payout.memberId}
+        `;
+        return { ok: true };
+      });
+      if (!result.ok) {
+        return Response.json({ error: payout.status === "completed" ? "Already completed" : "Cannot complete a rejected payout" }, { status: 400 });
+      }
+      await logActivity(admin.name, `Completed payout ${payoutId} for ${payout.member.name} (₦${(payout.amount / 100).toLocaleString()})`);
       return Response.json({ ok: true });
     }
 
     if (action === "reject") {
-      if (payout.status === "completed") return Response.json({ error: "Cannot reject a completed payout" }, { status: 400 });
-      await prisma.$transaction([
-        prisma.affiliatePayout.update({ where: { id: payoutId }, data: { status: "rejected", processedAt: new Date() } }),
-        prisma.crewMember.update({ where: { id: payout.memberId }, data: { totalEarned: { decrement: payout.amount } } }),
-      ]);
+      const now = new Date();
+      // Conditional UPDATE — only transitions from pending/processing. Idempotent.
+      // Rejection does NOT touch totalEarned — the money was earned, payout was declined.
+      const affected = await prisma.$executeRaw`
+        UPDATE affiliate_payouts SET status = 'rejected', "processedAt" = ${now}
+        WHERE id = ${payoutId} AND status IN ('pending', 'processing')
+      `;
+      if (affected === 0) {
+        return Response.json({ error: payout.status === "rejected" ? "Already rejected" : "Cannot reject a completed payout" }, { status: 400 });
+      }
       await logActivity(admin.name, `Rejected payout ${payoutId} for ${payout.member.name}`);
       return Response.json({ ok: true });
     }

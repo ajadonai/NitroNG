@@ -2,6 +2,7 @@
 import { useState, useMemo } from "react";
 import { StatusBadge, EmptyState } from "./kit";
 import { useTheme } from "../shared-nav";
+import { useToast } from "../toast";
 import { useHeaderAction } from "./shell";
 import { fN } from "@/lib/format";
 
@@ -11,6 +12,7 @@ function fmtDate(d) {
 
 export default function TeamPage({ initialData }) {
   const { dark, t } = useTheme();
+  const toast = useToast();
   const [data, setData] = useState(initialData);
   const [showInvite, setShowInvite] = useState(false);
   const [invName, setInvName] = useState("");
@@ -45,6 +47,7 @@ export default function TeamPage({ initialData }) {
       setInviteResult(d.invited);
       setInvName("");
       setInvEmail("");
+      toast.success("Invite sent");
       reload();
     } catch {
       setInvError("Something went wrong");

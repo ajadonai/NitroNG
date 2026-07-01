@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { StatusBadge, EmptyState, Modal } from "./kit";
 import { useTheme } from "../shared-nav";
+import { useToast } from "../toast";
 import { fN } from "@/lib/format";
 
 function fmtDate(d) {
@@ -10,12 +11,12 @@ function fmtDate(d) {
 
 export default function PayoutsPage({ initialData }) {
   const { dark, t } = useTheme();
+  const toast = useToast();
   const [data, setData] = useState(initialData);
   const [showForm, setShowForm] = useState(false);
   const [amount, setAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const reload = () => {
@@ -43,11 +44,10 @@ export default function PayoutsPage({ initialData }) {
       });
       const d = await res.json();
       if (d.error) { setSubmitError(d.error); return; }
-      setSubmitSuccess(true);
       setShowForm(false);
       setAmount("");
       reload();
-      setTimeout(() => setSubmitSuccess(false), 4000);
+      toast.success("Payout request submitted");
     } catch {
       setSubmitError("Something went wrong");
     } finally {
@@ -167,14 +167,6 @@ export default function PayoutsPage({ initialData }) {
           <button onClick={handleBankSave} disabled={bankSaving} className="py-[7px] px-4 rounded-lg text-[12.5px] font-semibold border-none cursor-pointer text-white disabled:opacity-50" style={{ background: t.grad, fontFamily: "inherit" }}>{bankSaving ? "Saving..." : "Save"}</button>
         </div>
       </Modal>
-
-      {/* Success toast */}
-      {submitSuccess && (
-        <div className="flex items-center gap-2 py-3 px-4 rounded-xl text-[13px] font-medium" style={{ color: t.green, background: `${t.green}12`, border: `1px solid ${t.green}30` }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          Payout request submitted
-        </div>
-      )}
 
       {/* Payout form */}
       {showForm && (

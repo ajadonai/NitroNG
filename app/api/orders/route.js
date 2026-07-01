@@ -174,7 +174,7 @@ export async function PATCH(req) {
       const refunded = await prisma.$transaction(async (tx) => {
         const claimed = await tx.order.updateMany({
           where: { id: order.id, status: { in: ['Pending', 'Processing'] }, apiOrderId: null },
-          data: { status: 'Cancelled', lastError: 'user_cancelled', refundedAt: new Date() },
+          data: { status: 'Cancelled', queuedBehind: null, lastError: 'user_cancelled', refundedAt: new Date() },
         });
         if (claimed.count === 0) return false;
         await tx.user.update({ where: { id: session.id }, data: { balance: { increment: order.charge } } });

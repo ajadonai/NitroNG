@@ -2,6 +2,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { EmptyState, Modal } from "./kit";
 import { useTheme } from "../shared-nav";
+import { useToast } from "../toast";
 import { useHeaderAction } from "./shell";
 
 function fmtDate(d) {
@@ -67,19 +68,31 @@ function CreateModal({ open, onClose, onCreated, team, memberId, leadSplit, dark
     if (!slug.trim()) { setError("Slug is required"); return; }
     if (slugStatus === "taken") { setError("That slug is taken"); return; }
     setCreating(true);
+    const submittedSlug = slug.trim();
     try {
-      const body = { name: name.trim(), slug: slug.trim() };
+      const body = { name: name.trim(), slug: submittedSlug };
       if (assignee !== "self") body.affiliateId = assignee;
       const res = await fetch("/api/pit/links", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const d = await res.json();
-      if (d.error) { setError(d.error); return; }
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || "The server returned an invalid response");
       onClose();
       onCreated();
     } catch (err) {
+      // The insert may have committed even if the response failed afterwards.
+      // Reconcile with the server before telling the user creation failed.
+      try {
+        const checkRes = await fetch("/api/pit/links", { cache: "no-store" });
+        const checkData = await checkRes.json();
+        if (checkRes.ok && checkData.links?.some((link) => link.slug === submittedSlug)) {
+          onClose();
+          onCreated();
+          return;
+        }
+      } catch {}
       setError(`Something went wrong: ${err.message}`);
     } finally {
       setCreating(false);
@@ -416,6 +429,7 @@ function LinkCard({ link, isSelf, dark, t, copied, onCopy, onToggle, onArchive, 
 /* ── Main Page ── */
 export default function LinksPage({ initialData }) {
   const { dark, t } = useTheme();
+  const toast = useToast();
   const [data, setData] = useState(initialData);
   const [showCreate, setShowCreate] = useState(false);
   const [copied, setCopied] = useState(null);
@@ -453,11 +467,13 @@ export default function LinksPage({ initialData }) {
 
   const toggleEnabled = async (id, enabled) => {
     await fetch("/api/pit/links", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, enabled: !enabled }) });
+    toast.success(enabled ? "Link paused" : "Link activated");
     reload();
   };
 
   const archive = async (id) => {
     await fetch("/api/pit/links", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+    toast.success("Link archived");
     reload();
   };
 
@@ -469,6 +485,7 @@ export default function LinksPage({ initialData }) {
     await fetch("/api/pit/links", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     setReassignLink(null);
     setReassignTo("");
+    toast.success("Link reassigned");
     reload();
   };
 
@@ -539,7 +556,7 @@ export default function LinksPage({ initialData }) {
       )}
 
       {/* Create modal */}
-      <CreateModal open={showCreate} onClose={() => setShowCreate(false)} onCreated={reload} team={team} memberId={memberId} leadSplit={leadSplit} dark={dark} t={t} />
+      <CreateModal open={showCreate} onClose={() => setShowCreate(false)} onCreated={() => { reload(); toast.success("Link created"); }} team={team} memberId={memberId} leadSplit={leadSplit} dark={dark} t={t} />
 
       {/* Reassign modal */}
       <Modal open={!!reassignLink} onClose={() => setReassignLink(null)} title="Reassign Link" subtitle={reassignLink?.name} dark={dark} t={t}>

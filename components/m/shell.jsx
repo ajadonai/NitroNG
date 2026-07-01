@@ -2,6 +2,7 @@
 import { useEffect, useState, createContext, useContext, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ThemeProvider, useTheme } from "../shared-nav";
+import { ToastProvider } from "../toast";
 import { NitroWordmark } from "../nitro-logo";
 
 const HeaderActionCtx = createContext(() => {});
@@ -70,6 +71,7 @@ function ShellInner({ children, member }) {
   ];
 
   return (
+    <ToastProvider dark={dark}>
     <div className="crew-app" style={{ background: t.bg, color: t.text, minHeight: "100vh" }}>
       {/* ── Full-width topbar ── */}
       <header className="crew-topbar" style={{ background: dark ? "rgba(9,12,21,.85)" : "rgba(240,237,232,.85)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
@@ -160,6 +162,7 @@ function ShellInner({ children, member }) {
         .crew-bottom-label { font-size: 10px; letter-spacing: 0.2px; }
       `}</style>
     </div>
+    </ToastProvider>
   );
 }
 
