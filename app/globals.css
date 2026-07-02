@@ -492,7 +492,7 @@
 .adm-nav-section { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; padding: 10px 14px 4px; }
 
 /* Admin sidebar — distribute items evenly across full height */
-.admin-sidebar { padding: 8px 10px; display: flex; flex-direction: column; overflow: hidden; justify-content: space-between; }
+.admin-sidebar { padding: 8px 10px; display: flex; flex-direction: column; overflow-y: auto; justify-content: space-between; }
 .admin-sidebar .dash-nav-item { padding: 4px 12px; font-size: 13px; gap: 9px; margin-bottom: 0; }
 .admin-sidebar .adm-nav-section { font-size: 10px; padding: 8px 12px 2px; }
 
