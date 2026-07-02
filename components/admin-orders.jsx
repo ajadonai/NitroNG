@@ -214,16 +214,18 @@ export default function AdminOrdersPage({ dark, t }) {
   }, [search, fetchOrders]);
 
   const needsDispatch = (o) => {
+    if (o.queuedBehind) return false;
     if (!['Pending', 'Processing', 'Dispatching'].includes(o.status)) return false;
-    // Non-drip order with no provider ID (includes timed-out Dispatching)
     if (!o.dripDispatches && !o.apiOrderId) return true;
-    // Drip order with failed batches
     if (o.dripDispatches?.some(d => d.status === 'failed')) return true;
     return false;
   };
 
+  const isQueued = (o) => !!o.queuedBehind;
+
   const filtered = orders.filter(o => {
     if (filter === "needs_dispatch") return needsDispatch(o);
+    if (filter === "queued") return isQueued(o);
     if (filter !== "all" && o.status !== filter) return false;
     return true;
   });
@@ -231,7 +233,7 @@ export default function AdminOrdersPage({ dark, t }) {
   const grouped = groupOrders(filtered);
   const totalPages = Math.ceil(grouped.length / perPage);
   const paged = grouped.slice((page - 1) * perPage, page * perPage);
-  const counts = { all: orders.length, needs_dispatch: orders.filter(needsDispatch).length };
+  const counts = { all: orders.length, needs_dispatch: orders.filter(needsDispatch).length, queued: orders.filter(isQueued).length };
   ["Completed", "Processing", "Pending", "Partial", "Cancelled"].forEach(s => { counts[s] = orders.filter(o => o.status === s).length; });
 
   const [syncing, setSyncing] = useState(false);
@@ -382,11 +384,12 @@ export default function AdminOrdersPage({ dark, t }) {
           <input aria-label="Search orders" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search order ID, service, or user…" className="w-full py-[9px] pl-9 pr-8 rounded-lg text-[13px] outline-none font-[inherit]" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? '#131728' : '#fff', color: t.text }} />
           {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full cursor-pointer border-none p-0" style={{ background: dark ? 'rgba(255,255,255,.15)' : 'rgba(0,0,0,.1)', color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
         </div>
-        <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(1); }} options={
+        <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(1); }} alert={counts.needs_dispatch > 0} options={
           [
             { value: "all", label: "All" },
             { value: "needs_dispatch", label: `Needs Dispatch${counts.needs_dispatch ? ` (${counts.needs_dispatch})` : ""}` },
-            ...["Completed", "Processing", "Pending", "Partial", "Cancelled", "Failed", "Rejected"].map(f => ({ value: f, label: f })),
+            { value: "queued", label: `Queued${counts.queued ? ` (${counts.queued})` : ""}` },
+            ...["Pending", "Processing", "Completed", "Partial", "Cancelled"].map(f => ({ value: f, label: f })),
           ]
         } />
         <button onClick={syncOrders} disabled={syncing} className="py-[7px] px-3 rounded-lg text-[12px] font-semibold cursor-pointer font-[inherit] flex items-center gap-1.5 shrink-0" style={{ border: `1px solid ${t.cardBorder}`, background: 'transparent', color: t.accent, opacity: syncing ? .5 : 1 }}>
@@ -497,11 +500,12 @@ export default function AdminOrdersPage({ dark, t }) {
                               const isPartial = o.status === "Partial";
                               const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : isPartial ? (dark ? "#fbbf24" : "#d97706") : "#c47d8e";
                               const waiting = !isCancelled && !hasData && !isComplete && (o.status === "Pending" || o.status === "Processing");
+                              const queued = !!o.queuedBehind;
                               const isProcessing = !isComplete && !isPartial && !isCancelled && !waiting && pct > 0 && pct < 100;
                               return (
                                 <div className="mb-2.5 py-1.5 px-2.5 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
                                   <div className="flex items-center justify-between text-[11px] mb-1">
-                                    <span style={{ color: t.textMuted }}>{isCancelled ? "Cancelled" : waiting ? "Waiting to start" : "Delivered"}</span>
+                                    <span style={{ color: t.textMuted }}>{isCancelled ? "Cancelled" : queued ? `Queued behind ${o.queuedBehind}` : waiting ? "Waiting to start" : "Delivered"}</span>
                                     {!waiting && <span className="m font-semibold" style={{ color: barColor }}>{delivered.toLocaleString()} / {qty.toLocaleString()}</span>}
                                   </div>
                                   <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
@@ -655,11 +659,12 @@ export default function AdminOrdersPage({ dark, t }) {
                     const isPartial = o.status === "Partial";
                     const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : isPartial ? (dark ? "#fbbf24" : "#d97706") : "#c47d8e";
                     const waiting = !isCancelled && !hasData && !isComplete && (o.status === "Pending" || o.status === "Processing");
+                    const queued = !!o.queuedBehind;
                     const isProcessing = !isComplete && !isPartial && !isCancelled && !waiting && pct > 0 && pct < 100;
                     return (
                       <div className="mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
                         <div className="flex items-center justify-between text-[12px] mb-1.5">
-                          <span style={{ color: t.textMuted }}>{isCancelled ? "Cancelled" : waiting ? "Waiting to start" : "Delivered"}</span>
+                          <span style={{ color: t.textMuted }}>{isCancelled ? "Cancelled" : queued ? `Queued behind ${o.queuedBehind}` : waiting ? "Waiting to start" : "Delivered"}</span>
                           {!waiting && <span className="m font-semibold" style={{ color: barColor }}>{delivered.toLocaleString()} / {qty.toLocaleString()}</span>}
                         </div>
                         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>

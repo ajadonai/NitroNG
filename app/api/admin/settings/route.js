@@ -66,6 +66,21 @@ export async function POST(req) {
     );
 
     await prisma.$transaction(ops);
+
+    const tierKeys = ['affiliate_starter_rate', 'affiliate_growth_rate', 'affiliate_pro_rate'];
+    if (entries.some(([key]) => tierKeys.includes(key))) {
+      const rates = Object.fromEntries(entries.filter(([k]) => tierKeys.includes(k)).map(([k, v]) => [k, parseInt(v)]));
+      const TIER_MAP = { starter: 'affiliate_starter_rate', growth: 'affiliate_growth_rate', pro: 'affiliate_pro_rate' };
+      for (const [tier, key] of Object.entries(TIER_MAP)) {
+        if (rates[key]) {
+          await prisma.crewMember.updateMany({ where: { tier, status: { not: 'rejected' }, deletedAt: null }, data: { commissionRate: rates[key] } });
+        }
+      }
+      if (rates.affiliate_pro_rate) {
+        await prisma.crewMember.updateMany({ where: { role: 'chief', status: { not: 'rejected' }, deletedAt: null }, data: { commissionRate: rates.affiliate_pro_rate } });
+      }
+    }
+
     await logActivity(admin.name, 'Updated site settings', 'settings');
 
     return Response.json({ success: true, message: 'Settings saved' });

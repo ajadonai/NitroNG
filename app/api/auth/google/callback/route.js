@@ -8,6 +8,7 @@ import { isDisposableEmail } from '@/lib/validate';
 import { cookies, headers } from 'next/headers';
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { tgNewUser } from '@/lib/telegram';
+import { notifyCrewSignup } from '@/lib/commissions';
 
 export async function GET(req) {
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -149,6 +150,7 @@ export async function GET(req) {
         log.error('Google signup', `Welcome email failed: ${err.message}`)
       );
       tgNewUser(name, email, referredBy || viaSlug || null);
+      if (viaSlug) notifyCrewSignup(viaSlug).catch(() => {});
     }
 
     // Sign JWT and set cookie

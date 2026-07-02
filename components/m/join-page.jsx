@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ThemeProvider, useTheme } from "../shared-nav";
+import { NitroWordmark } from "../nitro-logo";
 
 function Inner({ token }) {
   const { dark, toggleTheme, t } = useTheme();
@@ -9,13 +10,15 @@ function Inner({ token }) {
   const [invite, setInvite] = useState(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [phone, setPhone] = useState("");
+  const [xHandle, setXHandle] = useState("");
   const [error, setError] = useState("");
   const [pageError, setPageError] = useState("");
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/m/auth/join?token=${token}`)
+    fetch(`/api/pit/auth/join?token=${token}`)
       .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
       .then(({ ok, data }) => {
         if (ok) setInvite(data);
@@ -33,14 +36,14 @@ function Inner({ token }) {
     if (password !== confirm) { setError("Passwords don't match"); return; }
     setLoading(true);
     try {
-      const res = await fetch("/api/m/auth/join", {
+      const res = await fetch("/api/pit/auth/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({ token, password, phone: phone.trim() || undefined, xHandle: xHandle.trim().replace(/^@/, "") || undefined }),
       });
       const data = await res.json();
       if (res.ok) {
-        router.push("/m");
+        router.push("/pit");
       } else {
         setError(data.error || "Something went wrong");
       }
@@ -69,7 +72,7 @@ function Inner({ token }) {
           </div>
           <h1 className="serif text-[22px] font-semibold mb-2" style={{ color: t.text }}>Invite Issue</h1>
           <p className="text-[13px] mb-5" style={{ color: t.muted }}>{pageError}</p>
-          <a href="/m/login" onClick={e => { e.preventDefault(); router.push("/m/login"); }} className="text-[13px] font-semibold" style={{ color: t.accent, textDecoration: "none" }}>Go to login</a>
+          <a href="/pit/login" onClick={e => { e.preventDefault(); router.push("/pit/login"); }} className="text-[13px] font-semibold" style={{ color: t.accent, textDecoration: "none" }}>Go to login</a>
         </div>
       </div>
     );
@@ -77,12 +80,9 @@ function Inner({ token }) {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: t.bg }}>
-      <div className="mb-6 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: t.grad }}>{LOGO}</div>
-        <div>
-          <div className="text-lg font-bold tracking-[2px]" style={{ color: t.text }}>NITRO</div>
-          <div className="text-[9px] font-semibold tracking-[1.5px] uppercase" style={{ color: t.accent }}>Pit Crew</div>
-        </div>
+      <div className="mb-6 flex items-center gap-2">
+        <span className="h-7 px-3 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span>
+        <span className="text-xs py-0.5 px-1.5 rounded font-semibold" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)", color: t.accent }}>PIT</span>
       </div>
       <div className="w-full max-w-[400px] rounded-2xl p-7" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
         <h1 className="serif text-[22px] font-semibold text-center mb-1" style={{ color: t.text }}>Join the Crew</h1>
@@ -104,6 +104,14 @@ function Inner({ token }) {
           <div>
             <label className="block text-[12px] font-medium mb-1.5" style={{ color: t.muted }}>Confirm password</label>
             <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} required placeholder="Re-enter password" className="w-full h-10 px-3 rounded-lg border text-[13.5px] outline-none" style={inputStyle} />
+          </div>
+          <div>
+            <label className="block text-[12px] font-medium mb-1.5" style={{ color: t.muted }}>Phone number</label>
+            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g. 08012345678" className="w-full h-10 px-3 rounded-lg border text-[13.5px] outline-none" style={inputStyle} />
+          </div>
+          <div>
+            <label className="block text-[12px] font-medium mb-1.5" style={{ color: t.muted }}>X (Twitter) handle</label>
+            <input value={xHandle} onChange={e => setXHandle(e.target.value)} placeholder="@yourhandle" className="w-full h-10 px-3 rounded-lg border text-[13.5px] outline-none" style={inputStyle} />
           </div>
           <button type="submit" disabled={loading} className="w-full h-10 rounded-lg border-none text-white text-[13.5px] font-semibold cursor-pointer transition-opacity" style={{ background: t.grad, opacity: loading ? 0.6 : 1, fontFamily: "inherit" }}>
             {loading ? "Joining..." : "Join Crew"}

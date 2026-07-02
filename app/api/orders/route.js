@@ -9,6 +9,7 @@ import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig } from '@/l
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
 import { tgNewOrder } from '@/lib/telegram';
+import { voidCommissions } from '@/lib/commissions';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -72,6 +73,7 @@ export async function GET(req) {
         created: o.createdAt.toISOString(),
         serviceType: o.tier?.group?.type || null,
         dripDays: o.dripDays || null,
+        queuedBehind: o.queuedBehind || null,
       })),
     });
   } catch (err) {
@@ -172,7 +174,7 @@ export async function PATCH(req) {
       const refunded = await prisma.$transaction(async (tx) => {
         const claimed = await tx.order.updateMany({
           where: { id: order.id, status: { in: ['Pending', 'Processing'] }, apiOrderId: null },
-          data: { status: 'Cancelled', lastError: 'user_cancelled', refundedAt: new Date() },
+          data: { status: 'Cancelled', queuedBehind: null, lastError: 'user_cancelled', refundedAt: new Date() },
         });
         if (claimed.count === 0) return false;
         await tx.user.update({ where: { id: session.id }, data: { balance: { increment: order.charge } } });
@@ -187,6 +189,7 @@ export async function PATCH(req) {
         return true;
       });
       if (!refunded) return Response.json({ error: 'Order already sent to provider' }, { status: 409 });
+      voidCommissions(order.id, 'user_cancelled').catch(() => {});
       return Response.json({ success: true, status: 'Cancelled', refunded: order.charge / 100 });
     }
 
@@ -292,6 +295,7 @@ export async function PATCH(req) {
             platformCampaignId: reorderPromoType === 'platform' ? reorderPromoId : null,
             recurringCampaignId: reorderPromoType === 'recurring' ? reorderPromoId : null,
             status: 'Pending', apiOrderId: null,
+            ...(reorderActiveForLink ? { queuedBehind: reorderActiveForLink.orderId } : {}),
             ...(reorderDripSchedule ? { dripDays: 1 } : {}),
           },
         });
@@ -713,6 +717,7 @@ export async function POST(req) {
           recurringCampaignId: activePromoType === 'recurring' ? activePromoId : null,
           status: 'Pending',
           apiOrderId: null,
+          ...(activeForLink ? { queuedBehind: activeForLink.orderId } : {}),
           ...(dripSchedule ? { dripDays: validDripDays || 1 } : {}),
         },
       });

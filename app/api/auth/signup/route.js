@@ -9,6 +9,7 @@ import { headers } from 'next/headers';
 import { sendWelcomeEmail } from '@/lib/email';
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { tgNewUser } from '@/lib/telegram';
+import { notifyCrewSignup } from '@/lib/commissions';
 
 export async function POST(req) {
   try {
@@ -119,6 +120,7 @@ export async function POST(req) {
     );
 
     tgNewUser(derivedName, email, referredBy || via || null);
+    if (via) notifyCrewSignup(via).catch(() => {});
 
     // Sign JWT and set cookie
     const token = signUserToken(user);

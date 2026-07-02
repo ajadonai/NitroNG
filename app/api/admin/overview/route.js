@@ -151,9 +151,9 @@ export async function GET() {
       prisma.transaction.count({
         where: { method: 'manual', status: 'Pending', NOT: { note: { contains: '[awaiting_confirmation]' } } },
       }).catch(() => 0),
-      // Pending + Processing order count for badge
+      // Pending + Processing order count for badge (exclude queued)
       prisma.order.count({
-        where: { status: { in: ['Pending', 'Processing'] }, deletedAt: null },
+        where: { status: { in: ['Pending', 'Processing'] }, deletedAt: null, queuedBehind: null },
       }).catch(() => 0),
       // Open issue categories count for badge (not individual issues)
       prisma.adminIssue?.findMany({
