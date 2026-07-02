@@ -90,7 +90,7 @@ export async function GET(req) {
         refundedAt: o.refundedAt?.toISOString() || null,
         refundedTotal: refundMap[o.orderId] ? refundMap[o.orderId] / 100 : 0,
         tierServiceApiId: o.tier?.service?.apiId || null,
-        tierCurrentPrice: o.tier?.sellPer1k ? Math.round(o.tier.sellPer1k * o.quantity / 1000) / 100 : null,
+        tierCurrentPrice: o.tier?.sellPer1k ? Math.round(Number(o.tier.sellPer1k) * o.quantity / 1000) / 100 : null,
       })),
     });
   } catch (err) {
