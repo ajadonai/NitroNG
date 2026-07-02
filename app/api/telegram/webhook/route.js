@@ -3,6 +3,7 @@ import { log } from '@/lib/logger';
 import { applyWelcomeBonus } from '@/lib/welcome-bonus';
 import { tgAnswerCallback, tgEditMessage, tgPayment } from '@/lib/telegram';
 import { watBounds } from '@/lib/format';
+import { getBalance, PROVIDER_IDS, getProviderName, isProviderConfigured } from '@/lib/smm';
 
 export const maxDuration = 60;
 
@@ -424,6 +425,24 @@ async function handlePending(chatId, threadId) {
   ].join('\n'));
 }
 
+// ── /balance — provider balances ───────────────────────
+async function handleBalance(chatId, threadId) {
+  const configured = PROVIDER_IDS.filter(id => isProviderConfigured(id));
+  const results = await Promise.allSettled(configured.map(id => getBalance(id).then(r => ({ id, balance: r.balance || r.Balance || '?', currency: r.currency || 'USD' }))));
+  const lines = results.map((r, i) => {
+    const id = configured[i];
+    const name = getProviderName(id);
+    if (r.status === 'fulfilled') return `  ${name}: <b>$${Number(r.value.balance).toFixed(2)}</b> ${r.value.currency}`;
+    return `  ${name}: ❌ ${r.reason?.message?.slice(0, 60) || 'error'}`;
+  });
+
+  await reply(chatId, threadId, [
+    '💳 <b>Provider Balances</b>',
+    '',
+    ...lines,
+  ].join('\n'));
+}
+
 export async function POST(req) {
   const secret = req.headers.get('x-telegram-bot-api-secret-token');
   if (secret !== process.env.CRON_SECRET) return Response.json({ ok: true });
@@ -446,6 +465,7 @@ export async function POST(req) {
     else if (command === '/users') await handleUsers(chatId, threadId);
     else if (command === '/top') await handleTop(chatId, threadId);
     else if (command === '/pending') await handlePending(chatId, threadId);
+    else if (command === '/balance') await handleBalance(chatId, threadId);
     else if (command === '/help') {
       await reply(chatId, threadId, [
         '🔭 <b>WatchTower Commands</b>',
@@ -457,6 +477,7 @@ export async function POST(req) {
         '/users — Signups, active users, top depositors',
         '/top — Top platforms + services this month',
         '/pending — Pending manual deposits',
+        '/balance — Provider balances (MTP, DaoSMM, etc.)',
         '/help — This message',
       ].join('\n'));
     }
