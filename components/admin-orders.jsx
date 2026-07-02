@@ -7,20 +7,29 @@ import { fN, fD, fT } from "../lib/format";
 import { FilterDropdown } from "./date-range-picker";
 
 const DRIP_CONFIG = {
-  followers:  { batchSize: 500,  intervalHours: 2 },
-  views:      { batchSize: 5000, intervalHours: 1 },
-  likes:      { batchSize: 500,  intervalHours: 1 },
-  comments:   { batchSize: 50,   intervalHours: 0.5 },
-  engagement: { batchSize: 1500, intervalHours: 1 },
-  reviews:    { batchSize: 10,   intervalHours: 2 },
+  followers:  { batchSize: 200,  intervalHours: 2 },
+  views:      { batchSize: 2000, intervalHours: 1 },
+  likes:      { batchSize: 200,  intervalHours: 1 },
+  comments:   { batchSize: 20,   intervalHours: 0.5 },
+  engagement: { batchSize: 500,  intervalHours: 1 },
+  reviews:    { batchSize: 5,    intervalHours: 2 },
 };
 
-function estimateDelivery(serviceType, quantity, remains) {
+function estimateDelivery(serviceType, quantity, remains, dripEndAt) {
+  if (dripEndAt) {
+    const msLeft = new Date(dripEndAt).getTime() - Date.now();
+    if (msLeft <= 0) return null;
+    const hoursLeft = msLeft / 3600000;
+    if (hoursLeft < 1) return `< 1 hour`;
+    if (hoursLeft < 24) { const h = Math.ceil(hoursLeft); return `~${h} ${h === 1 ? 'hour' : 'hours'}`; }
+    const d = Math.ceil(hoursLeft / 24);
+    return `~${d} ${d === 1 ? 'day' : 'days'}`;
+  }
   const cfg = DRIP_CONFIG[(serviceType || '').toLowerCase()];
   if (!cfg) return null;
   if (remains != null && remains <= 0) return null;
-  const left = remains != null && remains < quantity ? remains : quantity;
-  const batches = Math.floor(left / cfg.batchSize);
+  const q = remains != null && remains < quantity ? remains : quantity;
+  const batches = Math.floor(q / cfg.batchSize);
   if (batches < 2) {
     if (cfg.intervalHours < 1) return `< ${Math.round(cfg.intervalHours * 60)} minutes`;
     return `< ${cfg.intervalHours} ${cfg.intervalHours === 1 ? 'hour' : 'hours'}`;
@@ -573,7 +582,7 @@ export default function AdminOrdersPage({ dark, t }) {
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Start Count</div>
                                 <div className="m text-[13px] font-semibold" style={{ color: t.text }}>{o.startCount.toLocaleString()}</div>
                               </div>}
-                              {(() => { const est = estimateDelivery(o.serviceType, o.quantity, o.remains); if (!est || o.status === "Completed" || o.status === "Cancelled") return null; return (
+                              {(() => { const est = estimateDelivery(o.serviceType, o.quantity, o.remains, o.dripEndAt); if (!est || o.status === "Completed" || o.status === "Cancelled") return null; return (
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.05)", border: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Est. Time</div>
                                 <div className="m text-[13px] font-semibold flex items-center justify-center gap-1" style={{ color: t.accent }}>
@@ -732,7 +741,7 @@ export default function AdminOrdersPage({ dark, t }) {
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Start Count</div>
                       <div className="m text-sm font-semibold" style={{ color: t.text }}>{o.startCount.toLocaleString()}</div>
                     </div>}
-                    {(() => { const est = estimateDelivery(o.serviceType, o.quantity, o.remains); if (!est || o.status === "Completed" || o.status === "Cancelled") return null; return (
+                    {(() => { const est = estimateDelivery(o.serviceType, o.quantity, o.remains, o.dripEndAt); if (!est || o.status === "Completed" || o.status === "Cancelled") return null; return (
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.05)", border: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Est. Time</div>
                       <div className="m text-sm font-semibold flex items-center justify-center gap-1" style={{ color: t.accent }}>

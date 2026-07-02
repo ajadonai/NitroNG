@@ -1,15 +1,14 @@
 import { getCrewSession } from "@/lib/crew";
 import prisma from "@/lib/prisma";
+import { getMemberEarnings } from "@/lib/commissions";
 import PayoutsPage from "@/components/m/payouts-page";
 
 const DEFAULT_MIN_PAYOUT = 500000;
 
 async function getInitialPayouts(member) {
   const id = member.id;
-  const isChief = member.role === "chief";
-  const amountField = isChief ? "leadAmount" : "marketerAmount";
 
-  const [payouts, pendingPayouts, approvedSum, minPayoutRow] = await Promise.all([
+  const [payouts, pendingPayouts, earnings, minPayoutRow] = await Promise.all([
     prisma.affiliatePayout.findMany({
       where: { memberId: id },
       orderBy: { createdAt: "desc" },
@@ -19,15 +18,12 @@ async function getInitialPayouts(member) {
       where: { memberId: id, status: { in: ["pending", "processing"] } },
       _sum: { amount: true },
     }),
-    prisma.affiliateCommission.aggregate({
-      where: { ...(isChief ? { leadId: id } : { memberId: id }), status: "approved" },
-      _sum: { [amountField]: true },
-    }),
+    getMemberEarnings(id, member.role),
     prisma.setting.findUnique({ where: { key: 'affiliate_min_payout' } }),
   ]);
   const minPayout = minPayoutRow ? parseInt(minPayoutRow.value) * 100 : DEFAULT_MIN_PAYOUT;
 
-  const approved = approvedSum._sum[amountField] || 0;
+  const approved = earnings.totalApproved;
   const pendingAmount = pendingPayouts._sum.amount || 0;
   const available = approved - member.totalPaid - pendingAmount;
 

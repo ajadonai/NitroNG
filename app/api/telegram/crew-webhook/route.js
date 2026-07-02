@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
+import { getMemberEarnings, getMemberHeld } from '@/lib/commissions';
 import { sendDM, replyInGroup, crewWelcome, crewDmChiefNewLink, kickFromGroup } from '@/lib/crew-bot';
 
 export const maxDuration = 60;
@@ -80,23 +81,16 @@ async function handleMyStats(member) {
 }
 
 async function handleEarnings(member) {
-  const isChief = member.role === 'chief';
-  const field = isChief ? 'leadAmount' : 'marketerAmount';
-  const where = isChief ? { leadId: member.id } : { memberId: member.id };
-
-  const [held, approved, paid] = await Promise.all([
-    prisma.affiliateCommission.aggregate({ where: { ...where, status: 'held' }, _sum: { [field]: true } }),
-    prisma.affiliateCommission.aggregate({ where: { ...where, status: 'approved' }, _sum: { [field]: true } }),
-    member.totalPaid,
+  const [earnings, heldAmount, pendingPayouts] = await Promise.all([
+    getMemberEarnings(member.id, member.role),
+    getMemberHeld(member.id, member.role),
+    prisma.affiliatePayout.aggregate({
+      where: { memberId: member.id, status: { in: ['pending', 'processing'] } },
+      _sum: { amount: true },
+    }),
   ]);
 
-  const heldAmount = held._sum[field] || 0;
-  const approvedAmount = approved._sum[field] || 0;
-  const pendingPayouts = await prisma.affiliatePayout.aggregate({
-    where: { memberId: member.id, status: { in: ['pending', 'processing'] } },
-    _sum: { amount: true },
-  });
-  const available = Math.max(0, approvedAmount - paid - (pendingPayouts._sum.amount || 0));
+  const available = Math.max(0, earnings.totalApproved - member.totalPaid - (pendingPayouts._sum.amount || 0));
 
   return [
     '💰 <b>Your Earnings</b>',
@@ -104,7 +98,7 @@ async function handleEarnings(member) {
     `  Held: <b>${naira(heldAmount)}</b>`,
     `  Available: <b>${naira(available)}</b>`,
     `  Total earned: <b>${naira(member.totalEarned)}</b>`,
-    `  Total paid: <b>${naira(paid)}</b>`,
+    `  Total paid: <b>${naira(member.totalPaid)}</b>`,
     '',
     `  Tier: ${member.tier.charAt(0).toUpperCase() + member.tier.slice(1)} (${member.commissionRate}%)`,
   ].join('\n');

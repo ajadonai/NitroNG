@@ -80,6 +80,7 @@ export async function GET(req) {
         status: o.status,
         apiOrderId: o.apiOrderId,
         dripDays: o.dripDays || null,
+        dripEndAt: o.dripDispatches?.filter(d => !['completed', 'partial', 'failed'].includes(d.status)).sort((a, b) => b.scheduledAt - a.scheduledAt)[0]?.scheduledAt?.toISOString() || null,
         dripDispatches: o.dripDispatches?.length > 0 ? o.dripDispatches.map(d => ({ id: d.id, day: d.day, batch: d.batch, qty: d.quantity, status: d.status, apiOrderId: d.apiOrderId, scheduled: d.scheduledAt?.toISOString(), dispatched: d.dispatchedAt?.toISOString(), completed: d.completedAt?.toISOString(), error: d.lastError })) : null,
         batchId: o.batchId || null,
         lastError: o.lastError || null,

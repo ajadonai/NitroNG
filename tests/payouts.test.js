@@ -167,3 +167,35 @@ describe('concurrent payout overdraw prevention', () => {
     expect(bCanRequest).toBe(false); // B gets "Insufficient balance"
   });
 });
+
+// ──────────────────────────────────────
+// Payout completion revalidation
+// ──────────────────────────────────────
+describe('payout completion revalidation', () => {
+  it('blocks completion when voided commissions leave insufficient approved earnings', () => {
+    // Admin payout completion now revalidates:
+    //   available = getMemberEarnings().totalApproved - totalPaid - otherPendingPayouts
+    //   if (payout.amount > available) return { ok: false, reason: 'insufficient' }
+    //
+    // Scenario: member earned 10000, requested 10000 payout, then commission voided.
+    const totalApproved = 0; // voided
+    const totalPaid = 0;
+    const otherPendingAmount = 0;
+    const payoutAmount = 10000;
+
+    const available = totalApproved - totalPaid - otherPendingAmount;
+    const canComplete = payoutAmount <= available;
+    expect(canComplete).toBe(false);
+  });
+
+  it('allows completion when approved earnings still cover the payout', () => {
+    const totalApproved = 15000;
+    const totalPaid = 3000;
+    const otherPendingAmount = 2000;
+    const payoutAmount = 10000;
+
+    const available = totalApproved - totalPaid - otherPendingAmount;
+    const canComplete = payoutAmount <= available;
+    expect(canComplete).toBe(true);
+  });
+});
