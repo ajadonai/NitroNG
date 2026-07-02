@@ -18,12 +18,13 @@ export async function GET(req) {
     if (fromParam) {
       since = new Date(new Date(fromParam).getTime() - 60 * 60 * 1000);
       if (toParam) { until = new Date(new Date(toParam).getTime() + 23 * 60 * 60 * 1000 - 1); }
-    } else if (range === '24h') since = new Date(now - 24 * 60 * 60 * 1000);
+    } else if (range === 'all') { since = null; }
+    else if (range === '24h') since = new Date(now - 24 * 60 * 60 * 1000);
     else if (range === '7d') since = new Date(now - 7 * 24 * 60 * 60 * 1000);
     else if (range === '90d') since = new Date(now - 90 * 24 * 60 * 60 * 1000);
     else since = new Date(now - 30 * 24 * 60 * 60 * 1000);
 
-    const dateFilter = { gte: since, ...(until && { lte: until }) };
+    const dateFilter = since ? { gte: since, ...(until && { lte: until }) } : {};
 
     const [ordersAgg, userCount, depositAgg, adminCreditAgg, adminGiftAgg, couponBonusAgg, referralBonusAgg, refundAgg, ordersByStatus, topServices, allOrders, chartOrders, chartDeposits, partialOrders, providerTopupAgg] = await Promise.all([
       prisma.order.aggregate({
@@ -188,7 +189,8 @@ export async function GET(req) {
     });
     // Fill in missing days
     const chartData = [];
-    const d = new Date(since);
+    const chartStart = since || (Object.keys(dayMap).length ? new Date(Object.keys(dayMap).sort()[0]) : now);
+    const d = new Date(chartStart);
     while (d <= now) {
       const key = toDay(d);
       chartData.push({ date: key, orders: dayMap[key]?.orders || 0, revenue: Math.round(dayMap[key]?.revenue || 0), deposits: Math.round(dayMap[key]?.deposits || 0) });
