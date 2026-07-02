@@ -29,7 +29,7 @@ export async function GET(req) {
     const include = {
       user: { select: { name: true, email: true, phone: true } },
       service: { select: { name: true, category: true, provider: true, apiId: true } },
-      tier: { select: { tier: true, group: { select: { name: true, platform: true, type: true } } } },
+      tier: { select: { tier: true, group: { select: { name: true, platform: true, type: true } }, service: { select: { apiId: true, costPer1k: true } } } },
     };
     try {
       await prisma.dripDispatch.findFirst({ take: 1 });
@@ -87,6 +87,8 @@ export async function GET(req) {
         serviceType: o.tier?.group?.type || null,
         refundedAt: o.refundedAt?.toISOString() || null,
         refundedTotal: refundMap[o.orderId] ? refundMap[o.orderId] / 100 : 0,
+        tierServiceApiId: o.tier?.service?.apiId || null,
+        tierServiceCost: o.tier?.service?.costPer1k || null,
       })),
     });
   } catch (err) {
@@ -460,7 +462,7 @@ export async function POST(req) {
       const { link: newLink } = body;
       const fullOrder = await prisma.order.findFirst({
         where: { OR: [{ orderId }, { id: orderId }], deletedAt: null },
-        include: { service: true, user: { select: { id: true, balance: true } } },
+        include: { service: true, tier: { include: { service: true } }, user: { select: { id: true, balance: true } } },
       });
       if (!fullOrder) return Response.json({ error: 'Order not found' }, { status: 404 });
       if (fullOrder.status !== 'Cancelled') return Response.json({ error: 'Only cancelled orders can be re-dispatched' }, { status: 400 });
@@ -472,11 +474,27 @@ export async function POST(req) {
         return Response.json({ error: `Insufficient balance (has ₦${(fullOrder.user.balance / 100).toLocaleString()}, needs ₦${(fullOrder.charge / 100).toLocaleString()})` }, { status: 400 });
       }
 
+      let service = fullOrder.service;
+      const tierService = fullOrder.tier?.service;
+      let serviceSwapped = false;
+      if (tierService && tierService.id !== service.id) {
+        service = tierService;
+        serviceSwapped = true;
+      }
+
+      let costUpdate = {};
+      if (serviceSwapped) {
+        const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
+        const usdRate = Number(usdRateSetting?.value || 1600);
+        const newCost = Math.round((Number(service.costPer1k) * usdRate / 1000) * fullOrder.quantity / 100) * 100;
+        costUpdate = { serviceId: service.id, cost: newCost };
+      }
+
       const hasDrip = await prisma.dripDispatch.findFirst({ where: { orderId: fullOrder.id }, select: { id: true } });
 
       await prisma.$transaction(async (tx) => {
         await tx.$executeRaw`UPDATE users SET balance = balance - ${fullOrder.charge} WHERE id = ${fullOrder.user.id}`;
-        await tx.order.update({ where: { id: fullOrder.id }, data: { link, status: 'Processing', apiOrderId: null, lastError: null, dispatchedAt: new Date() } });
+        await tx.order.update({ where: { id: fullOrder.id }, data: { link, status: 'Processing', apiOrderId: null, lastError: null, dispatchedAt: new Date(), ...costUpdate } });
         await tx.transaction.create({ data: { userId: fullOrder.user.id, type: 'charge', amount: fullOrder.charge, method: 'wallet', status: 'Completed', note: `Re-dispatch ${orderId}` } });
         if (hasDrip) {
           await tx.dripDispatch.updateMany({ where: { orderId: fullOrder.id, status: { in: ['failed', 'cancelled'] } }, data: { status: 'pending', apiOrderId: null, lastError: null, dispatchedAt: null } });
@@ -484,7 +502,6 @@ export async function POST(req) {
       });
 
       const { placeOrder } = await import('@/lib/smm');
-      const service = fullOrder.service;
       const prov = service.provider || 'mtp';
       const apiType = (service.apiType || '').toLowerCase();
       const extra = {};
@@ -517,8 +534,9 @@ export async function POST(req) {
             } else {
               await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'pending', dispatchedAt: null } });
             }
-            await logActivity(admin.name, `Re-dispatched ${orderId}${newLink ? ' (new link)' : ''} → batch ${first.batch}: ${batchApiId || 'no ID'}`, 'order');
-            return Response.json({ success: true, status: 'Processing', message: `Re-dispatched batch ${first.batch}: ${batchApiId || 'pending'}` });
+            const swapNote = serviceSwapped ? ` (service ${fullOrder.service.apiId}→${service.apiId})` : '';
+            await logActivity(admin.name, `Re-dispatched ${orderId}${newLink ? ' (new link)' : ''}${swapNote} → batch ${first.batch}: ${batchApiId || 'no ID'}`, 'order');
+            return Response.json({ success: true, status: 'Processing', message: `Re-dispatched batch ${first.batch}: ${batchApiId || 'pending'}${serviceSwapped ? ` (service updated to ${service.apiId})` : ''}` });
           } catch (err) {
             await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'failed', lastError: err.message.slice(0, 500) } });
             return Response.json({ error: `Provider error: ${err.message}` }, { status: 502 });
@@ -533,8 +551,9 @@ export async function POST(req) {
         if (apiOrderId) {
           await prisma.order.update({ where: { id: fullOrder.id }, data: { apiOrderId } });
         }
-        await logActivity(admin.name, `Re-dispatched ${orderId}${newLink ? ' (new link)' : ''} → ${apiOrderId || 'no ID'}`, 'order');
-        return Response.json({ success: true, status: 'Processing', apiOrderId, message: `Re-dispatched: ${apiOrderId || 'pending'}` });
+        const swapNote = serviceSwapped ? ` (service ${fullOrder.service.apiId}→${service.apiId})` : '';
+        await logActivity(admin.name, `Re-dispatched ${orderId}${newLink ? ' (new link)' : ''}${swapNote} → ${apiOrderId || 'no ID'}`, 'order');
+        return Response.json({ success: true, status: 'Processing', apiOrderId, message: `Re-dispatched: ${apiOrderId || 'pending'}${serviceSwapped ? ` (service updated to ${service.apiId})` : ''}` });
       } catch (err) {
         await prisma.order.update({ where: { id: fullOrder.id }, data: { status: 'Cancelled', lastError: err.message.slice(0, 500), dispatchedAt: null } });
         return Response.json({ error: `Provider error: ${err.message}` }, { status: 502 });
