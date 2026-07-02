@@ -265,6 +265,7 @@ model Order {
   dispatchedAt    DateTime?
   completedAt     DateTime?
   refundedAt      DateTime?
+  redispatchedAt  DateTime?
   loyaltyDiscount       Int      @default(0)
   campaignDiscount      Int      @default(0)
   campaignPercent       Int?
