@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
-import { requireAdmin, logActivity, canSeeSensitive, maskEmail } from "@/lib/admin";
+import { requireAdmin, logActivity, canSeeSensitive, maskEmail, maskAccountNo } from "@/lib/admin";
+import { getMemberEarnings } from "@/lib/commissions";
 
 export async function GET() {
   const { admin, error } = await requireAdmin("crew");
@@ -19,9 +20,9 @@ export async function GET() {
         memberId: p.memberId,
         memberName: p.member.name,
         memberEmail: sensitive ? p.member.email : maskEmail(p.member.email),
-        bankName: p.bankName || p.member.bankName,
-        bankAccountNo: p.bankAccountNo || p.member.bankAccountNo,
-        bankAccountName: p.bankAccountName || p.member.bankAccountName,
+        bankName: sensitive ? (p.bankName || p.member.bankName) : null,
+        bankAccountNo: sensitive ? (p.bankAccountNo || p.member.bankAccountNo) : maskAccountNo(p.bankAccountNo || p.member.bankAccountNo),
+        bankAccountName: sensitive ? (p.bankAccountName || p.member.bankAccountName) : null,
         amount: p.amount / 100,
         status: p.status,
         reference: p.reference,
@@ -61,14 +62,28 @@ export async function POST(req) {
       const now = new Date();
       const ref = reference || null;
       const result = await prisma.$transaction(async (tx) => {
-        // Conditional UPDATE — only transitions from pending/processing.
-        // Two concurrent completions: one gets affected=1, the other gets affected=0.
+        const [lockedMember] = await tx.$queryRaw`
+          SELECT id, "totalPaid", role FROM crew_members WHERE id = ${payout.memberId} FOR UPDATE
+        `;
+        if (!lockedMember) return { ok: false, reason: 'member' };
+
+        const [earnings, otherPending] = await Promise.all([
+          getMemberEarnings(payout.memberId, lockedMember.role, tx),
+          tx.affiliatePayout.aggregate({
+            where: { memberId: payout.memberId, status: { in: ['pending', 'processing'] }, id: { not: payoutId } },
+            _sum: { amount: true },
+          }),
+        ]);
+
+        const available = earnings.totalApproved - lockedMember.totalPaid - (otherPending._sum.amount || 0);
+        if (payout.amount > available) return { ok: false, reason: 'insufficient' };
+
         const affected = await tx.$executeRaw`
           UPDATE affiliate_payouts
           SET status = 'completed', reference = ${ref}, "processedAt" = ${now}
           WHERE id = ${payoutId} AND status IN ('pending', 'processing')
         `;
-        if (affected === 0) return { ok: false };
+        if (affected === 0) return { ok: false, reason: 'status' };
         await tx.$executeRaw`
           UPDATE crew_members SET "totalPaid" = "totalPaid" + ${payout.amount}
           WHERE id = ${payout.memberId}
@@ -76,6 +91,7 @@ export async function POST(req) {
         return { ok: true };
       });
       if (!result.ok) {
+        if (result.reason === 'insufficient') return Response.json({ error: "Insufficient approved earnings — commissions may have been voided" }, { status: 400 });
         return Response.json({ error: payout.status === "completed" ? "Already completed" : "Cannot complete a rejected payout" }, { status: 400 });
       }
       await logActivity(admin.name, `Completed payout ${payoutId} for ${payout.member.name} (₦${(payout.amount / 100).toLocaleString()})`);

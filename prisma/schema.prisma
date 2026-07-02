@@ -61,8 +61,10 @@ model User {
   perPagePreference Int @default(10) // Orders per page: 10, 25, 50
   tourCompleted     Boolean @default(false)
   orderTourCompleted Boolean @default(false)
-  signupSource    String?
-  signupIp        String?
+  signupSource        String?
+  signupIp            String?
+  referredByMemberId  String?
+  referredByLinkId    String?
   tosAcceptedAt   DateTime?
   tosVersion      String?
   firstDepositBonusPaid Boolean @default(false)
