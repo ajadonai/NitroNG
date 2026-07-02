@@ -28,7 +28,7 @@ export async function GET(req) {
     let hasDripTable = true;
     const include = {
       user: { select: { name: true, email: true, phone: true } },
-      service: { select: { name: true, category: true, provider: true, apiId: true } },
+      service: { select: { name: true, category: true, provider: true, apiId: true, costPer1k: true } },
       tier: { select: { tier: true, group: { select: { name: true, platform: true, type: true } }, service: { select: { apiId: true, costPer1k: true } } } },
     };
     try {
@@ -87,8 +87,9 @@ export async function GET(req) {
         serviceType: o.tier?.group?.type || null,
         refundedAt: o.refundedAt?.toISOString() || null,
         refundedTotal: refundMap[o.orderId] ? refundMap[o.orderId] / 100 : 0,
+        serviceCostPer1k: o.service?.costPer1k || null,
         tierServiceApiId: o.tier?.service?.apiId || null,
-        tierServiceCost: o.tier?.service?.costPer1k || null,
+        tierServiceCostPer1k: o.tier?.service?.costPer1k || null,
       })),
     });
   } catch (err) {
