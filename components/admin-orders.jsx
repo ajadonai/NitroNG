@@ -888,16 +888,13 @@ export default function AdminOrdersPage({ dark, t }) {
               <input type="url" value={redispatchLink} onChange={e => setRedispatchLink(e.target.value)} className="w-full rounded-lg py-2.5 px-3 text-sm outline-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.text, fontFamily: "inherit" }} placeholder="https://..." autoFocus />
             </div>
             <div className="text-[11px] mb-4 py-2.5 px-3 rounded-lg flex flex-col gap-1.5" style={{ background: dark ? "rgba(252,211,77,.08)" : "rgba(217,119,6,.05)", color: dark ? "#fcd34d" : "#d97706" }}>
-              <div>Customer will be re-charged {fN(rd.charge)}</div>
-              {hasSwap && (() => {
-                const oldCost = rd.serviceCostPer1k;
-                const newCost = rd.tierServiceCostPer1k;
-                const costChanged = oldCost && newCost && oldCost !== newCost;
-                return <>
-                  <div className="flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>Service <span className="font-mono font-semibold">{rd.serviceApiId}</span> → <span className="font-mono font-semibold">{rd.tierServiceApiId}</span></div>
-                  {costChanged && <div>Cost: <span className="font-mono">${(oldCost / 100).toFixed(2)}</span> → <span className="font-mono font-semibold">${(newCost / 100).toFixed(2)}</span>/1k {newCost > oldCost ? "↑" : "↓"}</div>}
-                </>;
-              })()}
+              {rd.tierCurrentPrice && rd.tierCurrentPrice !== rd.charge ? (() => {
+                const diff = rd.tierCurrentPrice - rd.charge;
+                return <div>Order now prices at <span className="font-mono font-semibold">{fN(rd.tierCurrentPrice)}</span> ({diff > 0 ? "+" : ""}{fN(diff)})</div>;
+              })() : <div>Customer will be re-charged {fN(rd.charge)}</div>}
+              {hasSwap && (
+                <div className="flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>Service <span className="font-mono font-semibold">{rd.serviceApiId}</span> → <span className="font-mono font-semibold">{rd.tierServiceApiId}</span></div>
+              )}
             </div>
             <div className="flex justify-end gap-2">
               <button onClick={() => setRedispatchPrompt(null)} className="py-2 px-4 rounded-lg text-sm font-medium cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textSoft }}>Cancel</button>

@@ -29,7 +29,7 @@ export async function GET(req) {
     const include = {
       user: { select: { name: true, email: true, phone: true } },
       service: { select: { name: true, category: true, provider: true, apiId: true, costPer1k: true } },
-      tier: { select: { tier: true, group: { select: { name: true, platform: true, type: true } }, service: { select: { apiId: true, costPer1k: true } } } },
+      tier: { select: { tier: true, sellPer1k: true, group: { select: { name: true, platform: true, type: true } }, service: { select: { apiId: true, costPer1k: true } } } },
     };
     try {
       await prisma.dripDispatch.findFirst({ take: 1 });
@@ -54,6 +54,8 @@ export async function GET(req) {
     }
 
     const sensitive = canSeeSensitive(admin);
+    const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
+    const usdRate = Number(usdRateSetting?.value || 1600);
 
     return Response.json({
       orders: orders.map(o => ({
@@ -87,9 +89,8 @@ export async function GET(req) {
         serviceType: o.tier?.group?.type || null,
         refundedAt: o.refundedAt?.toISOString() || null,
         refundedTotal: refundMap[o.orderId] ? refundMap[o.orderId] / 100 : 0,
-        serviceCostPer1k: o.service?.costPer1k || null,
         tierServiceApiId: o.tier?.service?.apiId || null,
-        tierServiceCostPer1k: o.tier?.service?.costPer1k || null,
+        tierCurrentPrice: o.tier?.sellPer1k ? Math.round(o.tier.sellPer1k * o.quantity / 1000) / 100 : null,
       })),
     });
   } catch (err) {
