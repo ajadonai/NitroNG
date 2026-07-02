@@ -355,6 +355,11 @@ export default function AdminOrdersPage({ dark, t }) {
   const openRefund = (o) => { setRefundPrompt(o); setRefundPercent(25); };
   const doRefund = async () => {
     if (!refundPrompt) return;
+    const alr = refundPrompt.refundedTotal || 0;
+    const rem = Math.max(0, refundPrompt.charge - alr);
+    const amt = refundPercent === 100 ? rem : Math.round(refundPrompt.charge * refundPercent / 100 * 100) / 100;
+    const ok = await confirm({ title: "Confirm Refund", message: `Refund ${fN(amt)} (${refundPercent === 100 ? "full" : refundPercent + "%"}) to ${refundPrompt.user} for order ${refundPrompt.id}?`, confirmLabel: "Yes, Refund", danger: true });
+    if (!ok) return;
     setRefundSending(true);
     try {
       const res = await fetch("/api/admin/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "refund", orderId: refundPrompt.id, percent: refundPercent }) });
