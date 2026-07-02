@@ -893,7 +893,8 @@ export default function AdminOrdersPage({ dark, t }) {
               )}
               {rd.tierCurrentPrice && rd.tierCurrentPrice !== rd.charge && (() => {
                 const diff = rd.tierCurrentPrice - rd.charge;
-                return <div>New price: <span className="font-mono font-semibold">{fN(rd.tierCurrentPrice)}</span> ({diff > 0 ? "+" : ""}{fN(diff)})</div>;
+                const up = diff > 0;
+                return <div>New price: <span className="font-mono font-semibold">{fN(rd.tierCurrentPrice)}</span> <span style={{ color: up ? (dark ? "#34d399" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>({up ? "+" : ""}{fN(diff)})</span></div>;
               })()}
               <div>Re-charged: {fN(rd.charge)}</div>
             </div>
