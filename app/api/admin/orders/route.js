@@ -3,6 +3,7 @@ import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canSeeSensitive, maskEmail, maskPhone } from '@/lib/admin';
 import { sendEmail, walletCreditEmail } from '@/lib/email';
 import { checkOrder, cancelOrder, refillOrder, isProviderConfigured, getProviderName } from '@/lib/smm';
+import { voidCommissions } from '@/lib/commissions';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('orders');
@@ -70,6 +71,7 @@ export async function GET(req) {
         dripDispatches: o.dripDispatches?.length > 0 ? o.dripDispatches.map(d => ({ id: d.id, day: d.day, batch: d.batch, qty: d.quantity, status: d.status, apiOrderId: d.apiOrderId, scheduled: d.scheduledAt?.toISOString(), dispatched: d.dispatchedAt?.toISOString(), completed: d.completedAt?.toISOString(), error: d.lastError })) : null,
         batchId: o.batchId || null,
         lastError: o.lastError || null,
+        queuedBehind: o.queuedBehind || null,
         retryCount: o.retryCount || 0,
         created: o.createdAt.toISOString(),
         serviceType: o.tier?.group?.type || null,
@@ -114,7 +116,7 @@ export async function POST(req) {
       const result = await prisma.$transaction(async (tx) => {
         const claimed = await tx.order.updateMany({
           where: { id: order.id, status: { not: 'Cancelled' } },
-          data: { status: isPartial ? 'Partial' : 'Cancelled', lastError: body.note ? `admin_cancelled: ${body.note}` : 'admin_cancelled', refundedAt: new Date() },
+          data: { status: isPartial ? 'Partial' : 'Cancelled', queuedBehind: null, lastError: body.note ? `admin_cancelled: ${body.note}` : 'admin_cancelled', refundedAt: new Date() },
         });
         if (claimed.count === 0) return { ok: false };
 
@@ -142,6 +144,8 @@ export async function POST(req) {
         return { ok: true, refundAmount };
       });
       if (!result.ok) return Response.json({ error: 'Order already cancelled' }, { status: 409 });
+
+      voidCommissions(order.id, 'admin_cancelled').catch(() => {});
 
       if (result.refundAmount > 0) {
         try {
@@ -192,7 +196,7 @@ export async function POST(req) {
               await prisma.$transaction(async (tx) => {
                 const claimed = await tx.order.updateMany({
                   where: { id: order.id, status: { not: 'Cancelled' } },
-                  data: { status: 'Cancelled', refundedAt: new Date() },
+                  data: { status: 'Cancelled', queuedBehind: null, refundedAt: new Date() },
                 });
                 if (claimed.count === 0) return;
                 const existing = await tx.transaction.aggregate({
@@ -219,7 +223,7 @@ export async function POST(req) {
                 const refundAmount = Math.round((remains / order.quantity) * order.charge / 100) * 100;
                 if (refundAmount > 0) {
                   await prisma.$transaction(async (tx) => {
-                    await tx.order.update({ where: { id: order.id }, data: { status: 'Partial', refundedAt: new Date() } });
+                    await tx.order.update({ where: { id: order.id }, data: { status: 'Partial', queuedBehind: null, refundedAt: new Date() } });
                     const existing = await tx.transaction.aggregate({
                       where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
                       _sum: { amount: true },
@@ -238,7 +242,7 @@ export async function POST(req) {
                 }
               }
             } else {
-              await prisma.order.update({ where: { id: order.id }, data: { status: newStatus } });
+              await prisma.order.update({ where: { id: order.id }, data: { status: newStatus, queuedBehind: null } });
             }
           }
           await logActivity(admin.name, `Checked order ${orderId} via ${providerLabel}: ${newStatus}`, 'order');

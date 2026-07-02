@@ -76,11 +76,12 @@ function Spinner({ size = 14, color = "currentColor" }) {
 }
 
 /* ── Status helpers (unified) ── */
-function sClr(s, dk) { return s === "Completed" ? (dk ? "#6ee7b7" : "#059669") : s === "Processing" ? (dk ? "#a5b4fc" : "#4f46e5") : s === "Pending" ? (dk ? "#fcd34d" : "#d97706") : s === "Partial" ? (dk ? "#fdba74" : "#ea580c") : (s === "Failed" || s === "Rejected") ? (dk ? "#fca5a5" : "#dc2626") : s === "Cancelled" ? (dk ? "#a1a1aa" : "#71717a") : (dk ? "#555250" : "#8a8785"); }
-function sBg(s, dk) { return s === "Completed" ? (dk ? "#0a2416" : "#ecfdf5") : s === "Processing" ? (dk ? "#0f1629" : "#eef2ff") : s === "Pending" ? (dk ? "#1c1608" : "#fffbeb") : s === "Partial" ? (dk ? "#1c1008" : "#fff7ed") : (s === "Failed" || s === "Rejected") ? (dk ? "#1f0a0a" : "#fef2f2") : s === "Cancelled" ? (dk ? "#1a1a1a" : "#f5f5f5") : (dk ? "#141414" : "#f5f5f5"); }
-function sBrd(s, dk) { return s === "Completed" ? (dk ? "#166534" : "#a7f3d0") : s === "Processing" ? (dk ? "#3730a3" : "#c7d2fe") : s === "Pending" ? (dk ? "#92400e" : "#fde68a") : s === "Partial" ? (dk ? "#9a3412" : "#fed7aa") : (s === "Failed" || s === "Rejected") ? (dk ? "#991b1b" : "#fecaca") : s === "Cancelled" ? (dk ? "#404040" : "#d4d4d4") : (dk ? "#404040" : "#d4d4d4"); }
+function sClr(s, dk) { return s === "Completed" ? (dk ? "#6ee7b7" : "#059669") : s === "Processing" ? (dk ? "#a5b4fc" : "#4f46e5") : s === "Pending" ? (dk ? "#fcd34d" : "#d97706") : s === "Queued" ? (dk ? "#a5b4fc" : "#4f46e5") : s === "Partial" ? (dk ? "#fdba74" : "#ea580c") : (s === "Failed" || s === "Rejected") ? (dk ? "#fca5a5" : "#dc2626") : s === "Cancelled" ? (dk ? "#a1a1aa" : "#71717a") : (dk ? "#555250" : "#8a8785"); }
+function sBg(s, dk) { return s === "Completed" ? (dk ? "#0a2416" : "#ecfdf5") : s === "Processing" ? (dk ? "#0f1629" : "#eef2ff") : s === "Pending" ? (dk ? "#1c1608" : "#fffbeb") : s === "Queued" ? (dk ? "#0f1629" : "#eef2ff") : s === "Partial" ? (dk ? "#1c1008" : "#fff7ed") : (s === "Failed" || s === "Rejected") ? (dk ? "#1f0a0a" : "#fef2f2") : s === "Cancelled" ? (dk ? "#1a1a1a" : "#f5f5f5") : (dk ? "#141414" : "#f5f5f5"); }
+function sBrd(s, dk) { return s === "Completed" ? (dk ? "#166534" : "#a7f3d0") : s === "Processing" ? (dk ? "#3730a3" : "#c7d2fe") : s === "Pending" ? (dk ? "#92400e" : "#fde68a") : s === "Queued" ? (dk ? "#3730a3" : "#c7d2fe") : s === "Partial" ? (dk ? "#9a3412" : "#fed7aa") : (s === "Failed" || s === "Rejected") ? (dk ? "#991b1b" : "#fecaca") : s === "Cancelled" ? (dk ? "#404040" : "#d4d4d4") : (dk ? "#404040" : "#d4d4d4"); }
 
 function isAttention(o) {
+  if (o.queuedBehind) return false;
   return o.status === "Partial" || (o.lastError && o.status === "Pending" && !o.apiOrderId);
 }
 
@@ -123,12 +124,13 @@ function ProgressBar({ order, dark, detailed }) {
   const isPartial = order.status === "Partial";
   const color = isComplete ? (dark ? "#6ee7b7" : "#059669") : isPartial ? (dark ? "#fbbf24" : "#d97706") : "#c47d8e";
   const waiting = !hasData && !isComplete && (order.status === "Pending" || order.status === "Processing");
+  const isQueued = waiting && !!order.queuedBehind;
   const isProcessing = !isComplete && !isPartial && !waiting && pct > 0 && pct < 100;
   if (detailed) {
     return (
       <div>
         <div className="flex items-center justify-between text-[11px] mb-1" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.45)" }}>
-          <span>{waiting ? "Waiting to start" : `${delivered.toLocaleString()} / ${qty.toLocaleString()} delivered`}</span>
+          <span>{waiting ? (isQueued ? "Queued" : "Waiting to start") : `${delivered.toLocaleString()} / ${qty.toLocaleString()} delivered`}</span>
           {!waiting && <span style={{ color }}>{pct}%</span>}
         </div>
         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
@@ -225,6 +227,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
   const isPartial = o.status === "Partial";
   const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : isPartial ? (dark ? "#fbbf24" : "#d97706") : "#c47d8e";
   const waiting = !isCancelled && !hasData && !isComplete && (o.status === "Pending" || o.status === "Processing");
+  const isQueued = waiting && !!o.queuedBehind;
   const py = compact ? "py-3 px-3 desktop:py-3.5 desktop:px-4" : "py-3.5 px-3.5 desktop:py-4 desktop:px-[18px]";
   const waMessage = encodeURIComponent(`Hi *Nitro*, I need help with my order:\n\n*Order:* ${o.id}\n*Service:* ${o.service}${o.tier ? ' (' + o.tier + ')' : ''}\n*Quantity:* ${qty.toLocaleString()}\n*Delivered:* ${delivered.toLocaleString()} / ${qty.toLocaleString()}\n*Status:* ${o.status}\n*Date:* ${fD(o.created, true)}`);
   const reportIssueButton = waNum ? (
@@ -255,7 +258,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         return (
           <div className="mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
             <div className="flex items-center justify-between text-[12px] mb-1.5">
-              <span style={{ color: t.textMuted }}>{isCancelled ? "Cancelled" : waiting ? "Waiting to start" : "Delivered"}</span>
+              <span style={{ color: t.textMuted }}>{isCancelled ? "Cancelled" : waiting ? (isQueued ? "Queued" : "Waiting to start") : "Delivered"}</span>
               {!waiting && <span className="m font-semibold" style={{ color: barColor }}>{delivered.toLocaleString()} / {qty.toLocaleString()}</span>}
             </div>
             <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
@@ -295,8 +298,18 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         </div>
       )}
 
+      {/* Queued notice */}
+      {isQueued && (
+        <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(165,180,252,.08)" : "rgba(79,70,229,.04)", border: `1px solid ${dark ? "rgba(165,180,252,.18)" : "rgba(79,70,229,.12)"}` }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#a5b4fc" : "#4f46e5"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <div className="text-[12px]" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>
+            You have another order running on this same link. This one will start automatically once it completes — no action needed.
+          </div>
+        </div>
+      )}
+
       {/* Issue notice */}
-      {o.lastError && o.status === "Pending" && !o.apiOrderId && (
+      {!isQueued && o.lastError && o.status === "Pending" && !o.apiOrderId && (
         <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.05)", border: `1px solid ${dark ? "rgba(251,191,36,.18)" : "rgba(217,119,6,.14)"}` }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <div className="text-[12px]" style={{ color: dark ? "#fbbf24" : "#d97706" }}>
@@ -379,7 +392,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         </div>
         <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
           <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Status</div>
-          <Badge status={o.status} dark={dark} />
+          <Badge status={isQueued ? "Queued" : o.status} dark={dark} />
         </div>
         <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
           <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : "Charge"}</div>
@@ -477,7 +490,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                   {expandedOrder !== o.id && <ProgressBar order={o} dark={dark} />}
                 </div>
                 <div className="text-right shrink-0">
-                  <Badge status={o.status} dark={dark} />
+                  <Badge status={o.queuedBehind ? "Queued" : o.status} dark={dark} />
                 </div>
                 <svg className="shrink-0 ml-0.5" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expandedOrder === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s", }}><polyline points="6 9 12 15 18 9"/></svg>
               </div>
@@ -573,7 +586,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavi
         } else if (data.startCount != null) {
           detail = "Order started";
         }
-        toast.info(data.status, detail || "Waiting to start");
+        toast.info(data.status, detail || (order?.queuedBehind ? "Queued" : "Waiting to start"));
       } else if (action === "cancel") {
         setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, status: "Cancelled" } : o)));
         toast.success("Order cancelled", data.refunded ? `₦${data.refunded.toLocaleString()} refunded to wallet` : "Cancelled successfully");
@@ -676,6 +689,13 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavi
         </div>
       )}
 
+      {/* Delivery notice — mobile (sidebar handles desktop) */}
+      {orders.some(o => o.status === "Processing" || o.status === "Pending") && (
+        <div className="desktop:hidden text-[11px] leading-relaxed px-1 mb-2" style={{ color: t.textMuted }}>
+          Orders are typically delivered within 0 to 6 hours. In some cases, delivery may take up to 24 hours. We are unable to act on delivery speed requests within the first 6 hours of order placement.
+        </div>
+      )}
+
       {/* Order list */}
       <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
         {pagedGroups.length > 0 ? pagedGroups.map((item, i) => {
@@ -697,8 +717,8 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavi
                   {expanded !== o.id && <ProgressBar order={o} dark={dark} />}
                 </div>
                 <div className="text-right shrink-0 flex items-center gap-1.5">
-                  {(o.status === "Processing" || o.status === "Pending") && <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: sClr(o.status, dark) }} />}
-                  <Badge status={o.status} dark={dark} />
+                  {(o.status === "Processing" || o.status === "Pending") && !o.queuedBehind && <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: sClr(o.status, dark) }} />}
+                  <Badge status={o.queuedBehind ? "Queued" : o.status} dark={dark} />
                 </div>
                 <svg className="shrink-0 ml-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expanded === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s", }}><polyline points="6 9 12 15 18 9"/></svg>
               </div>

@@ -10,7 +10,7 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const includeArchived = searchParams.get('includeArchived') === 'true';
     const links = await prisma.acquisitionLink.findMany({
-      where: includeArchived ? {} : { archivedAt: null },
+      where: { affiliateId: null, ...(includeArchived ? {} : { archivedAt: null }) },
       orderBy: { createdAt: 'desc' },
     });
 

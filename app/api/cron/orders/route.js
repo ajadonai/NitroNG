@@ -6,6 +6,7 @@ import { checkOrder } from '@/lib/smm';
 import { sendEmail, emailWrap, batchCompletionEmail, emailRow, emailDataBox, emailCTA } from '@/lib/email';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { tgRefund, tgOrderCancelled } from '@/lib/telegram';
+import { createCommission, voidCommissions } from '@/lib/commissions';
 
 // Polls provider APIs for order status updates
 // Auto-refunds failed/cancelled orders
@@ -124,6 +125,7 @@ export async function GET(req) {
                 where: { id: order.id },
                 data: {
                   status: 'Cancelled',
+                  queuedBehind: null,
                   ...(liveRemains != null ? { remains: liveRemains } : {}),
                   ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}),
                   ...(providerError ? { lastError: String(providerError).slice(0, 500) } : {}),
@@ -145,7 +147,7 @@ export async function GET(req) {
             stats.updated++;
             stats.refunded++;
             tgOrderCancelled(order.orderId, order.charge, providerError || 'provider_cancelled');
-            // Fire-and-forget email (non-critical)
+            voidCommissions(order.id, 'order_cancelled').catch(() => {});
             refundOrder(order, null, true).catch(() => {});
           } else if (newStatus === 'Partial' && result.remains) {
             const remains = Number(result.remains) || 0;
@@ -157,6 +159,7 @@ export async function GET(req) {
                 where: { id: order.id },
                 data: {
                   status: 'Partial',
+                  queuedBehind: null,
                   remains: liveRemains,
                   ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}),
                   ...(refundAmount > 0 ? { refundedAt: new Date() } : {}),
@@ -181,17 +184,26 @@ export async function GET(req) {
               stats.refunded++;
               refundOrder(order, refundAmount, true).catch(() => {});
             }
+            const delivered = order.quantity - (Number(result.remains) || 0);
+            if (delivered > 0) {
+              const partialCharge = Math.round((delivered / order.quantity) * order.charge);
+              const partialCost = Math.round((delivered / order.quantity) * order.cost);
+              createCommission(order.id, order.userId, partialCharge, partialCost).catch(() => {});
+            }
           } else {
             await prisma.order.update({
               where: { id: order.id },
               data: {
                 status: newStatus,
-                ...(newStatus === 'Completed' ? { completedAt: new Date() } : {}),
+                ...(newStatus === 'Completed' ? { completedAt: new Date(), queuedBehind: null } : {}),
                 ...(liveRemains != null ? { remains: liveRemains } : {}),
                 ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}),
               },
             });
             stats.updated++;
+            if (newStatus === 'Completed') {
+              createCommission(order.id, order.userId, order.charge, order.cost).catch(() => {});
+            }
           }
 
         } catch (err) {
@@ -252,13 +264,19 @@ export async function GET(req) {
         if (order.link && order.serviceId) {
           const blocking = await prisma.order.findFirst({
             where: { serviceId: order.serviceId, link: order.link, status: { in: ['Pending', 'Processing', 'In progress'] }, apiOrderId: { not: null }, id: { not: order.id }, deletedAt: null },
+            select: { orderId: true },
           });
-          if (blocking) continue;
+          if (blocking) {
+            if (order.queuedBehind !== blocking.orderId) {
+              await prisma.order.update({ where: { id: order.id }, data: { queuedBehind: blocking.orderId } }).catch(() => {});
+            }
+            continue;
+          }
         }
 
         const claimed = await prisma.order.updateMany({
           where: { id: order.id, status: 'Pending', apiOrderId: null },
-          data: { status: 'Dispatching', dispatchedAt: new Date() },
+          data: { status: 'Dispatching', dispatchedAt: new Date(), queuedBehind: null },
         });
         if (claimed.count === 0) continue;
 
@@ -362,6 +380,7 @@ export async function GET(req) {
           });
           stats.autoRefunded++;
           tgRefund(order.orderId, order.charge, 'dispatch_failed');
+          voidCommissions(order.id, 'dispatch_failed').catch(() => {});
           if (order.charge >= 5000) await refundOrder(order, null, true);
         } catch (err) {
           log.warn(`Auto-refund ${order.orderId}`, err.message);
@@ -421,6 +440,15 @@ export async function GET(req) {
         }
       }
     } catch (e) { log.warn('Refund recovery sweep', e.message); }
+
+    // Clear stale queuedBehind on terminal orders (safety net)
+    try {
+      const { count } = await prisma.order.updateMany({
+        where: { queuedBehind: { not: null }, status: { in: ['Completed', 'Cancelled', 'Partial'] } },
+        data: { queuedBehind: null },
+      });
+      if (count > 0) stats.queueCleaned = count;
+    } catch (e) { log.warn('Queue cleanup', e.message); }
 
     // Clean up expired idempotency keys
     try {

@@ -1,0 +1,217 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Mock prisma before importing commissions
+const mockTx = {
+  $queryRaw: vi.fn(),
+  $executeRaw: vi.fn(),
+  affiliateCommission: {
+    findMany: vi.fn(),
+    updateMany: vi.fn(),
+    aggregate: vi.fn(),
+  },
+  crewMember: {
+    update: vi.fn(),
+  },
+};
+
+const mockPrisma = {
+  ...mockTx,
+  $transaction: vi.fn(),
+  affiliateCommission: {
+    ...mockTx.affiliateCommission,
+  },
+};
+
+vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
+vi.mock('@/lib/logger', () => ({ log: { error: vi.fn() } }));
+vi.mock('@/lib/crew-bot', () => ({ crewSignup: vi.fn(), crewFirstPurchase: vi.fn(), crewRepeatBuyer: vi.fn() }));
+
+const { voidCommissions, releaseHeldCommissions, getMemberEarnings } = await import('@/lib/commissions');
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  // Default: $transaction executes the callback with mockTx
+  mockPrisma.$transaction.mockImplementation(async (fn) => fn(mockTx));
+});
+
+// ──────────────────────────────────────
+// voidCommissions
+// ──────────────────────────────────────
+describe('voidCommissions', () => {
+  it('does not decrement totalEarned for held commissions', async () => {
+    mockTx.$queryRaw.mockResolvedValue([
+      { id: 'c1', memberId: 'm1', leadId: 'l1', marketerAmount: 500, leadAmount: 200, status: 'held' },
+    ]);
+    mockTx.$executeRaw.mockResolvedValue(1);
+
+    await voidCommissions('order1', 'test');
+
+    // First $executeRaw is the UPDATE to voided. No further calls for totalEarned.
+    expect(mockTx.$executeRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('decrements totalEarned exactly once for approved commissions', async () => {
+    mockTx.$queryRaw.mockResolvedValue([
+      { id: 'c1', memberId: 'm1', leadId: 'l1', marketerAmount: 500, leadAmount: 200, status: 'approved' },
+    ]);
+    mockTx.$executeRaw.mockResolvedValue(1);
+
+    await voidCommissions('order1', 'test');
+
+    // 1 UPDATE to voided + 1 decrement for m1 + 1 decrement for l1 = 3
+    expect(mockTx.$executeRaw).toHaveBeenCalledTimes(3);
+  });
+
+  it('is idempotent — second void on same order returns 0', async () => {
+    mockTx.$queryRaw.mockResolvedValue([]); // no held/approved rows found
+
+    const count = await voidCommissions('order1', 'test');
+
+    expect(count).toBe(0);
+    expect(mockTx.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('handles mixed held + approved: only decrements for approved', async () => {
+    mockTx.$queryRaw.mockResolvedValue([
+      { id: 'c1', memberId: 'm1', leadId: null, marketerAmount: 300, leadAmount: 0, status: 'held' },
+      { id: 'c2', memberId: 'm1', leadId: 'l1', marketerAmount: 500, leadAmount: 200, status: 'approved' },
+    ]);
+    mockTx.$executeRaw.mockResolvedValue(1);
+
+    const count = await voidCommissions('order1', 'test');
+
+    expect(count).toBe(2);
+    // 1 UPDATE to voided + 1 decrement m1 (500, not 800) + 1 decrement l1 (200) = 3
+    expect(mockTx.$executeRaw).toHaveBeenCalledTimes(3);
+  });
+
+  it('uses SELECT FOR UPDATE to lock rows against concurrent voids', async () => {
+    mockTx.$queryRaw.mockResolvedValue([
+      { id: 'c1', memberId: 'm1', leadId: null, marketerAmount: 300, leadAmount: 0, status: 'approved' },
+    ]);
+    mockTx.$executeRaw.mockResolvedValue(1);
+
+    await voidCommissions('order1', 'test');
+
+    // Tagged template: first arg is TemplateStringsArray, join to check full SQL
+    const fullSql = [...mockTx.$queryRaw.mock.calls[0][0]].join('');
+    expect(fullSql).toContain('FOR UPDATE');
+  });
+});
+
+// ──────────────────────────────────────
+// releaseHeldCommissions
+// ──────────────────────────────────────
+describe('releaseHeldCommissions', () => {
+  it('uses UPDATE ... RETURNING to claim only rows this invocation transitions', async () => {
+    mockTx.$queryRaw.mockResolvedValue([
+      { id: 'c1', memberId: 'm1', leadId: null, marketerAmount: 500, leadAmount: 0 },
+    ]);
+    mockTx.$executeRaw.mockResolvedValue(1);
+
+    const count = await releaseHeldCommissions();
+
+    expect(count).toBe(1);
+    // Tagged template: first arg is TemplateStringsArray, join to check full SQL
+    const fullSql = [...mockTx.$queryRaw.mock.calls[0][0]].join('');
+    expect(fullSql).toContain('RETURNING');
+    expect(fullSql).toContain("status = 'approved'");
+    expect(fullSql).toContain("status = 'held'");
+  });
+
+  it('does not re-credit older approved commissions', async () => {
+    // If there are 5 old approved commissions and 1 newly releasable held one,
+    // only the 1 held one is returned by UPDATE ... RETURNING (it had status='held').
+    // The 5 old ones are already 'approved' so they don't match WHERE status='held'.
+    mockTx.$queryRaw.mockResolvedValue([
+      { id: 'new1', memberId: 'm1', leadId: null, marketerAmount: 100, leadAmount: 0 },
+    ]);
+    mockTx.$executeRaw.mockResolvedValue(1);
+
+    const count = await releaseHeldCommissions();
+
+    expect(count).toBe(1);
+    // Only 1 increment of 100, not re-crediting historical commissions
+    expect(mockTx.$executeRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('aggregates multiple commissions for the same member into one increment', async () => {
+    mockTx.$queryRaw.mockResolvedValue([
+      { id: 'c1', memberId: 'm1', leadId: null, marketerAmount: 500, leadAmount: 0 },
+      { id: 'c2', memberId: 'm1', leadId: null, marketerAmount: 300, leadAmount: 0 },
+    ]);
+    mockTx.$executeRaw.mockResolvedValue(1);
+
+    await releaseHeldCommissions();
+
+    // 1 increment for m1 with aggregated amount (800)
+    expect(mockTx.$executeRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns 0 when no commissions are ready for release', async () => {
+    mockTx.$queryRaw.mockResolvedValue([]);
+
+    const count = await releaseHeldCommissions();
+
+    expect(count).toBe(0);
+    expect(mockTx.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('runs entirely inside a transaction', async () => {
+    mockTx.$queryRaw.mockResolvedValue([]);
+    await releaseHeldCommissions();
+    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ──────────────────────────────────────
+// getMemberEarnings
+// ──────────────────────────────────────
+describe('getMemberEarnings', () => {
+  it('calculates crew earnings as marketerAmount only', async () => {
+    mockPrisma.affiliateCommission.aggregate.mockResolvedValueOnce({
+      _sum: { marketerAmount: 1000 },
+    });
+
+    const result = await getMemberEarnings('m1', 'crew');
+
+    expect(result.directEarned).toBe(1000);
+    expect(result.teamEarned).toBe(0);
+    expect(result.totalApproved).toBe(1000);
+  });
+
+  it('calculates chief earnings as direct + team', async () => {
+    mockPrisma.affiliateCommission.aggregate
+      .mockResolvedValueOnce({ _sum: { marketerAmount: 1000 } })
+      .mockResolvedValueOnce({ _sum: { leadAmount: 500 } });
+
+    const result = await getMemberEarnings('chief1', 'chief');
+
+    expect(result.directEarned).toBe(1000);
+    expect(result.teamEarned).toBe(500);
+    expect(result.totalApproved).toBe(1500);
+  });
+
+  it('chief direct + team earnings are both included in totalApproved (withdrawable)', async () => {
+    mockPrisma.affiliateCommission.aggregate
+      .mockResolvedValueOnce({ _sum: { marketerAmount: 2000 } })
+      .mockResolvedValueOnce({ _sum: { leadAmount: 3000 } });
+
+    const result = await getMemberEarnings('chief1', 'chief');
+
+    // Both are withdrawable
+    expect(result.totalApproved).toBe(5000);
+  });
+
+  it('handles null sums (zero earnings)', async () => {
+    mockPrisma.affiliateCommission.aggregate
+      .mockResolvedValueOnce({ _sum: { marketerAmount: null } })
+      .mockResolvedValueOnce({ _sum: { leadAmount: null } });
+
+    const result = await getMemberEarnings('chief1', 'chief');
+
+    expect(result.directEarned).toBe(0);
+    expect(result.teamEarned).toBe(0);
+    expect(result.totalApproved).toBe(0);
+  });
+});
