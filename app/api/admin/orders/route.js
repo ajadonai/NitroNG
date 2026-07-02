@@ -43,6 +43,16 @@ export async function GET(req) {
       include,
     });
 
+    const orderIds = orders.map(o => o.orderId).filter(Boolean);
+    const refundTotals = orderIds.length > 0
+      ? await prisma.transaction.groupBy({ by: ['reference'], where: { type: 'refund', status: 'Completed', reference: { in: orderIds.flatMap(id => [`REF-${id}`, `ADM-REF-${id}`]) } }, _sum: { amount: true } })
+      : [];
+    const refundMap = {};
+    for (const r of refundTotals) {
+      const oid = r.reference.replace(/^(ADM-)?REF-/, '');
+      refundMap[oid] = (refundMap[oid] || 0) + (r._sum.amount || 0);
+    }
+
     const sensitive = canSeeSensitive(admin);
 
     return Response.json({
@@ -75,6 +85,8 @@ export async function GET(req) {
         retryCount: o.retryCount || 0,
         created: o.createdAt.toISOString(),
         serviceType: o.tier?.group?.type || null,
+        refundedAt: o.refundedAt?.toISOString() || null,
+        refundedTotal: refundMap[o.orderId] ? refundMap[o.orderId] / 100 : 0,
       })),
     });
   } catch (err) {
@@ -286,9 +298,9 @@ export async function POST(req) {
     }
 
     if (action === 'refund') {
-      const { refundType, amount } = body;
-      if (!refundType || !['full', 'partial'].includes(refundType)) {
-        return Response.json({ error: 'Refund type must be "full" or "partial"' }, { status: 400 });
+      const { percent } = body;
+      if (!percent || ![25, 50, 100].includes(percent)) {
+        return Response.json({ error: 'Percent must be 25, 50, or 100' }, { status: 400 });
       }
 
       const existing = await prisma.transaction.aggregate({
@@ -301,13 +313,15 @@ export async function POST(req) {
       if (maxRefundable <= 0) return Response.json({ error: 'Order already fully refunded' }, { status: 400 });
 
       let refundAmount;
-      if (refundType === 'full') {
+      if (percent === 100) {
         refundAmount = maxRefundable;
       } else {
-        refundAmount = Math.round((amount || 0) * 100);
-        if (refundAmount <= 0) return Response.json({ error: 'Amount must be greater than zero' }, { status: 400 });
-        if (refundAmount > maxRefundable) return Response.json({ error: `Amount exceeds maximum refundable (₦${(maxRefundable / 100).toLocaleString()})` }, { status: 400 });
+        refundAmount = Math.round(order.charge * percent / 100);
+        if (refundAmount > maxRefundable) refundAmount = maxRefundable;
       }
+      if (refundAmount <= 0) return Response.json({ error: 'Nothing left to refund' }, { status: 400 });
+
+      const label = percent === 100 ? 'full' : `${percent}%`;
 
       await prisma.$transaction(async (tx) => {
         await tx.user.update({ where: { id: order.userId }, data: { balance: { increment: refundAmount } } });
@@ -316,7 +330,7 @@ export async function POST(req) {
             userId: order.userId, type: 'refund', amount: refundAmount,
             method: 'wallet', status: 'Completed',
             reference: `ADM-REF-${order.orderId || order.id}`,
-            note: `Admin refund — ${refundType}${refundType === 'partial' ? ` (₦${(refundAmount / 100).toLocaleString()})` : ''}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} previously refunded)` : ''}`,
+            note: `Admin refund — ${label} (₦${(refundAmount / 100).toLocaleString()})${alreadyRefunded > 0 ? ` · ₦${(alreadyRefunded / 100).toLocaleString()} previously refunded` : ''}`,
           },
         });
         await tx.order.update({ where: { id: order.id }, data: { refundedAt: new Date() } });
@@ -331,7 +345,7 @@ export async function POST(req) {
       } catch {}
 
       const refundMsg = `₦${(refundAmount / 100).toLocaleString()}`;
-      await logActivity(admin.name, `Refunded ${refundMsg} for order ${orderId} (${refundType})`, 'order');
+      await logActivity(admin.name, `Refunded ${refundMsg} for order ${orderId} (${label})`, 'order');
       return Response.json({ success: true, message: `${refundMsg} refunded to customer` });
     }
 
