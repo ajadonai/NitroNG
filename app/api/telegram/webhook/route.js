@@ -433,8 +433,8 @@ async function handleCheck(chatId, threadId, orderId) {
     where: { orderId: id },
     include: {
       user: { select: { name: true } },
-      service: { select: { name: true, category: true, provider: true, apiId: true } },
-      tier: { select: { tier: true } },
+      service: { select: { name: true, category: true, provider: true } },
+      tier: { select: { tier: true, group: { select: { name: true, platform: true } } } },
       dripDispatches: { orderBy: [{ day: 'asc' }, { batch: 'asc' }], select: { day: true, batch: true, quantity: true, status: true, scheduledAt: true } },
     },
   });
@@ -444,41 +444,38 @@ async function handleCheck(chatId, threadId, orderId) {
   const statusIcon = { Pending: '🕐', Dispatching: '📤', Processing: '⏳', Completed: '✅', Partial: '🔄', Cancelled: '❌', Refunded: '💸' };
   const delivered = o.quantity - (o.remains || 0);
   const deliveredPct = o.quantity > 0 ? Math.round((delivered / o.quantity) * 100) : 0;
+  const div = '┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈';
+  const serviceName = o.tier?.group?.name || o.service?.category || '—';
 
   const lines = [
     `🔍 <b>${o.orderId}</b>  ${statusIcon[o.status] || '⚪'} ${o.status}`,
-    '',
+    div,
     `👤 ${o.user?.name || 'Unknown'}${o.tier ? ` · ${o.tier.tier}` : ''}`,
-    `📦 ${o.service?.name || '—'}`,
+    `📦 ${serviceName}`,
     `🔗 ${o.link}`,
-    '',
-    `📊 Qty: <b>${o.quantity.toLocaleString()}</b>  ·  Remains: <b>${(o.remains || 0).toLocaleString()}</b>  (${deliveredPct}% delivered)`,
-    `💰 Charge: <b>${naira(o.charge)}</b>  ·  Cost: <b>${naira(o.cost)}</b>  ·  Margin: ${o.charge > 0 ? Math.round(((o.charge - o.cost) / o.charge) * 100) : 0}%`,
+    div,
+    `📊 Qty: <b>${o.quantity.toLocaleString()}</b>  ·  Remains: <b>${(o.remains || 0).toLocaleString()}</b>  (${deliveredPct}%)`,
   ];
 
-  if (o.campaignDiscount || o.loyaltyDiscount) {
-    lines.push(`🎁 Discounts: campaign ${naira(o.campaignDiscount || 0)}, loyalty ${naira(o.loyaltyDiscount || 0)}`);
-  }
+  if (o.lastError) { lines.push(div); lines.push(`⚠️ ${o.lastError.slice(0, 120)}`); }
 
-  lines.push('');
-  lines.push(`🏭 Provider: <b>${o.service?.provider || '—'}</b>  ·  Ext ID: <code>${o.apiOrderId || '—'}</code>`);
-
-  if (o.lastError) lines.push(`⚠️ Last error: ${o.lastError.slice(0, 100)}`);
+  lines.push(div);
+  lines.push(`🏭 <b>${o.service?.provider || '—'}</b>  ·  Ext: <code>${o.apiOrderId || '—'}</code>`);
 
   if (o.dripDays) {
     const completed = o.dripDispatches.filter(d => d.status === 'completed').length;
     const pending = o.dripDispatches.filter(d => d.status === 'pending').length;
     const processing = o.dripDispatches.filter(d => !['completed', 'pending', 'failed'].includes(d.status)).length;
     const failed = o.dripDispatches.filter(d => d.status === 'failed').length;
-    lines.push('');
+    lines.push(div);
     lines.push(`💧 Drip: <b>${o.dripDays} days</b>  ·  ${o.dripDispatches.length} batches`);
-    lines.push(`   ✅ ${completed} done  ·  ⏳ ${processing} active  ·  🕐 ${pending} pending${failed ? `  ·  ❌ ${failed} failed` : ''}`);
+    lines.push(`   ✅ ${completed}  ⏳ ${processing}  🕐 ${pending}${failed ? `  ❌ ${failed}` : ''}`);
     const nextPending = o.dripDispatches.find(d => d.status === 'pending');
     if (nextPending) lines.push(`   Next: ${new Date(nextPending.scheduledAt).toLocaleString('en-GB', { timeZone: 'Africa/Lagos', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`);
   }
 
-  lines.push('');
-  lines.push(`📅 Created: ${ago(o.createdAt)}${o.dispatchedAt ? `  ·  Dispatched: ${ago(o.dispatchedAt)}` : ''}${o.completedAt ? `  ·  Completed: ${ago(o.completedAt)}` : ''}`);
+  lines.push(div);
+  lines.push(`📅 ${ago(o.createdAt)}${o.dispatchedAt ? `  ·  Sent ${ago(o.dispatchedAt)}` : ''}${o.completedAt ? `  ·  Done ${ago(o.completedAt)}` : ''}`);
   if (o.retryCount > 0) lines.push(`🔁 Retries: ${o.retryCount}`);
 
   await reply(chatId, threadId, lines.join('\n'));
