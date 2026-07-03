@@ -36,6 +36,7 @@ export async function GET(req) {
       allOrdersForPlatforms,
       chartOrders, chartDeposits, chartUsers,
       recentOrders, recentDeposits,
+      recentRefunds,
       monthOrdererIds,
       monthRepeatResult,
       idleUsers,
@@ -96,6 +97,16 @@ export async function GET(req) {
         orderBy: { createdAt: 'desc' },
         take: 15,
         include: { user: { select: { name: true, email: true } } },
+      }),
+      prisma.order.findMany({
+        where: { refundedAt: { not: null }, deletedAt: null },
+        orderBy: { refundedAt: 'desc' },
+        take: 15,
+        include: {
+          user: { select: { name: true, email: true } },
+          service: { select: { name: true, category: true } },
+          tier: { select: { tier: true, group: { select: { name: true } } } },
+        },
       }),
       prisma.order.findMany({
         where: { createdAt: { gte: monthStart }, deletedAt: null },
@@ -281,6 +292,17 @@ export async function GET(req) {
         status: o.status,
         cancelReason: o.status === 'Cancelled' ? (o.lastError || null) : null,
         created: o.createdAt.toISOString(),
+      })),
+      recentRefunds: recentRefunds.map(o => ({
+        id: o.orderId || o.id,
+        service: o.tier?.group?.name || o.service?.name || o.serviceId,
+        platform: o.service?.category || 'unknown',
+        user: o.user?.name || o.user?.email || 'Unknown',
+        charge: (o.charge || 0) / 100,
+        status: o.status,
+        quantity: o.quantity,
+        remains: o.remains || 0,
+        refundedAt: o.refundedAt.toISOString(),
       })),
       recentDeposits: recentDeposits.map(tx => ({
         id: tx.id,
