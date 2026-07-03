@@ -425,6 +425,65 @@ async function handlePending(chatId, threadId) {
   ].join('\n'));
 }
 
+// ── /check NTR-XXXX — order lookup ────────────────────
+async function handleCheck(chatId, threadId, orderId) {
+  if (!orderId) { await reply(chatId, threadId, '⚠️ Usage: <code>/check NTR-1566</code>'); return; }
+  const id = orderId.toUpperCase();
+  const o = await prisma.order.findUnique({
+    where: { orderId: id },
+    include: {
+      user: { select: { name: true } },
+      service: { select: { name: true, category: true, provider: true, externalId: true } },
+      tier: { select: { tier: true } },
+      dripDispatches: { orderBy: [{ day: 'asc' }, { batch: 'asc' }], select: { day: true, batch: true, quantity: true, status: true, scheduledAt: true } },
+    },
+  });
+  if (!o) { await reply(chatId, threadId, `❌ Order <b>${id}</b> not found`); return; }
+
+  const ago = (d) => { if (!d) return '—'; const m = Math.round((Date.now() - new Date(d).getTime()) / 60000); return m < 60 ? `${m}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`; };
+  const statusIcon = { Pending: '🕐', Dispatching: '📤', Processing: '⏳', Completed: '✅', Partial: '🔄', Cancelled: '❌', Refunded: '💸' };
+  const delivered = o.quantity - (o.remains || 0);
+  const deliveredPct = o.quantity > 0 ? Math.round((delivered / o.quantity) * 100) : 0;
+
+  const lines = [
+    `🔍 <b>${o.orderId}</b>  ${statusIcon[o.status] || '⚪'} ${o.status}`,
+    '',
+    `👤 ${o.user?.name || 'Unknown'}${o.tier ? ` · ${o.tier.tier}` : ''}`,
+    `📦 ${o.service?.name || '—'}`,
+    `🔗 ${o.link}`,
+    '',
+    `📊 Qty: <b>${o.quantity.toLocaleString()}</b>  ·  Remains: <b>${(o.remains || 0).toLocaleString()}</b>  (${deliveredPct}% delivered)`,
+    `💰 Charge: <b>${naira(o.charge)}</b>  ·  Cost: <b>${naira(o.cost)}</b>  ·  Margin: ${o.charge > 0 ? Math.round(((o.charge - o.cost) / o.charge) * 100) : 0}%`,
+  ];
+
+  if (o.campaignDiscount || o.loyaltyDiscount) {
+    lines.push(`🎁 Discounts: campaign ${naira(o.campaignDiscount || 0)}, loyalty ${naira(o.loyaltyDiscount || 0)}`);
+  }
+
+  lines.push('');
+  lines.push(`🏭 Provider: <b>${o.service?.provider || '—'}</b>  ·  Ext ID: <code>${o.apiOrderId || '—'}</code>`);
+
+  if (o.lastError) lines.push(`⚠️ Last error: ${o.lastError.slice(0, 100)}`);
+
+  if (o.dripDays) {
+    const completed = o.dripDispatches.filter(d => d.status === 'completed').length;
+    const pending = o.dripDispatches.filter(d => d.status === 'pending').length;
+    const processing = o.dripDispatches.filter(d => !['completed', 'pending', 'failed'].includes(d.status)).length;
+    const failed = o.dripDispatches.filter(d => d.status === 'failed').length;
+    lines.push('');
+    lines.push(`💧 Drip: <b>${o.dripDays} days</b>  ·  ${o.dripDispatches.length} batches`);
+    lines.push(`   ✅ ${completed} done  ·  ⏳ ${processing} active  ·  🕐 ${pending} pending${failed ? `  ·  ❌ ${failed} failed` : ''}`);
+    const nextPending = o.dripDispatches.find(d => d.status === 'pending');
+    if (nextPending) lines.push(`   Next: ${new Date(nextPending.scheduledAt).toLocaleString('en-GB', { timeZone: 'Africa/Lagos', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`);
+  }
+
+  lines.push('');
+  lines.push(`📅 Created: ${ago(o.createdAt)}${o.dispatchedAt ? `  ·  Dispatched: ${ago(o.dispatchedAt)}` : ''}${o.completedAt ? `  ·  Completed: ${ago(o.completedAt)}` : ''}`);
+  if (o.retryCount > 0) lines.push(`🔁 Retries: ${o.retryCount}`);
+
+  await reply(chatId, threadId, lines.join('\n'));
+}
+
 // ── /balance — provider balances ───────────────────────
 async function handleBalance(chatId, threadId) {
   const configured = PROVIDER_IDS.filter(id => isProviderConfigured(id));
@@ -458,6 +517,8 @@ export async function POST(req) {
     const chatId = msg.chat.id;
     const threadId = msg.message_thread_id;
 
+    const arg = msg.text.trim().split(/\s+/)[1];
+
     if (command === '/stats') await handleStats(chatId, threadId);
     else if (command === '/revenue') await handleRevenue(chatId, threadId);
     else if (command === '/orders') await handleOrders(chatId, threadId);
@@ -466,6 +527,7 @@ export async function POST(req) {
     else if (command === '/top') await handleTop(chatId, threadId);
     else if (command === '/pending') await handlePending(chatId, threadId);
     else if (command === '/balance') await handleBalance(chatId, threadId);
+    else if (command === '/check') await handleCheck(chatId, threadId, arg);
     else if (command === '/help') {
       await reply(chatId, threadId, [
         '🔭 <b>WatchTower Commands</b>',
@@ -478,6 +540,7 @@ export async function POST(req) {
         '/top — Top platforms + services this month',
         '/pending — Pending manual deposits',
         '/balance — Provider balances (MTP, DaoSMM, etc.)',
+        '/check NTR-XXXX — Look up any order',
         '/help — This message',
       ].join('\n'));
     }
