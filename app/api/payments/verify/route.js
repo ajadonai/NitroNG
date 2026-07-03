@@ -177,7 +177,7 @@ export async function POST(req) {
     const eventId = `apinfo_${reference}`;
     const hdrs = await getHeaders();
     const { fbp, fbc } = parseFbCookies(hdrs.get('cookie'));
-    trackDeposit({
+    await trackDeposit({
       email: session.email,
       userId: session.id,
       reference,
