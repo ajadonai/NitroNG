@@ -9,6 +9,7 @@ import { cookies, headers } from 'next/headers';
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { tgNewUser } from '@/lib/telegram';
 import { notifyCrewSignup } from '@/lib/commissions';
+import { resolveSignupAttribution } from '@/lib/link-ownership';
 
 export async function GET(req) {
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -128,6 +129,9 @@ export async function GET(req) {
       let tosVersion = '2026-03-23';
       try { const s = await prisma.setting.findUnique({ where: { key: 'tos_version' } }); if (s) tosVersion = s.value; } catch {}
 
+      // Resolve affiliate link at signup time (frozen attribution)
+      const { memberId: referredByMemberId, linkId: referredByLinkId } = await resolveSignupAttribution(viaSlug);
+
       user = await prisma.user.create({
         data: {
           name,
@@ -140,6 +144,8 @@ export async function GET(req) {
           emailVerified: true,
           signupSource: viaSlug || null,
           signupIp,
+          referredByMemberId,
+          referredByLinkId,
           tosAcceptedAt: new Date(),
           tosVersion,
         },
@@ -150,7 +156,7 @@ export async function GET(req) {
         log.error('Google signup', `Welcome email failed: ${err.message}`)
       );
       tgNewUser(name, email, referredBy || viaSlug || null);
-      if (viaSlug) notifyCrewSignup(viaSlug).catch(() => {});
+      if (referredByMemberId) notifyCrewSignup(viaSlug).catch(() => {});
     }
 
     // Sign JWT and set cookie

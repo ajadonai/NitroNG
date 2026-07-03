@@ -41,7 +41,7 @@ export async function GET(req, { params }) {
     log.error('GoRedirect', `DB lookup failed: ${err.message}`);
   }
 
-  if (!link || !link.enabled) {
+  if (!link || !link.enabled || link.archivedAt) {
     return NextResponse.redirect(new URL('/', req.url), 302);
   }
 

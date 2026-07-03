@@ -381,7 +381,7 @@ function FinanceOverviewTab({ dark, t }) {
     const params = new URLSearchParams();
     if (dv?.start) params.set("from", localDate(dv.start));
     if (dv?.end) params.set("to", localDate(dv.end));
-    if (!dv) params.set("range", "30d");
+    if (!dv) params.set("range", "all");
     fetch(`/api/admin/analytics?${params}`).then(res => res.json()).then(d => { setStats(d); setLoading(false); }).catch(() => setLoading(false));
   };
 
@@ -1107,11 +1107,11 @@ function FinanceBreakdownTab({ dark, t }) {
   const [topupSaving, setTopupSaving] = useState(false);
 
   const load = () => {
-    if (!dateValue) return;
     setLoading(true);
     const params = new URLSearchParams();
-    if (dateValue.start) params.set("from", localDate(dateValue.start));
-    if (dateValue.end) params.set("to", localDate(dateValue.end));
+    if (dateValue?.start) params.set("from", localDate(dateValue.start));
+    if (dateValue?.end) params.set("to", localDate(dateValue.end));
+    if (!dateValue) params.set("range", "all");
     if (platform !== "all") params.set("platform", platform);
     if (tier !== "all") params.set("tier", tier);
     if (provider !== "all") params.set("provider", provider);

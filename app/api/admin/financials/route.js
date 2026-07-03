@@ -22,7 +22,8 @@ export async function GET(req) {
     if (fromParam) {
       since = new Date(fromParam);
       if (toParam) { rangeEnd = new Date(toParam); rangeEnd.setHours(23, 59, 59, 999); }
-    } else if (range === '24h') since = new Date(now - 24 * 60 * 60 * 1000);
+    } else if (range === 'all') { since = null; }
+    else if (range === '24h') since = new Date(now - 24 * 60 * 60 * 1000);
     else if (range === '7d') since = new Date(now - 7 * 24 * 60 * 60 * 1000);
     else if (range === '90d') since = new Date(now - 90 * 24 * 60 * 60 * 1000);
     else if (range === 'month') { since = monthStart; }
@@ -32,7 +33,8 @@ export async function GET(req) {
 
     // Build order filters
     const rangeEndOp = fromParam ? 'lte' : 'lt';
-    const orderWhere = { deletedAt: null, status: { notIn: ['Cancelled'] }, createdAt: { gte: since, ...(rangeEnd ? { [rangeEndOp]: rangeEnd } : {}) } };
+    const dateCond = since ? { gte: since, ...(rangeEnd ? { [rangeEndOp]: rangeEnd } : {}) } : undefined;
+    const orderWhere = { deletedAt: null, status: { notIn: ['Cancelled'] }, ...(dateCond && { createdAt: dateCond }) };
     if (platform !== 'all') orderWhere.service = { ...orderWhere.service, category: platform };
     if (tier !== 'all') orderWhere.tierName = tier.charAt(0).toUpperCase() + tier.slice(1);
     if (provider !== 'all') orderWhere.service = { ...orderWhere.service, provider: provider };
@@ -40,7 +42,7 @@ export async function GET(req) {
     const allOrderWhere = { ...orderWhere };
     delete allOrderWhere.status; // For status breakdown include all
 
-    const txWhere = { createdAt: { gte: since, ...(rangeEnd ? { [rangeEndOp]: rangeEnd } : {}) } };
+    const txWhere = dateCond ? { createdAt: dateCond } : {};
 
     const [
       ordersAgg, cancelledAgg,
@@ -90,7 +92,7 @@ export async function GET(req) {
       }),
       // Provider top-ups (actual cash out)
       prisma.providerTopup.aggregate({
-        where: { createdAt: { gte: since, ...(rangeEnd ? { [rangeEndOp]: rangeEnd } : {}) } },
+        where: dateCond ? { createdAt: dateCond } : {},
         _sum: { amount: true },
       }),
     ]);

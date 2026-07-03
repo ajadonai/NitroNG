@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { getCrewSession } from "@/lib/crew";
+import { getTeamIds, verifyLinkOwnership } from "@/lib/link-ownership";
 
 function slugify(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30);
@@ -7,25 +8,6 @@ function slugify(name) {
 
 function logAction(linkId, actorId, action, detail) {
   return prisma.linkLog.create({ data: { linkId, actorId, action, detail } });
-}
-
-async function getTeamIds(chiefId) {
-  const crew = await prisma.crewMember.findMany({
-    where: { leadId: chiefId, status: "approved" },
-    select: { id: true },
-  });
-  return new Set([chiefId, ...crew.map(m => m.id)]);
-}
-
-async function verifyLinkOwnership(linkId, chiefId) {
-  const link = await prisma.acquisitionLink.findUnique({
-    where: { id: linkId },
-    select: { id: true, affiliateId: true },
-  });
-  if (!link) return null;
-  const teamIds = await getTeamIds(chiefId);
-  if (!teamIds.has(link.affiliateId)) return null;
-  return link;
 }
 
 export async function GET(req) {
@@ -99,19 +81,11 @@ export async function POST(req) {
     const slug = customSlug?.trim() ? slugify(customSlug) : slugify(name);
     if (!slug) return Response.json({ error: "Invalid slug" }, { status: 400 });
 
-    const [maxLinksRow, activeCount] = await Promise.all([
-      prisma.setting.findUnique({ where: { key: 'affiliate_max_links_chief' } }),
-      prisma.acquisitionLink.count({ where: { affiliateId: member.id, archivedAt: null } }),
-    ]);
-    const maxLinks = parseInt(maxLinksRow?.value) || 5;
-    if (activeCount >= maxLinks) return Response.json({ error: `Maximum ${maxLinks} active links allowed` }, { status: 400 });
-
-    const existing = await prisma.acquisitionLink.findUnique({ where: { slug } });
-    if (existing) return Response.json({ error: "That slug is already taken" }, { status: 409 });
+    const teamIds = await getTeamIds(member.id);
+    const teamArray = [...teamIds];
 
     let assigneeName = member.name;
     if (affiliateId && affiliateId !== member.id) {
-      const teamIds = await getTeamIds(member.id);
       if (!teamIds.has(affiliateId)) return Response.json({ error: "Can only assign to your own team members" }, { status: 403 });
       const affiliate = await prisma.crewMember.findUnique({ where: { id: affiliateId }, select: { name: true, status: true } });
       if (!affiliate || affiliate.status !== "approved") return Response.json({ error: "Invalid affiliate" }, { status: 400 });
@@ -119,9 +93,22 @@ export async function POST(req) {
     }
 
     const assigneeId = affiliateId || member.id;
-    const link = await prisma.acquisitionLink.create({
-      data: { name: name.trim(), slug, affiliateId: assigneeId },
-    });
+    let link;
+    try {
+      link = await prisma.$transaction(async (tx) => {
+        const [maxLinksRow, activeCount] = await Promise.all([
+          tx.setting.findUnique({ where: { key: 'affiliate_max_links' } }),
+          tx.acquisitionLink.count({ where: { affiliateId: { in: teamArray }, archivedAt: null } }),
+        ]);
+        const maxLinks = parseInt(maxLinksRow?.value) || 5;
+        if (activeCount >= maxLinks) throw Object.assign(new Error('limit'), { _limit: maxLinks });
+        return tx.acquisitionLink.create({ data: { name: name.trim(), slug, affiliateId: assigneeId } });
+      }, { isolationLevel: 'Serializable' });
+    } catch (e) {
+      if (e._limit) return Response.json({ error: `Maximum ${e._limit} active links allowed` }, { status: 400 });
+      if (e.code === 'P2002') return Response.json({ error: "That slug is already taken" }, { status: 409 });
+      throw e;
+    }
 
     logAction(link.id, member.id, "created", `Created and assigned to ${assigneeName}`).catch(() => {});
 
@@ -188,7 +175,7 @@ export async function DELETE(req) {
     const owned = await verifyLinkOwnership(id, member.id);
     if (!owned) return Response.json({ error: "Link not found" }, { status: 404 });
 
-    await prisma.acquisitionLink.update({ where: { id }, data: { archivedAt: new Date() } });
+    await prisma.acquisitionLink.update({ where: { id }, data: { archivedAt: new Date(), enabled: false } });
     logAction(id, member.id, "deleted", "Link archived").catch(() => {});
     return Response.json({ ok: true });
   } catch (e) {

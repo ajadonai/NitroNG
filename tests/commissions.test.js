@@ -9,6 +9,9 @@ const mockTx = {
     updateMany: vi.fn(),
     aggregate: vi.fn(),
   },
+  affiliatePayout: {
+    findMany: vi.fn().mockResolvedValue([]),
+  },
   crewMember: {
     update: vi.fn(),
   },
@@ -168,10 +171,10 @@ describe('releaseHeldCommissions', () => {
 // getMemberEarnings
 // ──────────────────────────────────────
 describe('getMemberEarnings', () => {
-  it('calculates crew earnings as marketerAmount only', async () => {
-    mockPrisma.affiliateCommission.aggregate.mockResolvedValueOnce({
-      _sum: { marketerAmount: 1000 },
-    });
+  it('calculates crew earnings as marketerAmount plus any historical leadAmount', async () => {
+    mockPrisma.affiliateCommission.aggregate
+      .mockResolvedValueOnce({ _sum: { marketerAmount: 1000 } })
+      .mockResolvedValueOnce({ _sum: { leadAmount: null } });
 
     const result = await getMemberEarnings('m1', 'crew');
 
@@ -213,5 +216,62 @@ describe('getMemberEarnings', () => {
     expect(result.directEarned).toBe(0);
     expect(result.teamEarned).toBe(0);
     expect(result.totalApproved).toBe(0);
+  });
+});
+
+// ──────────────────────────────────────
+// voidCommissions — payout auto-rejection
+// ──────────────────────────────────────
+describe('voidCommissions payout reconciliation', () => {
+  it('auto-rejects pending payouts that exceed post-void available balance', async () => {
+    // Member has 1000 approved, pending payout of 1000. Voiding sets approved to 0.
+    mockTx.$queryRaw
+      .mockResolvedValueOnce([
+        { id: 'c1', memberId: 'm1', leadId: null, marketerAmount: 1000, leadAmount: 0, status: 'approved' },
+      ])
+      .mockResolvedValueOnce([{ totalPaid: 0, role: 'crew' }]);
+
+    mockTx.$executeRaw.mockResolvedValue(1);
+
+    mockTx.affiliatePayout.findMany.mockResolvedValueOnce([
+      { id: 'p1', amount: 1000, createdAt: new Date() },
+    ]);
+
+    // Post-void: no approved commissions left
+    mockTx.affiliateCommission.aggregate
+      .mockResolvedValueOnce({ _sum: { marketerAmount: 0 } })
+      .mockResolvedValueOnce({ _sum: { leadAmount: 0 } });
+
+    const count = await voidCommissions('order1', 'test');
+
+    expect(count).toBe(1);
+    // 1 void UPDATE + 1 totalEarned decrement + 1 payout rejection = 3
+    expect(mockTx.$executeRaw).toHaveBeenCalledTimes(3);
+  });
+
+  it('keeps payouts that are still covered after void', async () => {
+    // Member has 2000 approved across two commissions, 1000 pending payout.
+    // Voiding one (1000) leaves 1000 approved — payout of 1000 still fits.
+    mockTx.$queryRaw
+      .mockResolvedValueOnce([
+        { id: 'c1', memberId: 'm1', leadId: null, marketerAmount: 1000, leadAmount: 0, status: 'approved' },
+      ])
+      .mockResolvedValueOnce([{ totalPaid: 0, role: 'crew' }]);
+
+    mockTx.$executeRaw.mockResolvedValue(1);
+
+    mockTx.affiliatePayout.findMany.mockResolvedValueOnce([
+      { id: 'p1', amount: 1000, createdAt: new Date() },
+    ]);
+
+    // Post-void: 1000 still approved from other commission
+    mockTx.affiliateCommission.aggregate
+      .mockResolvedValueOnce({ _sum: { marketerAmount: 1000 } })
+      .mockResolvedValueOnce({ _sum: { leadAmount: 0 } });
+
+    await voidCommissions('order1', 'test');
+
+    // 1 void UPDATE + 1 totalEarned decrement = 2 (no payout rejection)
+    expect(mockTx.$executeRaw).toHaveBeenCalledTimes(2);
   });
 });

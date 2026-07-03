@@ -46,7 +46,7 @@ export async function GET(req) {
     const orders = await prisma.order.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, speed: true, refill: true, refillDays: true, group: { select: { name: true, type: true } } } } },
+      include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, speed: true, refill: true, refillDays: true, group: { select: { name: true, type: true } } } }, dripDispatches: { where: { status: { in: ['pending', 'dispatching', 'processing'] } }, select: { scheduledAt: true }, orderBy: { scheduledAt: 'desc' }, take: 1 } },
     });
 
     return Response.json({
@@ -73,6 +73,7 @@ export async function GET(req) {
         created: o.createdAt.toISOString(),
         serviceType: o.tier?.group?.type || null,
         dripDays: o.dripDays || null,
+        dripEndAt: o.dripDispatches?.[0]?.scheduledAt?.toISOString() || null,
         queuedBehind: o.queuedBehind || null,
       })),
     });

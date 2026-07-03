@@ -93,7 +93,7 @@ export function AdminCrewPage({ dark, t }) {
   const [payoutsLoading, setPayoutsLoading] = useState(false);
   const [payoutFilter, setPayoutFilter] = useState("all");
   const [refInput, setRefInput] = useState({});
-  const [tierCfg, setTierCfg] = useState({ crew_enabled: "1", affiliate_starter_rate: "30", affiliate_growth_rate: "40", affiliate_pro_rate: "50", affiliate_growth_threshold: "50", affiliate_pro_threshold: "150", affiliate_lead_split: "40", affiliate_hold_days: "7", affiliate_min_payout: "5000", affiliate_min_order: "1000", affiliate_max_links_chief: "5" });
+  const [tierCfg, setTierCfg] = useState({ crew_enabled: "1", affiliate_starter_rate: "30", affiliate_growth_rate: "40", affiliate_pro_rate: "50", affiliate_growth_threshold: "50", affiliate_pro_threshold: "150", affiliate_lead_split: "40", affiliate_hold_days: "7", affiliate_min_payout: "5000", affiliate_min_order: "1000", affiliate_max_links: "5" });
   const [tierCfgLoading, setTierCfgLoading] = useState(false);
   const [tierCfgSaving, setTierCfgSaving] = useState(false);
   const [activityLogs, setActivityLogs] = useState([]);
@@ -132,7 +132,7 @@ export function AdminCrewPage({ dark, t }) {
   const loadTierCfg = useCallback(async () => {
     setTierCfgLoading(true);
     try {
-      const res = await fetch("/api/admin/settings?keys=crew_enabled,affiliate_starter_rate,affiliate_growth_rate,affiliate_pro_rate,affiliate_growth_threshold,affiliate_pro_threshold,affiliate_lead_split,affiliate_hold_days,affiliate_min_payout,affiliate_min_order,affiliate_max_links_chief");
+      const res = await fetch("/api/admin/settings?keys=crew_enabled,affiliate_starter_rate,affiliate_growth_rate,affiliate_pro_rate,affiliate_growth_threshold,affiliate_pro_threshold,affiliate_lead_split,affiliate_hold_days,affiliate_min_payout,affiliate_min_order,affiliate_max_links");
       const d = await res.json();
       if (d.settings) setTierCfg(prev => ({ ...prev, ...d.settings }));
     } catch {} finally { setTierCfgLoading(false); }
@@ -516,7 +516,7 @@ export function AdminCrewPage({ dark, t }) {
                 <SettingRow label="Hold period" hint="Days a commission is held after an order completes, before it's payable." hair={hair} t={t}><SettingField k="affiliate_hold_days" unit="days" dark={dark} t={t} tierCfg={tierCfg} setTierCfg={setTierCfg} /></SettingRow>
                 <SettingRow label="Minimum payout" hint="Smallest amount a member can request." hair={hair} t={t}><SettingField k="affiliate_min_payout" pre="₦" dark={dark} t={t} tierCfg={tierCfg} setTierCfg={setTierCfg} /></SettingRow>
                 <SettingRow label="Minimum order to earn" hint="Orders below this earn no commission." hair={hair} t={t}><SettingField k="affiliate_min_order" pre="₦" dark={dark} t={t} tierCfg={tierCfg} setTierCfg={setTierCfg} /></SettingRow>
-                <SettingRow label="Max links per chief" hint="How many tracking links a chief can create." hair={hair} t={t}><SettingField k="affiliate_max_links_chief" unit="links" dark={dark} t={t} tierCfg={tierCfg} setTierCfg={setTierCfg} /></SettingRow>
+                <SettingRow label="Max links per chief" hint="How many tracking links a chief can create." hair={hair} t={t}><SettingField k="affiliate_max_links" unit="links" dark={dark} t={t} tierCfg={tierCfg} setTierCfg={setTierCfg} /></SettingRow>
               </div>
 
               {/* Save */}

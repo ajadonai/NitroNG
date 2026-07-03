@@ -10,6 +10,7 @@ import { sendWelcomeEmail } from '@/lib/email';
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { tgNewUser } from '@/lib/telegram';
 import { notifyCrewSignup } from '@/lib/commissions';
+import { resolveSignupAttribution } from '@/lib/link-ownership';
 
 export async function POST(req) {
   try {
@@ -95,6 +96,9 @@ export async function POST(req) {
     let tosVersion = '2026-03-23';
     try { const s = await prisma.setting.findUnique({ where: { key: 'tos_version' } }); if (s) tosVersion = s.value; } catch {}
 
+    // Resolve affiliate link at signup time (frozen attribution)
+    const { memberId: referredByMemberId, linkId: referredByLinkId } = await resolveSignupAttribution(via);
+
     // Create user
     const derivedName = (firstName && lastName) ? `${firstName} ${lastName}` : name.trim();
     const user = await prisma.user.create({
@@ -110,6 +114,8 @@ export async function POST(req) {
         emailVerified: true,
         signupSource: via || null,
         signupIp: ip,
+        referredByMemberId,
+        referredByLinkId,
         tosAcceptedAt: new Date(),
         tosVersion,
       },
@@ -120,7 +126,7 @@ export async function POST(req) {
     );
 
     tgNewUser(derivedName, email, referredBy || via || null);
-    if (via) notifyCrewSignup(via).catch(() => {});
+    if (referredByMemberId) notifyCrewSignup(via).catch(() => {});
 
     // Sign JWT and set cookie
     const token = signUserToken(user);

@@ -34,7 +34,7 @@ export async function POST(req) {
     if (!slug || typeof slug !== 'string') return Response.json({ ok: false }, { status: 400 });
 
     const link = await prisma.acquisitionLink.findUnique({ where: { slug: slug.toLowerCase() } });
-    if (!link || !link.enabled) return Response.json({ ok: false }, { status: 404 });
+    if (!link || !link.enabled || link.archivedAt) return Response.json({ ok: false }, { status: 404 });
 
     const hdrs = await headers();
     const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown';
