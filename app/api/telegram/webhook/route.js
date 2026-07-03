@@ -452,7 +452,7 @@ async function handleCheck(chatId, threadId, orderId) {
     div,
     `👤 ${o.user?.name || 'Unknown'}${o.tier ? ` · ${o.tier.tier}` : ''}`,
     `📦 ${serviceName}`,
-    `🔗 ${o.link}`,
+    `🔗 <a href="${o.link}">${o.service?.category || 'Link'}</a>`,
     div,
     `${statusIcon[o.status] || '⚪'} <b>${o.status}</b>  ·  ${deliveredPct}% delivered`,
     `📊 Qty: <b>${o.quantity.toLocaleString()}</b>  ·  Remains: <b>${(o.remains || 0).toLocaleString()}</b>`,
