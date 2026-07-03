@@ -433,7 +433,7 @@ async function handleCheck(chatId, threadId, orderId) {
     where: { orderId: id },
     include: {
       user: { select: { name: true } },
-      service: { select: { name: true, category: true, provider: true, externalId: true } },
+      service: { select: { name: true, category: true, provider: true, apiId: true } },
       tier: { select: { tier: true } },
       dripDispatches: { orderBy: [{ day: 'asc' }, { batch: 'asc' }], select: { day: true, batch: true, quantity: true, status: true, scheduledAt: true } },
     },
@@ -519,30 +519,35 @@ export async function POST(req) {
 
     const arg = msg.text.trim().split(/\s+/)[1];
 
-    if (command === '/stats') await handleStats(chatId, threadId);
-    else if (command === '/revenue') await handleRevenue(chatId, threadId);
-    else if (command === '/orders') await handleOrders(chatId, threadId);
-    else if (command === '/profit') await handleProfit(chatId, threadId);
-    else if (command === '/users') await handleUsers(chatId, threadId);
-    else if (command === '/top') await handleTop(chatId, threadId);
-    else if (command === '/pending') await handlePending(chatId, threadId);
-    else if (command === '/balance') await handleBalance(chatId, threadId);
-    else if (command === '/check') await handleCheck(chatId, threadId, arg);
-    else if (command === '/help') {
-      await reply(chatId, threadId, [
-        '🔭 <b>WatchTower Commands</b>',
-        '',
-        '/stats — Full dashboard snapshot',
-        '/revenue — Revenue + money in (today / month / all time)',
-        '/orders — Order counts + status breakdown',
-        '/profit — Profit, margins, cost, cash flow',
-        '/users — Signups, active users, top depositors',
-        '/top — Top platforms + services this month',
-        '/pending — Pending manual deposits',
-        '/balance — Provider balances (MTP, DaoSMM, etc.)',
-        '/check NTR-XXXX — Look up any order',
-        '/help — This message',
-      ].join('\n'));
+    try {
+      if (command === '/stats') await handleStats(chatId, threadId);
+      else if (command === '/revenue') await handleRevenue(chatId, threadId);
+      else if (command === '/orders') await handleOrders(chatId, threadId);
+      else if (command === '/profit') await handleProfit(chatId, threadId);
+      else if (command === '/users') await handleUsers(chatId, threadId);
+      else if (command === '/top') await handleTop(chatId, threadId);
+      else if (command === '/pending') await handlePending(chatId, threadId);
+      else if (command === '/balance') await handleBalance(chatId, threadId);
+      else if (command === '/check') await handleCheck(chatId, threadId, arg);
+      else if (command === '/help') {
+        await reply(chatId, threadId, [
+          '🔭 <b>WatchTower Commands</b>',
+          '',
+          '/stats — Full dashboard snapshot',
+          '/revenue — Revenue + money in (today / month / all time)',
+          '/orders — Order counts + status breakdown',
+          '/profit — Profit, margins, cost, cash flow',
+          '/users — Signups, active users, top depositors',
+          '/top — Top platforms + services this month',
+          '/pending — Pending manual deposits',
+          '/balance — Provider balances (MTP, DaoSMM, etc.)',
+          '/check NTR-XXXX — Look up any order',
+          '/help — This message',
+        ].join('\n'));
+      }
+    } catch (err) {
+      log.error('WatchTower command', err.message);
+      await reply(chatId, threadId, `❌ Error: ${err.message?.slice(0, 120) || 'unknown'}`);
     }
 
     return Response.json({ ok: true });
