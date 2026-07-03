@@ -448,13 +448,14 @@ async function handleCheck(chatId, threadId, orderId) {
   const serviceName = o.tier?.group?.name || o.service?.category || '—';
 
   const lines = [
-    `🔍 <b>${o.orderId}</b>  ${statusIcon[o.status] || '⚪'} ${o.status}`,
+    `🔍 <b>${o.orderId}</b>`,
     div,
     `👤 ${o.user?.name || 'Unknown'}${o.tier ? ` · ${o.tier.tier}` : ''}`,
     `📦 ${serviceName}`,
     `🔗 ${o.link}`,
     div,
-    `📊 Qty: <b>${o.quantity.toLocaleString()}</b>  ·  Remains: <b>${(o.remains || 0).toLocaleString()}</b>  (${deliveredPct}%)`,
+    `${statusIcon[o.status] || '⚪'} <b>${o.status}</b>  ·  ${deliveredPct}% delivered`,
+    `📊 Qty: <b>${o.quantity.toLocaleString()}</b>  ·  Remains: <b>${(o.remains || 0).toLocaleString()}</b>`,
   ];
 
   if (o.lastError) { lines.push(div); lines.push(`⚠️ ${o.lastError.slice(0, 120)}`); }
