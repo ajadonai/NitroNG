@@ -286,6 +286,66 @@ function DepositFeed({ deposits }) {
   );
 }
 
+// ─── Refund feed ────────────────────────────────────────────────
+function RefundFeed({ refunds }) {
+  if (!refunds || refunds.length === 0) return (
+    <div style={{
+      background: 'rgba(255,255,255,.03)',
+      border: '1px solid rgba(255,255,255,.07)',
+      borderRadius: 12,
+      padding: '10px 14px',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600 }}>Refunded Orders</div>
+      <div style={{ fontSize: 11, color: '#444', marginTop: 6 }}>No refunds yet</div>
+    </div>
+  );
+
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,.03)',
+      border: '1px solid rgba(255,255,255,.07)',
+      borderRadius: 12,
+      padding: '10px 14px',
+      height: '100%',
+      overflow: 'hidden',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 6, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#f0abfc', animation: 'pulse-dot 2s ease-in-out infinite' }} />
+        Refunded Orders
+        <span className="m" style={{ marginLeft: 'auto', fontSize: 9, color: '#555', fontWeight: 500 }}>{refunds.length}</span>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} className="pulse-feed-scroll">
+        {refunds.map((o, i) => {
+          const isPartial = o.status === 'Partial';
+          return (
+            <div key={o.id} style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '0 4px',
+              borderTop: i > 0 ? '1px solid rgba(255,255,255,.04)' : 'none',
+              animation: i < 20 ? `pulse-feed-in .5s ease ${i * 40}ms both` : undefined,
+            }}>
+              <div style={{ width: 40, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{
+                  width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                  background: isPartial ? '#fdba74' : '#f0abfc',
+                  boxShadow: `0 0 6px ${isPartial ? '#fdba74' : '#f0abfc'}66`,
+                }} />
+                <span style={{ fontSize: 9, color: isPartial ? '#fdba74' : '#f0abfc', fontWeight: 600, letterSpacing: 0.3 }}>{isPartial ? 'Part' : 'Full'}</span>
+              </div>
+              <div style={{ flex: 1, fontSize: 11, color: '#f5f3f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
+                {o.service}
+              </div>
+              <div className="m" style={{ fontSize: 11, color: '#f0abfc', whiteSpace: 'nowrap', fontWeight: 600, width: 52, textAlign: 'right', flexShrink: 0 }}>{fmtNaira(o.charge)}</div>
+              <div style={{ fontSize: 10, color: '#555', whiteSpace: 'nowrap', width: 44, textAlign: 'right', flexShrink: 0 }}>{timeAgo(o.refundedAt)}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Live feed ──────────────────────────────────────────────────
 function cancelLabel(reason) {
   if (!reason) return 'by provider';
@@ -684,7 +744,7 @@ export default function PulseDashboard({ secretKey }) {
       <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent)', margin: '2px 0' }} />
 
       {/* Row 4: Platforms + Status | Live Feed | Deposits */}
-      <div className="pulse-row4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, flex: 1, minHeight: 0 }}>
+      <div className="pulse-row4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10, flex: 1, minHeight: 0 }}>
         <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: 8 }}>
           <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column' }}>
             <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 10 }}>Top Platforms</div>
@@ -711,7 +771,7 @@ export default function PulseDashboard({ secretKey }) {
           {(() => {
             const statusColors = {
               Completed: '#6ee7b7', Processing: '#a5b4fc', Pending: '#fcd34d',
-              Partial: '#fdba74', Cancelled: '#a1a1aa',
+              Partial: '#fdba74', Cancelled: '#a1a1aa', Refunded: '#f0abfc',
             };
             const items = (data.byStatus || []).reduce((acc, s) => {
               if (s.status === 'Failed' || s.status === 'Rejected') {
@@ -752,6 +812,7 @@ export default function PulseDashboard({ secretKey }) {
         </div>
         <LiveFeed orders={data.recentOrders} />
         <DepositFeed deposits={data.recentDeposits} />
+        <RefundFeed refunds={data.recentRefunds} />
       </div>
 
       <style>{`
