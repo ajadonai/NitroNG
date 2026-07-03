@@ -425,6 +425,63 @@ async function handlePending(chatId, threadId) {
   ].join('\n'));
 }
 
+// ── /check NTR-XXXX — order lookup ────────────────────
+async function handleCheck(chatId, threadId, orderId) {
+  if (!orderId) { await reply(chatId, threadId, '⚠️ Usage: <code>/check NTR-1566</code>'); return; }
+  const id = orderId.toUpperCase();
+  const o = await prisma.order.findUnique({
+    where: { orderId: id },
+    include: {
+      user: { select: { name: true } },
+      service: { select: { name: true, category: true, provider: true } },
+      tier: { select: { tier: true, group: { select: { name: true, platform: true } } } },
+      dripDispatches: { orderBy: [{ day: 'asc' }, { batch: 'asc' }], select: { day: true, batch: true, quantity: true, status: true, scheduledAt: true } },
+    },
+  });
+  if (!o) { await reply(chatId, threadId, `❌ Order <b>${id}</b> not found`); return; }
+
+  const ago = (d) => { if (!d) return '—'; const m = Math.round((Date.now() - new Date(d).getTime()) / 60000); return m < 60 ? `${m}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`; };
+  const statusIcon = { Pending: '🕐', Dispatching: '📤', Processing: '⏳', Completed: '✅', Partial: '🔄', Cancelled: '❌', Refunded: '💸' };
+  const delivered = o.quantity - (o.remains || 0);
+  const deliveredPct = o.quantity > 0 ? Math.round((delivered / o.quantity) * 100) : 0;
+  const div = '┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈';
+  const serviceName = o.tier?.group?.name || o.service?.category || '—';
+
+  const lines = [
+    `🔍 <b>${o.orderId}</b>`,
+    div,
+    `👤 ${o.user?.name || 'Unknown'}${o.tier ? ` · ${o.tier.tier}` : ''}`,
+    `📦 ${serviceName}`,
+    `🔗 <a href="${o.link}">${o.service?.category || 'Link'}</a>`,
+    div,
+    `${statusIcon[o.status] || '⚪'} <b>${o.status}</b>  ·  ${deliveredPct}% delivered`,
+    `📊 Qty: <b>${o.quantity.toLocaleString()}</b>  ·  Remains: <b>${(o.remains || 0).toLocaleString()}</b>`,
+  ];
+
+  if (o.lastError) { lines.push(div); lines.push(`⚠️ ${o.lastError.slice(0, 120)}`); }
+
+  lines.push(div);
+  lines.push(`🏭 <b>${o.service?.provider || '—'}</b>  ·  Ext: <code>${o.apiOrderId || '—'}</code>`);
+
+  if (o.dripDays) {
+    const completed = o.dripDispatches.filter(d => d.status === 'completed').length;
+    const pending = o.dripDispatches.filter(d => d.status === 'pending').length;
+    const processing = o.dripDispatches.filter(d => !['completed', 'pending', 'failed'].includes(d.status)).length;
+    const failed = o.dripDispatches.filter(d => d.status === 'failed').length;
+    lines.push(div);
+    lines.push(`💧 Drip: <b>${o.dripDays} days</b>  ·  ${o.dripDispatches.length} batches`);
+    lines.push(`   ✅ ${completed}  ⏳ ${processing}  🕐 ${pending}${failed ? `  ❌ ${failed}` : ''}`);
+    const nextPending = o.dripDispatches.find(d => d.status === 'pending');
+    if (nextPending) lines.push(`   Next: ${new Date(nextPending.scheduledAt).toLocaleString('en-GB', { timeZone: 'Africa/Lagos', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`);
+  }
+
+  lines.push(div);
+  lines.push(`📅 ${ago(o.createdAt)}${o.dispatchedAt ? `  ·  Sent ${ago(o.dispatchedAt)}` : ''}${o.completedAt ? `  ·  Done ${ago(o.completedAt)}` : ''}`);
+  if (o.retryCount > 0) lines.push(`🔁 Retries: ${o.retryCount}`);
+
+  await reply(chatId, threadId, lines.join('\n'));
+}
+
 // ── /balance — provider balances ───────────────────────
 async function handleBalance(chatId, threadId) {
   const configured = PROVIDER_IDS.filter(id => isProviderConfigured(id));
@@ -458,28 +515,37 @@ export async function POST(req) {
     const chatId = msg.chat.id;
     const threadId = msg.message_thread_id;
 
-    if (command === '/stats') await handleStats(chatId, threadId);
-    else if (command === '/revenue') await handleRevenue(chatId, threadId);
-    else if (command === '/orders') await handleOrders(chatId, threadId);
-    else if (command === '/profit') await handleProfit(chatId, threadId);
-    else if (command === '/users') await handleUsers(chatId, threadId);
-    else if (command === '/top') await handleTop(chatId, threadId);
-    else if (command === '/pending') await handlePending(chatId, threadId);
-    else if (command === '/balance') await handleBalance(chatId, threadId);
-    else if (command === '/help') {
-      await reply(chatId, threadId, [
-        '🔭 <b>WatchTower Commands</b>',
-        '',
-        '/stats — Full dashboard snapshot',
-        '/revenue — Revenue + money in (today / month / all time)',
-        '/orders — Order counts + status breakdown',
-        '/profit — Profit, margins, cost, cash flow',
-        '/users — Signups, active users, top depositors',
-        '/top — Top platforms + services this month',
-        '/pending — Pending manual deposits',
-        '/balance — Provider balances (MTP, DaoSMM, etc.)',
-        '/help — This message',
-      ].join('\n'));
+    const arg = msg.text.trim().split(/\s+/)[1];
+
+    try {
+      if (command === '/stats') await handleStats(chatId, threadId);
+      else if (command === '/revenue') await handleRevenue(chatId, threadId);
+      else if (command === '/orders') await handleOrders(chatId, threadId);
+      else if (command === '/profit') await handleProfit(chatId, threadId);
+      else if (command === '/users') await handleUsers(chatId, threadId);
+      else if (command === '/top') await handleTop(chatId, threadId);
+      else if (command === '/pending') await handlePending(chatId, threadId);
+      else if (command === '/balance') await handleBalance(chatId, threadId);
+      else if (command === '/check') await handleCheck(chatId, threadId, arg);
+      else if (command === '/help') {
+        await reply(chatId, threadId, [
+          '🔭 <b>WatchTower Commands</b>',
+          '',
+          '/stats — Full dashboard snapshot',
+          '/revenue — Revenue + money in (today / month / all time)',
+          '/orders — Order counts + status breakdown',
+          '/profit — Profit, margins, cost, cash flow',
+          '/users — Signups, active users, top depositors',
+          '/top — Top platforms + services this month',
+          '/pending — Pending manual deposits',
+          '/balance — Provider balances (MTP, DaoSMM, etc.)',
+          '/check NTR-XXXX — Look up any order',
+          '/help — This message',
+        ].join('\n'));
+      }
+    } catch (err) {
+      log.error('WatchTower command', err.message);
+      await reply(chatId, threadId, `❌ Error: ${err.message?.slice(0, 120) || 'unknown'}`);
     }
 
     return Response.json({ ok: true });
