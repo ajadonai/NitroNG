@@ -3,6 +3,7 @@ import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { parseFbCookies } from '@/lib/meta-capi';
 
 async function getGatewayKeys(gatewayId) {
   // Try Settings DB first
@@ -74,6 +75,13 @@ export async function POST(req) {
         note: `${gateway} deposit ₦${amountNum.toLocaleString()}${couponId ? ` [coupon:${couponId}]` : ''}`,
       },
     });
+
+    const { fbp, fbc } = parseFbCookies(req.headers.get('cookie'));
+    await prisma.user.update({ where: { id: user.id }, data: {
+      lastIp: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || undefined,
+      lastUa: req.headers.get('user-agent') || undefined,
+      lastFbp: fbp || undefined, lastFbc: fbc || undefined,
+    }});
 
     // ═══ FLUTTERWAVE ═══
     if (gateway === 'flutterwave') {

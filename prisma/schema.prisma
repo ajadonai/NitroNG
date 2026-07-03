@@ -63,6 +63,10 @@ model User {
   orderTourCompleted Boolean @default(false)
   signupSource        String?
   signupIp            String?
+  lastIp              String?
+  lastUa              String?  @db.Text
+  lastFbp             String?
+  lastFbc             String?
   referredByMemberId  String?
   referredByLinkId    String?
   tosAcceptedAt   DateTime?

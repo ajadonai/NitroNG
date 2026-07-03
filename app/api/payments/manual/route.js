@@ -3,6 +3,7 @@ import { log } from '@/lib/logger';
 import { getCurrentUser } from '@/lib/auth';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { tgManualPending } from '@/lib/telegram';
+import { parseFbCookies } from '@/lib/meta-capi';
 
 // POST — create a manual transfer request (returns bank details + creates pending tx)
 export async function POST(req) {
@@ -61,6 +62,13 @@ export async function POST(req) {
         note: `Manual bank transfer ₦${amountNum.toLocaleString()}${couponId ? ` [coupon:${couponId}]` : ''} [awaiting_confirmation]`,
       },
     });
+
+    const { fbp, fbc } = parseFbCookies(req.headers.get('cookie'));
+    await prisma.user.update({ where: { id: user.id }, data: {
+      lastIp: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || undefined,
+      lastUa: req.headers.get('user-agent') || undefined,
+      lastFbp: fbp || undefined, lastFbc: fbc || undefined,
+    }});
 
     return Response.json({
       bankName, accountNumber, accountName,
