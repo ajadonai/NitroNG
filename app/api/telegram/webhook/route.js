@@ -444,7 +444,7 @@ async function handleCheck(chatId, threadId, orderId) {
   const statusIcon = { Pending: '🕐', Dispatching: '📤', Processing: '⏳', Completed: '✅', Partial: '🔄', Cancelled: '❌', Refunded: '💸' };
   const delivered = o.quantity - (o.remains || 0);
   const deliveredPct = o.quantity > 0 ? Math.round((delivered / o.quantity) * 100) : 0;
-  const div = '┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈';
+  const div = '┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈';
   const serviceName = o.tier?.group?.name || o.service?.category || '—';
 
   const lines = [
