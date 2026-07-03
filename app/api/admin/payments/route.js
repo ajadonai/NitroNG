@@ -303,8 +303,8 @@ export async function POST(req) {
         }
       } catch (err) { log.error('Deferred referral (manual)', err.message); }
 
-      const approvedUser = await prisma.user.findUnique({ where: { id: tx.userId }, select: { name: true, email: true } });
-      await trackDeposit({ email: approvedUser?.email, userId: tx.userId, reference: tx.reference, amountKobo: tx.amount });
+      const approvedUser = await prisma.user.findUnique({ where: { id: tx.userId }, select: { name: true, email: true, phone: true, lastIp: true, lastUa: true, lastFbp: true, lastFbc: true } });
+      await trackDeposit({ email: approvedUser?.email, phone: approvedUser?.phone, userId: tx.userId, reference: tx.reference, amountKobo: tx.amount, clientIp: approvedUser?.lastIp, userAgent: approvedUser?.lastUa, fbp: approvedUser?.lastFbp, fbc: approvedUser?.lastFbc });
       await logActivity(admin.name, `Approved manual deposit ₦${(tx.amount / 100).toLocaleString()} for ${approvedUser?.name || approvedUser?.email || tx.userId}`, 'payment');
       try { tgPayment(approvedUser?.name || approvedUser?.email || 'Unknown', tx.amount, 0, 'Manual', admin.name); } catch {}
       return Response.json({ success: true });
