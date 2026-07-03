@@ -102,7 +102,7 @@ export async function POST(req) {
       try {
         const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true, name: true } });
         if (u) {
-          trackDeposit({ email: u.email, userId: tx.userId, reference, amountKobo });
+          await trackDeposit({ email: u.email, userId: tx.userId, reference, amountKobo });
           tgPayment(u.name || u.email, amountKobo, couponBonus || 0, 'Flutterwave');
         }
       } catch {}

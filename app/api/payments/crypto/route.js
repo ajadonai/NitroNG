@@ -206,7 +206,7 @@ export async function GET(req) {
 
       try {
         const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true } });
-        if (u) trackDeposit({ email: u.email, userId: tx.userId, reference, amountKobo: tx.amount });
+        if (u) await trackDeposit({ email: u.email, userId: tx.userId, reference, amountKobo: tx.amount });
       } catch {}
 
       // Deferred referral bonus
