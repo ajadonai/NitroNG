@@ -1,5 +1,8 @@
 import prisma from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req) {
   if (!process.env.ANALYTICS_READ_TOKEN)
     return Response.json({ error: "Not configured" }, { status: 503 });
@@ -95,11 +98,15 @@ export async function GET(req) {
   }
 
   const result = { generatedAt: now.toISOString(), windows };
+  const noCache = {
+    "Cache-Control": "no-store, no-cache, must-revalidate",
+    "CDN-Cache-Control": "no-store",
+  };
   const pretty = new URL(req.url).searchParams.has("pretty");
   if (pretty) {
     return new Response(JSON.stringify(result, null, 2), {
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...noCache },
     });
   }
-  return Response.json(result);
+  return Response.json(result, { headers: noCache });
 }

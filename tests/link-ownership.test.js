@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock prisma
 const mockPrisma = {
   acquisitionLink: { findUnique: vi.fn() },
   crewMember: { findMany: vi.fn() },
@@ -8,29 +7,11 @@ const mockPrisma = {
 
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
 
+const { getTeamIds, verifyLinkOwnership } = await import('@/lib/link-ownership');
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
-
-// Replicate the ownership logic from the route
-async function getTeamIds(chiefId) {
-  const crew = await mockPrisma.crewMember.findMany({
-    where: { leadId: chiefId, status: "approved" },
-    select: { id: true },
-  });
-  return new Set([chiefId, ...crew.map(m => m.id)]);
-}
-
-async function verifyLinkOwnership(linkId, chiefId) {
-  const link = await mockPrisma.acquisitionLink.findUnique({
-    where: { id: linkId },
-    select: { id: true, affiliateId: true },
-  });
-  if (!link) return null;
-  const teamIds = await getTeamIds(chiefId);
-  if (!teamIds.has(link.affiliateId)) return null;
-  return link;
-}
 
 describe('link ownership verification', () => {
   it('allows chief to access their own link', async () => {
@@ -51,7 +32,7 @@ describe('link ownership verification', () => {
 
   it("blocks chief from accessing another chief's link", async () => {
     mockPrisma.acquisitionLink.findUnique.mockResolvedValue({ id: 'link1', affiliateId: 'chief2' });
-    mockPrisma.crewMember.findMany.mockResolvedValue([{ id: 'crew1' }]); // chief1's crew
+    mockPrisma.crewMember.findMany.mockResolvedValue([{ id: 'crew1' }]);
 
     const result = await verifyLinkOwnership('link1', 'chief1');
     expect(result).toBeNull();
@@ -59,7 +40,7 @@ describe('link ownership verification', () => {
 
   it("blocks chief from accessing another chief's crew member's link", async () => {
     mockPrisma.acquisitionLink.findUnique.mockResolvedValue({ id: 'link1', affiliateId: 'otherCrew' });
-    mockPrisma.crewMember.findMany.mockResolvedValue([{ id: 'crew1' }]); // chief1's crew doesn't include otherCrew
+    mockPrisma.crewMember.findMany.mockResolvedValue([{ id: 'crew1' }]);
 
     const result = await verifyLinkOwnership('link1', 'chief1');
     expect(result).toBeNull();
@@ -73,7 +54,6 @@ describe('link ownership verification', () => {
   });
 
   it('chief cannot assign links to another chief\'s member', async () => {
-    // Team membership check: chief1's team is [chief1, crew1]
     mockPrisma.crewMember.findMany.mockResolvedValue([{ id: 'crew1' }]);
     const teamIds = await getTeamIds('chief1');
 
@@ -96,7 +76,7 @@ describe('hierarchy invariants', () => {
       { id: 'c1' }, { id: 'c2' }, { id: 'c3' },
     ]);
     const teamIds = await getTeamIds('chief1');
-    expect(teamIds.size).toBe(4); // chief + 3 crew
+    expect(teamIds.size).toBe(4);
     expect(teamIds.has('chief1')).toBe(true);
     expect(teamIds.has('c1')).toBe(true);
     expect(teamIds.has('c2')).toBe(true);

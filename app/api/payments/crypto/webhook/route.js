@@ -97,7 +97,7 @@ export async function POST(req) {
       try {
         const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true, name: true } });
         if (u) {
-          trackDeposit({ email: u.email, userId: tx.userId, reference: order_id, amountKobo: tx.amount });
+          await trackDeposit({ email: u.email, userId: tx.userId, reference: order_id, amountKobo: tx.amount });
           tgPayment(u.name || u.email, tx.amount, couponBonus || 0, 'Crypto');
         }
       } catch {}

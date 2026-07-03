@@ -28,8 +28,8 @@ export async function GET(req) {
     let hasDripTable = true;
     const include = {
       user: { select: { name: true, email: true, phone: true } },
-      service: { select: { name: true, category: true, provider: true, apiId: true } },
-      tier: { select: { tier: true, group: { select: { name: true, platform: true, type: true } } } },
+      service: { select: { name: true, category: true, provider: true, apiId: true, costPer1k: true } },
+      tier: { select: { tier: true, sellPer1k: true, group: { select: { name: true, platform: true, type: true } }, service: { select: { apiId: true, costPer1k: true } } } },
     };
     try {
       await prisma.dripDispatch.findFirst({ take: 1 });
@@ -43,7 +43,19 @@ export async function GET(req) {
       include,
     });
 
+    const orderIds = orders.map(o => o.orderId).filter(Boolean);
+    const refundTotals = orderIds.length > 0
+      ? await prisma.transaction.groupBy({ by: ['reference'], where: { type: 'refund', status: 'Completed', reference: { in: orderIds.flatMap(id => [`REF-${id}`, `ADM-REF-${id}`]) } }, _sum: { amount: true } })
+      : [];
+    const refundMap = {};
+    for (const r of refundTotals) {
+      const oid = r.reference.replace(/^(ADM-)?REF-/, '');
+      refundMap[oid] = (refundMap[oid] || 0) + (r._sum.amount || 0);
+    }
+
     const sensitive = canSeeSensitive(admin);
+    const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
+    const usdRate = Number(usdRateSetting?.value || 1600);
 
     return Response.json({
       orders: orders.map(o => ({
@@ -68,6 +80,7 @@ export async function GET(req) {
         status: o.status,
         apiOrderId: o.apiOrderId,
         dripDays: o.dripDays || null,
+        dripEndAt: o.dripDispatches?.filter(d => !['completed', 'partial', 'failed'].includes(d.status)).sort((a, b) => b.scheduledAt - a.scheduledAt)[0]?.scheduledAt?.toISOString() || null,
         dripDispatches: o.dripDispatches?.length > 0 ? o.dripDispatches.map(d => ({ id: d.id, day: d.day, batch: d.batch, qty: d.quantity, status: d.status, apiOrderId: d.apiOrderId, scheduled: d.scheduledAt?.toISOString(), dispatched: d.dispatchedAt?.toISOString(), completed: d.completedAt?.toISOString(), error: d.lastError })) : null,
         batchId: o.batchId || null,
         lastError: o.lastError || null,
@@ -75,6 +88,10 @@ export async function GET(req) {
         retryCount: o.retryCount || 0,
         created: o.createdAt.toISOString(),
         serviceType: o.tier?.group?.type || null,
+        refundedAt: o.refundedAt?.toISOString() || null,
+        refundedTotal: refundMap[o.orderId] ? refundMap[o.orderId] / 100 : 0,
+        tierServiceApiId: o.tier?.service?.apiId || null,
+        tierCurrentPrice: o.tier?.sellPer1k ? Math.round(Number(o.tier.sellPer1k) * o.quantity / 1000) / 100 : null,
       })),
     });
   } catch (err) {
@@ -286,9 +303,9 @@ export async function POST(req) {
     }
 
     if (action === 'refund') {
-      const { refundType, amount } = body;
-      if (!refundType || !['full', 'partial'].includes(refundType)) {
-        return Response.json({ error: 'Refund type must be "full" or "partial"' }, { status: 400 });
+      const { percent } = body;
+      if (!percent || ![25, 50, 100].includes(percent)) {
+        return Response.json({ error: 'Percent must be 25, 50, or 100' }, { status: 400 });
       }
 
       const existing = await prisma.transaction.aggregate({
@@ -301,13 +318,15 @@ export async function POST(req) {
       if (maxRefundable <= 0) return Response.json({ error: 'Order already fully refunded' }, { status: 400 });
 
       let refundAmount;
-      if (refundType === 'full') {
+      if (percent === 100) {
         refundAmount = maxRefundable;
       } else {
-        refundAmount = Math.round((amount || 0) * 100);
-        if (refundAmount <= 0) return Response.json({ error: 'Amount must be greater than zero' }, { status: 400 });
-        if (refundAmount > maxRefundable) return Response.json({ error: `Amount exceeds maximum refundable (₦${(maxRefundable / 100).toLocaleString()})` }, { status: 400 });
+        refundAmount = Math.round(order.charge * percent / 100);
+        if (refundAmount > maxRefundable) refundAmount = maxRefundable;
       }
+      if (refundAmount <= 0) return Response.json({ error: 'Nothing left to refund' }, { status: 400 });
+
+      const label = percent === 100 ? 'full' : `${percent}%`;
 
       await prisma.$transaction(async (tx) => {
         await tx.user.update({ where: { id: order.userId }, data: { balance: { increment: refundAmount } } });
@@ -316,7 +335,7 @@ export async function POST(req) {
             userId: order.userId, type: 'refund', amount: refundAmount,
             method: 'wallet', status: 'Completed',
             reference: `ADM-REF-${order.orderId || order.id}`,
-            note: `Admin refund — ${refundType}${refundType === 'partial' ? ` (₦${(refundAmount / 100).toLocaleString()})` : ''}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} previously refunded)` : ''}`,
+            note: `Admin refund — ${label} (₦${(refundAmount / 100).toLocaleString()})${alreadyRefunded > 0 ? ` · ₦${(alreadyRefunded / 100).toLocaleString()} previously refunded` : ''}`,
           },
         });
         await tx.order.update({ where: { id: order.id }, data: { refundedAt: new Date() } });
@@ -331,7 +350,7 @@ export async function POST(req) {
       } catch {}
 
       const refundMsg = `₦${(refundAmount / 100).toLocaleString()}`;
-      await logActivity(admin.name, `Refunded ${refundMsg} for order ${orderId} (${refundType})`, 'order');
+      await logActivity(admin.name, `Refunded ${refundMsg} for order ${orderId} (${label})`, 'order');
       return Response.json({ success: true, message: `${refundMsg} refunded to customer` });
     }
 
@@ -446,7 +465,7 @@ export async function POST(req) {
       const { link: newLink } = body;
       const fullOrder = await prisma.order.findFirst({
         where: { OR: [{ orderId }, { id: orderId }], deletedAt: null },
-        include: { service: true, user: { select: { id: true, balance: true } } },
+        include: { service: true, tier: { include: { service: true } }, user: { select: { id: true, balance: true } } },
       });
       if (!fullOrder) return Response.json({ error: 'Order not found' }, { status: 404 });
       if (fullOrder.status !== 'Cancelled') return Response.json({ error: 'Only cancelled orders can be re-dispatched' }, { status: 400 });
@@ -458,19 +477,36 @@ export async function POST(req) {
         return Response.json({ error: `Insufficient balance (has ₦${(fullOrder.user.balance / 100).toLocaleString()}, needs ₦${(fullOrder.charge / 100).toLocaleString()})` }, { status: 400 });
       }
 
+      let service = fullOrder.service;
+      const tierService = fullOrder.tier?.service;
+      let serviceSwapped = false;
+      if (tierService && tierService.id !== service.id) {
+        service = tierService;
+        serviceSwapped = true;
+      }
+
+      let costUpdate = {};
+      if (serviceSwapped) {
+        const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
+        const usdRate = Number(usdRateSetting?.value || 1600);
+        const newCost = Math.round((Number(service.costPer1k) * usdRate / 1000) * fullOrder.quantity / 100) * 100;
+        costUpdate = { serviceId: service.id, cost: newCost };
+      }
+
       const hasDrip = await prisma.dripDispatch.findFirst({ where: { orderId: fullOrder.id }, select: { id: true } });
 
       await prisma.$transaction(async (tx) => {
         await tx.$executeRaw`UPDATE users SET balance = balance - ${fullOrder.charge} WHERE id = ${fullOrder.user.id}`;
-        await tx.order.update({ where: { id: fullOrder.id }, data: { link, status: 'Processing', apiOrderId: null, lastError: null, dispatchedAt: new Date() } });
-        await tx.transaction.create({ data: { userId: fullOrder.user.id, type: 'charge', amount: fullOrder.charge, method: 'wallet', status: 'Completed', note: `Re-dispatch ${orderId}` } });
+        const now = new Date();
+        const originalDate = fullOrder.createdAt.toISOString().split('T')[0];
+        await tx.order.update({ where: { id: fullOrder.id }, data: { link, status: 'Processing', apiOrderId: null, lastError: null, dispatchedAt: now, redispatchedAt: now, createdAt: now, ...costUpdate } });
+        await tx.transaction.create({ data: { userId: fullOrder.user.id, type: 'charge', amount: fullOrder.charge, method: 'wallet', status: 'Completed', note: `Re-dispatch ${orderId} (original: ${originalDate})` } });
         if (hasDrip) {
           await tx.dripDispatch.updateMany({ where: { orderId: fullOrder.id, status: { in: ['failed', 'cancelled'] } }, data: { status: 'pending', apiOrderId: null, lastError: null, dispatchedAt: null } });
         }
       });
 
       const { placeOrder } = await import('@/lib/smm');
-      const service = fullOrder.service;
       const prov = service.provider || 'mtp';
       const apiType = (service.apiType || '').toLowerCase();
       const extra = {};
@@ -503,8 +539,9 @@ export async function POST(req) {
             } else {
               await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'pending', dispatchedAt: null } });
             }
-            await logActivity(admin.name, `Re-dispatched ${orderId}${newLink ? ' (new link)' : ''} → batch ${first.batch}: ${batchApiId || 'no ID'}`, 'order');
-            return Response.json({ success: true, status: 'Processing', message: `Re-dispatched batch ${first.batch}: ${batchApiId || 'pending'}` });
+            const swapNote = serviceSwapped ? ` (service ${fullOrder.service.apiId}→${service.apiId})` : '';
+            await logActivity(admin.name, `Re-dispatched ${orderId}${newLink ? ' (new link)' : ''}${swapNote} → batch ${first.batch}: ${batchApiId || 'no ID'}`, 'order');
+            return Response.json({ success: true, status: 'Processing', message: `Re-dispatched batch ${first.batch}: ${batchApiId || 'pending'}${serviceSwapped ? ` (service updated to ${service.apiId})` : ''}` });
           } catch (err) {
             await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'failed', lastError: err.message.slice(0, 500) } });
             return Response.json({ error: `Provider error: ${err.message}` }, { status: 502 });
@@ -519,8 +556,9 @@ export async function POST(req) {
         if (apiOrderId) {
           await prisma.order.update({ where: { id: fullOrder.id }, data: { apiOrderId } });
         }
-        await logActivity(admin.name, `Re-dispatched ${orderId}${newLink ? ' (new link)' : ''} → ${apiOrderId || 'no ID'}`, 'order');
-        return Response.json({ success: true, status: 'Processing', apiOrderId, message: `Re-dispatched: ${apiOrderId || 'pending'}` });
+        const swapNote = serviceSwapped ? ` (service ${fullOrder.service.apiId}→${service.apiId})` : '';
+        await logActivity(admin.name, `Re-dispatched ${orderId}${newLink ? ' (new link)' : ''}${swapNote} → ${apiOrderId || 'no ID'}`, 'order');
+        return Response.json({ success: true, status: 'Processing', apiOrderId, message: `Re-dispatched: ${apiOrderId || 'pending'}${serviceSwapped ? ` (service updated to ${service.apiId})` : ''}` });
       } catch (err) {
         await prisma.order.update({ where: { id: fullOrder.id }, data: { status: 'Cancelled', lastError: err.message.slice(0, 500), dispatchedAt: null } });
         return Response.json({ error: `Provider error: ${err.message}` }, { status: 502 });

@@ -435,6 +435,24 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
         </div>
       )}
 
+      {/* ── Growth Package bundle breakdown ── */}
+      {selTier && isPackage && svcName.includes("growth package") && (
+        <div className="mx-5 max-md:mx-3.5 mt-3 rounded-lg py-2.5 px-3" style={{ background: dark ? "rgba(59,130,246,.06)" : "rgba(59,130,246,.04)", border: `1px solid ${dark ? "rgba(59,130,246,.15)" : "rgba(59,130,246,.1)"}` }}>
+          <div className="flex items-start gap-2 mb-2">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={dark ? "#60a5fa" : "#2563eb"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><path d="M20 12V8H6a2 2 0 01-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 000 4h4v-4h-4z"/></svg>
+            <div className="text-[11.5px] leading-[1.6] font-semibold" style={{ color: dark ? "#60a5fa" : "#2563eb" }}>
+              {selTier.tier === "Budget" && "1,000 Followers + 200 Likes + 200 Shares"}
+              {selTier.tier === "Standard" && "5,000 Followers + 1,000 Likes + 1,000 Shares"}
+              {selTier.tier === "Premium" && "10,000 Followers + 2,000 Likes + 2,000 Shares"}
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div className="text-[10.5px] leading-[1.5]" style={{ color: dark ? "#fbbf24" : "#92400e" }}>Likes and shares will be delivered to your most recent post.</div>
+          </div>
+        </div>
+      )}
+
       {/* ── Form fields ── */}
       <div className="p-5 max-md:p-3.5">
       {selTier && <>

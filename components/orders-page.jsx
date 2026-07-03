@@ -33,12 +33,21 @@ const DRIP_CONFIG = {
   reviews:    { batchSize: 5,    intervalHours: 2 },
 };
 
-function estimateDelivery(serviceType, quantity, remains) {
+function estimateDelivery(serviceType, quantity, remains, dripEndAt) {
+  if (dripEndAt) {
+    const msLeft = new Date(dripEndAt).getTime() - Date.now();
+    if (msLeft <= 0) return null;
+    const hoursLeft = msLeft / 3600000;
+    if (hoursLeft < 1) return `< 1 hour`;
+    if (hoursLeft < 24) { const h = Math.ceil(hoursLeft); return `~${h} ${h === 1 ? 'hour' : 'hours'}`; }
+    const d = Math.ceil(hoursLeft / 24);
+    return `~${d} ${d === 1 ? 'day' : 'days'}`;
+  }
   const cfg = DRIP_CONFIG[(serviceType || '').toLowerCase()];
   if (!cfg) return null;
   if (remains != null && remains <= 0) return null;
-  const left = remains != null && remains < quantity ? remains : quantity;
-  const batches = Math.floor(left / cfg.batchSize);
+  const q = remains != null && remains < quantity ? remains : quantity;
+  const batches = Math.floor(q / cfg.batchSize);
   if (batches < 2) {
     if (cfg.intervalHours < 1) return `< ${Math.round(cfg.intervalHours * 60)} minutes`;
     return `< ${cfg.intervalHours} ${cfg.intervalHours === 1 ? 'hour' : 'hours'}`;
@@ -252,7 +261,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
 
       {/* Delivery progress */}
       {(() => {
-        const estTime = estimateDelivery(o.serviceType, qty, o.remains);
+        const estTime = estimateDelivery(o.serviceType, qty, o.remains, o.dripEndAt);
         const isActive = !isCancelled && !isComplete && o.status !== "Partial";
         const isProcessing = isActive && !waiting && pct > 0 && pct < 100;
         return (
