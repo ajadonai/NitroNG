@@ -17,10 +17,9 @@ export async function GET() {
       serviceCount = services;
     } catch {}
 
-    const USER_BASE = 1145;
-    const ORDER_BASE = 19961;
+    const ORDER_BASE = 20000;
     const PROCESSING_BASE = 20;
-    const displayUsers = userCount + USER_BASE;
+    const displayUsers = Math.floor(userCount / 100) * 100;
     const displayOrders = orderCount + ORDER_BASE;
 
     let deliveryRate, processingCount;
