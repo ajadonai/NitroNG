@@ -89,7 +89,11 @@ export async function GET(req) {
         created: o.createdAt.toISOString(),
         serviceType: o.tier?.group?.type || null,
         refundedAt: o.refundedAt?.toISOString() || null,
-        refundedTotal: refundMap[o.orderId] ? refundMap[o.orderId] / 100 : 0,
+        redispatchedAt: o.redispatchedAt?.toISOString() || null,
+        refundedTotal: (() => {
+          const raw = refundMap[o.orderId] || 0;
+          return o.redispatchedAt ? Math.max(0, raw - o.charge) / 100 : raw / 100;
+        })(),
         tierServiceApiId: o.tier?.service?.apiId || null,
         tierCurrentPrice: o.tier?.sellPer1k ? Math.round(Number(o.tier.sellPer1k) * o.quantity / 1000) / 100 : null,
       })),
@@ -308,8 +312,11 @@ export async function POST(req) {
         return Response.json({ error: 'Percent must be 25, 50, or 100' }, { status: 400 });
       }
 
+      const refRefs = order.redispatchedAt
+        ? [`ADM-REF-${order.orderId}`]
+        : [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`];
       const existing = await prisma.transaction.aggregate({
-        where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
+        where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: refRefs } },
         _sum: { amount: true },
       });
       const alreadyRefunded = existing._sum.amount || 0;
