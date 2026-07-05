@@ -336,7 +336,7 @@ function RefundFeed({ refunds }) {
               <div style={{ flex: 1, fontSize: 11, color: '#f5f3f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
                 {o.service}
               </div>
-              <div className="m" style={{ fontSize: 11, color: '#f0abfc', whiteSpace: 'nowrap', fontWeight: 600, width: 52, textAlign: 'right', flexShrink: 0 }}>{fmtNaira(o.charge)}</div>
+              <div className="m" style={{ fontSize: 11, color: '#f0abfc', whiteSpace: 'nowrap', fontWeight: 600, width: 52, textAlign: 'right', flexShrink: 0 }}>{fmtNaira(o.refunded || o.charge)}</div>
               <div style={{ fontSize: 10, color: '#555', whiteSpace: 'nowrap', width: 44, textAlign: 'right', flexShrink: 0 }}>{timeAgo(o.refundedAt)}</div>
             </div>
           );
