@@ -12,6 +12,7 @@
     { "path": "/api/cron/drip", "schedule": "5,25,45 * * * *" },
     { "path": "/api/cron/digest", "schedule": "0 5,11,17 * * *" },
     { "path": "/api/cron/digest-eod", "schedule": "59 22 * * *" },
-    { "path": "/api/cron/sync-services", "schedule": "0,30 1,2,3,4 * * 0" }
+    { "path": "/api/cron/sync-services", "schedule": "0,30 1,2,3,4 * * 0" },
+    { "path": "/api/cron/cohort-stats", "schedule": "0 1 * * *" }
   ]
 }
