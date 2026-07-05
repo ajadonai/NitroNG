@@ -432,7 +432,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
 
 
 /* ── Batch row ── */
-function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpandedOrder, doAction, actionLoading, doBatchAction, batchActionLoading, confirm, toast, onNavigate }) {
+function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpandedOrder, doAction, actionLoading, doBatchAction, batchActionLoading, confirm, toast, onNavigate, waNum }) {
   const hasAttentionOrders = batch.orders.some(isAttention);
   const totalCharge = batch.orders.reduce((s, o) => s + (o.charge || 0), 0);
   const isLoading = batchActionLoading === batch.batchId;
@@ -709,7 +709,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavi
       <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
         {pagedGroups.length > 0 ? pagedGroups.map((item, i) => {
           if (item.type === "batch") {
-            return <BatchRow key={item.batchId} batch={item} dark={dark} t={t} expanded={expandedBatch === item.batchId} onToggle={(id) => { setExpandedBatch(expandedBatch === id ? null : id); setExpandedBatchOrder(null); setExpanded(null); }} expandedOrder={expandedBatchOrder} setExpandedOrder={setExpandedBatchOrder} doAction={doAction} actionLoading={actionLoading} doBatchAction={doBatchAction} batchActionLoading={batchActionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} />;
+            return <BatchRow key={item.batchId} batch={item} dark={dark} t={t} expanded={expandedBatch === item.batchId} onToggle={(id) => { setExpandedBatch(expandedBatch === id ? null : id); setExpandedBatchOrder(null); setExpanded(null); }} expandedOrder={expandedBatchOrder} setExpandedOrder={setExpandedBatchOrder} doAction={doAction} actionLoading={actionLoading} doBatchAction={doBatchAction} batchActionLoading={batchActionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} />;
           }
           const o = item.order;
           const attn = isAttention(o);
