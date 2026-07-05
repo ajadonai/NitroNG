@@ -832,7 +832,7 @@ export default function AdminOrdersPage({ dark, t }) {
       {refundPrompt && (() => {
         const alreadyRefunded = refundPrompt.refundedTotal || 0;
         const remaining = Math.max(0, refundPrompt.charge - alreadyRefunded);
-        const refundPctOf = (pct) => pct === 100 ? remaining : Math.round(refundPrompt.charge * pct / 100 * 100) / 100;
+        const refundPctOf = (pct) => pct === 100 ? remaining : Math.round(remaining * pct / 100 * 100) / 100;
         const amber = dark ? "#fbbf24" : "#c2710a";
         const amberBg = dark ? "rgba(251,191,36,.10)" : "rgba(217,119,6,.08)";
         const amberBrd = dark ? "rgba(251,191,36,.32)" : "rgba(217,119,6,.30)";

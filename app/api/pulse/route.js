@@ -293,17 +293,29 @@ export async function GET(req) {
         cancelReason: o.status === 'Cancelled' ? (o.lastError || null) : null,
         created: o.createdAt.toISOString(),
       })),
-      recentRefunds: recentRefunds.map(o => ({
-        id: o.orderId || o.id,
-        service: o.tier?.group?.name || o.service?.name || o.serviceId,
-        platform: o.service?.category || 'unknown',
-        user: o.user?.name || o.user?.email || 'Unknown',
-        charge: (o.charge || 0) / 100,
-        status: o.status,
-        quantity: o.quantity,
-        remains: o.remains || 0,
-        refundedAt: o.refundedAt.toISOString(),
-      })),
+      recentRefunds: await (async () => {
+        const refOrderIds = recentRefunds.map(o => o.orderId || o.id);
+        const refTotals = refOrderIds.length > 0
+          ? await prisma.transaction.groupBy({ by: ['reference'], where: { type: 'refund', status: 'Completed', reference: { in: refOrderIds.flatMap(id => [`REF-${id}`, `ADM-REF-${id}`]) } }, _sum: { amount: true } })
+          : [];
+        const refMap = {};
+        for (const r of refTotals) { const oid = r.reference.replace(/^(ADM-)?REF-/, ''); refMap[oid] = (refMap[oid] || 0) + (r._sum.amount || 0); }
+        return recentRefunds.map(o => {
+          const oid = o.orderId || o.id;
+          return {
+            id: oid,
+            service: o.tier?.group?.name || o.service?.name || o.serviceId,
+            platform: o.service?.category || 'unknown',
+            user: o.user?.name || o.user?.email || 'Unknown',
+            charge: (o.charge || 0) / 100,
+            refunded: (refMap[oid] || 0) / 100,
+            status: o.status,
+            quantity: o.quantity,
+            remains: o.remains || 0,
+            refundedAt: o.refundedAt.toISOString(),
+          };
+        });
+      })(),
       recentDeposits: recentDeposits.map(tx => ({
         id: tx.id,
         user: tx.user?.name || tx.user?.email || 'Unknown',

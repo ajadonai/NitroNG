@@ -321,7 +321,7 @@ export async function POST(req) {
       if (percent === 100) {
         refundAmount = maxRefundable;
       } else {
-        refundAmount = Math.round(order.charge * percent / 100);
+        refundAmount = Math.round(maxRefundable * percent / 100);
         if (refundAmount > maxRefundable) refundAmount = maxRefundable;
       }
       if (refundAmount <= 0) return Response.json({ error: 'Nothing left to refund' }, { status: 400 });
