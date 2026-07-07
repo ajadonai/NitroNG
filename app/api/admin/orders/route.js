@@ -519,7 +519,7 @@ export async function POST(req) {
       const { link: newLink } = body;
       const fullOrder = await prisma.order.findFirst({
         where: { OR: [{ orderId }, { id: orderId }], deletedAt: null },
-        include: { service: true, tier: { include: { service: true, group: true } }, user: { select: { id: true } }, dripDispatches: true },
+        include: { service: true, tier: { include: { service: true, group: true } }, user: { select: { id: true, balance: true } }, dripDispatches: true },
       });
       if (!fullOrder) return Response.json({ error: 'Order not found' }, { status: 404 });
       if (fullOrder.status !== 'Cancelled') return Response.json({ error: 'Only cancelled orders can be re-dispatched' }, { status: 400 });
@@ -550,6 +550,11 @@ export async function POST(req) {
       const remainingQty = fullOrder.quantity - delivered;
       if (remainingQty <= 0) return Response.json({ error: 'No remaining quantity to redispatch' }, { status: 400 });
 
+      const newCharge = Math.round(fullOrder.charge * remainingQty / fullOrder.quantity);
+      if (fullOrder.user.balance < newCharge) {
+        return Response.json({ error: `Insufficient balance (has ₦${(fullOrder.user.balance / 100).toLocaleString()}, needs ₦${(newCharge / 100).toLocaleString()})` }, { status: 400 });
+      }
+
       const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
       const usdRate = Number(usdRateSetting?.value || 1600);
       const newCost = Math.round((Number(service.costPer1k) * usdRate / 1000) * remainingQty / 100) * 100;
@@ -572,13 +577,21 @@ export async function POST(req) {
 
       const newId = await nextOrderId();
       const newOrder = await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`UPDATE users SET balance = balance - ${newCharge} WHERE id = ${fullOrder.user.id} AND balance >= ${newCharge}`;
         await tx.order.update({ where: { id: fullOrder.id }, data: { redispatchedAt: new Date() } });
         const child = await tx.order.create({
           data: {
             orderId: newId, userId: fullOrder.userId, serviceId: service.id, tierId: fullOrder.tierId,
-            link, quantity: remainingQty, charge: 0, cost: newCost, status: 'Processing',
+            link, quantity: remainingQty, charge: newCharge, cost: newCost, status: 'Processing',
             parentOrderId: fullOrder.orderId, comments: fullOrder.comments,
             ...(dripSchedule ? { dripDays: fullOrder.dripDays || 1 } : {}),
+          },
+        });
+        await tx.transaction.create({
+          data: {
+            userId: fullOrder.userId, type: 'order', amount: -newCharge,
+            method: 'wallet', status: 'Completed', reference: newId,
+            note: `Re-dispatch ${fullOrder.orderId} → ${newId} (${remainingQty} qty)`,
           },
         });
         if (dripSchedule) {
