@@ -1,5 +1,17 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+
+export function hasConsent() {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem('nitro-cookie-consent') === 'accepted';
+}
+
+export function initPixel() {
+  if (typeof window === 'undefined' || window.fbq) return;
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  window.fbq('init','27456534517306114');
+  window.fbq('track','PageView');
+}
 
 export default function CookieBanner() {
   const [show, setShow] = useState(false);
@@ -8,6 +20,10 @@ export default function CookieBanner() {
 
   useEffect(() => {
     const consent = localStorage.getItem('nitro-cookie-consent');
+    if (consent === 'accepted') {
+      initPixel();
+      return;
+    }
     if (!consent) {
       const timer = setTimeout(() => setShow(true), 2000);
       return () => clearTimeout(timer);
@@ -32,10 +48,21 @@ export default function CookieBanner() {
     return () => { window.removeEventListener('storage', check); observer.disconnect(); clearInterval(interval); };
   }, []);
 
-  const dismiss = (choice) => {
+  const dismiss = useCallback((choice) => {
     localStorage.setItem('nitro-cookie-consent', choice);
+    if (choice === 'accepted') initPixel();
     setExiting(true);
-  };
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      localStorage.removeItem('nitro-cookie-consent');
+      setExiting(false);
+      setShow(true);
+    };
+    window.addEventListener('nitro-cookie-reset', handler);
+    return () => window.removeEventListener('nitro-cookie-reset', handler);
+  }, []);
 
   if (!show) return null;
 
@@ -54,7 +81,7 @@ export default function CookieBanner() {
         <div className="flex-1 flex items-center gap-2.5">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c47d8e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-70"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           <p className="text-xs leading-normal" style={{ color: dark ? 'rgba(255,255,255,.7)' : 'rgba(28,27,25,.7)' }}>
-            We use cookies to keep you signed in and improve your experience.{' '}
+            We use essential cookies to keep you signed in. Non-essential cookies (analytics, advertising) are only used with your consent.{' '}
             <a href="/cookie" className="font-semibold" style={{ color: dark ? '#c47d8e' : '#8b4a5e' }}>Cookie policy</a>
           </p>
         </div>
