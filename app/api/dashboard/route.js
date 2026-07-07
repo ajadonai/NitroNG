@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
+import { getBonusInfo } from '@/lib/bonus-credit';
 
 export async function GET() {
   try {
@@ -157,6 +158,7 @@ export async function GET() {
     const nextTier = currentIdx < loyaltyTiers.length - 1 ? loyaltyTiers[currentIdx + 1] : null;
 
     const tc = (s) => s ? s.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase()) : '';
+    const bonusCredit = await getBonusInfo(prisma, user.id);
 
     return ok({
       user: {
@@ -188,6 +190,7 @@ export async function GET() {
         tosVersion: user.tosVersion || null,
         orderTourCompleted: user.orderTourCompleted,
         welcomeBonusEligible: !user.firstDepositBonusPaid,
+        bonusCredit: bonusCredit || null,
       },
       orders: orders.map(o => ({
         id: o.orderId || o.id,

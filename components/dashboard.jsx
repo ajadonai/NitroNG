@@ -1291,6 +1291,7 @@ function DashboardInner({ initialData }) {
               <div className="shrink-0 ml-4 py-1.5 px-3 max-md:py-1 max-md:px-2.5 rounded-xl text-right" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Balance</div>
                 <div className="m text-lg max-md:text-base font-semibold" style={{ color: t.green }}>{fN(user?.balance || 0)}</div>
+                {user?.bonusCredit && <div className="text-[9px] mt-0.5" style={{ color: t.accent }}>₦{(user.bonusCredit.amount / 100).toLocaleString()} bonus — expires in {Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))}d</div>}
               </div>
             </div>
             <div className="page-divider" style={{ background: t.cardBorder }} />

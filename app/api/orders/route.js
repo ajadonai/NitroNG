@@ -10,6 +10,7 @@ import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
 import { tgNewOrder } from '@/lib/telegram';
 import { voidCommissions } from '@/lib/commissions';
+import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -178,6 +179,7 @@ export async function PATCH(req) {
           data: { status: 'Cancelled', queuedBehind: null, lastError: 'user_cancelled', refundedAt: new Date() },
         });
         if (claimed.count === 0) return false;
+        await restoreBonusForRefund(tx, order.id);
         await tx.user.update({ where: { id: session.id }, data: { balance: { increment: order.charge } } });
         await tx.transaction.create({
           data: {
@@ -282,8 +284,7 @@ export async function PATCH(req) {
 
       // Step 1: Deduct balance FIRST
       const newOrder = await prisma.$transaction(async (tx) => {
-        const updated = await tx.$executeRaw`UPDATE users SET balance = balance - ${charge} WHERE id = ${session.id} AND balance >= ${charge}`;
-        if (updated === 0) throw new Error('INSUFFICIENT_BALANCE');
+        await deductBalance(tx, session.id, charge);
         const created = await tx.order.create({
           data: {
             orderId: newOrderId, userId: session.id, serviceId: order.serviceId,
@@ -300,6 +301,7 @@ export async function PATCH(req) {
             ...(reorderDripSchedule ? { dripDays: 1 } : {}),
           },
         });
+        await trackBonusConsumption(tx, session.id, created.id, charge);
         if (reorderDripSchedule) {
           await tx.dripDispatch.createMany({
             data: reorderDripSchedule.dispatches.map(d => ({
@@ -696,10 +698,7 @@ export async function POST(req) {
 
     // Step 1: Atomic balance deduct FIRST — before sending to provider
     const result = await prisma.$transaction(async (tx) => {
-      const updated = await tx.$executeRaw`UPDATE users SET balance = balance - ${charge} WHERE id = ${session.id} AND balance >= ${charge}`;
-      if (updated === 0) {
-        throw new Error('INSUFFICIENT_BALANCE');
-      }
+      await deductBalance(tx, session.id, charge);
       const order = await tx.order.create({
         data: {
           orderId,
@@ -710,7 +709,7 @@ export async function POST(req) {
           quantity: qty,
           charge,
           cost,
-          comments: comments ? comments.split('\n').map(l => l.trim().replace(/^[""“”]+|[""“”]+$/g, '').trim()).filter(Boolean).join('\n').slice(0, 5000) : null,
+          comments: comments ? comments.split('\n').map(l => l.trim().replace(/^[“”””]+|[“”””]+$/g, '').trim()).filter(Boolean).join('\n').slice(0, 5000) : null,
           loyaltyDiscount,
           campaignDiscount: promoDiscount,
           campaignPercent: promoPercent,
@@ -722,6 +721,7 @@ export async function POST(req) {
           ...(dripSchedule ? { dripDays: validDripDays || 1 } : {}),
         },
       });
+      await trackBonusConsumption(tx, session.id, order.id, charge);
       if (dripSchedule) {
         await tx.dripDispatch.createMany({
           data: dripSchedule.dispatches.map(d => ({

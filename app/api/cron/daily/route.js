@@ -3,9 +3,10 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getBalance } from '@/lib/smm';
-import { sendEmail, emailWrap, emailRow, emailDataBox, sendNudgeIdleFunds, sendNudgeComeback, sendNudgeLapsed, sendNudgeIdleBalance, sendAdActivationDay1, sendAdActivationDay3, sendAdActivationDay6 } from '@/lib/email';
+import { sendEmail, emailWrap, emailRow, emailDataBox, sendNudgeIdleFunds, sendNudgeIdleBalance, sendAdActivationDay1, sendAdActivationDay3, sendAdActivationDay6, sendWinback30Email, sendWinback60Email } from '@/lib/email';
 import { tgProviderBalance, tgDailySummary } from '@/lib/telegram';
 import { releaseHeldCommissions } from '@/lib/commissions';
+import { expireBonusCredits, grantWinbackCredit } from '@/lib/bonus-credit';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -161,6 +162,207 @@ export async function GET(req) {
     }
   }
 
+  // ═══ WINBACK PLAY 7: credit-backed 2-touch re-engagement ═══
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+  const sixtyDaysAgo = new Date(Date.now() - 60 * 86400000);
+
+  // Reset winback flags when user completed a new order since last touch
+  try {
+    const resetCount = await prisma.$executeRaw`
+      UPDATE users SET "winback30SentAt" = NULL, "winback60SentAt" = NULL
+      WHERE "winback30SentAt" IS NOT NULL
+      AND EXISTS (
+        SELECT 1 FROM orders
+        WHERE orders."userId" = users.id
+        AND orders.status = 'Completed'
+        AND orders."deletedAt" IS NULL
+        AND orders."createdAt" > users."winback30SentAt"
+      )`;
+    if (resetCount > 0) log.info('WinbackReset', `Reset ${resetCount} users with new orders`);
+    results.winbackReset = { reset: resetCount };
+  } catch (err) {
+    log.error('WinbackReset', err.message);
+    results.winbackReset = { error: err.message };
+  }
+
+  // Load winback settings
+  let wb30Pct = 15, wb30Min = 100, wb30Cap = 500;
+  let wb60Pct = 25, wb60Min = 150, wb60Cap = 1000;
+  let wbExpiryDays = 7;
+  try {
+    const wbKeys = ['winback30_pct', 'winback30_min_naira', 'winback30_cap_naira', 'winback60_pct', 'winback60_min_naira', 'winback60_cap_naira', 'winback_credit_expiry_days'];
+    const wbSettings = await prisma.setting.findMany({ where: { key: { in: wbKeys } } });
+    const ws = Object.fromEntries(wbSettings.map(r => [r.key, parseInt(r.value)]));
+    if (ws.winback30_pct) wb30Pct = ws.winback30_pct;
+    if (ws.winback30_min_naira) wb30Min = ws.winback30_min_naira;
+    if (ws.winback30_cap_naira) wb30Cap = ws.winback30_cap_naira;
+    if (ws.winback60_pct) wb60Pct = ws.winback60_pct;
+    if (ws.winback60_min_naira) wb60Min = ws.winback60_min_naira;
+    if (ws.winback60_cap_naira) wb60Cap = ws.winback60_cap_naira;
+    if (ws.winback_credit_expiry_days) wbExpiryDays = ws.winback_credit_expiry_days;
+  } catch {}
+
+  function winbackCredit(lifetimeSpendKobo, pct, minNaira, capNaira) {
+    const raw = Math.floor(lifetimeSpendKobo * pct / 100);
+    return Math.min(Math.max(raw, minNaira * 100), capNaira * 100);
+  }
+
+  // Spacing guard: no marketing email of any kind within 10 days
+  const tenDaysAgo = new Date(Date.now() - 10 * 86400000);
+  const spacingGuard = {
+    NOT: {
+      OR: [
+        { nudgeIdleFundsSentAt: { gt: tenDaysAgo } },
+        { nudgeComebackSentAt: { gt: tenDaysAgo } },
+        { nudgeLapsedSentAt: { gt: tenDaysAgo } },
+        { nudgeIdleBalanceSentAt: { gt: tenDaysAgo } },
+        { winbackSentAt: { gt: tenDaysAgo } },
+        { winback30SentAt: { gt: tenDaysAgo } },
+        { winback60SentAt: { gt: tenDaysAgo } },
+        { adActivationDay1SentAt: { gt: tenDaysAgo } },
+        { adActivationDay3SentAt: { gt: tenDaysAgo } },
+        { adActivationDay6SentAt: { gt: tenDaysAgo } },
+      ],
+    },
+  };
+
+  // Retry markers: Date(1) = 1st fail, Date(2) = 2nd fail, Date(0) = permanent give-up
+  const RETRY_ELIGIBLE = [new Date(1), new Date(2)];
+  const STALE_CUTOFF_MS = 4 * 86400000;
+
+  // Day-30 touch (fresh + retries)
+  try {
+    let wb30Sent = 0;
+    const wb30Batch = await prisma.user.findMany({
+      where: {
+        status: 'Active', emailVerified: true, notifPromo: true,
+        OR: [{ winback30SentAt: null }, { winback30SentAt: { in: RETRY_ELIGIBLE } }],
+        ...spacingGuard,
+        orders: {
+          some: { status: 'Completed', deletedAt: null },
+          none: { status: 'Completed', deletedAt: null, createdAt: { gt: thirtyDaysAgo } },
+        },
+      },
+      select: { id: true, name: true, email: true, winback30SentAt: true },
+      take: 50,
+    });
+    for (const user of wb30Batch) {
+      try {
+        const isRetry = user.winback30SentAt !== null;
+        const attempt = isRetry ? user.winback30SentAt.getTime() + 1 : 1;
+        let creditNaira, daysLeft;
+
+        if (isRetry) {
+          const bc = await prisma.bonusCredit.findFirst({
+            where: { userId: user.id, source: 'winback', amountRemaining: { gt: 0 }, expiredAt: null },
+            orderBy: { grantedAt: 'desc' },
+            select: { expiresAt: true, amountGranted: true },
+          });
+          const msLeft = bc ? bc.expiresAt.getTime() - Date.now() : 0;
+          if (!bc || msLeft < STALE_CUTOFF_MS) {
+            await prisma.user.update({ where: { id: user.id }, data: { winback30SentAt: new Date(0) } });
+            continue;
+          }
+          creditNaira = bc.amountGranted / 100;
+          daysLeft = Math.max(1, Math.ceil(msLeft / 86400000));
+        } else {
+          const agg = await prisma.order.aggregate({
+            where: { userId: user.id, status: 'Completed', deletedAt: null },
+            _sum: { charge: true },
+          });
+          const creditKobo = winbackCredit(agg._sum.charge || 0, wb30Pct, wb30Min, wb30Cap);
+          creditNaira = creditKobo / 100;
+          await grantWinbackCredit(prisma, user.id, creditKobo, wbExpiryDays);
+          daysLeft = wbExpiryDays;
+        }
+
+        try {
+          await sendWinback30Email(user.name || 'there', user.email, creditNaira, daysLeft);
+          await prisma.user.update({ where: { id: user.id }, data: { winback30SentAt: new Date() } });
+          wb30Sent++;
+        } catch (emailErr) {
+          log.warn('Winback30', `Email failed (attempt ${attempt}): ${user.email}: ${emailErr.message}`);
+          await prisma.user.update({ where: { id: user.id }, data: { winback30SentAt: attempt >= 3 ? new Date(0) : new Date(attempt) } }).catch(() => {});
+        }
+      } catch (e) {
+        log.warn('Winback30', `Failed: ${user.email}: ${e.message}`);
+        await prisma.user.update({ where: { id: user.id }, data: { winback30SentAt: new Date(0) } }).catch(() => {});
+      }
+    }
+    if (wb30Sent > 0) log.info('Winback30', `Sent ${wb30Sent} of ${wb30Batch.length}`);
+    results.winback30 = { sent: wb30Sent, total: wb30Batch.length };
+  } catch (err) {
+    log.error('Winback30', err.message);
+    results.winback30 = { error: err.message };
+  }
+
+  // Day-60 touch (fresh + retries)
+  try {
+    let wb60Sent = 0;
+    const wb60Batch = await prisma.user.findMany({
+      where: {
+        status: 'Active', emailVerified: true, notifPromo: true,
+        winback30SentAt: { not: null, gt: new Date(1000) },
+        OR: [{ winback60SentAt: null }, { winback60SentAt: { in: RETRY_ELIGIBLE } }],
+        ...spacingGuard,
+        orders: {
+          some: { status: 'Completed', deletedAt: null },
+          none: { status: 'Completed', deletedAt: null, createdAt: { gt: sixtyDaysAgo } },
+        },
+      },
+      select: { id: true, name: true, email: true, winback60SentAt: true },
+      take: 50,
+    });
+    for (const user of wb60Batch) {
+      try {
+        const isRetry = user.winback60SentAt !== null;
+        const attempt = isRetry ? user.winback60SentAt.getTime() + 1 : 1;
+        let creditNaira, daysLeft;
+
+        if (isRetry) {
+          const bc = await prisma.bonusCredit.findFirst({
+            where: { userId: user.id, source: 'winback', amountRemaining: { gt: 0 }, expiredAt: null },
+            orderBy: { grantedAt: 'desc' },
+            select: { expiresAt: true, amountGranted: true },
+          });
+          const msLeft = bc ? bc.expiresAt.getTime() - Date.now() : 0;
+          if (!bc || msLeft < STALE_CUTOFF_MS) {
+            await prisma.user.update({ where: { id: user.id }, data: { winback60SentAt: new Date(0) } });
+            continue;
+          }
+          creditNaira = bc.amountGranted / 100;
+          daysLeft = Math.max(1, Math.ceil(msLeft / 86400000));
+        } else {
+          const agg = await prisma.order.aggregate({
+            where: { userId: user.id, status: 'Completed', deletedAt: null },
+            _sum: { charge: true },
+          });
+          const creditKobo = winbackCredit(agg._sum.charge || 0, wb60Pct, wb60Min, wb60Cap);
+          creditNaira = creditKobo / 100;
+          await grantWinbackCredit(prisma, user.id, creditKobo, wbExpiryDays);
+          daysLeft = wbExpiryDays;
+        }
+
+        try {
+          await sendWinback60Email(user.name || 'there', user.email, creditNaira, daysLeft);
+          await prisma.user.update({ where: { id: user.id }, data: { winback60SentAt: new Date() } });
+          wb60Sent++;
+        } catch (emailErr) {
+          log.warn('Winback60', `Email failed (attempt ${attempt}): ${user.email}: ${emailErr.message}`);
+          await prisma.user.update({ where: { id: user.id }, data: { winback60SentAt: attempt >= 3 ? new Date(0) : new Date(attempt) } }).catch(() => {});
+        }
+      } catch (e) {
+        log.warn('Winback60', `Failed: ${user.email}: ${e.message}`);
+        await prisma.user.update({ where: { id: user.id }, data: { winback60SentAt: new Date(0) } }).catch(() => {});
+      }
+    }
+    if (wb60Sent > 0) log.info('Winback60', `Sent ${wb60Sent} of ${wb60Batch.length}`);
+    results.winback60 = { sent: wb60Sent, total: wb60Batch.length };
+  } catch (err) {
+    log.error('Winback60', err.message);
+    results.winback60 = { error: err.message };
+  }
+
   // ═══ NUDGE: funded wallet but never ordered (7+ days) ═══
   try {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -194,70 +396,9 @@ export async function GET(req) {
     results.nudgeIdleFunds = { error: err.message };
   }
 
-  // ═══ NUDGE: ordered once, quiet 7+ days ═══
-  try {
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    let comebackSent = 0;
-    const comebackBatch = await prisma.user.findMany({
-      where: {
-        status: 'Active', emailVerified: true, notifPromo: true,
-        nudgeComebackSentAt: null,
-        orders: { some: { status: 'Completed', createdAt: { lte: sevenDaysAgo } } },
-      },
-      select: { id: true, name: true, email: true, _count: { select: { orders: { where: { status: { not: 'Cancelled' }, deletedAt: null } } } } },
-      take: 50,
-    });
-    const oneTimers = comebackBatch.filter(u => u._count.orders === 1);
-    for (const user of oneTimers) {
-      try {
-        await sendNudgeComeback(user.name || 'there', user.email);
-        await prisma.user.update({ where: { id: user.id }, data: { nudgeComebackSentAt: new Date() } });
-        comebackSent++;
-      } catch (e) {
-        log.warn('NudgeComeback', `Failed: ${user.email}: ${e.message}`);
-        await prisma.user.update({ where: { id: user.id }, data: { nudgeComebackSentAt: new Date(0) } }).catch(() => {});
-      }
-    }
-    if (comebackSent > 0) log.info('NudgeComeback', `Sent ${comebackSent} of ${oneTimers.length}`);
-    results.nudgeComeback = { sent: comebackSent, total: oneTimers.length };
-  } catch (err) {
-    log.error('NudgeComeback', err.message);
-    results.nudgeComeback = { error: err.message };
-  }
-
-  // ═══ NUDGE: was active, gone 14+ days ═══
-  try {
-    const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
-    let lapsedSent = 0;
-    const lapsedBatch = await prisma.user.findMany({
-      where: {
-        status: 'Active', emailVerified: true, notifPromo: true,
-        nudgeLapsedSentAt: null,
-        orders: {
-          some: { status: { not: 'Cancelled' }, deletedAt: null },
-          none: { createdAt: { gt: fourteenDaysAgo }, deletedAt: null },
-        },
-      },
-      select: { id: true, name: true, email: true, _count: { select: { orders: { where: { status: { not: 'Cancelled' }, deletedAt: null } } } } },
-      take: 50,
-    });
-    const multiOrderLapsed = lapsedBatch.filter(u => u._count.orders >= 2);
-    for (const user of multiOrderLapsed) {
-      try {
-        await sendNudgeLapsed(user.name || 'there', user.email);
-        await prisma.user.update({ where: { id: user.id }, data: { nudgeLapsedSentAt: new Date() } });
-        lapsedSent++;
-      } catch (e) {
-        log.warn('NudgeLapsed', `Failed: ${user.email}: ${e.message}`);
-        await prisma.user.update({ where: { id: user.id }, data: { nudgeLapsedSentAt: new Date(0) } }).catch(() => {});
-      }
-    }
-    if (lapsedSent > 0) log.info('NudgeLapsed', `Sent ${lapsedSent} of ${multiOrderLapsed.length}`);
-    results.nudgeLapsed = { sent: lapsedSent, total: multiOrderLapsed.length };
-  } catch (err) {
-    log.error('NudgeLapsed', err.message);
-    results.nudgeLapsed = { error: err.message };
-  }
+  // ═══ RETIRED: comeback (7d one-timer) and lapsed (14d multi-order) nudges ═══
+  // Replaced by Play 7 winback sequence above — the only reactivation voice for past buyers.
+  // DB fields nudgeComebackSentAt / nudgeLapsedSentAt kept (harmless).
 
   // ═══ NUDGE: has ₦500+ balance, no orders in 7+ days ═══
   try {
@@ -268,6 +409,8 @@ export async function GET(req) {
         status: 'Active', emailVerified: true, notifPromo: true,
         nudgeIdleBalanceSentAt: null,
         balance: { gte: 50000 },
+        // Reverse guard: exclude users in an active Play 7 window
+        bonusCredits: { none: { amountRemaining: { gt: 0 }, expiredAt: null, expiresAt: { gt: new Date() } } },
         orders: {
           some: { deletedAt: null },
           none: { createdAt: { gt: sevenDaysAgo }, deletedAt: null },
@@ -351,6 +494,16 @@ export async function GET(req) {
     results.tierRecalc = { error: err.message };
   }
 
+  // ═══ BONUS EXPIRY: expire past-due bonus credits ═══
+  try {
+    const bonusExpired = await expireBonusCredits(prisma);
+    results.bonusExpiry = { expired: bonusExpired };
+    if (bonusExpired > 0) log.info('BonusExpiry', `Expired ${bonusExpired} bonus credits`);
+  } catch (err) {
+    log.error('BonusExpiry', err.message);
+    results.bonusExpiry = { error: err.message };
+  }
+
   // ═══ BALANCE: check provider balances + alert if low ═══
   try {
     const LOW_BALANCE_USD = 10;
@@ -421,13 +574,17 @@ export async function GET(req) {
   if (results.cleanup?.deleted) summary['Stale users cleaned'] = results.cleanup.deleted;
   if (results.cleanup?.permanentlyDeleted) summary['Permanently deleted'] = results.cleanup.permanentlyDeleted;
   if (results.tickets?.closed) summary['Tickets auto-closed'] = results.tickets.closed;
-  const nudgeKeys = ['nudgeIdleFunds', 'nudgeComeback', 'nudgeLapsed', 'nudgeIdleBalance'];
+  const nudgeKeys = ['nudgeIdleFunds', 'nudgeIdleBalance'];
   const totalNudges = nudgeKeys.reduce((s, k) => s + (results[k]?.sent || 0), 0);
   if (totalNudges) summary['Nudge emails sent'] = totalNudges;
   const totalAds = (results.adActivationDay1?.sent || 0) + (results.adActivationDay3?.sent || 0) + (results.adActivationDay6?.sent || 0);
   if (totalAds) summary['Activation emails'] = totalAds;
+  const totalWinback = (results.winback30?.sent || 0) + (results.winback60?.sent || 0);
+  if (totalWinback) summary['Winback credits sent'] = totalWinback;
+  if (results.winbackReset?.reset) summary['Winback resets'] = results.winbackReset.reset;
   if (results.commissions?.released) summary['Commissions released'] = results.commissions.released;
   if (results.tierRecalc?.changed) summary['Tier changes'] = results.tierRecalc.changed;
+  if (results.bonusExpiry?.expired) summary['Bonus credits expired'] = results.bonusExpiry.expired;
   if (results.balance?.alerts) summary['Low balance alerts'] = results.balance.alerts;
   const bals = results.balance?.balances || {};
   Object.entries(bals).forEach(([k, v]) => { if (v.balance != null) summary[`${k.toUpperCase()} bal`] = `$${v.balance.toFixed(2)}`; });

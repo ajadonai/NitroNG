@@ -803,12 +803,16 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
   const [socialMsg, setSocialMsg] = useState(null);
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailMsg, setEmailMsg] = useState(null);
+  const [winback, setWinback] = useState({ winback30_pct: "15", winback30_min_naira: "100", winback30_cap_naira: "500", winback60_pct: "25", winback60_min_naira: "150", winback60_cap_naira: "1000", winback_credit_expiry_days: "7" });
+  const [winbackSaving, setWinbackSaving] = useState(false);
+  const [winbackMsg, setWinbackMsg] = useState(null);
 
   useEffect(() => {
     fetch("/api/admin/settings").then(r => r.json()).then(d => {
       if (d.settings) {
         setSocial(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("social_"))) }));
         setEmails(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("site_email_"))) }));
+        setWinback(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("winback"))) }));
       }
     }).finally(() => setSocialLoading(false));
   }, []);
@@ -831,6 +835,16 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
       setEmailMsg(res.ok ? { type: "success", text: "Contact emails saved" } : { type: "error", text: data.error || "Failed" });
     } catch { setEmailMsg({ type: "error", text: "Request failed" }); }
     setEmailSaving(false);
+  };
+
+  const saveWinback = async () => {
+    setWinbackSaving(true); setWinbackMsg(null);
+    try {
+      const res = await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ settings: winback }) });
+      const data = await res.json();
+      setWinbackMsg(res.ok ? { type: "success", text: "Win-back settings saved" } : { type: "error", text: data.error || "Failed" });
+    } catch { setWinbackMsg({ type: "error", text: "Request failed" }); }
+    setWinbackSaving(false);
   };
 
   const applyTheme = (mode) => {
@@ -1044,6 +1058,48 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
             </div>
           ))}
           <button onClick={saveSocial} disabled={socialSaving} className="adm-btn-primary" style={{ opacity: socialSaving ? .5 : 1 }}>{socialSaving ? "Saving..." : "Save Social Links"}</button>
+          </div>
+        </div>
+
+        {/* ── WIN-BACK CREDITS ── */}
+        <div className="set-card" style={{ background: cardBg, border: cardBorder }}>
+          <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+            <div className="set-card-title" style={{ color: t.textMuted }}>Win-back credits</div>
+            <div className="set-card-desc" style={{ color: t.textMuted }}>Configure bonus credit amounts for the automated win-back sequence (Play 7).</div>
+          </div>
+          <div className="set-card-body">
+          {winbackMsg && <InlineAlert type={winbackMsg.type} dark={dark} className="mb-3">{winbackMsg.text}</InlineAlert>}
+          <div className="text-[11px] font-semibold tracking-[.8px] uppercase mb-2" style={{ color: t.textMuted }}>Day 30 touch</div>
+          {[
+            ["winback30_pct", "Credit %", "15", "Percentage of lifetime spend"],
+            ["winback30_min_naira", "Floor (₦)", "100", "Minimum credit in naira"],
+            ["winback30_cap_naira", "Cap (₦)", "500", "Maximum credit in naira"],
+          ].map(([key, label, placeholder, hint]) => (
+            <div key={key} className="mb-3">
+              <label className="text-sm block mb-0.5" style={{ color: t.textMuted }}>{label}</label>
+              <input value={winback[key] || ""} onChange={e => setWinback(prev => ({ ...prev, [key]: e.target.value }))} placeholder={placeholder} type="number" className="w-full py-2.5 px-3.5 rounded-lg text-[15px] outline-none border font-[inherit]" style={admInputStyle} />
+              <div className="text-xs mt-0.5 opacity-70" style={{ color: t.textMuted }}>{hint}</div>
+            </div>
+          ))}
+          <div className="text-[11px] font-semibold tracking-[.8px] uppercase mb-2 mt-4" style={{ color: t.textMuted }}>Day 60 touch</div>
+          {[
+            ["winback60_pct", "Credit %", "25", "Percentage of lifetime spend"],
+            ["winback60_min_naira", "Floor (₦)", "150", "Minimum credit in naira"],
+            ["winback60_cap_naira", "Cap (₦)", "1000", "Maximum credit in naira"],
+          ].map(([key, label, placeholder, hint]) => (
+            <div key={key} className="mb-3">
+              <label className="text-sm block mb-0.5" style={{ color: t.textMuted }}>{label}</label>
+              <input value={winback[key] || ""} onChange={e => setWinback(prev => ({ ...prev, [key]: e.target.value }))} placeholder={placeholder} type="number" className="w-full py-2.5 px-3.5 rounded-lg text-[15px] outline-none border font-[inherit]" style={admInputStyle} />
+              <div className="text-xs mt-0.5 opacity-70" style={{ color: t.textMuted }}>{hint}</div>
+            </div>
+          ))}
+          <div className="text-[11px] font-semibold tracking-[.8px] uppercase mb-2 mt-4" style={{ color: t.textMuted }}>General</div>
+          <div className="mb-3">
+            <label className="text-sm block mb-0.5" style={{ color: t.textMuted }}>Expiry (days)</label>
+            <input value={winback["winback_credit_expiry_days"] || ""} onChange={e => setWinback(prev => ({ ...prev, winback_credit_expiry_days: e.target.value }))} placeholder="7" type="number" className="w-full py-2.5 px-3.5 rounded-lg text-[15px] outline-none border font-[inherit]" style={admInputStyle} />
+            <div className="text-xs mt-0.5 opacity-70" style={{ color: t.textMuted }}>Days before bonus credit expires</div>
+          </div>
+          <button onClick={saveWinback} disabled={winbackSaving} className="adm-btn-primary" style={{ opacity: winbackSaving ? .5 : 1 }}>{winbackSaving ? "Saving..." : "Save Win-back Settings"}</button>
           </div>
         </div>
 
