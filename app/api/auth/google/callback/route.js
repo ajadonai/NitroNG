@@ -132,24 +132,35 @@ export async function GET(req) {
       // Resolve affiliate link at signup time (frozen attribution)
       const { memberId: referredByMemberId, linkId: referredByLinkId } = await resolveSignupAttribution(viaSlug);
 
-      user = await prisma.user.create({
-        data: {
-          name,
-          firstName: firstName || null,
-          lastName: lastName || null,
-          email,
-          password: '', // No password for Google-only accounts
-          referralCode: refCode,
-          referredBy,
-          emailVerified: true,
-          signupSource: viaSlug || null,
-          signupIp,
-          referredByMemberId,
-          referredByLinkId,
-          tosAcceptedAt: new Date(),
-          tosVersion,
-        },
-      });
+      for (let attempt = 0; ; attempt++) {
+        try {
+          user = await prisma.user.create({
+            data: {
+              name,
+              firstName: firstName || null,
+              lastName: lastName || null,
+              email,
+              password: '',
+              referralCode: refCode,
+              referredBy,
+              emailVerified: true,
+              signupSource: viaSlug || null,
+              signupIp,
+              referredByMemberId,
+              referredByLinkId,
+              tosAcceptedAt: new Date(),
+              tosVersion,
+            },
+          });
+          break;
+        } catch (err) {
+          if (err.code === 'P2002' && err.meta?.target?.includes('referralCode') && attempt < 3) {
+            refCode = generateReferralCode();
+            continue;
+          }
+          throw err;
+        }
+      }
 
       isNewUser = true;
       sendWelcomeEmail(firstName || name, email).catch(err =>

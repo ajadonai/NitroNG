@@ -63,6 +63,10 @@ model User {
   orderTourCompleted Boolean @default(false)
   signupSource        String?
   signupIp            String?
+  lastIp              String?
+  lastUa              String?  @db.Text
+  lastFbp             String?
+  lastFbc             String?
   referredByMemberId  String?
   referredByLinkId    String?
   tosAcceptedAt   DateTime?
@@ -94,6 +98,7 @@ model User {
   videoWatches  VideoWatch[]
   crewMember    CrewMember?
 
+  @@index([signupIp])
   @@map("users")
 }
 
@@ -268,6 +273,7 @@ model Order {
   completedAt     DateTime?
   refundedAt      DateTime?
   redispatchedAt  DateTime?
+  parentOrderId   String?
   loyaltyDiscount       Int      @default(0)
   campaignDiscount      Int      @default(0)
   campaignPercent       Int?
@@ -292,6 +298,7 @@ model Order {
   @@index([createdAt])
   @@index([platformCampaignId])
   @@index([recurringCampaignId])
+  @@index([parentOrderId])
   @@map("orders")
 }
 

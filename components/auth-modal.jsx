@@ -1030,7 +1030,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
                     .slice(0, 20)
                 )
               }
-              placeholder="e.g. NTR-7X92"
+              placeholder="e.g. NTR-K3BN7A"
               maxLength={20}
               type="text"
               className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none mb-4"

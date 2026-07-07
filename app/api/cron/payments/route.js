@@ -2,6 +2,7 @@ export const maxDuration = 60;
 
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
+import { trackDeposit } from '@/lib/meta-capi';
 
 async function getGatewayKeys(gatewayId) {
   const setting = await prisma.setting.findUnique({ where: { key: `gateway_${gatewayId}` } });
@@ -138,6 +139,10 @@ export async function GET(req) {
           await creditTransaction(tx, amount);
           recovered++;
           log.info('Payment Recovery', `Recovered ₦${amount / 100} for ${tx.reference}`);
+          try {
+            const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true, phone: true, lastIp: true, lastUa: true, lastFbp: true, lastFbc: true } });
+            if (u) await trackDeposit({ email: u.email, phone: u.phone, userId: tx.userId, reference: tx.reference, amountKobo: amount, clientIp: u.lastIp, userAgent: u.lastUa, fbp: u.lastFbp, fbc: u.lastFbc });
+          } catch {}
         } else if (result.failed) {
           await prisma.transaction.update({ where: { id: tx.id }, data: { status: 'Cancelled', note: (tx.note || '') + ' [expired-by-cron]' } });
           expired++;

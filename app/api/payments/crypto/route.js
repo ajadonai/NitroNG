@@ -2,7 +2,7 @@ import { fetchWithRetry } from '@/lib/fetch';
 import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
-import { trackDeposit } from '@/lib/meta-capi';
+import { trackDeposit, parseFbCookies } from '@/lib/meta-capi';
 
 const NP_KEY = process.env.NOWPAYMENTS_API_KEY;
 const NP_URL = 'https://api.nowpayments.io/v1';
@@ -110,6 +110,13 @@ export async function POST(req) {
       },
     });
 
+    const { fbp, fbc } = parseFbCookies(req.headers.get('cookie'));
+    await prisma.user.update({ where: { id: user.id }, data: {
+      lastIp: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || undefined,
+      lastUa: req.headers.get('user-agent') || undefined,
+      lastFbp: fbp || undefined, lastFbc: fbc || undefined,
+    }});
+
     return Response.json({
       paymentId: npData.payment_id,
       payAddress: npData.pay_address,
@@ -205,8 +212,8 @@ export async function GET(req) {
       }
 
       try {
-        const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true } });
-        if (u) await trackDeposit({ email: u.email, userId: tx.userId, reference, amountKobo: tx.amount });
+        const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true, phone: true, lastIp: true, lastUa: true, lastFbp: true, lastFbc: true } });
+        if (u) await trackDeposit({ email: u.email, phone: u.phone, userId: tx.userId, reference, amountKobo: tx.amount, clientIp: u.lastIp, userAgent: u.lastUa, fbp: u.lastFbp, fbc: u.lastFbc });
       } catch {}
 
       // Deferred referral bonus

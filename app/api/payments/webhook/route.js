@@ -100,9 +100,9 @@ export async function POST(req) {
       log.info('Webhook', `₦${amountKobo / 100} + ₦${couponBonus / 100} bonus credited (ref: ${reference})`);
 
       try {
-        const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true, name: true } });
+        const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true, name: true, phone: true, lastIp: true, lastUa: true, lastFbp: true, lastFbc: true } });
         if (u) {
-          await trackDeposit({ email: u.email, userId: tx.userId, reference, amountKobo });
+          await trackDeposit({ email: u.email, phone: u.phone, userId: tx.userId, reference, amountKobo, clientIp: u.lastIp, userAgent: u.lastUa, fbp: u.lastFbp, fbc: u.lastFbc });
           tgPayment(u.name || u.email, amountKobo, couponBonus || 0, 'Flutterwave');
         }
       } catch {}

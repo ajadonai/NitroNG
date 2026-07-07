@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import { verifyUserToken } from '@/lib/auth';
+import { verifyUserToken, verifyAdminToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
 
 export async function POST(req) {
@@ -9,7 +9,9 @@ export async function POST(req) {
 
     const cookieStore = await cookies();
     const token = cookieStore.get('nitro_token')?.value;
-    const payload = token ? verifyUserToken(token) : null;
+    const adminToken = cookieStore.get('nitro_admin_token')?.value;
+    const payload = (token ? verifyUserToken(token) : null)
+      || (adminToken ? verifyAdminToken(adminToken) : null);
 
     const ua = req.headers.get('user-agent') || null;
 

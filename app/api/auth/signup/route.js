@@ -99,27 +99,38 @@ export async function POST(req) {
     // Resolve affiliate link at signup time (frozen attribution)
     const { memberId: referredByMemberId, linkId: referredByLinkId } = await resolveSignupAttribution(via);
 
-    // Create user
     const derivedName = (firstName && lastName) ? `${firstName} ${lastName}` : name.trim();
-    const user = await prisma.user.create({
-      data: {
-        name: derivedName,
-        firstName: firstName || null,
-        lastName: lastName || null,
-        phone: phone || null,
-        email: email.toLowerCase().trim(),
-        password: hashed,
-        referralCode: refCode,
-        referredBy,
-        emailVerified: true,
-        signupSource: via || null,
-        signupIp: ip,
-        referredByMemberId,
-        referredByLinkId,
-        tosAcceptedAt: new Date(),
-        tosVersion,
-      },
-    });
+    let user;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        user = await prisma.user.create({
+          data: {
+            name: derivedName,
+            firstName: firstName || null,
+            lastName: lastName || null,
+            phone: phone || null,
+            email: email.toLowerCase().trim(),
+            password: hashed,
+            referralCode: refCode,
+            referredBy,
+            emailVerified: true,
+            signupSource: via || null,
+            signupIp: ip,
+            referredByMemberId,
+            referredByLinkId,
+            tosAcceptedAt: new Date(),
+            tosVersion,
+          },
+        });
+        break;
+      } catch (err) {
+        if (err.code === 'P2002' && err.meta?.target?.includes('referralCode') && attempt < 3) {
+          refCode = generateReferralCode();
+          continue;
+        }
+        throw err;
+      }
+    }
 
     sendWelcomeEmail(firstName || name, email).catch(err =>
       log.error('Signup', `Welcome email failed: ${err.message}`)

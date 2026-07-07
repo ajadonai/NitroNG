@@ -53,7 +53,7 @@ export function AdminPaymentsPage({ dark, t }) {
     if (tab !== "deposits") return;
     const interval = setInterval(() => refresh(), 30000);
     return () => clearInterval(interval);
-  }, [tab]);
+  }, [tab, search, statusFilter, dateValue]);
 
   const doSearch = () => refresh(search, statusFilter);
   const changeStatus = (s) => { setStatusFilter(s); refresh(search, s); };
@@ -159,8 +159,8 @@ export function AdminPaymentsPage({ dark, t }) {
         {/* Search + filters */}
         <div className="flex items-center gap-3 mb-3.5 flex-wrap">
           <div className="relative flex-1 min-w-full desktop:min-w-[200px]">
-            <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && doSearch()} placeholder="Search ref, user, email..." className="w-full py-2 px-3 pr-8 rounded-lg text-[13px] outline-none font-[inherit] box-border" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.12)" : "#fff", color: t.text }} />
-            {search && <button aria-label="Clear search" onClick={() => { setSearch(""); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
+            <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && doSearch()} placeholder="Search ref, user, email, sender name..." className="w-full py-2 px-3 pr-8 rounded-lg text-[13px] outline-none font-[inherit] box-border" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.12)" : "#fff", color: t.text }} />
+            {search && <button aria-label="Clear search" onClick={() => { setSearch(""); refresh("", statusFilter); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
           </div>
           <DateRangePicker dark={dark} t={t} value={dateValue} onChange={changeDateValue} />
           <FilterDropdown dark={dark} t={t} value={statusFilter} onChange={changeStatus} options={[
