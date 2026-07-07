@@ -6,6 +6,21 @@ import { checkOrder, cancelOrder, refillOrder, isProviderConfigured, getProvider
 import { voidCommissions } from '@/lib/commissions';
 import { cleanLink } from '@/lib/clean-link';
 
+async function nextOrderId(tx) {
+  const rows = await (tx || prisma).order.findMany({
+    where: { OR: [{ orderId: { startsWith: 'NTR-' } }, { orderId: { startsWith: 'ORD-' } }] },
+    select: { orderId: true },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+  });
+  let max = 0;
+  for (const r of rows) {
+    const n = parseInt(r.orderId.replace(/^(NTR|ORD)-/, ''), 10);
+    if (!isNaN(n) && n > max) max = n;
+  }
+  return `NTR-${max + 1}`;
+}
+
 export async function GET(req) {
   const { admin, error } = await requireAdmin('orders');
   if (error) return error;
@@ -23,6 +38,7 @@ export async function GET(req) {
         { link: { contains: search, mode: 'insensitive' } },
         { user: { name: { contains: search, mode: 'insensitive' } } },
         { user: { email: { contains: search, mode: 'insensitive' } } },
+        { parentOrderId: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -58,6 +74,16 @@ export async function GET(req) {
     const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
     const usdRate = Number(usdRateSetting?.value || 1600);
 
+    const redispatchedIds = orders.filter(o => o.redispatchedAt).map(o => o.orderId);
+    let childMap = {};
+    if (redispatchedIds.length > 0) {
+      const children = await prisma.order.findMany({
+        where: { parentOrderId: { in: redispatchedIds }, deletedAt: null },
+        select: { parentOrderId: true, orderId: true },
+      });
+      for (const c of children) childMap[c.parentOrderId] = c.orderId;
+    }
+
     return Response.json({
       orders: orders.map(o => ({
         id: o.orderId || o.id,
@@ -91,6 +117,8 @@ export async function GET(req) {
         serviceType: o.tier?.group?.type || null,
         refundedAt: o.refundedAt?.toISOString() || null,
         redispatchedAt: o.redispatchedAt?.toISOString() || null,
+        parentOrderId: o.parentOrderId || null,
+        childOrderId: childMap[o.orderId] || null,
         refundedTotal: (() => {
           const raw = refundMap[o.orderId] || 0;
           return o.redispatchedAt ? Math.max(0, raw - o.charge) / 100 : raw / 100;
@@ -491,17 +519,14 @@ export async function POST(req) {
       const { link: newLink } = body;
       const fullOrder = await prisma.order.findFirst({
         where: { OR: [{ orderId }, { id: orderId }], deletedAt: null },
-        include: { service: true, tier: { include: { service: true } }, user: { select: { id: true, balance: true } } },
+        include: { service: true, tier: { include: { service: true, group: true } }, user: { select: { id: true } }, dripDispatches: true },
       });
       if (!fullOrder) return Response.json({ error: 'Order not found' }, { status: 404 });
       if (fullOrder.status !== 'Cancelled') return Response.json({ error: 'Only cancelled orders can be re-dispatched' }, { status: 400 });
+      if (fullOrder.redispatchedAt) return Response.json({ error: 'Order already redispatched' }, { status: 400 });
 
-      const link = (newLink || '').trim() || fullOrder.link;
+      const link = cleanLink((newLink || '').trim() || fullOrder.link);
       if (!link) return Response.json({ error: 'No link provided' }, { status: 400 });
-
-      if (fullOrder.user.balance < fullOrder.charge) {
-        return Response.json({ error: `Insufficient balance (has ₦${(fullOrder.user.balance / 100).toLocaleString()}, needs ₦${(fullOrder.charge / 100).toLocaleString()})` }, { status: 400 });
-      }
 
       let service = fullOrder.service;
       const tierService = fullOrder.tier?.service;
@@ -511,25 +536,59 @@ export async function POST(req) {
         serviceSwapped = true;
       }
 
-      let costUpdate = {};
-      if (serviceSwapped) {
-        const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
-        const usdRate = Number(usdRateSetting?.value || 1600);
-        const newCost = Math.round((Number(service.costPer1k) * usdRate / 1000) * fullOrder.quantity / 100) * 100;
-        costUpdate = { serviceId: service.id, cost: newCost };
+      const hasDrip = fullOrder.dripDispatches?.length > 0;
+      let delivered = 0;
+      if (hasDrip) {
+        for (const d of fullOrder.dripDispatches) {
+          if (d.status === 'completed' || d.status === 'partial') {
+            delivered += d.quantity - (d.remains || 0);
+          }
+        }
+      } else if (fullOrder.remains != null) {
+        delivered = fullOrder.quantity - fullOrder.remains;
+      }
+      const remainingQty = fullOrder.quantity - delivered;
+      if (remainingQty <= 0) return Response.json({ error: 'No remaining quantity to redispatch' }, { status: 400 });
+
+      const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
+      const usdRate = Number(usdRateSetting?.value || 1600);
+      const newCost = Math.round((Number(service.costPer1k) * usdRate / 1000) * remainingQty / 100) * 100;
+
+      let dripSchedule = null;
+      if (hasDrip) {
+        const providerMin = service.min || 50;
+        const groupType = fullOrder.tier?.group?.type || '';
+        const platform = (fullOrder.service?.category || '').toLowerCase();
+        if (fullOrder.dripDays && fullOrder.dripDays > 1) {
+          const proportionalDays = Math.max(1, Math.round(fullOrder.dripDays * remainingQty / fullOrder.quantity));
+          const { calculateMultiDayDrip } = await import('@/lib/drip-feed');
+          dripSchedule = calculateMultiDayDrip(remainingQty, proportionalDays, providerMin, new Date(), groupType, platform);
+        } else {
+          const { calculateIntradayDrip } = await import('@/lib/drip-feed');
+          const intraday = calculateIntradayDrip(remainingQty, providerMin, new Date(), groupType, platform);
+          if (intraday) dripSchedule = { dispatches: intraday.dispatches.map(d => ({ ...d, day: 1 })) };
+        }
       }
 
-      const hasDrip = await prisma.dripDispatch.findFirst({ where: { orderId: fullOrder.id }, select: { id: true } });
-
-      await prisma.$transaction(async (tx) => {
-        await tx.$executeRaw`UPDATE users SET balance = balance - ${fullOrder.charge} WHERE id = ${fullOrder.user.id}`;
-        const now = new Date();
-        const originalDate = fullOrder.createdAt.toISOString().split('T')[0];
-        await tx.order.update({ where: { id: fullOrder.id }, data: { link, status: 'Processing', apiOrderId: null, lastError: null, dispatchedAt: now, redispatchedAt: now, createdAt: now, ...costUpdate } });
-        await tx.transaction.create({ data: { userId: fullOrder.user.id, type: 'charge', amount: fullOrder.charge, method: 'wallet', status: 'Completed', note: `Re-dispatch ${orderId} (original: ${originalDate})` } });
-        if (hasDrip) {
-          await tx.dripDispatch.updateMany({ where: { orderId: fullOrder.id, status: { in: ['failed', 'cancelled'] } }, data: { status: 'pending', apiOrderId: null, lastError: null, dispatchedAt: null } });
+      const newId = await nextOrderId();
+      const newOrder = await prisma.$transaction(async (tx) => {
+        await tx.order.update({ where: { id: fullOrder.id }, data: { redispatchedAt: new Date() } });
+        const child = await tx.order.create({
+          data: {
+            orderId: newId, userId: fullOrder.userId, serviceId: service.id, tierId: fullOrder.tierId,
+            link, quantity: remainingQty, charge: 0, cost: newCost, status: 'Processing',
+            parentOrderId: fullOrder.orderId, comments: fullOrder.comments,
+            ...(dripSchedule ? { dripDays: fullOrder.dripDays || 1 } : {}),
+          },
+        });
+        if (dripSchedule) {
+          await tx.dripDispatch.createMany({
+            data: dripSchedule.dispatches.map(d => ({
+              orderId: child.id, day: d.day || 1, batch: d.batch, quantity: d.quantity, scheduledAt: d.scheduledAt,
+            })),
+          });
         }
+        return child;
       });
 
       const { placeOrder } = await import('@/lib/smm');
@@ -546,10 +605,11 @@ export async function POST(req) {
         const match = link.match(/instagram\.com\/([^/?#]+)/);
         if (match) extra.username = match[1];
       }
+      const swapNote = serviceSwapped ? ` (service ${fullOrder.service.apiId}→${service.apiId})` : '';
 
-      if (hasDrip) {
+      if (dripSchedule) {
         const first = await prisma.dripDispatch.findFirst({
-          where: { orderId: fullOrder.id, status: 'pending' },
+          where: { orderId: newOrder.id, status: 'pending' },
           orderBy: [{ day: 'asc' }, { batch: 'asc' }],
         });
         if (first) {
@@ -560,34 +620,32 @@ export async function POST(req) {
             const result = await placeOrder(prov, service.apiId, link, first.quantity, batchExtra);
             const batchApiId = result.order ? String(result.order) : null;
             if (batchApiId) {
-              await prisma.dripDispatch.update({ where: { id: first.id }, data: { apiOrderId: batchApiId, status: 'processing', lastError: null } });
-              await prisma.order.update({ where: { id: fullOrder.id }, data: { dripDelivered: 1 } });
+              await prisma.dripDispatch.update({ where: { id: first.id }, data: { apiOrderId: batchApiId, status: 'processing' } });
+              await prisma.order.update({ where: { id: newOrder.id }, data: { dripDelivered: 1 } });
             } else {
               await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'pending', dispatchedAt: null } });
             }
-            const swapNote = serviceSwapped ? ` (service ${fullOrder.service.apiId}→${service.apiId})` : '';
-            await logActivity(admin.name, `Re-dispatched ${orderId}${newLink ? ' (new link)' : ''}${swapNote} → batch ${first.batch}: ${batchApiId || 'no ID'}`, 'order');
-            return Response.json({ success: true, status: 'Processing', message: `Re-dispatched batch ${first.batch}: ${batchApiId || 'pending'}${serviceSwapped ? ` (service updated to ${service.apiId})` : ''}` });
+            await logActivity(admin.name, `Redispatched ${orderId} → ${newId} (${remainingQty} qty)${swapNote}`, 'order');
+            return Response.json({ success: true, newOrderId: newId, message: `Created ${newId} for ${remainingQty} remaining — batch 1 dispatched` });
           } catch (err) {
             await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'failed', lastError: err.message.slice(0, 500) } });
-            return Response.json({ error: `Provider error: ${err.message}` }, { status: 502 });
+            await logActivity(admin.name, `Redispatched ${orderId} → ${newId} (${remainingQty} qty)${swapNote} — batch 1 failed`, 'order');
+            return Response.json({ success: true, newOrderId: newId, message: `Created ${newId} for ${remainingQty} remaining — first batch failed, cron will retry` });
           }
         }
       }
 
       try {
-        if (apiType === 'subscriptions') { extra.min = fullOrder.quantity; extra.max = fullOrder.quantity; }
-        const result = await placeOrder(prov, service.apiId, link, fullOrder.quantity, extra);
+        if (apiType === 'subscriptions') { extra.min = remainingQty; extra.max = remainingQty; }
+        const result = await placeOrder(prov, service.apiId, link, remainingQty, extra);
         const apiOrderId = result.order ? String(result.order) : null;
-        if (apiOrderId) {
-          await prisma.order.update({ where: { id: fullOrder.id }, data: { apiOrderId } });
-        }
-        const swapNote = serviceSwapped ? ` (service ${fullOrder.service.apiId}→${service.apiId})` : '';
-        await logActivity(admin.name, `Re-dispatched ${orderId}${newLink ? ' (new link)' : ''}${swapNote} → ${apiOrderId || 'no ID'}`, 'order');
-        return Response.json({ success: true, status: 'Processing', apiOrderId, message: `Re-dispatched: ${apiOrderId || 'pending'}${serviceSwapped ? ` (service updated to ${service.apiId})` : ''}` });
+        if (apiOrderId) await prisma.order.update({ where: { id: newOrder.id }, data: { apiOrderId, dispatchedAt: new Date() } });
+        await logActivity(admin.name, `Redispatched ${orderId} → ${newId} (${remainingQty} qty)${swapNote} → ${apiOrderId || 'no ID'}`, 'order');
+        return Response.json({ success: true, newOrderId: newId, apiOrderId, message: `Created ${newId} for ${remainingQty} remaining: ${apiOrderId || 'pending'}` });
       } catch (err) {
-        await prisma.order.update({ where: { id: fullOrder.id }, data: { status: 'Cancelled', lastError: err.message.slice(0, 500), dispatchedAt: null } });
-        return Response.json({ error: `Provider error: ${err.message}` }, { status: 502 });
+        await prisma.order.update({ where: { id: newOrder.id }, data: { status: 'Pending', lastError: err.message.slice(0, 500) } });
+        await logActivity(admin.name, `Redispatched ${orderId} → ${newId} (${remainingQty} qty)${swapNote} — provider error`, 'order');
+        return Response.json({ success: true, newOrderId: newId, message: `Created ${newId} for ${remainingQty} remaining — provider error, will retry` });
       }
     }
 
