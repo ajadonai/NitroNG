@@ -73,6 +73,8 @@ model User {
   tosVersion      String?
   firstDepositBonusPaid Boolean @default(false)
   winbackSentAt          DateTime?
+  winback30SentAt        DateTime?
+  winback60SentAt        DateTime?
   nudgeIdleFundsSentAt   DateTime?
   nudgeComebackSentAt    DateTime?
   nudgeLapsedSentAt      DateTime?
@@ -97,6 +99,7 @@ model User {
   gameRewards   GameReward[]
   videoWatches  VideoWatch[]
   crewMember    CrewMember?
+  bonusCredits  BonusCredit[]
 
   @@index([signupIp])
   @@map("users")
@@ -290,6 +293,7 @@ model Order {
   recurringCampaign RecurringCampaign? @relation(fields: [recurringCampaignId], references: [id])
   dripDispatches        DripDispatch[]
   affiliateCommissions  AffiliateCommission[]
+  creditUsages          OrderCreditUsage[]
 
   @@index([userId])
   @@index([userId, batchId])
@@ -884,4 +888,39 @@ model ChangelogEntry {
 
   @@index([date])
   @@map("changelog_entries")
+}
+
+// ──────────────────────────────────────
+// BONUS CREDITS
+// ──────────────────────────────────────
+
+model BonusCredit {
+  id              String    @id @default(cuid())
+  userId          String
+  source          String    // 'welcome_bonus' | 'winback' | 'campaign'
+  amountGranted   Int
+  amountRemaining Int
+  grantedAt       DateTime  @default(now())
+  expiresAt       DateTime
+  expiredAt       DateTime?
+
+  user   User               @relation(fields: [userId], references: [id])
+  usages OrderCreditUsage[]
+
+  @@index([userId, expiresAt])
+  @@map("bonus_credits")
+}
+
+model OrderCreditUsage {
+  id            String @id @default(cuid())
+  orderId       String
+  bonusCreditId String
+  amount        Int
+
+  order       Order       @relation(fields: [orderId], references: [id])
+  bonusCredit BonusCredit @relation(fields: [bonusCreditId], references: [id])
+
+  @@index([orderId])
+  @@index([bonusCreditId])
+  @@map("order_credit_usages")
 }

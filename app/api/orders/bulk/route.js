@@ -11,6 +11,7 @@ import { calculateIntradayDrip, getDripConfig } from '@/lib/drip-feed';
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
 import { tgNewOrder } from '@/lib/telegram';
+import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -200,6 +201,9 @@ export async function PATCH(req) {
           where: { id: { in: cancellable.map(o => o.id) } },
           data: { status: 'Cancelled', lastError: 'user_cancelled', refundedAt: new Date() },
         });
+        for (const o of cancellable) {
+          await restoreBonusForRefund(tx, o.id);
+        }
         const refundAmount = cancellable.reduce((s, o) => s + o.charge, 0);
         await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${session.id}`;
         await tx.transaction.create({
@@ -317,13 +321,7 @@ export async function PATCH(req) {
       const newBatchId = await nextBatchId();
 
       const result = await prisma.$transaction(async (tx) => {
-        const updated = await tx.$executeRaw`UPDATE users SET balance = balance - ${totalCharge} WHERE id = ${session.id} AND balance >= ${totalCharge}`;
-        if (updated === 0) {
-          const user = await tx.user.findUnique({ where: { id: session.id }, select: { balance: true } });
-          const err = new Error('INSUFFICIENT_BALANCE');
-          err.needed = Math.max(0, totalCharge - (user?.balance || 0));
-          throw err;
-        }
+        await deductBalance(tx, session.id, totalCharge);
 
         const ids = await nextOrderIds(tx, orderData.length);
         const createdOrders = [];
@@ -334,6 +332,7 @@ export async function PATCH(req) {
           const created = await tx.order.create({
             data: { orderId, userId: session.id, serviceId: o.serviceId, tierId: o.tierId, batchId: newBatchId, link: o.link, quantity: o.quantity, charge: d.charge, cost: d.cost, comments: o.comments, status: 'Pending' },
           });
+          await trackBonusConsumption(tx, session.id, created.id, d.charge);
           createdOrders.push({ dbId: created.id, orderId, service: o.service, tier: o.tier, link: o.link, qty: o.quantity, comments: o.comments });
         }
 
@@ -530,13 +529,14 @@ export async function POST(req) {
       const totalCharge = orderData.reduce((sum, o) => sum + o.finalCharge, 0);
 
       // Atomic balance deduction
-      const updated = await tx.$executeRaw`UPDATE users SET balance = balance - ${totalCharge} WHERE id = ${session.id} AND balance >= ${totalCharge}`;
-      if (updated === 0) {
-        const user = await tx.user.findUnique({ where: { id: session.id }, select: { balance: true } });
-        const deficit = totalCharge - (user?.balance || 0);
-        const err = new Error('INSUFFICIENT_BALANCE');
-        err.needed = Math.max(0, deficit);
-        throw err;
+      try {
+        await deductBalance(tx, session.id, totalCharge);
+      } catch (e) {
+        if (e.message === 'INSUFFICIENT_BALANCE') {
+          const user = await tx.user.findUnique({ where: { id: session.id }, select: { balance: true } });
+          e.needed = Math.max(0, totalCharge - (user?.balance || 0));
+        }
+        throw e;
       }
 
       const ids = await nextOrderIds(tx, orderData.length);
@@ -565,6 +565,7 @@ export async function POST(req) {
             ...(o.dripSchedule ? { dripDays: 1 } : {}),
           },
         });
+        await trackBonusConsumption(tx, session.id, order.id, o.finalCharge);
         if (o.dripSchedule) {
           await tx.dripDispatch.createMany({
             data: o.dripSchedule.dispatches.map(d => ({
