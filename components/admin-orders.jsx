@@ -358,6 +358,23 @@ export default function AdminOrdersPage({ dark, t }) {
     } catch { toast.error("Request failed", "Check your connection"); } finally { setRedispatchSending(false); }
   };
 
+  const [editLinkPrompt, setEditLinkPrompt] = useState(null);
+  const [editLinkValue, setEditLinkValue] = useState('');
+  const [editLinkSending, setEditLinkSending] = useState(false);
+  const openEditLink = (o) => { setEditLinkPrompt(o); setEditLinkValue(o.link || ''); };
+  const doEditLink = async () => {
+    if (!editLinkPrompt) return;
+    setEditLinkSending(true);
+    try {
+      const res = await fetch("/api/admin/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update_link", orderId: editLinkPrompt.id, link: editLinkValue.trim() }) });
+      const data = await res.json();
+      if (!res.ok) { toast.error("Update failed", data.error || "Something went wrong"); return; }
+      toast.success(editLinkPrompt.id, "Link updated");
+      setOrders(prev => prev.map(o => o.id === editLinkPrompt.id ? { ...o, link: data.link } : o));
+      setEditLinkPrompt(null);
+    } catch { toast.error("Request failed", "Check your connection"); } finally { setEditLinkSending(false); }
+  };
+
   const [refundPrompt, setRefundPrompt] = useState(null);
   const [refundPercent, setRefundPercent] = useState(25);
   const [refundSending, setRefundSending] = useState(false);
@@ -498,6 +515,7 @@ export default function AdminOrdersPage({ dark, t }) {
                                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
                                 </div>
                                 <a href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="m min-w-0 flex-1 text-[12px] leading-[1.45] overflow-hidden text-ellipsis whitespace-nowrap no-underline" style={{ color: t.textSoft }}>{o.link}</a>
+                                {!o.apiOrderId && o.status !== "Cancelled" && <button onClick={() => openEditLink(o)} className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }} title="Edit link"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>}
                               </div>
                             )}
 
@@ -657,6 +675,7 @@ export default function AdminOrdersPage({ dark, t }) {
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
                       </div>
                       <a href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="m min-w-0 flex-1 text-[12px] desktop:text-[13px] leading-[1.45] overflow-hidden text-ellipsis whitespace-nowrap no-underline" style={{ color: t.textSoft }}>{o.link}</a>
+                      {!o.apiOrderId && o.status !== "Cancelled" && <button onClick={() => openEditLink(o)} className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }} title="Edit link"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>}
                     </div>
                   )}
 
@@ -915,6 +934,23 @@ export default function AdminOrdersPage({ dark, t }) {
         </div>
         );
       })()}
+
+      {editLinkPrompt && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => setEditLinkPrompt(null)}>
+          <div className="w-full max-w-[400px] mx-4 rounded-xl p-5" style={{ background: dark ? "#1e1e1e" : "#fff", border: `1px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
+            <div className="text-[15px] font-semibold mb-1" style={{ color: t.text }}>Edit Link — {editLinkPrompt.id}</div>
+            <div className="text-[12px] mb-4" style={{ color: t.textMuted }}>Tracking params will be stripped automatically.</div>
+            <div className="mb-4">
+              <label className="text-[11px] uppercase tracking-[1px] block mb-1.5" style={{ color: t.textMuted }}>Link</label>
+              <input type="url" value={editLinkValue} onChange={e => setEditLinkValue(e.target.value)} className="w-full rounded-lg py-2.5 px-3 text-sm outline-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.text, fontFamily: "inherit" }} placeholder="https://..." autoFocus />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setEditLinkPrompt(null)} className="py-2 px-4 rounded-lg text-sm font-medium cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textSoft }}>Cancel</button>
+              <button onClick={doEditLink} disabled={editLinkSending || !editLinkValue.trim()} className="py-2 px-4 rounded-lg text-sm font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)", color: dark ? "#e8a0b2" : "#c47d8e", opacity: editLinkSending || !editLinkValue.trim() ? .5 : 1 }}>{editLinkSending ? "Saving..." : "Save Link"}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </>
   );
