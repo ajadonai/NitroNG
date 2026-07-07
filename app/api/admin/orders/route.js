@@ -550,8 +550,15 @@ export async function POST(req) {
       const remainingQty = fullOrder.quantity - delivered;
       if (remainingQty <= 0) return Response.json({ error: 'No remaining quantity to redispatch' }, { status: 400 });
 
-      const newCharge = Math.round(fullOrder.charge * remainingQty / fullOrder.quantity);
-      if (fullOrder.user.balance < newCharge) {
+      const expectedCharge = Math.round(fullOrder.charge * remainingQty / fullOrder.quantity);
+      const refundAgg = await prisma.transaction.aggregate({
+        where: { userId: fullOrder.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${fullOrder.orderId}`, `ADM-REF-${fullOrder.orderId}`] } },
+        _sum: { amount: true },
+      });
+      const totalRefunded = refundAgg._sum.amount || 0;
+      const heldFromOriginal = Math.max(0, fullOrder.charge - totalRefunded);
+      const newCharge = Math.max(0, expectedCharge - heldFromOriginal);
+      if (newCharge > 0 && fullOrder.user.balance < newCharge) {
         return Response.json({ error: `Insufficient balance (has ₦${(fullOrder.user.balance / 100).toLocaleString()}, needs ₦${(newCharge / 100).toLocaleString()})` }, { status: 400 });
       }
 
@@ -577,7 +584,9 @@ export async function POST(req) {
 
       const newId = await nextOrderId();
       const newOrder = await prisma.$transaction(async (tx) => {
-        await tx.$executeRaw`UPDATE users SET balance = balance - ${newCharge} WHERE id = ${fullOrder.user.id} AND balance >= ${newCharge}`;
+        if (newCharge > 0) {
+          await tx.$executeRaw`UPDATE users SET balance = balance - ${newCharge} WHERE id = ${fullOrder.user.id} AND balance >= ${newCharge}`;
+        }
         await tx.order.update({ where: { id: fullOrder.id }, data: { redispatchedAt: new Date() } });
         const child = await tx.order.create({
           data: {
@@ -587,13 +596,15 @@ export async function POST(req) {
             ...(dripSchedule ? { dripDays: fullOrder.dripDays || 1 } : {}),
           },
         });
-        await tx.transaction.create({
-          data: {
-            userId: fullOrder.userId, type: 'order', amount: -newCharge,
-            method: 'wallet', status: 'Completed', reference: newId,
-            note: `Re-dispatch ${fullOrder.orderId} → ${newId} (${remainingQty} qty)`,
-          },
-        });
+        if (newCharge > 0) {
+          await tx.transaction.create({
+            data: {
+              userId: fullOrder.userId, type: 'order', amount: -newCharge,
+              method: 'wallet', status: 'Completed', reference: newId,
+              note: `Re-dispatch ${fullOrder.orderId} → ${newId} (${remainingQty} qty)`,
+            },
+          });
+        }
         if (dripSchedule) {
           await tx.dripDispatch.createMany({
             data: dripSchedule.dispatches.map(d => ({
