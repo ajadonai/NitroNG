@@ -177,8 +177,10 @@ export async function POST(req) {
     const eventId = `apinfo_${reference}`;
     const hdrs = await getHeaders();
     const { fbp, fbc } = parseFbCookies(hdrs.get('cookie'));
+    const verifyUser = await prisma.user.findUnique({ where: { id: session.id }, select: { phone: true } });
     await trackDeposit({
       email: session.email,
+      phone: verifyUser?.phone,
       userId: session.id,
       reference,
       amountKobo: paidAmount,

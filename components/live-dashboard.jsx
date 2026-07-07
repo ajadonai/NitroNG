@@ -88,6 +88,7 @@ function deviceInfo(ua) {
 
 function conversionSignal(session) {
   if (!session.user) return { label: 'Guest', color: '#8a8580', bg: 'rgba(138,133,128,.12)' };
+  if (session.user.isAdmin) return { label: 'Admin', color: '#c47d8e', bg: 'rgba(196,125,142,.12)' };
   const u = session.user;
   if (u.balance > 0 && u.orderCount > 0) return { label: 'Hot', color: '#f59e0b', bg: 'rgba(245,158,11,.12)' };
   if (u.balance > 0) return { label: 'Has Funds', color: '#6ee7b7', bg: 'rgba(110,231,183,.12)' };
@@ -150,7 +151,7 @@ function SessionCard({ s, expanded, onToggle, isNew }) {
           </div>
         </div>
 
-        {s.user && (
+        {s.user && !s.user.isAdmin && (
           <div className="live-stats" style={{ display: 'flex', gap: 16, flexShrink: 0, fontSize: 12 }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ color: s.user.balance > 0 ? '#6ee7b7' : '#8a8580', fontWeight: 700 }}>
@@ -182,7 +183,7 @@ function SessionCard({ s, expanded, onToggle, isNew }) {
           display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px',
           fontSize: 12, animation: 'expand-in .2s ease',
         }}>
-          {s.user ? (
+          {s.user && !s.user.isAdmin ? (
             <>
               <Detail label="Email" value={s.user.email} />
               <Detail label="Joined" value={timeAgo(s.user.joined)} />
@@ -210,6 +211,11 @@ function SessionCard({ s, expanded, onToggle, isNew }) {
                   ))}
                 </div>
               )}
+            </>
+          ) : s.user?.isAdmin ? (
+            <>
+              <Detail label="Email" value={s.user.email} />
+              <Detail label="Device" value={device.label} />
             </>
           ) : (
             <>

@@ -46,8 +46,15 @@ export async function GET(req) {
     : [];
   const userMap = Object.fromEntries(users.map(u => [u.id, u]));
 
+  const unmatchedIds = userIds.filter(id => !userMap[id]);
+  const admins = unmatchedIds.length
+    ? await prisma.admin.findMany({ where: { id: { in: unmatchedIds } }, select: { id: true, name: true, email: true } })
+    : [];
+  const adminMap = Object.fromEntries(admins.map(a => [a.id, a]));
+
   const result = sessions.map(s => {
     const u = s.userId ? userMap[s.userId] : null;
+    const admin = !u && s.userId ? adminMap[s.userId] : null;
     return {
       sessionId: s.sessionId,
       page: s.page,
@@ -71,6 +78,10 @@ export async function GET(req) {
           status: o.status,
           date: o.createdAt.toISOString(),
         })),
+      } : admin ? {
+        name: admin.name,
+        email: admin.email,
+        isAdmin: true,
       } : null,
     };
   });

@@ -777,6 +777,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
             min: tier.min,
             max: tier.max,
             provider: tier.provider || "mtp",
+            apiType: tier.apiType || "Default",
             tags: tier.tags || [],
           })),
         };

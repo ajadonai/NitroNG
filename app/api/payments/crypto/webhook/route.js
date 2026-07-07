@@ -95,9 +95,9 @@ export async function POST(req) {
       log.info('NowPayments Webhook', `✓ Credited ${tx.amount / 100} + ₦${couponBonus / 100} bonus to user ${tx.userId}`);
 
       try {
-        const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true, name: true } });
+        const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true, name: true, phone: true, lastIp: true, lastUa: true, lastFbp: true, lastFbc: true } });
         if (u) {
-          await trackDeposit({ email: u.email, userId: tx.userId, reference: order_id, amountKobo: tx.amount });
+          await trackDeposit({ email: u.email, phone: u.phone, userId: tx.userId, reference: order_id, amountKobo: tx.amount, clientIp: u.lastIp, userAgent: u.lastUa, fbp: u.lastFbp, fbc: u.lastFbc });
           tgPayment(u.name || u.email, tx.amount, couponBonus || 0, 'Crypto');
         }
       } catch {}
