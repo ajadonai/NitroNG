@@ -4,6 +4,7 @@ import { requireAdmin, logActivity, canSeeSensitive, maskEmail, maskPhone } from
 import { sendEmail, walletCreditEmail } from '@/lib/email';
 import { checkOrder, cancelOrder, refillOrder, isProviderConfigured, getProviderName } from '@/lib/smm';
 import { voidCommissions } from '@/lib/commissions';
+import { cleanLink } from '@/lib/clean-link';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('orders');
@@ -140,6 +141,11 @@ export async function POST(req) {
           data: { status: isPartial ? 'Partial' : 'Cancelled', queuedBehind: null, lastError: body.note ? `admin_cancelled: ${body.note}` : 'admin_cancelled', refundedAt: new Date() },
         });
         if (claimed.count === 0) return { ok: false };
+
+        await tx.dripDispatch.updateMany({
+          where: { orderId: order.id, status: { notIn: ['completed', 'partial'] } },
+          data: { status: 'cancelled', completedAt: new Date() },
+        });
 
         let refundAmount = 0;
         if (maxRefund > 0) {
@@ -369,6 +375,19 @@ export async function POST(req) {
       await prisma.order.update({ where: { id: order.id }, data: { status: 'Pending', retryCount: 0, lastError: null } });
       await logActivity(admin.name, `Reset order ${orderId} for retry`, 'order');
       return Response.json({ success: true });
+    }
+
+    if (action === 'update_link') {
+      const { link: newLink } = body;
+      if (!newLink || !newLink.trim()) return Response.json({ error: 'Link is required' }, { status: 400 });
+      const order = await prisma.order.findFirst({ where: { orderId, deletedAt: null } });
+      if (!order) return Response.json({ error: 'Order not found' }, { status: 404 });
+      if (order.apiOrderId) return Response.json({ error: 'Cannot change link — order already sent to provider' }, { status: 400 });
+      if (order.status === 'Cancelled') return Response.json({ error: 'Order is cancelled' }, { status: 400 });
+      const cleaned = cleanLink(newLink.trim());
+      await prisma.order.update({ where: { id: order.id }, data: { link: cleaned } });
+      await logActivity(admin.name, `Updated link for ${orderId}`, 'order');
+      return Response.json({ success: true, link: cleaned });
     }
 
     if (action === 'dispatch') {
