@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { applyWelcomeBonus } from '@/lib/welcome-bonus';
-import { tgAnswerCallback, tgEditMessage, tgPayment } from '@/lib/telegram';
+import { tgAnswerCallback, tgEditMessage, tgDeleteMessage, tgPayment } from '@/lib/telegram';
 import { watBounds } from '@/lib/format';
 import { getBalance, PROVIDER_IDS, getProviderName, isProviderConfigured } from '@/lib/smm';
 
@@ -427,8 +427,16 @@ async function handlePending(chatId, threadId) {
 
 // ── /check NTR-XXXX — order lookup ────────────────────
 async function handleCheck(chatId, threadId, orderId) {
-  if (!orderId) { await reply(chatId, threadId, '⚠️ Usage: <code>/check NTR-1566</code>'); return; }
-  const id = orderId.toUpperCase();
+  if (!orderId) {
+    await fetch(`${API}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, ...(threadId ? { message_thread_id: threadId } : {}), text: '🔍 What order number?', parse_mode: 'HTML', reply_markup: { force_reply: true, selective: true } }),
+    }).catch(() => {});
+    return;
+  }
+  const raw = orderId.trim().replace(/^#/, '');
+  const id = /^\d+$/.test(raw) ? `NTR-${raw}` : raw.toUpperCase();
   const o = await prisma.order.findUnique({
     where: { orderId: id },
     include: {
@@ -511,10 +519,15 @@ export async function POST(req) {
     const userId = String(msg.from?.id);
     if (!ADMIN_TG_IDS.includes(userId)) return Response.json({ ok: true });
 
-    const command = msg.text.trim().split(/[\s@]/)[0].toLowerCase();
     const chatId = msg.chat.id;
     const threadId = msg.message_thread_id;
 
+    if (msg.reply_to_message?.from?.id === Number(TOKEN.split(':')[0]) && msg.reply_to_message?.text === '🔍 What order number?') {
+      try { await handleCheck(chatId, threadId, msg.text.trim()); } catch (err) { await reply(chatId, threadId, `❌ Error: ${err.message?.slice(0, 120) || 'unknown'}`); }
+      return Response.json({ ok: true });
+    }
+
+    const command = msg.text.trim().split(/[\s@]/)[0].toLowerCase();
     const arg = msg.text.trim().split(/\s+/)[1];
 
     try {
@@ -539,7 +552,7 @@ export async function POST(req) {
           '/top — Top platforms + services this month',
           '/pending — Pending manual deposits',
           '/balance — Provider balances (MTP, DaoSMM, etc.)',
-          '/check NTR-XXXX — Look up any order',
+          '/check NTR-XXXX or /check 1234 — Look up any order',
           '/help — This message',
         ].join('\n'));
       }
@@ -657,8 +670,7 @@ export async function POST(req) {
       });
 
       await tgAnswerCallback(cb.id, `Approved ${amt}`);
-      const finalText = cb.message.text.replace(/\n\n⚠️ .*$/, '') + `\n\n✅ <b>Approved</b> by ${adminLabel}`;
-      await tgEditMessage(cb.message.message_id, finalText, { reply_markup: { inline_keyboard: [] } });
+      await tgDeleteMessage(cb.message.message_id);
       await tgPayment(name, tx.amount, 0, 'Manual', adminLabel);
       log.info('TG Webhook', `Approved manual deposit ${txId} for ${name}`);
 
@@ -674,8 +686,7 @@ export async function POST(req) {
       });
 
       await tgAnswerCallback(cb.id, 'Rejected');
-      const finalText = cb.message.text.replace(/\n\n⚠️ .*$/, '') + `\n\n❌ <b>Rejected</b> by ${adminLabel}`;
-      await tgEditMessage(cb.message.message_id, finalText, { reply_markup: { inline_keyboard: [] } });
+      await tgDeleteMessage(cb.message.message_id);
       log.info('TG Webhook', `Rejected manual deposit ${txId} for ${name}`);
     }
   } catch (err) {

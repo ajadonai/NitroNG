@@ -8,7 +8,7 @@ import { cleanLink } from '@/lib/clean-link';
 import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig } from '@/lib/drip-feed';
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
-import { tgNewOrder } from '@/lib/telegram';
+import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { voidCommissions } from '@/lib/commissions';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
 
@@ -192,6 +192,7 @@ export async function PATCH(req) {
         return true;
       });
       if (!refunded) return Response.json({ error: 'Order already sent to provider' }, { status: 409 });
+      tgRefundAlert({ orderId: order.orderId, amount: order.charge, charge: order.charge, qty: order.quantity, status: 'Cancelled', reason: 'user_cancelled', service: order.tier?.group?.name, source: 'user' });
       voidCommissions(order.id, 'user_cancelled').catch(() => {});
       return Response.json({ success: true, status: 'Cancelled', refunded: order.charge / 100 });
     }

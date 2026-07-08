@@ -10,7 +10,7 @@ import { cleanLink } from '@/lib/clean-link';
 import { calculateIntradayDrip, getDripConfig } from '@/lib/drip-feed';
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
-import { tgNewOrder } from '@/lib/telegram';
+import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
 
 async function nextOrderIds(tx, count) {
@@ -212,6 +212,7 @@ export async function PATCH(req) {
         return { cancelled: cancellable.length, refunded: refundAmount / 100 };
       });
       if (result.cancelled === 0) return Response.json({ error: 'No cancellable orders — all have been sent to providers' }, { status: 400 });
+      tgRefundAlert({ orderId: batchId, amount: result.refunded * 100, charge: result.refunded * 100, qty: result.cancelled, status: 'Cancelled', reason: 'user_cancelled (bulk)', source: 'user' });
       return Response.json({ success: true, ...result });
     }
 

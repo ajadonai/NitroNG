@@ -5,7 +5,7 @@ import { log } from '@/lib/logger';
 import { checkOrder } from '@/lib/smm';
 import { sendEmail, emailWrap, batchCompletionEmail, emailRow, emailDataBox, emailCTA } from '@/lib/email';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
-import { tgRefund, tgOrderCancelled } from '@/lib/telegram';
+import { tgRefund, tgOrderCancelled, tgRefundAlert } from '@/lib/telegram';
 import { createCommission, voidCommissions } from '@/lib/commissions';
 
 // Polls provider APIs for order status updates
@@ -147,6 +147,7 @@ export async function GET(req) {
             stats.updated++;
             stats.refunded++;
             tgOrderCancelled(order.orderId, order.charge, providerError || 'provider_cancelled');
+            tgRefundAlert({ orderId: order.orderId, amount: order.charge, charge: order.charge, qty: order.quantity, remains: order.remains, status: 'Cancelled', reason: providerError || 'provider_cancelled', service: order.service?.category, source: 'auto' });
             voidCommissions(order.id, 'order_cancelled').catch(() => {});
             refundOrder(order, null, true).catch(() => {});
           } else if (newStatus === 'Partial' && result.remains) {
@@ -182,6 +183,7 @@ export async function GET(req) {
             stats.updated++;
             if (refundAmount > 0) {
               stats.refunded++;
+              tgRefundAlert({ orderId: order.orderId, amount: refundAmount, charge: order.charge, qty: order.quantity, remains: Number(result.remains) || 0, status: 'Partial', service: order.service?.category, source: 'auto' });
               refundOrder(order, refundAmount, true).catch(() => {});
             }
             const delivered = order.quantity - (Number(result.remains) || 0);
@@ -380,6 +382,7 @@ export async function GET(req) {
           });
           stats.autoRefunded++;
           tgRefund(order.orderId, order.charge, 'dispatch_failed');
+          tgRefundAlert({ orderId: order.orderId, amount: order.charge, charge: order.charge, qty: order.quantity, status: 'Cancelled', reason: 'dispatch_failed', source: 'auto' });
           voidCommissions(order.id, 'dispatch_failed').catch(() => {});
           if (order.charge >= 5000) await refundOrder(order, null, true);
         } catch (err) {
@@ -434,6 +437,7 @@ export async function GET(req) {
           });
           stats.recovered++;
           log.warn(`Recovered refund ${order.orderId}`, `₦${(refundAmount / 100).toLocaleString()} credited`);
+          tgRefundAlert({ orderId: order.orderId, amount: refundAmount, charge: order.charge, qty: order.quantity, remains: order.remains, status: order.status, reason: 'recovered', source: 'auto' });
           refundOrder(order, order.status === 'Partial' ? refundAmount : null, true).catch(() => {});
         } catch (err) {
           log.warn(`Recovery refund ${order.orderId}`, err.message);

@@ -99,7 +99,8 @@ model User {
   gameRewards   GameReward[]
   videoWatches  VideoWatch[]
   crewMember    CrewMember?
-  bonusCredits  BonusCredit[]
+  bonusCredits      BonusCredit[]
+  taskSubmissions   TaskSubmission[]
 
   @@index([signupIp])
   @@map("users")
@@ -923,4 +924,58 @@ model OrderCreditUsage {
   @@index([orderId])
   @@index([bonusCreditId])
   @@map("order_credit_usages")
+}
+
+// ──────────────────────────────────────
+// TASKS
+// ──────────────────────────────────────
+
+model Task {
+  id                 String           @id
+  platform           String
+  title              String
+  instructions       String
+  category           String
+  proofType          String
+  reward             Int
+  frequency          String           @default("one_time")
+  maxPerMonth        Int              @default(0)
+  minViews           Int              @default(0)
+  minFollowers       Int              @default(0)
+  keepDays           Int              @default(0)
+  monthlyCap         Int              @default(0)
+  viralBonus         Boolean          @default(false)
+  viralThreshold     Int              @default(0)
+  viralAmount        Int              @default(0)
+  allowNonDepositors Boolean          @default(true)
+  active             Boolean          @default(true)
+  sortOrder          Int              @default(0)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  submissions TaskSubmission[]
+
+  @@map("tasks")
+}
+
+model TaskSubmission {
+  id              String    @id
+  taskId          String
+  userId          String
+  proof           String
+  views           Int?
+  status          String    @default("pending")
+  creditedAmount  Int?
+  bonusCreditId   String?
+  rejectionReason String?
+  createdAt       DateTime  @default(now())
+  reviewedAt      DateTime?
+  reviewedBy      String?
+
+  task Task @relation(fields: [taskId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([status])
+  @@index([taskId, userId])
+  @@map("task_submissions")
 }
