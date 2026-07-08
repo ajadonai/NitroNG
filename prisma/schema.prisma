@@ -681,21 +681,24 @@ model RecurringCampaign {
 // ──────────────────────────────────────
 
 model AcquisitionLink {
-  id          String      @id @default(cuid())
-  name        String
-  slug        String      @unique
-  enabled     Boolean     @default(true)
-  affiliateId String?
-  archivedAt  DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  clicks      LinkClick[]
-  affiliate   CrewMember? @relation(fields: [affiliateId], references: [id])
-  commissions AffiliateCommission[]
+  id               String      @id @default(cuid())
+  name             String
+  slug             String      @unique
+  enabled          Boolean     @default(true)
+  affiliateId      String?
+  createdByChiefId String?
+  archivedAt       DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  clicks           LinkClick[]
+  affiliate        CrewMember? @relation("LinkAffiliate", fields: [affiliateId], references: [id])
+  createdByChief   CrewMember? @relation("LinkCreator", fields: [createdByChiefId], references: [id])
+  commissions      AffiliateCommission[]
 
-  logs        LinkLog[]
+  logs             LinkLog[]
 
   @@index([affiliateId])
+  @@index([createdByChiefId])
   @@map("acquisition_links")
 }
 
@@ -774,7 +777,8 @@ model CrewMember {
   user             User?        @relation(fields: [userId], references: [id])
   lead             CrewMember?  @relation("CrewHierarchy", fields: [leadId], references: [id])
   crew             CrewMember[] @relation("CrewHierarchy")
-  links            AcquisitionLink[]
+  links            AcquisitionLink[] @relation("LinkAffiliate")
+  createdLinks     AcquisitionLink[] @relation("LinkCreator")
   linkLogs         LinkLog[]
   commissions      AffiliateCommission[] @relation("CommissionMember")
   leadCommissions  AffiliateCommission[] @relation("CommissionLead")

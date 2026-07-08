@@ -104,7 +104,7 @@ export async function POST(req) {
           ]);
           const maxLinks = parseInt(maxLinksRow?.value) || 5;
           if (activeCount >= maxLinks) throw Object.assign(new Error('limit'), { _limit: maxLinks });
-          return tx.acquisitionLink.create({ data: { name: name.trim(), slug, affiliateId: assigneeId } });
+          return tx.acquisitionLink.create({ data: { name: name.trim(), slug, affiliateId: assigneeId, createdByChiefId: member.id } });
         }, { isolationLevel: 'Serializable' });
         break;
       } catch (e) {

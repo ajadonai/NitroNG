@@ -73,7 +73,7 @@ describe('POST link limit', () => {
     mockTx.setting.findUnique.mockResolvedValue({ value: '5' });
     mockTx.acquisitionLink.count.mockResolvedValue(2);
     mockTx.acquisitionLink.create.mockResolvedValue({
-      id: 'new', name: 'Test', slug: 'test', enabled: true, createdAt: new Date(),
+      id: 'new', name: 'Test', slug: 'test', enabled: true, createdByChiefId: 'chief1', createdAt: new Date(),
     });
 
     await POST(makeReq({ name: 'Test Link' }));
@@ -99,7 +99,7 @@ describe('POST link limit', () => {
     mockTx.setting.findUnique.mockResolvedValue({ value: '10' });
     mockTx.acquisitionLink.count.mockResolvedValue(1);
     mockTx.acquisitionLink.create.mockResolvedValue({
-      id: 'new', name: 'Test', slug: 'test', enabled: true, createdAt: new Date(),
+      id: 'new', name: 'Test', slug: 'test', enabled: true, createdByChiefId: 'chief1', createdAt: new Date(),
     });
 
     await POST(makeReq({ name: 'Test' }));
@@ -108,6 +108,19 @@ describe('POST link limit', () => {
       expect.any(Function),
       { isolationLevel: 'Serializable' },
     );
+  });
+
+  it('sets createdByChiefId to the creating chief', async () => {
+    mockTx.setting.findUnique.mockResolvedValue({ value: '10' });
+    mockTx.acquisitionLink.count.mockResolvedValue(0);
+    mockTx.acquisitionLink.create.mockResolvedValue({
+      id: 'new', name: 'Test', slug: 'test', enabled: true, createdByChiefId: 'chief1', createdAt: new Date(),
+    });
+
+    await POST(makeReq({ name: 'Ownership Test' }));
+
+    const createCall = mockTx.acquisitionLink.create.mock.calls[0][0];
+    expect(createCall.data.createdByChiefId).toBe('chief1');
   });
 });
 
@@ -144,7 +157,7 @@ describe('POST slug uniqueness', () => {
 // ──────────────────────────────────────
 describe('DELETE archive', () => {
   it('sets both archivedAt and enabled=false', async () => {
-    mockPrisma.acquisitionLink.findUnique.mockResolvedValue({ id: 'link1', affiliateId: 'chief1' });
+    mockPrisma.acquisitionLink.findUnique.mockResolvedValue({ id: 'link1', affiliateId: 'chief1', createdByChiefId: 'chief1' });
     mockPrisma.acquisitionLink.update.mockResolvedValue({});
 
     const res = await DELETE(makeDeleteReq({ id: 'link1' }));
@@ -173,7 +186,7 @@ describe('P2034 serialization retry', () => {
     mockTx.setting.findUnique.mockResolvedValue({ value: '10' });
     mockTx.acquisitionLink.count.mockResolvedValue(0);
     mockTx.acquisitionLink.create.mockResolvedValue({
-      id: 'retry-ok', name: 'Retry', slug: 'retry', enabled: true, createdAt: new Date(),
+      id: 'retry-ok', name: 'Retry', slug: 'retry', enabled: true, createdByChiefId: 'chief1', createdAt: new Date(),
     });
 
     const res = await POST(makeReq({ name: 'Retry Link' }));
