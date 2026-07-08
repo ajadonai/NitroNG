@@ -164,10 +164,13 @@ export async function POST(req) {
 
     if (action === "demote-crew") {
       const orphaned = await prisma.crewMember.findMany({ where: { leadId: memberId }, select: { id: true } });
+      const ops = [
+        prisma.crewMember.update({ where: { id: memberId }, data: { role: "crew", teamName: null } }),
+      ];
       if (orphaned.length) {
-        await prisma.crewMember.updateMany({ where: { leadId: memberId }, data: { leadId: null } });
+        ops.unshift(prisma.crewMember.updateMany({ where: { leadId: memberId }, data: { leadId: null } }));
       }
-      await prisma.crewMember.update({ where: { id: memberId }, data: { role: "crew", teamName: null } });
+      await prisma.$transaction(ops);
       const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
       await logActivity(admin.name, `Demoted ${m?.name || memberId} to crew${orphaned.length ? ` (${orphaned.length} crew unassigned)` : ''}`);
       return Response.json({ ok: true, unassignedCrew: orphaned.length });
@@ -186,14 +189,15 @@ export async function POST(req) {
       if (!chiefId) return Response.json({ error: "Chief ID required" }, { status: 400 });
       if (chiefId === memberId) return Response.json({ error: "Cannot assign a member to themselves" }, { status: 400 });
       const [chief, m] = await Promise.all([
-        prisma.crewMember.findUnique({ where: { id: chiefId }, select: { name: true, role: true, status: true } }),
+        prisma.crewMember.findUnique({ where: { id: chiefId }, select: { name: true, role: true, status: true, deletedAt: true } }),
         prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true, role: true } }),
       ]);
+      if (!m) return Response.json({ error: "Member not found" }, { status: 404 });
       if (!chief || chief.role !== "chief") return Response.json({ error: "Destination must be a chief" }, { status: 400 });
-      if (chief.status !== "approved") return Response.json({ error: "Destination chief is not active" }, { status: 400 });
-      if (m?.role === "chief") return Response.json({ error: "Chiefs cannot be assigned to a team" }, { status: 400 });
+      if (chief.status !== "approved" || chief.deletedAt) return Response.json({ error: "Destination chief is not active" }, { status: 400 });
+      if (m.role === "chief") return Response.json({ error: "Chiefs cannot be assigned to a team" }, { status: 400 });
       await prisma.crewMember.update({ where: { id: memberId }, data: { leadId: chiefId } });
-      await logActivity(admin.name, `${action === "move-team" ? "Moved" : "Assigned"} crew member ${m?.name || memberId} to ${chief.name}'s team`);
+      await logActivity(admin.name, `${action === "move-team" ? "Moved" : "Assigned"} crew member ${m.name || memberId} to ${chief.name}'s team`);
       return Response.json({ ok: true });
     }
 

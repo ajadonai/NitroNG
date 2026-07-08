@@ -5,6 +5,7 @@ const mockPrisma = {
   setting: { findUnique: vi.fn(), findMany: vi.fn() },
   acquisitionLink: { findFirst: vi.fn(), findUnique: vi.fn(), create: vi.fn() },
   activityLog: { create: vi.fn().mockResolvedValue({}) },
+  $transaction: vi.fn(async (ops) => Promise.all(ops)),
 };
 
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
@@ -70,7 +71,7 @@ describe('demote-crew', () => {
     expect(updateCall.data.role).toBe('crew');
   });
 
-  it('unassigns orphaned crew members', async () => {
+  it('unassigns orphaned crew members in a transaction', async () => {
     mockPrisma.crewMember.findMany.mockResolvedValue([{ id: 'c1' }, { id: 'c2' }]);
     mockPrisma.crewMember.updateMany.mockResolvedValue({ count: 2 });
     mockPrisma.crewMember.update.mockResolvedValue({});
@@ -79,10 +80,9 @@ describe('demote-crew', () => {
     const res = await POST(makeReq({ action: 'demote-crew', memberId: 'chief1' }));
     const body = await res.json();
 
-    expect(mockPrisma.crewMember.updateMany).toHaveBeenCalledWith({
-      where: { leadId: 'chief1' },
-      data: { leadId: null },
-    });
+    expect(mockPrisma.$transaction).toHaveBeenCalledWith(expect.any(Array));
+    const txOps = mockPrisma.$transaction.mock.calls[0][0];
+    expect(txOps).toHaveLength(2);
     expect(body.unassignedCrew).toBe(2);
   });
 
@@ -94,7 +94,9 @@ describe('demote-crew', () => {
     const res = await POST(makeReq({ action: 'demote-crew', memberId: 'chief1' }));
     const body = await res.json();
 
-    expect(mockPrisma.crewMember.updateMany).not.toHaveBeenCalled();
+    expect(mockPrisma.$transaction).toHaveBeenCalledWith(expect.any(Array));
+    const txOps = mockPrisma.$transaction.mock.calls[0][0];
+    expect(txOps).toHaveLength(1);
     expect(body.unassignedCrew).toBe(0);
   });
 });
@@ -149,7 +151,7 @@ describe('assign-team', () => {
 
   it('allows valid crew-to-chief assignment', async () => {
     mockPrisma.crewMember.findUnique
-      .mockResolvedValueOnce({ name: 'Good Chief', role: 'chief', status: 'approved' })
+      .mockResolvedValueOnce({ name: 'Good Chief', role: 'chief', status: 'approved', deletedAt: null })
       .mockResolvedValueOnce({ name: 'Crew Member', role: 'crew' });
     mockPrisma.crewMember.update.mockResolvedValue({});
 
@@ -161,5 +163,29 @@ describe('assign-team', () => {
       where: { id: 'crew1' },
       data: { leadId: 'chief1' },
     });
+  });
+
+  it('rejects soft-deleted chief as destination', async () => {
+    mockPrisma.crewMember.findUnique
+      .mockResolvedValueOnce({ name: 'Deleted Chief', role: 'chief', status: 'approved', deletedAt: new Date() })
+      .mockResolvedValueOnce({ name: 'Member', role: 'crew' });
+
+    const res = await POST(makeReq({ action: 'assign-team', memberId: 'crew1', chiefId: 'chief-del' }));
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toMatch(/not active/);
+  });
+
+  it('returns 404 when source member does not exist', async () => {
+    mockPrisma.crewMember.findUnique
+      .mockResolvedValueOnce({ name: 'Good Chief', role: 'chief', status: 'approved', deletedAt: null })
+      .mockResolvedValueOnce(null);
+
+    const res = await POST(makeReq({ action: 'assign-team', memberId: 'ghost', chiefId: 'chief1' }));
+    const body = await res.json();
+
+    expect(res.status).toBe(404);
+    expect(body.error).toMatch(/not found/i);
   });
 });
