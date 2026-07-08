@@ -8,780 +8,9 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model acquisition_links {
-  id                    String                  @id
-  name                  String
-  slug                  String                  @unique
-  enabled               Boolean                 @default(true)
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime
-  archivedAt            DateTime?
-  affiliateId           String?
-  crew_members          crew_members?           @relation(fields: [affiliateId], references: [id])
-  affiliate_commissions affiliate_commissions[]
-  link_clicks           link_clicks[]
-  link_logs             link_logs[]
-
-  @@index([affiliateId])
-}
-
-model activity_log {
-  id        String   @id
-  adminName String
-  action    String
-  type      String
-  createdAt DateTime @default(now())
-
-  @@index([adminName])
-  @@index([createdAt])
-}
-
-model admin_issues {
-  id         String    @id
-  type       String
-  title      String
-  message    String
-  metadata   String?
-  status     String    @default("open")
-  resolvedAt DateTime?
-  resolvedBy String?
-  createdAt  DateTime  @default(now())
-
-  @@index([createdAt])
-  @@index([status])
-}
-
-model admin_sessions {
-  id         String   @id
-  adminId    String
-  tokenHash  String   @unique
-  deviceInfo String?
-  ip         String?
-  lastActive DateTime @default(now())
-  createdAt  DateTime @default(now())
-  deviceType String   @default("web")
-  admins     admins   @relation(fields: [adminId], references: [id], onDelete: Cascade)
-
-  @@index([adminId])
-}
-
-model admins {
-  id                                                          String                @id
-  email                                                       String                @unique
-  password                                                    String
-  name                                                        String
-  role                                                        String                @default("admin")
-  status                                                      String                @default("Active")
-  lastActive                                                  DateTime              @default(now())
-  createdAt                                                   DateTime              @default(now())
-  updatedAt                                                   DateTime
-  customPages                                                 String?
-  themePreference                                             String                @default("auto")
-  customActions                                               String?
-  admin_sessions                                              admin_sessions[]
-  platform_campaigns_platform_campaigns_createdByIdToadmins   platform_campaigns[]  @relation("platform_campaigns_createdByIdToadmins")
-  platform_campaigns_platform_campaigns_updatedByIdToadmins   platform_campaigns[]  @relation("platform_campaigns_updatedByIdToadmins")
-  recurring_campaigns_recurring_campaigns_createdByIdToadmins recurring_campaigns[] @relation("recurring_campaigns_createdByIdToadmins")
-  recurring_campaigns_recurring_campaigns_updatedByIdToadmins recurring_campaigns[] @relation("recurring_campaigns_updatedByIdToadmins")
-}
-
-model affiliate_commissions {
-  id                                                        String            @id
-  orderId                                                   String
-  linkId                                                    String
-  memberId                                                  String
-  leadId                                                    String?
-  orderCharge                                               Int
-  commissionRate                                            Int
-  leadSplit                                                 Int
-  leadAmount                                                Int
-  marketerAmount                                            Int
-  status                                                    String            @default("held")
-  releasesAt                                                DateTime
-  voidedAt                                                  DateTime?
-  voidReason                                                String?
-  createdAt                                                 DateTime          @default(now())
-  orderCost                                                 Int               @default(0)
-  crew_members_affiliate_commissions_leadIdTocrew_members   crew_members?     @relation("affiliate_commissions_leadIdTocrew_members", fields: [leadId], references: [id])
-  acquisition_links                                         acquisition_links @relation(fields: [linkId], references: [id])
-  crew_members_affiliate_commissions_memberIdTocrew_members crew_members      @relation("affiliate_commissions_memberIdTocrew_members", fields: [memberId], references: [id])
-  orders                                                    orders            @relation(fields: [orderId], references: [id])
-
-  @@unique([orderId, memberId])
-  @@index([leadId, status])
-  @@index([memberId, status])
-  @@index([orderId])
-  @@index([status, releasesAt])
-}
-
-model affiliate_payouts {
-  id              String       @id
-  memberId        String
-  amount          Int
-  status          String       @default("pending")
-  reference       String?
-  processedAt     DateTime?
-  createdAt       DateTime     @default(now())
-  bankAccountName String?
-  bankAccountNo   String?
-  bankName        String?
-  crew_members    crew_members @relation(fields: [memberId], references: [id])
-
-  @@index([memberId])
-  @@index([status])
-}
-
-model alerts {
-  id          String    @id
-  message     String
-  type        String    @default("info")
-  target      String    @default("both")
-  active      Boolean   @default(true)
-  createdBy   String
-  expiresAt   DateTime?
-  deletedAt   DateTime?
-  createdAt   DateTime  @default(now())
-  actionHref  String?
-  actionLabel String?
-
-  @@index([active])
-  @@index([target])
-}
-
-model blog_posts {
-  id          String   @id
-  title       String
-  slug        String   @unique
-  excerpt     String?
-  content     String
-  category    String   @default("Tutorials")
-  thumbnail   String?
-  published   Boolean  @default(false)
-  showInHowTo Boolean  @default(false)
-  sortOrder   Int      @default(0)
-  authorName  String
-  views       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime
-
-  @@index([category])
-  @@index([published])
-  @@index([showInHowTo])
-}
-
-model bonus_credits {
-  id                  String                @id
-  userId              String
-  source              String
-  amountGranted       Int
-  amountRemaining     Int
-  grantedAt           DateTime              @default(now())
-  expiresAt           DateTime
-  expiredAt           DateTime?
-  users               users                 @relation(fields: [userId], references: [id])
-  order_credit_usages order_credit_usages[]
-
-  @@index([userId, expiresAt])
-}
-
-model changelog_entries {
-  id          String   @id
-  date        DateTime @db.Date
-  tag         String
-  title       String
-  description String
-  createdAt   DateTime @default(now())
-
-  @@index([date])
-}
-
-model crew_members {
-  id                                                                 String                  @id
-  role                                                               String                  @default("crew")
-  status                                                             String                  @default("pending")
-  name                                                               String
-  email                                                              String                  @unique
-  password                                                           String
-  phone                                                              String?
-  xHandle                                                            String?
-  whyApply                                                           String?
-  bankAccountName                                                    String?
-  bankName                                                           String?
-  bankAccountNo                                                      String?
-  tier                                                               String                  @default("starter")
-  commissionRate                                                     Int                     @default(30)
-  totalEarned                                                        Int                     @default(0)
-  totalPaid                                                          Int                     @default(0)
-  leadId                                                             String?
-  inviteToken                                                        String?                 @unique
-  inviteExpiresAt                                                    DateTime?
-  approvedAt                                                         DateTime?
-  suspendedAt                                                        DateTime?
-  createdAt                                                          DateTime                @default(now())
-  updatedAt                                                          DateTime
-  telegramUserId                                                     String?
-  telegramLinkCode                                                   String?
-  userId                                                             String?                 @unique
-  telegramHandle                                                     String?
-  deletedAt                                                          DateTime?
-  resetExpires                                                       DateTime?
-  resetToken                                                         String?
-  teamName                                                           String?
-  acquisition_links                                                  acquisition_links[]
-  affiliate_commissions_affiliate_commissions_leadIdTocrew_members   affiliate_commissions[] @relation("affiliate_commissions_leadIdTocrew_members")
-  affiliate_commissions_affiliate_commissions_memberIdTocrew_members affiliate_commissions[] @relation("affiliate_commissions_memberIdTocrew_members")
-  affiliate_payouts                                                  affiliate_payouts[]
-  crew_members                                                       crew_members?           @relation("crew_membersTocrew_members", fields: [leadId], references: [id])
-  other_crew_members                                                 crew_members[]          @relation("crew_membersTocrew_members")
-  users                                                              users?                  @relation(fields: [userId], references: [id])
-  crew_sessions                                                      crew_sessions[]
-  link_logs                                                          link_logs[]
-
-  @@index([leadId])
-  @@index([role, status])
-  @@index([status])
-}
-
-model crew_sessions {
-  id           String       @id
-  memberId     String
-  token        String       @unique
-  expiresAt    DateTime
-  createdAt    DateTime     @default(now())
-  crew_members crew_members @relation(fields: [memberId], references: [id], onDelete: Cascade)
-
-  @@index([memberId])
-  @@index([token])
-}
-
-model drip_dispatches {
-  id           String    @id
-  orderId      String
-  day          Int
-  batch        Int
-  quantity     Int
-  apiOrderId   String?
-  status       String    @default("pending")
-  startCount   Int?
-  remains      Int?
-  scheduledAt  DateTime
-  dispatchedAt DateTime?
-  completedAt  DateTime?
-  lastError    String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime
-  orders       orders    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@index([orderId])
-  @@index([status, scheduledAt])
-}
-
-model game_rewards {
-  id        String   @id
-  userId    String
-  monthKey  String
-  rank      Int
-  score     Int
-  amount    Int
-  credited  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  users     users    @relation(fields: [userId], references: [id])
-
-  @@unique([monthKey, rank])
-  @@index([userId])
-}
-
-model game_scores {
-  id        String   @id
-  userId    String
-  sessionId String
-  score     Int
-  moves     Int
-  duration  Int
-  monthKey  String
-  verified  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  users     users    @relation(fields: [userId], references: [id])
-
-  @@index([monthKey, score(sort: Desc)])
-  @@index([userId, monthKey])
-}
-
-model game_sessions {
-  id        String   @id
-  userId    String
-  seed      String
-  status    String   @default("active")
-  createdAt DateTime @default(now())
-  users     users    @relation(fields: [userId], references: [id])
-
-  @@index([userId, status])
-}
-
-model idempotency_keys {
-  key       String   @id
-  userId    String
-  batchId   String?
-  status    String
-  response  Json?
-  createdAt DateTime @default(now())
-  expiresAt DateTime
-
-  @@index([expiresAt])
-  @@index([userId])
-}
-
-model link_clicks {
-  id                String            @id
-  linkId            String
-  ipHash            String
-  deviceType        String            @default("desktop")
-  os                String?
-  browser           String?
-  country           String?
-  city              String?
-  referrer          String?
-  createdAt         DateTime          @default(now())
-  acquisition_links acquisition_links @relation(fields: [linkId], references: [id], onDelete: Cascade)
-
-  @@index([createdAt])
-  @@index([linkId, createdAt])
-  @@index([linkId, ipHash])
-}
-
-model link_logs {
-  id                String            @id
-  linkId            String
-  action            String
-  detail            String?
-  actorId           String
-  createdAt         DateTime          @default(now())
-  crew_members      crew_members      @relation(fields: [actorId], references: [id])
-  acquisition_links acquisition_links @relation(fields: [linkId], references: [id], onDelete: Cascade)
-
-  @@index([linkId])
-}
-
-model live_sessions {
-  sessionId String   @id
-  userId    String?
-  page      String
-  ua        String?
-  lastSeen  DateTime @default(now())
-  firstSeen DateTime @default(now())
-
-  @@index([lastSeen])
-}
-
-model order_credit_usages {
-  id            String        @id
-  orderId       String
-  bonusCreditId String
-  amount        Int
-  bonus_credits bonus_credits @relation(fields: [bonusCreditId], references: [id])
-  orders        orders        @relation(fields: [orderId], references: [id])
-
-  @@index([bonusCreditId])
-  @@index([orderId])
-}
-
-model orders {
-  id                    String                  @id
-  orderId               String                  @unique
-  userId                String
-  serviceId             String
-  link                  String
-  quantity              Int
-  charge                Int
-  cost                  Int
-  status                String                  @default("Pending")
-  apiOrderId            String?
-  remains               Int?
-  createdAt             DateTime                @default(now())
-  deletedAt             DateTime?
-  updatedAt             DateTime
-  tierId                String?
-  batchId               String?
-  comments              String?
-  dispatchedAt          DateTime?
-  lastError             String?
-  loyaltyDiscount       Int                     @default(0)
-  refundedAt            DateTime?
-  retryCount            Int                     @default(0)
-  campaignDiscount      Int                     @default(0)
-  campaignPercent       Int?
-  platformCampaignId    String?
-  recurringCampaignId   String?
-  startCount            Int?
-  completedAt           DateTime?
-  dripDays              Int?
-  dripDelivered         Int                     @default(0)
-  protected             Boolean                 @default(false)
-  queuedBehind          String?
-  redispatchedAt        DateTime?
-  parentOrderId         String?
-  affiliate_commissions affiliate_commissions[]
-  drip_dispatches       drip_dispatches[]
-  order_credit_usages   order_credit_usages[]
-  platform_campaigns    platform_campaigns?     @relation(fields: [platformCampaignId], references: [id])
-  recurring_campaigns   recurring_campaigns?    @relation(fields: [recurringCampaignId], references: [id])
-  services              services                @relation(fields: [serviceId], references: [id])
-  service_tiers         service_tiers?          @relation(fields: [tierId], references: [id])
-  users                 users                   @relation(fields: [userId], references: [id])
-
-  @@index([createdAt])
-  @@index([parentOrderId])
-  @@index([platformCampaignId])
-  @@index([recurringCampaignId])
-  @@index([status])
-  @@index([userId, batchId])
-  @@index([userId, deletedAt, status])
-  @@index([userId])
-}
-
-model platform_campaigns {
-  id                                            String         @id
-  name                                          String
-  description                                   String?
-  discountPercent                               Int
-  startAt                                       DateTime
-  endAt                                         DateTime
-  timezone                                      String         @default("Africa/Lagos")
-  status                                        CampaignStatus @default(DRAFT)
-  priority                                      Int            @default(10)
-  maxDiscountPerOrder                           Int?
-  bannerCopy                                    String
-  bannerColor                                   String?        @db.VarChar(7)
-  bannerCtaText                                 String?
-  lineItemLabel                                 String
-  createdById                                   String
-  updatedById                                   String?
-  createdAt                                     DateTime       @default(now())
-  updatedAt                                     DateTime
-  emailedAt                                     DateTime?
-  emailTheme                                    String?
-  orders                                        orders[]
-  admins_platform_campaigns_createdByIdToadmins admins         @relation("platform_campaigns_createdByIdToadmins", fields: [createdById], references: [id])
-  admins_platform_campaigns_updatedByIdToadmins admins?        @relation("platform_campaigns_updatedByIdToadmins", fields: [updatedById], references: [id])
-
-  @@index([status, startAt, endAt])
-}
-
-model provider_topups {
-  id        String   @id
-  provider  String
-  amount    Int
-  note      String?
-  adminName String?
-  createdAt DateTime @default(now())
-
-  @@index([createdAt])
-  @@index([provider, createdAt])
-}
-
-model recurring_campaigns {
-  id                                             String    @id
-  name                                           String
-  description                                    String?
-  dayOfWeek                                      DayOfWeek
-  startTimeLocal                                 String    @default("00:00")
-  endTimeLocal                                   String    @default("23:59")
-  timezone                                       String    @default("Africa/Lagos")
-  discountPercent                                Int
-  active                                         Boolean   @default(false)
-  priority                                       Int       @default(0)
-  effectiveFrom                                  DateTime?
-  effectiveUntil                                 DateTime?
-  maxDiscountPerOrder                            Int?
-  bannerCopy                                     String
-  bannerColor                                    String?   @db.VarChar(7)
-  lineItemLabel                                  String
-  createdById                                    String
-  updatedById                                    String?
-  createdAt                                      DateTime  @default(now())
-  updatedAt                                      DateTime
-  orders                                         orders[]
-  admins_recurring_campaigns_createdByIdToadmins admins    @relation("recurring_campaigns_createdByIdToadmins", fields: [createdById], references: [id])
-  admins_recurring_campaigns_updatedByIdToadmins admins?   @relation("recurring_campaigns_updatedByIdToadmins", fields: [updatedById], references: [id])
-
-  @@index([active, dayOfWeek])
-}
-
-model service_groups {
-  id            String          @id
-  name          String
-  platform      String
-  type          String          @default("Standard")
-  nigerian      Boolean         @default(false)
-  enabled       Boolean         @default(true)
-  sortOrder     Int             @default(0)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime
-  description   String?
-  tags          String[]        @default([])
-  service_tiers service_tiers[]
-}
-
-model service_tiers {
-  id             String         @id
-  groupId        String
-  serviceId      String?
-  tier           String         @default("Standard")
-  sellPer1k      BigInt
-  refill         Boolean        @default(false)
-  speed          String         @default("0-2 hrs")
-  enabled        Boolean        @default(true)
-  sortOrder      Int            @default(0)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime
-  refillDays     Int            @default(0)
-  orders         orders[]
-  service_groups service_groups @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  services       services?      @relation(fields: [serviceId], references: [id])
-
-  @@index([groupId])
-  @@index([serviceId])
-}
-
-model services {
-  id            String          @id
-  apiId         Int
-  name          String
-  category      String
-  costPer1k     BigInt
-  sellPer1k     BigInt
-  markup        Int             @default(54)
-  min           Int             @default(100)
-  max           Int             @default(50000)
-  refill        Boolean         @default(false)
-  avgTime       String          @default("0-2 hrs")
-  enabled       Boolean         @default(true)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime
-  provider      String          @default("mtp")
-  dripfeed      Boolean         @default(false)
-  apiType       String          @default("Default")
-  tags          String[]        @default([])
-  orders        orders[]
-  service_tiers service_tiers[]
-
-  @@unique([apiId, provider])
-  @@index([provider])
-}
-
-model sessions {
-  id         String   @id
-  userId     String
-  tokenHash  String   @unique
-  deviceType String   @default("web")
-  deviceInfo String?
-  ip         String?
-  lastActive DateTime @default(now())
-  createdAt  DateTime @default(now())
-  users      users    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([deviceType])
-  @@index([userId])
-}
-
-model settings {
-  key       String   @id
-  value     String
-  updatedAt DateTime
-}
-
-model task_submissions {
-  id              String    @id
-  taskId          String
-  userId          String
-  proof           String
-  views           Int?
-  status          String    @default("pending")
-  creditedAmount  Int?
-  bonusCreditId   String?
-  rejectionReason String?
-  createdAt       DateTime  @default(now())
-  reviewedAt      DateTime?
-  reviewedBy      String?
-  tasks           tasks     @relation(fields: [taskId], references: [id])
-  users           users     @relation(fields: [userId], references: [id])
-
-  @@index([status])
-  @@index([taskId, userId])
-}
-
-model tasks {
-  id                 String             @id
-  platform           String
-  title              String
-  instructions       String
-  category           String
-  proofType          String
-  reward             Int
-  frequency          String             @default("one_time")
-  maxPerMonth        Int                @default(0)
-  minViews           Int                @default(0)
-  minFollowers       Int                @default(0)
-  keepDays           Int                @default(0)
-  monthlyCap         Int                @default(0)
-  viralBonus         Boolean            @default(false)
-  viralThreshold     Int                @default(0)
-  viralAmount        Int                @default(0)
-  allowNonDepositors Boolean            @default(true)
-  active             Boolean            @default(true)
-  sortOrder          Int                @default(0)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime
-  task_submissions   task_submissions[]
-}
-
-model ticket_replies {
-  id        String   @id
-  ticketId  String
-  from      String
-  message   String
-  createdAt DateTime @default(now())
-  tickets   tickets  @relation(fields: [ticketId], references: [id])
-
-  @@index([ticketId])
-}
-
-model tickets {
-  id             String           @id
-  ticketId       String           @unique
-  userId         String
-  subject        String
-  message        String
-  orderId        String?
-  status         String           @default("Open")
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime
-  lockedBy       String?
-  lockedAt       DateTime?
-  unreadByAdmin  Boolean          @default(true)
-  unreadByUser   Boolean          @default(false)
-  ticket_replies ticket_replies[]
-  users          users            @relation(fields: [userId], references: [id])
-
-  @@index([status])
-  @@index([userId])
-}
-
-model transactions {
-  id             String   @id
-  userId         String
-  type           String
-  amount         Int
-  method         String?
-  reference      String?  @unique
-  status         String   @default("Completed")
-  note           String?
-  createdAt      DateTime @default(now())
-  gatewayUrl     String?
-  idempotencyKey String?
-  users          users    @relation(fields: [userId], references: [id])
-
-  @@unique([userId, idempotencyKey])
-  @@index([createdAt])
-  @@index([type])
-  @@index([type, status, createdAt])
-  @@index([userId])
-  @@index([userId, type])
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model users {
-  id                     String             @id
-  email                  String             @unique
-  password               String
-  name                   String
-  balance                Int                @default(0)
-  referralCode           String             @unique
-  referredBy             String?
-  emailVerified          Boolean            @default(false)
-  verifyToken            String?
-  verifyExpires          DateTime?
-  resetToken             String?
-  resetExpires           DateTime?
-  status                 String             @default("Active")
-  createdAt              DateTime           @default(now())
-  updatedAt              DateTime
-  firstName              String?
-  lastName               String?
-  phone                  String?            @unique
-  apiKey                 String?            @unique
-  notifOrders            Boolean            @default(true)
-  notifPromo             Boolean            @default(true)
-  notifEmail             Boolean            @default(true)
-  notifClearedAt         DateTime?
-  notifReadIds           String?
-  themePreference        String             @default("auto")
-  perPagePreference      Int                @default(10)
-  deletedAt              DateTime?
-  deletedName            String?
-  deletedEmail           String?
-  tourCompleted          Boolean            @default(false)
-  orderTourCompleted     Boolean            @default(false)
-  signupIp               String?
-  tosAcceptedAt          DateTime?
-  tosVersion             String?
-  signupSource           String?
-  notifReadAllAt         DateTime?
-  winbackSentAt          DateTime?
-  firstDepositBonusPaid  Boolean            @default(false)
-  nudgeComebackSentAt    DateTime?
-  nudgeIdleBalanceSentAt DateTime?
-  nudgeIdleFundsSentAt   DateTime?
-  nudgeLapsedSentAt      DateTime?
-  adActivationDay1SentAt DateTime?
-  adActivationDay3SentAt DateTime?
-  adActivationDay6SentAt DateTime?
-  referredByLinkId       String?
-  referredByMemberId     String?
-  lastFbc                String?
-  lastFbp                String?
-  lastIp                 String?
-  lastUa                 String?
-  winback30SentAt        DateTime?
-  winback60SentAt        DateTime?
-  bonus_credits          bonus_credits[]
-  crew_members           crew_members?
-  game_rewards           game_rewards[]
-  game_scores            game_scores[]
-  game_sessions          game_sessions[]
-  orders                 orders[]
-  sessions               sessions[]
-  task_submissions       task_submissions[]
-  tickets                tickets[]
-  transactions           transactions[]
-  video_watches          video_watches[]
-  waitlist               waitlist[]
-
-  @@index([signupIp])
-}
-
-model video_watches {
-  id        String   @id
-  userId    String
-  adUnitId  String?
-  earned    Int
-  revenue   Int?
-  createdAt DateTime @default(now())
-  users     users    @relation(fields: [userId], references: [id])
-
-  @@index([userId, createdAt])
-}
-
-model waitlist {
-  id        String   @id
-  userId    String
-  feature   String
-  createdAt DateTime @default(now())
-  email     String
-  users     users    @relation(fields: [userId], references: [id])
-
-  @@unique([userId, feature])
-}
+// ──────────────────────────────────────
+// ENUMS
+// ──────────────────────────────────────
 
 enum CampaignStatus {
   DRAFT
@@ -799,4 +28,954 @@ enum DayOfWeek {
   FRIDAY
   SATURDAY
   SUNDAY
+}
+
+// ──────────────────────────────────────
+// USERS
+// ──────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  name          String
+  firstName     String?
+  lastName      String?
+  phone         String?  @unique
+  balance       Int      @default(0)
+  referralCode  String   @unique @default(cuid())
+  referredBy    String?
+  emailVerified Boolean  @default(false)
+  verifyToken   String?
+  verifyExpires DateTime?
+  resetToken    String?
+  resetExpires  DateTime?
+  apiKey        String?   @unique
+  notifOrders   Boolean  @default(true)
+  notifPromo    Boolean  @default(true)
+  notifEmail    Boolean  @default(true)
+  notifClearedAt DateTime?
+  notifReadAllAt DateTime?
+  notifReadIds  String?  // JSON array of read notification IDs
+  themePreference String @default("auto") // "auto" | "night" | "day"
+  perPagePreference Int @default(10) // Orders per page: 10, 25, 50
+  tourCompleted     Boolean @default(false)
+  orderTourCompleted Boolean @default(false)
+  signupSource        String?
+  signupIp            String?
+  lastIp              String?
+  lastUa              String?  @db.Text
+  lastFbp             String?
+  lastFbc             String?
+  referredByMemberId  String?
+  referredByLinkId    String?
+  tosAcceptedAt   DateTime?
+  tosVersion      String?
+  firstDepositBonusPaid Boolean @default(false)
+  winbackSentAt          DateTime?
+  winback30SentAt        DateTime?
+  winback60SentAt        DateTime?
+  nudgeIdleFundsSentAt   DateTime?
+  nudgeComebackSentAt    DateTime?
+  nudgeLapsedSentAt      DateTime?
+  nudgeIdleBalanceSentAt DateTime?
+  adActivationDay1SentAt DateTime?
+  adActivationDay3SentAt DateTime?
+  adActivationDay6SentAt DateTime?
+  status        String   @default("Active")
+  deletedAt     DateTime?
+  deletedName   String?
+  deletedEmail  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  orders        Order[]
+  transactions  Transaction[]
+  tickets       Ticket[]
+  sessions      Session[]
+  waitlist      Waitlist[]
+  gameSessions  GameSession[]
+  gameScores    GameScore[]
+  gameRewards   GameReward[]
+  videoWatches  VideoWatch[]
+  crewMember    CrewMember?
+  bonusCredits      BonusCredit[]
+  taskSubmissions   TaskSubmission[]
+
+  @@index([signupIp])
+  @@map("users")
+}
+
+// ──────────────────────────────────────
+// SESSIONS
+// ──────────────────────────────────────
+
+model Session {
+  id          String   @id @default(cuid())
+  userId      String
+  tokenHash   String   @unique
+  deviceType  String   @default("web") // "web" or "mobile"
+  deviceInfo  String?  // e.g. "Chrome · macOS", "Safari · iPhone"
+  ip          String?
+  lastActive  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceType])
+  @@map("sessions")
+}
+
+// ──────────────────────────────────────
+// ADMINS
+// ──────────────────────────────────────
+
+model Admin {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  password   String
+  name       String
+  role       String   @default("admin")
+  status      String   @default("Active")
+  customPages String?  // JSON array of page slugs — overrides role defaults when set
+  customActions String? // JSON array of granted action keys — e.g. ["payments.approve"]
+  lastActive  DateTime @default(now())
+  themePreference String @default("auto") // "auto" | "night" | "day"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  sessions    AdminSession[]
+  platformCampaignsCreated  PlatformCampaign[]  @relation("PlatformCampaignCreator")
+  platformCampaignsUpdated  PlatformCampaign[]  @relation("PlatformCampaignUpdater")
+  recurringCampaignsCreated RecurringCampaign[] @relation("RecurringCampaignCreator")
+  recurringCampaignsUpdated RecurringCampaign[] @relation("RecurringCampaignUpdater")
+
+  @@map("admins")
+}
+
+model AdminSession {
+  id         String   @id @default(cuid())
+  adminId    String
+  tokenHash  String   @unique
+  deviceType String   @default("web")
+  deviceInfo String?
+  ip         String?
+  lastActive DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@map("admin_sessions")
+}
+
+// ──────────────────────────────────────
+// SERVICES
+// ──────────────────────────────────────
+
+model Service {
+  id        String  @id @default(cuid())
+  apiId     Int
+  name      String
+  category  String
+  provider  String  @default("mtp") // 'mtp' | 'jap' | 'dao'
+  costPer1k BigInt
+  sellPer1k BigInt
+  markup    Int     @default(54)
+  min       Int     @default(100)
+  max       Int     @default(50000)
+  refill    Boolean @default(false)
+  dripfeed  Boolean @default(false)
+  tags      String[] @default([])
+  apiType   String  @default("Default")
+  avgTime   String  @default("0-2 hrs")
+  enabled   Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+  tiers  ServiceTier[]
+
+  @@unique([apiId, provider])
+  @@index([provider])
+  @@map("services")
+}
+
+// ──────────────────────────────────────
+// SERVICE GROUPS (Menu Builder)
+// ──────────────────────────────────────
+
+model ServiceGroup {
+  id          String  @id @default(cuid())
+  name        String
+  platform    String
+  type        String  @default("Standard")
+  nigerian    Boolean @default(false)
+  enabled     Boolean @default(true)
+  sortOrder   Int     @default(0)
+  description String?
+  tags        String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tiers ServiceTier[]
+
+  @@map("service_groups")
+}
+
+model ServiceTier {
+  id        String  @id @default(cuid())
+  groupId   String
+  serviceId String?
+  tier      String  @default("Standard")
+  sellPer1k BigInt
+  refill     Boolean @default(false)
+  refillDays Int     @default(0)
+  speed      String  @default("0-2 hrs")
+  enabled   Boolean @default(true)
+  sortOrder Int     @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group   ServiceGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  service Service?     @relation(fields: [serviceId], references: [id])
+  orders  Order[]
+
+  @@index([groupId])
+  @@index([serviceId])
+  @@map("service_tiers")
+}
+
+// ──────────────────────────────────────
+// ORDERS
+// ──────────────────────────────────────
+
+model Order {
+  id         String   @id @default(cuid())
+  orderId    String   @unique
+  userId     String
+  serviceId  String
+  link       String
+  quantity   Int
+  charge     Int
+  cost       Int
+  status          String   @default("Pending")
+  apiOrderId      String?
+  tierId          String?
+  batchId         String?
+  remains         Int?
+  startCount      Int?
+  comments        String?  @db.Text
+  protected       Boolean  @default(false)
+  retryCount      Int      @default(0)
+  lastError       String?
+  queuedBehind    String?
+  dripDays        Int?
+  dripDelivered   Int      @default(0)
+  dispatchedAt    DateTime?
+  completedAt     DateTime?
+  refundedAt      DateTime?
+  redispatchedAt  DateTime?
+  parentOrderId   String?
+  loyaltyDiscount       Int      @default(0)
+  campaignDiscount      Int      @default(0)
+  campaignPercent       Int?
+  platformCampaignId    String?
+  recurringCampaignId   String?
+  createdAt       DateTime @default(now())
+  deletedAt       DateTime?
+  updatedAt       DateTime @updatedAt
+
+  user              User               @relation(fields: [userId], references: [id])
+  service           Service            @relation(fields: [serviceId], references: [id])
+  tier              ServiceTier?       @relation(fields: [tierId], references: [id])
+  platformCampaign  PlatformCampaign?  @relation(fields: [platformCampaignId], references: [id])
+  recurringCampaign RecurringCampaign? @relation(fields: [recurringCampaignId], references: [id])
+  dripDispatches        DripDispatch[]
+  affiliateCommissions  AffiliateCommission[]
+  creditUsages          OrderCreditUsage[]
+
+  @@index([userId])
+  @@index([userId, batchId])
+  @@index([userId, deletedAt, status])
+  @@index([status])
+  @@index([createdAt])
+  @@index([platformCampaignId])
+  @@index([recurringCampaignId])
+  @@index([parentOrderId])
+  @@map("orders")
+}
+
+model DripDispatch {
+  id           String    @id @default(cuid())
+  orderId      String
+  day          Int
+  batch        Int
+  quantity     Int
+  apiOrderId   String?
+  status       String    @default("pending") // pending | dispatching | processing | completed | partial | failed
+  startCount   Int?
+  remains      Int?
+  scheduledAt  DateTime
+  dispatchedAt DateTime?
+  completedAt  DateTime?
+  lastError    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status, scheduledAt])
+  @@map("drip_dispatches")
+}
+
+// ──────────────────────────────────────
+// TRANSACTIONS
+// ──────────────────────────────────────
+
+model Transaction {
+  id              String   @id @default(cuid())
+  userId          String
+  type            String
+  amount          Int
+  method          String?
+  reference       String?  @unique
+  idempotencyKey  String?
+  gatewayUrl      String?
+  status          String   @default("Completed")
+  note            String?
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId])
+  @@index([userId, type])
+  @@index([type])
+  @@index([type, status, createdAt])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+// ──────────────────────────────────────
+// SUPPORT TICKETS
+// ──────────────────────────────────────
+
+model Ticket {
+  id        String   @id @default(cuid())
+  ticketId  String   @unique
+  userId    String
+  subject   String
+  message   String
+  orderId   String?
+  status    String   @default("Open")
+  lockedBy      String?
+  lockedAt      DateTime?
+  unreadByAdmin Boolean  @default(true)
+  unreadByUser  Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user    User          @relation(fields: [userId], references: [id])
+  replies TicketReply[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("tickets")
+}
+
+model TicketReply {
+  id        String   @id @default(cuid())
+  ticketId  String
+  from      String
+  message   String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+
+  @@index([ticketId])
+  @@map("ticket_replies")
+}
+
+// ──────────────────────────────────────
+// ALERTS
+// ──────────────────────────────────────
+
+model Alert {
+  id          String    @id @default(cuid())
+  message     String
+  type        String    @default("info")
+  target      String    @default("both")
+  active      Boolean   @default(true)
+  createdBy   String
+  actionLabel String?
+  actionHref  String?
+  expiresAt   DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([active])
+  @@index([target])
+  @@map("alerts")
+}
+
+// ──────────────────────────────────────
+// ACTIVITY LOG
+// ──────────────────────────────────────
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  adminName String
+  action    String
+  type      String
+  createdAt DateTime @default(now())
+
+  @@index([adminName])
+  @@index([createdAt])
+  @@map("activity_log")
+}
+
+// ──────────────────────────────────────
+// ADMIN ISSUES
+// ──────────────────────────────────────
+
+model AdminIssue {
+  id         String    @id @default(cuid())
+  type       String    // 'dead_service' | 'low_balance' | 'order_failure' etc.
+  title      String
+  message    String
+  metadata   String?   @db.Text // JSON with tier/service/provider details
+  status     String    @default("open") // 'open' | 'resolved'
+  resolvedAt DateTime?
+  resolvedBy String?
+  createdAt  DateTime  @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("admin_issues")
+}
+
+// ──────────────────────────────────────
+// SITE SETTINGS
+// ──────────────────────────────────────
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+// ──────────────────────────────────────
+// BLOG POSTS
+// ──────────────────────────────────────
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  excerpt     String?
+  content     String   @db.Text
+  category    String   @default("Tutorials")
+  thumbnail   String?
+  published   Boolean  @default(false)
+  showInHowTo Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  authorName  String
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([published])
+  @@index([showInHowTo])
+  @@index([category])
+  @@map("blog_posts")
+}
+
+// ──────────────────────────────────────
+// IDEMPOTENCY
+// ──────────────────────────────────────
+
+model IdempotencyKey {
+  key       String   @id
+  userId    String
+  batchId   String?
+  status    String   // 'processing' | 'completed' | 'failed'
+  response  Json?
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}
+
+// ──────────────────────────────────────
+// WAITLIST
+// ──────────────────────────────────────
+
+model Waitlist {
+  id        String   @id @default(cuid())
+  userId    String
+  feature   String
+  email     String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, feature])
+  @@map("waitlist")
+}
+
+// ──────────────────────────────────────
+// EARN — GAME SESSIONS
+// ──────────────────────────────────────
+
+model GameSession {
+  id        String   @id @default(cuid())
+  userId    String
+  seed      String
+  status    String   @default("active") // active | completed | expired
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+  @@map("game_sessions")
+}
+
+// ──────────────────────────────────────
+// EARN — GAME SCORES
+// ──────────────────────────────────────
+
+model GameScore {
+  id        String   @id @default(cuid())
+  userId    String
+  sessionId String
+  score     Int
+  moves     Int
+  duration  Int      // seconds played
+  monthKey  String   // "2026-05"
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([monthKey, score(sort: Desc)])
+  @@index([userId, monthKey])
+  @@map("game_scores")
+}
+
+// ──────────────────────────────────────
+// EARN — GAME REWARDS
+// ──────────────────────────────────────
+
+model GameReward {
+  id        String   @id @default(cuid())
+  userId    String
+  monthKey  String   // "2026-05"
+  rank      Int      // 1-5
+  score     Int
+  amount    Int      // kobo
+  credited  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([monthKey, rank])
+  @@index([userId])
+  @@map("game_rewards")
+}
+
+// ──────────────────────────────────────
+// EARN — VIDEO WATCHES
+// ──────────────────────────────────────
+
+model VideoWatch {
+  id        String   @id @default(cuid())
+  userId    String
+  adUnitId  String?
+  earned    Int      // kobo credited to user
+  revenue   Int?     // kobo total ad revenue (for tracking split)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@map("video_watches")
+}
+
+// ──────────────────────────────────────
+// PROMOTIONS — SEASONAL CAMPAIGNS
+// ──────────────────────────────────────
+
+model PlatformCampaign {
+  id                  String         @id @default(cuid())
+  name                String
+  description         String?
+  discountPercent     Int
+  startAt             DateTime
+  endAt               DateTime
+  timezone            String         @default("Africa/Lagos")
+  status              CampaignStatus @default(DRAFT)
+  priority            Int            @default(10)
+  maxDiscountPerOrder Int?
+  bannerCopy          String
+  bannerColor         String?        @db.VarChar(7)
+  bannerCtaText       String?
+  lineItemLabel       String
+  emailTheme          String?
+  emailedAt           DateTime?
+  createdById         String
+  updatedById         String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  createdBy Admin  @relation("PlatformCampaignCreator", fields: [createdById], references: [id])
+  updatedBy Admin? @relation("PlatformCampaignUpdater", fields: [updatedById], references: [id])
+  orders    Order[]
+
+  @@index([status, startAt, endAt])
+  @@map("platform_campaigns")
+}
+
+// ──────────────────────────────────────
+// PROMOTIONS — RECURRING CAMPAIGNS
+// ──────────────────────────────────────
+
+model RecurringCampaign {
+  id                  String    @id @default(cuid())
+  name                String
+  description         String?
+  dayOfWeek           DayOfWeek
+  startTimeLocal      String    @default("00:00")
+  endTimeLocal        String    @default("23:59")
+  timezone            String    @default("Africa/Lagos")
+  discountPercent     Int
+  active              Boolean   @default(false)
+  priority            Int       @default(0)
+  effectiveFrom       DateTime?
+  effectiveUntil      DateTime?
+  maxDiscountPerOrder Int?
+  bannerCopy          String
+  bannerColor         String?   @db.VarChar(7)
+  lineItemLabel       String
+  createdById         String
+  updatedById         String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  createdBy Admin  @relation("RecurringCampaignCreator", fields: [createdById], references: [id])
+  updatedBy Admin? @relation("RecurringCampaignUpdater", fields: [updatedById], references: [id])
+  orders    Order[]
+
+  @@index([active, dayOfWeek])
+  @@map("recurring_campaigns")
+}
+
+// ──────────────────────────────────────
+// ACQUISITION LINKS
+// ──────────────────────────────────────
+
+model AcquisitionLink {
+  id          String      @id @default(cuid())
+  name        String
+  slug        String      @unique
+  enabled     Boolean     @default(true)
+  affiliateId String?
+  archivedAt  DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  clicks      LinkClick[]
+  affiliate   CrewMember? @relation(fields: [affiliateId], references: [id])
+  commissions AffiliateCommission[]
+
+  logs        LinkLog[]
+
+  @@index([affiliateId])
+  @@map("acquisition_links")
+}
+
+model LinkLog {
+  id        String   @id @default(cuid())
+  linkId    String
+  action    String
+  detail    String?
+  actorId   String
+  createdAt DateTime @default(now())
+
+  link  AcquisitionLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  actor CrewMember      @relation(fields: [actorId], references: [id])
+
+  @@index([linkId])
+  @@map("link_logs")
+}
+
+model LinkClick {
+  id         String   @id @default(cuid())
+  linkId     String
+  ipHash     String
+  deviceType String   @default("desktop")
+  os         String?
+  browser    String?
+  country    String?
+  city       String?
+  referrer   String?
+  createdAt  DateTime @default(now())
+
+  link AcquisitionLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId, createdAt])
+  @@index([linkId, ipHash])
+  @@index([createdAt])
+  @@map("link_clicks")
+}
+
+// ──────────────────────────────────────
+// Pit Crew (Affiliate Portal)
+// ──────────────────────────────────────
+
+model CrewMember {
+  id               String   @id @default(cuid())
+  role             String   @default("crew") // "chief" | "crew"
+  status           String   @default("pending") // "pending" | "approved" | "suspended" | "rejected"
+  name             String
+  email            String   @unique
+  password         String
+  phone            String?
+  xHandle          String?
+  telegramHandle   String?
+  whyApply         String?  @db.Text
+  bankAccountName  String?
+  bankName         String?
+  bankAccountNo    String?
+  tier             String   @default("starter") // "starter" | "growth" | "pro"
+  commissionRate   Int      @default(30) // % of profit going to crew side
+  totalEarned      Int      @default(0) // kobo
+  totalPaid        Int      @default(0) // kobo
+  userId           String?  @unique
+  telegramUserId   String?
+  telegramLinkCode String?
+  teamName         String?
+  leadId           String?
+  inviteToken      String?  @unique
+  inviteExpiresAt  DateTime?
+  approvedAt       DateTime?
+  suspendedAt      DateTime?
+  deletedAt        DateTime?
+  resetToken       String?
+  resetExpires     DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user             User?        @relation(fields: [userId], references: [id])
+  lead             CrewMember?  @relation("CrewHierarchy", fields: [leadId], references: [id])
+  crew             CrewMember[] @relation("CrewHierarchy")
+  links            AcquisitionLink[]
+  linkLogs         LinkLog[]
+  commissions      AffiliateCommission[] @relation("CommissionMember")
+  leadCommissions  AffiliateCommission[] @relation("CommissionLead")
+  payouts          AffiliatePayout[]
+  sessions         CrewSession[]
+
+  @@index([leadId])
+  @@index([status])
+  @@index([role, status])
+  @@map("crew_members")
+}
+
+model CrewSession {
+  id        String   @id @default(cuid())
+  memberId  String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  member CrewMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([token])
+  @@map("crew_sessions")
+}
+
+model AffiliateCommission {
+  id              String   @id @default(cuid())
+  orderId         String
+  linkId          String
+  memberId        String
+  leadId          String?
+  orderCharge     Int      // kobo — the order.charge that earned this commission
+  orderCost       Int      @default(0) // kobo — the order.cost at time of commission
+  commissionRate  Int      // % of profit to crew side at time of creation
+  leadSplit       Int      // % at time of creation
+  leadAmount      Int      // kobo — chief's cut
+  marketerAmount  Int      // kobo — crew member's cut
+  status          String   @default("held") // "held" | "approved" | "voided"
+  releasesAt      DateTime
+  voidedAt        DateTime?
+  voidReason      String?
+  createdAt       DateTime @default(now())
+
+  order  Order           @relation(fields: [orderId], references: [id])
+  link   AcquisitionLink @relation(fields: [linkId], references: [id])
+  member CrewMember      @relation("CommissionMember", fields: [memberId], references: [id])
+  lead   CrewMember?     @relation("CommissionLead", fields: [leadId], references: [id])
+
+  @@unique([orderId, memberId])
+  @@index([memberId, status])
+  @@index([leadId, status])
+  @@index([status, releasesAt])
+  @@index([orderId])
+  @@map("affiliate_commissions")
+}
+
+model AffiliatePayout {
+  id              String    @id @default(cuid())
+  memberId        String
+  amount          Int       // kobo
+  status          String    @default("pending") // "pending" | "processing" | "completed" | "rejected"
+  reference       String?
+  bankName        String?
+  bankAccountNo   String?
+  bankAccountName String?
+  processedAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  member CrewMember @relation(fields: [memberId], references: [id])
+
+  @@index([memberId])
+  @@index([status])
+  @@map("affiliate_payouts")
+}
+
+// ──────────────────────────────────────
+// Provider Top-ups
+// ──────────────────────────────────────
+model ProviderTopup {
+  id        String   @id @default(cuid())
+  provider  String
+  amount    Int
+  note      String?
+  adminName String?
+  createdAt DateTime @default(now())
+
+  @@index([provider, createdAt])
+  @@index([createdAt])
+  @@map("provider_topups")
+}
+
+model LiveSession {
+  sessionId String   @id
+  userId    String?
+  page      String
+  ua        String?
+  lastSeen  DateTime @default(now())
+  firstSeen DateTime @default(now())
+
+  @@index([lastSeen])
+  @@map("live_sessions")
+}
+
+model ChangelogEntry {
+  id          String   @id @default(cuid())
+  date        DateTime @db.Date
+  tag         String
+  title       String
+  description String
+  createdAt   DateTime @default(now())
+
+  @@index([date])
+  @@map("changelog_entries")
+}
+
+// ──────────────────────────────────────
+// BONUS CREDITS
+// ──────────────────────────────────────
+
+model BonusCredit {
+  id              String    @id @default(cuid())
+  userId          String
+  source          String    // 'welcome_bonus' | 'winback' | 'campaign'
+  amountGranted   Int
+  amountRemaining Int
+  grantedAt       DateTime  @default(now())
+  expiresAt       DateTime
+  expiredAt       DateTime?
+
+  user   User               @relation(fields: [userId], references: [id])
+  usages OrderCreditUsage[]
+
+  @@index([userId, expiresAt])
+  @@map("bonus_credits")
+}
+
+model OrderCreditUsage {
+  id            String @id @default(cuid())
+  orderId       String
+  bonusCreditId String
+  amount        Int
+
+  order       Order       @relation(fields: [orderId], references: [id])
+  bonusCredit BonusCredit @relation(fields: [bonusCreditId], references: [id])
+
+  @@index([orderId])
+  @@index([bonusCreditId])
+  @@map("order_credit_usages")
+}
+
+// ──────────────────────────────────────
+// TASKS
+// ──────────────────────────────────────
+
+model Task {
+  id                 String           @id
+  platform           String
+  title              String
+  instructions       String
+  category           String
+  proofType          String
+  reward             Int
+  frequency          String           @default("one_time")
+  maxPerMonth        Int              @default(0)
+  minViews           Int              @default(0)
+  minFollowers       Int              @default(0)
+  keepDays           Int              @default(0)
+  monthlyCap         Int              @default(0)
+  viralBonus         Boolean          @default(false)
+  viralThreshold     Int              @default(0)
+  viralAmount        Int              @default(0)
+  allowNonDepositors Boolean          @default(true)
+  active             Boolean          @default(true)
+  sortOrder          Int              @default(0)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  submissions TaskSubmission[]
+
+  @@map("tasks")
+}
+
+model TaskSubmission {
+  id              String    @id
+  taskId          String
+  userId          String
+  proof           String
+  views           Int?
+  status          String    @default("pending")
+  creditedAmount  Int?
+  bonusCreditId   String?
+  rejectionReason String?
+  createdAt       DateTime  @default(now())
+  reviewedAt      DateTime?
+  reviewedBy      String?
+
+  task Task @relation(fields: [taskId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([status])
+  @@index([taskId, userId])
+  @@map("task_submissions")
 }
