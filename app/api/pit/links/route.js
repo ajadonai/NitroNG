@@ -93,21 +93,26 @@ export async function POST(req) {
     }
 
     const assigneeId = affiliateId || member.id;
+    const MAX_RETRIES = 3;
     let link;
-    try {
-      link = await prisma.$transaction(async (tx) => {
-        const [maxLinksRow, activeCount] = await Promise.all([
-          tx.setting.findUnique({ where: { key: 'affiliate_max_links' } }),
-          tx.acquisitionLink.count({ where: { affiliateId: { in: teamArray }, archivedAt: null } }),
-        ]);
-        const maxLinks = parseInt(maxLinksRow?.value) || 5;
-        if (activeCount >= maxLinks) throw Object.assign(new Error('limit'), { _limit: maxLinks });
-        return tx.acquisitionLink.create({ data: { name: name.trim(), slug, affiliateId: assigneeId } });
-      }, { isolationLevel: 'Serializable' });
-    } catch (e) {
-      if (e._limit) return Response.json({ error: `Maximum ${e._limit} active links allowed` }, { status: 400 });
-      if (e.code === 'P2002') return Response.json({ error: "That slug is already taken" }, { status: 409 });
-      throw e;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        link = await prisma.$transaction(async (tx) => {
+          const [maxLinksRow, activeCount] = await Promise.all([
+            tx.setting.findUnique({ where: { key: 'affiliate_max_links' } }),
+            tx.acquisitionLink.count({ where: { affiliateId: { in: teamArray }, archivedAt: null } }),
+          ]);
+          const maxLinks = parseInt(maxLinksRow?.value) || 5;
+          if (activeCount >= maxLinks) throw Object.assign(new Error('limit'), { _limit: maxLinks });
+          return tx.acquisitionLink.create({ data: { name: name.trim(), slug, affiliateId: assigneeId } });
+        }, { isolationLevel: 'Serializable' });
+        break;
+      } catch (e) {
+        if (e._limit) return Response.json({ error: `Maximum ${e._limit} active links allowed` }, { status: 400 });
+        if (e.code === 'P2002') return Response.json({ error: "That slug is already taken" }, { status: 409 });
+        if (e.code === 'P2034' && attempt < MAX_RETRIES - 1) continue;
+        throw e;
+      }
     }
 
     logAction(link.id, member.id, "created", `Created and assigned to ${assigneeName}`).catch(() => {});

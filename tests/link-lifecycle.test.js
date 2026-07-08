@@ -49,6 +49,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockGetCrewSession.mockResolvedValue(CHIEF);
   mockPrisma.crewMember.findMany.mockResolvedValue([]);
+  mockPrisma.$transaction.mockImplementation(async (fn) => fn(mockTx));
 });
 
 // ──────────────────────────────────────
@@ -159,6 +160,59 @@ describe('DELETE archive', () => {
 // ──────────────────────────────────────
 // Setting key alignment
 // ──────────────────────────────────────
+describe('P2034 serialization retry', () => {
+  it('retries on P2034 then succeeds', async () => {
+    const p2034 = new Error('Write conflict');
+    p2034.code = 'P2034';
+    let callCount = 0;
+    mockPrisma.$transaction.mockImplementation(async (fn, opts) => {
+      callCount++;
+      if (callCount === 1) throw p2034;
+      return fn(mockTx);
+    });
+    mockTx.setting.findUnique.mockResolvedValue({ value: '10' });
+    mockTx.acquisitionLink.count.mockResolvedValue(0);
+    mockTx.acquisitionLink.create.mockResolvedValue({
+      id: 'retry-ok', name: 'Retry', slug: 'retry', enabled: true, createdAt: new Date(),
+    });
+
+    const res = await POST(makeReq({ name: 'Retry Link' }));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.link.id).toBe('retry-ok');
+    expect(callCount).toBe(2);
+  });
+
+  it('retries on P2034 then hits cap', async () => {
+    const p2034 = new Error('Write conflict');
+    p2034.code = 'P2034';
+    let callCount = 0;
+    mockPrisma.$transaction.mockImplementation(async (fn, opts) => {
+      callCount++;
+      if (callCount === 1) throw p2034;
+      return fn(mockTx);
+    });
+    mockTx.setting.findUnique.mockResolvedValue({ value: '3' });
+    mockTx.acquisitionLink.count.mockResolvedValue(3);
+
+    const res = await POST(makeReq({ name: 'Cap After Retry' }));
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toMatch(/Maximum 3/);
+  });
+
+  it('gives up after max retries on P2034', async () => {
+    const p2034 = new Error('Write conflict');
+    p2034.code = 'P2034';
+    mockPrisma.$transaction.mockRejectedValue(p2034);
+
+    const res = await POST(makeReq({ name: 'Exhaust Retries' }));
+    expect(res.status).toBe(500);
+  });
+});
+
 describe('setting key', () => {
   it('reads affiliate_max_links (not affiliate_max_links_chief)', async () => {
     mockTx.setting.findUnique.mockResolvedValue({ value: '10' });
