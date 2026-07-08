@@ -5,6 +5,7 @@ import { sendEmail, walletCreditEmail } from '@/lib/email';
 import { checkOrder, cancelOrder, refillOrder, isProviderConfigured, getProviderName } from '@/lib/smm';
 import { voidCommissions } from '@/lib/commissions';
 import { cleanLink } from '@/lib/clean-link';
+import { tgRefundAlert } from '@/lib/telegram';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -200,6 +201,9 @@ export async function POST(req) {
       });
       if (!result.ok) return Response.json({ error: 'Order already cancelled' }, { status: 409 });
 
+      if (result.refundAmount > 0) {
+        tgRefundAlert({ orderId: order.orderId, amount: result.refundAmount, charge: order.charge, qty: order.quantity, remains: order.remains, status: isPartial ? 'Partial' : 'Cancelled', reason: 'admin_cancelled', source: admin.name });
+      }
       voidCommissions(order.id, 'admin_cancelled').catch(() => {});
 
       if (result.refundAmount > 0) {
@@ -391,6 +395,7 @@ export async function POST(req) {
       } catch {}
 
       const refundMsg = `₦${(refundAmount / 100).toLocaleString()}`;
+      tgRefundAlert({ orderId: order.orderId, amount: refundAmount, charge: order.charge, qty: order.quantity, remains: order.remains, status: percent === 100 ? 'Cancelled' : 'Partial', reason: `admin (${label})`, source: admin.name });
       await logActivity(admin.name, `Refunded ${refundMsg} for order ${orderId} (${label})`, 'order');
       return Response.json({ success: true, message: `${refundMsg} refunded to customer` });
     }
