@@ -686,13 +686,13 @@ model AcquisitionLink {
   slug             String      @unique
   enabled          Boolean     @default(true)
   affiliateId      String?
-  createdByChiefId String?
+  createdByChiefId String
   archivedAt       DateTime?
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
   clicks           LinkClick[]
   affiliate        CrewMember? @relation("LinkAffiliate", fields: [affiliateId], references: [id])
-  createdByChief   CrewMember? @relation("LinkCreator", fields: [createdByChiefId], references: [id])
+  createdByChief   CrewMember  @relation("LinkCreator", fields: [createdByChiefId], references: [id], onDelete: Restrict)
   commissions      AffiliateCommission[]
 
   logs             LinkLog[]
