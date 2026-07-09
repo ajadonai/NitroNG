@@ -3,11 +3,110 @@ import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
 import { getBonusInfo } from '@/lib/bonus-credit';
+import { serializeTransaction, transactionHistoryCutoff } from '@/lib/transaction-history';
+
+const ORDER_INCLUDE = {
+  service: { select: { name: true, category: true } },
+  tier: {
+    select: {
+      tier: true,
+      speed: true,
+      refill: true,
+      refillDays: true,
+      group: { select: { name: true, platform: true, type: true } },
+    },
+  },
+};
+
+function serializeOrder(o) {
+  return {
+    id: o.orderId || o.id,
+    internalId: o.id,
+    service: o.tier?.group?.name || o.service?.name || o.serviceId,
+    platform: o.tier?.group?.platform || o.service?.category || 'unknown',
+    tier: o.tier?.tier || null,
+    speed: o.tier?.speed || null,
+    link: o.link,
+    quantity: o.quantity,
+    charge: o.charge / 100,
+    remains: o.remains,
+    startCount: o.startCount,
+    status: o.status,
+    batchId: o.batchId || null,
+    apiOrderId: o.apiOrderId || null,
+    lastError: o.lastError || null,
+    retryCount: o.retryCount || 0,
+    refill: o.tier?.refill || false,
+    refillDays: o.tier?.refillDays || 0,
+    completedAt: o.completedAt?.toISOString() || null,
+    created: o.createdAt.toISOString(),
+    serviceType: o.tier?.group?.type || null,
+    dripDays: o.dripDays || null,
+  };
+}
+
+async function getOrderSummary(userId) {
+  const rows = await prisma.$queryRaw`
+    WITH scoped AS (
+      SELECT
+        o.status,
+        o.charge,
+        o.quantity,
+        o."createdAt",
+        o."lastError",
+        o."apiOrderId",
+        o."queuedBehind",
+        COALESCE(sg.platform, s.category, 'unknown') AS platform
+      FROM orders o
+      JOIN services s ON s.id = o."serviceId"
+      LEFT JOIN service_tiers st ON st.id = o."tierId"
+      LEFT JOIN service_groups sg ON sg.id = st."groupId"
+      WHERE o."userId" = ${userId} AND o."deletedAt" IS NULL
+    ),
+    platform_counts AS (
+      SELECT platform, COUNT(*) AS order_count
+      FROM scoped
+      GROUP BY platform
+      ORDER BY order_count DESC, platform ASC
+      LIMIT 1
+    )
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE status <> 'Cancelled')::int AS "nonCancelled",
+      COUNT(*) FILTER (WHERE status IN ('Pending', 'Processing', 'Dispatching', 'Partial'))::int AS active,
+      COUNT(*) FILTER (WHERE status = 'Completed')::int AS completed,
+      COUNT(*) FILTER (WHERE "createdAt" >= NOW() - INTERVAL '7 days')::int AS "thisWeek",
+      COUNT(*) FILTER (
+        WHERE "queuedBehind" IS NULL
+          AND (status = 'Partial' OR (status = 'Pending' AND "lastError" IS NOT NULL AND "apiOrderId" IS NULL))
+      )::int AS attention,
+      COALESCE(SUM(charge) FILTER (WHERE status <> 'Cancelled'), 0)::bigint AS "spentKobo",
+      COALESCE(SUM(charge) FILTER (WHERE status = 'Cancelled'), 0)::bigint AS "refundedKobo",
+      COALESCE(ROUND(AVG(quantity)), 0)::int AS "averageQuantity",
+      (SELECT platform FROM platform_counts) AS "topPlatform"
+    FROM scoped
+  `;
+  const row = rows[0] || {};
+  return {
+    total: Number(row.total || 0),
+    nonCancelled: Number(row.nonCancelled || 0),
+    active: Number(row.active || 0),
+    completed: Number(row.completed || 0),
+    thisWeek: Number(row.thisWeek || 0),
+    attention: Number(row.attention || 0),
+    spent: Number(row.spentKobo || 0) / 100,
+    refunded: Number(row.refundedKobo || 0) / 100,
+    spentKobo: Number(row.spentKobo || 0),
+    averageQuantity: Number(row.averageQuantity || 0),
+    topPlatform: row.topPlatform || null,
+  };
+}
 
 export async function GET() {
   try {
     const payload = await getCurrentUser();
     if (!payload) return error('Not authenticated', 401);
+    const historyCutoff = transactionHistoryCutoff();
 
     const user = await prisma.user.findUnique({
       where: { id: payload.id },
@@ -18,17 +117,38 @@ export async function GET() {
         orderTourCompleted: true,
         notifOrders: true, notifPromo: true, notifEmail: true,
         tosVersion: true, firstDepositBonusPaid: true,
+        _count: { select: { transactions: { where: { createdAt: { gte: historyCutoff } } } } },
       },
     });
     if (!user) return error('User not found', 404);
 
     let orders = [];
+    let activeOrders = [];
+    let orderSummary = {
+      total: 0, nonCancelled: 0, active: 0, completed: 0, thisWeek: 0,
+      attention: 0, spent: 0, refunded: 0, spentKobo: 0,
+      averageQuantity: 0, topPlatform: null,
+    };
     try {
-      orders = await prisma.order.findMany({
-        where: { userId: user.id, deletedAt: null },
-        orderBy: { createdAt: 'desc' },
-        include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, speed: true, refill: true, refillDays: true, group: { select: { name: true, platform: true, type: true } } } } },
-      });
+      [orders, activeOrders, orderSummary] = await Promise.all([
+        prisma.order.findMany({
+          where: { userId: user.id, deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+          take: 25,
+          include: ORDER_INCLUDE,
+        }),
+        prisma.order.findMany({
+          where: {
+            userId: user.id,
+            deletedAt: null,
+            status: { in: ['Pending', 'Processing', 'Dispatching', 'Partial'] },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+          include: ORDER_INCLUDE,
+        }),
+        getOrderSummary(user.id),
+      ]);
     } catch (e) { log.error('Dashboard', 'Orders query failed', { error: e.message }); }
 
     // Mark stale pending gateway payments as Expired (>24h old, non-manual)
@@ -43,14 +163,23 @@ export async function GET() {
     let transactions = [];
     let walletSummary = { funded: 0, spent: 0 };
     try {
-      transactions = await prisma.transaction.findMany({
-        where: { userId: user.id },
-        orderBy: { createdAt: 'desc' },
-      });
-      const completedTxs = transactions.filter(tx => tx.status === 'Completed');
-      const funded = completedTxs.filter(tx => ['deposit', 'admin_credit', 'admin_gift', 'referral', 'bonus'].includes(tx.type)).reduce((s, tx) => s + Math.abs(tx.amount), 0);
-      const orderDebits = completedTxs.filter(tx => tx.type === 'order').reduce((s, tx) => s + Math.abs(tx.amount), 0);
-      const refunds = completedTxs.filter(tx => tx.type === 'refund').reduce((s, tx) => s + Math.abs(tx.amount), 0);
+      const [recentTransactions, totalsByType] = await Promise.all([
+        prisma.transaction.findMany({
+          where: { userId: user.id, createdAt: { gte: historyCutoff } },
+          orderBy: { createdAt: 'desc' },
+          take: 100,
+        }),
+        prisma.transaction.groupBy({
+          by: ['type'],
+          where: { userId: user.id, status: 'Completed' },
+          _sum: { amount: true },
+        }),
+      ]);
+      transactions = recentTransactions;
+      const totals = Object.fromEntries(totalsByType.map(row => [row.type, Math.abs(row._sum.amount || 0)]));
+      const funded = ['deposit', 'admin_credit', 'admin_gift', 'referral', 'bonus'].reduce((sum, type) => sum + (totals[type] || 0), 0);
+      const orderDebits = totals.order || 0;
+      const refunds = totals.refund || 0;
       walletSummary = { funded: funded / 100, spent: (orderDebits - refunds) / 100 };
     } catch (e) { log.error('Dashboard', 'Transactions query failed', { error: e.message }); }
 
@@ -144,13 +273,8 @@ export async function GET() {
       if (tosSetting) currentTosVersion = tosSetting.value;
     } catch {}
 
-    let totalOrders = 0;
-    let totalSpend = 0;
-    try {
-      const agg = await prisma.order.aggregate({ where: { userId: user.id, deletedAt: null, status: { not: 'Cancelled' } }, _sum: { charge: true }, _count: { id: true } });
-      totalOrders = agg._count.id || 0;
-      totalSpend = agg._sum.charge || 0;
-    } catch {}
+    const totalOrders = orderSummary.nonCancelled;
+    const totalSpend = orderSummary.spentKobo;
 
     let badge = loyaltyTiers[0];
     for (const t2 of loyaltyTiers) { if (totalSpend >= t2.threshold) badge = t2; }
@@ -192,39 +316,22 @@ export async function GET() {
         welcomeBonusEligible: !user.firstDepositBonusPaid,
         bonusCredit: bonusCredit || null,
       },
-      orders: orders.map(o => ({
-        id: o.orderId || o.id,
-        internalId: o.id,
-        service: o.tier?.group?.name || o.service?.name || o.serviceId,
-        platform: o.tier?.group?.platform || o.service?.category || 'unknown',
-        tier: o.tier?.tier || null,
-        speed: o.tier?.speed || null,
-        link: o.link, quantity: o.quantity,
-        charge: o.charge / 100,
-        remains: o.remains,
-        startCount: o.startCount,
-        status: o.status,
-        batchId: o.batchId || null,
-        apiOrderId: o.apiOrderId || null,
-        lastError: o.lastError || null,
-        retryCount: o.retryCount || 0,
-        refill: o.tier?.refill || false,
-        refillDays: o.tier?.refillDays || 0,
-        completedAt: o.completedAt?.toISOString() || null,
-        created: o.createdAt.toISOString(),
-        serviceType: o.tier?.group?.type || null,
-        dripDays: o.dripDays || null,
-      })),
-      transactions: transactions.map(tx => ({
-        id: tx.id, type: tx.type,
-        reference: tx.reference || null,
-        amount: tx.amount / 100,
-        status: tx.status,
-        method: tx.method || tx.type,
-        date: tx.createdAt.toISOString(),
-        description: tx.note?.replace(/\[(rejected_by|approved_by|user_confirmed|awaiting_confirmation):?[^\]]*\]\s*/g, '').trim() || null,
-        awaitingConfirmation: tx.status === 'Pending' && tx.method === 'manual' && tx.note?.includes('[awaiting_confirmation]') || false,
-      })),
+      orders: orders.map(serializeOrder),
+      activeOrders: activeOrders.map(serializeOrder),
+      ordersTotal: orderSummary.total,
+      orderSummary: {
+        total: orderSummary.total,
+        active: orderSummary.active,
+        completed: orderSummary.completed,
+        thisWeek: orderSummary.thisWeek,
+        attention: orderSummary.attention,
+        spent: orderSummary.spent,
+        refunded: orderSummary.refunded,
+        averageQuantity: orderSummary.averageQuantity,
+        topPlatform: orderSummary.topPlatform,
+      },
+      transactions: transactions.map(serializeTransaction),
+      transactionsTotal: user._count.transactions,
       walletSummary,
       alerts: alerts.map(a => ({
         id: a.id, message: a.message, type: a.type,

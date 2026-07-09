@@ -1,28 +1,42 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from "react";
+import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme } from "./shared-nav";
 import { NitroWordmark } from "./nitro-logo";
 import { ToastProvider } from "./toast";
 import { ConfirmProvider } from "./confirm-dialog";
 import AnnouncementBanner from "./announcement-banner";
-import AdminOrdersPage from "./admin-orders";
-import AdminUsersPage from "./admin-users";
-import AdminTicketsPage from "./admin-tickets";
-import AdminServicesPage from "./admin-services";
-import AdminServiceGroupsPage from "./admin-service-groups";
-import AdminPricingPage from "./admin-pricing";
-import { AdminPaymentsPage, AdminFinancePage, AdminAlertsPage, AdminSettingsPage } from "./admin-pages";
-import { AdminActivityPage, AdminTeamPage, AdminCouponsPage, AdminNotificationsPage, AdminMaintenancePage, AdminAPIPage, AdminAcquisitionPage, AdminIssuesPage, AdminChangelogPage } from "./admin-extra-pages";
-import { AdminCrewPage } from "./admin-crew";
-import AdminBlogPage from "./admin-blog";
-import AdminPromotionsPage from "./admin-promotions";
-import AdminTasksPage from "./admin-tasks";
-import AdminLeaderboardPage, { AdminLeaderboardSidebar } from "./admin-leaderboard";
 import { fN, fD } from "../lib/format";
 import { SITE } from "../lib/site";
 import { PlatformIcon } from "./platform-icon";
 import { Avatar } from "./avatar";
 import { useToast } from "./toast";
+
+const AdminOrdersPage = dynamic(() => import("./admin-orders"), { ssr: false });
+const AdminUsersPage = dynamic(() => import("./admin-users"), { ssr: false });
+const AdminTicketsPage = dynamic(() => import("./admin-tickets"), { ssr: false });
+const AdminServicesPage = dynamic(() => import("./admin-services"), { ssr: false });
+const AdminServiceGroupsPage = dynamic(() => import("./admin-service-groups"), { ssr: false });
+const AdminPricingPage = dynamic(() => import("./admin-pricing"), { ssr: false });
+const AdminPaymentsPage = dynamic(() => import("./admin-pages").then(m => m.AdminPaymentsPage), { ssr: false });
+const AdminFinancePage = dynamic(() => import("./admin-pages").then(m => m.AdminFinancePage), { ssr: false });
+const AdminAlertsPage = dynamic(() => import("./admin-pages").then(m => m.AdminAlertsPage), { ssr: false });
+const AdminSettingsPage = dynamic(() => import("./admin-pages").then(m => m.AdminSettingsPage), { ssr: false });
+const AdminActivityPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminActivityPage), { ssr: false });
+const AdminTeamPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminTeamPage), { ssr: false });
+const AdminCouponsPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminCouponsPage), { ssr: false });
+const AdminNotificationsPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminNotificationsPage), { ssr: false });
+const AdminMaintenancePage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminMaintenancePage), { ssr: false });
+const AdminAPIPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminAPIPage), { ssr: false });
+const AdminAcquisitionPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminAcquisitionPage), { ssr: false });
+const AdminIssuesPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminIssuesPage), { ssr: false });
+const AdminChangelogPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminChangelogPage), { ssr: false });
+const AdminCrewPage = dynamic(() => import("./admin-crew").then(m => m.AdminCrewPage), { ssr: false });
+const AdminBlogPage = dynamic(() => import("./admin-blog"), { ssr: false });
+const AdminPromotionsPage = dynamic(() => import("./admin-promotions"), { ssr: false });
+const AdminTasksPage = dynamic(() => import("./admin-tasks"), { ssr: false });
+const AdminLeaderboardPage = dynamic(() => import("./admin-leaderboard"), { ssr: false });
+const AdminLeaderboardSidebar = dynamic(() => import("./admin-leaderboard").then(m => m.AdminLeaderboardSidebar), { ssr: false });
 
 /* ═══════════════════════════════════════════ */
 /* ═══ HELPERS                             ═══ */

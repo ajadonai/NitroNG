@@ -11,6 +11,7 @@ import { headers as getHeaders } from 'next/headers';
 import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { voidCommissions } from '@/lib/commissions';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
+import { buildOrderDisplayGroups } from '@/lib/order-history';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -33,31 +34,85 @@ export async function GET(req) {
     if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
 
     const url = new URL(req.url);
-    const search = url.searchParams.get('search')?.trim();
+    const rawSearch = url.searchParams.get('search')?.trim();
+    const search = rawSearch && rawSearch.length >= 2 ? rawSearch : null;
+    const page = Math.max(1, Number(url.searchParams.get('page')) || 1);
+    const perPage = Math.min(100, Math.max(10, Number(url.searchParams.get('perPage')) || 25));
+    const filter = url.searchParams.get('filter') || 'all';
+    const start = url.searchParams.get('start');
+    const end = url.searchParams.get('end');
 
     const where = { userId: session.id, deletedAt: null };
+    const and = [];
     if (search) {
-      where.OR = [
+      and.push({ OR: [
         { orderId: { contains: search, mode: 'insensitive' } },
         { batchId: { contains: search, mode: 'insensitive' } },
         { link: { contains: search, mode: 'insensitive' } },
-      ];
+      ] });
+    }
+    if (filter === 'active') where.status = { in: ['Pending', 'Processing', 'Dispatching'] };
+    else if (filter === 'attention') {
+      where.queuedBehind = null;
+      and.push({ OR: [
+        { status: 'Partial' },
+        { status: 'Pending', lastError: { not: null }, apiOrderId: null },
+      ] });
+    } else if (filter !== 'all') where.status = filter;
+    if (and.length) where.AND = and;
+
+    if (start || end) {
+      where.createdAt = {};
+      if (start) {
+        const d = new Date(start);
+        if (!Number.isNaN(d.getTime())) where.createdAt.gte = d;
+      }
+      if (end) {
+        const d = new Date(end);
+        if (!Number.isNaN(d.getTime())) where.createdAt.lte = d;
+      }
+      if (!Object.keys(where.createdAt).length) delete where.createdAt;
     }
 
-    const orders = await prisma.order.findMany({
+    // Paginate logical display rows so every bulk batch stays intact on one page.
+    // The first query is deliberately narrow; full relations are loaded only for
+    // the selected singles/batches.
+    const matchingRefs = await prisma.order.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, speed: true, refill: true, refillDays: true, group: { select: { name: true, type: true } } } }, dripDispatches: { where: { status: { in: ['pending', 'dispatching', 'processing'] } }, select: { scheduledAt: true }, orderBy: { scheduledAt: 'desc' }, take: 1 } },
+      select: { id: true, batchId: true, createdAt: true },
+    });
+    const displayGroups = buildOrderDisplayGroups(matchingRefs);
+    const total = displayGroups.length;
+    const pageGroups = displayGroups.slice((page - 1) * perPage, page * perPage);
+    const batchIds = pageGroups.map(group => group.batchId).filter(Boolean);
+    const singleIds = pageGroups.map(group => group.singleId).filter(Boolean);
+
+    const orders = pageGroups.length === 0 ? [] : await prisma.order.findMany({
+      where: {
+        userId: session.id,
+        deletedAt: null,
+        OR: [
+          ...(batchIds.length ? [{ batchId: { in: batchIds } }] : []),
+          ...(singleIds.length ? [{ id: { in: singleIds } }] : []),
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, speed: true, refill: true, refillDays: true, group: { select: { name: true, platform: true, type: true } } } }, dripDispatches: { where: { status: { in: ['pending', 'dispatching', 'processing'] } }, select: { scheduledAt: true }, orderBy: { scheduledAt: 'desc' }, take: 1 } },
     });
 
     return Response.json({
+      total,
+      matchingOrdersTotal: matchingRefs.length,
+      page,
+      totalPages: Math.max(1, Math.ceil(total / perPage)),
       orders: orders.map(o => ({
         id: o.orderId || o.id,
         internalId: o.id,
         service: o.tier?.group?.name || o.service?.name || o.serviceId,
         tier: o.tier?.group?.name && o.tier?.tier ? o.tier.tier : null,
         speed: o.tier?.speed || null,
-        platform: o.service?.category || 'unknown',
+        platform: o.tier?.group?.platform || o.service?.category || 'unknown',
         link: o.link,
         quantity: o.quantity,
         charge: o.charge / 100,

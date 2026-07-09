@@ -4,6 +4,7 @@ import { requireAdmin, logActivity } from '@/lib/admin';
 import { getServices, getBalance, isProviderConfigured, getProviderName, checkOrder } from '@/lib/smm';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { calculateTierPrice } from '@/lib/markup';
+import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 
 export const maxDuration = 60;
 
@@ -121,6 +122,7 @@ export async function POST(req) {
 
       await logActivity(admin.name, `Synced from ${getProviderName(providerId)}: ${created} new, ${updated} updated, ${skipped} skipped, ${disabled} disabled (removed by provider)`, 'service');
 
+      if (created > 0 || updated > 0 || disabled > 0) invalidateServiceCatalogue();
       return Response.json({ success: true, provider: providerId, total: providerServices.length, created, updated, skipped, disabled });
     }
 
@@ -399,6 +401,7 @@ export async function POST(req) {
 
       await logActivity(admin.name, `Price sync: ${stats.updated} costs updated, ${stats.repriced} repriced, ${stats.losers} below cost`, 'service');
 
+      if (ops.length > 0) invalidateServiceCatalogue();
       return Response.json({ success: true, ...stats, losers: losers.slice(0, 20) });
     }
 

@@ -3,7 +3,6 @@ import { useState, useEffect, useMemo, useRef, useTransition, Fragment } from "r
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme } from "./shared-nav";
 import { NitroWordmark } from "./nitro-logo";
-import NewOrderPage, { PLATFORMS, PLATFORM_GROUPS, OrderForm, ServicesSidebar } from "./new-order";
 import { ToastProvider } from "./toast";
 import { ConfirmProvider } from "./confirm-dialog";
 import AnnouncementBanner from "./announcement-banner";
@@ -14,6 +13,8 @@ import { Avatar } from "./avatar";
 import OrderTour from "./order-tour";
 
 /* Dynamic imports — only load when user navigates to that page */
+const NewOrderPage = dynamic(() => import("./new-order").then(m => m.default), { ssr: false });
+const ServicesSidebar = dynamic(() => import("./new-order").then(m => m.ServicesSidebar), { ssr: false });
 const OrdersPage = dynamic(() => import("./orders-page").then(m => m.default), { ssr: false });
 const OrdersSidebar = dynamic(() => import("./orders-page").then(m => m.OrdersSidebar), { ssr: false });
 const ReferralsPage = dynamic(() => import("./referrals-page").then(m => m.default), { ssr: false });
@@ -113,15 +114,14 @@ function MobileMenuHint({ dark, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ OVERVIEW PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
-function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs, socialLinks }) {
+function OverviewPage({ user, orders, activeOrders, orderSummary, alerts, dark, t, setActive, a2hs, socialLinks }) {
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [tipsOpen, setTipsOpen] = useState(false);
   const balance = user?.balance || 0;
-  const activeOrders = orders.filter(o => o.status === "Processing" || o.status === "Pending" || o.status === "Partial");
-  const completed = orders.filter(o => o.status === "Completed").length;
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const weekOrders = orders.filter(o => o.created && new Date(o.created) > weekAgo).length;
-  const isNew = orders.length === 0;
+  const activeCount = orderSummary?.active ?? activeOrders.length;
+  const completed = orderSummary?.completed ?? 0;
+  const weekOrders = orderSummary?.thisWeek ?? 0;
+  const isNew = (orderSummary?.total ?? orders.length) === 0;
   const lowBal = balance < 500;
   const firstName = user?.name?.split(" ")[0] || "there";
   const isAttn = (o) => o.status === "Partial" || (o.status === "Pending" && o.lastError && !o.apiOrderId);
@@ -132,8 +132,8 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs, socialLi
     ? { label: "Place your first order", sub: "Pick a platform and start growing today", target: "services" }
     : lowBal
     ? { label: "Add funds", sub: "Top up your balance to keep the momentum going", target: "add-funds" }
-    : activeOrders.length > 0
-    ? { label: "Track your orders", sub: `${activeOrders.length} order${activeOrders.length > 1 ? "s" : ""} in progress right now`, target: "orders" }
+    : activeCount > 0
+    ? { label: "Track your orders", sub: `${activeCount} order${activeCount > 1 ? "s" : ""} in progress right now`, target: "orders" }
     : { label: "Start a new order", sub: "Ready when you are — let's keep growing", target: "services" };
 
   return (
@@ -141,7 +141,7 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs, socialLi
       {/* ── Stat cards ── */}
       <div className="dash-stats">
         {[
-          ["Active", String(activeOrders.length), dark ? "#e0a458" : "#d97706"],
+          ["Active", String(activeCount), dark ? "#e0a458" : "#d97706"],
           ["Delivered", String(completed), dark ? "#6ee7b7" : "#059669"],
           ["This Week", String(weekOrders), dark ? "#a5b4fc" : "#4f46e5"],
         ].map(([label, val, color]) => (
@@ -192,7 +192,7 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs, socialLi
               <div className="text-sm font-semibold tracking-wide uppercase" style={{ color: t.textMuted }}>Active Orders</div>
               {attentionOrders.length > 0 && <span className="text-[11px] font-semibold py-0.5 px-2 rounded-full" style={{ background: dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)", color: dark ? "#fcd34d" : "#d97706" }}>Needs attention</span>}
             </div>
-            {activeOrders.length > 3 && <button onClick={() => setActive("orders")} className="text-xs font-medium bg-transparent border-none cursor-pointer font-[inherit]" style={{ color: t.accent }}>View all {activeOrders.length} →</button>}
+            {activeCount > 3 && <button onClick={() => setActive("orders")} className="text-xs font-medium bg-transparent border-none cursor-pointer font-[inherit]" style={{ color: t.accent }}>View all {activeCount} →</button>}
           </div>
           {sortedActive.slice(0, 3).map((o, i) => {
             const pct = o.remains != null && o.quantity > 0 ? Math.max(0, Math.min(100, Math.round((o.quantity - o.remains) / o.quantity * 100))) : null;
@@ -327,7 +327,7 @@ function OverviewPage({ user, orders, alerts, dark, t, setActive, a2hs, socialLi
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium" style={{ color: t.text }}>{item.orders.length} orders</div>
+                    <div className="text-sm font-medium" style={{ color: t.text }}>Bulk order</div>
                     <div className="text-xs mt-px" style={{ color: t.textMuted }}>{item.created ? fD(item.created, true) : ""}</div>
                   </div>
                 </div>
@@ -454,9 +454,8 @@ function WaitlistPage({ feature, dark, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ RIGHT SIDEBAR                      ═══ */
 /* ═══════════════════════════════════════════ */
-function RightSidebar({ orders, user, dark, t, setActive }) {
-  const activeOrders = orders.filter(o => o.status === "Processing" || o.status === "Pending" || o.status === "Partial");
-
+function RightSidebar({ activeOrders, orderSummary, user, dark, t, setActive }) {
+  const activeCount = orderSummary?.active ?? activeOrders.length;
   return (
     <>
       {/* ── Your Stats ── */}
@@ -464,15 +463,12 @@ function RightSidebar({ orders, user, dark, t, setActive }) {
         <div className="text-sm font-semibold uppercase tracking-[1.5px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Your Stats</div>
         <div className="flex flex-col">
           {(() => {
-            const platformCounts = {};
-            orders.forEach(o => { const p = o.platform || "unknown"; platformCounts[p] = (platformCounts[p] || 0) + 1; });
-            const topPlatform = Object.entries(platformCounts).sort((a, b) => b[1] - a[1])[0];
-            const avgQty = orders.length > 0 ? Math.round(orders.reduce((s, o) => s + (o.quantity || 0), 0) / orders.length) : 0;
+            const topPlatform = orderSummary?.topPlatform;
+            const avgQty = orderSummary?.averageQuantity || 0;
             const memberDate = user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : "—";
-            const wk = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-            const wkOrders = orders.filter(o => o.created && new Date(o.created) > wk).length;
+            const wkOrders = orderSummary?.thisWeek || 0;
             return [
-              ["Most Ordered", topPlatform ? topPlatform[0].charAt(0).toUpperCase() + topPlatform[0].slice(1) : "—", <svg key="ig" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>],
+              ["Most Ordered", topPlatform ? topPlatform.charAt(0).toUpperCase() + topPlatform.slice(1) : "—", <svg key="ig" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>],
               ["Avg Order Size", avgQty > 0 ? avgQty.toLocaleString() + " qty" : "—", <svg key="sz" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#a5b4fc" : "#4f46e5"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>],
               ["This Week", wkOrders > 0 ? wkOrders + " orders" : "No orders", <svg key="wk" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>],
               ["Member Since", memberDate, <svg key="ms" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#e0a458" : "#d97706"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>],
@@ -496,7 +492,7 @@ function RightSidebar({ orders, user, dark, t, setActive }) {
       {/* ── Active Orders ── */}
       <div className="flex-1 overflow-auto pt-2">
         <div className="text-sm font-semibold uppercase tracking-[1.5px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Active Orders</div>
-        {activeOrders.length === 0 && <div className="text-sm mb-2.5" style={{ color: t.textMuted }}>No active orders</div>}
+        {activeCount === 0 && <div className="text-sm mb-2.5" style={{ color: t.textMuted }}>No active orders</div>}
         <div className="flex flex-col gap-1.5">
           {activeOrders.slice(0, 5).map(o => (
             <div key={o.id} className="py-2.5 px-3 rounded-[10px]" style={{ background: t.cardBg }}>
@@ -510,8 +506,8 @@ function RightSidebar({ orders, user, dark, t, setActive }) {
             </div>
           ))}
         </div>
-        {activeOrders.length > 5 && (
-          <button onClick={() => setActive("orders")} className="w-full py-1.5 text-sm font-medium text-center bg-none border-none cursor-pointer mt-1 transition-transform duration-200 hover:-translate-y-px" style={{ color: t.accent }}>View all {activeOrders.length} active →</button>
+        {activeCount > 5 && (
+          <button onClick={() => setActive("orders")} className="w-full py-1.5 text-sm font-medium text-center bg-none border-none cursor-pointer mt-1 transition-transform duration-200 hover:-translate-y-px" style={{ color: t.accent }}>View all {activeCount} active →</button>
         )}
       </div>
 
@@ -722,7 +718,15 @@ function DashboardInner({ initialData }) {
     return u;
   });
   const [orders, setOrders] = useState(initialData?.orders || []);
+  const [activeOrders, setActiveOrders] = useState(initialData?.activeOrders || []);
+  const [ordersTotal, setOrdersTotal] = useState(initialData?.ordersTotal ?? initialData?.orders?.length ?? 0);
+  const [orderSummary, setOrderSummary] = useState(initialData?.orderSummary || {
+    total: initialData?.ordersTotal ?? initialData?.orders?.length ?? 0,
+    active: 0, completed: 0, thisWeek: 0, attention: 0,
+    spent: 0, refunded: 0, averageQuantity: 0, topPlatform: null,
+  });
   const [txs, setTxs] = useState(initialData?.transactions || []);
+  const [transactionsTotal, setTransactionsTotal] = useState(initialData?.transactionsTotal ?? initialData?.transactions?.length ?? 0);
   const [unreadTickets, setUnreadTickets] = useState(initialData?.unreadTickets || []);
   const [walletSummary, setWalletSummary] = useState(initialData?.walletSummary || { funded: 0, spent: 0 });
   const enrichedTxs = useMemo(() => {
@@ -866,7 +870,11 @@ function DashboardInner({ initialData }) {
         const data = await res.json();
         setUser(data.user);
         if (data.orders) setOrders(data.orders);
+        if (data.activeOrders) setActiveOrders(data.activeOrders);
+        if (data.ordersTotal != null) setOrdersTotal(data.ordersTotal);
+        if (data.orderSummary) setOrderSummary(data.orderSummary);
         if (data.transactions) setTxs(data.transactions);
+        if (data.transactionsTotal != null) setTransactionsTotal(data.transactionsTotal);
         if (data.unreadTickets) setUnreadTickets(data.unreadTickets);
         if (data.walletSummary) setWalletSummary(data.walletSummary);
         if (data.alerts) setAlerts(data.alerts);
@@ -899,7 +907,11 @@ function DashboardInner({ initialData }) {
             const data = await res.json();
             setUser(data.user);
             if (data.orders) setOrders(data.orders);
+            if (data.activeOrders) setActiveOrders(data.activeOrders);
+            if (data.ordersTotal != null) setOrdersTotal(data.ordersTotal);
+            if (data.orderSummary) setOrderSummary(data.orderSummary);
             if (data.transactions) setTxs(data.transactions);
+            if (data.transactionsTotal != null) setTransactionsTotal(data.transactionsTotal);
         if (data.unreadTickets) setUnreadTickets(data.unreadTickets);
             if (data.walletSummary) setWalletSummary(data.walletSummary);
             if (data.alerts) setAlerts(data.alerts);
@@ -976,7 +988,11 @@ function DashboardInner({ initialData }) {
           const data = await res.json();
           if (data.user) setUser(data.user);
           if (data.orders) setOrders(data.orders);
+          if (data.activeOrders) setActiveOrders(data.activeOrders);
+          if (data.ordersTotal != null) setOrdersTotal(data.ordersTotal);
+          if (data.orderSummary) setOrderSummary(data.orderSummary);
           if (data.transactions) setTxs(data.transactions);
+          if (data.transactionsTotal != null) setTransactionsTotal(data.transactionsTotal);
         if (data.unreadTickets) setUnreadTickets(data.unreadTickets);
           if (data.walletSummary) setWalletSummary(data.walletSummary);
           if (data.alerts) setAlerts(data.alerts);
@@ -1019,6 +1035,7 @@ function DashboardInner({ initialData }) {
               const dashData = await dashRes.json();
               setUser(dashData.user);
               if (dashData.transactions) setTxs(dashData.transactions);
+              if (dashData.transactionsTotal != null) setTransactionsTotal(dashData.transactionsTotal);
               if (dashData.unreadTickets) setUnreadTickets(dashData.unreadTickets);
               if (dashData.walletSummary) setWalletSummary(dashData.walletSummary);
             }
@@ -1123,11 +1140,11 @@ function DashboardInner({ initialData }) {
   const renderPage = () => {
     switch (active) {
       case "overview":
-        return <OverviewPage user={user} orders={orders} alerts={alerts} dark={dark} t={t} setActive={setActive} a2hs={{ ready: a2hsReady, isIos, dismissed: a2hsDismissed, onInstall: handleA2hsInstall, onDismiss: dismissA2hs }} socialLinks={socialLinks} />;
+        return <OverviewPage user={user} orders={orders} activeOrders={activeOrders} orderSummary={orderSummary} alerts={alerts} dark={dark} t={t} setActive={setActive} a2hs={{ ready: a2hsReady, isIos, dismissed: a2hsDismissed, onInstall: handleA2hsInstall, onDismiss: dismissA2hs }} socialLinks={socialLinks} />;
       case "services":
         return <NewOrderPage dark={dark} t={t} user={user} onOrderSuccess={refreshDashboard} onViewOrders={() => setActive("orders")} onTopUp={() => setActive("add-funds")} platform={noPlatform} setPlatform={setNoPlatform} selSvc={noSelSvc} setSelSvc={setNoSelSvc} selTier={noSelTier} setSelTier={setNoSelTier} qty={noQty} setQty={setNoQty} link={noLink} setLink={setNoLink} comments={noComments} setComments={setNoComments} catModal={noCatModal} setCatModal={setNoCatModal} tourActive={showOrderTour} activePromotion={activePromotion} />;
       case "orders":
-        return <OrdersPage orders={orders} txs={enrichedTxs} dark={dark} t={t} onNavigate={setActive} waNum={socialLinks.social_whatsapp_support?.replace(/\D/g, "")} />;
+        return <OrdersPage orders={orders} initialTotal={ordersTotal} orderSummary={orderSummary} txs={enrichedTxs} dark={dark} t={t} onNavigate={setActive} onRefresh={refreshDashboard} waNum={socialLinks.social_whatsapp_support?.replace(/\D/g, "")} />;
       case "referrals":
         return <ReferralsPage user={user} dark={dark} t={t} />;
       case "settings":
@@ -1136,7 +1153,7 @@ function DashboardInner({ initialData }) {
         if (socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setActive("overview"); return null; }
         return <SupportPage dark={dark} t={t} />;
       case "add-funds":
-        return <AddFundsPage user={user} txs={enrichedTxs} walletSummary={walletSummary} dark={dark} t={t} paymentStatus={paymentStatus} setPaymentStatus={setPaymentStatus} onPlaceOrder={() => setActive("services")} onRefresh={refreshDashboard} />;
+        return <AddFundsPage user={user} txs={enrichedTxs} transactionsTotal={transactionsTotal} walletSummary={walletSummary} dark={dark} t={t} paymentStatus={paymentStatus} setPaymentStatus={setPaymentStatus} onPlaceOrder={() => setActive("services")} onRefresh={refreshDashboard} />;
       case "guide":
         return <GuidePage dark={dark} t={t} />;
       case "earn":
@@ -1227,7 +1244,7 @@ function DashboardInner({ initialData }) {
             {/* ── Nav items — grouped on desktop, flat on mobile ── */}
             <>
               {NAV_ITEMS.map((item, i) => {
-                const processingCount = item.id === "orders" ? orders.filter(o => o.status === "Processing" || o.status === "Pending").length : 0;
+                const processingCount = item.id === "orders" ? orderSummary.active : 0;
                 const isSupportItem = item.id === "support";
                 const isActive = active === item.id;
                 return (
@@ -1286,7 +1303,7 @@ function DashboardInner({ initialData }) {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xl max-md:text-lg font-semibold mb-0.5" style={{ color: t.text }}>Welcome back, {firstName}</div>
-                <div className="text-sm" style={{ color: t.textMuted }}>{orders.length === 0 ? "Place your first order in under a minute." : "Here's your dashboard at a glance."}</div>
+                <div className="text-sm" style={{ color: t.textMuted }}>{orderSummary.total === 0 ? "Place your first order in under a minute." : "Here's your dashboard at a glance."}</div>
               </div>
               <div className="shrink-0 ml-4 py-1.5 px-3 max-md:py-1 max-md:px-2.5 rounded-xl text-right" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Balance</div>
@@ -1318,7 +1335,7 @@ function DashboardInner({ initialData }) {
           {isServices ? (
             <ServicesSidebar dark={dark} t={t} />
           ) : isOrders ? (
-            <OrdersSidebar orders={orders} dark={dark} t={t} />
+            <OrdersSidebar orders={orders} orderSummary={orderSummary} dark={dark} t={t} />
           ) : isReferrals ? (
             <ReferralsSidebar user={user} dark={dark} t={t} />
           ) : isSettings ? (
@@ -1352,7 +1369,7 @@ function DashboardInner({ initialData }) {
               ))}
             </>
           ) : (
-            <RightSidebar orders={orders} user={user} dark={dark} t={t} setActive={setActive} />
+            <RightSidebar activeOrders={activeOrders} orderSummary={orderSummary} user={user} dark={dark} t={t} setActive={setActive} />
           )}
         </aside>
       </div>

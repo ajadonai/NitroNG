@@ -17,6 +17,7 @@ export async function GET(req) {
     const sortDir = url.searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc';
     const quick = url.searchParams.get('quick') || '';
     const isExport = url.searchParams.get('export') === 'true';
+    const includeStats = url.searchParams.get('includeStats') === 'true';
 
     // --- Where clauses ---
     const searchWhere = search ? {
@@ -65,28 +66,10 @@ export async function GET(req) {
       _count: { select: { orders: { where: { status: { not: 'Cancelled' }, deletedAt: null } } } },
     };
 
-    // --- Parallel queries ---
-    const [
-      filteredCount,
-      tabCountsRaw,
-      totalUsers,
-      activeUsers,
-      balanceAgg,
-      totalOrders,
-      newThisWeek,
-      ordersThisMonth,
-      fundedWallets,
-      users,
-    ] = await Promise.all([
+    // Search/list requests stay lean. Global stats are loaded only when requested.
+    const [filteredCount, tabCountsRaw, users] = await Promise.all([
       prisma.user.count({ where: fullWhere }),
       prisma.user.groupBy({ by: ['status'], where: baseWhere, _count: { _all: true } }),
-      prisma.user.count(),
-      prisma.user.count({ where: { status: 'Active' } }),
-      prisma.user.aggregate({ _sum: { balance: true } }),
-      prisma.order.count({ where: { status: { not: 'Cancelled' }, deletedAt: null } }),
-      prisma.user.count({ where: { createdAt: { gte: startOfWeek } } }),
-      prisma.order.count({ where: { createdAt: { gte: startOfMonth }, status: { not: 'Cancelled' }, deletedAt: null } }),
-      prisma.user.count({ where: { balance: { gt: 0 } } }),
       prisma.user.findMany({
         where: fullWhere,
         orderBy,
@@ -94,6 +77,28 @@ export async function GET(req) {
         ...(isExport ? { take: 10000 } : { skip: (page - 1) * perPage, take: perPage }),
       }),
     ]);
+
+    let stats;
+    if (includeStats) {
+      const [totalUsers, activeUsers, balanceAgg, totalOrders, newThisWeek, ordersThisMonth, fundedWallets] = await Promise.all([
+        prisma.user.count(),
+        prisma.user.count({ where: { status: 'Active' } }),
+        prisma.user.aggregate({ _sum: { balance: true } }),
+        prisma.order.count({ where: { status: { not: 'Cancelled' }, deletedAt: null } }),
+        prisma.user.count({ where: { createdAt: { gte: startOfWeek } } }),
+        prisma.order.count({ where: { createdAt: { gte: startOfMonth }, status: { not: 'Cancelled' }, deletedAt: null } }),
+        prisma.user.count({ where: { balance: { gt: 0 } } }),
+      ]);
+      stats = {
+        totalUsers,
+        activeUsers,
+        totalBalance: (balanceAgg._sum.balance || 0) / 100,
+        totalOrders,
+        newThisWeek,
+        ordersThisMonth,
+        fundedWallets,
+      };
+    }
 
     // --- Build tab counts map ---
     const tabCounts = { all: 0, active: 0, suspended: 0, pending: 0, deleted: 0 };
@@ -106,7 +111,6 @@ export async function GET(req) {
       else if (row.status === 'Deleted') tabCounts.deleted = c;
     }
 
-    const totalBalance = (balanceAgg._sum.balance || 0) / 100;
     const totalPages = Math.ceil(filteredCount / perPage);
 
     const sensitive = canSeeSensitive(admin);
@@ -133,15 +137,7 @@ export async function GET(req) {
       totalPages,
       page,
       tabCounts,
-      stats: {
-        totalUsers,
-        activeUsers,
-        totalBalance,
-        totalOrders,
-        newThisWeek,
-        ordersThisMonth,
-        fundedWallets,
-      },
+      ...(stats ? { stats } : {}),
     });
   } catch (err) {
     log.error('Admin Users', err.message);

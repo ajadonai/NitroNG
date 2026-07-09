@@ -44,13 +44,13 @@ export default function CookieBanner() {
     window.addEventListener('storage', check);
     const observer = new MutationObserver(check);
     observer.observe(document.documentElement, { attributes: true });
-    const interval = setInterval(check, 500);
-    return () => { window.removeEventListener('storage', check); observer.disconnect(); clearInterval(interval); };
+    return () => { window.removeEventListener('storage', check); observer.disconnect(); };
   }, []);
 
   const dismiss = useCallback((choice) => {
     localStorage.setItem('nitro-cookie-consent', choice);
     if (choice === 'accepted') initPixel();
+    window.dispatchEvent(new Event('nitro-consent-changed'));
     setExiting(true);
   }, []);
 

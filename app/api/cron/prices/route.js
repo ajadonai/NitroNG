@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getServices, isProviderConfigured } from '@/lib/smm';
 import { calculateTierPrice } from '@/lib/markup';
+import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -232,6 +233,7 @@ export async function GET(req) {
     }
 
     log.info('PriceSync', `Synced ${stats.synced}, updated ${stats.updated} costs, repriced ${stats.repriced}, ${stats.losers} losers, ${stats.dead} dead`);
+    if (ops.length > 0) invalidateServiceCatalogue();
     return Response.json({ success: true, ...stats, losers: losers.slice(0, 20) });
   } catch (err) {
     log.error('PriceSync', err.stack || err.message);
