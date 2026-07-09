@@ -9,11 +9,10 @@ import '@fontsource/cormorant-garamond/latin-400.css';
 import '@fontsource/cormorant-garamond/latin-400-italic.css';
 import '@fontsource/cormorant-garamond/latin-500-italic.css';
 import '@fontsource/cormorant-garamond/latin-700.css';
-import Script from 'next/script';
-import SentryInit from '@/components/sentry-init';
 import CookieBanner from '@/components/cookie-banner';
 import CAPIPageView from '@/components/capi-tracker';
 import Heartbeat from '@/components/heartbeat';
+import AnalyticsScripts from '@/components/analytics-scripts';
 
 export const metadata = {
   title: {
@@ -196,9 +195,6 @@ export default function RootLayout({ children }) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://sentry.io" crossOrigin="anonymous" />
-        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18121451903" />
-        <script dangerouslySetInnerHTML={{ __html: "window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','AW-18121451903');" }} />
-        <Script src="https://t.contentsquare.net/uxa/326b90ddf7f96.js" strategy="afterInteractive" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(appSchema) }} />
@@ -208,10 +204,7 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:py-2 focus:px-4 focus:rounded-lg focus:bg-[#c47d8e] focus:text-white focus:text-sm focus:font-semibold focus:no-underline">Skip to main content</a>
-        <Script src="https://plausible.io/js/pa-nE8AS3pS0CWFTGc_htkYL.js" strategy="afterInteractive" />
-        <Script id="plausible-init" strategy="afterInteractive">{`window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`}</Script>
-
-        <SentryInit />
+        <AnalyticsScripts />
         <CookieBanner />
         <CAPIPageView />
         <Heartbeat />

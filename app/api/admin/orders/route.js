@@ -29,7 +29,8 @@ export async function GET(req) {
   try {
     const url = new URL(req.url);
     const batchId = url.searchParams.get('batchId')?.trim();
-    const search = url.searchParams.get('search')?.trim();
+    const rawSearch = url.searchParams.get('search')?.trim();
+    const search = rawSearch && rawSearch.length >= 2 ? rawSearch : null;
     const page = Math.max(1, parseInt(url.searchParams.get('page')) || 1);
     const perPage = Math.min(100, Math.max(10, parseInt(url.searchParams.get('perPage')) || 50));
     const filter = url.searchParams.get('filter') || 'all';
@@ -46,17 +47,13 @@ export async function GET(req) {
       ],
     } : null;
 
-    let hasDripTable = true;
     const include = {
       user: { select: { name: true, email: true, phone: true } },
       service: { select: { name: true, category: true, provider: true, apiId: true, costPer1k: true } },
       tier: { select: { tier: true, sellPer1k: true, group: { select: { name: true, platform: true, type: true } }, service: { select: { apiId: true, costPer1k: true } } } },
+      dripDispatches: { select: { id: true, day: true, batch: true, quantity: true, status: true, apiOrderId: true, scheduledAt: true, dispatchedAt: true, completedAt: true, lastError: true }, orderBy: { scheduledAt: 'asc' } },
     };
-    try {
-      await prisma.dripDispatch.findFirst({ take: 1 });
-      include.dripDispatches = { select: { id: true, day: true, batch: true, quantity: true, status: true, apiOrderId: true, scheduledAt: true, dispatchedAt: true, completedAt: true, lastError: true }, orderBy: { scheduledAt: 'asc' } };
-      if (search && searchCondition.OR) searchCondition.OR.push({ dripDispatches: { some: { apiOrderId: { contains: search, mode: 'insensitive' } } } });
-    } catch { hasDripTable = false; }
+    if (search && searchCondition.OR) searchCondition.OR.push({ dripDispatches: { some: { apiOrderId: { contains: search, mode: 'insensitive' } } } });
 
     let orders, total, counts;
 
@@ -73,8 +70,7 @@ export async function GET(req) {
         if (filter === 'queued') return { queuedBehind: { not: null } };
         if (filter === 'needs_dispatch') {
           const nd = { queuedBehind: null, status: { in: ['Pending', 'Processing', 'Dispatching'] } };
-          if (hasDripTable) nd.OR = [{ apiOrderId: null, dripDispatches: { none: {} } }, { dripDispatches: { some: { status: 'failed' } } }];
-          else nd.apiOrderId = null;
+          nd.OR = [{ apiOrderId: null, dripDispatches: { none: {} } }, { dripDispatches: { some: { status: 'failed' } } }];
           return nd;
         }
         if (filter && filter !== 'all') return { status: filter };
@@ -91,8 +87,7 @@ export async function GET(req) {
       const countsWhere = searchCondition ? { ...baseWhere, AND: [searchCondition] } : baseWhere;
 
       const ndWhere = { queuedBehind: null, status: { in: ['Pending', 'Processing', 'Dispatching'] } };
-      if (hasDripTable) ndWhere.OR = [{ apiOrderId: null, dripDispatches: { none: {} } }, { dripDispatches: { some: { status: 'failed' } } }];
-      else ndWhere.apiOrderId = null;
+      ndWhere.OR = [{ apiOrderId: null, dripDispatches: { none: {} } }, { dripDispatches: { some: { status: 'failed' } } }];
 
       let statusGroups, queuedCount, needsDispatchCount;
       [orders, total, statusGroups, queuedCount, needsDispatchCount] = await Promise.all([

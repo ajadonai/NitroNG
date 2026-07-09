@@ -103,6 +103,10 @@ model User {
   taskSubmissions   TaskSubmission[]
 
   @@index([signupIp])
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "users_name_trgm_idx")
+  @@index([email(ops: raw("gin_trgm_ops"))], type: Gin, map: "users_email_trgm_idx")
+  @@index([deletedName(ops: raw("gin_trgm_ops"))], type: Gin, map: "users_deleted_name_trgm_idx")
+  @@index([deletedEmail(ops: raw("gin_trgm_ops"))], type: Gin, map: "users_deleted_email_trgm_idx")
   @@map("users")
 }
 
@@ -304,6 +308,11 @@ model Order {
   @@index([platformCampaignId])
   @@index([recurringCampaignId])
   @@index([parentOrderId])
+  @@index([orderId(ops: raw("gin_trgm_ops"))], type: Gin, map: "orders_order_id_trgm_idx")
+  @@index([apiOrderId(ops: raw("gin_trgm_ops"))], type: Gin, map: "orders_api_order_id_trgm_idx")
+  @@index([batchId(ops: raw("gin_trgm_ops"))], type: Gin, map: "orders_batch_id_trgm_idx")
+  @@index([link(ops: raw("gin_trgm_ops"))], type: Gin, map: "orders_link_trgm_idx")
+  @@index([parentOrderId(ops: raw("gin_trgm_ops"))], type: Gin, map: "orders_parent_order_id_trgm_idx")
   @@map("orders")
 }
 
@@ -328,6 +337,7 @@ model DripDispatch {
 
   @@index([orderId])
   @@index([status, scheduledAt])
+  @@index([apiOrderId(ops: raw("gin_trgm_ops"))], type: Gin, map: "drip_dispatches_api_order_id_trgm_idx")
   @@map("drip_dispatches")
 }
 
@@ -352,11 +362,14 @@ model Transaction {
 
   @@unique([userId, idempotencyKey])
   @@index([userId])
+  @@index([userId, createdAt])
   @@index([userId, type])
   @@index([type])
   @@index([type, status, createdAt])
   @@index([type, status, method, createdAt])
   @@index([createdAt])
+  @@index([reference(ops: raw("gin_trgm_ops"))], type: Gin, map: "transactions_reference_trgm_idx")
+  @@index([note(ops: raw("gin_trgm_ops"))], type: Gin, map: "transactions_note_trgm_idx")
   @@map("transactions")
 }
 
@@ -435,6 +448,8 @@ model ActivityLog {
 
   @@index([adminName])
   @@index([createdAt])
+  @@index([adminName(ops: raw("gin_trgm_ops"))], type: Gin, map: "activity_log_admin_name_trgm_idx")
+  @@index([action(ops: raw("gin_trgm_ops"))], type: Gin, map: "activity_log_action_trgm_idx")
   @@map("activity_log")
 }
 
@@ -493,6 +508,8 @@ model BlogPost {
   @@index([published])
   @@index([showInHowTo])
   @@index([category])
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "blog_posts_title_trgm_idx")
+  @@index([excerpt(ops: raw("gin_trgm_ops"))], type: Gin, map: "blog_posts_excerpt_trgm_idx")
   @@map("blog_posts")
 }
 

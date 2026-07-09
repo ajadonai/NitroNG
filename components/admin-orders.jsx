@@ -211,7 +211,7 @@ export default function AdminOrdersPage({ dark, t }) {
     const controller = new AbortController();
     abortRef.current = controller;
     const params = new URLSearchParams();
-    if (q) params.set('search', q);
+    if (q?.trim().length >= 2) params.set('search', q.trim());
     if (f && f !== 'all') params.set('filter', f);
     params.set('page', String(p || 1));
     params.set('perPage', String(pp || 25));
@@ -225,7 +225,8 @@ export default function AdminOrdersPage({ dark, t }) {
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => { setDebouncedSearch(search); setPage(1); }, search ? 350 : 0);
+    const nextSearch = search.trim().length >= 2 ? search.trim() : "";
+    const t = setTimeout(() => { setDebouncedSearch(nextSearch); setPage(1); }, search ? 350 : 0);
     return () => clearTimeout(t);
   }, [search]);
 

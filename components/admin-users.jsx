@@ -155,12 +155,15 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
 
   const menuRef = useRef(null);
   const searchTimer = useRef(null);
+  const fetchAbortRef = useRef(null);
+  const statsLoadedRef = useRef(false);
 
   /* ── Debounced search ─────────────────────────── */
 
   useEffect(() => {
     clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => setDebouncedSearch(search), search ? 350 : 0);
+    const nextSearch = search.trim().length >= 2 ? search.trim() : "";
+    searchTimer.current = setTimeout(() => setDebouncedSearch(nextSearch), search ? 350 : 0);
     return () => clearTimeout(searchTimer.current);
   }, [search]);
 
@@ -173,20 +176,31 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
+    fetchAbortRef.current?.abort();
+    const controller = new AbortController();
+    fetchAbortRef.current = controller;
     const params = new URLSearchParams({ page: String(page), perPage: String(PER_PAGE), sort: sort.key, sortDir: sort.dir });
     if (tab !== 'all') params.set('status', tab);
-    if (debouncedSearch) params.set('search', debouncedSearch);
+    if (debouncedSearch.length >= 2) params.set('search', debouncedSearch);
     if (quick) params.set('quick', quick);
+    if (!statsLoadedRef.current) params.set('includeStats', 'true');
     try {
-      const res = await fetch(`/api/admin/users?${params}`);
+      const res = await fetch(`/api/admin/users?${params}`, { signal: controller.signal });
       const data = await res.json();
       setUsers(data.users || []);
       setFilteredCount(data.filteredCount || 0);
       setTotalPages(data.totalPages || 1);
       setTabCounts(data.tabCounts || {});
-      if (data.stats) setStats(data.stats);
-    } catch { /* network error — keep stale data */ }
-    setLoading(false);
+      if (data.stats) {
+        statsLoadedRef.current = true;
+        setStats(data.stats);
+      }
+    } catch (error) {
+      if (error?.name === 'AbortError') return;
+      // Network error — keep stale data.
+    } finally {
+      if (fetchAbortRef.current === controller) setLoading(false);
+    }
   }, [page, tab, debouncedSearch, quick, sort]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
