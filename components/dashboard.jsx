@@ -542,7 +542,7 @@ const NOTIF_ICONS = {
   chat: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,
 };
 
-function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedIds, setClearedIds, setClearedAt, readAllAt, setReadAllAt, onNavigate }) {
+function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedIds, setClearedIds, setClearedAt, readAllAt, setReadAllAt, onNavigate, socialLinks = {} }) {
   const [filter, setFilter] = useState("all");
 
   const filtered = filter === "all" ? items : items.filter(n => n.type === filter);
@@ -1209,7 +1209,7 @@ function DashboardInner({ initialData }) {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
               {bellUnread > 0 && <div className="dash-bell-badge">{bellUnread > 10 ? "10+" : bellUnread}</div>}
             </button>
-            {notifOpen && <NotifDropdown items={notifItems} dark={dark} t={t} onClose={() => setNotifOpen(false)} readIds={readNotifIds} setReadIds={setReadNotifIds} clearedIds={clearedNotifIds} setClearedIds={setClearedNotifIds} setClearedAt={setNotifClearedAt} readAllAt={notifReadAllAt} setReadAllAt={setNotifReadAllAt} onNavigate={setActive} />}
+            {notifOpen && <NotifDropdown items={notifItems} dark={dark} t={t} onClose={() => setNotifOpen(false)} readIds={readNotifIds} setReadIds={setReadNotifIds} clearedIds={clearedNotifIds} setClearedIds={setClearedNotifIds} setClearedAt={setNotifClearedAt} readAllAt={notifReadAllAt} setReadAllAt={setNotifReadAllAt} onNavigate={setActive} socialLinks={socialLinks} />}
           </div>
           {/* Avatar → Settings */}
           <button onClick={() => { setActive("settings"); setLeftOpen(false); }} className="dash-avatar-btn" aria-label="Profile">
