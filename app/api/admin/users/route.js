@@ -223,7 +223,8 @@ export async function POST(req) {
       // Email notification
       if (user.email && user.notifEmail !== false) {
         const reason = isGift ? 'You received a gift!' : 'Balance credited';
-        walletCreditEmail(user.name, Number(amount), reason).then(html => sendEmail(user.email, `₦${Number(amount).toLocaleString()} credited to your Nitro wallet`, html)).catch(() => {});
+        const html = walletCreditEmail(user.name, Number(amount), reason);
+        sendEmail(user.email, `₦${Number(amount).toLocaleString()} credited to your Nitro wallet`, html).catch(() => {});
       }
 
       return Response.json({ success: true, message: `₦${Number(amount).toLocaleString()} credited to ${user.name}` });
