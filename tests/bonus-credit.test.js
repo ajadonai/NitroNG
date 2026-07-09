@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('@/lib/logger', () => ({ log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } }));
 
 const { deductBalance, trackBonusConsumption, restoreBonusForRefund, grantWinbackCredit, expireBonusCredits, getBonusInfo } = await import('@/lib/bonus-credit');
+const { applyWelcomeBonus } = await import('@/lib/welcome-bonus');
 
 function makeTx() {
   const state = {
@@ -66,6 +67,20 @@ function makeTx() {
   };
 
   return { tx, state };
+}
+
+function makeWelcomeBonusDb() {
+  return {
+    user: {
+      findUnique: vi.fn(),
+      updateMany: vi.fn(),
+      update: vi.fn(),
+      count: vi.fn(),
+    },
+    transaction: { create: vi.fn() },
+    alert: { create: vi.fn() },
+    setting: { findMany: vi.fn() },
+  };
 }
 
 beforeEach(() => { vi.clearAllMocks(); });
@@ -264,5 +279,144 @@ describe('getBonusInfo', () => {
     const result = await getBonusInfo(db, 'u1');
     expect(result.amount).toBe(5000);
     expect(result.expiresAt).toBe(soon.toISOString());
+  });
+});
+
+describe('applyWelcomeBonus', () => {
+  it('pays bonus when under IP cap', async () => {
+    const db = makeWelcomeBonusDb();
+    db.user.findUnique.mockResolvedValue({ firstDepositBonusPaid: false, referredBy: null, signupIp: '1.2.3.4' });
+    db.user.updateMany.mockResolvedValue({ count: 1 });
+    db.setting.findMany.mockResolvedValue([]);
+    db.user.count.mockResolvedValue(1);
+    db.user.update.mockResolvedValue({});
+    db.transaction.create.mockResolvedValue({});
+
+    const result = await applyWelcomeBonus(db, 'user1', 250000);
+
+    expect(result).toBe(50000);
+    expect(db.user.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'user1' },
+      data: { balance: { increment: 50000 } },
+    }));
+    expect(db.transaction.create).toHaveBeenCalled();
+    expect(db.alert.create).not.toHaveBeenCalled();
+  });
+
+  it('withholds bonus and creates alert when at IP cap', async () => {
+    const db = makeWelcomeBonusDb();
+    db.user.findUnique.mockResolvedValue({ firstDepositBonusPaid: false, referredBy: null, signupIp: '1.2.3.4' });
+    db.user.updateMany.mockResolvedValue({ count: 1 });
+    db.setting.findMany.mockResolvedValue([]);
+    db.user.count.mockResolvedValue(2);
+
+    const result = await applyWelcomeBonus(db, 'user3', 500000);
+
+    expect(result).toBe(0);
+    expect(db.user.update).not.toHaveBeenCalled();
+    expect(db.transaction.create).not.toHaveBeenCalled();
+    expect(db.alert.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        type: 'welcome_bonus_ip_flag',
+        target: 'admin',
+      }),
+    }));
+  });
+
+  it('pays normally when signupIp is unknown', async () => {
+    const db = makeWelcomeBonusDb();
+    db.user.findUnique.mockResolvedValue({ firstDepositBonusPaid: false, referredBy: null, signupIp: 'unknown' });
+    db.user.updateMany.mockResolvedValue({ count: 1 });
+    db.user.update.mockResolvedValue({});
+    db.transaction.create.mockResolvedValue({});
+
+    const result = await applyWelcomeBonus(db, 'user4', 1000000);
+
+    expect(result).toBe(300000);
+    expect(db.user.count).not.toHaveBeenCalled();
+    expect(db.user.update).toHaveBeenCalled();
+  });
+
+  it('pays normally when signupIp is null', async () => {
+    const db = makeWelcomeBonusDb();
+    db.user.findUnique.mockResolvedValue({ firstDepositBonusPaid: false, referredBy: null, signupIp: null });
+    db.user.updateMany.mockResolvedValue({ count: 1 });
+    db.user.update.mockResolvedValue({});
+    db.transaction.create.mockResolvedValue({});
+
+    const result = await applyWelcomeBonus(db, 'user5', 500000);
+
+    expect(result).toBe(120000);
+    expect(db.user.count).not.toHaveBeenCalled();
+  });
+
+  it('allows bonus again when prior claims are outside the window', async () => {
+    const db = makeWelcomeBonusDb();
+    db.user.findUnique.mockResolvedValue({ firstDepositBonusPaid: false, referredBy: null, signupIp: '1.2.3.4' });
+    db.user.updateMany.mockResolvedValue({ count: 1 });
+    db.setting.findMany.mockResolvedValue([
+      { key: 'welcome_bonus_ip_window_days', value: '30' },
+    ]);
+    db.user.count.mockResolvedValue(0);
+    db.user.update.mockResolvedValue({});
+    db.transaction.create.mockResolvedValue({});
+
+    const result = await applyWelcomeBonus(db, 'user6', 250000);
+
+    expect(result).toBe(50000);
+    expect(db.user.count).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        signupIp: '1.2.3.4',
+        id: { not: 'user6' },
+        createdAt: { gte: expect.any(Date) },
+      }),
+    }));
+  });
+
+  it('returns 0 for referred users', async () => {
+    const db = makeWelcomeBonusDb();
+    db.user.findUnique.mockResolvedValue({ firstDepositBonusPaid: false, referredBy: 'someReferrer', signupIp: '5.6.7.8' });
+    db.user.updateMany.mockResolvedValue({ count: 1 });
+
+    const result = await applyWelcomeBonus(db, 'user7', 1000000);
+
+    expect(result).toBe(0);
+    expect(db.user.update).not.toHaveBeenCalled();
+    expect(db.user.count).not.toHaveBeenCalled();
+  });
+
+  it('returns 0 for sub-₦2,500 deposits', async () => {
+    const db = makeWelcomeBonusDb();
+
+    const result = await applyWelcomeBonus(db, 'user8', 200000);
+
+    expect(result).toBe(0);
+    expect(db.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('returns 0 for second deposits', async () => {
+    const db = makeWelcomeBonusDb();
+    db.user.findUnique.mockResolvedValue({ firstDepositBonusPaid: true, referredBy: null, signupIp: '1.2.3.4' });
+
+    const result = await applyWelcomeBonus(db, 'user9', 500000);
+
+    expect(result).toBe(0);
+    expect(db.user.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('respects custom cap from settings', async () => {
+    const db = makeWelcomeBonusDb();
+    db.user.findUnique.mockResolvedValue({ firstDepositBonusPaid: false, referredBy: null, signupIp: '1.2.3.4' });
+    db.user.updateMany.mockResolvedValue({ count: 1 });
+    db.setting.findMany.mockResolvedValue([
+      { key: 'welcome_bonus_ip_cap', value: '5' },
+    ]);
+    db.user.count.mockResolvedValue(4);
+    db.user.update.mockResolvedValue({});
+    db.transaction.create.mockResolvedValue({});
+
+    const result = await applyWelcomeBonus(db, 'user10', 250000);
+
+    expect(result).toBe(50000);
   });
 });
