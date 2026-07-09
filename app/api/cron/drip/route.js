@@ -221,12 +221,14 @@ export async function GET(req) {
             const intervalMs = (config?.intervalHours || 2) * 60 * 60 * 1000;
             const now = Date.now();
 
-            for (let i = 0; i < pending.length; i++) {
-              const newScheduled = new Date(now + (i + 1) * intervalMs);
-              await prisma.dripDispatch.update({
-                where: { id: pending[i].id },
-                data: { scheduledAt: newScheduled },
-              });
+            if (pending.length > 0) {
+              const vals = [], prms = [];
+              for (let i = 0; i < pending.length; i++) {
+                const b = i * 2;
+                vals.push(`($${b+1}, $${b+2}::timestamptz)`);
+                prms.push(pending[i].id, new Date(now + (i + 1) * intervalMs));
+              }
+              await prisma.$executeRawUnsafe(`UPDATE "drip_dispatches" SET "scheduledAt" = v.t, "updatedAt" = NOW() FROM (VALUES ${vals.join(',')}) AS v(id,t) WHERE "drip_dispatches"."id" = v.id`, ...prms);
             }
           }
         }
@@ -248,12 +250,13 @@ export async function GET(req) {
       take: 50,
     });
 
+    const rollupRows = [];
+    let doneCount = 0;
     for (const order of dripOrders) {
       if (!order.dripDispatches.length) continue;
 
       const all = order.dripDispatches;
 
-      // Aggregate remains: dispatched ones use their remains, unsent ones count full quantity
       const totalRemains = all.reduce((sum, d) => {
         if (d.remains != null) return sum + d.remains;
         if (['completed'].includes(d.status)) return sum;
@@ -262,6 +265,7 @@ export async function GET(req) {
 
       const firstDispatch = all.find(d => d.day === 1 && d.batch === 1) || all[0];
       const firstStartCount = firstDispatch?.startCount != null ? firstDispatch.startCount : undefined;
+      const sc = (firstStartCount !== undefined && order.startCount == null) ? Number(firstStartCount) : null;
 
       const hasFailed = all.some(d => d.status === 'failed');
       const allDone = all.every(d => ['completed', 'partial', 'failed'].includes(d.status));
@@ -270,18 +274,25 @@ export async function GET(req) {
         const hasPartial = all.some(d => d.status === 'partial');
         const hasCompleted = all.some(d => d.status === 'completed');
         const newStatus = hasFailed ? (hasCompleted || hasPartial ? 'Partial' : 'Cancelled') : (hasPartial ? 'Partial' : 'Completed');
-
-        await prisma.order.update({
-          where: { id: order.id },
-          data: { status: newStatus, remains: totalRemains, completedAt: new Date(), ...(firstStartCount !== undefined && order.startCount == null && { startCount: firstStartCount }) },
-        });
-        stats.rolledUp++;
+        rollupRows.push({ id: order.id, status: newStatus, remains: totalRemains, sc });
+        doneCount++;
       } else {
-        await prisma.order.update({
-          where: { id: order.id },
-          data: { remains: totalRemains, ...(firstStartCount !== undefined && order.startCount == null && { startCount: firstStartCount }) },
-        });
+        rollupRows.push({ id: order.id, status: null, remains: totalRemains, sc });
       }
+    }
+    if (rollupRows.length) {
+      const vals = [], prms = [];
+      for (let i = 0; i < rollupRows.length; i++) {
+        const b = i * 4;
+        const r = rollupRows[i];
+        vals.push(`($${b+1}, $${b+2}, $${b+3}::int, $${b+4}::int)`);
+        prms.push(r.id, r.status, r.remains, r.sc);
+      }
+      await prisma.$executeRawUnsafe(
+        `UPDATE "orders" SET "status" = COALESCE(v.s, "orders"."status"), "remains" = v.r, "completedAt" = CASE WHEN v.s IS NOT NULL THEN NOW() ELSE "orders"."completedAt" END, "startCount" = COALESCE(v.sc, "orders"."startCount"), "updatedAt" = NOW() FROM (VALUES ${vals.join(',')}) AS v(id, s, r, sc) WHERE "orders"."id" = v.id`,
+        ...prms,
+      );
+      stats.rolledUp = doneCount;
     }
   } catch (err) {
     log.error('Drip cron', err.message);
