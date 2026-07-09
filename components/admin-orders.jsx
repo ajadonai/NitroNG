@@ -312,6 +312,8 @@ export default function AdminOrdersPage({ dark, t }) {
   };
 
   const autoChecked = useRef(new Set());
+  const needsDispatch = (o) => !o.queuedBehind && ['Pending', 'Processing', 'Dispatching'].includes(o.status) && (!o.apiOrderId || (o.dripDispatches && o.dripDispatches.some(d => d.status === 'failed')));
+
   const autoCheck = useCallback((o) => {
     if (!o || !o.apiOrderId || ["Completed", "Cancelled", "Partial"].includes(o.status) || autoChecked.current.has(o.id) || actionLoading) return;
     autoChecked.current.add(o.id);
