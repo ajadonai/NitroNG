@@ -265,7 +265,8 @@ export async function POST(req) {
           const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true, notifEmail: true, notifOrders: true } });
           if (user?.email && user.notifEmail !== false && user.notifOrders !== false) {
             const amount = result.refundAmount / 100;
-            walletCreditEmail(user.name || 'there', amount, 'Order cancelled — refund processed').then(html => sendEmail(user.email, `₦${amount.toLocaleString()} refunded to your Nitro wallet`, html)).catch(() => {});
+            const html = walletCreditEmail(user.name || 'there', amount, 'Order cancelled — refund processed');
+            sendEmail(user.email, `₦${amount.toLocaleString()} refunded to your Nitro wallet`, html).catch(() => {});
           }
         } catch {}
       }
@@ -444,7 +445,8 @@ export async function POST(req) {
         const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true, notifEmail: true, notifOrders: true } });
         if (user?.email && user.notifEmail !== false && user.notifOrders !== false) {
           const amt = refundAmount / 100;
-          walletCreditEmail(user.name || 'there', amt, 'Refund processed for your order').then(html => sendEmail(user.email, `₦${amt.toLocaleString()} refunded to your Nitro wallet`, html)).catch(() => {});
+          const html = walletCreditEmail(user.name || 'there', amt, 'Refund processed for your order');
+          sendEmail(user.email, `₦${amt.toLocaleString()} refunded to your Nitro wallet`, html).catch(() => {});
         }
       } catch {}
 
