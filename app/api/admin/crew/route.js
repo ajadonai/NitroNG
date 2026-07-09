@@ -3,6 +3,18 @@ import { requireAdmin, logActivity, canSeeSensitive, maskEmail, maskPhone } from
 import { kickFromGroup } from "@/lib/crew-bot";
 import { sendEmail, pitRejectionEmail } from "@/lib/email";
 
+const MAX_RETRIES = 3;
+async function serializable(fn) {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      return await prisma.$transaction(fn, { isolationLevel: 'Serializable' });
+    } catch (e) {
+      if (e.code === 'P2034' && attempt < MAX_RETRIES - 1) continue;
+      throw e;
+    }
+  }
+}
+
 export async function GET(req) {
   const { admin, error } = await requireAdmin("crew");
   if (error) return error;
@@ -113,7 +125,11 @@ export async function POST(req) {
 
     if (action === "reject") {
       const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true, email: true, telegramUserId: true } });
-      await prisma.crewMember.update({ where: { id: memberId }, data: { status: "rejected" } });
+      const { count } = await prisma.crewMember.updateMany({
+        where: { id: memberId, status: 'pending' },
+        data: { status: "rejected", inviteToken: null, inviteExpiresAt: null },
+      });
+      if (count === 0) return Response.json({ error: "Member is no longer pending" }, { status: 409 });
       if (m?.telegramUserId) kickFromGroup(m.telegramUserId).catch(() => {});
       if (m?.email) {
         const html = pitRejectionEmail(m.name || 'there');
@@ -154,16 +170,22 @@ export async function POST(req) {
 
     if (action === "promote-chief") {
       const { teamName } = body;
-      const proRateRow = await prisma.setting.findUnique({ where: { key: 'affiliate_pro_rate' } });
-      const proRate = parseInt(proRateRow?.value) || 50;
-      await prisma.crewMember.update({ where: { id: memberId }, data: { role: "chief", tier: "pro", commissionRate: proRate, teamName: teamName?.trim() || null, leadId: null } });
-      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
-      await logActivity(admin.name, `Promoted ${m?.name || memberId} to chief`);
+      const memberName = await serializable(async (tx) => {
+        const proRateRow = await tx.setting.findUnique({ where: { key: 'affiliate_pro_rate' } });
+        const proRate = parseInt(proRateRow?.value) || 50;
+        const updated = await tx.crewMember.update({
+          where: { id: memberId },
+          data: { role: "chief", tier: "pro", commissionRate: proRate, teamName: teamName?.trim() || null, leadId: null },
+          select: { name: true },
+        });
+        return updated.name;
+      });
+      await logActivity(admin.name, `Promoted ${memberName || memberId} to chief`);
       return Response.json({ ok: true });
     }
 
     if (action === "demote-crew") {
-      const { name: memberName, unassigned } = await prisma.$transaction(async (tx) => {
+      const { name: memberName, unassigned } = await serializable(async (tx) => {
         const { count } = await tx.crewMember.updateMany({ where: { leadId: memberId }, data: { leadId: null } });
         const updated = await tx.crewMember.update({ where: { id: memberId }, data: { role: "crew", teamName: null }, select: { name: true } });
         return { name: updated.name, unassigned: count };
@@ -186,7 +208,7 @@ export async function POST(req) {
       if (chiefId === memberId) return Response.json({ error: "Cannot assign a member to themselves" }, { status: 400 });
       let result;
       try {
-        result = await prisma.$transaction(async (tx) => {
+        result = await serializable(async (tx) => {
           const [chief, m] = await Promise.all([
             tx.crewMember.findUnique({ where: { id: chiefId }, select: { name: true, role: true, status: true, deletedAt: true } }),
             tx.crewMember.findUnique({ where: { id: memberId }, select: { name: true, role: true } }),
@@ -197,7 +219,7 @@ export async function POST(req) {
           if (m.role === "chief") throw Object.assign(new Error("Chiefs cannot be assigned to a team"), { _status: 400 });
           await tx.crewMember.update({ where: { id: memberId }, data: { leadId: chiefId } });
           return { memberName: m.name, chiefName: chief.name };
-        }, { isolationLevel: 'Serializable' });
+        });
       } catch (e) {
         if (e._status) return Response.json({ error: e.message }, { status: e._status });
         throw e;

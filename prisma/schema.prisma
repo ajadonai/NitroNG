@@ -355,6 +355,7 @@ model Transaction {
   @@index([userId, type])
   @@index([type])
   @@index([type, status, createdAt])
+  @@index([type, status, method, createdAt])
   @@index([createdAt])
   @@map("transactions")
 }

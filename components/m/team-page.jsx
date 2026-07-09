@@ -22,6 +22,8 @@ export default function TeamPage({ initialData }) {
   const [inviteResult, setInviteResult] = useState(null);
   const [copied, setCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [resendResult, setResendResult] = useState(null);
+  const [actionLoading, setActionLoading] = useState(null);
 
   const reload = () => {
     setRefreshing(true);
@@ -47,7 +49,7 @@ export default function TeamPage({ initialData }) {
       setInviteResult(d.invited);
       setInvName("");
       setInvEmail("");
-      toast.success("Invite sent");
+      toast.success("Invite link created");
       reload();
     } catch {
       setInvError("Something went wrong");
@@ -56,12 +58,44 @@ export default function TeamPage({ initialData }) {
     }
   };
 
-  const copyInvite = () => {
-    if (inviteResult?.inviteUrl) {
-      navigator.clipboard.writeText(inviteResult.inviteUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+  const copyInvite = (url) => {
+    navigator.clipboard.writeText(url || inviteResult?.inviteUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleResend = async (memberId) => {
+    setActionLoading(memberId);
+    try {
+      const res = await fetch("/api/pit/team", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId }),
+      });
+      const d = await res.json();
+      if (d.error) { toast.error(d.error); return; }
+      setResendResult({ memberId, inviteUrl: d.inviteUrl, name: d.name });
+      toast.success("New invite link created");
+      reload();
+    } catch { toast.error("Something went wrong"); }
+    finally { setActionLoading(null); }
+  };
+
+  const handleRevoke = async (memberId, name) => {
+    if (!confirm(`Revoke invite for ${name}? This will remove the pending member.`)) return;
+    setActionLoading(memberId);
+    try {
+      const res = await fetch("/api/pit/team", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId }),
+      });
+      const d = await res.json();
+      if (d.error) { toast.error(d.error); return; }
+      toast.success("Invite revoked");
+      reload();
+    } catch { toast.error("Something went wrong"); }
+    finally { setActionLoading(null); }
   };
 
   const members = data?.members || [];
@@ -88,7 +122,7 @@ export default function TeamPage({ initialData }) {
         <div className="rounded-[14px] overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
           <div className="py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
             <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>
-              {inviteResult ? "Invite Sent" : "Invite a Crew Member"}
+              {inviteResult ? "Invite Link Ready" : "Invite a Crew Member"}
             </div>
             <div className="text-[11px] mt-[2px]" style={{ color: t.soft }}>{inviteResult ? "Share the link to complete registration" : "Add someone to your crew"}</div>
           </div>
@@ -101,7 +135,7 @@ export default function TeamPage({ initialData }) {
                 <div className="flex items-center gap-2 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)", border: `1px solid ${t.surfaceBrd}` }}>
                   <span className="text-[12px] flex-1 truncate" style={{ color: t.accent }}>{inviteResult.inviteUrl}</span>
                   <button
-                    onClick={copyInvite}
+                    onClick={() => copyInvite()}
                     className="bg-transparent border-none cursor-pointer p-1 flex shrink-0"
                     style={{ color: copied ? t.green : t.muted }}
                   >
@@ -175,15 +209,52 @@ export default function TeamPage({ initialData }) {
             <div className="text-[11px] mt-[2px]" style={{ color: t.soft }}>Awaiting approval or registration</div>
           </div>
           {pending.map((m, i) => (
-            <div key={m.id} className="flex items-center gap-3 px-[18px] py-[12px]" style={{ borderTop: i > 0 ? `1px solid ${t.surfaceBrd}` : undefined }}>
-              <div className="w-8 h-8 rounded-[9px] flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ background: t.grad }}>
-                {m.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
+            <div key={m.id} style={{ borderTop: i > 0 ? `1px solid ${t.surfaceBrd}` : undefined }}>
+              <div className="flex items-center gap-3 px-[18px] py-[12px]">
+                <div className="w-8 h-8 rounded-[9px] flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ background: t.grad }}>
+                  {m.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-medium truncate" style={{ color: t.text }}>{m.name}</div>
+                  <div className="text-[11.5px] truncate" style={{ color: t.muted }}>{m.email}</div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => handleResend(m.id)}
+                    disabled={actionLoading === m.id}
+                    className="text-[11px] font-semibold py-[4px] px-[10px] rounded-md border-none cursor-pointer disabled:opacity-50"
+                    style={{ background: t.accentLight, color: t.accent, fontFamily: "inherit" }}
+                  >
+                    Resend
+                  </button>
+                  <button
+                    onClick={() => handleRevoke(m.id, m.name)}
+                    disabled={actionLoading === m.id}
+                    className="text-[11px] font-semibold py-[4px] px-[10px] rounded-md border-none cursor-pointer disabled:opacity-50"
+                    style={{ background: dark ? "rgba(214,48,49,.15)" : "rgba(214,48,49,.08)", color: "#d63031", fontFamily: "inherit" }}
+                  >
+                    Revoke
+                  </button>
+                  <StatusBadge status={m.inviteExpired ? "expired" : m.hasPendingInvite ? "invited" : "pending"} label={m.inviteExpired ? "Expired" : m.hasPendingInvite ? "Invited" : "Pending"} dark={dark} t={t} />
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-medium truncate" style={{ color: t.text }}>{m.name}</div>
-                <div className="text-[11.5px] truncate" style={{ color: t.muted }}>{m.email}</div>
-              </div>
-              <StatusBadge status={m.hasPendingInvite ? "invited" : "pending"} label={m.hasPendingInvite ? "Invited" : "Applied"} dark={dark} t={t} />
+              {resendResult?.memberId === m.id && (
+                <div className="px-[18px] pb-[12px]">
+                  <div className="flex items-center gap-2 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)", border: `1px solid ${t.surfaceBrd}` }}>
+                    <span className="text-[12px] flex-1 truncate" style={{ color: t.accent }}>{resendResult.inviteUrl}</span>
+                    <button
+                      onClick={() => copyInvite(resendResult.inviteUrl)}
+                      className="bg-transparent border-none cursor-pointer p-1 flex shrink-0"
+                      style={{ color: copied ? t.green : t.muted }}
+                    >
+                      {copied
+                        ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      }
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

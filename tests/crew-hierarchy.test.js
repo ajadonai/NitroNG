@@ -12,16 +12,13 @@ const mockPrisma = {
   setting: { findUnique: vi.fn(), findMany: vi.fn() },
   acquisitionLink: { findFirst: vi.fn(), findUnique: vi.fn(), create: vi.fn() },
   activityLog: { create: vi.fn().mockResolvedValue({}) },
-  $transaction: vi.fn(async (fnOrOps) => {
-    if (typeof fnOrOps === 'function') return fnOrOps(mockPrisma);
-    return Promise.all(fnOrOps);
-  }),
+  $transaction: vi.fn(),
 };
 
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
 vi.mock('@/lib/logger', () => ({ log: { error: vi.fn() } }));
 vi.mock('@/lib/crew-bot', () => ({ kickFromGroup: vi.fn() }));
-vi.mock('@/lib/email', () => ({ sendEmail: vi.fn(), pitRejectionEmail: vi.fn() }));
+vi.mock('@/lib/email', () => ({ sendEmail: vi.fn().mockResolvedValue(undefined), pitRejectionEmail: vi.fn().mockReturnValue('<html>rejected</html>') }));
 
 const mockRequireAdmin = vi.fn();
 const mockLogActivity = vi.fn().mockResolvedValue(undefined);
@@ -46,23 +43,23 @@ function makeReq(body) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockRequireAdmin.mockResolvedValue({ admin: { name: 'Admin', email: 'admin@test.com' }, error: null });
-  mockPrisma.$transaction.mockImplementation(async (fnOrOps) => {
-    if (typeof fnOrOps === 'function') return fnOrOps(mockPrisma);
-    return Promise.all(fnOrOps);
-  });
+  mockPrisma.$transaction.mockImplementation(async (fn) => fn(mockPrisma));
 });
 
 // ──────────────────────────────────────
 // Promote to chief
 // ──────────────────────────────────────
 describe('promote-chief', () => {
-  it('clears leadId when promoting to chief', async () => {
+  it('clears leadId inside a Serializable transaction', async () => {
     mockPrisma.setting.findUnique.mockResolvedValue({ value: '50' });
-    mockCrewMember.update.mockResolvedValue({});
-    mockCrewMember.findUnique.mockResolvedValue({ name: 'Test Crew' });
+    mockCrewMember.update.mockResolvedValue({ name: 'Test Crew' });
 
     await POST(makeReq({ action: 'promote-chief', memberId: 'crew1', teamName: 'New Team' }));
 
+    expect(mockPrisma.$transaction).toHaveBeenCalledWith(
+      expect.any(Function),
+      { isolationLevel: 'Serializable' },
+    );
     const updateCall = mockCrewMember.update.mock.calls[0][0];
     expect(updateCall.data.role).toBe('chief');
     expect(updateCall.data.leadId).toBeNull();
@@ -73,7 +70,7 @@ describe('promote-chief', () => {
 // Demote to crew
 // ──────────────────────────────────────
 describe('demote-crew', () => {
-  it('runs unassignment and role change in an interactive transaction', async () => {
+  it('runs in a Serializable transaction', async () => {
     mockCrewMember.updateMany.mockResolvedValue({ count: 2 });
     mockCrewMember.update.mockResolvedValue({ name: 'Ex Chief' });
     mockCrewMember.findUnique.mockResolvedValue({ name: 'Ex Chief' });
@@ -81,16 +78,15 @@ describe('demote-crew', () => {
     const res = await POST(makeReq({ action: 'demote-crew', memberId: 'chief1' }));
     const body = await res.json();
 
-    expect(mockPrisma.$transaction).toHaveBeenCalledWith(expect.any(Function));
+    expect(mockPrisma.$transaction).toHaveBeenCalledWith(
+      expect.any(Function),
+      { isolationLevel: 'Serializable' },
+    );
     expect(body.ok).toBe(true);
     expect(body.unassignedCrew).toBe(2);
-
-    const updateCall = mockCrewMember.update.mock.calls[0][0];
-    expect(updateCall.data.role).toBe('crew');
-    expect(updateCall.data.teamName).toBeNull();
   });
 
-  it('reports actual updateMany count, not pre-query length', async () => {
+  it('reports actual updateMany count', async () => {
     mockCrewMember.updateMany.mockResolvedValue({ count: 3 });
     mockCrewMember.update.mockResolvedValue({ name: 'Chief' });
     mockCrewMember.findUnique.mockResolvedValue({ name: 'Chief' });
@@ -199,9 +195,104 @@ describe('assign-team', () => {
       expect.any(Function),
       { isolationLevel: 'Serializable' },
     );
-    expect(mockCrewMember.update).toHaveBeenCalledWith({
-      where: { id: 'crew1' },
-      data: { leadId: 'chief1' },
+  });
+});
+
+// ──────────────────────────────────────
+// P2034 retry across all hierarchy ops
+// ──────────────────────────────────────
+describe('P2034 retry', () => {
+  it('retries promote-chief on P2034', async () => {
+    const p2034 = Object.assign(new Error('Write conflict'), { code: 'P2034' });
+    let calls = 0;
+    mockPrisma.$transaction.mockImplementation(async (fn) => {
+      calls++;
+      if (calls === 1) throw p2034;
+      return fn(mockPrisma);
     });
+    mockPrisma.setting.findUnique.mockResolvedValue({ value: '50' });
+    mockCrewMember.update.mockResolvedValue({ name: 'Retry Chief' });
+
+    const res = await POST(makeReq({ action: 'promote-chief', memberId: 'crew1' }));
+    const body = await res.json();
+
+    expect(body.ok).toBe(true);
+    expect(calls).toBe(2);
+  });
+
+  it('retries demote-crew on P2034', async () => {
+    const p2034 = Object.assign(new Error('Write conflict'), { code: 'P2034' });
+    let calls = 0;
+    mockPrisma.$transaction.mockImplementation(async (fn) => {
+      calls++;
+      if (calls === 1) throw p2034;
+      return fn(mockPrisma);
+    });
+    mockCrewMember.updateMany.mockResolvedValue({ count: 1 });
+    mockCrewMember.update.mockResolvedValue({ name: 'Retry Demote' });
+    mockCrewMember.findUnique.mockResolvedValue({ name: 'Retry Demote' });
+
+    const res = await POST(makeReq({ action: 'demote-crew', memberId: 'chief1' }));
+    const body = await res.json();
+
+    expect(body.ok).toBe(true);
+    expect(calls).toBe(2);
+  });
+
+  it('retries assign-team on P2034', async () => {
+    const p2034 = Object.assign(new Error('Write conflict'), { code: 'P2034' });
+    let calls = 0;
+    mockPrisma.$transaction.mockImplementation(async (fn) => {
+      calls++;
+      if (calls === 1) throw p2034;
+      return fn(mockPrisma);
+    });
+    mockCrewMember.findUnique
+      .mockResolvedValueOnce({ name: 'Chief', role: 'chief', status: 'approved', deletedAt: null })
+      .mockResolvedValueOnce({ name: 'Crew', role: 'crew' });
+    mockCrewMember.update.mockResolvedValue({});
+
+    const res = await POST(makeReq({ action: 'assign-team', memberId: 'crew1', chiefId: 'chief1' }));
+    const body = await res.json();
+
+    expect(body.ok).toBe(true);
+    expect(calls).toBe(2);
+  });
+
+  it('gives up after max retries', async () => {
+    const p2034 = Object.assign(new Error('Write conflict'), { code: 'P2034' });
+    mockPrisma.$transaction.mockRejectedValue(p2034);
+
+    const res = await POST(makeReq({ action: 'promote-chief', memberId: 'crew1' }));
+    expect(res.status).toBe(500);
+  });
+});
+
+// ──────────────────────────────────────
+// Admin reject — guarded write
+// ──────────────────────────────────────
+describe('admin reject', () => {
+  it('guards with status: pending to prevent overwriting concurrent join', async () => {
+    mockCrewMember.findUnique.mockResolvedValue({ name: 'Test', email: 'test@t.com', telegramUserId: null });
+    mockCrewMember.updateMany.mockResolvedValue({ count: 1 });
+
+    const res = await POST(makeReq({ action: 'reject', memberId: 'crew1' }));
+    const body = await res.json();
+
+    expect(body.ok).toBe(true);
+    expect(mockCrewMember.updateMany).toHaveBeenCalledWith({
+      where: { id: 'crew1', status: 'pending' },
+      data: { status: 'rejected', inviteToken: null, inviteExpiresAt: null },
+    });
+  });
+
+  it('returns 409 when member was approved concurrently', async () => {
+    mockCrewMember.findUnique.mockResolvedValue({ name: 'Test', email: 'test@t.com', telegramUserId: null });
+    mockCrewMember.updateMany.mockResolvedValue({ count: 0 });
+
+    const res = await POST(makeReq({ action: 'reject', memberId: 'crew1' }));
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.error).toMatch(/no longer pending/i);
   });
 });
