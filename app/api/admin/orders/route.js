@@ -73,7 +73,7 @@ export async function GET(req) {
         if (filter === 'queued') return { queuedBehind: { not: null } };
         if (filter === 'needs_dispatch') {
           const nd = { queuedBehind: null, status: { in: ['Pending', 'Processing', 'Dispatching'] } };
-          if (hasDripTable) nd.OR = [{ apiOrderId: null }, { dripDispatches: { some: { status: 'failed' } } }];
+          if (hasDripTable) nd.OR = [{ apiOrderId: null, dripDispatches: { none: {} } }, { dripDispatches: { some: { status: 'failed' } } }];
           else nd.apiOrderId = null;
           return nd;
         }
@@ -91,7 +91,7 @@ export async function GET(req) {
       const countsWhere = searchCondition ? { ...baseWhere, AND: [searchCondition] } : baseWhere;
 
       const ndWhere = { queuedBehind: null, status: { in: ['Pending', 'Processing', 'Dispatching'] } };
-      if (hasDripTable) ndWhere.OR = [{ apiOrderId: null }, { dripDispatches: { some: { status: 'failed' } } }];
+      if (hasDripTable) ndWhere.OR = [{ apiOrderId: null, dripDispatches: { none: {} } }, { dripDispatches: { some: { status: 'failed' } } }];
       else ndWhere.apiOrderId = null;
 
       let statusGroups, queuedCount, needsDispatchCount;

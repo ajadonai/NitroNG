@@ -312,7 +312,11 @@ export default function AdminOrdersPage({ dark, t }) {
   };
 
   const autoChecked = useRef(new Set());
-  const needsDispatch = (o) => !o.queuedBehind && ['Pending', 'Processing', 'Dispatching'].includes(o.status) && (!o.apiOrderId || (o.dripDispatches && o.dripDispatches.some(d => d.status === 'failed')));
+  const needsDispatch = (o) => {
+    if (o.queuedBehind || !['Pending', 'Processing', 'Dispatching'].includes(o.status)) return false;
+    if (o.dripDispatches && o.dripDispatches.length > 0) return o.dripDispatches.some(d => d.status === 'failed');
+    return !o.apiOrderId;
+  };
 
   const autoCheck = useCallback((o) => {
     if (!o || !o.apiOrderId || ["Completed", "Cancelled", "Partial"].includes(o.status) || autoChecked.current.has(o.id) || actionLoading) return;
