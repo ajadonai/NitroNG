@@ -1,4 +1,5 @@
 'use client';
+import { useState, useEffect } from 'react';
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 
@@ -8,6 +9,8 @@ export default function AboutView() {
 
 function AboutInner() {
   const { dark, t } = useTheme();
+  const [stats, setStats] = useState(null);
+  useEffect(() => { fetch('/api/site-info').then(r => r.json()).then(d => setStats(d.stats)).catch(() => {}); }, []);
   const accent = "#c47d8e";
   const border = dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)";
   const cardBg = dark ? "rgba(255,255,255,.06)" : "#fff";
@@ -32,10 +35,10 @@ function AboutInner() {
           {/* Stats strip */}
           <section className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-14">
             {[
-              ['50K+', 'Orders delivered'],
-              ['2K+', 'Active creators'],
-              ['35+', 'Platforms'],
-              ['98%', 'Delivery rate'],
+              [stats?.orders || '50K+', 'Orders delivered'],
+              [stats?.users || '2.3K', 'Active creators'],
+              [(stats?.platforms || 35) + '+', 'Platforms'],
+              [stats?.deliveryRate ? stats.deliveryRate + '%' : '98%', 'Delivery rate'],
             ].map(([num, label]) => (
               <div key={label} className="rounded-2xl p-5 text-center" style={{ background: cardBg, border: `1px solid ${border}` }}>
                 <div className="text-2xl font-bold mb-1" style={{ color: accent }}>{num}</div>
