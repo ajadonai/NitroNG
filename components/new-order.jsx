@@ -572,10 +572,10 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
               Insufficient balance · Top up
             </button>
             )
-          ) : (
+          ) : (<>
             <div className="text-[10.5px] mb-2 px-0.5" style={{ color: t.textMuted }}>Profile must be <b style={{ color: t.text }}>public</b>. No refunds for orders on private profiles.</div>
             <button onClick={() => { if (dripOn && showMultiDay) { setDripStep(2); } else { onSubmit(dripOn && showMultiDay ? clampedDays : undefined); } }} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames || needsKeywords) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer || needsKeywords) || (comments || "").trim()) && !commentShort && !orderLoading ? 1 : .5 }}>{orderLoading ? "Placing..." : dripOn && showMultiDay ? "Next" : "Place Order"}</button>
-          )}
+          </>)}
         </>) : (<>
           {/* Step 2: Drip config — replaces entire form body */}
           <div className="flex items-center gap-2 mb-3 cursor-pointer select-none" onClick={() => setDripStep(1)} style={{ WebkitTapHighlightColor: "transparent" }}>
