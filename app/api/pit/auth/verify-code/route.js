@@ -2,7 +2,7 @@ import prisma from "@/lib/prisma";
 import crypto from "crypto";
 import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
 
-const SECRET = process.env.CRON_SECRET || "pit-verify-fallback";
+const SECRET = process.env.CRON_SECRET;
 
 export async function POST(req) {
   try {

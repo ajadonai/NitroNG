@@ -53,7 +53,7 @@ export function AdminActivityPage({ dark, t }) {
   }, [tab]);
 
   // Admin tab helpers
-  const typeLabels = { user: "Users", order: "Orders", alert: "Alerts", blog: "Blog", coupon: "Coupons", settings: "Settings", service: "Services", payment: "Payments", reward: "Rewards", leaderboard_reward: "Rewards", leaderboard_announcement: "Rewards", auto_reward_config: "Rewards", team: "Team", admin: "Admin", ticket: "Tickets", maintenance: "Maintenance" };
+  const typeLabels = { user: "Users", order: "Orders", alert: "Alerts", blog: "Blog", coupon: "Coupons", settings: "Settings", service: "Services", payment: "Payments", reward: "Rewards", leaderboard_reward: "Rewards", leaderboard_announcement: "Rewards", auto_reward_config: "Rewards", team: "Team", admin: "Admin", ticket: "Tickets", maintenance: "Maintenance", crew: "Crew", acquisition: "Tracking Links" };
   const getTypeLabel = (type) => {
     if (!type) return "Other";
     if (typeLabels[type]) return typeLabels[type];
@@ -76,6 +76,7 @@ export function AdminActivityPage({ dark, t }) {
     if (type === "credit" || type === "deposit") return t.green;
     if (type === "admin" || type === "maintenance") return t.amber;
     if (type === "notification") return t.accent;
+    if (type === "crew" || type === "acquisition") return t.accent;
     return t.textMuted;
   };
 

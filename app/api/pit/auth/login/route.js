@@ -2,13 +2,24 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { cookies } from "next/headers";
+import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
+import { hashToken } from "@/lib/crew";
+import { validateEmail, validatePassword, sanitizeEmail } from "@/lib/validate";
 
 export async function POST(req) {
   try {
+    const { limited } = await rateLimit(req, { maxAttempts: 5, windowMs: 5 * 60 * 1000 });
+    if (limited) return tooManyRequests("Too many login attempts. Try again in 5 minutes.");
+
     const { email, password } = await req.json().catch(() => ({}));
     if (!email || !password) return Response.json({ error: "Email and password required" }, { status: 400 });
+    if (!validateEmail(email)) return Response.json({ error: "Invalid email address" }, { status: 400 });
+    if (!validatePassword(password)) return Response.json({ error: "Invalid password" }, { status: 400 });
 
-    const clean = email.toLowerCase().trim();
+    const clean = sanitizeEmail(email);
+
+    const { limited: emailLimited } = await rateLimit(req, { maxAttempts: 8, windowMs: 15 * 60 * 1000, key: `rl:acct:${clean}:pit-login` });
+    if (emailLimited) return tooManyRequests("Too many login attempts for this account. Try again in 15 minutes.");
     const member = await prisma.crewMember.findUnique({ where: { email: clean } });
 
     if (!member) {
@@ -28,7 +39,7 @@ export async function POST(req) {
 
     const token = crypto.randomBytes(32).toString("hex");
     await prisma.crewSession.create({
-      data: { memberId: member.id, token, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+      data: { memberId: member.id, token: hashToken(token), expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
     });
 
     const jar = await cookies();

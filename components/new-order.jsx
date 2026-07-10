@@ -219,8 +219,8 @@ const LINK_EXAMPLES = {
   instagram: { profile: ["instagram.com/username"], channel: ["instagram.com/channel/ABC123"], post: ["instagram.com/p/ABC123", "instagram.com/reel/ABC123", "ig.me/abc123"] },
   tiktok: { profile: ["tiktok.com/@username", "@username"], post: ["tiktok.com/@user/video/123...", "vm.tiktok.com/ABC123"] },
   twitter: { profile: ["x.com/username", "twitter.com/username"], post: ["x.com/username/status/123...", "t.co/abc123"] },
-  youtube: { profile: ["youtube.com/@channel", "youtube.com/c/name"], post: ["youtube.com/watch?v=ABC123", "youtu.be/ABC123", "youtube.com/shorts/ABC123"] },
-  facebook: { profile: ["facebook.com/pagename", "fb.com/pagename"], channel: ["facebook.com/groups/groupname"], post: ["facebook.com/share/r/ABC123", "facebook.com/user/posts/123...", "fb.watch/abc123"] },
+  youtube: { profile: ["youtube.com/@channel", "youtube.com/c/name"], post: ["youtube.com/watch?v=ABC123", "youtu.be/ABC123", "youtube.com/shorts/ABC123"], commentLike: ["youtube.com/watch?v=VIDEO_ID&lc=COMMENT_ID"] },
+  facebook: { profile: ["facebook.com/pagename", "fb.com/pagename"], channel: ["facebook.com/groups/groupname"], post: ["facebook.com/share/r/ABC123", "facebook.com/user/posts/123...", "fb.watch/abc123"], commentLike: ["facebook.com/comment/permalink/COMMENT_ID"] },
   threads: { profile: ["threads.net/@username"], post: ["threads.net/@username/post/ABC123"] },
   telegram: { profile: ["t.me/channelname"], post: ["t.me/channelname/123"] },
   linkedin: { profile: ["linkedin.com/in/username", "linkedin.com/company/name"], post: ["linkedin.com/posts/user_title-123..."] },
@@ -364,7 +364,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   /* Detect service type from provider apiType (reliable) with name fallback */
   const svcName = (selSvc?.name || "").toLowerCase();
   const apiType = (selTier?.apiType || "").toLowerCase();
-  const isComment = apiType.includes("comment") || ((svcName.includes("comment")) && !svcName.includes("comment like"));
+  const isComment = apiType.includes("comment") || ((svcName.includes("comment")) && !svcName.includes("comment like") || svcName.includes("likes (comments)") && !svcName.includes("likes (comments)"));
   const isCustomComment = apiType.includes("custom comment") || apiType.includes("comment replies");
   const isMention = apiType.includes("mention");
   const isPoll = apiType === "poll";
@@ -386,7 +386,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const isProfileSvc = (/follow|subscri|member|profile visit/i.test(svcName) || isMultiPostSvc || isAutoSvc) && !isChannelSvc;
   const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays/i.test(svcName) && !isProfileSvc && !isChannelSvc;
 
-  const linkPlaceholder = (LINK_EXAMPLES[platform] ? (isPostSvc ? LINK_EXAMPLES[platform].post?.[0] : isChannelSvc ? (LINK_EXAMPLES[platform].channel?.[0] || LINK_EXAMPLES[platform].profile?.[0]) : isProfileSvc ? LINK_EXAMPLES[platform].profile?.[0] : null) : null) || LINK_HINTS[platform] || `${platform}.com/...`;
+  const isCommentLikeSvc = svcName.includes("comment like") || svcName.includes("likes (comments)");
+  const linkPlaceholder = (LINK_EXAMPLES[platform] ? (isCommentLikeSvc ? LINK_EXAMPLES[platform].commentLike?.[0] : isPostSvc ? LINK_EXAMPLES[platform].post?.[0] : isChannelSvc ? (LINK_EXAMPLES[platform].channel?.[0] || LINK_EXAMPLES[platform].profile?.[0]) : isProfileSvc ? LINK_EXAMPLES[platform].profile?.[0] : null) : null) || LINK_HINTS[platform] || `${platform}.com/...`;
   const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
 
   const plat = PLATFORMS.find(pl => pl.id === platform);
@@ -465,7 +466,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           </div>
           {linkError && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626" }}>{linkError}</div>}
           {!linkError && LINK_EXAMPLES[platform] && (isProfileSvc || isPostSvc || isChannelSvc) && (() => {
-              const type = isChannelSvc ? "channel" : isProfileSvc ? "profile" : "post";
+              const isCommentLike = svcName.includes("comment like") || svcName.includes("likes (comments)");
+              const type = isCommentLike ? "commentLike" : isChannelSvc ? "channel" : isProfileSvc ? "profile" : "post";
               const examples = LINK_EXAMPLES[platform][type] || LINK_EXAMPLES[platform].profile;
               if (!examples || !examples.length) return null;
               return <div className="mt-1.5">

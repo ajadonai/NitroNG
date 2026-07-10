@@ -7,6 +7,7 @@ import { sendEmail, emailWrap, emailRow, emailDataBox, sendNudgeIdleFunds, sendN
 import { tgProviderBalance, tgDailySummary } from '@/lib/telegram';
 import { releaseHeldCommissions } from '@/lib/commissions';
 import { expireBonusCredits, grantWinbackCredit } from '@/lib/bonus-credit';
+import { getTierConfig } from '@/lib/affiliate-settings';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -449,18 +450,10 @@ export async function GET(req) {
   // ═══ TIER RECALCULATION: promote/demote crew members by active referred users ═══
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const tierSettings = await prisma.setting.findMany({
-      where: { key: { in: ['affiliate_starter_rate', 'affiliate_growth_rate', 'affiliate_pro_rate', 'affiliate_growth_threshold', 'affiliate_pro_threshold'] } },
-    });
-    const s = Object.fromEntries(tierSettings.map(r => [r.key, parseInt(r.value)]));
-    const TIERS = {
-      starter: { rate: s.affiliate_starter_rate || 30, min: 0 },
-      growth:  { rate: s.affiliate_growth_rate || 40, min: s.affiliate_growth_threshold || 30 },
-      pro:     { rate: s.affiliate_pro_rate || 50, min: s.affiliate_pro_threshold || 100 },
-    };
+    const TIERS = await getTierConfig();
 
     const members = await prisma.crewMember.findMany({
-      where: { status: 'approved' },
+      where: { status: 'approved', role: { not: 'chief' } },
       select: { id: true, tier: true, commissionRate: true, links: { select: { slug: true } } },
     });
 
