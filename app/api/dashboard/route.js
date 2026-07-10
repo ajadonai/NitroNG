@@ -73,7 +73,7 @@ async function getOrderSummary(userId) {
     SELECT
       COUNT(*)::int AS total,
       COUNT(*) FILTER (WHERE status <> 'Cancelled')::int AS "nonCancelled",
-      COUNT(*) FILTER (WHERE status IN ('Pending', 'Processing', 'Dispatching', 'Partial'))::int AS active,
+      COUNT(*) FILTER (WHERE status IN ('Pending', 'Processing', 'Dispatching'))::int AS active,
       COUNT(*) FILTER (WHERE status = 'Completed')::int AS completed,
       COUNT(*) FILTER (WHERE "createdAt" >= NOW() - INTERVAL '7 days')::int AS "thisWeek",
       COUNT(*) FILTER (
@@ -141,7 +141,7 @@ export async function GET() {
           where: {
             userId: user.id,
             deletedAt: null,
-            status: { in: ['Pending', 'Processing', 'Dispatching', 'Partial'] },
+            status: { in: ['Pending', 'Processing', 'Dispatching'] },
           },
           orderBy: { createdAt: 'desc' },
           take: 5,
