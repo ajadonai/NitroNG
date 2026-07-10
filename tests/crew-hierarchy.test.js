@@ -51,7 +51,7 @@ beforeEach(() => {
 // ──────────────────────────────────────
 describe('promote-chief', () => {
   it('clears leadId inside a Serializable transaction', async () => {
-    mockPrisma.setting.findUnique.mockResolvedValue({ value: '50' });
+    mockPrisma.setting.findMany.mockResolvedValue([{ key: 'affiliate_pro_rate', value: '50' }]);
     mockCrewMember.update.mockResolvedValue({ name: 'Test Crew' });
 
     await POST(makeReq({ action: 'promote-chief', memberId: 'crew1', teamName: 'New Team' }));
@@ -210,7 +210,7 @@ describe('P2034 retry', () => {
       if (calls === 1) throw p2034;
       return fn(mockPrisma);
     });
-    mockPrisma.setting.findUnique.mockResolvedValue({ value: '50' });
+    mockPrisma.setting.findMany.mockResolvedValue([{ key: 'affiliate_pro_rate', value: '50' }]);
     mockCrewMember.update.mockResolvedValue({ name: 'Retry Chief' });
 
     const res = await POST(makeReq({ action: 'promote-chief', memberId: 'crew1' }));

@@ -779,9 +779,10 @@ model CrewMember {
   totalEarned      Int      @default(0) // kobo
   totalPaid        Int      @default(0) // kobo
   userId           String?  @unique
-  telegramUserId   String?
-  telegramLinkCode String?
-  teamName         String?
+  telegramUserId   String?  @unique
+  telegramLinkCode          String?
+  telegramLinkCodeExpiresAt DateTime?
+  teamName                  String?
   leadId           String?
   inviteToken      String?  @unique
   inviteExpiresAt  DateTime?

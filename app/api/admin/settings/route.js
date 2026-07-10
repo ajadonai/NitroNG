@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction, canSeeSensitive } from '@/lib/admin';
+import { TIER_RATE_KEYS, validateAffiliateSettings } from '@/lib/affiliate-settings';
 
 const ALLOWED_KEYS = new Set([
   'markup_brackets', 'markup_margin_floor', 'markup_floor_ceiling', 'markup_ng_bonus',
@@ -21,6 +22,7 @@ const ALLOWED_KEYS = new Set([
   'affiliate_enabled', 'affiliate_starter_rate', 'affiliate_growth_rate', 'affiliate_pro_rate',
   'affiliate_lead_split', 'affiliate_growth_threshold', 'affiliate_pro_threshold',
   'affiliate_hold_days', 'affiliate_min_payout', 'affiliate_min_order', 'affiliate_max_links',
+  'crew_telegram_group_link',
 ]);
 
 export async function GET() {
@@ -60,6 +62,11 @@ export async function POST(req) {
     const entries = Object.entries(settings).filter(([key]) => ALLOWED_KEYS.has(key));
     if (entries.length === 0) return Response.json({ error: 'No valid settings provided' }, { status: 400 });
 
+    const validationErrors = validateAffiliateSettings(entries);
+    if (validationErrors.length > 0) {
+      return Response.json({ error: validationErrors.join('; ') }, { status: 400 });
+    }
+
     const ops = entries.map(([key, value]) =>
       prisma.setting.upsert({
         where: { key },
@@ -70,11 +77,10 @@ export async function POST(req) {
 
     await prisma.$transaction(ops);
 
-    const tierKeys = ['affiliate_starter_rate', 'affiliate_growth_rate', 'affiliate_pro_rate'];
+    const tierKeys = Object.values(TIER_RATE_KEYS);
     if (entries.some(([key]) => tierKeys.includes(key))) {
       const rates = Object.fromEntries(entries.filter(([k]) => tierKeys.includes(k)).map(([k, v]) => [k, parseInt(v)]));
-      const TIER_MAP = { starter: 'affiliate_starter_rate', growth: 'affiliate_growth_rate', pro: 'affiliate_pro_rate' };
-      for (const [tier, key] of Object.entries(TIER_MAP)) {
+      for (const [tier, key] of Object.entries(TIER_RATE_KEYS)) {
         if (rates[key]) {
           await prisma.crewMember.updateMany({ where: { tier, status: { not: 'rejected' }, deletedAt: null }, data: { commissionRate: rates[key] } });
         }
@@ -84,7 +90,22 @@ export async function POST(req) {
       }
     }
 
-    await logActivity(admin.name, 'Updated site settings', 'settings');
+    const AFFILIATE_KEYS = new Set([
+      'affiliate_enabled', 'affiliate_starter_rate', 'affiliate_growth_rate', 'affiliate_pro_rate',
+      'affiliate_lead_split', 'affiliate_growth_threshold', 'affiliate_pro_threshold',
+      'affiliate_hold_days', 'affiliate_min_payout', 'affiliate_min_order', 'affiliate_max_links',
+      'crew_telegram_group_link',
+    ]);
+    const affChanges = entries.filter(([k]) => AFFILIATE_KEYS.has(k));
+    const otherChanges = entries.filter(([k]) => !AFFILIATE_KEYS.has(k));
+
+    if (affChanges.length > 0) {
+      const detail = affChanges.map(([k, v]) => `${k}=${v}`).join(', ');
+      await logActivity(admin.name, `Updated affiliate settings: ${detail}`, 'crew');
+    }
+    if (otherChanges.length > 0) {
+      await logActivity(admin.name, `Updated site settings (${otherChanges.length} keys)`, 'settings');
+    }
 
     return Response.json({ success: true, message: 'Settings saved' });
   } catch (err) {

@@ -43,7 +43,9 @@ export async function GET(req) {
     if (configured.length === 0) return Response.json({ skipped: true, reason: 'No providers configured' });
 
     const now = new Date();
-    const weekKey = `${now.getUTCFullYear()}-W${Math.ceil(((now - new Date(now.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7)}`;
+    const weekNum = Math.ceil(((now - new Date(now.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7);
+    const half = now.getUTCDay() >= 4 || now.getUTCDay() === 0 ? 'b' : 'a';
+    const weekKey = `${now.getUTCFullYear()}-W${weekNum}${half}`;
 
     const setting = await prisma.setting.findUnique({ where: { key: SETTING_KEY } });
     let state = {};
