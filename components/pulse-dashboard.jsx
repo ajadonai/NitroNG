@@ -670,10 +670,10 @@ export default function PulseDashboard({ secretKey }) {
           {data.monthRevenue > 0 && (
             <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
-                <div style={{ height: '100%', borderRadius: 2, background: data.monthProfit < 0 ? 'linear-gradient(90deg, #fca5a5, #f87171)' : 'linear-gradient(90deg, #34d399, #10b981)', width: `${Math.max(0, Math.min(100, Math.abs((data.monthProfit / data.monthRevenue) * 100)))}%`, transition: 'width 1s ease' }} />
+                <div style={{ height: '100%', borderRadius: 2, background: data.monthProfit < 0 ? 'linear-gradient(90deg, #fca5a5, #f87171)' : 'linear-gradient(90deg, #34d399, #10b981)', width: `${Math.max(0, Math.min(100, Math.abs(data.monthCost > 0 ? (data.monthProfit / data.monthCost) * 100 : 0)))}%`, transition: 'width 1s ease' }} />
               </div>
               <span className="m" style={{ fontSize: 10, color: data.monthProfit < 0 ? '#fca5a5' : '#34d399', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                {Math.round((data.monthProfit / data.monthRevenue) * 100)}% margin
+                {data.monthCost > 0 ? Math.round((data.monthProfit / data.monthCost) * 100) : 0}% markup
               </span>
             </div>
           )}

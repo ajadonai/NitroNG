@@ -34,7 +34,7 @@ const partialAdj = (orders) => {
   return { charge, cost };
 };
 const pct = (a, b) => b === 0 ? (a > 0 ? '🆕' : '—') : `${a >= b ? '+' : ''}${Math.round(((a - b) / b) * 100)}%`;
-const margin = (rev, cost) => rev > 0 ? `${Math.round(((rev - cost) / rev) * 100)}%` : '—';
+const margin = (rev, cost) => cost > 0 ? `${Math.round(((rev - cost) / cost) * 100)}%` : '—';
 const k = (v) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1_000 ? `${(v / 1_000).toFixed(1)}K` : v.toLocaleString();
 
 // ── /stats — full snapshot ──────────────────────────────
@@ -80,14 +80,14 @@ async function handleStats(chatId, threadId) {
     '',
     '<b>Today</b>',
     `  Revenue: <b>${naira(Math.round(todayRev) * 100)}</b>`,
-    `  Profit: <b>${naira(Math.round(todayRev - todayCost) * 100)}</b> (${margin(todayRev, todayCost)} margin)`,
+    `  Profit: <b>${naira(Math.round(todayRev - todayCost) * 100)}</b> (${margin(todayRev, todayCost)} markup)`,
     `  Money in: <b>${naira(Math.round(todayDep) * 100)}</b> (${todayDepositsAgg._count} deposits)`,
     `  Orders: <b>${todayOrderCount}</b>  ·  New users: <b>${todayUsers}</b>`,
     '',
     '<b>This month</b>',
     `  Revenue: <b>${naira(Math.round(monthRev) * 100)}</b>`,
     `  Cost: <b>${naira(Math.round(monthCost) * 100)}</b>`,
-    `  Profit: <b>${naira(Math.round(monthRev - monthCost) * 100)}</b> (${margin(monthRev, monthCost)} margin)`,
+    `  Profit: <b>${naira(Math.round(monthRev - monthCost) * 100)}</b> (${margin(monthRev, monthCost)} markup)`,
     `  Money in: <b>${naira(Math.round(monthDep) * 100)}</b> (${monthDepositsAgg._count} deposits)`,
     `  Orders: <b>${monthOrderCount.toLocaleString()}</b>  ·  New users: <b>${monthUsers}</b>`,
     '',
@@ -239,16 +239,16 @@ async function handleProfit(chatId, threadId) {
     '',
     '<b>Today</b>',
     `  Revenue: ${naira(Math.round(tRev) * 100)}  ·  Cost: ${naira(Math.round(tCost) * 100)}`,
-    `  Profit: <b>${naira(Math.round(tRev - tCost) * 100)}</b> (${margin(tRev, tCost)} margin)`,
+    `  Profit: <b>${naira(Math.round(tRev - tCost) * 100)}</b> (${margin(tRev, tCost)} markup)`,
     `  ${pct(tRev - tCost, yRev - yCost)} vs yesterday`,
     '',
     '<b>This month</b>',
     `  Revenue: ${naira(Math.round(mRev) * 100)}  ·  Cost: ${naira(Math.round(mCost) * 100)}`,
-    `  Profit: <b>${naira(Math.round(mRev - mCost) * 100)}</b> (${margin(mRev, mCost)} margin)`,
+    `  Profit: <b>${naira(Math.round(mRev - mCost) * 100)}</b> (${margin(mRev, mCost)} markup)`,
     '',
     '<b>All time</b>',
     `  Revenue: ${naira(Math.round(aRev) * 100)}  ·  Cost: ${naira(Math.round(aCost) * 100)}`,
-    `  Profit: <b>${naira(Math.round(aRev - aCost) * 100)}</b> (${margin(aRev, aCost)} margin)`,
+    `  Profit: <b>${naira(Math.round(aRev - aCost) * 100)}</b> (${margin(aRev, aCost)} markup)`,
     '',
     '<b>Cash flow (month)</b>',
     `  Money in: ${naira(Math.round(monthDep) * 100)}`,
@@ -547,7 +547,7 @@ export async function POST(req) {
           '/stats — Full dashboard snapshot',
           '/revenue — Revenue + money in (today / month / all time)',
           '/orders — Order counts + status breakdown',
-          '/profit — Profit, margins, cost, cash flow',
+          '/profit — Profit, markup, cost, cash flow',
           '/users — Signups, active users, top depositors',
           '/top — Top platforms + services this month',
           '/pending — Pending manual deposits',

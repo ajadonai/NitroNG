@@ -570,7 +570,7 @@ export default function AdminOrdersPage({ dark, t }) {
                             })()}
 
                             {/* Details grid */}
-                            {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); const profit = netCharge - netCost; const margin = netCharge > 0 ? Math.round(profit / netCharge * 100) : 0; return (
+                            {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); const profit = netCharge - netCost; const margin = netCost > 0 ? Math.round(profit / netCost * 100) : 0; return (
                             <div className="grid grid-cols-2 desktop:grid-cols-4 gap-1.5 mb-2.5">
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : isPartial ? "Net Charge" : "Charge"}</div>
@@ -732,7 +732,7 @@ export default function AdminOrdersPage({ dark, t }) {
                   })()}
 
                   {/* Details grid */}
-                  {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); const profit = netCharge - netCost; const margin = netCharge > 0 ? Math.round(profit / netCharge * 100) : 0; return (
+                  {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); const profit = netCharge - netCost; const margin = netCost > 0 ? Math.round(profit / netCost * 100) : 0; return (
                   <div className="grid grid-cols-2 desktop:grid-cols-4 gap-2 mb-3">
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : isPartial ? "Net Charge" : "Charge"}</div>
