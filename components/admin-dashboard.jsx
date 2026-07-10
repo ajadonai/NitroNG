@@ -1,27 +1,42 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from "react";
+import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme } from "./shared-nav";
 import { NitroWordmark } from "./nitro-logo";
 import { ToastProvider } from "./toast";
 import { ConfirmProvider } from "./confirm-dialog";
 import AnnouncementBanner from "./announcement-banner";
-import AdminOrdersPage from "./admin-orders";
-import AdminUsersPage from "./admin-users";
-import AdminTicketsPage from "./admin-tickets";
-import AdminServicesPage from "./admin-services";
-import AdminServiceGroupsPage from "./admin-service-groups";
-import AdminPricingPage from "./admin-pricing";
-import { AdminPaymentsPage, AdminFinancePage, AdminAlertsPage, AdminSettingsPage } from "./admin-pages";
-import { AdminActivityPage, AdminTeamPage, AdminCouponsPage, AdminNotificationsPage, AdminMaintenancePage, AdminAPIPage, AdminAcquisitionPage, AdminIssuesPage, AdminChangelogPage } from "./admin-extra-pages";
-import { AdminCrewPage } from "./admin-crew";
-import AdminBlogPage from "./admin-blog";
-import AdminPromotionsPage from "./admin-promotions";
-import AdminLeaderboardPage, { AdminLeaderboardSidebar } from "./admin-leaderboard";
 import { fN, fD } from "../lib/format";
 import { SITE } from "../lib/site";
 import { PlatformIcon } from "./platform-icon";
 import { Avatar } from "./avatar";
 import { useToast } from "./toast";
+
+const AdminOrdersPage = dynamic(() => import("./admin-orders"), { ssr: false });
+const AdminUsersPage = dynamic(() => import("./admin-users"), { ssr: false });
+const AdminTicketsPage = dynamic(() => import("./admin-tickets"), { ssr: false });
+const AdminServicesPage = dynamic(() => import("./admin-services"), { ssr: false });
+const AdminServiceGroupsPage = dynamic(() => import("./admin-service-groups"), { ssr: false });
+const AdminPricingPage = dynamic(() => import("./admin-pricing"), { ssr: false });
+const AdminPaymentsPage = dynamic(() => import("./admin-pages").then(m => m.AdminPaymentsPage), { ssr: false });
+const AdminFinancePage = dynamic(() => import("./admin-pages").then(m => m.AdminFinancePage), { ssr: false });
+const AdminAlertsPage = dynamic(() => import("./admin-pages").then(m => m.AdminAlertsPage), { ssr: false });
+const AdminSettingsPage = dynamic(() => import("./admin-pages").then(m => m.AdminSettingsPage), { ssr: false });
+const AdminActivityPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminActivityPage), { ssr: false });
+const AdminTeamPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminTeamPage), { ssr: false });
+const AdminCouponsPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminCouponsPage), { ssr: false });
+const AdminNotificationsPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminNotificationsPage), { ssr: false });
+const AdminMaintenancePage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminMaintenancePage), { ssr: false });
+const AdminAPIPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminAPIPage), { ssr: false });
+const AdminAcquisitionPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminAcquisitionPage), { ssr: false });
+const AdminIssuesPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminIssuesPage), { ssr: false });
+const AdminChangelogPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminChangelogPage), { ssr: false });
+const AdminCrewPage = dynamic(() => import("./admin-crew").then(m => m.AdminCrewPage), { ssr: false });
+const AdminBlogPage = dynamic(() => import("./admin-blog"), { ssr: false });
+const AdminPromotionsPage = dynamic(() => import("./admin-promotions"), { ssr: false });
+const AdminTasksPage = dynamic(() => import("./admin-tasks"), { ssr: false });
+const AdminLeaderboardPage = dynamic(() => import("./admin-leaderboard"), { ssr: false });
+const AdminLeaderboardSidebar = dynamic(() => import("./admin-leaderboard").then(m => m.AdminLeaderboardSidebar), { ssr: false });
 
 /* ═══════════════════════════════════════════ */
 /* ═══ HELPERS                             ═══ */
@@ -50,6 +65,7 @@ const ADMIN_NAV = [
     { id: "alerts", label: "Announcements", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> },
     { id: "notifications", label: "Email Blasts", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 17H2a3 3 0 003-3V9a7 7 0 0114 0v5a3 3 0 003 3zm-8.27 4a2 2 0 01-3.46 0"/></svg> },
     { id: "rewards", label: "Rewards", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg> },
+    { id: "tasks", label: "Tasks", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> },
     { id: "acquisition", label: "Tracking Links", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg> },
     { id: "crew", label: "Pit", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> },
     { id: "changelog", label: "Changelog", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg> },
@@ -683,6 +699,7 @@ function AdminDashboardInner({ initialData }) {
       case "acquisition": return <AdminAcquisitionPage dark={dark} t={t} />;
       case "issues": return <AdminIssuesPage dark={dark} t={t} />;
       case "crew": return <AdminCrewPage dark={dark} t={t} />;
+      case "tasks": return <AdminTasksPage dark={dark} t={t} />;
       case "changelog": return <AdminChangelogPage dark={dark} t={t} />;
       case "settings": return <AdminSettingsPage admin={admin} dark={dark} t={t} themeMode={themeMode} setThemeMode={setThemeMode} setDark={setDark} onLogout={handleLogout} notifPrefs={notifPrefs} updateNotifPref={updateNotifPref} />;
       default: return <AdminOverview data={data} dark={dark} t={t} setActive={setActive} />;

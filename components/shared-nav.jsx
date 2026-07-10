@@ -216,6 +216,7 @@ export function SharedFooter() {
           {[["FAQ", "/faq"], ["Terms", "/terms"], ["Privacy", "/privacy"], ["Refund", "/refund"], ["Cookies", "/cookie"]].map(([l, h]) => (
             <a key={l} href={h} className={linkCls} style={{ color: linkColor }}>{l}</a>
           ))}
+          <button onClick={() => window.dispatchEvent(new Event('nitro-cookie-reset'))} className={`${linkCls} bg-transparent border-0 cursor-pointer p-0 text-left`} style={{ color: linkColor }}>Cookie Settings</button>
         </div>
 
         {/* Get in touch */}

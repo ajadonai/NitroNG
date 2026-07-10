@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
+import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 
 export async function GET() {
   const { admin, error } = await requireAdmin('services');
@@ -93,6 +94,7 @@ export async function POST(req) {
         },
       });
       await logActivity(admin.name, `Created service group "${name}"`, 'service');
+      invalidateServiceCatalogue();
       return Response.json({ success: true, group });
     }
 
@@ -112,6 +114,7 @@ export async function POST(req) {
 
       const group = await prisma.serviceGroup.update({ where: { id: groupId }, data });
       await logActivity(admin.name, `Updated service group "${group.name}"`, 'service');
+      invalidateServiceCatalogue();
       return Response.json({ success: true, group });
     }
 
@@ -124,6 +127,7 @@ export async function POST(req) {
 
       await prisma.serviceGroup.delete({ where: { id: groupId } }); // cascade deletes tiers
       await logActivity(admin.name, `Deleted service group "${group.name}"`, 'service');
+      invalidateServiceCatalogue();
       return Response.json({ success: true });
     }
 
@@ -163,6 +167,7 @@ export async function POST(req) {
         },
       });
       await logActivity(admin.name, `Added ${tier || 'Standard'} tier to "${group.name}"`, 'service');
+      invalidateServiceCatalogue();
       return Response.json({ success: true, tier: newTier });
     }
 
@@ -185,6 +190,7 @@ export async function POST(req) {
 
       const updated = await prisma.serviceTier.update({ where: { id: tierIdToUpdate }, data });
       await logActivity(admin.name, `Updated tier ${updated.tier}`, 'service');
+      invalidateServiceCatalogue();
       return Response.json({ success: true, tier: updated });
     }
 
@@ -197,6 +203,7 @@ export async function POST(req) {
 
       await prisma.serviceTier.delete({ where: { id: tierIdToDelete } });
       await logActivity(admin.name, `Deleted ${existing.tier} tier from "${existing.group.name}"`, 'service');
+      invalidateServiceCatalogue();
       return Response.json({ success: true });
     }
 
@@ -239,6 +246,7 @@ export async function POST(req) {
         }
       }
       await logActivity(admin.name, `Recalculated prices: ${updated} updated, ${skipped} skipped (no cost)`, 'service');
+      invalidateServiceCatalogue();
       return Response.json({ success: true, updated, skipped, total: allTiers.length });
     }
 

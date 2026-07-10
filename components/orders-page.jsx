@@ -551,7 +551,8 @@ function Pagination({ total, page, setPage, perPage, setPerPage, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ ORDERS PAGE                         ═══ */
 /* ═══════════════════════════════════════════ */
-export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavigate, waNum }) {
+export default function OrdersPage({ orders: initialOrders, initialTotal = initialOrders.length, txs, dark, t, onNavigate, onRefresh, waNum }) {
+  const initialTotalCount = Number.isFinite(initialTotal) ? initialTotal : initialOrders.length;
   const confirm = useConfirm();
   const [orders, setOrders] = useState(initialOrders);
   const [filter, setFilter] = useState("all");
@@ -560,21 +561,51 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavi
   const [expandedBatch, setExpandedBatch] = useState(null);
   const [expandedBatchOrder, setExpandedBatchOrder] = useState(null);
   const [oPage, setOPage] = useState(1);
+  const [perPage, setPerPage] = useState(25);
+  const [total, setTotal] = useState(initialTotalCount);
+  const [matchingOrdersTotal, setMatchingOrdersTotal] = useState(initialTotalCount);
   const [actionLoading, setActionLoading] = useState(null);
   const [batchActionLoading, setBatchActionLoading] = useState(null);
   const [dateRange, setDateRange] = useState(null);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const toast = useToast();
+  const fetchAbortRef = useRef(null);
 
-  useEffect(() => { setOrders(initialOrders); }, [initialOrders]);
-
-  const fetchOrders = useCallback(async (q) => {
+  const fetchOrders = useCallback(async () => {
+    fetchAbortRef.current?.abort();
+    const controller = new AbortController();
+    fetchAbortRef.current = controller;
     try {
-      const params = q ? `?search=${encodeURIComponent(q)}` : '';
-      const res = await fetch(`/api/orders${params}`);
+      const params = new URLSearchParams({
+        page: String(oPage),
+        perPage: String(perPage),
+      });
+      if (debouncedSearch.trim().length >= 2) params.set('search', debouncedSearch.trim());
+      if (filter !== 'all') params.set('filter', filter);
+      if (dateRange?.start) params.set('start', dateRange.start.toISOString());
+      if (dateRange?.end) {
+        const end = new Date(dateRange.end);
+        end.setHours(23, 59, 59, 999);
+        params.set('end', end.toISOString());
+      }
+      const res = await fetch(`/api/orders?${params}`, { signal: controller.signal });
       const data = await res.json();
-      if (res.ok && data.orders) setOrders(data.orders);
-    } catch {}
-  }, []);
+      if (res.ok && data.orders) {
+        const totalPages = Math.max(1, data.totalPages || 1);
+        if (oPage > totalPages) {
+          setOPage(totalPages);
+          return;
+        }
+        setOrders(data.orders);
+        setTotal(data.total || 0);
+        setMatchingOrdersTotal(data.matchingOrdersTotal || 0);
+      }
+    } catch (error) {
+      if (error?.name !== 'AbortError') {
+        // Keep the last successful page visible on transient network errors.
+      }
+    }
+  }, [oPage, perPage, debouncedSearch, filter, dateRange]);
 
   const doAction = async (orderId, action) => {
     setActionLoading(orderId);
@@ -596,9 +627,12 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavi
           detail = "Order started";
         }
         toast.info(data.status, detail || (order?.queuedBehind ? "Queued" : "Waiting to start"));
+        await fetchOrders();
+        onRefresh?.();
       } else if (action === "cancel") {
-        setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, status: "Cancelled" } : o)));
         toast.success("Order cancelled", data.refunded ? `₦${data.refunded.toLocaleString()} refunded to wallet` : "Cancelled successfully");
+        await fetchOrders();
+        onRefresh?.();
       } else if (action === "reorder") {
         toast.success(data.queued ? "Reorder queued" : "Reorder placed", data.queued ? "Will start when your current order for this link completes." : (data.order?.id || ""));
       }
@@ -613,6 +647,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavi
       const data = await res.json();
       if (!res.ok) { toast.error("Action failed", data.error || "Something went wrong"); setBatchActionLoading(null); return; }
       await fetchOrders();
+      onRefresh?.();
       if (action === "check") toast.info("Batch checked", `Checked ${data.checked || 0} orders · ${data.updated || 0} updated`);
       else if (action === "cancel") toast.success("Batch cancelled", `${data.cancelled || 0} cancelled${data.refunded ? ` · ${fN(data.refunded)} refunded` : ""}`);
       else if (action === "reorder") toast.success("Batch retry", `Placed ${data.placed || 0} of ${data.retried || 0}`);
@@ -621,31 +656,28 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavi
     setBatchActionLoading(null);
   };
 
-  const [perPage, setPerPage] = useState(25);
   useEffect(() => {
-    try { const saved = localStorage.getItem("nitro-per-page"); if (saved) setPerPage(Number(saved)); } catch {}
+    try {
+      const saved = Number(localStorage.getItem("nitro-per-page"));
+      if (PER_PAGE_OPTIONS.includes(saved)) setPerPage(saved);
+    } catch {}
   }, []);
 
   const searchTimer = useRef(null);
   useEffect(() => {
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => fetchOrders(search), search ? 350 : 0);
+    const nextSearch = search.trim().length >= 2 ? search.trim() : "";
+    searchTimer.current = setTimeout(() => { setDebouncedSearch(nextSearch); setOPage(1); }, search ? 350 : 0);
     return () => clearTimeout(searchTimer.current);
-  }, [search, fetchOrders]);
+  }, [search]);
 
-  const filteredOrders = orders.filter(o => {
-    if (filter === "active" && o.status !== "Processing" && o.status !== "Pending") return false;
-    if (filter === "attention" && !isAttention(o)) return false;
-    if (filter !== "all" && filter !== "active" && filter !== "attention" && o.status !== filter) return false;
-    if (dateRange) {
-      const d = new Date(o.created);
-      if (dateRange.start && d < dateRange.start) return false;
-      if (dateRange.end) { const endOfDay = new Date(dateRange.end); endOfDay.setHours(23, 59, 59, 999); if (d > endOfDay) return false; }
-    }
-    return true;
-  });
-  const grouped = groupOrders(filteredOrders);
-  const pagedGroups = grouped.slice((oPage - 1) * perPage, oPage * perPage);
+  useEffect(() => {
+    fetchOrders();
+    return () => fetchAbortRef.current?.abort();
+  }, [fetchOrders]);
+
+  const grouped = groupOrders(orders);
+  const pagedGroups = grouped;
 
   const autoChecked = useRef(new Set());
   const autoCheck = useCallback((o) => {
@@ -661,7 +693,8 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavi
     if (expandedBatchOrder) { const o = orders.find(x => x.id === expandedBatchOrder); autoCheck(o); }
   }, [expandedBatchOrder]);
 
-  const hasFilters = filter !== "all" || search || dateRange;
+  const searchTooShort = search.trim().length === 1;
+  const hasFilters = filter !== "all" || search.trim().length >= 2 || dateRange;
 
   return (
     <>
@@ -678,9 +711,12 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavi
 
       {/* Search + filters */}
       <div className="flex items-center gap-2 desktop:gap-3 mb-2 desktop:mb-3 flex-nowrap desktop:flex-wrap min-w-0">
-        <div className="relative flex-1 min-w-0 desktop:min-w-[200px]">
-          <input aria-label="Search orders" placeholder="Search orders..." value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="w-full min-w-0 py-2 desktop:py-2.5 px-3 desktop:px-3.5 pr-8 rounded-[10px] border text-[13px] desktop:text-sm font-[inherit] outline-none box-border" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.09)" : "#fff", color: t.text }} />
-          {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setOPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
+        <div className="flex-1 min-w-0 desktop:min-w-[200px]">
+          <div className="relative">
+            <input aria-label="Search orders" placeholder="Search orders..." value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="w-full min-w-0 py-2 desktop:py-2.5 px-3 desktop:px-3.5 pr-8 rounded-[10px] border text-[13px] desktop:text-sm font-[inherit] outline-none box-border" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.09)" : "#fff", color: t.text }} />
+            {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setOPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
+          </div>
+          {searchTooShort && <div className="text-[11px] desktop:text-xs mt-1" style={{ color: t.textMuted }}>Type at least 2 characters to search.</div>}
         </div>
         <DateRangePicker dark={dark} t={t} value={dateRange} onChange={(v) => { setDateRange(v); setOPage(1); }} />
         <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setOPage(1); setExpanded(null); }} options={
@@ -691,9 +727,9 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavi
       </div>
 
       {/* Result count */}
-      {hasFilters && filteredOrders.length !== orders.length && (
+      {hasFilters && (
         <div className="text-[12px] desktop:text-[13px] mb-2" style={{ color: t.textMuted }}>
-          Showing {filteredOrders.length} of {orders.length} orders
+          Showing {pagedGroups.length} of {total} matching result{total === 1 ? "" : "s"} ({matchingOrdersTotal} order{matchingOrdersTotal === 1 ? "" : "s"})
           {hasFilters && <button onClick={() => { setFilter("all"); setSearch(""); setDateRange(null); setOPage(1); }} className="ml-2 underline cursor-pointer bg-transparent border-none font-[inherit] text-[12px] desktop:text-[13px]" style={{ color: t.accent }}>Clear filters</button>}
         </div>
       )}
@@ -753,7 +789,7 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavi
           </div>
         )}
       </div>
-      <Pagination total={grouped.length} page={oPage} setPage={setOPage} perPage={perPage} setPerPage={setPerPage} t={t} />
+      <Pagination total={total} page={oPage} setPage={setOPage} perPage={perPage} setPerPage={setPerPage} t={t} />
     </>
   );
 }
@@ -761,19 +797,20 @@ export default function OrdersPage({ orders: initialOrders, txs, dark, t, onNavi
 /* ═══════════════════════════════════════════ */
 /* ═══ ORDERS RIGHT SIDEBAR                ═══ */
 /* ═══════════════════════════════════════════ */
-export function OrdersSidebar({ orders, dark, t }) {
-  const activeCount = orders.filter(o => o.status === "Processing" || o.status === "Pending").length;
-  const attentionCount = orders.filter(isAttention).length;
-  const completedCount = orders.filter(o => o.status === "Completed").length;
-  const totalSpent = orders.filter(o => o.status !== "Cancelled").reduce((s, o) => s + (o.charge || 0), 0);
-  const refundedTotal = orders.filter(o => o.status === "Cancelled").reduce((s, o) => s + (o.charge || 0), 0);
+export function OrdersSidebar({ orders, orderSummary, dark, t }) {
+  const activeCount = orderSummary?.active || 0;
+  const attentionCount = orderSummary?.attention || 0;
+  const completedCount = orderSummary?.completed || 0;
+  const totalSpent = orderSummary?.spent || 0;
+  const refundedTotal = orderSummary?.refunded || 0;
+  const totalOrders = orderSummary?.total ?? 0;
 
   return (
     <>
       <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Order Summary</div>
       <div className="grid grid-cols-2 gap-1.5 mb-4">
         {[
-          ["Total", String(orders.length), dark ? "#a5b4fc" : "#4f46e5"],
+          ["Total", String(totalOrders), dark ? "#a5b4fc" : "#4f46e5"],
           ["Active", String(activeCount), dark ? "#fcd34d" : "#d97706"],
           ["Completed", String(completedCount), dark ? "#6ee7b7" : "#059669"],
           ...(attentionCount > 0 ? [["Attention", String(attentionCount), dark ? "#fbbf24" : "#d97706"]] : []),

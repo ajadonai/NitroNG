@@ -1,4 +1,5 @@
 'use client';
+import { useState, useEffect } from 'react';
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 
@@ -8,6 +9,8 @@ export default function AboutView() {
 
 function AboutInner() {
   const { dark, t } = useTheme();
+  const [stats, setStats] = useState(null);
+  useEffect(() => { fetch('/api/site-info').then(r => r.json()).then(d => setStats(d.stats)).catch(() => {}); }, []);
   const accent = "#c47d8e";
   const border = dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)";
   const cardBg = dark ? "rgba(255,255,255,.06)" : "#fff";
@@ -32,10 +35,10 @@ function AboutInner() {
           {/* Stats strip */}
           <section className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-14">
             {[
-              ['50K+', 'Orders delivered'],
-              ['2K+', 'Active creators'],
-              ['35+', 'Platforms'],
-              ['98%', 'Delivery rate'],
+              [stats?.orders || '50K+', 'Orders delivered'],
+              [stats?.users || '2.3K', 'Active creators'],
+              [(stats?.platforms || 35) + '+', 'Platforms'],
+              [stats?.deliveryRate ? stats.deliveryRate + '%' : '98%', 'Delivery rate'],
             ].map(([num, label]) => (
               <div key={label} className="rounded-2xl p-5 text-center" style={{ background: cardBg, border: `1px solid ${border}` }}>
                 <div className="text-2xl font-bold mb-1" style={{ color: accent }}>{num}</div>
@@ -76,7 +79,7 @@ function AboutInner() {
                 ['Never need your password', 'We only use your public profile link. Your accounts stay under your control.'],
                 ['Automatic refunds', 'If we can\'t deliver, your wallet gets credited automatically. No chasing support for days.'],
                 ['Real support', 'Reach us on WhatsApp anytime. We respond in minutes, not "2-3 business days."'],
-                ['Multiple quality tiers', 'Budget, Standard, and Premium options. You choose the quality and price point that fits.'],
+                ['Multiple quality tiers', 'Budget (no refill), Standard (30-day refill), and Premium (lifetime refill). You choose the quality and price point that fits.'],
                 ['Registered business', 'RC 9514845. We\'re a real company, not a WhatsApp-only operation.'],
               ].map(([title, desc]) => (
                 <div key={title} className="rounded-xl p-5" style={{ background: softBg, border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}` }}>

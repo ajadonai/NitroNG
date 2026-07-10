@@ -1,64 +1,31 @@
 import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { getServiceCatalogue } from '@/lib/service-catalog';
 
 export async function GET(req) {
   try {
     const session = await getCurrentUser();
     if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
 
-    const { searchParams } = new URL(req.url);
-    const platform = searchParams.get('platform');
-
-    const where = { enabled: true };
-    if (platform) where.platform = platform;
-
-    const groups = await prisma.serviceGroup.findMany({
-      where,
-      orderBy: { sortOrder: 'asc' },
-      include: {
-        tiers: {
-          where: { enabled: true },
-          orderBy: { sortOrder: 'asc' },
-          include: {
-            service: {
-              select: { id: true, apiId: true, name: true, min: true, max: true, refill: true, dripfeed: true, avgTime: true, provider: true, apiType: true },
-            },
-          },
-        },
-      },
-    });
-
-    // Get unique platforms for filter
-    const platforms = await prisma.serviceGroup.findMany({
-      where: { enabled: true },
-      select: { platform: true },
-      distinct: ['platform'],
-      orderBy: { platform: 'asc' },
-    });
-
-    // Nitro minimum order floors (overrides provider min if lower)
-    const NITRO_MINS = {
-      followers: 100,
-      likes: 100,
-      views: 500,
-      comments: 10,
-      engagement: 50,   // shares, saves, retweets, reposts
-      plays: 500,        // music streams — same as views
-      reviews: 10,       // same as comments
-    };
-    const DEFAULT_MIN = 50;
+    const catalogue = await getServiceCatalogue();
+    const platform = new URL(req.url).searchParams.get('platform');
+    const groups = platform ? catalogue.groups.filter(g => g.platform === platform) : catalogue.groups;
 
     // Get user's loyalty discount
     let loyaltyDiscount = 0;
     let loyaltyTierName = null;
     try {
-      const loyaltyEnabledRow = await prisma.setting.findUnique({ where: { key: 'loyalty_enabled' } });
-      if (loyaltyEnabledRow?.value !== 'false') {
-        const ltRow = await prisma.setting.findUnique({ where: { key: 'loyalty_tiers' } });
+      const [settings, spendAgg] = await Promise.all([
+        prisma.setting.findMany({ where: { key: { in: ['loyalty_enabled', 'loyalty_tiers'] } }, select: { key: true, value: true } }),
+        prisma.order.aggregate({ where: { userId: session.id, deletedAt: null, status: { not: 'Cancelled' } }, _sum: { charge: true } }),
+      ]);
+      const settingMap = Object.fromEntries(settings.map(s => [s.key, s.value]));
+      const loyaltyEnabledRow = settingMap.loyalty_enabled;
+      if (loyaltyEnabledRow !== 'false') {
+        const ltRow = settingMap.loyalty_tiers;
         if (ltRow) {
-          const tiers = JSON.parse(ltRow.value);
-          const spendAgg = await prisma.order.aggregate({ where: { userId: session.id, deletedAt: null, status: { not: 'Cancelled' } }, _sum: { charge: true } });
+          const tiers = JSON.parse(ltRow);
           const totalSpend = spendAgg._sum.charge || 0;
           let userTier = tiers[0];
           for (const t2 of tiers) { if (totalSpend >= t2.threshold) userTier = t2; }
@@ -71,31 +38,8 @@ export async function GET(req) {
     } catch {}
 
     return Response.json({
-      groups: groups.map(g => {
-        const nitroMin = NITRO_MINS[g.type?.toLowerCase()] || DEFAULT_MIN;
-        return {
-          id: g.id,
-          name: g.name,
-          platform: g.platform,
-          type: g.type,
-          nigerian: g.nigerian,
-          ...(g.description ? { description: g.description } : {}),
-          tiers: g.tiers.filter(t => t.service || t.serviceId).map(t => ({
-            id: t.id,
-            tier: t.tier,
-            price: Number(t.sellPer1k) / 100,
-            min: Math.min(Math.max(t.service?.min || 100, nitroMin), t.service?.max || 100000),
-            max: t.service?.max || 100000,
-            refill: t.refill,
-            speed: t.speed,
-            serviceId: t.serviceId,
-            provider: t.service?.provider || 'mtp',
-            apiType: t.service?.apiType || 'Default',
-            tags: g.tags || [],
-          })),
-        };
-      }).filter(g => g.tiers.length > 0),
-      platforms: platforms.map(p => p.platform),
+      groups,
+      platforms: catalogue.platforms,
       ...(loyaltyDiscount > 0 ? { loyaltyDiscount, loyaltyTier: loyaltyTierName } : {}),
     });
   } catch (err) {

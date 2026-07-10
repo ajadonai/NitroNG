@@ -15,32 +15,28 @@ beforeEach(() => {
 
 describe('link ownership verification', () => {
   it('allows chief to access their own link', async () => {
-    mockPrisma.acquisitionLink.findUnique.mockResolvedValue({ id: 'link1', affiliateId: 'chief1' });
-    mockPrisma.crewMember.findMany.mockResolvedValue([]);
+    mockPrisma.acquisitionLink.findUnique.mockResolvedValue({ id: 'link1', affiliateId: 'chief1', createdByChiefId: 'chief1' });
 
     const result = await verifyLinkOwnership('link1', 'chief1');
     expect(result).not.toBeNull();
   });
 
-  it("allows chief to access their crew member's link", async () => {
-    mockPrisma.acquisitionLink.findUnique.mockResolvedValue({ id: 'link1', affiliateId: 'crew1' });
-    mockPrisma.crewMember.findMany.mockResolvedValue([{ id: 'crew1' }, { id: 'crew2' }]);
+  it("allows chief to access link assigned to crew member", async () => {
+    mockPrisma.acquisitionLink.findUnique.mockResolvedValue({ id: 'link1', affiliateId: 'crew1', createdByChiefId: 'chief1' });
 
     const result = await verifyLinkOwnership('link1', 'chief1');
     expect(result).not.toBeNull();
   });
 
   it("blocks chief from accessing another chief's link", async () => {
-    mockPrisma.acquisitionLink.findUnique.mockResolvedValue({ id: 'link1', affiliateId: 'chief2' });
-    mockPrisma.crewMember.findMany.mockResolvedValue([{ id: 'crew1' }]);
+    mockPrisma.acquisitionLink.findUnique.mockResolvedValue({ id: 'link1', affiliateId: 'chief2', createdByChiefId: 'chief2' });
 
     const result = await verifyLinkOwnership('link1', 'chief1');
     expect(result).toBeNull();
   });
 
-  it("blocks chief from accessing another chief's crew member's link", async () => {
-    mockPrisma.acquisitionLink.findUnique.mockResolvedValue({ id: 'link1', affiliateId: 'otherCrew' });
-    mockPrisma.crewMember.findMany.mockResolvedValue([{ id: 'crew1' }]);
+  it("blocks chief from accessing link created by another chief even if assigned to shared crew", async () => {
+    mockPrisma.acquisitionLink.findUnique.mockResolvedValue({ id: 'link1', affiliateId: 'crew1', createdByChiefId: 'chief2' });
 
     const result = await verifyLinkOwnership('link1', 'chief1');
     expect(result).toBeNull();

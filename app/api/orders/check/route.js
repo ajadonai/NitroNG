@@ -2,6 +2,7 @@ import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { checkOrder, isProviderConfigured } from '@/lib/smm';
+import { tgRefundAlert } from '@/lib/telegram';
 
 export async function POST(req) {
   try {
@@ -85,6 +86,7 @@ export async function POST(req) {
               });
             }
           });
+          tgRefundAlert({ orderId: order.orderId, amount: order.charge, charge: order.charge, qty: order.quantity, status: 'Cancelled', reason: 'provider_cancelled', source: 'check' });
         } else if (newStatus === 'Partial' && providerStatus.remains) {
           const remains = Number(providerStatus.remains) || 0;
           if (remains > 0 && order.charge > 0 && order.quantity > 0) {
@@ -107,6 +109,7 @@ export async function POST(req) {
                   },
                 });
               });
+              tgRefundAlert({ orderId: order.orderId, amount: refundAmount, charge: order.charge, qty: order.quantity, remains, status: 'Partial', reason: 'provider_partial', source: 'check' });
             }
           }
         } else {

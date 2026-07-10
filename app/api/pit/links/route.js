@@ -42,7 +42,7 @@ export async function GET(req) {
     const crewIds = crew.map((m) => m.id);
 
     const links = await prisma.acquisitionLink.findMany({
-      where: { archivedAt: null, affiliateId: { in: [member.id, ...crewIds] } },
+      where: { archivedAt: null, createdByChiefId: member.id },
       orderBy: { createdAt: "desc" },
       include: {
         _count: { select: { clicks: true, commissions: true } },
@@ -81,11 +81,9 @@ export async function POST(req) {
     const slug = customSlug?.trim() ? slugify(customSlug) : slugify(name);
     if (!slug) return Response.json({ error: "Invalid slug" }, { status: 400 });
 
-    const teamIds = await getTeamIds(member.id);
-    const teamArray = [...teamIds];
-
     let assigneeName = member.name;
     if (affiliateId && affiliateId !== member.id) {
+      const teamIds = await getTeamIds(member.id);
       if (!teamIds.has(affiliateId)) return Response.json({ error: "Can only assign to your own team members" }, { status: 403 });
       const affiliate = await prisma.crewMember.findUnique({ where: { id: affiliateId }, select: { name: true, status: true } });
       if (!affiliate || affiliate.status !== "approved") return Response.json({ error: "Invalid affiliate" }, { status: 400 });
@@ -93,21 +91,26 @@ export async function POST(req) {
     }
 
     const assigneeId = affiliateId || member.id;
+    const MAX_RETRIES = 3;
     let link;
-    try {
-      link = await prisma.$transaction(async (tx) => {
-        const [maxLinksRow, activeCount] = await Promise.all([
-          tx.setting.findUnique({ where: { key: 'affiliate_max_links' } }),
-          tx.acquisitionLink.count({ where: { affiliateId: { in: teamArray }, archivedAt: null } }),
-        ]);
-        const maxLinks = parseInt(maxLinksRow?.value) || 5;
-        if (activeCount >= maxLinks) throw Object.assign(new Error('limit'), { _limit: maxLinks });
-        return tx.acquisitionLink.create({ data: { name: name.trim(), slug, affiliateId: assigneeId } });
-      }, { isolationLevel: 'Serializable' });
-    } catch (e) {
-      if (e._limit) return Response.json({ error: `Maximum ${e._limit} active links allowed` }, { status: 400 });
-      if (e.code === 'P2002') return Response.json({ error: "That slug is already taken" }, { status: 409 });
-      throw e;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        link = await prisma.$transaction(async (tx) => {
+          const [maxLinksRow, activeCount] = await Promise.all([
+            tx.setting.findUnique({ where: { key: 'affiliate_max_links' } }),
+            tx.acquisitionLink.count({ where: { createdByChiefId: member.id, archivedAt: null } }),
+          ]);
+          const maxLinks = parseInt(maxLinksRow?.value) || 5;
+          if (activeCount >= maxLinks) throw Object.assign(new Error('limit'), { _limit: maxLinks });
+          return tx.acquisitionLink.create({ data: { name: name.trim(), slug, affiliateId: assigneeId, createdByChiefId: member.id } });
+        }, { isolationLevel: 'Serializable' });
+        break;
+      } catch (e) {
+        if (e._limit) return Response.json({ error: `Maximum ${e._limit} active links allowed` }, { status: 400 });
+        if (e.code === 'P2002') return Response.json({ error: "That slug is already taken" }, { status: 409 });
+        if (e.code === 'P2034' && attempt < MAX_RETRIES - 1) continue;
+        throw e;
+      }
     }
 
     logAction(link.id, member.id, "created", `Created and assigned to ${assigneeName}`).catch(() => {});

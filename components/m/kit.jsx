@@ -66,6 +66,7 @@ const STATUS_STYLES = (t, dark) => ({
   active:   { color: t.green, bg: dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)" },
   suspended:{ color: t.red, bg: dark ? "rgba(239,68,68,.08)" : "rgba(239,68,68,.06)" },
   invited:  { color: t.soft, bg: t.surface, border: t.surfaceBrd },
+  expired:  { color: dark ? "#fcd34d" : "#b45309", bg: dark ? "rgba(250,204,21,.12)" : "rgba(250,204,21,.08)" },
 });
 
 export function StatusBadge({ status, label, dark, t }) {
