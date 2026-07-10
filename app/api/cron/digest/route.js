@@ -73,7 +73,7 @@ export async function GET(req) {
     const mRev = ((monthRevAgg._sum.charge || 0) - adjM.charge) / 100;
     const mCost = ((monthCostAgg._sum.cost || 0) - adjM.cost) / 100;
     const mDep = (monthDepAgg._sum.amount || 0) / 100;
-    const marginPct = (rev, cost) => rev > 0 ? `${Math.round(((rev - cost) / rev) * 100)}%` : '—';
+    const marginPct = (rev, cost) => cost > 0 ? `${Math.round(((rev - cost) / cost) * 100)}%` : '—';
 
     const pct = (today, yesterday) => {
       if (yesterday === 0) return today > 0 ? null : 0;
