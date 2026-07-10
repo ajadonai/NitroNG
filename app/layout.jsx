@@ -135,7 +135,7 @@ export default function RootLayout({ children }) {
       "Cleanest marketing dashboard in Nigeria",
       "Naira pricing, no USD conversion",
       "Performance tracking and analytics",
-      "3-tier campaign quality: Budget, Standard, Premium",
+      "3-tier campaign quality: Budget (no refill), Standard (30-day refill), Premium (lifetime refill)",
       "Human support on WhatsApp",
       "API access for developers and agencies",
       "Bulk campaign tools for large projects",

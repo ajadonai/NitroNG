@@ -76,7 +76,7 @@ function AboutInner() {
                 ['Never need your password', 'We only use your public profile link. Your accounts stay under your control.'],
                 ['Automatic refunds', 'If we can\'t deliver, your wallet gets credited automatically. No chasing support for days.'],
                 ['Real support', 'Reach us on WhatsApp anytime. We respond in minutes, not "2-3 business days."'],
-                ['Multiple quality tiers', 'Budget, Standard, and Premium options. You choose the quality and price point that fits.'],
+                ['Multiple quality tiers', 'Budget (no refill), Standard (30-day refill), and Premium (lifetime refill). You choose the quality and price point that fits.'],
                 ['Registered business', 'RC 9514845. We\'re a real company, not a WhatsApp-only operation.'],
               ].map(([title, desc]) => (
                 <div key={title} className="rounded-xl p-5" style={{ background: softBg, border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}` }}>
