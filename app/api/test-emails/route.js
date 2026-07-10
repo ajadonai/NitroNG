@@ -1,4 +1,4 @@
-import { sendEmail, sendWelcomeEmail, sendPasswordResetEmail, walletCreditEmail, accountDeletionEmail, leaderboardRewardEmail, batchPlacementEmail, batchCompletionEmail, sendWinbackEmail, sendNudgeIdleFunds, sendNudgeComeback, sendNudgeLapsed, sendNudgeIdleBalance, gradualDeliveryAnnouncementEmail, sendAdActivationDay1, sendAdActivationDay3, sendAdActivationDay6 } from '@/lib/email';
+import { sendEmail, sendWelcomeEmail, sendPasswordResetEmail, walletCreditEmail, accountDeletionEmail, leaderboardRewardEmail, batchPlacementEmail, batchCompletionEmail, sendNudgeIdleFunds, sendNudgeComeback, sendNudgeLapsed, sendNudgeIdleBalance, gradualDeliveryAnnouncementEmail, sendAdActivationDay1, sendAdActivationDay3, sendAdActivationDay6 } from '@/lib/email';
 import prisma from '@/lib/prisma';
 
 export async function GET(req) {
