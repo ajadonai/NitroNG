@@ -1,10 +1,11 @@
 'use client';
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { hasConsent } from './cookie-banner';
 
 function fire(eventName, customData) {
   const eventId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-  if (typeof window !== 'undefined' && window.fbq) {
+  if (typeof window !== 'undefined' && window.fbq && hasConsent()) {
     window.fbq('track', eventName, customData || {}, { eventID: eventId });
   }
   fetch('/api/capi/track', {

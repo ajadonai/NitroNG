@@ -97,13 +97,14 @@ export async function GET() {
       return { charge, cost };
     };
 
+    // Phase 1: aggregates and counts (no relation sub-queries)
     const [
       userCount, orderCount, processingCount,
       revenueAgg, costAgg, depositsAgg,
       todayOrders, todayRevenueAgg, todayUsers, todayDepositsAgg,
       yesterdayRevenueAgg, yesterdayDepositsAgg,
-      partialAll, partialToday, partialYesterday,
-      recentOrders, recentUsers, openTickets, unreadTicketCount, pendingManualCount, pendingOrderCount, openIssueCount, activityLogs,
+      partials,
+      unreadTicketCount, pendingManualCount, pendingOrderCount, openIssueCount,
     ] = await Promise.all([
       prisma.user.count({ where: { emailVerified: true } }),
       prisma.order.count({ where: { deletedAt: null } }),
@@ -111,57 +112,42 @@ export async function GET() {
       prisma.order.aggregate({ where: { deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
       prisma.order.aggregate({ where: { deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
       prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed' }, _sum: { amount: true } }),
-      // Today
       prisma.order.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
       prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
       prisma.user.count({ where: { createdAt: { gte: todayStart }, emailVerified: true } }),
       prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true } }),
-      // Yesterday full day
       prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
       prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true } }),
-      // Partial adjustments
-      prisma.order.findMany({ where: { deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
-      prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
-      prisma.order.findMany({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
-      // Recent orders (last 5)
+      prisma.order.findMany({ where: { deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true, createdAt: true } }),
+      prisma.ticket.count({ where: { unreadByAdmin: true, status: { in: ['Open', 'In Progress'] } } }).catch(() => 0),
+      prisma.transaction.count({ where: { type: 'deposit', method: 'manual', status: 'Pending', NOT: { note: { contains: '[awaiting_confirmation]' } } } }).catch(() => 0),
+      prisma.order.count({ where: { status: { in: ['Pending', 'Processing'] }, deletedAt: null, queuedBehind: null } }).catch(() => 0),
+      prisma.adminIssue?.findMany({ where: { status: 'open' }, select: { type: true }, distinct: ['type'] }).then(r => r.length).catch(() => 0) ?? Promise.resolve(0),
+    ]);
+
+    const partialAll = partials;
+    const partialToday = partials.filter(p => p.createdAt >= todayStart);
+    const partialYesterday = partials.filter(p => p.createdAt >= yesterdayStart && p.createdAt < todayStart);
+
+    // Phase 2: queries with relation includes (generate sub-queries)
+    const [recentOrders, recentUsers, openTickets, activityLogs] = await Promise.all([
       prisma.order.findMany({
         where: { deletedAt: null },
         orderBy: { createdAt: 'desc' },
         take: 5,
         include: { user: { select: { name: true, email: true } }, service: { select: { name: true, category: true } }, tier: { select: { tier: true, group: { select: { name: true } } } } },
       }),
-      // Recent users (last 5)
       prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
         take: 5,
         select: { id: true, name: true, email: true, createdAt: true, _count: { select: { orders: { where: { status: { not: 'Cancelled' }, deletedAt: null } } } } },
       }),
-      // Open tickets (last 4)
       prisma.ticket.findMany({
         where: { status: 'Open' },
         orderBy: { createdAt: 'desc' },
         take: 4,
         include: { user: { select: { name: true, email: true } } },
       }),
-      // Unread ticket count for badge
-      prisma.ticket.count({
-        where: { unreadByAdmin: true, status: { in: ['Open', 'In Progress'] } },
-      }).catch(() => 0),
-      // Pending manual payment count for badge
-      prisma.transaction.count({
-        where: { method: 'manual', status: 'Pending', NOT: { note: { contains: '[awaiting_confirmation]' } } },
-      }).catch(() => 0),
-      // Pending + Processing order count for badge (exclude queued)
-      prisma.order.count({
-        where: { status: { in: ['Pending', 'Processing'] }, deletedAt: null, queuedBehind: null },
-      }).catch(() => 0),
-      // Open issue categories count for badge (not individual issues)
-      prisma.adminIssue?.findMany({
-        where: { status: 'open' },
-        select: { type: true },
-        distinct: ['type'],
-      }).then(r => r.length).catch(() => 0) ?? Promise.resolve(0),
-      // Recent activity (last 8)
       prisma.activityLog.findMany({
         orderBy: { createdAt: 'desc' },
         take: 8,

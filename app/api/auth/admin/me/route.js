@@ -8,22 +8,12 @@ export async function GET() {
     const session = await getCurrentAdmin();
     if (!session) return error('Not authenticated', 401);
 
-    const admin = await prisma.admin.findUnique({
-      where: { id: session.id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        status: true,
-        lastActive: true,
-      },
-    });
+    const full = session._admin || await prisma.admin.findUnique({ where: { id: session.id } });
 
-    if (!admin) return error('Admin not found', 404);
-    if (admin.status === 'Inactive') return error('Account inactive', 403);
+    if (!full) return error('Admin not found', 404);
+    if (full.status === 'Inactive') return error('Account inactive', 403);
 
-    return ok({ admin });
+    return ok({ admin: { id: full.id, name: full.name, email: full.email, role: full.role, status: full.status, lastActive: full.lastActive } });
   } catch (err) {
     log.error('ADMIN ME', err);
     return error('Something went wrong', 500);

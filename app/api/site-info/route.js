@@ -19,7 +19,7 @@ export async function GET() {
 
     const ORDER_BASE = 20000;
     const PROCESSING_BASE = 20;
-    const displayUsers = Math.floor(userCount / 100) * 100;
+    const displayUsers = userCount;
     const displayOrders = orderCount + ORDER_BASE;
 
     let deliveryRate, processingCount;
@@ -64,7 +64,7 @@ export async function GET() {
 
     return ok({
       stats: {
-        users: displayUsers >= 1000 ? `${Math.floor(displayUsers / 1000)}K+` : `${displayUsers}+`,
+        users: displayUsers >= 1000000 ? `${(displayUsers / 1000000).toFixed(1)}M` : displayUsers >= 1000 ? `${(displayUsers / 1000).toFixed(1)}K` : `${displayUsers}`,
         orders: displayOrders >= 1000000 ? `${(displayOrders / 1000000).toFixed(1)}M+` : displayOrders >= 1000 ? `${Math.floor(displayOrders / 1000)}K+` : `${displayOrders}+`,
         platforms: platformCount || 0,
         services: serviceCount || 0,

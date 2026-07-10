@@ -12,7 +12,7 @@ import InlineAlert from "./inline-alert";
 /* ═══ Grouped: Social (21) Music (9) Utility (5) */
 /* ═══════════════════════════════════════════ */
 
-const refillLabel = (tier) => tier === "Budget" ? "No refill if count drops" : tier === "Standard" ? "Free top-up if count drops" : "Auto-refill if count drops";
+const refillLabel = (tier) => tier === "Budget" ? "No refill" : tier === "Standard" ? "30-day refill" : "Lifetime refill";
 const tierClr = { Budget: { text: "#e0a458", bg: "rgba(224,164,88,.1)" }, Standard: { text: "#60a5fa", bg: "rgba(96,165,250,.1)" }, Premium: { text: "#a78bfa", bg: "rgba(167,139,250,.1)" } };
 const crossSells = {
   follower: { title: "Complete the look", body: "New followers check your posts first. Add likes so your content matches your profile.", cta: "Add Likes", color: "#f43f5e", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="#f43f5e" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> },
@@ -107,15 +107,15 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion }) 
           <div className="flex flex-col gap-2">
             <div className="py-2 px-2.5 rounded-lg" style={{ background: dark ? "#2d2210" : "#fef7ed" }}>
               <div className="text-[11.5px] font-bold mb-0.5 flex items-center gap-1.5" style={{ color: "#854F0B" }}>{TS.Budget.label} Budget</div>
-              <div className="text-[11px] leading-[1.5]" style={{ color: dark ? "#b0a9a2" : "#555250" }}>Cheapest option. No refill — if the count drops, it stays dropped. Best for one-time boosts where you don't need long-term retention.</div>
+              <div className="text-[11px] leading-[1.5]" style={{ color: dark ? "#b0a9a2" : "#555250" }}>Cheapest option. No refill — if the count drops, it stays dropped. Best for quick boosts where you don't need long-term retention.</div>
             </div>
             <div className="py-2 px-2.5 rounded-lg" style={{ background: dark ? "#0f1e30" : "#eef4fb" }}>
               <div className="text-[11.5px] font-bold mb-0.5 flex items-center gap-1.5" style={{ color: "#185FA5" }}>{TS.Standard.label} Standard</div>
-              <div className="text-[11px] leading-[1.5]" style={{ color: dark ? "#b0a9a2" : "#555250" }}>Mid-range. Comes with a free top-up if the count drops during the refill window (usually 30 days). Great for most people.</div>
+              <div className="text-[11px] leading-[1.5]" style={{ color: dark ? "#b0a9a2" : "#555250" }}>Mid-range. Includes a 30-day refill — if the count drops within 30 days, we top it back up for free. Great for most people.</div>
             </div>
             <div className="py-2 px-2.5 rounded-lg" style={{ background: dark ? "#221535" : "#f5eef5" }}>
               <div className="text-[11.5px] font-bold mb-0.5 flex items-center gap-1.5" style={{ color: "#534AB7" }}>{TS.Premium.label} Premium</div>
-              <div className="text-[11px] leading-[1.5]" style={{ color: dark ? "#b0a9a2" : "#555250" }}>Highest quality accounts with auto-refill. If the count drops, we top it back up automatically. Best for profiles you're building long-term.</div>
+              <div className="text-[11px] leading-[1.5]" style={{ color: dark ? "#b0a9a2" : "#555250" }}>Highest quality accounts with lifetime refill. If the count ever drops, we top it back up automatically — no time limit. Best for profiles you're building long-term.</div>
             </div>
           </div>
           <div className="mt-2.5 py-1.5 px-2.5 rounded-lg flex gap-2 items-start" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)" }}>
@@ -412,12 +412,12 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           ) : selTier.tier === "Standard" ? (
             <span className="inline-flex items-center gap-1 text-[11px] py-[3px] px-2 rounded-md" style={{ background: dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.06)", color: dark ? "#6ee7b7" : "#059669" }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              Free refill
+              30-day refill
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 text-[11px] py-[3px] px-2 rounded-md" style={{ background: dark ? "rgba(167,139,250,.08)" : "rgba(167,139,250,.06)", color: dark ? "#c4b5fd" : "#7c3aed" }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
-              Auto-refill
+              Lifetime refill
             </span>
           )}
         </div>}
@@ -572,9 +572,10 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
               Insufficient balance · Top up
             </button>
             )
-          ) : (
+          ) : (<>
+            <div className="text-[10.5px] mb-2 px-0.5" style={{ color: t.textMuted }}>Profile must be <b style={{ color: t.text }}>public</b>. No refunds for orders on private profiles.</div>
             <button onClick={() => { if (dripOn && showMultiDay) { setDripStep(2); } else { onSubmit(dripOn && showMultiDay ? clampedDays : undefined); } }} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames || needsKeywords) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer || needsKeywords) || (comments || "").trim()) && !commentShort && !orderLoading ? 1 : .5 }}>{orderLoading ? "Placing..." : dripOn && showMultiDay ? "Next" : "Place Order"}</button>
-          )}
+          </>)}
         </>) : (<>
           {/* Step 2: Drip config — replaces entire form body */}
           <div className="flex items-center gap-2 mb-3 cursor-pointer select-none" onClick={() => setDripStep(1)} style={{ WebkitTapHighlightColor: "transparent" }}>
@@ -1303,7 +1304,7 @@ function MobileGuide({ dark, t }) {
       {open && (
         <div className="px-3.5 pb-3.5 pt-2.5 text-[13px] leading-[1.7] flex flex-col gap-2.5" style={{ color: t.textMuted, borderLeft: `3px solid ${t.accent}`, borderTop: `2px solid ${dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)"}` }}>
           <div className="text-xs" style={{ color: t.textMuted }}>
-            <div className="mb-[3px]">• Set profile to <b style={{ color: t.text }}>public</b> before ordering</div>
+            <div className="mb-[3px]">• Set profile to <b style={{ color: t.text }}>public</b> before ordering — no refunds for private profiles</div>
             <div className="mb-[3px]">• <b style={{ color: t.text }}>Start small</b> — test Budget first</div>
             <div>• Not sure which tier? Tap the <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"-1px"}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> for a quick breakdown</div>
           </div>
@@ -1727,7 +1728,7 @@ export function ServicesSidebar({ dark, t }) {
       <div className="text-[11px] font-semibold uppercase tracking-[1px] py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Quick Tips</div>
 
       <div className="text-[12px] leading-[1.6]" style={{ color: t.textMuted }}>
-        <div className="mb-1">• Set profile to <b style={{ color: t.text }}>public</b> before ordering</div>
+        <div className="mb-1">• Set profile to <b style={{ color: t.text }}>public</b> before ordering — no refunds for private profiles</div>
         <div className="mb-1">• <b style={{ color: t.text }}>Start small</b> — test a Budget tier first</div>
         <div>• Not sure which tier? Tap the <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"-1px"}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> for a quick breakdown</div>
       </div>

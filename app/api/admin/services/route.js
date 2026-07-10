@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
+import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 
 export async function GET() {
   const { admin, error } = await requireAdmin('services');
@@ -68,6 +69,7 @@ export async function POST(req) {
         data: { enabled: true },
       });
       await logActivity(admin.name, `Sync-enabled ${result.count} services used by active tiers`, 'service');
+      invalidateServiceCatalogue();
       return Response.json({ success: true, enabled: result.count, total: ids.length, message: `Enabled ${result.count} services (${ids.length} total in use)` });
     }
 
@@ -107,11 +109,13 @@ export async function POST(req) {
           await prisma.serviceTier.updateMany({ where: { serviceId, enabled: true }, data: { enabled: false } });
           await prisma.service.update({ where: { id: serviceId }, data: { enabled: false } });
           await logActivity(admin.name, `Disabled service + ${activeTiers} tier(s): ${service.name}`, 'service');
+          invalidateServiceCatalogue();
           return Response.json({ success: true, enabled: false, cascaded: activeTiers, message: `Disabled service and ${activeTiers} tier(s) in Menu Builder` });
         }
       }
       await prisma.service.update({ where: { id: serviceId }, data: { enabled: newEnabled } });
       await logActivity(admin.name, `${service.enabled ? 'Disabled' : 'Enabled'} service: ${service.name}`, 'service');
+      invalidateServiceCatalogue();
       return Response.json({ success: true, enabled: newEnabled });
     }
 
@@ -121,6 +125,7 @@ export async function POST(req) {
       const newSell = Math.round(Number(service.costPer1k) * (1 + m / 100));
       await prisma.service.update({ where: { id: serviceId }, data: { markup: m, sellPer1k: newSell } });
       await logActivity(admin.name, `Updated markup for ${service.name} to ${m}%`, 'service');
+      invalidateServiceCatalogue();
       return Response.json({ success: true, markup: m, sellPer1k: newSell / 100 });
     }
 
@@ -139,6 +144,7 @@ export async function POST(req) {
 
       const updated = await prisma.service.update({ where: { id: serviceId }, data });
       await logActivity(admin.name, `Edited service: ${updated.name}`, 'service');
+      invalidateServiceCatalogue();
       return Response.json({ success: true, service: { id: updated.id, name: updated.name, category: updated.category, min: updated.min, max: updated.max, enabled: updated.enabled, refill: updated.refill, avgTime: updated.avgTime, tags: updated.tags || [] } });
     }
 
@@ -154,10 +160,12 @@ export async function POST(req) {
         // Don't delete, just disable
         await prisma.service.update({ where: { id: serviceId }, data: { enabled: false } });
         await logActivity(admin.name, `Disabled service (has ${orderCount} orders): ${service.name}`, 'service');
+        invalidateServiceCatalogue();
         return Response.json({ success: true, disabled: true, message: `Service has ${orderCount} order(s) — disabled instead of deleted to preserve history.` });
       }
       await prisma.service.delete({ where: { id: serviceId } });
       await logActivity(admin.name, `Deleted service: ${service.name}`, 'service');
+      invalidateServiceCatalogue();
       return Response.json({ success: true, deleted: true });
     }
 

@@ -139,7 +139,7 @@ export async function GET(req) {
       platformMap[name].cost += eff.cost;
     });
     const byPlatform = Object.values(platformMap)
-      .map(p => ({ ...p, profit: p.revenue - p.cost, margin: p.revenue > 0 ? Math.round(((p.revenue - p.cost) / p.revenue) * 100) : 0 }))
+      .map(p => ({ ...p, profit: p.revenue - p.cost, margin: p.cost > 0 ? Math.round(((p.revenue - p.cost) / p.cost) * 100) : 0 }))
       .sort((a, b) => b.profit - a.profit);
 
     // By tier — aggregate from raw orders
@@ -153,7 +153,7 @@ export async function GET(req) {
       tierMap[name].cost += eff.cost;
     });
     const byTier = Object.values(tierMap)
-      .map(t => ({ ...t, profit: t.revenue - t.cost, margin: t.revenue > 0 ? Math.round(((t.revenue - t.cost) / t.revenue) * 100) : 0 }))
+      .map(t => ({ ...t, profit: t.revenue - t.cost, margin: t.cost > 0 ? Math.round(((t.revenue - t.cost) / t.cost) * 100) : 0 }))
       .sort((a, b) => b.profit - a.profit);
 
     const chargeTotal = (ordersAgg._sum.charge || 0) - partialChargeAdj;
@@ -185,7 +185,7 @@ export async function GET(req) {
         ...(sensitive ? {
           totalCost: k(totalCost),
           grossProfit: k(grossProfit),
-          margin: netRevenue > 0 ? Math.round((grossProfit / netRevenue) * 1000) / 10 : 0,
+          margin: totalCost > 0 ? Math.round((grossProfit / totalCost) * 1000) / 10 : 0,
           profitPerOrder: orderCount > 0 ? k(Math.round(grossProfit / orderCount)) : 0,
         } : {}),
         orderCount, refundRate,

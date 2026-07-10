@@ -7,81 +7,129 @@ export const maxDuration = 60;
 
 const SNAPSHOT_KEY = "cohort_stats_snapshot";
 const STALE_MS = 25 * 60 * 60 * 1000; // 25 hours
+const STALE_ALERT_MS = 26 * 60 * 60 * 1000; // 26 hours
+
+function toNumber(value) {
+  return typeof value === "bigint" ? Number(value) : Number(value || 0);
+}
+
+function parseJsonArray(value) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  if (typeof value === "string") return JSON.parse(value);
+  return [];
+}
+
+function snapshotAgeMs(snapshot) {
+  const generatedAt = new Date(snapshot?.generatedAt || 0).getTime();
+  return Number.isFinite(generatedAt) ? Date.now() - generatedAt : Infinity;
+}
+
+async function computeWindow(days, now) {
+  const since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  const [row = {}] = await prisma.$queryRaw`
+    WITH cohort AS (
+      SELECT id, COALESCE("signupSource", 'organic/direct') AS source
+      FROM "users"
+      WHERE "createdAt" >= ${since}
+        AND "deletedAt" IS NULL
+    ),
+    deposits_by_user AS (
+      SELECT t."userId", SUM(t.amount)::bigint AS "totalDepositedKobo"
+      FROM "transactions" t
+      JOIN cohort c ON c.id = t."userId"
+      WHERE t.type = 'deposit'
+        AND t.status = 'Completed'
+      GROUP BY t."userId"
+    ),
+    source_stats AS (
+      SELECT
+        c.source,
+        COUNT(*)::int AS signups,
+        COUNT(d."userId")::int AS depositors
+      FROM cohort c
+      LEFT JOIN deposits_by_user d ON d."userId" = c.id
+      GROUP BY c.source
+    )
+    SELECT
+      (SELECT COUNT(*)::int FROM cohort) AS signups,
+      (SELECT COUNT(*)::int FROM deposits_by_user) AS depositors,
+      COALESCE((SELECT SUM("totalDepositedKobo") FROM deposits_by_user), 0)::bigint AS "totalDepositedKobo",
+      COALESCE((
+        SELECT json_agg(
+          json_build_object(
+            'source', source,
+            'signups', signups,
+            'depositors', depositors
+          )
+          ORDER BY signups DESC, source ASC
+        )
+        FROM source_stats
+      ), '[]'::json) AS "bySource"
+  `;
+
+  const signups = toNumber(row.signups);
+  const depositors = toNumber(row.depositors);
+  const totalDepositedKobo = toNumber(row.totalDepositedKobo);
+  const totalDepositedNGN = totalDepositedKobo / 100;
+  const depositRate = signups > 0 ? +(depositors / signups).toFixed(4) : 0;
+  const avgFirstDepositNGN = depositors > 0 ? +(totalDepositedNGN / depositors).toFixed(2) : 0;
+  const bySource = parseJsonArray(row.bySource).map((src) => {
+    const srcSignups = toNumber(src.signups);
+    const srcDepositors = toNumber(src.depositors);
+    return {
+      source: src.source || "organic/direct",
+      signups: srcSignups,
+      depositors: srcDepositors,
+      depositRate: srcSignups > 0 ? +(srcDepositors / srcSignups).toFixed(4) : 0,
+    };
+  });
+
+  return { signups, depositors, depositRate, totalDepositedNGN, avgFirstDepositNGN, bySource };
+}
 
 async function computeStats() {
   const now = new Date();
   const windows = {};
 
   for (const days of [7, 30]) {
-    const since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-    const cohortWhere = { createdAt: { gte: since }, deletedAt: null };
-
-    const signups = await prisma.user.count({ where: cohortWhere });
-
-    const depositorsAgg = await prisma.transaction.groupBy({
-      by: ["userId"],
-      where: { type: "deposit", status: "Completed", user: cohortWhere },
-    });
-    const depositors = depositorsAgg.length;
-
-    const sumResult = await prisma.transaction.aggregate({
-      _sum: { amount: true },
-      where: { type: "deposit", status: "Completed", user: cohortWhere },
-    });
-    const totalDepositedKobo = sumResult._sum.amount || 0;
-    const totalDepositedNGN = totalDepositedKobo / 100;
-
-    const depositRate = signups > 0 ? +(depositors / signups).toFixed(4) : 0;
-    const avgFirstDepositNGN =
-      depositors > 0 ? +(totalDepositedNGN / depositors).toFixed(2) : 0;
-
-    const signupsBySource = await prisma.user.groupBy({
-      by: ["signupSource"],
-      where: cohortWhere,
-      _count: true,
-    });
-
-    const depositorsBySource = await prisma.transaction.groupBy({
-      by: ["userId"],
-      where: { type: "deposit", status: "Completed", user: cohortWhere },
-      _count: true,
-    });
-    const depositorUserIds = new Set(depositorsBySource.map((r) => r.userId));
-
-    const cohortUsers = await prisma.user.findMany({
-      where: { ...cohortWhere, id: { in: [...depositorUserIds] } },
-      select: { id: true, signupSource: true },
-    });
-    const depositorSourceMap = {};
-    for (const u of cohortUsers) {
-      const src = u.signupSource || "organic/direct";
-      depositorSourceMap[src] = (depositorSourceMap[src] || 0) + 1;
-    }
-
-    const bySource = signupsBySource.map((row) => {
-      const src = row.signupSource || "organic/direct";
-      const srcSignups = row._count;
-      const srcDepositors = depositorSourceMap[src] || 0;
-      return {
-        source: src,
-        signups: srcSignups,
-        depositors: srcDepositors,
-        depositRate:
-          srcSignups > 0 ? +(srcDepositors / srcSignups).toFixed(4) : 0,
-      };
-    });
-
-    windows[`${days}d`] = {
-      signups,
-      depositors,
-      depositRate,
-      totalDepositedNGN,
-      avgFirstDepositNGN,
-      bySource,
-    };
+    windows[`${days}d`] = await computeWindow(days, now);
   }
 
   return { generatedAt: now.toISOString(), windows };
+}
+
+async function upsertStaleSnapshotIssue(snapshot, cause) {
+  const ageMs = snapshotAgeMs(snapshot);
+  if (ageMs < STALE_ALERT_MS) return;
+
+  const ageHours = +(ageMs / 36e5).toFixed(1);
+  const title = `Cohort stats snapshot stale for ${ageHours}h`;
+  const message = `Cohort-stats served a stale snapshot generated at ${snapshot.generatedAt}. Reader self-heal failed: ${cause}.`;
+  const metadata = JSON.stringify({
+    generatedAt: snapshot.generatedAt,
+    ageHours,
+    cause,
+    checkedAt: new Date().toISOString(),
+  });
+
+  try {
+    const existing = await prisma.adminIssue.findFirst({
+      where: { type: "cohort_stats_stale", status: "open" },
+    });
+    if (existing) {
+      await prisma.adminIssue.update({
+        where: { id: existing.id },
+        data: { title, message, metadata, createdAt: new Date() },
+      });
+    } else {
+      await prisma.adminIssue.create({
+        data: { type: "cohort_stats_stale", title, message, metadata },
+      });
+    }
+  } catch (err) {
+    log.warn("Cohort Stats", `Failed to create stale snapshot issue: ${err.message}`);
+  }
 }
 
 export async function GET(req) {
@@ -150,6 +198,7 @@ export async function GET(req) {
       log.error("Cohort Stats", `Live recompute failed: ${err.message}`);
       if (snapshot) {
         log.warn("Cohort Stats", `Serving stale snapshot from ${snapshot.generatedAt} as fallback`);
+        await upsertStaleSnapshotIssue(snapshot, err.message);
       } else {
         return Response.json({ error: "No data available" }, { status: 503, headers: noCache });
       }

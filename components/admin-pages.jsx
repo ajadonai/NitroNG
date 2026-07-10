@@ -803,12 +803,16 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
   const [socialMsg, setSocialMsg] = useState(null);
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailMsg, setEmailMsg] = useState(null);
+  const [winback, setWinback] = useState({ winback30_pct: "15", winback30_min_naira: "100", winback30_cap_naira: "500", winback60_pct: "25", winback60_min_naira: "150", winback60_cap_naira: "1000", winback_credit_expiry_days: "7" });
+  const [winbackSaving, setWinbackSaving] = useState(false);
+  const [winbackMsg, setWinbackMsg] = useState(null);
 
   useEffect(() => {
     fetch("/api/admin/settings").then(r => r.json()).then(d => {
       if (d.settings) {
         setSocial(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("social_"))) }));
         setEmails(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("site_email_"))) }));
+        setWinback(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("winback"))) }));
       }
     }).finally(() => setSocialLoading(false));
   }, []);
@@ -831,6 +835,16 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
       setEmailMsg(res.ok ? { type: "success", text: "Contact emails saved" } : { type: "error", text: data.error || "Failed" });
     } catch { setEmailMsg({ type: "error", text: "Request failed" }); }
     setEmailSaving(false);
+  };
+
+  const saveWinback = async () => {
+    setWinbackSaving(true); setWinbackMsg(null);
+    try {
+      const res = await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ settings: winback }) });
+      const data = await res.json();
+      setWinbackMsg(res.ok ? { type: "success", text: "Win-back settings saved" } : { type: "error", text: data.error || "Failed" });
+    } catch { setWinbackMsg({ type: "error", text: "Request failed" }); }
+    setWinbackSaving(false);
   };
 
   const applyTheme = (mode) => {
@@ -1047,6 +1061,48 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
           </div>
         </div>
 
+        {/* ── WIN-BACK CREDITS ── */}
+        <div className="set-card" style={{ background: cardBg, border: cardBorder }}>
+          <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+            <div className="set-card-title" style={{ color: t.textMuted }}>Win-back credits</div>
+            <div className="set-card-desc" style={{ color: t.textMuted }}>Configure bonus credit amounts for the automated win-back sequence (Play 7).</div>
+          </div>
+          <div className="set-card-body">
+          {winbackMsg && <InlineAlert type={winbackMsg.type} dark={dark} className="mb-3">{winbackMsg.text}</InlineAlert>}
+          <div className="text-[11px] font-semibold tracking-[.8px] uppercase mb-2" style={{ color: t.textMuted }}>Day 30 touch</div>
+          {[
+            ["winback30_pct", "Credit %", "15", "Percentage of lifetime spend"],
+            ["winback30_min_naira", "Floor (₦)", "100", "Minimum credit in naira"],
+            ["winback30_cap_naira", "Cap (₦)", "500", "Maximum credit in naira"],
+          ].map(([key, label, placeholder, hint]) => (
+            <div key={key} className="mb-3">
+              <label className="text-sm block mb-0.5" style={{ color: t.textMuted }}>{label}</label>
+              <input value={winback[key] || ""} onChange={e => setWinback(prev => ({ ...prev, [key]: e.target.value }))} placeholder={placeholder} type="number" className="w-full py-2.5 px-3.5 rounded-lg text-[15px] outline-none border font-[inherit]" style={admInputStyle} />
+              <div className="text-xs mt-0.5 opacity-70" style={{ color: t.textMuted }}>{hint}</div>
+            </div>
+          ))}
+          <div className="text-[11px] font-semibold tracking-[.8px] uppercase mb-2 mt-4" style={{ color: t.textMuted }}>Day 60 touch</div>
+          {[
+            ["winback60_pct", "Credit %", "25", "Percentage of lifetime spend"],
+            ["winback60_min_naira", "Floor (₦)", "150", "Minimum credit in naira"],
+            ["winback60_cap_naira", "Cap (₦)", "1000", "Maximum credit in naira"],
+          ].map(([key, label, placeholder, hint]) => (
+            <div key={key} className="mb-3">
+              <label className="text-sm block mb-0.5" style={{ color: t.textMuted }}>{label}</label>
+              <input value={winback[key] || ""} onChange={e => setWinback(prev => ({ ...prev, [key]: e.target.value }))} placeholder={placeholder} type="number" className="w-full py-2.5 px-3.5 rounded-lg text-[15px] outline-none border font-[inherit]" style={admInputStyle} />
+              <div className="text-xs mt-0.5 opacity-70" style={{ color: t.textMuted }}>{hint}</div>
+            </div>
+          ))}
+          <div className="text-[11px] font-semibold tracking-[.8px] uppercase mb-2 mt-4" style={{ color: t.textMuted }}>General</div>
+          <div className="mb-3">
+            <label className="text-sm block mb-0.5" style={{ color: t.textMuted }}>Expiry (days)</label>
+            <input value={winback["winback_credit_expiry_days"] || ""} onChange={e => setWinback(prev => ({ ...prev, winback_credit_expiry_days: e.target.value }))} placeholder="7" type="number" className="w-full py-2.5 px-3.5 rounded-lg text-[15px] outline-none border font-[inherit]" style={admInputStyle} />
+            <div className="text-xs mt-0.5 opacity-70" style={{ color: t.textMuted }}>Days before bonus credit expires</div>
+          </div>
+          <button onClick={saveWinback} disabled={winbackSaving} className="adm-btn-primary" style={{ opacity: winbackSaving ? .5 : 1 }}>{winbackSaving ? "Saving..." : "Save Win-back Settings"}</button>
+          </div>
+        </div>
+
         {/* ── THEME ── */}
         <div className="set-card" style={{ background: cardBg, border: cardBorder }}>
           <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
@@ -1208,7 +1264,7 @@ function FinanceBreakdownTab({ dark, t }) {
         <MetricCard label="Discounts" value={fN(p.totalDiscounts || 0)} sub={`Promo ₦${(p.promoDiscounts || 0).toLocaleString()} | Loyalty ₦${(p.loyaltyDiscounts || 0).toLocaleString()}`} color={amber} />
         <MetricCard label="Net Revenue" value={fN(p.netRevenue || 0)} sub="What users actually paid" color={green} />
         <MetricCard label="Provider Cost" value={fN(p.totalCost || 0)} sub="MTP + JAP + DAO" color={red} />
-        <MetricCard label="Gross Profit" value={fN(p.grossProfit || 0)} sub={`${p.margin || 0}% margin`} color={p.grossProfit >= 0 ? green : red} />
+        <MetricCard label="Gross Profit" value={fN(p.grossProfit || 0)} sub={`${p.margin || 0}% markup`} color={p.grossProfit >= 0 ? green : red} />
         <MetricCard label="Per Order" value={fN(p.profitPerOrder || 0)} sub={`${p.orderCount || 0} orders | ${p.refundRate || 0}% refund rate`} />
       </div>
 
@@ -1298,7 +1354,7 @@ function FinanceBreakdownTab({ dark, t }) {
       <div className="adm-stats mb-5">
         <MetricCard label="Wallet Liability" value={fN(lib.walletBalances || 0)} sub={`${lib.walletUsers || 0} users with balance`} color={amber} />
         <MetricCard label="Net Cash Flow" value={fN(totalIn - totalOut)} sub="Money in - Money out" color={totalIn - totalOut >= 0 ? green : red} />
-        <MetricCard label="Retained Profit" value={fN((p.grossProfit || 0))} sub={`${p.margin || 0}% margin`} color={green} />
+        <MetricCard label="Retained Profit" value={fN((p.grossProfit || 0))} sub={`${p.margin || 0}% markup`} color={green} />
       </div>
 
       {/* Profit by Platform */}
@@ -1307,7 +1363,7 @@ function FinanceBreakdownTab({ dark, t }) {
         <div className="adm-card mb-5 overflow-hidden" style={{ background: cardBg, border: `0.5px solid ${cardBorder}` }}>
           {/* Header */}
           <div className="fin-table-header grid grid-cols-[2fr_1fr_1fr_1fr_0.7fr_0.6fr] py-2.5 px-3.5" style={{ borderBottom: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
-            {["Platform", "Revenue", "Cost", "Profit", "Orders", "Margin"].map(h => (
+            {["Platform", "Revenue", "Cost", "Profit", "Orders", "Markup"].map(h => (
               <div key={h} className="text-[10px] font-semibold uppercase tracking-[1px]" style={{ color: subText, textAlign: h !== "Platform" ? "right" : "left" }}>{h}</div>
             ))}
           </div>
@@ -1319,7 +1375,7 @@ function FinanceBreakdownTab({ dark, t }) {
                 <div className="m text-xs text-right" style={{ color: red }}>{fN(pl.cost || 0)}</div>
                 <div className="m text-xs text-right font-semibold" style={{ color: green }}>{fN(pl.profit || 0)}</div>
                 <div className="text-xs text-right" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.5)" }}>{pl.orders}</div>
-                <div className="text-xs text-right font-semibold" style={{ color: (pl.margin || 0) >= 50 ? green : amber }}>{pl.margin || 0}%</div>
+                <div className="text-xs text-right font-semibold" style={{ color: (pl.margin || 0) >= 100 ? green : amber }}>{pl.margin || 0}%</div>
               </div>
               <div className="px-3.5 pb-1.5"><MiniBar value={pl.profit || 0} max={(s.byPlatform[0]?.profit || 1)} color={t.accent} /></div>
             </div>
@@ -1340,8 +1396,8 @@ function FinanceBreakdownTab({ dark, t }) {
                   <span className="text-[13px] font-semibold" style={{ color: t.text }}>{tr.name}</span>
                 </div>
                 <div className="m text-lg font-bold mb-[3px]" style={{ color: green }}>{fN(tr.profit || 0)}</div>
-                <div className="text-[11px] mb-2" style={{ color: subText }}>{tr.orders} orders · {tr.margin || 0}% margin</div>
-                <MiniBar value={tr.margin || 0} max={100} color={tierColor} />
+                <div className="text-[11px] mb-2" style={{ color: subText }}>{tr.orders} orders · {tr.margin || 0}% markup</div>
+                <MiniBar value={tr.margin || 0} max={Math.max(...(s.byTier || []).map(t => t.margin || 0), 100)} color={tierColor} />
                 <div className="flex justify-between mt-2 text-[11px]" style={{ color: subText }}>
                   <span>Rev: {fN(tr.revenue || 0)}</span>
                   <span>Cost: {fN(tr.cost || 0)}</span>

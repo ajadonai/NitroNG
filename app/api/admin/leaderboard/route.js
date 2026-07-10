@@ -152,7 +152,8 @@ export async function POST(req) {
 
       // Email notification
       if (user.email && user.notifEmail !== false && user.notifOrders !== false) {
-        leaderboardRewardEmail(user.name || 'there', amount).then(html => sendEmail(user.email, `You received ₦${amount.toLocaleString()} on Nitro!`, html)).catch(() => {});
+        const html = leaderboardRewardEmail(user.name || 'there', amount);
+        sendEmail(user.email, `You received ₦${amount.toLocaleString()} on Nitro!`, html).catch(() => {});
       }
 
       return Response.json({ success: true, message: `₦${amount.toLocaleString()} credited to ${user.name || user.email}` });

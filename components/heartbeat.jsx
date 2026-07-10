@@ -29,8 +29,15 @@ export default function Heartbeat() {
     };
 
     beat();
-    const iv = setInterval(beat, 10_000);
-    return () => clearInterval(iv);
+    const iv = setInterval(() => {
+      if (document.visibilityState === 'visible') beat();
+    }, 30_000);
+    const onVisible = () => { if (document.visibilityState === 'visible') beat(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(iv);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [pathname]);
 
   return null;

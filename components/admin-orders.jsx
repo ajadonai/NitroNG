@@ -201,49 +201,49 @@ export default function AdminOrdersPage({ dark, t }) {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(() => { try { const s = localStorage.getItem("adm-per-page"); return s ? Number(s) : 25; } catch { return 25; } });
 
-  const fetchOrders = useCallback((q) => {
-    const params = q ? `?search=${encodeURIComponent(q)}` : '';
-    fetch(`/api/admin/orders${params}`).then(r => r.json()).then(d => { setOrders(d.orders || []); setLoading(false); }).catch(() => setLoading(false));
+  const [total, setTotal] = useState(0);
+  const [counts, setCounts] = useState({});
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const abortRef = useRef(null);
+
+  const fetchOrders = useCallback((q, f, p, pp) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const params = new URLSearchParams();
+    if (q?.trim().length >= 2) params.set('search', q.trim());
+    if (f && f !== 'all') params.set('filter', f);
+    params.set('page', String(p || 1));
+    params.set('perPage', String(pp || 25));
+    const qs = params.toString();
+    fetch(`/api/admin/orders${qs ? `?${qs}` : ''}`, { signal: controller.signal }).then(r => r.json()).then(d => {
+      setOrders(d.orders || []);
+      setTotal(d.total || 0);
+      if (d.counts) setCounts(d.counts);
+      setLoading(false);
+    }).catch(e => { if (e.name !== 'AbortError') setLoading(false); });
   }, []);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => {
+    const nextSearch = search.trim().length >= 2 ? search.trim() : "";
+    const t = setTimeout(() => { setDebouncedSearch(nextSearch); setPage(1); }, search ? 350 : 0);
+    return () => clearTimeout(t);
+  }, [search]);
 
   useEffect(() => {
-    const id = setInterval(() => fetchOrders(search), 30000);
-    const onVis = () => { if (document.visibilityState === 'visible') fetchOrders(search); };
+    fetchOrders(debouncedSearch, filter, page, perPage);
+  }, [fetchOrders, debouncedSearch, filter, page, perPage]);
+
+  useEffect(() => {
+    const id = setInterval(() => fetchOrders(debouncedSearch, filter, page, perPage), 30000);
+    const onVis = () => { if (document.visibilityState === 'visible') fetchOrders(debouncedSearch, filter, page, perPage); };
     document.addEventListener('visibilitychange', onVis);
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); };
-  }, [fetchOrders, search]);
+  }, [fetchOrders, debouncedSearch, filter, page, perPage]);
 
-  const searchTimer = useRef(null);
-  useEffect(() => {
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => fetchOrders(search), search ? 350 : 0);
-    return () => clearTimeout(searchTimer.current);
-  }, [search, fetchOrders]);
-
-  const needsDispatch = (o) => {
-    if (o.queuedBehind) return false;
-    if (!['Pending', 'Processing', 'Dispatching'].includes(o.status)) return false;
-    if (!o.dripDispatches && !o.apiOrderId) return true;
-    if (o.dripDispatches?.some(d => d.status === 'failed')) return true;
-    return false;
-  };
-
-  const isQueued = (o) => !!o.queuedBehind;
-
-  const filtered = orders.filter(o => {
-    if (filter === "needs_dispatch") return needsDispatch(o);
-    if (filter === "queued") return isQueued(o);
-    if (filter !== "all" && o.status !== filter) return false;
-    return true;
-  });
-
-  const grouped = groupOrders(filtered);
-  const totalPages = Math.ceil(grouped.length / perPage);
-  const paged = grouped.slice((page - 1) * perPage, page * perPage);
-  const counts = { all: orders.length, needs_dispatch: orders.filter(needsDispatch).length, queued: orders.filter(isQueued).length };
-  ["Completed", "Processing", "Pending", "Partial", "Cancelled"].forEach(s => { counts[s] = orders.filter(o => o.status === s).length; });
+  const grouped = groupOrders(orders);
+  const totalPages = Math.ceil(total / perPage);
+  const paged = grouped;
 
   const [syncing, setSyncing] = useState(false);
   const syncOrders = async () => {
@@ -255,9 +255,7 @@ export default function AdminOrdersPage({ dark, t }) {
       if (data.message) { toast.info("Sync complete", data.message); return; }
       toast.success("Sync complete", `Checked ${data.checked} · ${data.updated} updated · ${data.refunded} refunded${data.errors ? ` · ${data.errors} errors` : ""}`);
       if (data.updated > 0) {
-        const r = await fetch("/api/admin/orders");
-        const d = await r.json();
-        if (d.orders) setOrders(d.orders);
+        fetchOrders(search, filter, page, perPage);
       }
     } catch { toast.error("Sync failed", "Check your connection"); } finally { setSyncing(false); }
   };
@@ -275,7 +273,7 @@ export default function AdminOrdersPage({ dark, t }) {
       }
       if (action === "dispatch") {
         toast.success(orderId, data.message || "Dispatched");
-        fetchOrders(search);
+        fetchOrders(search, filter, page, perPage);
       } else {
         const label = action === "check" ? `Status: ${data.status || "unknown"}${data.remains != null ? ` · ${data.remains} remaining` : ""}` : action === "cancel" ? "Order cancelled" : "Refill requested";
         toast.success(orderId, label);
@@ -287,7 +285,10 @@ export default function AdminOrdersPage({ dark, t }) {
   const doBatchAction = async (batchId, action) => {
     setBatchActionLoading(batchId);
     try {
-      const batchOrders = orders.filter(o => o.batchId === batchId);
+      const res = await fetch(`/api/admin/orders?batchId=${encodeURIComponent(batchId)}`);
+      if (!res.ok) { toast.error("Batch load failed", "Could not fetch all orders in this batch"); setBatchActionLoading(null); return; }
+      const data = await res.json();
+      const batchOrders = data.orders || [];
       let checked = 0, updated = 0, cancelled = 0;
       for (const o of batchOrders) {
         if (action === "check" && o.apiOrderId && !["Completed", "Cancelled"].includes(o.status)) {
@@ -306,11 +307,18 @@ export default function AdminOrdersPage({ dark, t }) {
       }
       if (action === "check") toast.info("Batch checked", `Checked ${checked} orders · ${updated} updated`);
       if (action === "cancel") toast.success("Batch cancelled", `${cancelled} orders cancelled`);
+      fetchOrders(debouncedSearch, filter, page, perPage);
     } catch { toast.error("Request failed", "Check your connection"); }
     setBatchActionLoading(null);
   };
 
   const autoChecked = useRef(new Set());
+  const needsDispatch = (o) => {
+    if (o.queuedBehind || !['Pending', 'Processing', 'Dispatching'].includes(o.status)) return false;
+    if (o.dripDispatches && o.dripDispatches.length > 0) return o.dripDispatches.some(d => d.status === 'failed');
+    return !o.apiOrderId;
+  };
+
   const autoCheck = useCallback((o) => {
     if (!o || !o.apiOrderId || ["Completed", "Cancelled", "Partial"].includes(o.status) || autoChecked.current.has(o.id) || actionLoading) return;
     autoChecked.current.add(o.id);
@@ -354,7 +362,7 @@ export default function AdminOrdersPage({ dark, t }) {
       if (!res.ok && !data.success) { toast.error("Re-dispatch failed", data.error || "Something went wrong"); return; }
       toast.success(data.newOrderId || redispatchPrompt.id, data.message || "Re-dispatched");
       setRedispatchPrompt(null);
-      fetchOrders(search);
+      fetchOrders(search, filter, page, perPage);
     } catch { toast.error("Request failed", "Check your connection"); } finally { setRedispatchSending(false); }
   };
 
@@ -393,7 +401,7 @@ export default function AdminOrdersPage({ dark, t }) {
       if (!res.ok) { toast.error("Refund failed", data.error || "Something went wrong"); return; }
       toast.success(refundPrompt.id, data.message || "Refund processed");
       setRefundPrompt(null);
-      fetchOrders(search);
+      fetchOrders(search, filter, page, perPage);
     } catch { toast.error("Refund failed", "Check your connection"); } finally { setRefundSending(false); }
   };
 
@@ -402,7 +410,7 @@ export default function AdminOrdersPage({ dark, t }) {
     <>
       <div className="adm-header">
         <div className="adm-title" style={{ color: t.text }}>Orders</div>
-        <div className="adm-subtitle" style={{ color: t.textMuted }}>{orders.length} total orders</div>
+        <div className="adm-subtitle" style={{ color: t.textMuted }}>{total} total orders</div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
@@ -410,7 +418,7 @@ export default function AdminOrdersPage({ dark, t }) {
       <div className="flex items-center gap-2 mb-4">
         <div className="relative flex-1 min-w-0">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-          <input aria-label="Search orders" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search order ID, service, or user…" className="w-full py-[9px] pl-9 pr-8 rounded-lg text-[13px] outline-none font-[inherit]" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? '#131728' : '#fff', color: t.text }} />
+          <input aria-label="Search orders" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search order ID, service, or user…" className="w-full py-[9px] pl-9 pr-8 rounded-lg text-[13px] outline-none font-[inherit]" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? '#131728' : '#fff', color: t.text }} />
           {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full cursor-pointer border-none p-0" style={{ background: dark ? 'rgba(255,255,255,.15)' : 'rgba(0,0,0,.1)', color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
         </div>
         <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(1); }} alert={counts.needs_dispatch > 0} options={
@@ -473,7 +481,7 @@ export default function AdminOrdersPage({ dark, t }) {
                     <div className="flex items-center gap-2 py-2.5 px-4 desktop:px-5 flex-wrap" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
                       <span className="text-[11px] uppercase tracking-[1px] font-medium mr-auto" style={{ color: t.textMuted }}>Batch actions</span>
                       {checkable.length > 0 && <button onClick={() => doBatchAction(batch.batchId, "check")} disabled={isBatchLoading} className="adm-btn-sm text-[11px] flex items-center justify-center gap-1.5 min-w-[70px]" style={{ borderColor: dark ? "rgba(96,165,250,.25)" : "rgba(37,99,235,.2)", color: dark ? "#60a5fa" : "#2563eb", background: dark ? "rgba(96,165,250,.08)" : "rgba(37,99,235,.04)" }}>{isBatchLoading ? <Spinner size={11} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check all"}</button>}
-                      {activeOrders.length > 0 && <button onClick={async () => { const ok = await confirm({ title: "Cancel Batch", message: `Cancel ${activeOrders.length} active order${activeOrders.length > 1 ? "s" : ""} in ${batch.batchId}? This may issue refunds.`, confirmLabel: "Cancel All", danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isBatchLoading} className="adm-btn-sm text-[11px]" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626", opacity: isBatchLoading ? .5 : 1 }}>Cancel all</button>}
+                      {activeOrders.length > 0 && <button onClick={async () => { const ok = await confirm({ title: "Cancel Batch", message: `Cancel all active orders in ${batch.batchId}? This may issue refunds.`, confirmLabel: "Cancel All", danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isBatchLoading} className="adm-btn-sm text-[11px]" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626", opacity: isBatchLoading ? .5 : 1 }}>Cancel all</button>}
                     </div>
                     {batch.orders.map((o, i) => (
                       <div key={o.id}>
@@ -562,7 +570,7 @@ export default function AdminOrdersPage({ dark, t }) {
                             })()}
 
                             {/* Details grid */}
-                            {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); const profit = netCharge - netCost; const margin = netCharge > 0 ? Math.round(profit / netCharge * 100) : 0; return (
+                            {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); const profit = netCharge - netCost; const margin = netCost > 0 ? Math.round(profit / netCost * 100) : 0; return (
                             <div className="grid grid-cols-2 desktop:grid-cols-4 gap-1.5 mb-2.5">
                               <div className="py-1.5 px-2 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : isPartial ? "Net Charge" : "Charge"}</div>
@@ -724,7 +732,7 @@ export default function AdminOrdersPage({ dark, t }) {
                   })()}
 
                   {/* Details grid */}
-                  {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); const profit = netCharge - netCost; const margin = netCharge > 0 ? Math.round(profit / netCharge * 100) : 0; return (
+                  {(() => { const isPartial = o.status === "Partial" && o.remains > 0 && o.quantity > 0; const delivered = isPartial ? o.quantity - o.remains : o.quantity; const ratio = isPartial ? delivered / o.quantity : 1; const netCharge = isPartial ? Math.round(o.charge * ratio) : o.charge; const netCost = isPartial ? Math.round((o.cost || 0) * ratio) : (o.cost || 0); const profit = netCharge - netCost; const margin = netCost > 0 ? Math.round(profit / netCost * 100) : 0; return (
                   <div className="grid grid-cols-2 desktop:grid-cols-4 gap-2 mb-3">
                     <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : isPartial ? "Net Charge" : "Charge"}</div>

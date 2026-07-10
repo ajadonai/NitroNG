@@ -248,6 +248,7 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
               <div>
                 <div className="text-[11px] font-semibold tracking-[1.5px] uppercase mb-4" style={{color:dark?"rgba(244,241,237,.4)":"rgba(28,27,25,.45)"}}>Company</div>
                 {[["FAQ","/faq"],["Terms","/terms"],["Privacy","/privacy"],["Refund","/refund"],["Cookies","/cookie"]].map(([l,h])=><a key={l} href={h} className="s6-footer-link block text-[13px] font-medium py-[5px] no-underline transition-all duration-200 hover:-translate-y-px hover:opacity-80" style={{color:dark?"rgba(244,241,237,.6)":"rgba(28,27,25,.6)"}}>{l}</a>)}
+                <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} className="s6-footer-link block text-[13px] font-medium py-[5px] cursor-pointer transition-all duration-200 hover:-translate-y-px hover:opacity-80" style={{color:dark?"rgba(244,241,237,.6)":"rgba(28,27,25,.6)"}} onClick={()=>window.dispatchEvent(new Event('nitro-cookie-reset'))}>Cookie Settings</div>
               </div>
               {/* Get in touch */}
               <div>

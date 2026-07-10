@@ -5,6 +5,7 @@ import { sendEmail, walletCreditEmail } from '@/lib/email';
 import { checkOrder, cancelOrder, refillOrder, isProviderConfigured, getProviderName } from '@/lib/smm';
 import { voidCommissions } from '@/lib/commissions';
 import { cleanLink } from '@/lib/clean-link';
+import { tgRefundAlert } from '@/lib/telegram';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -27,11 +28,15 @@ export async function GET(req) {
 
   try {
     const url = new URL(req.url);
-    const search = url.searchParams.get('search')?.trim();
+    const batchId = url.searchParams.get('batchId')?.trim();
+    const rawSearch = url.searchParams.get('search')?.trim();
+    const search = rawSearch && rawSearch.length >= 2 ? rawSearch : null;
+    const page = Math.max(1, parseInt(url.searchParams.get('page')) || 1);
+    const perPage = Math.min(100, Math.max(10, parseInt(url.searchParams.get('perPage')) || 50));
+    const filter = url.searchParams.get('filter') || 'all';
 
-    const where = { deletedAt: null };
-    if (search) {
-      where.OR = [
+    const searchCondition = search ? {
+      OR: [
         { orderId: { contains: search, mode: 'insensitive' } },
         { apiOrderId: { contains: search, mode: 'insensitive' } },
         { batchId: { contains: search, mode: 'insensitive' } },
@@ -39,26 +44,69 @@ export async function GET(req) {
         { user: { name: { contains: search, mode: 'insensitive' } } },
         { user: { email: { contains: search, mode: 'insensitive' } } },
         { parentOrderId: { contains: search, mode: 'insensitive' } },
-      ];
-    }
+      ],
+    } : null;
 
-    let hasDripTable = true;
     const include = {
       user: { select: { name: true, email: true, phone: true } },
       service: { select: { name: true, category: true, provider: true, apiId: true, costPer1k: true } },
       tier: { select: { tier: true, sellPer1k: true, group: { select: { name: true, platform: true, type: true } }, service: { select: { apiId: true, costPer1k: true } } } },
+      dripDispatches: { select: { id: true, day: true, batch: true, quantity: true, status: true, apiOrderId: true, scheduledAt: true, dispatchedAt: true, completedAt: true, lastError: true }, orderBy: { scheduledAt: 'asc' } },
     };
-    try {
-      await prisma.dripDispatch.findFirst({ take: 1 });
-      include.dripDispatches = { select: { id: true, day: true, batch: true, quantity: true, status: true, apiOrderId: true, scheduledAt: true, dispatchedAt: true, completedAt: true, lastError: true }, orderBy: { scheduledAt: 'asc' } };
-      if (search && where.OR) where.OR.push({ dripDispatches: { some: { apiOrderId: { contains: search, mode: 'insensitive' } } } });
-    } catch { hasDripTable = false; }
+    if (search && searchCondition.OR) searchCondition.OR.push({ dripDispatches: { some: { apiOrderId: { contains: search, mode: 'insensitive' } } } });
 
-    const orders = await prisma.order.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      include,
-    });
+    let orders, total, counts;
+
+    if (batchId) {
+      orders = await prisma.order.findMany({
+        where: { batchId, deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        include,
+      });
+      total = orders.length;
+      counts = {};
+    } else {
+      const filterCondition = (() => {
+        if (filter === 'queued') return { queuedBehind: { not: null } };
+        if (filter === 'needs_dispatch') {
+          const nd = { queuedBehind: null, status: { in: ['Pending', 'Processing', 'Dispatching'] } };
+          nd.OR = [{ apiOrderId: null, dripDispatches: { none: {} } }, { dripDispatches: { some: { status: 'failed' } } }];
+          return nd;
+        }
+        if (filter && filter !== 'all') return { status: filter };
+        return null;
+      })();
+
+      const baseWhere = { deletedAt: null };
+      const where = { ...baseWhere };
+      const andClauses = [];
+      if (searchCondition) andClauses.push(searchCondition);
+      if (filterCondition) andClauses.push(filterCondition);
+      if (andClauses.length) where.AND = andClauses;
+
+      const countsWhere = searchCondition ? { ...baseWhere, AND: [searchCondition] } : baseWhere;
+
+      const ndWhere = { queuedBehind: null, status: { in: ['Pending', 'Processing', 'Dispatching'] } };
+      ndWhere.OR = [{ apiOrderId: null, dripDispatches: { none: {} } }, { dripDispatches: { some: { status: 'failed' } } }];
+
+      let statusGroups, queuedCount, needsDispatchCount;
+      [orders, total, statusGroups, queuedCount, needsDispatchCount] = await Promise.all([
+        prisma.order.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          include,
+          take: perPage,
+          skip: (page - 1) * perPage,
+        }),
+        prisma.order.count({ where }),
+        prisma.order.groupBy({ by: ['status'], where: countsWhere, _count: true }),
+        prisma.order.count({ where: { ...countsWhere, queuedBehind: { not: null } } }),
+        prisma.order.count({ where: searchCondition ? { ...countsWhere, AND: [...(countsWhere.AND || []), ndWhere] } : { ...baseWhere, ...ndWhere } }),
+      ]);
+
+      counts = { all: 0, needs_dispatch: needsDispatchCount, queued: queuedCount };
+      for (const g of statusGroups) { counts[g.status] = g._count; counts.all += g._count; }
+    }
 
     const orderIds = orders.map(o => o.orderId).filter(Boolean);
     const refundTotals = orderIds.length > 0
@@ -85,6 +133,8 @@ export async function GET(req) {
     }
 
     return Response.json({
+      total,
+      counts,
       orders: orders.map(o => ({
         id: o.orderId || o.id,
         internalId: o.id,
@@ -200,6 +250,9 @@ export async function POST(req) {
       });
       if (!result.ok) return Response.json({ error: 'Order already cancelled' }, { status: 409 });
 
+      if (result.refundAmount > 0) {
+        tgRefundAlert({ orderId: order.orderId, amount: result.refundAmount, charge: order.charge, qty: order.quantity, remains: order.remains, status: isPartial ? 'Partial' : 'Cancelled', reason: 'admin_cancelled', source: admin.name });
+      }
       voidCommissions(order.id, 'admin_cancelled').catch(() => {});
 
       if (result.refundAmount > 0) {
@@ -207,7 +260,8 @@ export async function POST(req) {
           const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true, notifEmail: true, notifOrders: true } });
           if (user?.email && user.notifEmail !== false && user.notifOrders !== false) {
             const amount = result.refundAmount / 100;
-            walletCreditEmail(user.name || 'there', amount, 'Order cancelled — refund processed').then(html => sendEmail(user.email, `₦${amount.toLocaleString()} refunded to your Nitro wallet`, html)).catch(() => {});
+            const html = walletCreditEmail(user.name || 'there', amount, 'Order cancelled — refund processed');
+            sendEmail(user.email, `₦${amount.toLocaleString()} refunded to your Nitro wallet`, html).catch(() => {});
           }
         } catch {}
       }
@@ -386,11 +440,13 @@ export async function POST(req) {
         const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true, notifEmail: true, notifOrders: true } });
         if (user?.email && user.notifEmail !== false && user.notifOrders !== false) {
           const amt = refundAmount / 100;
-          walletCreditEmail(user.name || 'there', amt, 'Refund processed for your order').then(html => sendEmail(user.email, `₦${amt.toLocaleString()} refunded to your Nitro wallet`, html)).catch(() => {});
+          const html = walletCreditEmail(user.name || 'there', amt, 'Refund processed for your order');
+          sendEmail(user.email, `₦${amt.toLocaleString()} refunded to your Nitro wallet`, html).catch(() => {});
         }
       } catch {}
 
       const refundMsg = `₦${(refundAmount / 100).toLocaleString()}`;
+      tgRefundAlert({ orderId: order.orderId, amount: refundAmount, charge: order.charge, qty: order.quantity, remains: order.remains, status: percent === 100 ? 'Cancelled' : 'Partial', reason: `admin (${label})`, source: admin.name });
       await logActivity(admin.name, `Refunded ${refundMsg} for order ${orderId} (${label})`, 'order');
       return Response.json({ success: true, message: `${refundMsg} refunded to customer` });
     }

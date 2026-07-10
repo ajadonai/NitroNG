@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
 import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
@@ -54,7 +54,7 @@ const GW_META = {
 /* ═══════════════════════════════════════════ */
 /* ═══ ADD FUNDS PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
-export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymentStatus, setPaymentStatus, onPlaceOrder, onRefresh }) {
+export default function AddFundsPage({ user, txs, transactionsTotal, walletSummary, dark, t, paymentStatus, setPaymentStatus, onPlaceOrder, onRefresh }) {
   const toast = useToast();
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("");
@@ -772,7 +772,7 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
       )}
 
       {/* ═══ WALLET HISTORY ═══ */}
-      <WalletHistory txs={txs} walletSummary={walletSummary} dark={dark} t={t} onRefresh={onRefresh} setConfirmModal={setConfirmModal} setSenderName={setSenderName} />
+      <WalletHistory txs={txs} initialTotal={transactionsTotal} walletSummary={walletSummary} dark={dark} t={t} onRefresh={onRefresh} setConfirmModal={setConfirmModal} setSenderName={setSenderName} />
 
       {/* ═══ CONFIRM PAYMENT MODAL ═══ */}
       {confirmModal && (
@@ -811,26 +811,54 @@ export default function AddFundsPage({ user, txs, walletSummary, dark, t, paymen
 /* ═══════════════════════════════════════════ */
 /* ═══ WALLET HISTORY                      ═══ */
 /* ═══════════════════════════════════════════ */
-function WalletHistory({ txs, walletSummary, dark, t, onRefresh, setConfirmModal, setSenderName }) {
+function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, dark, t, onRefresh, setConfirmModal, setSenderName }) {
   const [filter, setFilter] = useState("all");
   const [dateRange, setDateRange] = useState(null);
   const [page, setPage] = useState(1);
   const perPage = 25;
+  const [historyTxs, setHistoryTxs] = useState(txs || []);
+  const [total, setTotal] = useState(initialTotal);
+  const [txTypes, setTxTypes] = useState(() => [...new Set((txs || []).map(tx => tx.type))]);
+  const abortRef = useRef(null);
+  const latestTransactionKey = txs?.[0] ? `${txs[0].id}:${txs[0].status}` : 'none';
 
-  const allTxs = txs || [];
-  const txTypes = [...new Set(allTxs.map(tx => tx.type))];
-
-  const filtered = allTxs.filter(tx => {
-    if (filter !== "all" && tx.type !== filter) return false;
-    if (dateRange) {
-      const d = new Date(tx.date);
-      if (dateRange.start && d < dateRange.start) return false;
-      if (dateRange.end) { const endOfDay = new Date(dateRange.end); endOfDay.setHours(23, 59, 59, 999); if (d > endOfDay) return false; }
+  const fetchHistory = useCallback(async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const params = new URLSearchParams({ page: String(page), perPage: String(perPage) });
+    if (filter !== 'all') params.set('type', filter);
+    if (dateRange?.start) params.set('start', dateRange.start.toISOString());
+    if (dateRange?.end) {
+      const end = new Date(dateRange.end);
+      end.setHours(23, 59, 59, 999);
+      params.set('end', end.toISOString());
     }
-    return true;
-  });
-  const paged = filtered.slice((page - 1) * perPage, page * perPage);
-  const totalPages = Math.ceil(filtered.length / perPage);
+    try {
+      const res = await fetch(`/api/transactions?${params}`, { signal: controller.signal });
+      const data = await res.json();
+      if (!res.ok) return;
+      const nextTotalPages = Math.max(1, data.totalPages || 1);
+      if (page > nextTotalPages) {
+        setPage(nextTotalPages);
+        return;
+      }
+      setHistoryTxs(data.transactions || []);
+      setTotal(data.total || 0);
+      if (Array.isArray(data.types)) setTxTypes(data.types);
+    } catch (error) {
+      if (error?.name !== 'AbortError') {
+        // Keep the last successful page visible on a transient network error.
+      }
+    }
+  }, [page, filter, dateRange]);
+
+  useEffect(() => {
+    fetchHistory();
+    return () => abortRef.current?.abort();
+  }, [fetchHistory, latestTransactionKey]);
+
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
 
   const totalIn = walletSummary?.funded || 0;
   const totalOut = walletSummary?.spent || 0;
@@ -840,7 +868,7 @@ function WalletHistory({ txs, walletSummary, dark, t, onRefresh, setConfirmModal
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div>
           <div className="text-base desktop:text-lg font-semibold" style={{ color: t.text }}>Wallet History</div>
-          <div className="text-[13px]" style={{ color: t.textMuted }}>{allTxs.length} transactions</div>
+          <div className="text-[13px]" style={{ color: t.textMuted }}>{total} transaction{total === 1 ? "" : "s"} · last 6 months</div>
         </div>
         <div className="flex gap-1.5 flex-wrap">
           <DateRangePicker dark={dark} t={t} value={dateRange} onChange={(v) => { setDateRange(v); setPage(1); }} />
@@ -865,8 +893,8 @@ function WalletHistory({ txs, walletSummary, dark, t, onRefresh, setConfirmModal
 
       {/* Transaction list */}
       <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-        {paged.length > 0 ? paged.map((tx, i) => (
-          <div key={tx.id} className="flex items-center gap-2.5 desktop:gap-3.5 py-3 px-3.5 desktop:py-3.5 desktop:px-[18px]" style={{ borderBottom: i < paged.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: tx.status === "Pending" ? (dark ? "rgba(252,211,77,.04)" : "rgba(217,119,6,.03)") : (tx.status === "Failed" || tx.status === "Rejected") ? (dark ? "rgba(252,165,165,.04)" : "rgba(220,38,38,.03)") : (tx.orderStatus && !["Completed","Cancelled"].includes(tx.orderStatus)) ? (dark ? "rgba(252,211,77,.04)" : "rgba(217,119,6,.03)") : "transparent" }}>
+        {historyTxs.length > 0 ? historyTxs.map((tx, i) => (
+          <div key={tx.id} className="flex items-center gap-2.5 desktop:gap-3.5 py-3 px-3.5 desktop:py-3.5 desktop:px-[18px]" style={{ borderBottom: i < historyTxs.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: tx.status === "Pending" ? (dark ? "rgba(252,211,77,.04)" : "rgba(217,119,6,.03)") : (tx.status === "Failed" || tx.status === "Rejected") ? (dark ? "rgba(252,165,165,.04)" : "rgba(220,38,38,.03)") : (tx.orderStatus && !["Completed","Cancelled"].includes(tx.orderStatus)) ? (dark ? "rgba(252,211,77,.04)" : "rgba(217,119,6,.03)") : "transparent" }}>
             <div className="w-8 h-8 desktop:w-9 desktop:h-9 rounded-[10px] flex items-center justify-center text-base font-semibold shrink-0" style={{ background: dark ? `${txRowClr(tx, dark)}15` : `${txRowClr(tx, dark)}10`, color: txRowClr(tx, dark) }}>{txIcon(tx.type)}</div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
@@ -887,8 +915,8 @@ function WalletHistory({ txs, walletSummary, dark, t, onRefresh, setConfirmModal
           </div>
         )) : (
           <div className="p-10 text-center text-[15px]" style={{ color: t.textMuted }}>
-            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No transactions yet</div>
-            <div className="text-[15px]" style={{ color: t.textMuted }}>Add funds to your wallet to get started</div>
+            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>{filter !== "all" || dateRange ? "No matching transactions" : "No transactions in the last 6 months"}</div>
+            <div className="text-[15px]" style={{ color: t.textMuted }}>{filter !== "all" || dateRange ? "Try adjusting your filters" : "New wallet activity will appear here"}</div>
           </div>
         )}
       </div>
