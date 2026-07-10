@@ -64,7 +64,7 @@ export async function GET() {
 
     return ok({
       stats: {
-        users: displayUsers.toLocaleString(),
+        users: displayUsers >= 1000000 ? `${(displayUsers / 1000000).toFixed(1)}M` : displayUsers >= 1000 ? `${(displayUsers / 1000).toFixed(1)}K` : `${displayUsers}`,
         orders: displayOrders >= 1000000 ? `${(displayOrders / 1000000).toFixed(1)}M+` : displayOrders >= 1000 ? `${Math.floor(displayOrders / 1000)}K+` : `${displayOrders}+`,
         platforms: platformCount || 0,
         services: serviceCount || 0,

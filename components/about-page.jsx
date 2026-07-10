@@ -36,7 +36,7 @@ function AboutInner() {
           <section className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-14">
             {[
               [stats?.orders || '50K+', 'Orders delivered'],
-              [stats?.users || '2,335', 'Active creators'],
+              [stats?.users || '2.3K', 'Active creators'],
               [(stats?.platforms || 35) + '+', 'Platforms'],
               [stats?.deliveryRate ? stats.deliveryRate + '%' : '98%', 'Delivery rate'],
             ].map(([num, label]) => (
