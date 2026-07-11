@@ -11,6 +11,7 @@ import { SegPill } from "./seg-pill";
 import { fN, fD } from "../lib/format";
 import { Avatar } from "./avatar";
 import OrderTour from "./order-tour";
+import { RewardsStrip, ChannelLane, StatusModal, PointsModal, getRewards } from "./rewards";
 
 /* Dynamic imports — only load when user navigates to that page */
 const NewOrderPage = dynamic(() => import("./new-order").then(m => m.default), { ssr: false });
@@ -117,10 +118,11 @@ function MobileMenuHint({ dark, t }) {
 function OverviewPage({ user, orders, activeOrders, orderSummary, alerts, dark, t, setActive, a2hs, socialLinks }) {
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [tipsOpen, setTipsOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [pointsOpen, setPointsOpen] = useState(false);
+  const rewards = useMemo(() => getRewards(), []); // MOCK — swap for /api/rewards
   const balance = user?.balance || 0;
   const activeCount = orderSummary?.active ?? activeOrders.length;
-  const completed = orderSummary?.completed ?? 0;
-  const weekOrders = orderSummary?.thisWeek ?? 0;
   const isNew = (orderSummary?.total ?? orders.length) === 0;
   const lowBal = balance < 500;
   const firstName = user?.name?.split(" ")[0] || "there";
@@ -138,20 +140,11 @@ function OverviewPage({ user, orders, activeOrders, orderSummary, alerts, dark, 
 
   return (
     <>
-      {/* ── Stat cards ── */}
-      <div className="dash-stats">
-        {[
-          ["Active", String(activeCount), dark ? "#e0a458" : "#d97706"],
-          ["Delivered", String(completed), dark ? "#6ee7b7" : "#059669"],
-          ["This Week", String(weekOrders), dark ? "#a5b4fc" : "#4f46e5"],
-        ].map(([label, val, color]) => (
-          <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-            <div className="dash-stat-dot" style={{ background: color }} />
-            <div className="dash-stat-label" style={{ color: t.textMuted }}>{label}</div>
-            <div className="m dash-stat-value" style={{ color }}>{val}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Rewards strip (Nitro Status · Nitro Points · Tasks) ── */}
+      <RewardsStrip rewards={rewards} dark={dark} t={t} onStatus={() => setStatusOpen(true)} onPoints={() => setPointsOpen(true)} onTasks={() => {}} />
+
+      {/* ── Channel lane ── */}
+      <ChannelLane dark={dark} t={t} socialLinks={socialLinks} />
 
       {/* Add to Home Screen — mobile/tablet only */}
       {!a2hs.dismissed && (a2hs.ready || a2hs.isIos) && (
@@ -179,10 +172,18 @@ function OverviewPage({ user, orders, activeOrders, orderSummary, alerts, dark, 
       )}
 
       {/* ── Next action ── */}
-      <div className="mb-5 max-md:mb-4 rounded-xl py-4 px-5 max-md:py-3.5 max-md:px-4" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)"}` }}>
-        <div className="text-[13px] mb-2.5 max-md:mb-2" style={{ color: t.textMuted }}>{primaryAction.sub}</div>
-        <button onClick={() => setActive(primaryAction.target)} className="w-full py-2.5 max-md:py-2 rounded-[10px] text-sm max-md:text-[13px] font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>{primaryAction.label}</button>
-      </div>
+      <button onClick={() => setActive(primaryAction.target)} className="w-full flex items-center gap-3 text-left rounded-[14px] max-md:rounded-xl py-[13px] px-4 mb-5 max-md:mb-4 border border-solid cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", borderColor: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)" }}>
+        <div className="w-[38px] h-[38px] rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", boxShadow: "0 4px 10px rgba(196,125,142,.3)" }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2 0-2.8-.8-.7-2-.7-3-.2z"/><path d="M15 9l-3 3-2-2 3-3c2-2 5-3 8-3 0 3-1 6-3 8z"/><path d="M9 12l-3-1 2-3M12 15l1 3 3-2"/></svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-bold" style={{ color: t.text }}>{primaryAction.label}</div>
+          <div className="text-[11.5px] mt-0.5 truncate" style={{ color: t.textMuted }}>{primaryAction.sub}</div>
+        </div>
+        <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.13)", color: t.accent }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+      </button>
 
       {/* ── Active orders (mobile/tablet only — desktop uses RightSidebar) ── */}
       {sortedActive.length > 0 && (
@@ -218,30 +219,23 @@ function OverviewPage({ user, orders, activeOrders, orderSummary, alerts, dark, 
         </div>
       )}
 
-      {/* ── Feature cards ── */}
+      {/* ── Quick links ── */}
       <div className="grid grid-cols-3 gap-2 mb-5 max-md:mb-4">
-        <button onClick={() => setTutorialOpen(true)} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)" }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0018 8 6 6 0 006 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 018.91 14"/></svg>
-          </div>
-          <div className="text-[12px] font-semibold" style={{ color: t.text }}>How it works</div>
-          <div className="text-[11px] -mt-0.5" style={{ color: t.textMuted }}>Step-by-step</div>
-        </button>
-        <button onClick={() => setTipsOpen(true)} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)" }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          </div>
-          <div className="text-[12px] font-semibold" style={{ color: t.text }}>What to Expect</div>
-          <div className="text-[11px] -mt-0.5" style={{ color: t.textMuted }}>Good to know</div>
-        </button>
-        <button onClick={() => { if (socialLinks?.social_whatsapp_support) window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); }} className="flex flex-col items-center gap-1.5 py-4 px-2 max-md:py-3 rounded-xl border-none cursor-pointer text-center transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(37,211,102,.15)" : "rgba(37,211,102,.1)" }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-          </div>
-          <div className="text-[12px] font-semibold" style={{ color: t.text }}>Support</div>
-          <div className="text-[11px] -mt-0.5" style={{ color: t.textMuted }}>WhatsApp</div>
-        </button>
+        {[
+          { label: "How it works", onClick: () => setTutorialOpen(true), gradient: "linear-gradient(135deg,#a78bfa,#7c3aed)", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg> },
+          { label: "What to Expect", onClick: () => setTipsOpen(true), gradient: "linear-gradient(135deg,#818cf8,#4f46e5)", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4.5l3 2"/></svg> },
+          { label: "Support", onClick: () => { if (socialLinks?.social_whatsapp_support) window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); }, gradient: "linear-gradient(135deg,#25d366,#128c7e)", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-3-.2-.3A8.2 8.2 0 1112 20.2zm4.6-6.1c-.3-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.2-.3.2-.5.1a6.7 6.7 0 01-2-1.2 7.5 7.5 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5v-.5c0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 .6.3 1.1.4 1.5.6.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.4z"/></svg> },
+        ].map(q => (
+          <button key={q.label} onClick={q.onClick} className="flex max-md:flex-col items-center gap-2.5 max-md:gap-[7px] py-[11px] px-3 max-md:py-3 max-md:px-1.5 rounded-xl border border-solid cursor-pointer text-left max-md:text-center font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", borderColor: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)" }}>
+            <div className="w-7 h-7 rounded-[9px] flex items-center justify-center shrink-0" style={{ background: q.gradient, boxShadow: "0 3px 8px rgba(0,0,0,.16)" }}>{q.icon}</div>
+            <div className="text-[12px] max-md:text-[11px] font-semibold truncate max-md:whitespace-normal max-md:leading-tight" style={{ color: t.text }}>{q.label}</div>
+          </button>
+        ))}
       </div>
+
+      {/* ── Rewards modals ── */}
+      <StatusModal open={statusOpen} onClose={() => setStatusOpen(false)} rewards={rewards} dark={dark} t={t} />
+      <PointsModal open={pointsOpen} onClose={() => setPointsOpen(false)} rewards={rewards} dark={dark} t={t} onUse={() => { setPointsOpen(false); setActive("services"); }} />
 
       {/* Tutorial popup */}
       {tutorialOpen && (
