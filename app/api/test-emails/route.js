@@ -1,4 +1,14 @@
-import { sendEmail, sendWelcomeEmail, sendPasswordResetEmail, walletCreditEmail, accountDeletionEmail, leaderboardRewardEmail, batchPlacementEmail, batchCompletionEmail, sendNudgeIdleFunds, sendNudgeComeback, sendNudgeLapsed, sendNudgeIdleBalance, gradualDeliveryAnnouncementEmail, sendAdActivationDay1, sendAdActivationDay3, sendAdActivationDay6 } from '@/lib/email';
+import {
+  sendEmail, sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail,
+  walletCreditEmail, accountDeletionEmail, leaderboardRewardEmail, referralBonusEmail,
+  batchPlacementEmail, batchCompletionEmail,
+  sendNudgeIdleFunds, sendNudgeIdleBalance, sendNudgeComeback, sendNudgeLapsed,
+  sendWinback30Email, sendWinback60Email, sendBonusReminderEmail,
+  pitApprovedEmail, pitSuspendedEmail, pitRejectionEmail,
+  payoutCompletedEmail, payoutRejectedEmail,
+  sendAdActivationDay1, sendAdActivationDay3, sendAdActivationDay6,
+  gradualDeliveryAnnouncementEmail,
+} from '@/lib/email';
 import prisma from '@/lib/prisma';
 
 export async function GET(req) {
@@ -9,22 +19,38 @@ export async function GET(req) {
   const only = url.searchParams.get('only');
   const results = [];
 
+  // Full Bright & Bold set — numbering matches Email Copy.md / the preview file
   const ALL = {
-    welcome:       () => sendWelcomeEmail(NAME, EMAIL),
-    reset:         () => sendPasswordResetEmail(EMAIL, NAME, 'https://nitro.ng/reset?token=test123'),
-    wallet:        () => sendEmail(EMAIL, '₦5,000 credited to your Nitro wallet', walletCreditEmail(NAME, 5000, 'Deposit via Flutterwave')),
-    deletion:      () => sendEmail(EMAIL, 'Your account is scheduled for deletion', accountDeletionEmail(NAME, 30)),
-    leaderboard:   () => sendEmail(EMAIL, 'You earned a leaderboard reward!', leaderboardRewardEmail(NAME, 2500)),
-    'batch-place': () => sendEmail(EMAIL, 'Batch order placed', batchPlacementEmail(NAME, 'BTH-1234', 10, 8, 2, 45000)),
-    'batch-done':  () => sendEmail(EMAIL, 'Batch order complete', batchCompletionEmail(NAME, 'BTH-1234', 7, 1, 0, 2500)),
-    'nudge-funds': () => sendNudgeIdleFunds(NAME, EMAIL, 12500),
-    'nudge-back':  () => sendNudgeComeback(NAME, EMAIL),
-    'nudge-lapsed':() => sendNudgeLapsed(NAME, EMAIL),
-    'nudge-idle':  () => sendNudgeIdleBalance(NAME, EMAIL, 8750),
-    'gradual':     () => sendEmail(EMAIL, "We've upgraded how your orders are delivered", gradualDeliveryAnnouncementEmail(NAME)),
-    'act-day1':    () => sendAdActivationDay1(NAME, EMAIL),
-    'act-day3':    () => sendAdActivationDay3(NAME, EMAIL),
-    'act-day6':    () => sendAdActivationDay6(NAME, EMAIL),
+    verify:          () => sendVerificationEmail(EMAIL, NAME, '482916'),                                   // 1
+    'verify-pit':    () => sendVerificationEmail(EMAIL, NAME, '482916', { pit: true }),                    // 1 (Pit)
+    welcome:         () => sendWelcomeEmail(NAME, EMAIL),                                                  // 2
+    reset:           () => sendPasswordResetEmail(EMAIL, NAME, 'https://nitro.ng/reset?token=test123'),    // 3
+    deletion:        () => sendEmail(EMAIL, 'Your Nitro account is scheduled for deletion', accountDeletionEmail(NAME, 30)), // 4
+    'deposit':       () => sendEmail(EMAIL, '₦5,000 is in your wallet', walletCreditEmail(NAME, 5000, null, { kind: 'deposit', bonus: 1200, newBalance: 6200, method: 'Flutterwave' })), // 5 (with bonus)
+    'deposit-plain': () => sendEmail(EMAIL, '₦1,000 is in your wallet', walletCreditEmail(NAME, 1000, null, { kind: 'deposit', bonus: 0, newBalance: 1000, method: 'Flutterwave' })),    // 5 (no bonus)
+    refund:          () => sendEmail(EMAIL, '₦1,200 refunded to your Nitro wallet', walletCreditEmail(NAME, 1200, null, { kind: 'refund', orderRef: '#48213', failReason: 'Could not deliver', newBalance: 3650 })), // 6
+    credit:          () => sendEmail(EMAIL, '₦2,000 credited to your Nitro wallet', walletCreditEmail(NAME, 2000, 'a small thank-you from the team.')), // generic credit
+    'batch-place':   () => sendEmail(EMAIL, 'Batch order placed', batchPlacementEmail(NAME, 'BULK-20', 18, 16, 2, 24300)),   // 7
+    'batch-done':    () => sendEmail(EMAIL, 'Batch BULK-20, all orders complete', batchCompletionEmail(NAME, 'BULK-20', 16, 1, 1, 1350)), // 8
+    'act-day1':      () => sendAdActivationDay1(NAME, EMAIL),                                              // 9
+    'act-day3':      () => sendAdActivationDay3(NAME, EMAIL),                                              // 10
+    'act-day6':      () => sendAdActivationDay6(NAME, EMAIL),                                              // 11
+    leaderboard:     () => sendEmail(EMAIL, 'You earned a leaderboard reward!', leaderboardRewardEmail(NAME, 2500)),          // 13
+    referral:        () => sendEmail(EMAIL, 'You received ₦1,000 on Nitro!', referralBonusEmail(NAME, 1000)),                 // 14
+    'comeback-30':   () => sendWinback30Email(NAME, EMAIL, 500, 7),                                        // 15
+    'comeback-60':   () => sendWinback60Email(NAME, EMAIL, 1000, 7),                                       // 16
+    'nudge-funds':   () => sendNudgeIdleFunds(NAME, EMAIL, 3000),                                          // 17
+    'nudge-idle':    () => sendNudgeIdleBalance(NAME, EMAIL, 7450),                                        // 18
+    'bonus-reminder':() => sendBonusReminderEmail(NAME, EMAIL),                                            // 19
+    'pit-approved':  () => sendEmail(EMAIL, "You're in. Welcome to the Pit", pitApprovedEmail(NAME)),      // 20
+    'pit-suspended': () => sendEmail(EMAIL, 'Your Pit account has been paused', pitSuspendedEmail(NAME)),  // 21
+    'payout-done':   () => sendEmail(EMAIL, 'Your payout of ₦18,500 has been sent', payoutCompletedEmail(NAME, 18500, 'PIT-8841-XK', 'GTBank ····2841', '11 Jul · 9:40 AM')), // 22
+    'payout-reject': () => sendEmail(EMAIL, 'About your payout request', payoutRejectedEmail(NAME, 18500, 'PIT-8841-XK')),    // 23
+    'pit-rejected':  () => sendEmail(EMAIL, 'Your Pit application update', pitRejectionEmail(NAME)),
+    // retired (kept for regression eyeballs only)
+    'nudge-back':    () => sendNudgeComeback(NAME, EMAIL),
+    'nudge-lapsed':  () => sendNudgeLapsed(NAME, EMAIL),
+    gradual:         () => sendEmail(EMAIL, "We've upgraded how your orders are delivered", gradualDeliveryAnnouncementEmail(NAME)),
   };
 
   const toRun = only ? { [only]: ALL[only] } : ALL;
