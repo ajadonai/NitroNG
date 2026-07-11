@@ -185,10 +185,11 @@ export function RewardsStrip({ rewards, dark, t, onStatus, onPoints, onTasks }) 
 
 export function ChannelLane({ dark, t, socialLinks }) {
   const telegram = socialLinks?.social_telegram_support;
+  const waChannel = socialLinks?.social_whatsapp_channel || WHATSAPP_CHANNEL_URL;
   const cards = [
     {
       key: 'wa',
-      href: WHATSAPP_CHANNEL_URL,
+      href: waChannel,
       gradient: 'linear-gradient(135deg,#25d366,#128c7e)',
       title: 'Follow us on WhatsApp',
       sub: 'Deal days and delivery news, first.',

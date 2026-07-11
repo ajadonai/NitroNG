@@ -102,6 +102,7 @@ model User {
   crewMember    CrewMember?
   bonusCredits      BonusCredit[]
   taskSubmissions   TaskSubmission[]
+  nitroPointLedger  NitroPointLedger[]
 
   @@index([signupIp])
   @@index([createdAt])
@@ -156,6 +157,7 @@ model Admin {
   platformCampaignsUpdated  PlatformCampaign[]  @relation("PlatformCampaignUpdater")
   recurringCampaignsCreated RecurringCampaign[] @relation("RecurringCampaignCreator")
   recurringCampaignsUpdated RecurringCampaign[] @relation("RecurringCampaignUpdater")
+  nitroPointAdjustments     NitroPointLedger[]
 
   @@map("admins")
 }
@@ -301,6 +303,7 @@ model Order {
   dripDispatches        DripDispatch[]
   affiliateCommissions  AffiliateCommission[]
   creditUsages          OrderCreditUsage[]
+  nitroPointLedger      NitroPointLedger[]
 
   @@index([userId])
   @@index([userId, batchId])
@@ -1003,4 +1006,33 @@ model TaskSubmission {
   @@index([status])
   @@index([taskId, userId])
   @@map("task_submissions")
+}
+
+// ──────────────────────────────────────
+// NITRO POINTS LEDGER
+// ──────────────────────────────────────
+
+model NitroPointLedger {
+  id                String   @id @default(cuid())
+  userId            String
+  type              String   // earned_order, redeemed_order, reversed_refund, restored_refund, manual_credit, manual_debit, opening_balance
+  pointsKobo        Int      // positive = credit, negative = debit
+  dedupeKey         String?  @unique // event-level idempotency, e.g. "earned_order:{orderId}", "reversed_refund:{orderId}:{txId}"
+  orderId           String?
+  transactionId     String?  // link to refund/redemption transaction
+  statusAtEvent     String?  // Nitro Status key at time of event
+  pointRateAtEvent  Float?   // earn rate % at time of event
+  eligibleSpendKobo Int?     // eligible spend for this event
+  reason            String?
+  createdByAdminId  String?
+  createdAt         DateTime @default(now())
+
+  user         User   @relation(fields: [userId], references: [id])
+  order        Order? @relation(fields: [orderId], references: [id])
+  createdByAdmin Admin? @relation(fields: [createdByAdminId], references: [id])
+
+  @@index([userId])
+  @@index([userId, type])
+  @@index([createdAt])
+  @@map("nitro_point_ledger")
 }

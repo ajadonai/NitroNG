@@ -11,7 +11,7 @@ import { SegPill } from "./seg-pill";
 import { fN, fD } from "../lib/format";
 import { Avatar } from "./avatar";
 import OrderTour from "./order-tour";
-import { RewardsStrip, ChannelLane, StatusModal, PointsModal, getRewards } from "./rewards";
+import { RewardsStrip, ChannelLane, StatusModal, PointsModal } from "./rewards";
 
 /* Dynamic imports — only load when user navigates to that page */
 const NewOrderPage = dynamic(() => import("./new-order").then(m => m.default), { ssr: false });
@@ -120,7 +120,10 @@ function OverviewPage({ user, orders, activeOrders, orderSummary, alerts, dark, 
   const [tipsOpen, setTipsOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [pointsOpen, setPointsOpen] = useState(false);
-  const rewards = useMemo(() => getRewards(), []); // MOCK — swap for /api/rewards
+  const [rewards, setRewards] = useState(null);
+  useEffect(() => {
+    fetch('/api/rewards').then(r => r.ok ? r.json() : null).then(d => { if (d) setRewards(d); });
+  }, []);
   const balance = user?.balance || 0;
   const activeCount = orderSummary?.active ?? activeOrders.length;
   const isNew = (orderSummary?.total ?? orders.length) === 0;

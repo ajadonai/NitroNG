@@ -4,7 +4,7 @@ import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
 import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
-import { WalletPointsCard, PointsModal, getRewards } from "./rewards";
+import { WalletPointsCard, PointsModal } from "./rewards";
 
 const TX_META = {
   deposit:      { label: "Deposit",       icon: "↓", clr: dk => dk ? "#6ee7b7" : "#059669" },
@@ -60,7 +60,10 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("");
   const [pointsOpen, setPointsOpen] = useState(false);
-  const rewards = getRewards(); // MOCK — swap for /api/rewards
+  const [rewards, setRewards] = useState(null);
+  useEffect(() => {
+    fetch('/api/rewards').then(r => r.ok ? r.json() : null).then(d => { if (d) setRewards(d); });
+  }, []);
   const [loading, setLoading] = useState(false);
   const [mobileStep, setMobileStep] = useState(1);
   const [gateways, setGateways] = useState([]);
