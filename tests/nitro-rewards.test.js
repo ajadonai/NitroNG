@@ -20,6 +20,7 @@ const {
   computeNitroDiscount,
   computePointsEarnedKobo,
   awardOrderPoints,
+  reverseOrderPoints,
   STATUS_TIERS,
   MIN_REDEEM_POINTS,
 } = await import('@/lib/nitro-rewards');
@@ -418,6 +419,110 @@ describe('awardOrderPoints', () => {
       data: expect.objectContaining({
         pointsKobo: 3000,
         eligibleSpendKobo: 300000,
+      }),
+    });
+  });
+});
+
+// ── Phase 3: Refund reversal ──
+
+describe('reverseOrderPoints', () => {
+  const mockTx = {
+    order: { findUnique: vi.fn() },
+    nitroPointLedger: { aggregate: vi.fn(), create: vi.fn() },
+  };
+
+  beforeEach(() => {
+    mockTx.order.findUnique.mockReset();
+    mockTx.nitroPointLedger.aggregate.mockReset();
+    mockTx.nitroPointLedger.create.mockReset();
+    mockTx.nitroPointLedger.aggregate.mockResolvedValue({ _sum: { pointsKobo: 0 } });
+  });
+
+  it('reverses full earned points on full refund', async () => {
+    mockTx.order.findUnique.mockResolvedValue({
+      charge: 500000, nitroPointsEarnedKobo: 5000, userId: 'u1', nitroStatusAtPurchase: 'pulse',
+    });
+    const result = await reverseOrderPoints(mockTx, { orderDbId: 'db-1', refundAmountKobo: 500000 });
+    expect(result).toBe(5000);
+    expect(mockTx.nitroPointLedger.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'u1',
+        type: 'reversed_refund',
+        pointsKobo: -5000,
+        orderId: 'db-1',
+        statusAtEvent: 'pulse',
+      }),
+    });
+  });
+
+  it('reverses proportionally on partial refund', async () => {
+    mockTx.order.findUnique.mockResolvedValue({
+      charge: 1000000, nitroPointsEarnedKobo: 10000, userId: 'u1', nitroStatusAtPurchase: 'boost',
+    });
+    const result = await reverseOrderPoints(mockTx, { orderDbId: 'db-2', refundAmountKobo: 400000 });
+    expect(result).toBe(4000); // floor(10000 * 400000/1000000)
+  });
+
+  it('caps reversal at remaining unreversed amount', async () => {
+    mockTx.order.findUnique.mockResolvedValue({
+      charge: 1000000, nitroPointsEarnedKobo: 10000, userId: 'u1', nitroStatusAtPurchase: 'boost',
+    });
+    // Already reversed 7000 of 10000
+    mockTx.nitroPointLedger.aggregate.mockResolvedValue({ _sum: { pointsKobo: -7000 } });
+    const result = await reverseOrderPoints(mockTx, { orderDbId: 'db-3', refundAmountKobo: 500000 });
+    // Proportional would be 5000, but only 3000 left
+    expect(result).toBe(3000);
+  });
+
+  it('returns 0 when order earned no points', async () => {
+    mockTx.order.findUnique.mockResolvedValue({
+      charge: 500000, nitroPointsEarnedKobo: 0, userId: 'u1', nitroStatusAtPurchase: 'spark',
+    });
+    const result = await reverseOrderPoints(mockTx, { orderDbId: 'db-4', refundAmountKobo: 500000 });
+    expect(result).toBe(0);
+    expect(mockTx.nitroPointLedger.create).not.toHaveBeenCalled();
+  });
+
+  it('returns 0 when already fully reversed', async () => {
+    mockTx.order.findUnique.mockResolvedValue({
+      charge: 500000, nitroPointsEarnedKobo: 5000, userId: 'u1', nitroStatusAtPurchase: 'pulse',
+    });
+    mockTx.nitroPointLedger.aggregate.mockResolvedValue({ _sum: { pointsKobo: -5000 } });
+    const result = await reverseOrderPoints(mockTx, { orderDbId: 'db-5', refundAmountKobo: 500000 });
+    expect(result).toBe(0);
+    expect(mockTx.nitroPointLedger.create).not.toHaveBeenCalled();
+  });
+
+  it('returns 0 when refund amount is 0', async () => {
+    const result = await reverseOrderPoints(mockTx, { orderDbId: 'db-6', refundAmountKobo: 0 });
+    expect(result).toBe(0);
+    expect(mockTx.order.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('allows negative balance after reversal (plan requirement)', async () => {
+    mockTx.order.findUnique.mockResolvedValue({
+      charge: 500000, nitroPointsEarnedKobo: 5000, userId: 'u1', nitroStatusAtPurchase: 'pulse',
+    });
+    const result = await reverseOrderPoints(mockTx, { orderDbId: 'db-7', refundAmountKobo: 500000 });
+    expect(result).toBe(5000);
+    expect(mockTx.nitroPointLedger.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ pointsKobo: -5000 }),
+    });
+  });
+
+  it('reverses points on drip order provider rejection (regression)', async () => {
+    // Drip order placed, batch-1 dispatch throws "incorrect service", full auto-refund fires
+    mockTx.order.findUnique.mockResolvedValue({
+      charge: 800000, nitroPointsEarnedKobo: 4000, userId: 'u1', nitroStatusAtPurchase: 'pulse',
+    });
+    const result = await reverseOrderPoints(mockTx, { orderDbId: 'db-drip', refundAmountKobo: 800000 });
+    expect(result).toBe(4000);
+    expect(mockTx.nitroPointLedger.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: 'reversed_refund',
+        pointsKobo: -4000,
+        orderId: 'db-drip',
       }),
     });
   });

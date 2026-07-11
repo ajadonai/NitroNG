@@ -5,6 +5,7 @@ import { getServices, getBalance, isProviderConfigured, getProviderName, checkOr
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { calculateTierPrice } from '@/lib/markup';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
+import { reverseOrderPoints } from '@/lib/nitro-rewards';
 
 export const maxDuration = 60;
 
@@ -189,6 +190,7 @@ export async function POST(req) {
                 await prisma.$transaction(async (tx) => {
                   await tx.$executeRaw`UPDATE users SET balance = balance + ${order.charge} WHERE id = ${order.userId}`;
                   await tx.transaction.create({ data: { userId: order.userId, type: 'refund', amount: order.charge, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund for cancelled order ${order.orderId}` } });
+                  await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: order.charge });
                 });
                 stats.refunded++;
               }
@@ -204,6 +206,7 @@ export async function POST(req) {
                     await prisma.$transaction(async (tx) => {
                       await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${order.userId}`;
                       await tx.transaction.create({ data: { userId: order.userId, type: 'refund', amount: refundAmount, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Partial refund for ${order.orderId}` } });
+                      await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
                     });
                     stats.refunded++;
                   }

@@ -6,6 +6,7 @@ import { cancelOrder, isProviderConfigured } from '@/lib/smm';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import bcrypt from 'bcryptjs';
 import { tgUserDeleted } from '@/lib/telegram';
+import { reverseOrderPoints } from '@/lib/nitro-rewards';
 
 export async function POST(req) {
   try {
@@ -59,6 +60,7 @@ export async function POST(req) {
           await tx.transaction.create({
             data: { userId: user.id, type: 'refund', amount: order.charge, status: 'Completed', reference: `REF-${order.orderId}`, note: `Refund — account deletion (order ${order.orderId})` },
           });
+          await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: order.charge });
         }
       }
       if (refund > 0) {

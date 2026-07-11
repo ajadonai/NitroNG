@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { checkOrder, isProviderConfigured } from '@/lib/smm';
 import { tgRefundAlert } from '@/lib/telegram';
+import { reverseOrderPoints } from '@/lib/nitro-rewards';
 
 export async function POST(req) {
   try {
@@ -84,6 +85,7 @@ export async function POST(req) {
                   note: `Refund for cancelled order ${order.orderId}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} already refunded)` : ''}`,
                 },
               });
+              await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
             }
           });
           tgRefundAlert({ orderId: order.orderId, amount: order.charge, charge: order.charge, qty: order.quantity, status: 'Cancelled', reason: 'provider_cancelled', source: 'check' });
@@ -108,6 +110,7 @@ export async function POST(req) {
                     note: `Partial refund for ${order.orderId} (${remains} undelivered)`,
                   },
                 });
+                await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
               });
               tgRefundAlert({ orderId: order.orderId, amount: refundAmount, charge: order.charge, qty: order.quantity, remains, status: 'Partial', reason: 'provider_partial', source: 'check' });
             }

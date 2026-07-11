@@ -6,6 +6,7 @@ import { checkOrder, cancelOrder, refillOrder, isProviderConfigured, getProvider
 import { voidCommissions } from '@/lib/commissions';
 import { cleanLink } from '@/lib/clean-link';
 import { tgRefundAlert } from '@/lib/telegram';
+import { reverseOrderPoints } from '@/lib/nitro-rewards';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -244,6 +245,7 @@ export async function POST(req) {
                 note: `Refund — order cancelled by admin${isPartial ? ` (${delivered}/${order.quantity} delivered)` : ''}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} already refunded)` : ''}`,
               },
             });
+            await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
           }
         }
         return { ok: true, refundAmount };
@@ -324,6 +326,7 @@ export async function POST(req) {
                       note: `Refund — order cancelled by provider${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} already refunded)` : ''}`,
                     },
                   });
+                  await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
                 }
               });
             } else if (newStatus === 'Partial' && status.remains) {
@@ -347,6 +350,7 @@ export async function POST(req) {
                         note: `Partial refund for ${order.orderId} (${remains} undelivered)`,
                       },
                     });
+                    await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
                   });
                 }
               }
@@ -434,6 +438,7 @@ export async function POST(req) {
           },
         });
         await tx.order.update({ where: { id: order.id }, data: { refundedAt: new Date() } });
+        await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
       });
 
       try {

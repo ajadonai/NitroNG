@@ -12,7 +12,7 @@ import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
 import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
-import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints } from '@/lib/nitro-rewards';
+import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints, reverseOrderPoints } from '@/lib/nitro-rewards';
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -204,6 +204,7 @@ export async function PATCH(req) {
         });
         for (const o of cancellable) {
           await restoreBonusForRefund(tx, o.id);
+          await reverseOrderPoints(tx, { orderDbId: o.id, refundAmountKobo: o.charge });
         }
         const refundAmount = cancellable.reduce((s, o) => s + o.charge, 0);
         await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${session.id}`;
@@ -246,6 +247,7 @@ export async function PATCH(req) {
                 await tx.transaction.create({
                   data: { userId: session.id, type: 'refund', amount: order.charge, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund cancelled ${order.orderId}` },
                 });
+                await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: order.charge });
               });
             }
           }
@@ -264,6 +266,7 @@ export async function PATCH(req) {
                     await tx.transaction.create({
                       data: { userId: session.id, type: 'refund', amount: refundAmount, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Partial refund ${order.orderId}` },
                     });
+                    await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
                   });
                 }
               }

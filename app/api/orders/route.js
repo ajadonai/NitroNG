@@ -12,7 +12,7 @@ import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { voidCommissions } from '@/lib/commissions';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
 import { buildOrderDisplayGroups } from '@/lib/order-history';
-import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints } from '@/lib/nitro-rewards';
+import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints, reverseOrderPoints } from '@/lib/nitro-rewards';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -245,6 +245,7 @@ export async function PATCH(req) {
             note: `Refund for cancelled order ${order.orderId || order.id}`,
           },
         });
+        await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: order.charge });
         return true;
       });
       if (!refunded) return Response.json({ error: 'Order already sent to provider' }, { status: 409 });
@@ -856,6 +857,7 @@ export async function POST(req) {
                   await tx.order.update({ where: { id: result.id }, data: { status: 'Cancelled', lastError: msg.slice(0, 500) } });
                   await tx.dripDispatch.updateMany({ where: { orderId: result.id }, data: { status: 'failed', lastError: msg.slice(0, 500) } });
                   await tx.transaction.create({ data: { userId: session.id, type: 'refund', amount: charge, method: 'wallet', status: 'Completed', reference: `REF-${orderId}`, note: `Auto-refund: ${msg.slice(0, 100)}` } });
+                  await reverseOrderPoints(tx, { orderDbId: result.id, refundAmountKobo: charge });
                 });
                 return Response.json({ error: 'This service is temporarily unavailable. You have been refunded.' }, { status: 409 });
               } catch (refundErr) { log.error('Drip auto-refund', refundErr.message); }
@@ -883,6 +885,7 @@ export async function POST(req) {
               await tx.$executeRaw`UPDATE users SET balance = balance + ${charge} WHERE id = ${session.id}`;
               await tx.order.update({ where: { id: result.id }, data: { status: 'Cancelled', lastError: msg.slice(0, 500) } });
               await tx.transaction.create({ data: { userId: session.id, type: 'refund', amount: charge, method: 'wallet', status: 'Completed', reference: `REF-${orderId}`, note: `Auto-refund: ${msg.slice(0, 100)}` } });
+              await reverseOrderPoints(tx, { orderDbId: result.id, refundAmountKobo: charge });
             });
             const provider = service.provider || 'mtp';
             prisma.adminIssue.findFirst({

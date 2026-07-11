@@ -7,6 +7,7 @@ import { sendEmail, walletCreditEmail, batchCompletionEmail } from '@/lib/email'
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { tgRefund, tgOrderCancelled, tgRefundAlert } from '@/lib/telegram';
 import { createCommission, voidCommissions } from '@/lib/commissions';
+import { reverseOrderPoints } from '@/lib/nitro-rewards';
 
 // Polls provider APIs for order status updates
 // Auto-refunds failed/cancelled orders
@@ -142,6 +143,7 @@ export async function GET(req) {
                 await tx.transaction.create({
                   data: { userId: order.userId, type: 'refund', amount: safeRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund for cancelled order ${order.orderId}` },
                 });
+                await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: safeRefund });
               }
             });
             stats.updated++;
@@ -177,6 +179,7 @@ export async function GET(req) {
                   await tx.transaction.create({
                     data: { userId: order.userId, type: 'refund', amount: safeRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Partial refund for ${order.orderId}` },
                   });
+                  await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: safeRefund });
                 }
               }
             });
@@ -379,6 +382,7 @@ export async function GET(req) {
             await tx.transaction.create({
               data: { userId: order.userId, type: 'refund', amount: order.charge, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund: failed to dispatch ${order.orderId}` },
             });
+            await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: order.charge });
           });
           stats.autoRefunded++;
           tgRefund(order.orderId, order.charge, 'dispatch_failed');
@@ -433,6 +437,7 @@ export async function GET(req) {
             await tx.transaction.create({
               data: { userId: order.userId, type: 'refund', amount: safeRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Recovered refund for ${order.orderId}` },
             });
+            await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: safeRefund });
             await tx.order.update({ where: { id: order.id }, data: { refundedAt: new Date() } });
           });
           stats.recovered++;
@@ -507,6 +512,7 @@ async function refundOrder(order, amount = null, emailOnly = false) {
             : `Auto-refund for cancelled order ${order.orderId}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} prior)` : ''}`,
         },
       });
+      await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: safeRefund });
     });
   }
 
