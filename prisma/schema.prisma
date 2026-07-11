@@ -75,6 +75,7 @@ model User {
   winbackSentAt          DateTime?
   winback30SentAt        DateTime?
   winback60SentAt        DateTime?
+  winbackSpendFloor      Int       @default(0)
   nudgeIdleFundsSentAt   DateTime?
   nudgeComebackSentAt    DateTime?
   nudgeLapsedSentAt      DateTime?

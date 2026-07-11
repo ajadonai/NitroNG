@@ -244,7 +244,7 @@ export async function GET(req) {
           none: { status: 'Completed', deletedAt: null, createdAt: { gt: thirtyDaysAgo } },
         },
       },
-      select: { id: true, name: true, email: true, winback30SentAt: true },
+      select: { id: true, name: true, email: true, winback30SentAt: true, winbackSpendFloor: true },
       take: 50,
     });
     for (const user of wb30Batch) {
@@ -271,9 +271,12 @@ export async function GET(req) {
             where: { userId: user.id, status: 'Completed', deletedAt: null },
             _sum: { charge: true },
           });
-          const creditKobo = winbackCredit(agg._sum.charge || 0, wb30Pct, wb30Min, wb30Cap);
+          const totalSpend = agg._sum.charge || 0;
+          const spendSinceFloor = Math.max(0, totalSpend - (user.winbackSpendFloor || 0));
+          const creditKobo = winbackCredit(spendSinceFloor, wb30Pct, wb30Min, wb30Cap);
           creditNaira = creditKobo / 100;
           await grantWinbackCredit(prisma, user.id, creditKobo, wbExpiryDays);
+          await prisma.user.update({ where: { id: user.id }, data: { winbackSpendFloor: totalSpend } });
           daysLeft = wbExpiryDays;
         }
 
@@ -311,7 +314,7 @@ export async function GET(req) {
           none: { status: 'Completed', deletedAt: null, createdAt: { gt: sixtyDaysAgo } },
         },
       },
-      select: { id: true, name: true, email: true, winback60SentAt: true },
+      select: { id: true, name: true, email: true, winback60SentAt: true, winbackSpendFloor: true },
       take: 50,
     });
     for (const user of wb60Batch) {
@@ -338,9 +341,12 @@ export async function GET(req) {
             where: { userId: user.id, status: 'Completed', deletedAt: null },
             _sum: { charge: true },
           });
-          const creditKobo = winbackCredit(agg._sum.charge || 0, wb60Pct, wb60Min, wb60Cap);
+          const totalSpend = agg._sum.charge || 0;
+          const spendSinceFloor = Math.max(0, totalSpend - (user.winbackSpendFloor || 0));
+          const creditKobo = winbackCredit(spendSinceFloor, wb60Pct, wb60Min, wb60Cap);
           creditNaira = creditKobo / 100;
           await grantWinbackCredit(prisma, user.id, creditKobo, wbExpiryDays);
+          await prisma.user.update({ where: { id: user.id }, data: { winbackSpendFloor: totalSpend } });
           daysLeft = wbExpiryDays;
         }
 
