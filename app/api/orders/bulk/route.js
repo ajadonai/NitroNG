@@ -450,12 +450,22 @@ export async function POST(req) {
         return Response.json({ error: `Row ${i + 1}: quantity must be between ${effectiveMin.toLocaleString()} and ${service.max.toLocaleString()}` }, { status: 400 });
       }
 
+      const serverPrice = Number(tier.sellPer1k);
       const clientPrice = row.expectedPrice ? row.expectedPrice * 100 : null;
-      if (clientPrice && Number(tier.sellPer1k) > clientPrice && (Number(tier.sellPer1k) - clientPrice) / clientPrice > 0.05) {
-        driftRows.push({ row: i + 1, clientPrice, serverPrice: Number(tier.sellPer1k) });
+      if (clientPrice && serverPrice > clientPrice && (serverPrice - clientPrice) / clientPrice > 0.05) {
+        driftRows.push({
+          row: i + 1,
+          tierId: tier.id,
+          service: tier.group?.name || service.name,
+          tier: tier.tier,
+          clientPrice,
+          serverPrice,
+          expectedPrice: clientPrice / 100,
+          currentPrice: serverPrice / 100,
+        });
       }
 
-      const charge = Math.round((Number(tier.sellPer1k) / 1000) * qty / 100) * 100;
+      const charge = Math.round((serverPrice / 1000) * qty / 100) * 100;
       const cost = Math.round((Number(service.costPer1k) * usdRate / 1000) * qty / 100) * 100;
       if (!charge || charge <= 0) {
         return Response.json({ error: `Row ${i + 1}: service pricing not configured` }, { status: 400 });
