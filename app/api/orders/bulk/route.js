@@ -12,6 +12,7 @@ import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
 import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
+import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints } from '@/lib/nitro-rewards';
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -502,36 +503,22 @@ export async function POST(req) {
     const batchId = isSingleOrder ? null : await nextBatchId();
 
     const result = await prisma.$transaction(async (tx) => {
-      // Loyalty discount — computed inside transaction for concurrency safety
-      let loyaltyPercent = 0;
-      let loyaltyTierName = null;
+      // Nitro Status discount — computed inside transaction for concurrency safety
+      let nitroTier = null;
       try {
-        const loyaltyEnabledRow = await tx.setting.findUnique({ where: { key: 'loyalty_enabled' } });
-        if (loyaltyEnabledRow?.value !== 'false') {
-          const ltRow = await tx.setting.findUnique({ where: { key: 'loyalty_tiers' } });
-          if (ltRow) {
-            const tiers = JSON.parse(ltRow.value);
-            const spendAgg = await tx.order.aggregate({ where: { userId: session.id, deletedAt: null, status: { not: 'Cancelled' } }, _sum: { charge: true } });
-            const totalSpend = spendAgg._sum.charge || 0;
-            let userTier = tiers[0];
-            for (const t of tiers) { if (totalSpend >= t.threshold) userTier = t; }
-            if (userTier.discount > 0) {
-              loyaltyPercent = userTier.discount;
-              loyaltyTierName = userTier.name;
-            }
-          }
-        }
-      } catch (err) { log.warn('Bulk loyalty discount', err.message); }
+        const spendKobo = await getEligibleSpendKoboTx(tx, session.id);
+        nitroTier = getNitroStatus(Math.floor(spendKobo / 100));
+      } catch (err) { log.warn('Bulk Nitro Status discount', err.message); }
 
       // Check for active promotion
       let activePromo = null;
       let promoType = null;
       try { const ap = await getActivePromotion(); if (ap) { activePromo = ap.promotion; promoType = ap.type; } } catch {}
 
-      // Apply loyalty + promotion discounts and compute total
+      // Apply Nitro Status + promotion discounts and compute total
       const orderData = resolved.map(r => {
-        const discount = loyaltyPercent > 0 ? Math.round(r.charge * (loyaltyPercent / 100)) : 0;
-        let afterLoyalty = Math.max(100, Math.round((r.charge - discount) / 100) * 100);
+        const discount = computeNitroDiscount(r.charge, nitroTier);
+        let afterLoyalty = discount > 0 ? Math.max(100, Math.round((r.charge - discount) / 100) * 100) : r.charge;
         const promoDiscount = activePromo ? applyPromotionDiscount(afterLoyalty, activePromo, activePromo.maxDiscountPerOrder) : 0;
         const finalCharge = Math.max(100, Math.round((afterLoyalty - promoDiscount) / 100) * 100);
         return { ...r, discount, promoDiscount, finalCharge };
@@ -568,6 +555,7 @@ export async function POST(req) {
             cost: o.cost,
             comments: o.comments,
             loyaltyDiscount: o.discount,
+            nitroStatusAtPurchase: nitroTier?.key || null,
             campaignDiscount: o.promoDiscount,
             campaignPercent: activePromo ? activePromo.discountPercent : null,
             platformCampaignId: promoType === 'platform' ? activePromo.id : null,
@@ -576,7 +564,11 @@ export async function POST(req) {
             ...(o.dripSchedule ? { dripDays: 1 } : {}),
           },
         });
-        await trackBonusConsumption(tx, session.id, order.id, o.finalCharge);
+        const bulkBonusUsed = await trackBonusConsumption(tx, session.id, order.id, o.finalCharge);
+        if (nitroTier) {
+          const bulkEligibleCharge = o.finalCharge - bulkBonusUsed;
+          await awardOrderPoints(tx, { userId: session.id, orderId, orderDbId: order.id, chargeKobo: bulkEligibleCharge, tier: nitroTier });
+        }
         if (o.dripSchedule) {
           await tx.dripDispatch.createMany({
             data: o.dripSchedule.dispatches.map(d => ({
@@ -601,12 +593,12 @@ export async function POST(req) {
           status: 'Completed',
           reference: txRef,
           note: isSingleOrder
-            ? `Order ${ids[0]} — ${orderData[0].tierName} x${orderData[0].qty.toLocaleString()}${loyaltyPercent > 0 ? ` (${loyaltyTierName} -${loyaltyPercent}%)` : ''}${activePromo ? ` (Promo -${activePromo.discountPercent}%)` : ''}`
-            : `Bulk ${batchId} — ${orderData.length} orders${loyaltyPercent > 0 ? ` (${loyaltyTierName} -${loyaltyPercent}%)` : ''}${activePromo ? ` (Promo -${activePromo.discountPercent}%)` : ''}${idempotencyKey ? ` [${idempotencyKey}]` : ''}`,
+            ? `Order ${ids[0]} — ${orderData[0].tierName} x${orderData[0].qty.toLocaleString()}${nitroTier && nitroTier.discountPct > 0 ? ` (${nitroTier.name} -${nitroTier.discountPct}%)` : ''}${activePromo ? ` (Promo -${activePromo.discountPercent}%)` : ''}`
+            : `Bulk ${batchId} — ${orderData.length} orders${nitroTier && nitroTier.discountPct > 0 ? ` (${nitroTier.name} -${nitroTier.discountPct}%)` : ''}${activePromo ? ` (Promo -${activePromo.discountPercent}%)` : ''}${idempotencyKey ? ` [${idempotencyKey}]` : ''}`,
         },
       });
 
-      return { createdOrders, totalCharge, loyaltyPercent, loyaltyTierName };
+      return { createdOrders, totalCharge, nitroTier };
     });
 
     const orderResults = result.createdOrders.map(o => ({ id: o.orderId, link: o.link, status: 'Pending', service: o.tierName }));
@@ -695,7 +687,7 @@ export async function POST(req) {
       failed: 0,
       totalCharge: result.totalCharge / 100,
       newBalance: newBalance / 100,
-      ...(result.loyaltyPercent > 0 ? { loyaltyDiscount: result.loyaltyPercent, loyaltyTier: result.loyaltyTierName } : {}),
+      ...(result.nitroTier && result.nitroTier.discountPct > 0 ? { loyaltyDiscount: result.nitroTier.discountPct, loyaltyTier: result.nitroTier.name } : {}),
       orders: orderResults,
     };
 

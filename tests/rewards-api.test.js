@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const prisma = {
   order: { findMany: vi.fn() },
   transaction: { aggregate: vi.fn() },
+  orderCreditUsage: { aggregate: vi.fn() },
   nitroPointLedger: { aggregate: vi.fn(), findMany: vi.fn() },
 };
 
@@ -16,8 +17,9 @@ const { GET } = await import('@/app/api/rewards/route');
 
 beforeEach(() => {
   vi.clearAllMocks();
-  prisma.order.findMany.mockResolvedValue([{ orderId: 'NTR-MOCK', charge: 243000000 }]);
+  prisma.order.findMany.mockResolvedValue([{ id: 'db-mock', orderId: 'NTR-MOCK', charge: 243000000 }]);
   prisma.transaction.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
+  prisma.orderCreditUsage.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
   prisma.nitroPointLedger.aggregate.mockResolvedValue({ _sum: { pointsKobo: 845000 } });
   prisma.nitroPointLedger.findMany.mockResolvedValue([]);
 });

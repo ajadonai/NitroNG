@@ -6,6 +6,7 @@ vi.mock('@/lib/logger', () => ({ log: { info: vi.fn(), warn: vi.fn(), error: vi.
 const mockPrisma = {
   order: { findMany: vi.fn() },
   transaction: { aggregate: vi.fn() },
+  orderCreditUsage: { aggregate: vi.fn() },
   nitroPointLedger: { aggregate: vi.fn(), findMany: vi.fn() },
 };
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
@@ -16,12 +17,16 @@ const {
   getEligibleSpendKobo,
   getPointsBalanceKobo,
   getRewardsPayload,
+  computeNitroDiscount,
+  computePointsEarnedKobo,
+  awardOrderPoints,
   STATUS_TIERS,
   MIN_REDEEM_POINTS,
 } = await import('@/lib/nitro-rewards');
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockPrisma.orderCreditUsage.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
 });
 
 // ── Tier calculation ──
@@ -87,8 +92,8 @@ describe('getStatusTiers', () => {
 describe('getEligibleSpendKobo', () => {
   it('sums completed and partial orders minus scoped refunds', async () => {
     mockPrisma.order.findMany.mockResolvedValue([
-      { orderId: 'NTR-1', charge: 600000 },
-      { orderId: 'NTR-2', charge: 400000 },
+      { id: 'db-1', orderId: 'NTR-1', charge: 600000 },
+      { id: 'db-2', orderId: 'NTR-2', charge: 400000 },
     ]);
     mockPrisma.transaction.aggregate.mockResolvedValue({ _sum: { amount: 200000 } });
 
@@ -112,31 +117,61 @@ describe('getEligibleSpendKobo', () => {
   });
 
   it('clamps to 0 when refunds exceed charges', async () => {
-    mockPrisma.order.findMany.mockResolvedValue([{ orderId: 'NTR-1', charge: 50000 }]);
+    mockPrisma.order.findMany.mockResolvedValue([{ id: 'db-1', orderId: 'NTR-1', charge: 50000 }]);
     mockPrisma.transaction.aggregate.mockResolvedValue({ _sum: { amount: 100000 } });
 
     expect(await getEligibleSpendKobo('user1')).toBe(0);
   });
 
   it('handles partial refund — only refunded value subtracted', async () => {
-    mockPrisma.order.findMany.mockResolvedValue([{ orderId: 'NTR-1', charge: 500000 }]);
+    mockPrisma.order.findMany.mockResolvedValue([{ id: 'db-1', orderId: 'NTR-1', charge: 500000 }]);
     mockPrisma.transaction.aggregate.mockResolvedValue({ _sum: { amount: 150000 } });
 
     expect(await getEligibleSpendKobo('user1')).toBe(350000);
   });
 
   it('cancelled order refund does not reduce eligible spend', async () => {
-    // Only the completed order is returned by findMany (cancelled is excluded by the query)
-    // So the cancelled order's refund reference won't be in the refs list
     mockPrisma.order.findMany.mockResolvedValue([
-      { orderId: 'NTR-1', charge: 1000000 },
-      // NTR-2 is cancelled — NOT returned by the Completed+Partial query
+      { id: 'db-1', orderId: 'NTR-1', charge: 1000000 },
     ]);
-    // Only refunds scoped to eligible order refs are counted
-    // The cancelled order's refund (REF-NTR-2) is never queried
     mockPrisma.transaction.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
 
     expect(await getEligibleSpendKobo('user1')).toBe(1000000);
+  });
+
+  it('subtracts bonus credit usage from eligible spend', async () => {
+    mockPrisma.order.findMany.mockResolvedValue([
+      { id: 'db-1', orderId: 'NTR-1', charge: 1000000 },
+    ]);
+    mockPrisma.transaction.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
+    mockPrisma.orderCreditUsage.aggregate.mockResolvedValue({ _sum: { amount: 300000 } });
+
+    expect(await getEligibleSpendKobo('user1')).toBe(700000);
+  });
+
+  it('order fully paid by bonus has zero eligible spend', async () => {
+    mockPrisma.order.findMany.mockResolvedValue([
+      { id: 'db-1', orderId: 'NTR-1', charge: 500000 },
+    ]);
+    mockPrisma.transaction.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
+    mockPrisma.orderCreditUsage.aggregate.mockResolvedValue({ _sum: { amount: 500000 } });
+
+    expect(await getEligibleSpendKobo('user1')).toBe(0);
+  });
+
+  it('cancelled order bonus usage does not reduce spend (cancelled orders excluded by query)', async () => {
+    // Only completed orders are returned; cancelled orders and their bonus usage are not queried
+    mockPrisma.order.findMany.mockResolvedValue([
+      { id: 'db-1', orderId: 'NTR-1', charge: 800000 },
+    ]);
+    mockPrisma.transaction.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
+    // Only bonus usage for db-1 is aggregated; cancelled order's db ID isn't in the list
+    mockPrisma.orderCreditUsage.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
+
+    expect(await getEligibleSpendKobo('user1')).toBe(800000);
+    expect(mockPrisma.orderCreditUsage.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { orderId: { in: ['db-1'] } } }),
+    );
   });
 });
 
@@ -165,10 +200,11 @@ describe('getPointsBalanceKobo', () => {
 // ── Rewards payload ──
 
 describe('getRewardsPayload', () => {
-  function setupMocks({ chargeKobo = 0, refundKobo = 0, balanceKobo = 0, history = [] } = {}) {
+  function setupMocks({ chargeKobo = 0, refundKobo = 0, bonusKobo = 0, balanceKobo = 0, history = [] } = {}) {
     mockPrisma.order.findMany.mockResolvedValue(
-      chargeKobo ? [{ orderId: 'NTR-MOCK', charge: chargeKobo }] : [],
+      chargeKobo ? [{ id: 'db-mock', orderId: 'NTR-MOCK', charge: chargeKobo }] : [],
     );
+    mockPrisma.orderCreditUsage.aggregate.mockResolvedValue({ _sum: { amount: bonusKobo || null } });
     mockPrisma.transaction.aggregate.mockResolvedValue({ _sum: { amount: refundKobo || null } });
     mockPrisma.nitroPointLedger.aggregate.mockResolvedValue({ _sum: { pointsKobo: balanceKobo || null } });
     mockPrisma.nitroPointLedger.findMany.mockResolvedValue(history);
@@ -254,5 +290,135 @@ describe('getRewardsPayload', () => {
     expect(r.history[0]).toEqual({ kind: 'earned', label: 'Earned', ref: '#NTR-2475', refType: 'order', pts: 125 });
     expect(r.history[1]).toEqual({ kind: 'spent', label: 'Spent', ref: '#NTR-2480', refType: 'order', pts: -5000 });
     expect(r.history[2]).toEqual({ kind: 'earned', label: 'Credit', ref: 'Goodwill', refType: 'admin', pts: 100 });
+  });
+});
+
+// ── Phase 2: Discount + earning helpers ──
+
+describe('computeNitroDiscount', () => {
+  it('returns 0 for Spark tier (0% discount)', () => {
+    const spark = getNitroStatus(0);
+    expect(computeNitroDiscount(500000, spark)).toBe(0);
+  });
+
+  it('computes correct discount for Pulse (0.5%)', () => {
+    const pulse = getNitroStatus(400000);
+    expect(computeNitroDiscount(1000000, pulse)).toBe(5000);
+  });
+
+  it('computes correct discount for Legend (4%)', () => {
+    const legend = getNitroStatus(75000000);
+    expect(computeNitroDiscount(1000000, legend)).toBe(40000);
+  });
+
+  it('returns 0 when tier is null', () => {
+    expect(computeNitroDiscount(500000, null)).toBe(0);
+  });
+
+  it('rounds to nearest integer', () => {
+    const pulse = getNitroStatus(400000);
+    expect(computeNitroDiscount(333333, pulse)).toBe(Math.round(333333 * 0.005));
+  });
+});
+
+describe('computePointsEarnedKobo', () => {
+  it('earns 0.5% for Spark tier', () => {
+    const spark = getNitroStatus(0);
+    expect(computePointsEarnedKobo(1000000, spark)).toBe(5000);
+  });
+
+  it('earns 1% for Pulse tier', () => {
+    const pulse = getNitroStatus(400000);
+    expect(computePointsEarnedKobo(1000000, pulse)).toBe(10000);
+  });
+
+  it('earns 2% for Legend tier', () => {
+    const legend = getNitroStatus(75000000);
+    expect(computePointsEarnedKobo(1000000, legend)).toBe(20000);
+  });
+
+  it('floors the result', () => {
+    const spark = getNitroStatus(0);
+    expect(computePointsEarnedKobo(999, spark)).toBe(Math.floor(999 * 0.5 / 100));
+  });
+
+  it('returns 0 for zero charge', () => {
+    const pulse = getNitroStatus(400000);
+    expect(computePointsEarnedKobo(0, pulse)).toBe(0);
+  });
+
+  it('returns 0 when tier is null', () => {
+    expect(computePointsEarnedKobo(1000000, null)).toBe(0);
+  });
+});
+
+describe('awardOrderPoints', () => {
+  const mockTx = {
+    nitroPointLedger: { create: vi.fn() },
+    order: { update: vi.fn() },
+  };
+
+  beforeEach(() => {
+    mockTx.nitroPointLedger.create.mockReset();
+    mockTx.order.update.mockReset();
+  });
+
+  it('creates ledger entry and updates order', async () => {
+    const tier = getNitroStatus(400000); // Pulse, 1%
+    const result = await awardOrderPoints(mockTx, {
+      userId: 'u1', orderId: 'NTR-100', orderDbId: 'db-1', chargeKobo: 500000, tier,
+    });
+
+    expect(result).toBe(5000); // 500000 * 1% = 5000
+    expect(mockTx.nitroPointLedger.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'u1',
+        type: 'earned_order',
+        pointsKobo: 5000,
+        dedupeKey: 'earned_order:db-1',
+        orderId: 'db-1',
+        statusAtEvent: 'pulse',
+        pointRateAtEvent: 1,
+      }),
+    });
+    expect(mockTx.order.update).toHaveBeenCalledWith({
+      where: { id: 'db-1' },
+      data: { nitroPointsEarnedKobo: 5000 },
+    });
+  });
+
+  it('returns 0 and skips writes for Spark with tiny charge', () => {
+    const spark = getNitroStatus(0); // 0.5%
+    const result = awardOrderPoints(mockTx, {
+      userId: 'u1', orderId: 'NTR-101', orderDbId: 'db-2', chargeKobo: 100, tier: spark,
+    });
+    return result.then(r => {
+      expect(r).toBe(0);
+      expect(mockTx.nitroPointLedger.create).not.toHaveBeenCalled();
+    });
+  });
+
+  it('order fully paid by bonus earns 0 points', async () => {
+    const pulse = getNitroStatus(400000);
+    const result = await awardOrderPoints(mockTx, {
+      userId: 'u1', orderId: 'NTR-102', orderDbId: 'db-3', chargeKobo: 0, tier: pulse,
+    });
+    expect(result).toBe(0);
+    expect(mockTx.nitroPointLedger.create).not.toHaveBeenCalled();
+  });
+
+  it('order partly paid by bonus earns points only on cash-funded part', async () => {
+    const pulse = getNitroStatus(400000); // 1% earn
+    // charge was 500000 but 200000 was bonus, so eligibleCharge = 300000
+    const result = await awardOrderPoints(mockTx, {
+      userId: 'u1', orderId: 'NTR-103', orderDbId: 'db-4', chargeKobo: 300000, tier: pulse,
+    });
+    expect(result).toBe(3000); // 300000 * 1% = 3000
+    expect(mockTx.nitroPointLedger.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        pointsKobo: 3000,
+        eligibleSpendKobo: 300000,
+      }),
+    });
   });
 });

@@ -12,6 +12,7 @@ import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { voidCommissions } from '@/lib/commissions';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
 import { buildOrderDisplayGroups } from '@/lib/order-history';
+import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints } from '@/lib/nitro-rewards';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -275,27 +276,17 @@ export async function PATCH(req) {
         return Response.json({ error: 'Service pricing not configured' }, { status: 400 });
       }
 
-      // Apply loyalty discount to reorder
+      // Apply Nitro Status discount to reorder
       let reorderLoyaltyDiscount = 0;
-      let reorderLoyaltyTierName = null;
+      let reorderNitroTier = null;
       try {
-        const loyaltyEnabledRow = await prisma.setting.findUnique({ where: { key: 'loyalty_enabled' } });
-        if (loyaltyEnabledRow?.value !== 'false') {
-          const ltRow = await prisma.setting.findUnique({ where: { key: 'loyalty_tiers' } });
-          if (ltRow) {
-            const tiers = JSON.parse(ltRow.value);
-            const spendAgg = await prisma.order.aggregate({ where: { userId: session.id, deletedAt: null, status: { not: 'Cancelled' } }, _sum: { charge: true } });
-            const totalSpend = spendAgg._sum.charge || 0;
-            let userTier = tiers[0];
-            for (const t2 of tiers) { if (totalSpend >= t2.threshold) userTier = t2; }
-            if (userTier.discount > 0) {
-              reorderLoyaltyDiscount = Math.round(charge * (userTier.discount / 100));
-              reorderLoyaltyTierName = userTier.name;
-              charge = Math.max(1, charge - reorderLoyaltyDiscount); // floor at 1 kobo
-            }
-          }
+        const spendKobo = await getEligibleSpendKoboTx(prisma, session.id);
+        reorderNitroTier = getNitroStatus(Math.floor(spendKobo / 100));
+        reorderLoyaltyDiscount = computeNitroDiscount(charge, reorderNitroTier);
+        if (reorderLoyaltyDiscount > 0) {
+          charge = Math.max(100, Math.round((charge - reorderLoyaltyDiscount) / 100) * 100);
         }
-      } catch (err) { log.warn('Reorder loyalty discount', err.message); }
+      } catch (err) { log.warn('Reorder Nitro Status discount', err.message); }
 
       // Apply promotion discount to reorder
       let reorderPromoDiscount = 0;
@@ -348,6 +339,7 @@ export async function PATCH(req) {
             charge, cost,
             comments: order.comments,
             loyaltyDiscount: reorderLoyaltyDiscount,
+            nitroStatusAtPurchase: reorderNitroTier?.key || null,
             campaignDiscount: reorderPromoDiscount,
             campaignPercent: reorderPromoPercent,
             platformCampaignId: reorderPromoType === 'platform' ? reorderPromoId : null,
@@ -357,7 +349,11 @@ export async function PATCH(req) {
             ...(reorderDripSchedule ? { dripDays: 1 } : {}),
           },
         });
-        await trackBonusConsumption(tx, session.id, created.id, charge);
+        const reorderBonusUsed = await trackBonusConsumption(tx, session.id, created.id, charge);
+        if (reorderNitroTier) {
+          const reorderEligibleCharge = charge - reorderBonusUsed;
+          await awardOrderPoints(tx, { userId: session.id, orderId: newOrderId, orderDbId: created.id, chargeKobo: reorderEligibleCharge, tier: reorderNitroTier });
+        }
         if (reorderDripSchedule) {
           await tx.dripDispatch.createMany({
             data: reorderDripSchedule.dispatches.map(d => ({
@@ -369,8 +365,9 @@ export async function PATCH(req) {
             })),
           });
         }
+        const reorderNitroTierName = reorderNitroTier?.name || null;
         const reorderDiscountParts = [
-          reorderLoyaltyDiscount > 0 ? `${reorderLoyaltyTierName} -₦${(reorderLoyaltyDiscount/100).toLocaleString()}` : null,
+          reorderLoyaltyDiscount > 0 ? `${reorderNitroTierName} -₦${(reorderLoyaltyDiscount/100).toLocaleString()}` : null,
           reorderPromoDiscount > 0 ? `${reorderPromoLabel} -₦${(reorderPromoDiscount/100).toLocaleString()}` : null,
         ].filter(Boolean);
         await tx.transaction.create({
@@ -454,7 +451,12 @@ export async function PATCH(req) {
       return Response.json({
         success: true,
         ...(reorderQueued ? { queued: true, message: 'Order queued — will start when your current order for this link completes.' } : {}),
-        order: { id: newOrderId, service: order.service.name, quantity: order.quantity, charge: charge / 100, status: (apiOrderId || reorderDripSchedule) ? 'Processing' : 'Pending' },
+        order: {
+          id: newOrderId, service: order.service.name, quantity: order.quantity,
+          charge: charge / 100, status: (apiOrderId || reorderDripSchedule) ? 'Processing' : 'Pending',
+          ...(reorderLoyaltyDiscount > 0 ? { loyaltyDiscount: reorderLoyaltyDiscount / 100, loyaltyTier: reorderNitroTier?.name } : {}),
+          ...(reorderPromoDiscount > 0 ? { promoDiscount: reorderPromoDiscount / 100, promoPercent: reorderPromoPercent, promoLabel: reorderPromoLabel } : {}),
+        },
       });
     }
 
@@ -674,27 +676,17 @@ export async function POST(req) {
       }
     }
 
-    // Apply loyalty discount based on total lifetime spend
+    // Apply Nitro Status discount based on eligible lifetime spend
     let loyaltyDiscount = 0;
-    let loyaltyTierName = null;
+    let nitroTier = null;
     try {
-      const loyaltyEnabledRow = await prisma.setting.findUnique({ where: { key: 'loyalty_enabled' } });
-      if (loyaltyEnabledRow?.value !== 'false') {
-        const ltRow = await prisma.setting.findUnique({ where: { key: 'loyalty_tiers' } });
-        if (ltRow) {
-          const tiers = JSON.parse(ltRow.value);
-          const spendAgg = await prisma.order.aggregate({ where: { userId: session.id, deletedAt: null, status: { not: 'Cancelled' } }, _sum: { charge: true } });
-          const totalSpend = spendAgg._sum.charge || 0;
-          let userTier = tiers[0];
-          for (const t2 of tiers) { if (totalSpend >= t2.threshold) userTier = t2; }
-          if (userTier.discount > 0) {
-            loyaltyDiscount = Math.round(charge * (userTier.discount / 100));
-            loyaltyTierName = userTier.name;
-            charge = Math.max(100, Math.round((charge - loyaltyDiscount) / 100) * 100);
-          }
-        }
+      const spendKobo = await getEligibleSpendKoboTx(prisma, session.id);
+      nitroTier = getNitroStatus(Math.floor(spendKobo / 100));
+      loyaltyDiscount = computeNitroDiscount(charge, nitroTier);
+      if (loyaltyDiscount > 0) {
+        charge = Math.max(100, Math.round((charge - loyaltyDiscount) / 100) * 100);
       }
-    } catch (err) { log.warn('Loyalty discount', err.message); }
+    } catch (err) { log.warn('Nitro Status discount', err.message); }
 
     // Apply promotion discount (stacks with loyalty)
     let promoDiscount = 0;
@@ -767,6 +759,7 @@ export async function POST(req) {
           cost,
           comments: comments ? comments.split('\n').map(l => l.trim().replace(/^[“”””]+|[“”””]+$/g, '').trim()).filter(Boolean).join('\n').slice(0, 5000) : null,
           loyaltyDiscount,
+          nitroStatusAtPurchase: nitroTier?.key || null,
           campaignDiscount: promoDiscount,
           campaignPercent: promoPercent,
           platformCampaignId: activePromoType === 'platform' ? activePromoId : null,
@@ -777,7 +770,11 @@ export async function POST(req) {
           ...(dripSchedule ? { dripDays: validDripDays || 1 } : {}),
         },
       });
-      await trackBonusConsumption(tx, session.id, order.id, charge);
+      const bonusUsed = await trackBonusConsumption(tx, session.id, order.id, charge);
+      if (nitroTier) {
+        const eligibleChargeKobo = charge - bonusUsed;
+        await awardOrderPoints(tx, { userId: session.id, orderId, orderDbId: order.id, chargeKobo: eligibleChargeKobo, tier: nitroTier });
+      }
       if (dripSchedule) {
         await tx.dripDispatch.createMany({
           data: dripSchedule.dispatches.map(d => ({
@@ -789,8 +786,9 @@ export async function POST(req) {
           })),
         });
       }
+      const nitroTierName = nitroTier?.name || null;
       const discountParts = [
-        loyaltyDiscount > 0 ? `${loyaltyTierName} -₦${(loyaltyDiscount/100).toLocaleString()}` : null,
+        loyaltyDiscount > 0 ? `${nitroTierName} -₦${(loyaltyDiscount/100).toLocaleString()}` : null,
         promoDiscount > 0 ? `${promoLabel} -₦${(promoDiscount/100).toLocaleString()}` : null,
       ].filter(Boolean);
       await tx.transaction.create({
@@ -948,7 +946,7 @@ export async function POST(req) {
         quantity: qty,
         charge: charge / 100,
         status: (apiOrderId || dripSchedule) ? 'Processing' : 'Pending',
-        ...(loyaltyDiscount > 0 ? { loyaltyDiscount: loyaltyDiscount / 100, loyaltyTier: loyaltyTierName } : {}),
+        ...(loyaltyDiscount > 0 ? { loyaltyDiscount: loyaltyDiscount / 100, loyaltyTier: nitroTier?.name } : {}),
         ...(promoDiscount > 0 ? { promoDiscount: promoDiscount / 100, promoPercent, promoLabel } : {}),
       },
     });
