@@ -260,7 +260,7 @@ export async function POST(req) {
           const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true, notifEmail: true, notifOrders: true } });
           if (user?.email && user.notifEmail !== false && user.notifOrders !== false) {
             const amount = result.refundAmount / 100;
-            const html = walletCreditEmail(user.name || 'there', amount, 'Order cancelled — refund processed');
+            const html = walletCreditEmail(user.name || 'there', amount, null, { kind: 'refund', orderRef: `#${order.orderId}`, failReason: 'Order cancelled' });
             sendEmail(user.email, `₦${amount.toLocaleString()} refunded to your Nitro wallet`, html).catch(() => {});
           }
         } catch {}
@@ -440,7 +440,7 @@ export async function POST(req) {
         const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true, notifEmail: true, notifOrders: true } });
         if (user?.email && user.notifEmail !== false && user.notifOrders !== false) {
           const amt = refundAmount / 100;
-          const html = walletCreditEmail(user.name || 'there', amt, 'Refund processed for your order');
+          const html = walletCreditEmail(user.name || 'there', amt, null, { kind: 'refund', orderRef: `#${order.orderId}`, failReason: percent === 100 ? 'Order cancelled' : 'Partial delivery' });
           sendEmail(user.email, `₦${amt.toLocaleString()} refunded to your Nitro wallet`, html).catch(() => {});
         }
       } catch {}
