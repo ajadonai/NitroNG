@@ -3,7 +3,7 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { checkOrder } from '@/lib/smm';
-import { sendEmail, emailWrap, batchCompletionEmail, emailRow, emailDataBox, emailCTA } from '@/lib/email';
+import { sendEmail, walletCreditEmail, batchCompletionEmail } from '@/lib/email';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { tgRefund, tgOrderCancelled, tgRefundAlert } from '@/lib/telegram';
 import { createCommission, voidCommissions } from '@/lib/commissions';
@@ -514,19 +514,12 @@ async function refundOrder(order, amount = null, emailOnly = false) {
   if (user?.email && user.notifEmail !== false && user.notifOrders !== false) {
     try {
       const isPartial = amount && amount !== order.charge;
-      const nairaAmount = (refundAmount / 100).toLocaleString();
-      const subject = isPartial ? `Partial Refund — ₦${nairaAmount} returned to your wallet` : `Order Refund — ₦${nairaAmount} returned to your wallet`;
-      const rows = emailRow('Order', order.orderId) + emailRow('Refund amount', `₦${nairaAmount}`, '#22c55e') + emailRow('Status', isPartial ? 'Partial delivery' : 'Cancelled');
-      const html = await emailWrap({
-        label: isPartial ? 'Partial Refund' : 'Refund',
-        labelBg: 'rgba(34,197,94,.1)',
-        labelColor: '#22c55e',
-        title: isPartial ? 'Partial Refund Processed' : 'Order Refund Processed',
-        body: `
-          <p class="em-t" style="font-size:15px;line-height:1.7;color:#555;margin:0 0 20px;">Your wallet has been credited.</p>
-          ${emailDataBox(rows, '#22c55e')}
-          <p class="em-t" style="font-size:13px;line-height:1.7;color:#888;margin:0 0 22px;">The refund has been automatically credited to your Nitro wallet. No action needed.</p>
-          ${emailCTA('https://nitro.ng/dashboard', 'View Dashboard')}`,
+      const nairaAmount = refundAmount / 100;
+      const subject = `₦${nairaAmount.toLocaleString()} refunded to your Nitro wallet`;
+      const html = walletCreditEmail(user.name || 'there', nairaAmount, null, {
+        kind: 'refund',
+        orderRef: `#${order.orderId}`,
+        failReason: isPartial ? 'Partial delivery' : 'Order cancelled',
       });
       sendEmail(user.email, subject, html).catch(err => log.warn(`Refund email ${order.orderId}`, err.message));
     } catch (emailErr) {

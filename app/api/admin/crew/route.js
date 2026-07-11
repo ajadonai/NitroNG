@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { requireAdmin, logActivity, canSeeSensitive, maskEmail, maskPhone } from "@/lib/admin";
 import { kickFromGroup } from "@/lib/crew-bot";
-import { sendEmail, pitRejectionEmail } from "@/lib/email";
+import { sendEmail, pitRejectionEmail, pitApprovedEmail, pitSuspendedEmail } from "@/lib/email";
 import { getTierRates, rateForRole, TIER_RATE_KEYS } from "@/lib/affiliate-settings";
 
 const MAX_RETRIES = 3;
@@ -106,7 +106,7 @@ export async function POST(req) {
     const { action, memberId, ...body } = await req.json();
 
     if (action === "approve") {
-      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true, role: true } });
+      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true, role: true, email: true } });
       const tierRates = await getTierRates();
       const rate = rateForRole(tierRates, m?.role);
       await prisma.crewMember.update({
@@ -124,6 +124,10 @@ export async function POST(req) {
         });
       }
 
+      if (m?.email) {
+        sendEmail(m.email, "You're in. Welcome to the Pit", pitApprovedEmail(m.name || 'there'),
+          'Your Pit application has been approved and your referral link is live. Log in: https://nitro.ng/pit').catch(() => {});
+      }
       await logActivity(admin.name, `Approved crew member: ${m?.name || memberId}`, 'crew');
       return Response.json({ ok: true });
     }
@@ -145,10 +149,14 @@ export async function POST(req) {
     }
 
     if (action === "suspend") {
-      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true, telegramUserId: true } });
+      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true, email: true, telegramUserId: true } });
       await prisma.crewSession.deleteMany({ where: { memberId } });
       await prisma.crewMember.update({ where: { id: memberId }, data: { status: "suspended", suspendedAt: new Date(), telegramLinkCode: null, telegramLinkCodeExpiresAt: null } });
       if (m?.telegramUserId) kickFromGroup(m.telegramUserId).catch(() => {});
+      if (m?.email) {
+        sendEmail(m.email, 'Your Pit account has been paused', pitSuspendedEmail(m.name || 'there'),
+          'Your Pit account has been suspended and commissions are on hold. If you think this is a mistake, contact support@nitro.ng').catch(() => {});
+      }
       await logActivity(admin.name, `Suspended crew member: ${m?.name || memberId}`, 'crew');
       return Response.json({ ok: true });
     }

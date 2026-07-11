@@ -3,6 +3,7 @@ import { log } from "@/lib/logger";
 import { applyWelcomeBonus } from '@/lib/welcome-bonus';
 import { trackDeposit } from '@/lib/meta-capi';
 import { tgPayment } from '@/lib/telegram';
+import { sendEmail, walletCreditEmail, referralBonusEmail } from '@/lib/email';
 
 export async function POST(req) {
   try {
@@ -61,7 +62,7 @@ export async function POST(req) {
       const couponMatch = (tx.note || '').match(/\[coupon:([^\]]+)\]/);
       const couponId = couponMatch?.[1];
 
-      const couponBonus = await prisma.$transaction(async (db) => {
+      const { couponBonus, welcomeBonus } = await prisma.$transaction(async (db) => {
         let bonus = 0;
         let bonusLabel = '';
 
@@ -93,17 +94,27 @@ export async function POST(req) {
         if (bonus > 0) {
           await db.transaction.create({ data: { userId: tx.userId, type: 'bonus', amount: bonus, status: 'Completed', note: bonusLabel } });
         }
-        await applyWelcomeBonus(db, tx.userId, amountKobo);
-        return bonus;
+        const wb = await applyWelcomeBonus(db, tx.userId, amountKobo);
+        return { couponBonus: bonus, welcomeBonus: wb };
       });
 
       log.info('Webhook', `₦${amountKobo / 100} + ₦${couponBonus / 100} bonus credited (ref: ${reference})`);
 
       try {
-        const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true, name: true, phone: true, lastIp: true, lastUa: true, lastFbp: true, lastFbc: true } });
+        const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true, name: true, phone: true, balance: true, lastIp: true, lastUa: true, lastFbp: true, lastFbc: true } });
         if (u) {
           await trackDeposit({ email: u.email, phone: u.phone, userId: tx.userId, reference, amountKobo, clientIp: u.lastIp, userAgent: u.lastUa, fbp: u.lastFbp, fbc: u.lastFbc });
           tgPayment(u.name || u.email, amountKobo, couponBonus || 0, 'Flutterwave');
+          // Deposit confirmation email (welcome bonus line renders only when > 0)
+          const amtNaira = amountKobo / 100;
+          const depositHtml = walletCreditEmail(u.name || 'there', amtNaira, null, {
+            kind: 'deposit',
+            bonus: (welcomeBonus || 0) / 100,
+            newBalance: u.balance / 100,
+            method: 'Flutterwave',
+          });
+          sendEmail(u.email, `₦${amtNaira.toLocaleString()} is in your wallet`, depositHtml,
+            `Your deposit of ₦${amtNaira.toLocaleString()} landed and is ready to spend. Place an order: https://nitro.ng/dashboard`).catch(() => {});
         }
       } catch {}
 
@@ -125,16 +136,23 @@ export async function POST(req) {
               if (referrer && !sameIp) {
                 const referrerBonus = Number(rs.ref_referrer_bonus) || 50000;
                 const inviteeBonus = Number(rs.ref_invitee_bonus) || 50000;
-                await prisma.$transaction(async (db) => {
+                const paid = await prisma.$transaction(async (db) => {
                   const exists = await db.transaction.findFirst({ where: { userId: tx.userId, type: 'referral', note: { contains: markerNote } } });
-                  if (exists) return;
+                  if (exists) return false;
                   await db.user.update({ where: { id: referrer.id }, data: { balance: { increment: referrerBonus } } });
                   await db.transaction.create({ data: { userId: referrer.id, type: 'referral', amount: referrerBonus, note: `Referral bonus: ${user.name} deposited` } });
                   if (inviteeBonus > 0) {
                     await db.user.update({ where: { id: tx.userId }, data: { balance: { increment: inviteeBonus } } });
                   }
                   await db.transaction.create({ data: { userId: tx.userId, type: 'referral', amount: inviteeBonus, note: `Referral welcome bonus ${markerNote}` } });
-                }).catch(e => log.warn('Referral race (webhook)', e.message));
+                  return true;
+                }).catch(e => { log.warn('Referral race (webhook)', e.message); return false; });
+                if (paid && referrer.email) {
+                  const refNaira = referrerBonus / 100;
+                  sendEmail(referrer.email, `You received ₦${refNaira.toLocaleString()} on Nitro!`,
+                    referralBonusEmail(referrer.name || 'there', refNaira),
+                    `Someone you referred just made their first deposit. ₦${refNaira.toLocaleString()} landed in your wallet: https://nitro.ng/dashboard`).catch(() => {});
+                }
               }
             }
           }

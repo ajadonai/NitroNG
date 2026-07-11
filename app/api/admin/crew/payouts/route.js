@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { requireAdmin, logActivity, canSeeSensitive, maskEmail, maskAccountNo } from "@/lib/admin";
 import { getMemberEarnings, raiseMoneyIssue } from "@/lib/commissions";
+import { sendEmail, payoutCompletedEmail, payoutRejectedEmail } from "@/lib/email";
 
 export async function GET() {
   const { admin, error } = await requireAdmin("crew");
@@ -46,7 +47,7 @@ export async function POST(req) {
     ({ action, payoutId, reference } = await req.json());
     payout = await prisma.affiliatePayout.findUnique({
       where: { id: payoutId },
-      include: { member: { select: { name: true, id: true, totalPaid: true } } },
+      include: { member: { select: { name: true, id: true, totalPaid: true, email: true, bankName: true, bankAccountNo: true } } },
     });
     if (!payout) return Response.json({ error: "Payout not found" }, { status: 404 });
 
@@ -97,6 +98,17 @@ export async function POST(req) {
         return Response.json({ error: payout.status === "completed" ? "Already completed" : "Cannot complete a rejected payout" }, { status: 400 });
       }
       await logActivity(admin.name, `Completed payout ${payoutId} for ${payout.member.name} (₦${(payout.amount / 100).toLocaleString()})`, 'crew');
+      if (payout.member.email) {
+        const amtN = payout.amount / 100;
+        const bankName = payout.bankName || payout.member.bankName;
+        const acctNo = payout.bankAccountNo || payout.member.bankAccountNo;
+        const bankLabel = bankName ? `${bankName}${acctNo ? ` ····${String(acctNo).slice(-4)}` : ''}` : null;
+        const dateStr = now.toLocaleDateString('en-NG', { timeZone: 'Africa/Lagos', day: 'numeric', month: 'short' }) + ' · ' + now.toLocaleTimeString('en-NG', { timeZone: 'Africa/Lagos', hour: 'numeric', minute: '2-digit' });
+        const payoutRef = ref || payoutId;
+        sendEmail(payout.member.email, `Your payout of ₦${amtN.toLocaleString()} has been sent`,
+          payoutCompletedEmail(payout.member.name || 'there', amtN, payoutRef, bankLabel, dateStr),
+          `Your payout of ₦${amtN.toLocaleString()} has been sent to your bank. Reference: ${payoutRef}. Earnings: https://nitro.ng/pit`).catch(() => {});
+      }
       return Response.json({ ok: true });
     }
 
@@ -112,6 +124,12 @@ export async function POST(req) {
         return Response.json({ error: payout.status === "rejected" ? "Already rejected" : "Cannot reject a completed payout" }, { status: 400 });
       }
       await logActivity(admin.name, `Rejected payout ${payoutId} for ${payout.member.name}`, 'crew');
+      if (payout.member.email) {
+        const amtN = payout.amount / 100;
+        sendEmail(payout.member.email, 'About your payout request',
+          payoutRejectedEmail(payout.member.name || 'there', amtN, payout.reference || null),
+          `We couldn't process your payout this time. The held ₦${amtN.toLocaleString()} is back in your commission balance. Earnings: https://nitro.ng/pit`).catch(() => {});
+      }
       return Response.json({ ok: true });
     }
 
