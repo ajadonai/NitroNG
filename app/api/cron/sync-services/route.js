@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getServices, isProviderConfigured, getProviderName, PROVIDER_IDS } from '@/lib/smm';
 import { calculateTierPrice } from '@/lib/markup';
+import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 
 function categorize(cat) {
   if (!cat) return 'Other';
@@ -138,6 +139,8 @@ export async function GET(req) {
       update: { value: JSON.stringify(state) },
       create: { key: SETTING_KEY, value: JSON.stringify(state) },
     });
+
+    if (created > 0 || updated > 0 || disabled > 0) invalidateServiceCatalogue();
 
     log.info('CronSync', `${getProviderName(next)}: ${created} new, ${updated} updated, ${disabled} disabled (${state.done.length}/${configured.length} done for ${weekKey})`);
 
