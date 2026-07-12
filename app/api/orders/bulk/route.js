@@ -12,7 +12,7 @@ import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
 import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
-import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints, reverseOrderPoints } from '@/lib/nitro-rewards';
+import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints, reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -195,23 +195,29 @@ export async function PATCH(req) {
       const result = await prisma.$transaction(async (tx) => {
         const cancellable = await tx.order.findMany({
           where: { batchId, userId: session.id, status: { in: ['Pending', 'Processing'] }, apiOrderId: null, deletedAt: null },
-          select: { id: true, charge: true, orderId: true },
+          select: { id: true, charge: true, orderId: true, nitroPointsRedeemedKobo: true },
         });
         if (cancellable.length === 0) return { cancelled: 0, refunded: 0 };
         await tx.order.updateMany({
           where: { id: { in: cancellable.map(o => o.id) } },
           data: { status: 'Cancelled', lastError: 'user_cancelled', refundedAt: new Date() },
         });
+        let totalWalletRefund = 0;
         for (const o of cancellable) {
           await restoreBonusForRefund(tx, o.id);
           await reverseOrderPoints(tx, { orderDbId: o.id, refundAmountKobo: o.charge });
+          const walletPart = o.charge - (o.nitroPointsRedeemedKobo || 0);
+          if (walletPart > 0) {
+            await tx.transaction.create({
+              data: { userId: session.id, type: 'refund', amount: walletPart, method: 'wallet', status: 'Completed', reference: `REF-${o.orderId}`, note: `Refund for cancelled order ${o.orderId}` },
+            });
+            totalWalletRefund += walletPart;
+          }
         }
-        const refundAmount = cancellable.reduce((s, o) => s + o.charge, 0);
-        await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${session.id}`;
-        await tx.transaction.create({
-          data: { userId: session.id, type: 'refund', amount: refundAmount, method: 'wallet', status: 'Completed', reference: `REF-${batchId}`, note: `Cancelled ${cancellable.length} pending orders from ${batchId}` },
-        });
-        return { cancelled: cancellable.length, refunded: refundAmount / 100 };
+        if (totalWalletRefund > 0) {
+          await tx.$executeRaw`UPDATE users SET balance = balance + ${totalWalletRefund} WHERE id = ${session.id}`;
+        }
+        return { cancelled: cancellable.length, refunded: totalWalletRefund / 100 };
       });
       if (result.cancelled === 0) return Response.json({ error: 'No cancellable orders — all have been sent to providers' }, { status: 400 });
       tgRefundAlert({ orderId: batchId, amount: result.refunded * 100, charge: result.refunded * 100, qty: result.cancelled, status: 'Cancelled', reason: 'user_cancelled (bulk)', source: 'user' });
@@ -238,37 +244,39 @@ export async function PATCH(req) {
           updated++;
 
           if (newStatus === 'Cancelled') {
-            const alreadyRefunded = await prisma.transaction.findFirst({ where: { userId: session.id, type: 'refund', reference: `REF-${order.orderId}` } });
-            if (!alreadyRefunded) {
-              await prisma.$transaction(async (tx) => {
-                const exists = await tx.transaction.findFirst({ where: { userId: session.id, type: 'refund', reference: `REF-${order.orderId}` } });
-                if (exists) return;
-                await tx.$executeRaw`UPDATE users SET balance = balance + ${order.charge} WHERE id = ${session.id}`;
+            await prisma.$transaction(async (tx) => {
+              const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: session.id });
+              const cappedRefund = Math.max(0, order.charge - alreadyRefunded);
+              if (cappedRefund <= 0) return;
+              const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, cappedRefund);
+              if (walletRefund > 0) {
+                await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${session.id}`;
                 await tx.transaction.create({
-                  data: { userId: session.id, type: 'refund', amount: order.charge, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund cancelled ${order.orderId}` },
+                  data: { userId: session.id, type: 'refund', amount: walletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund cancelled ${order.orderId}` },
                 });
-                await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: order.charge });
-              });
-            }
+              }
+              await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: cappedRefund });
+            });
           }
 
           if (newStatus === 'Partial' && result.remains) {
             const remains = Number(result.remains) || 0;
             if (remains > 0 && order.charge > 0 && order.quantity > 0) {
-              const alreadyRefunded = await prisma.transaction.findFirst({ where: { userId: session.id, type: 'refund', reference: `REF-${order.orderId}` } });
-              if (!alreadyRefunded) {
-                const refundAmount = Math.round((remains / order.quantity) * order.charge);
-                if (refundAmount > 0) {
-                  await prisma.$transaction(async (tx) => {
-                    const exists = await tx.transaction.findFirst({ where: { userId: session.id, type: 'refund', reference: `REF-${order.orderId}` } });
-                    if (exists) return;
-                    await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${session.id}`;
+              const refundAmount = Math.round((remains / order.quantity) * order.charge);
+              if (refundAmount > 0) {
+                await prisma.$transaction(async (tx) => {
+                  const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: session.id });
+                  const cappedRefund = Math.max(0, refundAmount - alreadyRefunded);
+                  if (cappedRefund <= 0) return;
+                  const { walletRefund: partialWalletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, cappedRefund);
+                  if (partialWalletRefund > 0) {
+                    await tx.$executeRaw`UPDATE users SET balance = balance + ${partialWalletRefund} WHERE id = ${session.id}`;
                     await tx.transaction.create({
-                      data: { userId: session.id, type: 'refund', amount: refundAmount, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Partial refund ${order.orderId}` },
+                      data: { userId: session.id, type: 'refund', amount: partialWalletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Partial refund ${order.orderId}` },
                     });
-                    await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
-                  });
-                }
+                  }
+                  await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: cappedRefund });
+                });
               }
             }
           }

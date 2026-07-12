@@ -147,6 +147,14 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
 
   const [creditAmt, setCreditAmt] = useState('');
   const [creditType, setCreditType] = useState('credit');
+  const [rewards, setRewards] = useState(null);
+  const [rewardsLoading, setRewardsLoading] = useState(false);
+  const [ptsAdjOpen, setPtsAdjOpen] = useState(false);
+  const [ptsAdjType, setPtsAdjType] = useState('manual_credit');
+  const [ptsAdjAmt, setPtsAdjAmt] = useState('');
+  const [ptsAdjReason, setPtsAdjReason] = useState('');
+  const [ptsAdjLoading, setPtsAdjLoading] = useState(false);
+  const canAdjustPoints = ['owner', 'superadmin'].includes(currentAdmin?.role);
   const [actionLoading, setActionLoading] = useState(false);
 
   const [txList, setTxList] = useState([]);
@@ -157,6 +165,8 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
   const searchTimer = useRef(null);
   const fetchAbortRef = useRef(null);
   const statsLoadedRef = useRef(false);
+  const rewardsReqRef = useRef(0);
+  const txReqRef = useRef(0);
 
   /* ── Debounced search ─────────────────────────── */
 
@@ -293,6 +303,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
   /* ── Transactions ─────────────────────────────── */
 
   const loadTransactions = async (user) => {
+    const reqId = ++txReqRef.current;
     setTxLoading(true); setTxList([]); setTxPage(1);
     try {
       const res = await fetch('/api/admin/users', {
@@ -301,9 +312,48 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
         body: JSON.stringify({ action: 'transactions', userId: user.id }),
       });
       const data = await res.json();
-      setTxList(data.transactions || []);
-    } catch { /* keep empty */ }
-    setTxLoading(false);
+      if (reqId === txReqRef.current) setTxList(data.transactions || []);
+    } catch {
+      if (reqId === txReqRef.current) setTxList([]);
+    } finally {
+      if (reqId === txReqRef.current) setTxLoading(false);
+    }
+  };
+
+  const loadRewards = async (user) => {
+    const reqId = ++rewardsReqRef.current;
+    setRewardsLoading(true); setRewards(null);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'rewards', userId: user.id }),
+      });
+      const data = await res.json();
+      if (reqId === rewardsReqRef.current) setRewards(data.rewards || null);
+    } catch {
+      if (reqId === rewardsReqRef.current) setRewards(null);
+    } finally {
+      if (reqId === rewardsReqRef.current) setRewardsLoading(false);
+    }
+  };
+
+  const submitPointsAdj = async () => {
+    if (!drawerUser || !ptsAdjReason.trim() || !Number(ptsAdjAmt)) return;
+    setPtsAdjLoading(true);
+    try {
+      const res = await fetch('/api/admin/rewards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: drawerUser.id, type: ptsAdjType, points: Number(ptsAdjAmt), reason: ptsAdjReason.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error('Failed', data.error || 'Could not adjust points'); return; }
+      toast.success('Done', `${ptsAdjType === 'manual_credit' ? 'Credited' : 'Debited'} ${ptsAdjAmt} pts`);
+      setPtsAdjAmt(''); setPtsAdjReason(''); setPtsAdjOpen(false);
+      loadRewards(drawerUser);
+    } catch { toast.error('Error', 'Network error'); }
+    finally { setPtsAdjLoading(false); }
   };
 
   /* ── Drawer ───────────────────────────────────── */
@@ -314,13 +364,18 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
     setCreditAmt(''); setCreditType('credit');
     setMenuUser(null);
     loadTransactions(user);
+    loadRewards(user);
   };
 
   const closeDrawer = () => {
+    rewardsReqRef.current++;
+    txReqRef.current++;
     setDrawerUser(null);
     setDrawerCreditOpen(false);
     setEditing(false);
     setTxList([]);
+    setRewards(null);
+    setPtsAdjOpen(false); setPtsAdjAmt(''); setPtsAdjReason('');
   };
 
   const startEditing = () => {
@@ -754,6 +809,113 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
                 </button>
               </div>
             </div>
+
+            {/* Nitro Rewards */}
+            <div className="mx-6 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[12px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.accent }}>Nitro Rewards</span>
+              </div>
+              {rewardsLoading ? (
+                <div className="rounded-xl p-3 space-y-1.5" style={cardStyle}>
+                  {[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? 'skel-dark' : 'skel-light'}`} style={{ height: 32, borderRadius: 6 }} />)}
+                </div>
+              ) : rewards ? (
+                <div className="rounded-xl overflow-hidden" style={cardStyle}>
+                  {/* Status + Points row */}
+                  <div className="grid grid-cols-2 gap-0">
+                    <div className="py-2.5 px-3" style={{ borderRight: `1px solid ${dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)'}` }}>
+                      <div className="text-[10px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.textMuted }}>Status</div>
+                      <div className="text-[14px] font-bold mt-0.5" style={{ color: t.accent }}>{rewards.status.name}</div>
+                      <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>
+                        {rewards.status.nextName ? `${fN(rewards.status.remainingToNext)} to ${rewards.status.nextName}` : 'Max tier'}
+                      </div>
+                    </div>
+                    <div className="py-2.5 px-3">
+                      <div className="text-[10px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.textMuted }}>Points</div>
+                      <div className="text-[14px] font-bold mt-0.5" style={{ color: t.text }}>{(rewards.points.balance || 0).toLocaleString()}</div>
+                      <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>₦{(rewards.points.valueNaira || 0).toLocaleString()} value</div>
+                    </div>
+                  </div>
+                  {/* Spend + progress */}
+                  <div className="py-2.5 px-3" style={{ borderTop: `1px solid ${dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)'}` }}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.textMuted }}>Eligible spend</span>
+                      <span className="text-[12px] font-bold" style={{ color: t.text, fontFamily: 'JetBrains Mono, monospace' }}>{fN(rewards.status.eligibleSpend)}</span>
+                    </div>
+                    <div className="h-[4px] rounded-full overflow-hidden" style={{ background: dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.06)' }}>
+                      <div className="h-full rounded-full" style={{ width: `${rewards.status.progressPct}%`, background: t.accent }} />
+                    </div>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-[10px]" style={{ color: t.textMuted }}>{rewards.status.discountPct}% discount</span>
+                      <span className="text-[10px]" style={{ color: t.textMuted }}>{rewards.status.pointEarnPct}% earn rate</span>
+                    </div>
+                  </div>
+                  {/* Totals */}
+                  {rewards.totals && Object.keys(rewards.totals).length > 0 && (
+                    <div className="py-2.5 px-3" style={{ borderTop: `1px solid ${dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)'}` }}>
+                      <div className="text-[10px] font-semibold uppercase tracking-[0.5px] mb-1.5" style={{ color: t.textMuted }}>Lifetime totals</div>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
+                        {[
+                          ['earned_order', 'Earned', t.green],
+                          ['redeemed_order', 'Redeemed', t.red],
+                          ['reversed_refund', 'Reversed', t.amber],
+                          ['restored_refund', 'Restored', t.green],
+                          ['manual_credit', 'Credited', t.accent],
+                          ['manual_debit', 'Debited', t.red],
+                        ].filter(([type]) => rewards.totals[type]).map(([type, label, color]) => (
+                          <span key={type} style={{ color }}>{label}: <span className="font-bold" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{Math.abs(Math.round((rewards.totals[type].kobo || 0) / 100)).toLocaleString()}</span></span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* Recent ledger */}
+                  {rewards.history?.length > 0 && (
+                    <div style={{ borderTop: `1px solid ${dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)'}` }}>
+                      <div className="py-2 px-3">
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.textMuted }}>Recent activity</div>
+                      </div>
+                      {rewards.history.slice(0, 8).map((entry, j) => (
+                        <div key={j} className="flex items-center gap-2 py-1.5 px-3 text-[11px]" style={{ borderTop: `1px solid ${dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.03)'}` }}>
+                          <span className="w-[42px] text-center text-[9px] py-[1px] px-1 rounded uppercase font-semibold tracking-[0.3px] shrink-0" style={{
+                            background: entry.kind === 'earned' ? (dark ? 'rgba(110,231,183,.12)' : 'rgba(5,150,105,.08)') : entry.kind === 'spent' ? (dark ? 'rgba(252,165,165,.12)' : 'rgba(220,38,38,.06)') : (dark ? 'rgba(251,191,36,.12)' : 'rgba(217,119,6,.06)'),
+                            color: entry.kind === 'earned' ? t.green : entry.kind === 'spent' ? t.red : t.amber
+                          }}>{entry.label}</span>
+                          <span className="flex-1 min-w-0 truncate" style={{ color: t.textSoft }}>{entry.ref}</span>
+                          <span className="font-bold shrink-0" style={{ color: entry.pts >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>{entry.pts >= 0 ? '+' : ''}{entry.pts}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-xl py-4 text-center text-[12px]" style={{ ...cardStyle, color: t.textMuted }}>No rewards data</div>
+              )}
+            </div>
+
+            {/* Points adjustment */}
+            {canAdjustPoints && rewards && (
+              <div className="mx-6 mb-4">
+                {!ptsAdjOpen ? (
+                  <button onClick={() => setPtsAdjOpen(true)} className="w-full py-2 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] border-none" style={{ background: dark ? 'rgba(251,191,36,.1)' : 'rgba(217,119,6,.06)', color: t.amber }}>Adjust Points</button>
+                ) : (
+                  <div className="rounded-xl p-4" style={cardStyle}>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-2" style={{ color: t.amber }}>Manual Points Adjustment</div>
+                    <div className="py-2 px-3 rounded-lg text-[11px] leading-relaxed mb-3" style={{ background: dark ? 'rgba(251,191,36,.08)' : 'rgba(217,119,6,.05)', color: t.textSoft }}>This changes redeemable points and finance liability.</div>
+                    <div className="flex rounded-lg overflow-hidden mb-3" style={{ border: `1px solid ${t.cardBorder}` }}>
+                      {[['manual_credit', 'Credit'], ['manual_debit', 'Debit']].map(([val, label]) => (
+                        <button key={val} onClick={() => setPtsAdjType(val)} className="flex-1 py-2 text-[12px] font-semibold border-none cursor-pointer font-[inherit]" style={{ background: ptsAdjType === val ? (val === 'manual_credit' ? (dark ? 'rgba(110,231,183,.15)' : 'rgba(5,150,105,.08)') : (dark ? 'rgba(252,165,165,.15)' : 'rgba(220,38,38,.06)')) : 'transparent', color: ptsAdjType === val ? (val === 'manual_credit' ? t.green : t.red) : t.textMuted }}>{label}</button>
+                      ))}
+                    </div>
+                    <input type="number" placeholder="Points" value={ptsAdjAmt} onChange={e => setPtsAdjAmt(e.target.value)} min="1" className="w-full py-2.5 px-3 rounded-lg text-[13px] outline-none font-[inherit] mb-2" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? '#131728' : '#fff', color: t.text }} />
+                    <input type="text" placeholder="Reason (required)" value={ptsAdjReason} onChange={e => setPtsAdjReason(e.target.value)} className="w-full py-2.5 px-3 rounded-lg text-[13px] outline-none font-[inherit] mb-3" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? '#131728' : '#fff', color: t.text }} />
+                    <div className="flex gap-2">
+                      <button onClick={submitPointsAdj} disabled={ptsAdjLoading || !Number(ptsAdjAmt) || !ptsAdjReason.trim()} className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold cursor-pointer font-[inherit] border-none" style={{ background: ptsAdjType === 'manual_credit' ? 'linear-gradient(135deg,#059669,#047857)' : 'linear-gradient(135deg,#dc2626,#991b1b)', color: '#fff', opacity: (Number(ptsAdjAmt) > 0 && ptsAdjReason.trim() && !ptsAdjLoading) ? 1 : .4 }}>{ptsAdjLoading ? 'Processing…' : ptsAdjType === 'manual_credit' ? `Credit ${ptsAdjAmt || '0'} pts` : `Debit ${ptsAdjAmt || '0'} pts`}</button>
+                      <button onClick={() => { setPtsAdjOpen(false); setPtsAdjAmt(''); setPtsAdjReason(''); }} className="py-2.5 px-4 rounded-lg text-[12px] font-semibold cursor-pointer font-[inherit]" style={{ border: `1px solid ${t.cardBorder}`, background: 'transparent', color: t.textMuted }}>Cancel</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Credit form */}
             {drawerCreditOpen && (

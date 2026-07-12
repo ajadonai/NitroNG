@@ -124,7 +124,7 @@ export async function GET(req) {
         } else {
           await prisma.dripDispatch.update({
             where: { id: dispatch.id },
-            data: { status: 'pending', lastError: 'no_order_id', dispatchedAt: null },
+            data: { status: 'failed', lastError: 'no_order_id' },
           });
           stats.dispatchFailed++;
         }

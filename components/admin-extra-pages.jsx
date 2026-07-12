@@ -604,6 +604,43 @@ export function AdminCouponsPage({ dark, t }) {
 
   const [rewardsTab, setRewardsTab] = useState("referrals");
 
+  // Points ledger
+  const [ledger, setLedger] = useState([]);
+  const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [ledgerPage, setLedgerPage] = useState(1);
+  const [ledgerTotal, setLedgerTotal] = useState(0);
+  const [ledgerTotalPages, setLedgerTotalPages] = useState(1);
+  const [ledgerSearch, setLedgerSearch] = useState('');
+  const [ledgerType, setLedgerType] = useState('');
+  const [ledgerFrom, setLedgerFrom] = useState('');
+  const [ledgerTo, setLedgerTo] = useState('');
+  const ledgerTimer = useRef(null);
+  const ledgerReqRef = useRef(0);
+
+  const fetchLedger = useCallback(async (pg = 1, searchVal, typeVal, fromVal, toVal) => {
+    const reqId = ++ledgerReqRef.current;
+    setLedgerLoading(true);
+    const params = new URLSearchParams({ page: String(pg), perPage: '25' });
+    if (searchVal) params.set('search', searchVal);
+    if (typeVal) params.set('type', typeVal);
+    if (fromVal) params.set('from', fromVal);
+    if (toVal) params.set('to', toVal);
+    try {
+      const res = await fetch(`/api/admin/rewards?${params}`);
+      if (!res.ok) { if (reqId === ledgerReqRef.current) { setLedger([]); setLedgerTotal(0); setLedgerTotalPages(1); } return; }
+      const data = await res.json();
+      if (reqId !== ledgerReqRef.current) return;
+      setLedger(data.entries || []);
+      setLedgerTotal(data.total || 0);
+      setLedgerTotalPages(data.totalPages || 1);
+      setLedgerPage(data.page || 1);
+    } catch {
+      if (reqId === ledgerReqRef.current) setLedger([]);
+    } finally {
+      if (reqId === ledgerReqRef.current) setLedgerLoading(false);
+    }
+  }, []);
+
   // Loyalty tier settings
   const DEFAULT_TIERS = [
     { name: "Starter", threshold: 0, discount: 0, perks: "Welcome to Nitro", color: "#6B7280" },
@@ -694,7 +731,7 @@ export function AdminCouponsPage({ dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Rewards</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage referrals, coupons, and loyalty program</div>
           </div>
-          <SegPill value={rewardsTab} options={[{value: "referrals", label: "Referrals"}, {value: "coupons", label: "Coupons"}, {value: "loyalty", label: "Loyalty"}]} onChange={setRewardsTab} dark={dark} t={t} />
+          <SegPill value={rewardsTab} options={[{value: "referrals", label: "Referrals"}, {value: "coupons", label: "Coupons"}, {value: "loyalty", label: "Loyalty"}, {value: "ledger", label: "Points Ledger"}]} onChange={v => { setRewardsTab(v); if (v === 'ledger' && ledger.length === 0 && !ledgerLoading) fetchLedger(1, ledgerSearch, ledgerType, ledgerFrom, ledgerTo); }} dark={dark} t={t} />
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -881,6 +918,85 @@ export function AdminCouponsPage({ dark, t }) {
         <div className="mt-4">
           <button onClick={saveLoyalty} disabled={loyaltySaving} className="adm-btn-primary" style={{ opacity: loyaltySaving ? .5 : 1 }}>{loyaltySaving ? "Saving..." : "Save Loyalty Settings"}</button>
         </div>
+        </div>
+      </div>
+      )}
+
+      {/* ═══ POINTS LEDGER TAB ═══ */}
+      {rewardsTab === "ledger" && (
+      <div className="adm-card mb-5" style={{ background: cardBg, border: cardBd }}>
+        <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+          <div className="set-card-title" style={{ color: t.textMuted }}>Nitro Points Ledger</div>
+          {ledgerTotal > 0 && <span className="text-[12px] font-medium" style={{ color: t.textSoft }}>{ledgerTotal.toLocaleString()} entries</span>}
+        </div>
+        <div className="set-card-body">
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <input value={ledgerSearch} onChange={e => { const v = e.target.value; setLedgerSearch(v); clearTimeout(ledgerTimer.current); ledgerTimer.current = setTimeout(() => fetchLedger(1, v, ledgerType, ledgerFrom, ledgerTo), 400); }} placeholder="Search user, order, reason…" className={inputCls} style={{ ...inputStyle, flex: '1 1 180px', minWidth: 140 }} />
+            <select value={ledgerType} onChange={e => { const v = e.target.value; setLedgerType(v); fetchLedger(1, ledgerSearch, v, ledgerFrom, ledgerTo); }} className={inputCls} style={{ ...inputStyle, flex: '0 0 150px', minWidth: 120 }}>
+              <option value="">All types</option>
+              <option value="earned_order">Earned</option>
+              <option value="redeemed_order">Redeemed</option>
+              <option value="reversed_refund">Reversed</option>
+              <option value="restored_refund">Restored</option>
+              <option value="manual_credit">Manual credit</option>
+              <option value="manual_debit">Manual debit</option>
+              <option value="opening_balance">Opening balance</option>
+            </select>
+            <input type="date" value={ledgerFrom} onChange={e => { const v = e.target.value; setLedgerFrom(v); fetchLedger(1, ledgerSearch, ledgerType, v, ledgerTo); }} className={inputCls} style={{ ...inputStyle, flex: '0 0 140px', minWidth: 120 }} />
+            <input type="date" value={ledgerTo} onChange={e => { const v = e.target.value; setLedgerTo(v); fetchLedger(1, ledgerSearch, ledgerType, ledgerFrom, v); }} className={inputCls} style={{ ...inputStyle, flex: '0 0 140px', minWidth: 120 }} />
+          </div>
+
+          {/* Table */}
+          {ledgerLoading ? (
+            <div className="space-y-1.5">
+              {[1,2,3,4,5].map(i => <div key={i} className={`skel-bone ${dark ? 'skel-dark' : 'skel-light'}`} style={{ height: 36, borderRadius: 6 }} />)}
+            </div>
+          ) : ledger.length > 0 ? (
+            <div className="rounded-xl overflow-hidden border" style={{ borderColor: dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)' }}>
+              <div className="overflow-x-auto">
+              <table className="w-full text-[12px]" style={{ borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: dark ? 'rgba(196,125,142,.12)' : 'rgba(196,125,142,.06)' }}>
+                    {['Date', 'User', 'Type', 'Points', 'Order', 'Reason/Admin'].map(h => (
+                      <th key={h} className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.textMuted, borderBottom: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)'}` }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {ledger.map((e, i) => (
+                    <tr key={e.id} style={{ borderBottom: i < ledger.length - 1 ? `1px solid ${dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.04)'}` : 'none' }}>
+                      <td className="py-2 px-3 whitespace-nowrap" style={{ color: t.textSoft }}>{fD(e.createdAt, true)}</td>
+                      <td className="py-2 px-3 max-w-[140px] truncate" style={{ color: t.text }}>{e.userName || e.userEmail || e.userId.slice(0, 8)}</td>
+                      <td className="py-2 px-3">
+                        <span className="text-[10px] py-[2px] px-1.5 rounded font-semibold uppercase tracking-[0.3px]" style={{
+                          background: e.points >= 0 ? (dark ? 'rgba(110,231,183,.12)' : 'rgba(5,150,105,.08)') : (dark ? 'rgba(252,165,165,.12)' : 'rgba(220,38,38,.06)'),
+                          color: e.points >= 0 ? t.green : t.red,
+                        }}>{e.type.replace(/_/g, ' ').replace('order', '').replace('refund', '').trim()}</span>
+                      </td>
+                      <td className="py-2 px-3 font-bold whitespace-nowrap" style={{ color: e.points >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>{e.points >= 0 ? '+' : ''}{e.points.toLocaleString()}</td>
+                      <td className="py-2 px-3 whitespace-nowrap" style={{ color: t.textSoft }}>{e.orderRef ? `#${e.orderRef}` : '—'}</td>
+                      <td className="py-2 px-3 max-w-[160px] truncate" style={{ color: t.textSoft }}>{e.adminName ? `[${e.adminName}] ` : ''}{e.reason || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+
+              {/* Pagination */}
+              {ledgerTotalPages > 1 && (
+                <div className="flex items-center justify-between py-2.5 px-3" style={{ borderTop: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)'}` }}>
+                  <span className="text-[11px]" style={{ color: t.textMuted }}>Page {ledgerPage} of {ledgerTotalPages} ({ledgerTotal})</span>
+                  <div className="flex gap-1">
+                    <button onClick={() => fetchLedger(ledgerPage - 1, ledgerSearch, ledgerType, ledgerFrom, ledgerTo)} disabled={ledgerPage <= 1} className="py-1 px-2.5 rounded text-[11px] cursor-pointer font-[inherit] border-none" style={{ background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)', color: t.textSoft, opacity: ledgerPage <= 1 ? .35 : 1 }}>Prev</button>
+                    <button onClick={() => fetchLedger(ledgerPage + 1, ledgerSearch, ledgerType, ledgerFrom, ledgerTo)} disabled={ledgerPage >= ledgerTotalPages} className="py-1 px-2.5 rounded text-[11px] cursor-pointer font-[inherit] border-none" style={{ background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)', color: t.textSoft, opacity: ledgerPage >= ledgerTotalPages ? .35 : 1 }}>Next</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="py-8 text-center text-[13px]" style={{ color: t.textMuted }}>{ledgerSearch || ledgerType || ledgerFrom || ledgerTo ? 'No entries match filters' : 'No points ledger entries yet'}</div>
+          )}
         </div>
       </div>
       )}

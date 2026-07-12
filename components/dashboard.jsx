@@ -30,7 +30,6 @@ const GuidePage = dynamic(() => import("./guide-page").then(m => m.default), { s
 const GuideSidebar = dynamic(() => import("./guide-page").then(m => m.GuideSidebar), { ssr: false });
 const LeaderboardPage = dynamic(() => import("./leaderboard-page").then(m => m.default), { ssr: false });
 const LeaderboardCard = dynamic(() => import("./leaderboard-page").then(m => m.LeaderboardCard), { ssr: false });
-const TierPerksCard = dynamic(() => import("./leaderboard-page").then(m => m.TierPerksCard), { ssr: false });
 const EarnPage = dynamic(() => import("./earn-page").then(m => m.default), { ssr: false });
 
 /* ═══════════════════════════════════════════ */
@@ -1344,7 +1343,7 @@ function DashboardInner({ initialData }) {
           ) : isGuide ? (
             <GuideSidebar dark={dark} t={t} />
           ) : isLeaderboard ? (
-            <><TierPerksCard dark={dark} t={t} /><LeaderboardCard dark={dark} t={t} /></>
+            <LeaderboardCard dark={dark} t={t} />
           ) : isAudit ? (
             <>
               <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>What you'll get</div>

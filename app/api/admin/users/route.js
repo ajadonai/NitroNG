@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction, canSeeSensitive, maskEmail, maskPhone } from '@/lib/admin';
 import { sendEmail, walletCreditEmail } from '@/lib/email';
+import { getRewardsPayload, getPointsTotals, getPointsHistory } from '@/lib/nitro-rewards';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('users');
@@ -151,6 +152,20 @@ export async function POST(req) {
     const { action, userId, amount, subtype } = body;
 
     if (!userId) return Response.json({ error: 'User ID required' }, { status: 400 });
+
+    // Rewards is read-only
+    if (action === 'rewards') {
+      const { admin, error } = await requireAdmin('users');
+      if (error) return error;
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+      if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
+      const [payload, totals, history] = await Promise.all([
+        getRewardsPayload(userId),
+        getPointsTotals(userId),
+        getPointsHistory(userId, 20),
+      ]);
+      return Response.json({ rewards: { ...payload, totals, history } });
+    }
 
     // Transactions is read-only — doesn't need write permission
     if (action === 'transactions') {

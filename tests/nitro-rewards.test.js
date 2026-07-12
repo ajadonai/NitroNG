@@ -7,7 +7,7 @@ const mockPrisma = {
   order: { findMany: vi.fn() },
   transaction: { aggregate: vi.fn() },
   orderCreditUsage: { aggregate: vi.fn() },
-  nitroPointLedger: { aggregate: vi.fn(), findMany: vi.fn() },
+  nitroPointLedger: { aggregate: vi.fn(), findMany: vi.fn(), groupBy: vi.fn() },
 };
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
 
@@ -16,11 +16,15 @@ const {
   getStatusTiers,
   getEligibleSpendKobo,
   getPointsBalanceKobo,
+  getPointsBalanceKoboTx,
   getRewardsPayload,
   computeNitroDiscount,
   computePointsEarnedKobo,
   awardOrderPoints,
   reverseOrderPoints,
+  computeRefundSplit,
+  getTotalRefundedKobo,
+  getPointsTotals,
   STATUS_TIERS,
   MIN_REDEEM_POINTS,
 } = await import('@/lib/nitro-rewards');
@@ -173,6 +177,25 @@ describe('getEligibleSpendKobo', () => {
     expect(mockPrisma.orderCreditUsage.aggregate).toHaveBeenCalledWith(
       expect.objectContaining({ where: { orderId: { in: ['db-1'] } } }),
     );
+  });
+
+  it('subtracts redeemed points from eligible spend', async () => {
+    mockPrisma.order.findMany.mockResolvedValue([
+      { id: 'db-1', orderId: 'NTR-1', charge: 1000000, nitroPointsRedeemedKobo: 500000 },
+    ]);
+    mockPrisma.transaction.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
+
+    expect(await getEligibleSpendKobo('user1')).toBe(500000);
+  });
+
+  it('subtracts both bonus and redeemed points from eligible spend', async () => {
+    mockPrisma.order.findMany.mockResolvedValue([
+      { id: 'db-1', orderId: 'NTR-1', charge: 1000000, nitroPointsRedeemedKobo: 300000 },
+    ]);
+    mockPrisma.transaction.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
+    mockPrisma.orderCreditUsage.aggregate.mockResolvedValue({ _sum: { amount: 200000 } });
+
+    expect(await getEligibleSpendKobo('user1')).toBe(500000);
   });
 });
 
@@ -525,5 +548,253 @@ describe('reverseOrderPoints', () => {
         orderId: 'db-drip',
       }),
     });
+  });
+});
+
+// ── Phase 4: Redemption helpers ──
+
+describe('getPointsBalanceKoboTx', () => {
+  it('returns balance from transaction-scoped aggregate', async () => {
+    const mockTx = {
+      nitroPointLedger: { aggregate: vi.fn().mockResolvedValue({ _sum: { pointsKobo: 750000 } }) },
+    };
+    const result = await getPointsBalanceKoboTx(mockTx, 'u1');
+    expect(result).toBe(750000);
+    expect(mockTx.nitroPointLedger.aggregate).toHaveBeenCalledWith({
+      where: { userId: 'u1' },
+      _sum: { pointsKobo: true },
+    });
+  });
+
+  it('returns 0 when no ledger entries', async () => {
+    const mockTx = {
+      nitroPointLedger: { aggregate: vi.fn().mockResolvedValue({ _sum: { pointsKobo: null } }) },
+    };
+    const result = await getPointsBalanceKoboTx(mockTx, 'u1');
+    expect(result).toBe(0);
+  });
+});
+
+describe('computeRefundSplit', () => {
+  it('returns full charge as wallet refund when no points redeemed', () => {
+    const { walletRefund, pointsRestore } = computeRefundSplit(500000, 0, 500000);
+    expect(walletRefund).toBe(500000);
+    expect(pointsRestore).toBe(0);
+  });
+
+  it('splits full refund between wallet and points', () => {
+    const { walletRefund, pointsRestore } = computeRefundSplit(1000000, 500000, 1000000);
+    expect(walletRefund).toBe(500000);
+    expect(pointsRestore).toBe(500000);
+  });
+
+  it('splits partial refund proportionally', () => {
+    // Order: 1000000 charge, 400000 redeemed. 50% refund.
+    const { walletRefund, pointsRestore } = computeRefundSplit(1000000, 400000, 500000);
+    // walletPaid = 600000, fraction = 0.5 → walletRefund = 300000
+    expect(walletRefund).toBe(300000);
+    // pointsRestore = floor(400000 * 0.5) = 200000
+    expect(pointsRestore).toBe(200000);
+  });
+
+  it('returns zeros when charge is 0', () => {
+    const { walletRefund, pointsRestore } = computeRefundSplit(0, 0, 0);
+    expect(walletRefund).toBe(0);
+    expect(pointsRestore).toBe(0);
+  });
+
+  it('handles fully points-funded order refund', () => {
+    const { walletRefund, pointsRestore } = computeRefundSplit(500000, 500000, 500000);
+    expect(walletRefund).toBe(0);
+    expect(pointsRestore).toBe(500000);
+  });
+
+  it('floors fractional amounts', () => {
+    // charge=333333, redeemed=100000, refund=166666 (50% ish)
+    const { walletRefund, pointsRestore } = computeRefundSplit(333333, 100000, 166666);
+    expect(walletRefund).toBe(Math.floor(233333 * 166666 / 333333));
+    expect(pointsRestore).toBe(Math.floor(100000 * 166666 / 333333));
+  });
+});
+
+describe('reverseOrderPoints — point restoration', () => {
+  const mockTx = {
+    order: { findUnique: vi.fn() },
+    nitroPointLedger: { aggregate: vi.fn(), create: vi.fn() },
+  };
+
+  beforeEach(() => {
+    mockTx.order.findUnique.mockReset();
+    mockTx.nitroPointLedger.aggregate.mockReset();
+    mockTx.nitroPointLedger.create.mockReset();
+    mockTx.nitroPointLedger.aggregate.mockResolvedValue({ _sum: { pointsKobo: 0 } });
+  });
+
+  it('restores redeemed points on full refund', async () => {
+    mockTx.order.findUnique.mockResolvedValue({
+      charge: 1000000, nitroPointsEarnedKobo: 5000, nitroPointsRedeemedKobo: 500000,
+      userId: 'u1', nitroStatusAtPurchase: 'pulse',
+    });
+    await reverseOrderPoints(mockTx, { orderDbId: 'db-r1', refundAmountKobo: 1000000 });
+    const calls = mockTx.nitroPointLedger.create.mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[0][0].data).toEqual(expect.objectContaining({ type: 'reversed_refund', pointsKobo: -5000 }));
+    expect(calls[1][0].data).toEqual(expect.objectContaining({ type: 'restored_refund', pointsKobo: 500000, orderId: 'db-r1' }));
+  });
+
+  it('restores proportionally on partial refund', async () => {
+    mockTx.order.findUnique.mockResolvedValue({
+      charge: 1000000, nitroPointsEarnedKobo: 10000, nitroPointsRedeemedKobo: 400000,
+      userId: 'u1', nitroStatusAtPurchase: 'boost',
+    });
+    await reverseOrderPoints(mockTx, { orderDbId: 'db-r2', refundAmountKobo: 500000 });
+    const calls = mockTx.nitroPointLedger.create.mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[1][0].data.type).toBe('restored_refund');
+    expect(calls[1][0].data.pointsKobo).toBe(200000); // floor(400000 * 500000/1000000)
+  });
+
+  it('caps restoration at unrestored amount', async () => {
+    mockTx.order.findUnique.mockResolvedValue({
+      charge: 1000000, nitroPointsEarnedKobo: 0, nitroPointsRedeemedKobo: 400000,
+      userId: 'u1', nitroStatusAtPurchase: 'pulse',
+    });
+    // No reversed_refund aggregate (earned=0), only restored_refund aggregate
+    mockTx.nitroPointLedger.aggregate
+      .mockResolvedValueOnce({ _sum: { pointsKobo: 300000 } });
+    await reverseOrderPoints(mockTx, { orderDbId: 'db-r3', refundAmountKobo: 500000 });
+    const calls = mockTx.nitroPointLedger.create.mock.calls;
+    expect(calls).toHaveLength(1);
+    expect(calls[0][0].data.pointsKobo).toBe(100000); // capped: 400000 - 300000 = 100000
+  });
+
+  it('skips restoration when order had no points redeemed', async () => {
+    mockTx.order.findUnique.mockResolvedValue({
+      charge: 500000, nitroPointsEarnedKobo: 2500, nitroPointsRedeemedKobo: 0,
+      userId: 'u1', nitroStatusAtPurchase: 'spark',
+    });
+    await reverseOrderPoints(mockTx, { orderDbId: 'db-r4', refundAmountKobo: 500000 });
+    const calls = mockTx.nitroPointLedger.create.mock.calls;
+    expect(calls).toHaveLength(1);
+    expect(calls[0][0].data.type).toBe('reversed_refund');
+  });
+
+  it('skips restoration when already fully restored', async () => {
+    mockTx.order.findUnique.mockResolvedValue({
+      charge: 500000, nitroPointsEarnedKobo: 0, nitroPointsRedeemedKobo: 500000,
+      userId: 'u1', nitroStatusAtPurchase: 'pulse',
+    });
+    // No reversed_refund aggregate (earned=0), only restored_refund aggregate
+    mockTx.nitroPointLedger.aggregate
+      .mockResolvedValueOnce({ _sum: { pointsKobo: 500000 } });
+    await reverseOrderPoints(mockTx, { orderDbId: 'db-r5', refundAmountKobo: 500000 });
+    expect(mockTx.nitroPointLedger.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('getTotalRefundedKobo', () => {
+  it('sums wallet refund transactions and restored points', async () => {
+    const mockTx = {
+      transaction: { aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 250000 } }) },
+      nitroPointLedger: { aggregate: vi.fn().mockResolvedValue({ _sum: { pointsKobo: 200000 } }) },
+    };
+    const result = await getTotalRefundedKobo(mockTx, { orderId: 'NTR-1', orderDbId: 'db-1', userId: 'u1' });
+    expect(result).toBe(450000);
+    expect(mockTx.transaction.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          reference: { in: ['REF-NTR-1', 'ADM-REF-NTR-1'] },
+        }),
+      }),
+    );
+    expect(mockTx.nitroPointLedger.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { orderId: 'db-1', type: 'restored_refund' },
+      }),
+    );
+  });
+
+  it('returns 0 when no refunds exist', async () => {
+    const mockTx = {
+      transaction: { aggregate: vi.fn().mockResolvedValue({ _sum: { amount: null } }) },
+      nitroPointLedger: { aggregate: vi.fn().mockResolvedValue({ _sum: { pointsKobo: null } }) },
+    };
+    const result = await getTotalRefundedKobo(mockTx, { orderId: 'NTR-2', orderDbId: 'db-2', userId: 'u1' });
+    expect(result).toBe(0);
+  });
+
+  it('handles wallet-only refund (no points restored)', async () => {
+    const mockTx = {
+      transaction: { aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 500000 } }) },
+      nitroPointLedger: { aggregate: vi.fn().mockResolvedValue({ _sum: { pointsKobo: 0 } }) },
+    };
+    const result = await getTotalRefundedKobo(mockTx, { orderId: 'NTR-3', orderDbId: 'db-3', userId: 'u1' });
+    expect(result).toBe(500000);
+  });
+});
+
+describe('reverseOrderPoints — partial then cancelled (bulk check regression)', () => {
+  const mockTx = {
+    order: { findUnique: vi.fn() },
+    nitroPointLedger: { aggregate: vi.fn(), create: vi.fn() },
+  };
+
+  beforeEach(() => {
+    mockTx.order.findUnique.mockReset();
+    mockTx.nitroPointLedger.aggregate.mockReset();
+    mockTx.nitroPointLedger.create.mockReset();
+  });
+
+  it('restores remaining redeemed points after prior partial refund', async () => {
+    // Order: charge=1000000, earned=5000, redeemed=500000
+    // First refund (partial 50%) already reversed 2500 earned and restored 250000 redeemed
+    // Second refund (remaining 50%) should reverse remaining 2500 and restore remaining 250000
+    mockTx.order.findUnique.mockResolvedValue({
+      charge: 1000000, nitroPointsEarnedKobo: 5000, nitroPointsRedeemedKobo: 500000,
+      userId: 'u1', nitroStatusAtPurchase: 'pulse',
+    });
+    mockTx.nitroPointLedger.aggregate
+      .mockResolvedValueOnce({ _sum: { pointsKobo: -2500 } })   // already reversed earned
+      .mockResolvedValueOnce({ _sum: { pointsKobo: 250000 } }); // already restored redeemed
+
+    await reverseOrderPoints(mockTx, { orderDbId: 'db-bulk', refundAmountKobo: 500000 });
+
+    const calls = mockTx.nitroPointLedger.create.mock.calls;
+    expect(calls).toHaveLength(2);
+    // Reverses remaining earned: floor(5000 * 500000/1000000) = 2500, capped at 5000-2500 = 2500
+    expect(calls[0][0].data).toEqual(expect.objectContaining({ type: 'reversed_refund', pointsKobo: -2500 }));
+    // Restores remaining redeemed: floor(500000 * 500000/1000000) = 250000, capped at 500000-250000 = 250000
+    expect(calls[1][0].data).toEqual(expect.objectContaining({ type: 'restored_refund', pointsKobo: 250000 }));
+  });
+});
+
+describe('getPointsTotals', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('returns totals grouped by type', async () => {
+    mockPrisma.nitroPointLedger.groupBy.mockResolvedValue([
+      { type: 'earned_order', _sum: { pointsKobo: 50000 }, _count: 5 },
+      { type: 'redeemed_order', _sum: { pointsKobo: -20000 }, _count: 2 },
+      { type: 'reversed_refund', _sum: { pointsKobo: -5000 }, _count: 1 },
+    ]);
+    const totals = await getPointsTotals('u1');
+    expect(totals.earned_order).toEqual({ kobo: 50000, count: 5 });
+    expect(totals.redeemed_order).toEqual({ kobo: -20000, count: 2 });
+    expect(totals.reversed_refund).toEqual({ kobo: -5000, count: 1 });
+    expect(totals.manual_credit).toBeUndefined();
+  });
+
+  it('returns empty object when no ledger entries', async () => {
+    mockPrisma.nitroPointLedger.groupBy.mockResolvedValue([]);
+    const totals = await getPointsTotals('u1');
+    expect(totals).toEqual({});
+  });
+
+  it('handles null sum as 0', async () => {
+    mockPrisma.nitroPointLedger.groupBy.mockResolvedValue([
+      { type: 'earned_order', _sum: { pointsKobo: null }, _count: 0 },
+    ]);
+    const totals = await getPointsTotals('u1');
+    expect(totals.earned_order).toEqual({ kobo: 0, count: 0 });
   });
 });

@@ -349,8 +349,9 @@ export function AdminPaymentsPage({ dark, t }) {
 export function AdminFinancePage({ dark, t, admin }) {
   const [tab, setTab] = useState("overview");
   const canBreakdown = admin?.pages === "*" || (Array.isArray(admin?.pages) && admin.pages.includes("financials"));
+  const canRewards = admin?.pages === "*" || (Array.isArray(admin?.pages) && admin.pages.includes("rewards"));
 
-
+  const subtitles = { overview: "Revenue, growth, and performance", breakdown: "Complete money flow breakdown", rewards: "Nitro Points liability and activity" };
 
   return (
     <>
@@ -358,13 +359,15 @@ export function AdminFinancePage({ dark, t, admin }) {
         <div className="adm-header-row">
           <div>
             <div className="adm-title" style={{ color: t.text }}>Finance</div>
-            <div className="adm-subtitle" style={{ color: t.textMuted }}>{tab === "overview" ? "Revenue, growth, and performance" : "Complete money flow breakdown"}</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>{subtitles[tab] || subtitles.overview}</div>
           </div>
-          <SegPill value={tab} options={[{value: "overview", label: "Overview"}, ...(canBreakdown ? [{value: "breakdown", label: "Breakdown"}] : [])]} onChange={setTab} dark={dark} t={t} />
+          <SegPill value={tab} options={[{value: "overview", label: "Overview"}, ...(canBreakdown ? [{value: "breakdown", label: "Breakdown"}] : []), ...(canRewards ? [{value: "rewards", label: "Rewards"}] : [])]} onChange={setTab} dark={dark} t={t} />
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
-      {tab === "overview" ? <FinanceOverviewTab dark={dark} t={t} /> : <FinanceBreakdownTab dark={dark} t={t} />}
+      {tab === "overview" && <FinanceOverviewTab dark={dark} t={t} />}
+      {tab === "breakdown" && <FinanceBreakdownTab dark={dark} t={t} />}
+      {tab === "rewards" && <FinanceRewardsTab dark={dark} t={t} />}
     </>
   );
 }
@@ -1426,5 +1429,89 @@ function FinanceBreakdownTab({ dark, t }) {
       </>}
       </>}
     </>
+  );
+}
+
+function FinanceRewardsTab({ dark, t }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const reqRef = useRef(0);
+
+  const load = (fromVal, toVal) => {
+    const reqId = ++reqRef.current;
+    setLoading(true);
+    const params = new URLSearchParams({ view: 'summary' });
+    if (fromVal) params.set('from', fromVal);
+    if (toVal) params.set('to', toVal);
+    fetch(`/api/admin/rewards?${params}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (reqId === reqRef.current) { setData(d); setLoading(false); } })
+      .catch(() => { if (reqId === reqRef.current) setLoading(false); });
+  };
+
+  useEffect(() => { load(from, to); }, []);
+
+  const cardBg = dark ? 'rgba(255,255,255,.06)' : '#fff';
+  const cardBd = `1px solid ${dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)'}`;
+
+  const TYPES = [
+    { key: 'earned_order', label: 'Earned', color: t.green },
+    { key: 'redeemed_order', label: 'Redeemed', color: t.red },
+    { key: 'reversed_refund', label: 'Reversed', color: t.amber },
+    { key: 'restored_refund', label: 'Restored', color: t.green },
+    { key: 'manual_credit', label: 'Manual credit', color: t.accent },
+    { key: 'manual_debit', label: 'Manual debit', color: t.red },
+  ];
+
+  return (
+    <div className="p-6 max-w-[900px]">
+      {/* Date filter */}
+      <div className="flex flex-wrap gap-2 mb-5 items-center">
+        <span className="text-[12px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.textMuted }}>Period</span>
+        <input type="date" value={from} onChange={e => { setFrom(e.target.value); load(e.target.value, to); }} className="py-1.5 px-2.5 rounded-lg text-[12px] outline-none font-[inherit]" style={{ border: cardBd, background: cardBg, color: t.text }} />
+        <span className="text-[11px]" style={{ color: t.textMuted }}>to</span>
+        <input type="date" value={to} onChange={e => { setTo(e.target.value); load(from, e.target.value); }} className="py-1.5 px-2.5 rounded-lg text-[12px] outline-none font-[inherit]" style={{ border: cardBd, background: cardBg, color: t.text }} />
+        {(from || to) && <button onClick={() => { setFrom(''); setTo(''); load('', ''); }} className="text-[11px] font-semibold cursor-pointer font-[inherit] border-none bg-transparent" style={{ color: t.accent }}>Clear</button>}
+      </div>
+
+      {loading ? (
+        <div className="space-y-3">
+          {[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? 'skel-dark' : 'skel-light'}`} style={{ height: 60, borderRadius: 10 }} />)}
+        </div>
+      ) : data ? (
+        <>
+          {/* Liability card */}
+          <div className="rounded-xl p-5 mb-5" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.05)', border: `1px solid ${dark ? 'rgba(196,125,142,.2)' : 'rgba(196,125,142,.12)'}` }}>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>Outstanding Points Liability</div>
+            <div className="text-[28px] font-bold" style={{ color: t.accent, fontFamily: 'JetBrains Mono, monospace' }}>{(data.liability.points || 0).toLocaleString()} <span className="text-[14px] font-medium" style={{ color: t.textSoft }}>pts</span></div>
+            <div className="text-[13px] mt-1" style={{ color: t.textSoft }}>₦{(data.liability.points || 0).toLocaleString()} redeemable value</div>
+          </div>
+
+          {/* Movement metrics */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {TYPES.map(({ key, label, color }) => {
+              const entry = data.byType?.[key];
+              if (!entry) return null;
+              const pts = Math.abs(Math.round((entry.kobo || 0) / 100));
+              return (
+                <div key={key} className="rounded-xl p-4" style={{ background: cardBg, border: cardBd }}>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>{label}</div>
+                  <div className="text-[18px] font-bold" style={{ color, fontFamily: 'JetBrains Mono, monospace' }}>{pts.toLocaleString()}</div>
+                  <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>{entry.count} {entry.count === 1 ? 'entry' : 'entries'}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {data.dateFiltered && (
+            <div className="mt-4 text-[11px]" style={{ color: t.textMuted }}>Metrics filtered by date range. Liability is always the current total.</div>
+          )}
+        </>
+      ) : (
+        <div className="py-8 text-center text-[13px]" style={{ color: t.textMuted }}>Could not load rewards data</div>
+      )}
+    </div>
   );
 }

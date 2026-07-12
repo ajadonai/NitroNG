@@ -6,7 +6,7 @@ import { cancelOrder, isProviderConfigured } from '@/lib/smm';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import bcrypt from 'bcryptjs';
 import { tgUserDeleted } from '@/lib/telegram';
-import { reverseOrderPoints } from '@/lib/nitro-rewards';
+import { reverseOrderPoints, computeRefundSplit } from '@/lib/nitro-rewards';
 
 export async function POST(req) {
   try {
@@ -47,7 +47,7 @@ export async function POST(req) {
     const totalRefund = await prisma.$transaction(async (tx) => {
       const claimable = await tx.order.findMany({
         where: { userId: user.id, status: { in: ['Pending', 'Processing'] }, deletedAt: null },
-        select: { id: true, orderId: true, charge: true },
+        select: { id: true, orderId: true, charge: true, nitroPointsRedeemedKobo: true },
       });
       let refund = 0;
       for (const order of claimable) {
@@ -56,10 +56,13 @@ export async function POST(req) {
           data: { status: 'Cancelled' },
         });
         if (claimed.count > 0) {
-          refund += order.charge;
-          await tx.transaction.create({
-            data: { userId: user.id, type: 'refund', amount: order.charge, status: 'Completed', reference: `REF-${order.orderId}`, note: `Refund — account deletion (order ${order.orderId})` },
-          });
+          const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, order.charge);
+          if (walletRefund > 0) {
+            refund += walletRefund;
+            await tx.transaction.create({
+              data: { userId: user.id, type: 'refund', amount: walletRefund, status: 'Completed', reference: `REF-${order.orderId}`, note: `Refund — account deletion (order ${order.orderId})` },
+            });
+          }
           await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: order.charge });
         }
       }

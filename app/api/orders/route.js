@@ -12,7 +12,7 @@ import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { voidCommissions } from '@/lib/commissions';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
 import { buildOrderDisplayGroups } from '@/lib/order-history';
-import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints, reverseOrderPoints } from '@/lib/nitro-rewards';
+import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints, reverseOrderPoints, getPointsBalanceKoboTx, computeRefundSplit, MIN_REDEEM_POINTS } from '@/lib/nitro-rewards';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -229,6 +229,7 @@ export async function PATCH(req) {
       if (order.status === 'Completed' || order.status === 'Cancelled' || order.status === 'Partial') {
         return Response.json({ error: `Cannot cancel ${order.status.toLowerCase()} order` }, { status: 400 });
       }
+      const { walletRefund: cancelWalletRefund, pointsRestore: cancelPointsRestore } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, order.charge);
       const refunded = await prisma.$transaction(async (tx) => {
         const claimed = await tx.order.updateMany({
           where: { id: order.id, status: { in: ['Pending', 'Processing'] }, apiOrderId: null },
@@ -236,22 +237,26 @@ export async function PATCH(req) {
         });
         if (claimed.count === 0) return false;
         await restoreBonusForRefund(tx, order.id);
-        await tx.user.update({ where: { id: session.id }, data: { balance: { increment: order.charge } } });
-        await tx.transaction.create({
-          data: {
-            userId: session.id, type: 'refund', amount: order.charge,
-            method: 'wallet', status: 'Completed',
-            reference: `REF-${order.orderId || order.id}`,
-            note: `Refund for cancelled order ${order.orderId || order.id}`,
-          },
-        });
+        if (cancelWalletRefund > 0) {
+          await tx.user.update({ where: { id: session.id }, data: { balance: { increment: cancelWalletRefund } } });
+          await tx.transaction.create({
+            data: {
+              userId: session.id, type: 'refund', amount: cancelWalletRefund,
+              method: 'wallet', status: 'Completed',
+              reference: `REF-${order.orderId || order.id}`,
+              note: `Refund for cancelled order ${order.orderId || order.id}`,
+            },
+          });
+        }
         await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: order.charge });
         return true;
       });
       if (!refunded) return Response.json({ error: 'Order already sent to provider' }, { status: 409 });
       tgRefundAlert({ orderId: order.orderId, amount: order.charge, charge: order.charge, qty: order.quantity, status: 'Cancelled', reason: 'user_cancelled', service: order.tier?.group?.name, source: 'user' });
       voidCommissions(order.id, 'user_cancelled').catch(() => {});
-      return Response.json({ success: true, status: 'Cancelled', refunded: order.charge / 100 });
+      const cancelResponse = { success: true, status: 'Cancelled', refunded: cancelWalletRefund / 100 };
+      if (cancelPointsRestore > 0) cancelResponse.pointsRestored = cancelPointsRestore / 100;
+      return Response.json(cancelResponse);
     }
 
     if (action === 'reorder') {
@@ -261,7 +266,7 @@ export async function PATCH(req) {
       }
 
       const reorderActiveForLink = await prisma.order.findFirst({
-        where: { serviceId: order.serviceId, link: order.link, status: { in: ['Pending', 'Processing', 'In progress'] }, apiOrderId: { not: null }, deletedAt: null },
+        where: { serviceId: order.serviceId, link: order.link, status: { in: ['Pending', 'Processing', 'In progress'] }, deletedAt: null },
         select: { orderId: true },
       });
 
@@ -479,7 +484,7 @@ export async function POST(req) {
     const session = await getCurrentUser();
     if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
 
-    const { tierId, serviceId, link, quantity, comments, serviceType, dripDays: rawDripDays, confirmDuplicate } = await req.json();
+    const { tierId, serviceId, link, quantity, comments, serviceType, dripDays: rawDripDays, confirmDuplicate, redeemPoints } = await req.json();
 
     // Get USD→NGN rate for cost calculation
     const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
@@ -712,9 +717,9 @@ export async function POST(req) {
 
     qty = Math.floor(Number(quantity));
 
-    // Check for active order on same service + link (MTP rejects duplicates)
+    // Check for active order on same service + link (providers reject duplicates)
     const activeForLink = await prisma.order.findFirst({
-      where: { serviceId: service.id, link: trimmedLink, status: { in: ['Pending', 'Processing', 'In progress'] }, apiOrderId: { not: null }, deletedAt: null },
+      where: { serviceId: service.id, link: trimmedLink, status: { in: ['Pending', 'Processing', 'In progress'] }, deletedAt: null },
       select: { orderId: true },
     });
 
@@ -746,65 +751,99 @@ export async function POST(req) {
     }
 
     // Step 1: Atomic balance deduct FIRST — before sending to provider
-    const result = await prisma.$transaction(async (tx) => {
-      await deductBalance(tx, session.id, charge);
-      const order = await tx.order.create({
-        data: {
-          orderId,
-          userId: session.id,
-          serviceId: service.id,
-          tierId: tier ? tier.id : null,
-          link: trimmedLink,
-          quantity: qty,
-          charge,
-          cost,
-          comments: comments ? comments.split('\n').map(l => l.trim().replace(/^[“”””]+|[“”””]+$/g, '').trim()).filter(Boolean).join('\n').slice(0, 5000) : null,
-          loyaltyDiscount,
-          nitroStatusAtPurchase: nitroTier?.key || null,
-          campaignDiscount: promoDiscount,
-          campaignPercent: promoPercent,
-          platformCampaignId: activePromoType === 'platform' ? activePromoId : null,
-          recurringCampaignId: activePromoType === 'recurring' ? activePromoId : null,
-          status: 'Pending',
-          apiOrderId: null,
-          ...(activeForLink ? { queuedBehind: activeForLink.orderId } : {}),
-          ...(dripSchedule ? { dripDays: validDripDays || 1 } : {}),
-        },
-      });
-      const bonusUsed = await trackBonusConsumption(tx, session.id, order.id, charge);
-      if (nitroTier) {
-        const eligibleChargeKobo = charge - bonusUsed;
-        await awardOrderPoints(tx, { userId: session.id, orderId, orderDbId: order.id, chargeKobo: eligibleChargeKobo, tier: nitroTier });
+    let pointsDiscountKobo = 0;
+    let result;
+    const MAX_RETRIES = 3;
+    for (let attempt = 0; attempt < (redeemPoints ? MAX_RETRIES : 1); attempt++) {
+      try {
+        pointsDiscountKobo = 0;
+        result = await prisma.$transaction(async (tx) => {
+          if (redeemPoints) {
+            const balanceKobo = await getPointsBalanceKoboTx(tx, session.id);
+            if (balanceKobo >= MIN_REDEEM_POINTS * 100) {
+              pointsDiscountKobo = Math.min(balanceKobo, charge);
+            }
+          }
+          const walletCharge = charge - pointsDiscountKobo;
+          if (walletCharge > 0) {
+            await deductBalance(tx, session.id, walletCharge);
+          }
+          const order = await tx.order.create({
+            data: {
+              orderId,
+              userId: session.id,
+              serviceId: service.id,
+              tierId: tier ? tier.id : null,
+              link: trimmedLink,
+              quantity: qty,
+              charge,
+              cost,
+              comments: comments ? comments.split('\n').map(l => l.trim().replace(/^[“”””]+|[“”””]+$/g, '').trim()).filter(Boolean).join('\n').slice(0, 5000) : null,
+              loyaltyDiscount,
+              nitroStatusAtPurchase: nitroTier?.key || null,
+              nitroPointsRedeemedKobo: pointsDiscountKobo,
+              campaignDiscount: promoDiscount,
+              campaignPercent: promoPercent,
+              platformCampaignId: activePromoType === 'platform' ? activePromoId : null,
+              recurringCampaignId: activePromoType === 'recurring' ? activePromoId : null,
+              status: 'Pending',
+              apiOrderId: null,
+              ...(activeForLink ? { queuedBehind: activeForLink.orderId } : {}),
+              ...(dripSchedule ? { dripDays: validDripDays || 1 } : {}),
+            },
+          });
+          if (pointsDiscountKobo > 0) {
+            await tx.nitroPointLedger.create({
+              data: {
+                userId: session.id,
+                type: 'redeemed_order',
+                pointsKobo: -pointsDiscountKobo,
+                dedupeKey: `redeemed_order:${order.id}`,
+                orderId: order.id,
+              },
+            });
+          }
+          const bonusUsed = await trackBonusConsumption(tx, session.id, order.id, walletCharge);
+          if (nitroTier) {
+            const eligibleChargeKobo = walletCharge - bonusUsed;
+            await awardOrderPoints(tx, { userId: session.id, orderId, orderDbId: order.id, chargeKobo: eligibleChargeKobo, tier: nitroTier });
+          }
+          if (dripSchedule) {
+            await tx.dripDispatch.createMany({
+              data: dripSchedule.dispatches.map(d => ({
+                orderId: order.id,
+                day: d.day || 1,
+                batch: d.batch,
+                quantity: d.quantity,
+                scheduledAt: d.scheduledAt,
+              })),
+            });
+          }
+          const nitroTierName = nitroTier?.name || null;
+          const discountParts = [
+            loyaltyDiscount > 0 ? `${nitroTierName} -₦${(loyaltyDiscount/100).toLocaleString()}` : null,
+            promoDiscount > 0 ? `${promoLabel} -₦${(promoDiscount/100).toLocaleString()}` : null,
+            pointsDiscountKobo > 0 ? `Points -₦${(pointsDiscountKobo/100).toLocaleString()}` : null,
+          ].filter(Boolean);
+          await tx.transaction.create({
+            data: {
+              userId: session.id,
+              type: 'order',
+              amount: -walletCharge,
+              method: 'wallet',
+              status: 'Completed',
+              reference: orderId,
+              note: `Order ${orderId} — ${tierName} x${qty.toLocaleString()}${discountParts.length > 0 ? ` (${discountParts.join(', ')})` : ''}`,
+            },
+          });
+          return order;
+        }, redeemPoints ? { isolationLevel: 'Serializable' } : undefined);
+        break;
+      } catch (e) {
+        if (redeemPoints && e.code === 'P2034' && attempt < MAX_RETRIES - 1) continue;
+        throw e;
       }
-      if (dripSchedule) {
-        await tx.dripDispatch.createMany({
-          data: dripSchedule.dispatches.map(d => ({
-            orderId: order.id,
-            day: d.day || 1,
-            batch: d.batch,
-            quantity: d.quantity,
-            scheduledAt: d.scheduledAt,
-          })),
-        });
-      }
-      const nitroTierName = nitroTier?.name || null;
-      const discountParts = [
-        loyaltyDiscount > 0 ? `${nitroTierName} -₦${(loyaltyDiscount/100).toLocaleString()}` : null,
-        promoDiscount > 0 ? `${promoLabel} -₦${(promoDiscount/100).toLocaleString()}` : null,
-      ].filter(Boolean);
-      await tx.transaction.create({
-        data: {
-          userId: session.id,
-          type: 'order',
-          amount: -charge,
-          method: 'wallet',
-          status: 'Completed',
-          reference: orderId,
-          note: `Order ${orderId} — ${tierName} x${qty.toLocaleString()}${discountParts.length > 0 ? ` (${discountParts.join(', ')})` : ''}`,
-        },
-      });
-      return order;
-    });
+    }
 
     // Step 2: Place on provider AFTER balance is secured (skip in dev / skip if queued)
     let apiOrderId = null;
@@ -845,7 +884,7 @@ export async function POST(req) {
               await prisma.order.update({ where: { id: result.id }, data: { dripDelivered: 1 } });
               apiOrderId = batchApiId;
             } else {
-              await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'pending', dispatchedAt: null } });
+              await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'failed', lastError: 'no_order_id' } });
             }
           } catch (err) {
             log.error('Drip batch 1', err.message);
@@ -853,10 +892,13 @@ export async function POST(req) {
             if (/incorrect service|invalid service/i.test(msg)) {
               try {
                 await prisma.$transaction(async (tx) => {
-                  await tx.$executeRaw`UPDATE users SET balance = balance + ${charge} WHERE id = ${session.id}`;
+                  const walletRefund = charge - pointsDiscountKobo;
+                  if (walletRefund > 0) {
+                    await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${session.id}`;
+                    await tx.transaction.create({ data: { userId: session.id, type: 'refund', amount: walletRefund, method: 'wallet', status: 'Completed', reference: `REF-${orderId}`, note: `Auto-refund: ${msg.slice(0, 100)}` } });
+                  }
                   await tx.order.update({ where: { id: result.id }, data: { status: 'Cancelled', lastError: msg.slice(0, 500) } });
                   await tx.dripDispatch.updateMany({ where: { orderId: result.id }, data: { status: 'failed', lastError: msg.slice(0, 500) } });
-                  await tx.transaction.create({ data: { userId: session.id, type: 'refund', amount: charge, method: 'wallet', status: 'Completed', reference: `REF-${orderId}`, note: `Auto-refund: ${msg.slice(0, 100)}` } });
                   await reverseOrderPoints(tx, { orderDbId: result.id, refundAmountKobo: charge });
                 });
                 return Response.json({ error: 'This service is temporarily unavailable. You have been refunded.' }, { status: 409 });
@@ -882,9 +924,12 @@ export async function POST(req) {
         if (permanent) {
           try {
             await prisma.$transaction(async (tx) => {
-              await tx.$executeRaw`UPDATE users SET balance = balance + ${charge} WHERE id = ${session.id}`;
+              const walletRefund = charge - pointsDiscountKobo;
+              if (walletRefund > 0) {
+                await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${session.id}`;
+                await tx.transaction.create({ data: { userId: session.id, type: 'refund', amount: walletRefund, method: 'wallet', status: 'Completed', reference: `REF-${orderId}`, note: `Auto-refund: ${msg.slice(0, 100)}` } });
+              }
               await tx.order.update({ where: { id: result.id }, data: { status: 'Cancelled', lastError: msg.slice(0, 500) } });
-              await tx.transaction.create({ data: { userId: session.id, type: 'refund', amount: charge, method: 'wallet', status: 'Completed', reference: `REF-${orderId}`, note: `Auto-refund: ${msg.slice(0, 100)}` } });
               await reverseOrderPoints(tx, { orderDbId: result.id, refundAmountKobo: charge });
             });
             const provider = service.provider || 'mtp';
@@ -951,6 +996,7 @@ export async function POST(req) {
         status: (apiOrderId || dripSchedule) ? 'Processing' : 'Pending',
         ...(loyaltyDiscount > 0 ? { loyaltyDiscount: loyaltyDiscount / 100, loyaltyTier: nitroTier?.name } : {}),
         ...(promoDiscount > 0 ? { promoDiscount: promoDiscount / 100, promoPercent, promoLabel } : {}),
+        ...(pointsDiscountKobo > 0 ? { pointsRedeemed: pointsDiscountKobo / 100 } : {}),
       },
     });
   } catch (err) {

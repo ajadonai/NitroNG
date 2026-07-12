@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { checkOrder, isProviderConfigured } from '@/lib/smm';
 import { tgRefundAlert } from '@/lib/telegram';
-import { reverseOrderPoints } from '@/lib/nitro-rewards';
+import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
 
 export async function POST(req) {
   try {
@@ -69,22 +69,21 @@ export async function POST(req) {
               data: { status: 'Cancelled', refundedAt: new Date() },
             });
             if (claimed.count === 0) return;
-            const existing = await tx.transaction.aggregate({
-              where: { userId: session.id, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
-              _sum: { amount: true },
-            });
-            const alreadyRefunded = existing._sum.amount || 0;
+            const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: session.id });
             const refundAmount = Math.max(0, order.charge - alreadyRefunded);
             if (refundAmount > 0) {
-              await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${session.id}`;
-              await tx.transaction.create({
-                data: {
-                  userId: session.id, type: 'refund', amount: refundAmount,
-                  method: 'wallet', status: 'Completed',
-                  reference: `REF-${order.orderId}`,
-                  note: `Refund for cancelled order ${order.orderId}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} already refunded)` : ''}`,
-                },
-              });
+              const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, refundAmount);
+              if (walletRefund > 0) {
+                await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${session.id}`;
+                await tx.transaction.create({
+                  data: {
+                    userId: session.id, type: 'refund', amount: walletRefund,
+                    method: 'wallet', status: 'Completed',
+                    reference: `REF-${order.orderId}`,
+                    note: `Refund for cancelled order ${order.orderId}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} already refunded)` : ''}`,
+                  },
+                });
+              }
               await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
             }
           });
@@ -96,21 +95,22 @@ export async function POST(req) {
             if (refundAmount > 0) {
               await prisma.$transaction(async (tx) => {
                 await tx.order.update({ where: { id: order.id }, data: { status: 'Partial', refundedAt: new Date() } });
-                const existing = await tx.transaction.aggregate({
-                  where: { userId: session.id, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
-                  _sum: { amount: true },
-                });
-                if ((existing._sum.amount || 0) > 0) return;
-                await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${session.id}`;
-                await tx.transaction.create({
-                  data: {
-                    userId: session.id, type: 'refund', amount: refundAmount,
-                    method: 'wallet', status: 'Completed',
-                    reference: `REF-${order.orderId}`,
-                    note: `Partial refund for ${order.orderId} (${remains} undelivered)`,
-                  },
-                });
-                await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
+                const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: session.id });
+                const cappedRefund = Math.max(0, refundAmount - alreadyRefunded);
+                if (cappedRefund <= 0) return;
+                const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, cappedRefund);
+                if (walletRefund > 0) {
+                  await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${session.id}`;
+                  await tx.transaction.create({
+                    data: {
+                      userId: session.id, type: 'refund', amount: walletRefund,
+                      method: 'wallet', status: 'Completed',
+                      reference: `REF-${order.orderId}`,
+                      note: `Partial refund for ${order.orderId} (${remains} undelivered)`,
+                    },
+                  });
+                }
+                await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: cappedRefund });
               });
               tgRefundAlert({ orderId: order.orderId, amount: refundAmount, charge: order.charge, qty: order.quantity, remains, status: 'Partial', reason: 'provider_partial', source: 'check' });
             }

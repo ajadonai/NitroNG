@@ -605,7 +605,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           </div>}
           </>)}
         <div className="rounded-[10px] p-2.5 mb-3 border border-solid" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", borderColor: t.cardBorder }}>
-          {discountAmount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}><span>{loyaltyTier} discount ({loyaltyDiscount}%)</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{discountAmount.toLocaleString()}</span></div>}
+          {discountAmount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}><span>Nitro Status discount ({loyaltyDiscount}%)</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{discountAmount.toLocaleString()}</span></div>}
           {cappedPromoDiscount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#f9a8d4" : "#be185d" }}><span>Discount ({activePromotion.discountPercent}%){cappedPromoDiscount < promoDiscountAmt ? ` · capped at ₦${cappedPromoDiscount.toLocaleString()}` : ''}</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{cappedPromoDiscount.toLocaleString()}</span></div>}
           <div className={`flex justify-between items-baseline${(discountAmount > 0 || cappedPromoDiscount > 0) ? " border-t border-solid pt-2 mt-1" : ""}`} style={(discountAmount > 0 || cappedPromoDiscount > 0) ? { borderColor: t.cardBorder } : undefined}>
             <span className="text-[13px] font-semibold" style={{ color: t.textMuted }}>Total</span>
@@ -1596,7 +1596,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
           </div>
           {bulkSuccess.loyaltyDiscount > 0 && (
             <div className="flex items-center justify-between gap-4 py-[3px] text-[12.5px]" style={{ color: bulkChrome.muted }}>
-              <span>Loyalty discount</span>
+              <span>Nitro Status discount</span>
               <span className="font-semibold text-right min-w-0 truncate" style={{ color: bulkChrome.money }}>{bulkSuccess.loyaltyTier} · {bulkSuccess.loyaltyDiscount}%</span>
             </div>
           )}
@@ -1778,7 +1778,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
           </div>
           {discount > 0 && (
             <div className="flex justify-between text-[12.5px] mb-1.5" style={{ color: dark ? "#b4db7a" : "#27500A" }}>
-              <span>Loyalty discount ({loyaltyDiscount}%)</span><span>−₦{discount.toLocaleString()}</span>
+              <span>Nitro Status discount ({loyaltyDiscount}%)</span><span>−₦{discount.toLocaleString()}</span>
             </div>
           )}
           <div className="flex justify-between items-baseline my-2.5">
