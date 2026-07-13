@@ -564,7 +564,7 @@ Playbook with DM scripts, team ops, commission math, and 15-section engineering 
 
 ### Status
 
-Fully specced. All blockers resolved. Schema design next, then scaffold build.
+✅ **Built.** Schema, portal UI, admin controls, commission engine, cron jobs, and fraud prevention all implemented. Pending launch — awaiting Trip's go-ahead to open to Crew Chiefs.
 
 ---
 
@@ -686,60 +686,9 @@ Dashboard card or notification: "Detty December starts in 2 days — fund your w
 
 ---
 
-## Product 6: Milestone Rewards (Loyalty Cashback)
+## ~~Product 6: Milestone Rewards~~ → Replaced by Nitro Status + Points
 
-*Added May 2026*
-
-### What it is
-
-After every N qualifying orders (each over a configurable minimum spend), users get a percentage of their total spend back as wallet credit. All parameters — on/off switch, minimum order threshold, orders per milestone, cashback percentage — are admin-configurable from the Rewards page.
-
-### Why
-
-Drives repeat ordering without giving away uncapped free orders. Users see a progress bar on their dashboard ("8/10 qualifying orders — 2 more to go") which creates a sunk-cost motivation to keep ordering on Nitro rather than switching platforms. The cashback is a percentage of spend, not a fixed amount, so Nitro's reward scales with user value.
-
-### How it works
-
-- **Hybrid counter + verification**: `milestoneCount` and `milestoneSpent` fields on User for instant dashboard display. Before paying out, the system verifies against actual completed orders since the last reward — if the counter drifted (due to race conditions or bugs), it self-heals instead of paying wrong amounts.
-- **Automatic checkout-line math**: When the Nth qualifying order completes, the cron calculates reward = sum of qualifying charges × cashback %, credits the wallet atomically, and resets the cycle. Leftover orders beyond the target carry forward.
-- **Refund-safe**: Cancelling a counted order decrements the counter. Already-credited rewards are never clawed back.
-- **New transaction type**: `milestone_reward` — appears in wallet history, finance dashboard (wallet obligations), and notification filters.
-
-### Admin controls
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| On/off switch | Off | Enables/disables the entire feature |
-| Minimum order | ₦5,000 | Orders below this don't count toward milestone |
-| Orders per milestone | 10 | How many qualifying orders per cycle |
-| Cashback % | 5% | Percentage of total qualifying spend returned |
-
-Permission-gated to owner/superadmin roles.
-
-### What users see
-
-**Dashboard progress card** (when enabled):
-```
-┌──────────────────────────────────────────┐
-│  Milestone Reward              5% cashback│
-│  ████████░░  8/10 qualifying orders       │
-│  2 more to go · ₦62,400 spent            │
-│  Orders over ₦5,000 qualify               │
-└──────────────────────────────────────────┘
-```
-
-**Email notification** on reward credit: "Congrats! You completed 10 qualifying orders and earned ₦X back. It's already in your wallet."
-
-### Edge cases handled
-
-- Two orders complete simultaneously → verification uses real DB count, takes exactly N orders
-- Counter drifts from reality → self-heal to actual count, no wrong payout
-- Feature toggled off → counters freeze, card hides, counters preserved for re-enable
-- Admin changes % mid-cycle → next payout uses current % (fair and transparent)
-
-### Status
-
-Detailed implementation plan exists (10 files identified, build order defined). Not yet built — awaiting go-ahead.
+*Removed July 2026.* The milestone cashback concept was superseded by the Nitro Status + Points system (shipped July 2026), which combines status tiers (Spark → Legend) with points earning/redemption. See `lib/nitro-rewards.js` for the canonical implementation.
 
 ---
 
@@ -787,62 +736,9 @@ Interactive drip feed mockup at `/app/mockup/page.jsx` — demonstrates the pare
 
 ---
 
-## Feature: Loyalty Points Program
+## ~~Feature: Loyalty Points Program~~ → Replaced by Nitro Status + Points
 
-*Added June 2026*
-
-### What it is
-
-Points-based loyalty system where users earn points on every order and redeem them for wallet credit. Incentivizes repeat ordering and rewards high-value customers with better redemption rates through account ranks.
-
-### Core mechanics
-
-- **Earning:** Every ₦1 spent = 1 point (calculated on order charge, not wallet top-up)
-- **Redemption:** 100 points = ₦1 to ₦2 depending on account rank
-- **Minimum redemption:** 500 points (prevents micro-redemptions that create noise)
-- **Points never expire** (simplicity — no expiry tracking, no angry emails)
-
-### Account rank system (to be designed)
-
-Ranks determine redemption rate. Higher rank = better point-to-naira conversion. Structure TBD, but the likely shape:
-
-| Rank | Qualification | Redemption rate |
-|---|---|---|
-| Starter | Default | 100 pts = ₦1.00 |
-| Regular | ₦50,000+ lifetime spend | 100 pts = ₦1.25 |
-| VIP | ₦200,000+ lifetime spend | 100 pts = ₦1.50 |
-| Elite | ₦500,000+ lifetime spend | 100 pts = ₦2.00 |
-
-Thresholds and rates are starting hypotheses. Rank should be computed from lifetime completed order spend (not deposits). Ranks only go up — no demotion if spending slows.
-
-### What users see
-
-**Dashboard card:**
-```
-┌──────────────────────────────────────────┐
-│  Loyalty Points              VIP rank    │
-│  2,340 pts available                     │
-│  Redeem 500+ pts → wallet credit         │
-│  Your rate: 100 pts = ₦1.50             │
-│  [Redeem Points]                         │
-└──────────────────────────────────────────┘
-```
-
-**Order confirmation:** "+2,500 points earned" shown after each completed order.
-
-**Redemption flow:** User enters point amount (≥500), sees naira equivalent at their rank rate, confirms, credit hits wallet instantly.
-
-### Key decisions still needed
-
-- Exact rank thresholds and redemption rates (validate against margin impact)
-- Whether points earned on promotional/discounted orders count at full value or reduced
-- Whether to show rank progress ("₦38,000 more to VIP") — likely yes
-- Admin controls: ability to adjust a user's points, view point ledger, toggle feature on/off
-- Whether referral bonuses also earn points for the referrer
-
-### Status
-
-Concept defined. No implementation yet. Awaiting account rank system design and margin analysis before build.
+*Removed July 2026.* This concept was superseded by the Nitro Status + Points system (shipped July 2026). Status tiers replace account ranks, points earning is tier-based (0.5%–2%), and redemption is live. See `lib/nitro-rewards.js`.
 
 ---
 
