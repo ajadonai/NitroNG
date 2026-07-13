@@ -2,9 +2,9 @@ import {
   sendEmail, sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail,
   walletCreditEmail, accountDeletionEmail, leaderboardRewardEmail, referralBonusEmail,
   batchPlacementEmail, batchCompletionEmail,
-  sendNudgeIdleFunds, sendNudgeIdleBalance, sendNudgeComeback, sendNudgeLapsed,
-  sendWinback30Email, sendWinback60Email, sendBonusReminderEmail,
-  sendStatusLaunchEmail, sendTasksLaunchEmail,
+  sendNudgeIdleFunds, sendNudgeIdleBalance,
+  sendWinback30Email, sendWinback60Email,
+  sendTasksLaunchEmail,
   pitApprovedEmail, pitSuspendedEmail, pitRejectionEmail,
   payoutCompletedEmail, payoutRejectedEmail,
   sendAdActivationDay1, sendAdActivationDay3, sendAdActivationDay6,
@@ -42,17 +42,12 @@ export async function GET(req) {
     'comeback-60':   () => sendWinback60Email(NAME, EMAIL, 1000, 7),                                       // 16
     'nudge-funds':   () => sendNudgeIdleFunds(NAME, EMAIL, 3000),                                          // 17
     'nudge-idle':    () => sendNudgeIdleBalance(NAME, EMAIL, 7450),                                        // 18
-    'bonus-reminder':() => sendBonusReminderEmail(NAME, EMAIL),                                            // 19
-    'launch-status': () => sendStatusLaunchEmail(NAME, EMAIL),                                             // 24 (manual broadcast)
     'launch-tasks':  () => sendTasksLaunchEmail(NAME, EMAIL),                                              // 25 (manual broadcast)
     'pit-approved':  () => sendEmail(EMAIL, "You're in. Welcome to the Pit", pitApprovedEmail(NAME)),      // 20
     'pit-suspended': () => sendEmail(EMAIL, 'Your Pit account has been paused', pitSuspendedEmail(NAME)),  // 21
     'payout-done':   () => sendEmail(EMAIL, 'Your payout of ₦18,500 has been sent', payoutCompletedEmail(NAME, 18500, 'PIT-8841-XK', 'GTBank ····2841', '11 Jul · 9:40 AM')), // 22
     'payout-reject': () => sendEmail(EMAIL, 'About your payout request', payoutRejectedEmail(NAME, 18500, 'PIT-8841-XK')),    // 23
     'pit-rejected':  () => sendEmail(EMAIL, 'Your Pit application update', pitRejectionEmail(NAME)),
-    // retired (kept for regression eyeballs only)
-    'nudge-back':    () => sendNudgeComeback(NAME, EMAIL),
-    'nudge-lapsed':  () => sendNudgeLapsed(NAME, EMAIL),
     gradual:         () => sendEmail(EMAIL, "We've upgraded how your orders are delivered", gradualDeliveryAnnouncementEmail(NAME)),
   };
 

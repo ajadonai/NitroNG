@@ -43,12 +43,11 @@ if (isMain) {
   config({ path: '.env.local' });
 
   const { PrismaClient } = await import('@prisma/client');
-  const { sendWeekendBackfillEmail } = await import('../lib/email.js');
 
   const prisma = new PrismaClient();
 
-  const dryRun  = process.env.DRY_RUN === '1';
-  const confirm = process.env.CONFIRM === '1';
+  const dryRun    = process.env.DRY_RUN === '1';
+  const confirm   = process.env.CONFIRM === '1';
 
   if (!dryRun && !confirm) {
     console.error('Safety: pass DRY_RUN=1 or CONFIRM=1');
@@ -115,7 +114,8 @@ if (isMain) {
       },
       select: {
         id: true, orderId: true, userId: true, charge: true,
-        nitroPointsRedeemedKobo: true, status: true, createdAt: true,
+        nitroPointsRedeemedKobo: true, nitroPointsEarnedKobo: true,
+        status: true, createdAt: true,
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -131,13 +131,14 @@ if (isMain) {
     const existingSet = new Set(existing.map(e => e.dedupeKey));
 
     const userSpendCache = new Map();
-    let totalPoints = 0, awardedCount = 0, skippedDupe = 0, skippedZero = 0;
+    let totalPoints = 0, awardedCount = 0, skippedDupe = 0, skippedAlreadyAwarded = 0, skippedZero = 0;
     const perUser = new Map();
     const awardRows = [];
 
     for (const order of orders) {
       const key = makeDedupeKey(order.id);
       if (existingSet.has(key)) { skippedDupe++; continue; }
+      if ((order.nitroPointsEarnedKobo || 0) > 0) { skippedAlreadyAwarded++; continue; }
 
       const eligible = await getPerOrderEligibleChargeKobo(order);
       if (eligible <= 0) { skippedZero++; continue; }
@@ -163,6 +164,7 @@ if (isMain) {
     console.log(`\nSummary:`);
     console.log(`  Orders to award:   ${awardedCount}`);
     console.log(`  Skipped (dupes):   ${skippedDupe}`);
+    console.log(`  Skipped (already): ${skippedAlreadyAwarded}`);
     console.log(`  Skipped (zero):    ${skippedZero}`);
     console.log(`  Users affected:    ${perUser.size}`);
     console.log(`  Total points:      ${totalPoints} kobo (${Math.floor(totalPoints / 100)} display pts)`);
@@ -178,7 +180,6 @@ if (isMain) {
 
     // ── Live run ──────────────────────────────────────────────
     console.log('\nWriting ledger entries...');
-    const emailTargets = new Map();
     let wrote = 0;
 
     for (const row of awardRows) {
@@ -201,12 +202,6 @@ if (isMain) {
           }
         });
         wrote++;
-        if (!emailTargets.has(row.userId)) {
-          const user = await prisma.user.findUnique({
-            where: { id: row.userId }, select: { name: true, email: true },
-          });
-          if (user) emailTargets.set(row.userId, { ...user, points: 0 });
-        }
       } catch (e) {
         if (e.code === 'P2002' && e.meta?.target?.includes('dedupeKey')) {
           console.log(`  Dupe caught on write: ${row.dedupeKey}`);
@@ -217,19 +212,7 @@ if (isMain) {
     }
 
     console.log(`Wrote ${wrote} ledger entries.`);
-
-    console.log(`Sending launch emails to ${emailTargets.size} user(s)...`);
-    for (const [userId, { name, email }] of emailTargets) {
-      try {
-        const userPts = perUser.get(userId);
-        const pointsDisplay = String(Math.floor((userPts?.points || 0) / 100));
-        await sendWeekendBackfillEmail(name, email, pointsDisplay);
-        console.log(`  ✓ ${email}`);
-      } catch (e) {
-        console.error(`  ✗ ${email}: ${e.message}`);
-      }
-    }
-
+    console.log('Weekend launch emails are retired; this script only writes missing ledger entries now.');
     console.log('Done.');
   }
 
