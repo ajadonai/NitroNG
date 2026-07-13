@@ -3,6 +3,396 @@ import { log } from "@/lib/logger";
 import { requireAdmin, canSeeSensitive, maskEmail } from '@/lib/admin';
 import { watBounds } from '@/lib/format';
 
+const KOBO_TO_NAIRA_COLUMNS = {
+  cashInKobo: 'cashInNaira',
+  cashOutKobo: 'cashOutNaira',
+  walletDeltaKobo: 'walletDeltaNaira',
+  orderRevenueKobo: 'orderRevenueNaira',
+  providerCostKobo: 'providerCostNaira',
+  statusDiscountKobo: 'statusDiscountNaira',
+  campaignDiscountKobo: 'campaignDiscountNaira',
+  pointsDeltaKobo: 'pointsDeltaNaira',
+  pointsRedeemedKobo: 'pointsRedeemedNaira',
+  bonusCreditDeltaKobo: 'bonusCreditDeltaNaira',
+  affiliateDeltaKobo: 'affiliateDeltaNaira',
+};
+
+const REPORT_COLUMNS = [
+  'section',
+  'date',
+  'eventType',
+  'status',
+  'reference',
+  'userId',
+  'userName',
+  'userEmail',
+  'orderId',
+  'description',
+  'count',
+  'cashInKobo',
+  'cashInNaira',
+  'cashOutKobo',
+  'cashOutNaira',
+  'walletDeltaKobo',
+  'walletDeltaNaira',
+  'orderRevenueKobo',
+  'orderRevenueNaira',
+  'providerCostKobo',
+  'providerCostNaira',
+  'statusDiscountKobo',
+  'statusDiscountNaira',
+  'campaignDiscountKobo',
+  'campaignDiscountNaira',
+  'pointsDeltaKobo',
+  'pointsDeltaNaira',
+  'pointsRedeemedKobo',
+  'pointsRedeemedNaira',
+  'bonusCreditDeltaKobo',
+  'bonusCreditDeltaNaira',
+  'affiliateDeltaKobo',
+  'affiliateDeltaNaira',
+  'nairaValue',
+];
+
+function csvEscape(value) {
+  const s = value == null ? '' : String(value);
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
+function csvFromRows(rows) {
+  return [
+    REPORT_COLUMNS.join(','),
+    ...rows.map((row) => REPORT_COLUMNS.map((col) => csvEscape(row[col] ?? '')).join(',')),
+  ].join('\n');
+}
+
+function isoDate(date) {
+  if (!date) return '';
+  try { return new Date(date).toISOString(); } catch { return ''; }
+}
+
+function naira(kobo) {
+  return ((Number(kobo) || 0) / 100).toFixed(2);
+}
+
+function reportRow(row) {
+  const numericFields = [
+    'count',
+    ...Object.keys(KOBO_TO_NAIRA_COLUMNS),
+  ];
+  const out = Object.fromEntries(REPORT_COLUMNS.map((c) => [c, '']));
+  Object.assign(out, row);
+  for (const field of numericFields) out[field] = Number(out[field] || 0);
+  for (const [koboColumn, nairaColumn] of Object.entries(KOBO_TO_NAIRA_COLUMNS)) {
+    out[nairaColumn] = row[nairaColumn] ?? naira(out[koboColumn]);
+  }
+  const main =
+    out.cashInKobo ||
+    out.cashOutKobo ||
+    out.walletDeltaKobo ||
+    out.orderRevenueKobo ||
+    out.providerCostKobo ||
+    out.statusDiscountKobo ||
+    out.campaignDiscountKobo ||
+    out.pointsDeltaKobo ||
+    out.pointsRedeemedKobo ||
+    out.bonusCreditDeltaKobo ||
+    out.affiliateDeltaKobo ||
+    0;
+  out.nairaValue = row.nairaValue ?? naira(main);
+  return out;
+}
+
+function sumRows(rows, key) {
+  return rows.reduce((sum, row) => sum + Number(row[key] || 0), 0);
+}
+
+function applyOrderFilters(where, { platform, tier, provider }) {
+  if (platform !== 'all') where.service = { ...(where.service || {}), category: platform };
+  if (provider !== 'all') where.service = { ...(where.service || {}), provider };
+  if (tier !== 'all') where.tier = { is: { tier: tier.charAt(0).toUpperCase() + tier.slice(1) } };
+  return where;
+}
+
+async function buildFinanceCsvReport({ dateCond, txWhere, filters, range }) {
+  const orderDateWhere = dateCond ? { createdAt: dateCond } : {};
+  const orderWhere = applyOrderFilters({ deletedAt: null, ...orderDateWhere }, filters);
+  const commissionRangeWhere = dateCond
+    ? { OR: [{ createdAt: dateCond }, { voidedAt: dateCond }] }
+    : {};
+  const payoutRangeWhere = dateCond
+    ? { OR: [{ createdAt: dateCond }, { processedAt: dateCond }] }
+    : {};
+
+  const [
+    transactions,
+    orders,
+    pointRows,
+    providerTopups,
+    commissions,
+    payouts,
+    walletLiability,
+    pointsLiability,
+    commissionLiability,
+    pendingPayouts,
+  ] = await Promise.all([
+    prisma.transaction.findMany({
+      where: txWhere,
+      include: { user: { select: { id: true, name: true, email: true } } },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.order.findMany({
+      where: orderWhere,
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        service: { select: { name: true, category: true, provider: true } },
+        tier: { select: { tier: true } },
+        creditUsages: { select: { amount: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.nitroPointLedger.findMany({
+      where: dateCond ? { createdAt: dateCond } : {},
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        order: { select: { orderId: true } },
+        createdByAdmin: { select: { name: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.providerTopup.findMany({
+      where: dateCond ? { createdAt: dateCond } : {},
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.affiliateCommission.findMany({
+      where: commissionRangeWhere,
+      include: {
+        order: { select: { orderId: true } },
+        member: { select: { id: true, name: true, email: true } },
+        lead: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.affiliatePayout.findMany({
+      where: payoutRangeWhere,
+      include: { member: { select: { id: true, name: true, email: true } } },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.user.aggregate({
+      where: { status: 'Active', balance: { gt: 0 } },
+      _sum: { balance: true },
+      _count: true,
+    }),
+    prisma.nitroPointLedger.aggregate({ _sum: { pointsKobo: true } }),
+    prisma.affiliateCommission.aggregate({
+      where: { status: { in: ['held', 'approved'] } },
+      _sum: { marketerAmount: true, leadAmount: true },
+      _count: true,
+    }),
+    prisma.affiliatePayout.aggregate({
+      where: { status: { in: ['pending', 'processing'] } },
+      _sum: { amount: true },
+      _count: true,
+    }),
+  ]);
+
+  const rows = [];
+  const add = (row) => rows.push(reportRow(row));
+
+  add({
+    section: 'metadata',
+    eventType: 'report_scope',
+    description: `Finance report. Range=${range}; Platform=${filters.platform}; Tier=${filters.tier}; Provider=${filters.provider}`,
+  });
+
+  for (const tx of transactions) {
+    const amount = tx.amount || 0;
+    const type = tx.type || 'transaction';
+    const isDeposit = type === 'deposit';
+    const isOrder = type === 'order';
+    const isRefund = type === 'refund';
+    const walletDelta = ['deposit', 'refund', 'bonus', 'bonus_expired', 'referral', 'admin_credit', 'admin_gift', 'order'].includes(type)
+      ? amount
+      : 0;
+    add({
+      section: 'wallet_transactions',
+      date: isoDate(tx.createdAt),
+      eventType: type,
+      status: tx.status,
+      reference: tx.reference || tx.id,
+      userId: tx.userId,
+      userName: tx.user?.name || '',
+      userEmail: tx.user?.email || '',
+      orderId: isOrder || isRefund ? (tx.reference || '') : '',
+      description: tx.note || `${type} transaction`,
+      count: 1,
+      cashInKobo: isDeposit && tx.status === 'Completed' ? amount : 0,
+      walletDeltaKobo: tx.status === 'Completed' ? walletDelta : 0,
+    });
+  }
+
+  for (const order of orders) {
+    const isCancelled = order.status === 'Cancelled';
+    const bonusUsed = order.creditUsages.reduce((sum, usage) => sum + (usage.amount || 0), 0);
+    const grossBeforeDiscount = (order.charge || 0) + (order.loyaltyDiscount || 0) + (order.campaignDiscount || 0);
+    add({
+      section: 'orders',
+      date: isoDate(order.createdAt),
+      eventType: 'order_created',
+      status: order.status,
+      reference: order.batchId || order.orderId,
+      userId: order.userId,
+      userName: order.user?.name || '',
+      userEmail: order.user?.email || '',
+      orderId: order.orderId,
+      description: `${order.service?.category || 'service'} / ${order.service?.name || 'Unknown'} / ${order.tier?.tier || 'Untiered'} / gross before discount ₦${naira(grossBeforeDiscount)}`,
+      count: 1,
+      orderRevenueKobo: isCancelled ? 0 : (order.charge || 0),
+      providerCostKobo: isCancelled ? 0 : (order.cost || 0),
+      statusDiscountKobo: isCancelled ? 0 : (order.loyaltyDiscount || 0),
+      campaignDiscountKobo: isCancelled ? 0 : (order.campaignDiscount || 0),
+      pointsRedeemedKobo: isCancelled ? 0 : (order.nitroPointsRedeemedKobo || 0),
+      bonusCreditDeltaKobo: isCancelled || !bonusUsed ? 0 : -bonusUsed,
+    });
+  }
+
+  for (const p of pointRows) {
+    add({
+      section: 'nitro_points',
+      date: isoDate(p.createdAt),
+      eventType: p.type,
+      status: p.statusAtEvent || '',
+      reference: p.dedupeKey || p.id,
+      userId: p.userId,
+      userName: p.user?.name || '',
+      userEmail: p.user?.email || '',
+      orderId: p.order?.orderId || '',
+      description: p.reason || (p.createdByAdmin?.name ? `Admin adjustment by ${p.createdByAdmin.name}` : 'Nitro Points ledger event'),
+      count: 1,
+      pointsDeltaKobo: p.pointsKobo || 0,
+    });
+  }
+
+  for (const topup of providerTopups) {
+    add({
+      section: 'provider_cash',
+      date: isoDate(topup.createdAt),
+      eventType: 'provider_topup',
+      status: 'Completed',
+      reference: topup.id,
+      description: `${topup.provider}${topup.note ? ` — ${topup.note}` : ''}${topup.adminName ? ` (${topup.adminName})` : ''}`,
+      count: 1,
+      cashOutKobo: topup.amount || 0,
+    });
+  }
+
+  for (const c of commissions) {
+    const total = (c.marketerAmount || 0) + (c.leadAmount || 0);
+    const createdInRange = !dateCond || (c.createdAt && (!dateCond.gte || c.createdAt >= dateCond.gte) && (!dateCond.lte || c.createdAt <= dateCond.lte) && (!dateCond.lt || c.createdAt < dateCond.lt));
+    const voidedInRange = c.voidedAt && (!dateCond || ((!dateCond.gte || c.voidedAt >= dateCond.gte) && (!dateCond.lte || c.voidedAt <= dateCond.lte) && (!dateCond.lt || c.voidedAt < dateCond.lt)));
+    if (createdInRange) {
+      add({
+        section: 'affiliate_commissions',
+        date: isoDate(c.createdAt),
+        eventType: 'commission_created',
+        status: c.status,
+        reference: c.id,
+        userId: c.memberId,
+        userName: c.member?.name || '',
+        userEmail: c.member?.email || '',
+        orderId: c.order?.orderId || '',
+        description: `Marketer ₦${naira(c.marketerAmount)}${c.leadId ? `, lead ₦${naira(c.leadAmount)}` : ''}`,
+        count: 1,
+        affiliateDeltaKobo: total,
+      });
+    }
+    if (voidedInRange) {
+      add({
+        section: 'affiliate_commissions',
+        date: isoDate(c.voidedAt),
+        eventType: 'commission_voided',
+        status: c.status,
+        reference: c.id,
+        userId: c.memberId,
+        userName: c.member?.name || '',
+        userEmail: c.member?.email || '',
+        orderId: c.order?.orderId || '',
+        description: c.voidReason || 'Commission voided',
+        count: 1,
+        affiliateDeltaKobo: -total,
+      });
+    }
+  }
+
+  for (const p of payouts) {
+    const completed = p.status === 'completed';
+    add({
+      section: 'affiliate_payouts',
+      date: isoDate(p.processedAt || p.createdAt),
+      eventType: completed ? 'payout_completed' : `payout_${p.status}`,
+      status: p.status,
+      reference: p.reference || p.id,
+      userId: p.memberId,
+      userName: p.member?.name || '',
+      userEmail: p.member?.email || '',
+      description: completed ? 'Affiliate payout paid out' : 'Affiliate payout state change',
+      count: 1,
+      cashOutKobo: completed ? (p.amount || 0) : 0,
+      affiliateDeltaKobo: completed ? -(p.amount || 0) : 0,
+    });
+  }
+
+  const summaryRows = [
+    ['total_cash_in', 'cashInKobo'],
+    ['total_cash_out', 'cashOutKobo'],
+    ['net_wallet_movement', 'walletDeltaKobo'],
+    ['order_revenue', 'orderRevenueKobo'],
+    ['provider_cost', 'providerCostKobo'],
+    ['status_discounts', 'statusDiscountKobo'],
+    ['campaign_discounts', 'campaignDiscountKobo'],
+    ['points_liability_movement', 'pointsDeltaKobo'],
+    ['points_redeemed_at_checkout', 'pointsRedeemedKobo'],
+    ['bonus_credit_consumed', 'bonusCreditDeltaKobo'],
+    ['affiliate_liability_movement', 'affiliateDeltaKobo'],
+  ];
+  rows.unshift(...summaryRows.map(([label, key]) => reportRow({
+    section: 'summary',
+    eventType: label,
+    description: `Sum of ${key} for detailed rows in this export`,
+    [key]: sumRows(rows, key),
+  })));
+
+  rows.unshift(reportRow({
+    section: 'ending_liability_snapshot',
+    eventType: 'affiliate_pending_payouts',
+    count: pendingPayouts._count || 0,
+    description: 'Pending/processing affiliate payouts as of report generation',
+    affiliateDeltaKobo: pendingPayouts._sum.amount || 0,
+  }));
+  rows.unshift(reportRow({
+    section: 'ending_liability_snapshot',
+    eventType: 'affiliate_commissions_unpaid',
+    count: commissionLiability._count || 0,
+    description: 'Held/approved affiliate commissions as of report generation',
+    affiliateDeltaKobo: (commissionLiability._sum.marketerAmount || 0) + (commissionLiability._sum.leadAmount || 0),
+  }));
+  rows.unshift(reportRow({
+    section: 'ending_liability_snapshot',
+    eventType: 'points_outstanding',
+    description: 'Outstanding Nitro Points liability as of report generation',
+    pointsDeltaKobo: pointsLiability._sum.pointsKobo || 0,
+  }));
+  rows.unshift(reportRow({
+    section: 'ending_liability_snapshot',
+    eventType: 'wallet_balances',
+    count: walletLiability._count || 0,
+    description: 'Active user wallet balances as of report generation',
+    walletDeltaKobo: walletLiability._sum.balance || 0,
+  }));
+
+  return csvFromRows(rows);
+}
+
 export async function GET(req) {
   const { admin, error } = await requireAdmin('financials');
   if (error) return error;
@@ -34,15 +424,35 @@ export async function GET(req) {
     // Build order filters
     const rangeEndOp = fromParam ? 'lte' : 'lt';
     const dateCond = since ? { gte: since, ...(rangeEnd ? { [rangeEndOp]: rangeEnd } : {}) } : undefined;
-    const orderWhere = { deletedAt: null, status: { notIn: ['Cancelled'] }, ...(dateCond && { createdAt: dateCond }) };
-    if (platform !== 'all') orderWhere.service = { ...orderWhere.service, category: platform };
-    if (tier !== 'all') orderWhere.tierName = tier.charAt(0).toUpperCase() + tier.slice(1);
-    if (provider !== 'all') orderWhere.service = { ...orderWhere.service, provider: provider };
+    const orderWhere = applyOrderFilters(
+      { deletedAt: null, status: { notIn: ['Cancelled'] }, ...(dateCond && { createdAt: dateCond }) },
+      { platform, tier, provider },
+    );
 
     const allOrderWhere = { ...orderWhere };
     delete allOrderWhere.status; // For status breakdown include all
 
     const txWhere = dateCond ? { createdAt: dateCond } : {};
+
+    if (url.searchParams.get('export') === 'csv') {
+      if (!canSeeSensitive(admin)) {
+        return Response.json({ error: 'Full finance export is restricted to owner and superadmin' }, { status: 403 });
+      }
+      const csv = await buildFinanceCsvReport({
+        dateCond,
+        txWhere,
+        range,
+        filters: { platform, tier, provider },
+      });
+      const stamp = new Date().toISOString().slice(0, 10);
+      return new Response(csv, {
+        headers: {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename="nitro-finance-report-${stamp}.csv"`,
+          'Cache-Control': 'no-store',
+        },
+      });
+    }
 
     const [
       ordersAgg, cancelledAgg,

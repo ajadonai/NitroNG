@@ -366,7 +366,7 @@ export function AdminFinancePage({ dark, t, admin }) {
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
       {tab === "overview" && <FinanceOverviewTab dark={dark} t={t} />}
-      {tab === "breakdown" && <FinanceBreakdownTab dark={dark} t={t} />}
+      {tab === "breakdown" && <FinanceBreakdownTab dark={dark} t={t} admin={admin} />}
       {tab === "rewards" && <FinanceRewardsTab dark={dark} t={t} />}
     </>
   );
@@ -1154,7 +1154,8 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
 /* ═══════════════════════════════════════════ */
 /* ═══ FINANCIALS PAGE                     ═══ */
 /* ═══════════════════════════════════════════ */
-function FinanceBreakdownTab({ dark, t }) {
+function FinanceBreakdownTab({ dark, t, admin }) {
+  const toast = useToast();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dateValue, setDateValue] = useState(null);
@@ -1165,9 +1166,9 @@ function FinanceBreakdownTab({ dark, t }) {
   const [topupAmount, setTopupAmount] = useState("");
   const [topupNote, setTopupNote] = useState("");
   const [topupSaving, setTopupSaving] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
 
-  const load = () => {
-    setLoading(true);
+  const buildParams = (extra = {}) => {
     const params = new URLSearchParams();
     if (dateValue?.start) params.set("from", localDate(dateValue.start));
     if (dateValue?.end) params.set("to", localDate(dateValue.end));
@@ -1175,10 +1176,46 @@ function FinanceBreakdownTab({ dark, t }) {
     if (platform !== "all") params.set("platform", platform);
     if (tier !== "all") params.set("tier", tier);
     if (provider !== "all") params.set("provider", provider);
+    Object.entries(extra).forEach(([key, value]) => params.set(key, value));
+    return params;
+  };
+
+  const load = () => {
+    setLoading(true);
+    const params = buildParams();
     fetch(`/api/admin/financials?${params}`)
       .then(r => r.json()).then(d => { setStats(d); setLoading(false); }).catch(() => setLoading(false));
   };
   useEffect(() => { load(); }, [dateValue, platform, tier, provider]);
+
+  const downloadReport = async () => {
+    setReportLoading(true);
+    try {
+      const params = buildParams({ export: "csv" });
+      const res = await fetch(`/api/admin/financials?${params}`);
+      if (!res.ok) {
+        let msg = "Could not download report";
+        try {
+          const d = await res.json();
+          if (d.error) msg = d.error;
+        } catch {}
+        toast.error("Download failed", msg);
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `nitro-finance-report-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Report downloaded", "Finance CSV includes wallet, orders, rewards, provider and Pit money trails.");
+    } catch {
+      toast.error("Download failed", "Please try again.");
+    } finally {
+      setReportLoading(false);
+    }
+  };
 
   const handleTopup = async () => {
     const amt = parseFloat(topupAmount);
@@ -1257,6 +1294,11 @@ function FinanceBreakdownTab({ dark, t }) {
           { value: "all", label: "All providers" }, { value: "mtp", label: "MTP" },
           { value: "jap", label: "JAP" }, { value: "dao", label: "DaoSMM" },
         ]} />
+        {['owner', 'superadmin'].includes(admin?.role) && (
+          <button onClick={downloadReport} disabled={reportLoading} className="h-9 px-3.5 rounded-lg text-xs font-semibold cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px disabled:opacity-60" style={{ background: dark ? "rgba(52,211,153,.12)" : "rgba(5,150,105,.08)", border: `1px solid ${dark ? "rgba(52,211,153,.28)" : "rgba(5,150,105,.18)"}`, color: green }}>
+            {reportLoading ? "Preparing..." : "↓ Finance CSV"}
+          </button>
+        )}
       </div>
 
       {loading ? <div className="adm-stats">{[1,2,3,4,5,6].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-20 rounded-xl`} />)}</div> : <>
