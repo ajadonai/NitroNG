@@ -36,6 +36,62 @@ beforeEach(() => {
   mockExecuteRawUnsafe.mockResolvedValue(0);
 });
 
+describe('drip cron — section 2 in-flight filter', () => {
+  it('excludes dispatches whose order has an in-flight batch from the due query', async () => {
+    // Section 0: no expired
+    // Section 1: no stuck dispatching
+    mockDripDispatch.findMany
+      .mockResolvedValueOnce([]) // section 1: stuck dispatching
+      .mockResolvedValueOnce([]) // section 2: due dispatches (none returned)
+      .mockResolvedValueOnce([]); // section 3: processing
+    mockOrder.findMany.mockResolvedValue([]); // section 4: rollup
+
+    const { GET } = await import('@/app/api/cron/drip/route');
+    await GET(makeReq());
+
+    // The second findMany call is section 2 (due dispatches)
+    const dueCall = mockDripDispatch.findMany.mock.calls[1];
+    expect(dueCall).toBeDefined();
+    const where = dueCall[0].where;
+
+    expect(where.status).toBe('pending');
+    expect(where.scheduledAt).toEqual({ lte: expect.any(Date) });
+    expect(where.order).toEqual({
+      dripDispatches: {
+        none: { status: { in: ['dispatching', 'processing'] } },
+      },
+    });
+  });
+
+  it('still runs in-loop in-flight guard as a race safety net', async () => {
+    const { placeOrder } = await import('@/lib/smm');
+
+    const fakeDispatch = {
+      id: 'disp-race', orderId: 'ord-race', batch: 1, quantity: 100,
+      scheduledAt: new Date(Date.now() - 60000),
+      order: { id: 'ord-race', orderId: 'ORD-RACE', status: 'Processing', deletedAt: null, comments: null, link: 'http://example.com', service: { provider: 'mtp', apiId: 123, apiType: 'Default' } },
+    };
+
+    mockDripDispatch.findMany
+      .mockResolvedValueOnce([])            // section 1
+      .mockResolvedValueOnce([fakeDispatch]) // section 2: dispatch passed DB filter
+      .mockResolvedValueOnce([]);            // section 3
+    // In-loop guard finds an in-flight batch (race condition)
+    mockDripDispatch.findFirst.mockResolvedValueOnce({ id: 'other-batch', status: 'processing' });
+    mockOrder.findMany.mockResolvedValue([]);
+
+    const { GET } = await import('@/app/api/cron/drip/route');
+    const res = await GET(makeReq());
+    const body = await res.json();
+
+    expect(body.stats.dispatched).toBe(0);
+    expect(placeOrder).not.toHaveBeenCalled();
+    expect(mockDripDispatch.findFirst).toHaveBeenCalledWith({
+      where: { orderId: 'ord-race', status: { in: ['dispatching', 'processing'] } },
+    });
+  });
+});
+
 describe('drip cron — section 3 reschedule (set-based UPDATE)', () => {
   it('reschedules pending dispatches with a single UPDATE FROM VALUES', async () => {
     const { checkOrder } = await import('@/lib/smm');

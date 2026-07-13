@@ -63,6 +63,11 @@ export async function GET(req) {
       where: {
         status: 'pending',
         scheduledAt: { lte: new Date() },
+        order: {
+          dripDispatches: {
+            none: { status: { in: ['dispatching', 'processing'] } },
+          },
+        },
       },
       include: {
         order: { include: { service: true } },
