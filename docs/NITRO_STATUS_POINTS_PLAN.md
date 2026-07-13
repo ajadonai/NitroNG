@@ -149,7 +149,7 @@ const rewards = {
   points: {
     balance: 8450,
     valueNaira: 8450,
-    minRedeem: 5000,
+    minRedeem: 2000,
     redeemable: true,
     neededToRedeem: 0
   },
@@ -194,7 +194,7 @@ When merging rewards UI with the admin WhatsApp setting work, replace `WHATSAPP_
   - `Nitro Status`
   - `Nitro Points`
   - `1 pt = ₦1`
-  - minimum redemption `5,000`
+  - minimum redemption `2,000`
 - The UI currently uses absolute progress toward the next tier minimum:
 
 ```js
@@ -218,7 +218,7 @@ progressPct = (eligibleSpend - currentMin) / (nextMin - currentMin) * 100
 - Nitro Points are earned from spending.
 - The points earn rate depends on the user's Nitro Status at the time of purchase.
 - `1 Nitro Point = ₦1` redeemable value.
-- Minimum redemption is `5,000 points = ₦5,000`.
+- Minimum redemption is `2,000 points = ₦2,000`.
 - Nitro Status gives users service discounts.
 - Nitro Points can be redeemed by users.
 - Refunds deduct the points originally earned from the refunded order.
@@ -295,7 +295,7 @@ Important anti-double-dip rule:
 ### Value
 
 - `1 point = ₦1`.
-- `5,000 points = ₦5,000`.
+- `2,000 points = ₦2,000`.
 
 ### Internal precision
 
@@ -305,7 +305,7 @@ Recommended implementation:
 
 - store rewards internally as integer kobo-equivalent, e.g. `pointsKobo` or `rewardValueKobo`;
 - `100 pointsKobo = 1 point = ₦1`;
-- minimum redemption is `500,000 pointsKobo`;
+- minimum redemption is `200,000 pointsKobo`;
 - display as `pointsKobo / 100`.
 
 Award calculation should be deterministic:
@@ -332,8 +332,8 @@ Example:
 
 ### Redemption
 
-- Minimum redemption: 5,000 points.
-- User can redeem points only when balance is at least 5,000 points.
+- Minimum redemption: 2,000 points.
+- User can redeem points only when balance is at least 2,000 points.
 - Redemption should be auditable in finance.
 
 Preferred launch implementation:
@@ -491,6 +491,30 @@ Finance should be able to reconcile:
 - redemptions against order discounts or rewards-credit transactions;
 - refund reversals against refunded orders.
 
+### Monthly rewards cost reporting
+
+Monthly reports should separate rewards into three finance lanes:
+
+1. **Checkout reductions** — value that reduced what users paid at checkout:
+   - Nitro Status discounts from `orders.loyaltyDiscount`;
+   - campaign discounts from `orders.campaignDiscount`;
+   - Nitro Points redeemed at checkout from `orders.nitroPointsRedeemedKobo`.
+
+2. **Accrual-style reward cost** — new reward cost created in the period:
+   - Nitro Status discounts;
+   - campaign discounts;
+   - points earned from orders;
+   - manual point credits;
+   - opening balances, if any.
+
+   Do **not** count points redeemed here as fresh cost. Redeemed points were already counted when issued; redemption is liability usage.
+
+3. **Points liability movement** — how outstanding points changed in the period:
+   - increases: earned points, manual credits, opening balances, restored refunded redemptions;
+   - decreases: redeemed points, reversed earned points after refunds, manual debits.
+
+The Finance → Rewards tab should show all three views so monthly reporting can reconcile cash collected, discounts given, and outstanding points liability without double-counting.
+
 ---
 
 ## 8. User-side UI plan
@@ -629,7 +653,7 @@ Redeemable copy:
 
 ```text
 You can redeem your points on orders.
-Minimum redemption: 5,000 points.
+Minimum redemption: 2,000 points.
 ```
 
 Button:
@@ -643,8 +667,8 @@ For UI-only phase, this button should navigate to New Order. Backend redemption 
 Below-minimum copy:
 
 ```text
-Minimum redemption is 5,000 points.
-Earn 1,800 more points to redeem.
+Minimum redemption is 2,000 points.
+Earn 800 more points to redeem.
 ```
 
 Activity preview:
@@ -672,7 +696,7 @@ Example:
 ```text
 Nitro Points
 8,450 pts ≈ ₦8,450
-Minimum redemption: ₦5,000
+Minimum redemption: ₦2,000
 
 View points
 ```
@@ -698,8 +722,8 @@ If the user cannot redeem:
 
 ```text
 Nitro Points
-3,200 available
-Minimum redemption is 5,000 points.
+1,200 available
+Minimum redemption is 2,000 points.
 ```
 
 ### Future order history/detail UI
@@ -763,7 +787,7 @@ const rewards = {
   points: {
     balance: 8450,
     valueNaira: 8450,
-    minRedeem: 5000,
+    minRedeem: 2000,
     redeemable: true,
     neededToRedeem: 0
   },
@@ -808,7 +832,7 @@ Add/manage:
 
 - Nitro Points enabled: true/false;
 - Nitro Status discounts enabled: true/false;
-- minimum redemption: default 5,000;
+- minimum redemption: default 2,000;
 - status tiers:
   - name;
   - min eligible lifetime spend;
@@ -911,7 +935,7 @@ Do not start redemption in this phase.
 ### Phase 3 — User redemption ✓
 
 - `[x]` Add redeem/apply-points endpoint or checkout parameter.
-- `[x]` Enforce minimum 5,000 points.
+- `[x]` Enforce minimum 2,000 points.
 - `[x]` Debit ledger transactionally.
 - `[x]` Apply redemption as checkout discount or rewards credit, not normal wallet balance.
 - `[x]` Add user points history.

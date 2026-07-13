@@ -692,6 +692,42 @@ Dashboard card or notification: "Detty December starts in 2 days — fund your w
 
 ---
 
+## Feature: Nitro Points Gamification Layer
+
+*Added July 2026*
+
+Nitro Status + Points is now the baseline rewards system. A future V2 layer should make points feel more alive without permanently raising the cashback cost on every order.
+
+The idea: users earn extra Nitro Points through specific behaviours, time-boxed campaigns, and lightweight achievements. This should sit on top of normal order earning, not replace it.
+
+Examples:
+
+- First order of the week: 2x or 3x points.
+- Weekend order boost: 2x points for selected windows.
+- Bulk order milestone: bonus points after crossing a spend/quantity threshold.
+- Streaks: place orders in 2–4 consecutive weeks and earn bonus points.
+- Tasks/bounties: complete brand-building actions and earn Nitro Points or wallet credit.
+- Reactivation: return after 30+ days and earn boosted points on the next order.
+- Status challenge: “Spend ₦X more this month to unlock Y bonus points.”
+
+Why this matters:
+
+- A flat 1%–2% earn rate is financially safe but can feel slow.
+- Gamified boosts create the feeling of progress without changing the permanent liability curve.
+- Time-boxed campaigns let Nitro test what moves repeat spend before making anything evergreen.
+
+Guardrails:
+
+- Keep base earn rates conservative.
+- Use bounded campaigns/multipliers before any permanent earn-rate increase.
+- Cap campaign liability per user and per campaign.
+- Snapshot multiplier/rate at order time.
+- Do not award points on refunded, bonus-funded, or points-funded value.
+- Show users clear expiry/eligibility rules before they act.
+- Finance must be able to report campaign-issued points separately from normal earned points.
+
+---
+
 ## Feature: Drip Feed Ordering
 
 *Added June 2026*

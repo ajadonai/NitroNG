@@ -1466,6 +1466,14 @@ function FinanceRewardsTab({ dark, t }) {
     { key: 'manual_debit', label: 'Manual debit', color: t.red },
   ];
 
+  const koboToNaira = (kobo) => Math.round((kobo || 0) / 100);
+  const cost = data?.cost || {};
+  const checkout = cost.checkoutReductions || {};
+  const movement = cost.pointsMovement || {};
+  const accrual = cost.accrualRewardCost || {};
+  const movementColor = (movement.netLiabilityChangeKobo || 0) >= 0 ? t.amber : t.green;
+  const fSignedKobo = (kobo) => `${(kobo || 0) < 0 ? '-' : ''}${fN(koboToNaira(kobo))}`;
+
   return (
     <div className="p-6 max-w-[900px]">
       {/* Date filter */}
@@ -1488,6 +1496,51 @@ function FinanceRewardsTab({ dark, t }) {
             <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>Outstanding Points Liability</div>
             <div className="text-[28px] font-bold" style={{ color: t.accent, fontFamily: 'JetBrains Mono, monospace' }}>{(data.liability.points || 0).toLocaleString()} <span className="text-[14px] font-medium" style={{ color: t.textSoft }}>pts</span></div>
             <div className="text-[13px] mt-1" style={{ color: t.textSoft }}>₦{(data.liability.points || 0).toLocaleString()} redeemable value</div>
+          </div>
+
+          {/* Cost reporting */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+            <div className="rounded-xl p-4" style={{ background: cardBg, border: cardBd }}>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>Reward cost</div>
+              <div className="text-[20px] font-bold" style={{ color: t.red, fontFamily: 'JetBrains Mono, monospace' }}>{fN(koboToNaira(accrual.kobo))}</div>
+              <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>Status/campaign discounts + points issued</div>
+            </div>
+            <div className="rounded-xl p-4" style={{ background: cardBg, border: cardBd }}>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>Checkout reductions</div>
+              <div className="text-[20px] font-bold" style={{ color: t.amber, fontFamily: 'JetBrains Mono, monospace' }}>{fN(koboToNaira(checkout.totalKobo))}</div>
+              <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>Discounts + points used at checkout</div>
+            </div>
+            <div className="rounded-xl p-4" style={{ background: cardBg, border: cardBd }}>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>Net points liability change</div>
+              <div className="text-[20px] font-bold" style={{ color: movementColor, fontFamily: 'JetBrains Mono, monospace' }}>{fSignedKobo(movement.netLiabilityChangeKobo)}</div>
+              <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>{(movement.netLiabilityChangeKobo || 0) >= 0 ? 'Liability increased' : 'Liability reduced'} this period</div>
+            </div>
+          </div>
+
+          <div className="rounded-xl p-4 mb-5" style={{ background: cardBg, border: cardBd }}>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-3" style={{ color: t.textMuted }}>Monthly rewards report breakdown</div>
+            {[
+              ['Nitro Status discounts', checkout.statusDiscountKobo, 'Immediate revenue reduction on orders', t.amber],
+              ['Campaign discounts', checkout.campaignDiscountKobo, 'Platform/recurring promotion reduction', t.amber],
+              ['Points redeemed at checkout', checkout.pointsRedeemedKobo, 'Existing liability used to pay for orders', t.red],
+              ['Points earned from orders', movement.earnedKobo, 'New points liability created by spend', t.green],
+              ['Manual point credits', movement.manualCreditKobo, 'Admin-issued points liability', t.accent],
+              ['Opening balances', movement.openingBalanceKobo, 'Imported/launch points liability', t.accent],
+              ['Points restored on refunds', movement.restoredKobo, 'Redeemed points returned after refunds', t.green],
+              ['Earned points reversed', movement.reversedKobo, 'Earned points removed after refunds', t.red],
+              ['Manual point debits', movement.manualDebitKobo, 'Admin-reduced liability', t.red],
+            ].map(([label, kobo, note, color]) => (
+              <div key={label} className="flex items-start justify-between gap-3 py-2.5" style={{ borderBottom: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)'}` }}>
+                <div>
+                  <div className="text-[13px] font-semibold" style={{ color: t.text }}>{label}</div>
+                  <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>{note}</div>
+                </div>
+                <div className="text-[13px] font-bold text-right whitespace-nowrap" style={{ color, fontFamily: 'JetBrains Mono, monospace' }}>{fN(koboToNaira(kobo))}</div>
+              </div>
+            ))}
+            <div className="text-[11px] mt-3 leading-relaxed" style={{ color: t.textMuted }}>
+              Reward cost excludes points redeemed because those points were already counted when issued. Checkout reductions include points redeemed so cash collected can still be reconciled.
+            </div>
           </div>
 
           {/* Movement metrics */}

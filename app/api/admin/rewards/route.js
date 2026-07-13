@@ -22,7 +22,13 @@ export async function GET(req) {
       if (to) { const end = new Date(to); end.setDate(end.getDate() + 1); dateWhere.createdAt.lte = end; }
     }
 
-    const [totals, liability] = await Promise.all([
+    const orderWhere = {
+      deletedAt: null,
+      status: { notIn: ['Cancelled'] },
+      ...(dateWhere.createdAt ? { createdAt: dateWhere.createdAt } : {}),
+    };
+
+    const [totals, liability, orderRewards] = await Promise.all([
       prisma.nitroPointLedger.groupBy({
         by: ['type'],
         where: dateWhere,
@@ -32,6 +38,15 @@ export async function GET(req) {
       prisma.nitroPointLedger.aggregate({
         _sum: { pointsKobo: true },
       }),
+      prisma.order.aggregate({
+        where: orderWhere,
+        _sum: {
+          loyaltyDiscount: true,
+          campaignDiscount: true,
+          nitroPointsRedeemedKobo: true,
+        },
+        _count: true,
+      }),
     ]);
 
     const byType = {};
@@ -39,9 +54,49 @@ export async function GET(req) {
       byType[r.type] = { kobo: r._sum.pointsKobo || 0, count: r._count };
     }
 
+    const byTypeKobo = (type) => byType[type]?.kobo || 0;
+    const statusDiscountKobo = orderRewards._sum.loyaltyDiscount || 0;
+    const campaignDiscountKobo = orderRewards._sum.campaignDiscount || 0;
+    const pointsRedeemedAtCheckoutKobo = orderRewards._sum.nitroPointsRedeemedKobo || 0;
+    const earnedKobo = byTypeKobo('earned_order');
+    const redeemedKobo = Math.abs(byTypeKobo('redeemed_order'));
+    const reversedKobo = Math.abs(byTypeKobo('reversed_refund'));
+    const restoredKobo = byTypeKobo('restored_refund');
+    const manualCreditKobo = byTypeKobo('manual_credit');
+    const manualDebitKobo = Math.abs(byTypeKobo('manual_debit'));
+    const openingBalanceKobo = byTypeKobo('opening_balance');
+    const netLiabilityChangeKobo = Object.values(byType).reduce((sum, row) => sum + (row.kobo || 0), 0);
+
     return Response.json({
       liability: { kobo: liability._sum.pointsKobo || 0, points: Math.floor((liability._sum.pointsKobo || 0) / 100) },
       byType,
+      cost: {
+        orderCount: orderRewards._count || 0,
+        checkoutReductions: {
+          statusDiscountKobo,
+          campaignDiscountKobo,
+          pointsRedeemedKobo: pointsRedeemedAtCheckoutKobo,
+          totalKobo: statusDiscountKobo + campaignDiscountKobo + pointsRedeemedAtCheckoutKobo,
+        },
+        pointsMovement: {
+          earnedKobo,
+          redeemedKobo,
+          reversedKobo,
+          restoredKobo,
+          manualCreditKobo,
+          manualDebitKobo,
+          openingBalanceKobo,
+          liabilityIncreaseKobo: earnedKobo + restoredKobo + manualCreditKobo + openingBalanceKobo,
+          liabilityDecreaseKobo: redeemedKobo + reversedKobo + manualDebitKobo,
+          netLiabilityChangeKobo,
+        },
+        accrualRewardCost: {
+          kobo: statusDiscountKobo + campaignDiscountKobo + earnedKobo + manualCreditKobo + openingBalanceKobo,
+          statusDiscountKobo,
+          campaignDiscountKobo,
+          pointsIssuedKobo: earnedKobo + manualCreditKobo + openingBalanceKobo,
+        },
+      },
       dateFiltered: !!(from || to),
     });
   }

@@ -19,8 +19,10 @@ const mockTx = {
 
 const mockGroupBy = vi.fn();
 const mockLedgerAggregate = vi.fn();
+const mockOrderAggregate = vi.fn();
 const mockPrisma = {
   nitroPointLedger: { findMany: mockFindMany, count: mockCount, groupBy: mockGroupBy, aggregate: mockLedgerAggregate },
+  order: { aggregate: mockOrderAggregate },
   $transaction: vi.fn(async (fn, _opts) => fn(mockTx)),
 };
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
@@ -53,6 +55,10 @@ beforeEach(() => {
   mockLogActivity.mockResolvedValue(undefined);
   mockGroupBy.mockResolvedValue([]);
   mockLedgerAggregate.mockResolvedValue({ _sum: { pointsKobo: 0 } });
+  mockOrderAggregate.mockResolvedValue({
+    _sum: { loyaltyDiscount: 0, campaignDiscount: 0, nitroPointsRedeemedKobo: 0 },
+    _count: 0,
+  });
 });
 
 describe('GET /api/admin/rewards', () => {
@@ -276,8 +282,13 @@ describe('GET /api/admin/rewards?view=summary', () => {
     mockGroupBy.mockResolvedValue([
       { type: 'earned_order', _sum: { pointsKobo: 100000 }, _count: 10 },
       { type: 'redeemed_order', _sum: { pointsKobo: -30000 }, _count: 3 },
+      { type: 'manual_credit', _sum: { pointsKobo: 20000 }, _count: 1 },
     ]);
     mockLedgerAggregate.mockResolvedValue({ _sum: { pointsKobo: 70000 } });
+    mockOrderAggregate.mockResolvedValue({
+      _sum: { loyaltyDiscount: 12000, campaignDiscount: 8000, nitroPointsRedeemedKobo: 30000 },
+      _count: 4,
+    });
 
     const res = await GET(makeReq({ view: 'summary' }));
     const data = await res.json();
@@ -285,6 +296,26 @@ describe('GET /api/admin/rewards?view=summary', () => {
     expect(data.liability).toEqual({ kobo: 70000, points: 700 });
     expect(data.byType.earned_order).toEqual({ kobo: 100000, count: 10 });
     expect(data.byType.redeemed_order).toEqual({ kobo: -30000, count: 3 });
+    expect(data.cost.checkoutReductions).toEqual({
+      statusDiscountKobo: 12000,
+      campaignDiscountKobo: 8000,
+      pointsRedeemedKobo: 30000,
+      totalKobo: 50000,
+    });
+    expect(data.cost.pointsMovement).toMatchObject({
+      earnedKobo: 100000,
+      redeemedKobo: 30000,
+      manualCreditKobo: 20000,
+      liabilityIncreaseKobo: 120000,
+      liabilityDecreaseKobo: 30000,
+      netLiabilityChangeKobo: 90000,
+    });
+    expect(data.cost.accrualRewardCost).toEqual({
+      kobo: 140000,
+      statusDiscountKobo: 12000,
+      campaignDiscountKobo: 8000,
+      pointsIssuedKobo: 120000,
+    });
     expect(data.dateFiltered).toBe(false);
   });
 
@@ -293,6 +324,9 @@ describe('GET /api/admin/rewards?view=summary', () => {
     const call = mockGroupBy.mock.calls[0][0];
     expect(call.where.createdAt.gte).toEqual(new Date('2026-06-01'));
     expect(call.where.createdAt.lte).toBeDefined();
+    const orderCall = mockOrderAggregate.mock.calls[0][0];
+    expect(orderCall.where.createdAt.gte).toEqual(new Date('2026-06-01'));
+    expect(orderCall.where.createdAt.lte).toBeDefined();
   });
 
   it('liability is always unfiltered', async () => {

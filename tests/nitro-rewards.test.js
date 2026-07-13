@@ -250,9 +250,9 @@ describe('getRewardsPayload', () => {
 
     expect(r.points.balance).toBe(0);
     expect(r.points.valueNaira).toBe(0);
-    expect(r.points.minRedeem).toBe(5000);
+    expect(r.points.minRedeem).toBe(2000);
     expect(r.points.redeemable).toBe(false);
-    expect(r.points.neededToRedeem).toBe(5000);
+    expect(r.points.neededToRedeem).toBe(2000);
 
     expect(r.history).toEqual([]);
   });
@@ -270,24 +270,24 @@ describe('getRewardsPayload', () => {
     expect(r.status.pointEarnPct).toBe(1.25);
   });
 
-  it('shows redeemable when balance >= 5000 points', async () => {
-    // 8450 points = 845000 pointsKobo
-    setupMocks({ balanceKobo: 845000 });
-    const r = await getRewardsPayload('user1');
-
-    expect(r.points.balance).toBe(8450);
-    expect(r.points.redeemable).toBe(true);
-    expect(r.points.neededToRedeem).toBe(0);
-  });
-
-  it('shows not redeemable when balance < 5000 points', async () => {
+  it('shows redeemable when balance >= 2000 points', async () => {
     // 3200 points = 320000 pointsKobo
     setupMocks({ balanceKobo: 320000 });
     const r = await getRewardsPayload('user1');
 
     expect(r.points.balance).toBe(3200);
+    expect(r.points.redeemable).toBe(true);
+    expect(r.points.neededToRedeem).toBe(0);
+  });
+
+  it('shows not redeemable when balance < 2000 points', async () => {
+    // 1200 points = 120000 pointsKobo
+    setupMocks({ balanceKobo: 120000 });
+    const r = await getRewardsPayload('user1');
+
+    expect(r.points.balance).toBe(1200);
     expect(r.points.redeemable).toBe(false);
-    expect(r.points.neededToRedeem).toBe(1800);
+    expect(r.points.neededToRedeem).toBe(800);
   });
 
   it('shows 100% progress for Legend tier', async () => {

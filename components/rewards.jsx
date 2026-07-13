@@ -14,7 +14,7 @@ import { useState } from 'react';
 //   rewards.tasks  { available, topReward }   (strip cell gated by TASKS_ENABLED)
 //
 // Wording rules (locked): "Nitro Status", "Nitro Points",
-// "Nitro Status discount" (never "loyalty"), 1 point = ₦1, min redeem 5,000.
+// "Nitro Status discount" (never "loyalty"), 1 point = ₦1, min redeem 2,000.
 // ─────────────────────────────────────────────────────────────────
 
 // Flip when the Tasks page ships; the strip grows its third cell.
@@ -52,7 +52,7 @@ export function getRewards() {
     points: {
       balance: 8450,
       valueNaira: 8450,
-      minRedeem: 5000,
+      minRedeem: 2000,
       redeemable: true,
       neededToRedeem: 0,
     },
