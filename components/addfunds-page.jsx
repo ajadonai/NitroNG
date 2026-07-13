@@ -139,7 +139,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   }, [txs]);
 
   const numAmount = Number(amount) || 0;
-  const valid = numAmount >= 500;
+  const valid = numAmount >= 1000;
   const balance = user?.balance || 0;
 
   const lastFunded = txs?.find(tx => tx.type === 'deposit' && tx.status === 'Completed');
@@ -321,7 +321,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           </div>
         );
       })()}
-      {welcomeEligible && numAmount >= 500 && (() => {
+      {welcomeEligible && numAmount >= 1000 && (() => {
         const nt = nextBonusTier(numAmount);
         if (!nt) return null;
         const diff = nt.min - numAmount;
@@ -341,13 +341,13 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         );
       })()}
       <div className="min-h-6 mt-2.5 flex items-center">
-        {numAmount > 0 && numAmount < 500 ? (
+        {numAmount > 0 && numAmount < 1000 ? (
           <div className="text-sm font-medium flex items-center gap-1.5" style={{ color: dark ? "#fcd34d" : "#d97706" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            Minimum deposit is ₦500
+            Minimum deposit is ₦1,000
           </div>
         ) : !valid && (
-          <div className="text-[12px]" style={{ color: t.textMuted }}>Minimum deposit is ₦500</div>
+          <div className="text-[12px]" style={{ color: t.textMuted }}>Minimum deposit is ₦1,000</div>
         )}
       </div>
     </>

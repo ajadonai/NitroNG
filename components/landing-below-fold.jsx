@@ -121,7 +121,7 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={dark?"#34d399":"#059669"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
                 </div>
                 <div className="flex-1">
-                  <div className="text-[15px] font-semibold" style={{color:t.text}}>Fund your wallet from <span style={{color:dark?"#34d399":"#059669"}}>{"₦"}500</span></div>
+                  <div className="text-[15px] font-semibold" style={{color:t.text}}>Fund your wallet from <span style={{color:dark?"#34d399":"#059669"}}>{"₦"}1,000</span></div>
                   <div className="text-[13px] mt-0.5" style={{color:t.textSoft}}>Cards, bank transfer, and crypto accepted. Funds arrive instantly.</div>
                 </div>
                 <button onClick={()=>setModal("signup")} className="s3-deposit-btn py-2.5 px-6 rounded-[10px] text-sm font-semibold border-none cursor-pointer whitespace-nowrap shrink-0 transition-transform duration-200 hover:-translate-y-px" style={{background:"#fff",color:"#1a1a1a"}}>Add funds {"→"}</button>
