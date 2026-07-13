@@ -347,7 +347,7 @@ function maxDripDays(qty) { return qty <= 5000 ? 5 : qty <= 10000 ? 7 : qty <= 2
 const MIN_DAYS_FLOOR = { followers: 3, views: 1, plays: 1, likes: 2, comments: 3, reviews: 3, engagement: 2 };
 function minDripDays(qty, type) { const floor = MIN_DAYS_FLOOR[(type || "").toLowerCase()] || 3; return Math.max(floor, Math.ceil(qty / safeDailyCap(type))); }
 
-export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible }) {
+export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible, pointsRedeemable = false, pointsBalance = 0, redeemPoints = false, setRedeemPoints }) {
   const minQty = selTier?.min || 100;
   const maxQty = selTier?.max || 50000;
   const isPackage = minQty === maxQty;
@@ -359,7 +359,9 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const afterLoyalty = Math.max(0, basePrice - discountAmount);
   const promoDiscountAmt = activePromotion ? Math.round(afterLoyalty * (activePromotion.discountPercent / 100)) : 0;
   const cappedPromoDiscount = activePromotion?.maxDiscountPerOrder ? Math.min(promoDiscountAmt, activePromotion.maxDiscountPerOrder / 100) : promoDiscountAmt;
-  const price = Math.max(0, afterLoyalty - cappedPromoDiscount);
+  const priceBeforePoints = Math.max(0, afterLoyalty - cappedPromoDiscount);
+  const pointsDiscount = redeemPoints && pointsRedeemable ? Math.min(pointsBalance, priceBeforePoints) : 0;
+  const price = Math.max(0, priceBeforePoints - pointsDiscount);
   const s = selTier ? TS[selTier.tier] : null;
   const [linkError, setLinkError] = useState("");
   const [linkHelpOpen, setLinkHelpOpen] = useState(false);
@@ -604,12 +606,25 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             Large delivery may flag the target account
           </div>}
           </>)}
+        {pointsRedeemable && priceBeforePoints > 0 && (
+          <div className="flex items-center justify-between gap-3 rounded-[10px] p-2.5 mb-2 border border-solid cursor-pointer select-none" onClick={() => setRedeemPoints(!redeemPoints)} style={{ background: redeemPoints ? (dark ? "rgba(251,191,36,.08)" : "rgba(251,191,36,.07)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)"), borderColor: redeemPoints ? (dark ? "rgba(251,191,36,.25)" : "rgba(251,191,36,.35)") : t.cardBorder }}>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-semibold" style={{ color: redeemPoints ? (dark ? "#fbbf24" : "#92400e") : t.text }}>Use Nitro Points</div>
+              <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{pointsBalance.toLocaleString()} pts available · saves ₦{Math.min(pointsBalance, priceBeforePoints).toLocaleString()}</div>
+            </div>
+            <div className="relative w-10 h-[22px] shrink-0" aria-hidden="true">
+              <div className="absolute inset-0 rounded-[11px] transition-colors duration-200" style={{ background: redeemPoints ? "#fbbf24" : (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.15)") }} />
+              <div className="absolute top-[2px] w-[18px] h-[18px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.2)] transition-[left] duration-200" style={{ left: redeemPoints ? 20 : 2 }} />
+            </div>
+          </div>
+        )}
         <div className="rounded-[10px] p-2.5 mb-3 border border-solid" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", borderColor: t.cardBorder }}>
-          {discountAmount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}><span>{loyaltyTier} discount ({loyaltyDiscount}%)</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{discountAmount.toLocaleString()}</span></div>}
+          {discountAmount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}><span>Nitro Status discount ({loyaltyDiscount}%)</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{discountAmount.toLocaleString()}</span></div>}
           {cappedPromoDiscount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#f9a8d4" : "#be185d" }}><span>Discount ({activePromotion.discountPercent}%){cappedPromoDiscount < promoDiscountAmt ? ` · capped at ₦${cappedPromoDiscount.toLocaleString()}` : ''}</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{cappedPromoDiscount.toLocaleString()}</span></div>}
-          <div className={`flex justify-between items-baseline${(discountAmount > 0 || cappedPromoDiscount > 0) ? " border-t border-solid pt-2 mt-1" : ""}`} style={(discountAmount > 0 || cappedPromoDiscount > 0) ? { borderColor: t.cardBorder } : undefined}>
+          {pointsDiscount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#fbbf24" : "#92400e" }}><span>Nitro Points</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{pointsDiscount.toLocaleString()}</span></div>}
+          <div className={`flex justify-between items-baseline${(discountAmount > 0 || cappedPromoDiscount > 0 || pointsDiscount > 0) ? " border-t border-solid pt-2 mt-1" : ""}`} style={(discountAmount > 0 || cappedPromoDiscount > 0 || pointsDiscount > 0) ? { borderColor: t.cardBorder } : undefined}>
             <span className="text-[13px] font-semibold" style={{ color: t.textMuted }}>Total</span>
-            <span className="font-bold text-[20px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>{(discountAmount > 0 || cappedPromoDiscount > 0) && <span className="text-[14px] font-normal line-through mr-1.5" style={{ color: t.textMuted }}>₦{basePrice.toLocaleString()}</span>}₦{price.toLocaleString()}</span>
+            <span className="font-bold text-[20px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>{(discountAmount > 0 || cappedPromoDiscount > 0 || pointsDiscount > 0) && <span className="text-[14px] font-normal line-through mr-1.5" style={{ color: t.textMuted }}>₦{basePrice.toLocaleString()}</span>}₦{price.toLocaleString()}</span>
           </div>
         </div>
           {balance != null && qtyNum > 0 && price > balance ? (
@@ -706,7 +721,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
 /* ═══════════════════════════════════════════ */
 /* ═══ NEW ORDER PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
-export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrders, onTopUp, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, catModal, setCatModal, tourActive, activePromotion }) {
+export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrders, onTopUp, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, catModal, setCatModal, tourActive, activePromotion, rewards, socialLinks, refreshRewards }) {
   const toast = useToast();
   const [filterType, setFilterType] = useState("all");
   const [search, setSearch] = useState("");
@@ -716,11 +731,14 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   const [menuError, setMenuError] = useState("");
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(null);
+  const [redeemPoints, setRedeemPoints] = useState(false);
   const successTierClr = orderSuccess ? (tierClr[orderSuccess.tier] || tierClr.Budget) : null;
   const successPlatformIcon = orderSuccess ? PLATFORMS.find(p => p.id === platform || p.label.toLowerCase().includes((orderSuccess.platform || "").toLowerCase()))?.icon : null;
   const successChrome = dark
     ? { card: "#10131f", hair: "#232a3d", text: "#eceef5", muted: "#8a90a5", money: "#4fd1a1", waTint: "#12261c", wa: "#1faa59", waHover: "#128c46" }
     : { card: "#ffffff", hair: "#eee7de", text: "#2a2723", muted: "#98918a", money: "#0a7d54", waTint: "#eaf7ef", wa: "#1faa59", waHover: "#128c46" };
+
+  const waChannelUrl = socialLinks?.social_whatsapp_channel || 'https://whatsapp.com/channel/0029Vb8hC6rJ3jv7Ig2m3D3Q';
 
   // Bulk mode state — hydrate from storage after mount to avoid SSR mismatch
   const [orderMode, setOrderMode] = useState("single");
@@ -862,7 +880,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   const price = selTier ? Math.round(((Number(qty) || 0) / 1000) * (selTier.pricePer1k || selTier.price)) : 0;
   const activePlat = PLATFORMS.find(p => p.id === platform);
 
-  useEffect(() => { setSelSvc(null); setSelTier(null); setFilterType("all"); setOrderModal(false); setOrderSuccess(null); setSearch(""); setLink(""); setComments(""); setQty(""); }, [platform]);
+  useEffect(() => { setSelSvc(null); setSelTier(null); setFilterType("all"); setOrderModal(false); setOrderSuccess(null); setSearch(""); setLink(""); setComments(""); setQty(""); setRedeemPoints(false); }, [platform]);
 
   /* Click outside any card → collapse */
   const listRef = useRef(null);
@@ -961,12 +979,13 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   /* Place order */
   const submitOrder = async (dripDaysArg, confirmDuplicate) => {
     if (!selTier?.id || !link || orderLoading) return;
+    const shouldRedeem = redeemPoints && rewards?.points?.redeemable;
     setOrderLoading(true);
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tierId: selTier.id, link: `https://${link.trim()}`, quantity: qty, ...(comments?.trim() ? { comments: comments.trim() } : {}), serviceType: selSvc?.type || "", ...(dripDaysArg != null ? { dripDays: dripDaysArg } : {}), ...(confirmDuplicate ? { confirmDuplicate: true } : {}) }),
+        body: JSON.stringify({ tierId: selTier.id, link: `https://${link.trim()}`, quantity: qty, ...(comments?.trim() ? { comments: comments.trim() } : {}), serviceType: selSvc?.type || "", ...(dripDaysArg != null ? { dripDays: dripDaysArg } : {}), ...(confirmDuplicate ? { confirmDuplicate: true } : {}), ...(shouldRedeem ? { redeemPoints: true } : {}) }),
         signal: AbortSignal.timeout(30000),
       });
       const data = await res.json();
@@ -976,11 +995,14 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
         return;
       }
       if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong"); setOrderLoading(false); return; }
-      setOrderSuccess({ ...data.order, queued: data.queued, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", speed: selTier?.speed || null, tier: selTier?.tier || null, link: link.trim(), balanceAfter: data.order?.charge != null && user?.balance != null ? Math.max(0, user.balance - data.order.charge) : null });
+      const walletCharge = (data.order?.charge || 0) - (data.order?.pointsRedeemed || 0);
+      setOrderSuccess({ ...data.order, queued: data.queued, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", speed: selTier?.speed || null, tier: selTier?.tier || null, link: link.trim(), balanceAfter: walletCharge > 0 && user?.balance != null ? Math.max(0, user.balance - walletCharge) : (user?.balance ?? null) });
       if (typeof window.fbq === "function") fbq("track", "Purchase", { value: data.order?.charge || 0, currency: "NGN", content_name: selSvc?.name || "Order", content_category: platform || "unknown" }, { eventID: data.eventId });
       if (typeof window.gtag === "function") gtag("event", "conversion", { send_to: "AW-18121451903/9P3HCL_TlaMcEP_S_cBD", transaction_id: data.order?.id || "" });
       setLink("");
+      setRedeemPoints(false);
       if (onOrderSuccess) onOrderSuccess();
+      if (refreshRewards) refreshRewards();
     } catch (err) {
       const msg = err?.name === "TimeoutError" ? "Request timed out" : "Network error";
       toast.error(msg, "Check your connection and try again.");
@@ -1258,7 +1280,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {/* Order modal — single mode only */}
       {orderMode === "single" && (orderModal || orderSuccess) && hasOrder && (
-        <div className="no-modal-overlay flex fixed inset-0 z-50 items-end justify-center px-3.5 pb-[70px] desktop:items-center desktop:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { setOrderModal(false); setOrderSuccess(null); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null)}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!orderSuccess&&!orderLoading){submitOrder()}}} style={{ background: "rgba(0,0,0,.45)" }}>
+        <div className="no-modal-overlay flex fixed inset-0 z-50 items-end justify-center px-3.5 pb-[70px] desktop:items-center desktop:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { setOrderModal(false); setOrderSuccess(null); setRedeemPoints(false); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null);setRedeemPoints(false);}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!orderSuccess&&!orderLoading){submitOrder()}}} style={{ background: "rgba(0,0,0,.45)" }}>
           <div role="dialog" aria-modal="true" aria-label="Order summary" className={`w-full overflow-y-auto border border-solid max-h-[calc(100dvh-84px)] desktop:max-h-[90vh] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] ${orderSuccess ? "rounded-[26px] desktop:max-w-[460px]" : "rounded-2xl desktop:max-w-[420px]"}`} onClick={e => e.stopPropagation()} style={{ background: orderSuccess ? successChrome.card : (dark ? "#0e1120" : "#fff"), borderColor: orderSuccess ? "transparent" : (dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"), boxShadow: orderSuccess ? "0 30px 80px rgba(20,10,14,.35)" : (dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)") }}>
             {orderSuccess ? (
               <div className="p-[30px] pb-[26px] max-md:p-5 max-md:pb-6">
@@ -1310,6 +1332,12 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                   <span>Est. delivery</span>
                   <span className="font-semibold text-right min-w-0 truncate" style={{ color: successChrome.text }}>{orderSuccess.queued ? "Starts when active order completes" : formatDeliverySpeed(orderSuccess.speed)}</span>
                 </div>
+                {orderSuccess.pointsRedeemed > 0 && (
+                  <div className="flex items-center justify-between gap-4 py-[3px] text-[12.5px]" style={{ color: successChrome.muted }}>
+                    <span>Points used</span>
+                    <span className="font-semibold min-w-0 truncate" style={{ color: dark ? "#fbbf24" : "#92400e", fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>₦{orderSuccess.pointsRedeemed.toLocaleString()}</span>
+                  </div>
+                )}
 
                 <p className="text-xs leading-[1.65] mt-3 mb-0" style={{ color: successChrome.muted }}>
                   Most orders finish within 6 hours, though some take up to 24. Delivery speed can't be adjusted in the first 6 hours, so no need to message support before then.
@@ -1324,7 +1352,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                     <div className="text-[13.5px] font-bold" style={{ color: successChrome.text }}>Follow The Nitro NG on WhatsApp</div>
                     <div className="text-xs leading-normal mt-0.5" style={{ color: successChrome.muted }}>Delivery updates, deal days and service news, straight from us.</div>
                   </div>
-                  <a href="https://whatsapp.com/channel/0029Vb8hC6rJ3jv7Ig2m3D3Q" target="_blank" rel="noopener" className="shrink-0 text-white text-[12.5px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap hover:!bg-[#128c46]" style={{ background: successChrome.wa }}>Follow</a>
+                  <a href={waChannelUrl} target="_blank" rel="noopener" className="shrink-0 text-white text-[12.5px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap hover:!bg-[#128c46]" style={{ background: successChrome.wa }}>Follow</a>
                 </div>
 
                 {/* Action buttons */}
@@ -1334,7 +1362,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 </div>
               </div>
             ) : (
-              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => setOrderModal(false)} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} welcomeBonusEligible={user?.welcomeBonusEligible} />
+              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => { setOrderModal(false); setRedeemPoints(false); }} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} welcomeBonusEligible={user?.welcomeBonusEligible} pointsRedeemable={rewards?.points?.redeemable || false} pointsBalance={rewards?.points?.balance || 0} redeemPoints={redeemPoints} setRedeemPoints={setRedeemPoints} />
             )}
           </div>
         </div>
@@ -1342,7 +1370,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {/* ═══ BULK CART BAR + EXPANDED ═══ */}
       {orderMode === "bulk" && cartBounds && cartRows.length > 0 && <BulkCartBar ref={cartBarRef} rows={cartRows} dark={dark} t={t} menuData={menuData} bounds={cartBounds} cartOpen={cartOpen} onClick={() => setCartOpen(true)} />}
-      {orderMode === "bulk" && cartOpen && cartBounds && <BulkCartExpanded rows={cartRows} setRows={setCartRows} dark={dark} t={t} menuData={menuData} bounds={cartBounds} onClose={() => setCartOpen(false)} onClear={() => { setCartRows([]); setCartOpen(false); }} onPlace={submitBulk} loading={bulkLoading} rowsScrollRef={cartRowsRef} bulkError={bulkError} setBulkError={setBulkError} bulkSuccess={bulkSuccess} setBulkSuccess={setBulkSuccess} onViewOrders={onViewOrders} onTopUp={onTopUp} />}
+      {orderMode === "bulk" && cartOpen && cartBounds && <BulkCartExpanded rows={cartRows} setRows={setCartRows} dark={dark} t={t} menuData={menuData} bounds={cartBounds} onClose={() => setCartOpen(false)} onClear={() => { setCartRows([]); setCartOpen(false); }} onPlace={submitBulk} loading={bulkLoading} rowsScrollRef={cartRowsRef} bulkError={bulkError} setBulkError={setBulkError} bulkSuccess={bulkSuccess} setBulkSuccess={setBulkSuccess} onViewOrders={onViewOrders} onTopUp={onTopUp} waChannelUrl={waChannelUrl} />}
       </>}
     </div>
   );
@@ -1477,7 +1505,7 @@ function isDuplicate(rows, idx) {
   return rows.some((r, i) => i !== idx && r.svcId === row.svcId && r.tier === row.tier && r.link.trim() === row.link.trim());
 }
 
-function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, onClear, onPlace, loading, rowsScrollRef, bulkError, setBulkError, bulkSuccess, setBulkSuccess, onViewOrders, onTopUp }) {
+function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, onClear, onPlace, loading, rowsScrollRef, bulkError, setBulkError, bulkSuccess, setBulkSuccess, onViewOrders, onTopUp, waChannelUrl }) {
   const loyaltyDiscount = menuData?.loyaltyDiscount || 0;
   const loyaltyTier = menuData?.loyaltyTier || null;
   const subtotal = rows.reduce((s, r) => s + getRowPrice(r, menuData), 0);
@@ -1596,7 +1624,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
           </div>
           {bulkSuccess.loyaltyDiscount > 0 && (
             <div className="flex items-center justify-between gap-4 py-[3px] text-[12.5px]" style={{ color: bulkChrome.muted }}>
-              <span>Loyalty discount</span>
+              <span>Nitro Status discount</span>
               <span className="font-semibold text-right min-w-0 truncate" style={{ color: bulkChrome.money }}>{bulkSuccess.loyaltyTier} · {bulkSuccess.loyaltyDiscount}%</span>
             </div>
           )}
@@ -1639,7 +1667,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
               <div className="text-[13.5px] font-bold" style={{ color: bulkChrome.text }}>Follow The Nitro NG on WhatsApp</div>
               <div className="text-xs leading-normal mt-0.5" style={{ color: bulkChrome.muted }}>Delivery updates, deal days and service news, straight from us.</div>
             </div>
-            <a href="https://whatsapp.com/channel/0029Vb8hC6rJ3jv7Ig2m3D3Q" target="_blank" rel="noopener" className="shrink-0 text-white text-[12.5px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap hover:!bg-[#128c46]" style={{ background: bulkChrome.wa }}>Follow</a>
+            <a href={waChannelUrl || 'https://whatsapp.com/channel/0029Vb8hC6rJ3jv7Ig2m3D3Q'} target="_blank" rel="noopener" className="shrink-0 text-white text-[12.5px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap hover:!bg-[#128c46]" style={{ background: bulkChrome.wa }}>Follow</a>
           </div>
 
           {/* Action buttons */}
@@ -1778,7 +1806,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
           </div>
           {discount > 0 && (
             <div className="flex justify-between text-[12.5px] mb-1.5" style={{ color: dark ? "#b4db7a" : "#27500A" }}>
-              <span>Loyalty discount ({loyaltyDiscount}%)</span><span>−₦{discount.toLocaleString()}</span>
+              <span>Nitro Status discount ({loyaltyDiscount}%)</span><span>−₦{discount.toLocaleString()}</span>
             </div>
           )}
           <div className="flex justify-between items-baseline my-2.5">

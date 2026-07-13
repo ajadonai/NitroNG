@@ -2,6 +2,10 @@
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
 
+## ⛔ HARD GATE: Tasks page
+
+Before building or shipping ANYTHING related to the Tasks page, task rewards, or the tasks launch email: **read `docs/TASKS_LAUNCH_GATE.md` and ask Trip the questions in it first.** The launch email already promises users specific numbers; do not ship task amounts Trip has not confirmed in that conversation.
+
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
 ## 1. Think Before Coding

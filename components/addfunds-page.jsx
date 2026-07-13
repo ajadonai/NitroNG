@@ -4,6 +4,7 @@ import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
 import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
+import { WalletPointsCard, PointsModal } from "./rewards";
 
 const TX_META = {
   deposit:      { label: "Deposit",       icon: "↓", clr: dk => dk ? "#6ee7b7" : "#059669" },
@@ -58,6 +59,11 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   const toast = useToast();
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("");
+  const [pointsOpen, setPointsOpen] = useState(false);
+  const [rewards, setRewards] = useState(null);
+  useEffect(() => {
+    fetch('/api/rewards').then(r => r.ok ? r.json() : null).then(d => { if (d) setRewards(d); });
+  }, []);
   const [loading, setLoading] = useState(false);
   const [mobileStep, setMobileStep] = useState(1);
   const [gateways, setGateways] = useState([]);
@@ -403,6 +409,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 
   return (
     <>
+      <PointsModal open={pointsOpen} onClose={() => setPointsOpen(false)} rewards={rewards} dark={dark} t={t} onUse={() => { setPointsOpen(false); onPlaceOrder?.(); }} />
+
       {/* Payment error — toast handles success */}
       {paymentStatus && paymentStatus.type !== "success" && (
         <div className="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl mb-4" style={{
@@ -461,6 +469,9 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             })()}
           </div>
         </div>
+
+        {/* Nitro Points (compact) */}
+        <WalletPointsCard rewards={rewards} dark={dark} t={t} onView={() => setPointsOpen(true)} />
 
         {/* Two columns */}
         <div className="flex gap-4 flex-1 items-stretch">
@@ -554,6 +565,9 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                 })()}
               </div>
             </div>
+
+            {/* Nitro Points (compact) */}
+            <WalletPointsCard rewards={rewards} dark={dark} t={t} onView={() => setPointsOpen(true)} />
 
             {/* Amount card */}
             <div className="rounded-xl p-4" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>

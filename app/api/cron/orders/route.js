@@ -7,6 +7,7 @@ import { sendEmail, walletCreditEmail, batchCompletionEmail } from '@/lib/email'
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { tgRefund, tgOrderCancelled, tgRefundAlert } from '@/lib/telegram';
 import { createCommission, voidCommissions } from '@/lib/commissions';
+import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
 
 // Polls provider APIs for order status updates
 // Auto-refunds failed/cancelled orders
@@ -120,7 +121,7 @@ export async function GET(req) {
 
           if (newStatus === 'Cancelled') {
             // Atomic: status update + refund in one transaction so neither can succeed alone
-            await prisma.$transaction(async (tx) => {
+            const { safeRefund: cancelledRefund } = await prisma.$transaction(async (tx) => {
               await tx.order.update({
                 where: { id: order.id },
                 data: {
@@ -132,30 +133,34 @@ export async function GET(req) {
                   refundedAt: new Date(),
                 },
               });
-              const existing = await tx.transaction.aggregate({
-                where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
-                _sum: { amount: true },
-              });
-              const safeRefund = Math.max(0, order.charge - (existing._sum.amount || 0));
+              const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
+              const safeRefund = Math.max(0, order.charge - alreadyRefunded);
               if (safeRefund > 0) {
-                await tx.$executeRaw`UPDATE users SET balance = balance + ${safeRefund} WHERE id = ${order.userId}`;
-                await tx.transaction.create({
-                  data: { userId: order.userId, type: 'refund', amount: safeRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund for cancelled order ${order.orderId}` },
-                });
+                const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, safeRefund);
+                if (walletRefund > 0) {
+                  await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
+                  await tx.transaction.create({
+                    data: { userId: order.userId, type: 'refund', amount: walletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund for cancelled order ${order.orderId}` },
+                  });
+                }
+                await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: safeRefund });
               }
+              return { safeRefund };
             });
             stats.updated++;
-            stats.refunded++;
-            tgOrderCancelled(order.orderId, order.charge, providerError || 'provider_cancelled');
-            tgRefundAlert({ orderId: order.orderId, amount: order.charge, charge: order.charge, qty: order.quantity, remains: order.remains, status: 'Cancelled', reason: providerError || 'provider_cancelled', service: order.service?.category, source: 'auto' });
             voidCommissions(order.id, 'order_cancelled').catch(() => {});
-            refundOrder(order, null, true).catch(() => {});
+            if (cancelledRefund > 0) {
+              stats.refunded++;
+              tgOrderCancelled(order.orderId, cancelledRefund, providerError || 'provider_cancelled');
+              tgRefundAlert({ orderId: order.orderId, amount: cancelledRefund, charge: order.charge, qty: order.quantity, remains: order.remains, status: 'Cancelled', reason: providerError || 'provider_cancelled', service: order.service?.category, source: 'auto' });
+              refundOrder(order, cancelledRefund, true, 'Order cancelled').catch(() => {});
+            }
           } else if (newStatus === 'Partial' && result.remains) {
             const remains = Number(result.remains) || 0;
             const refundAmount = remains > 0 && order.charge > 0 && order.quantity > 0
               ? Math.round((remains / order.quantity) * order.charge / 100) * 100 : 0;
             // Atomic: status update + partial refund
-            await prisma.$transaction(async (tx) => {
+            const { safeRefund: partialRefund } = await prisma.$transaction(async (tx) => {
               await tx.order.update({
                 where: { id: order.id },
                 data: {
@@ -166,25 +171,28 @@ export async function GET(req) {
                   ...(refundAmount > 0 ? { refundedAt: new Date() } : {}),
                 },
               });
+              let safeRefund = 0;
               if (refundAmount > 0) {
-                const existing = await tx.transaction.aggregate({
-                  where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
-                  _sum: { amount: true },
-                });
-                const safeRefund = Math.max(0, refundAmount - (existing._sum.amount || 0));
+                const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
+                safeRefund = Math.max(0, refundAmount - alreadyRefunded);
                 if (safeRefund > 0) {
-                  await tx.$executeRaw`UPDATE users SET balance = balance + ${safeRefund} WHERE id = ${order.userId}`;
-                  await tx.transaction.create({
-                    data: { userId: order.userId, type: 'refund', amount: safeRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Partial refund for ${order.orderId}` },
-                  });
+                  const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, safeRefund);
+                  if (walletRefund > 0) {
+                    await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
+                    await tx.transaction.create({
+                      data: { userId: order.userId, type: 'refund', amount: walletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Partial refund for ${order.orderId}` },
+                    });
+                  }
+                  await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: safeRefund });
                 }
               }
+              return { safeRefund };
             });
             stats.updated++;
-            if (refundAmount > 0) {
+            if (partialRefund > 0) {
               stats.refunded++;
-              tgRefundAlert({ orderId: order.orderId, amount: refundAmount, charge: order.charge, qty: order.quantity, remains: Number(result.remains) || 0, status: 'Partial', service: order.service?.category, source: 'auto' });
-              refundOrder(order, refundAmount, true).catch(() => {});
+              tgRefundAlert({ orderId: order.orderId, amount: partialRefund, charge: order.charge, qty: order.quantity, remains: Number(result.remains) || 0, status: 'Partial', service: order.service?.category, source: 'auto' });
+              refundOrder(order, partialRefund, true, 'Partial delivery').catch(() => {});
             }
             const delivered = order.quantity - (Number(result.remains) || 0);
             if (delivered > 0) {
@@ -375,16 +383,20 @@ export async function GET(req) {
               data: { status: 'Cancelled', lastError: 'dispatch_failed', refundedAt: new Date() },
             });
             if (claimed.count === 0) return;
-            await tx.$executeRaw`UPDATE users SET balance = balance + ${order.charge} WHERE id = ${order.userId}`;
-            await tx.transaction.create({
-              data: { userId: order.userId, type: 'refund', amount: order.charge, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund: failed to dispatch ${order.orderId}` },
-            });
+            const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, order.charge);
+            if (walletRefund > 0) {
+              await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
+              await tx.transaction.create({
+                data: { userId: order.userId, type: 'refund', amount: walletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund: failed to dispatch ${order.orderId}` },
+              });
+            }
+            await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: order.charge });
           });
           stats.autoRefunded++;
           tgRefund(order.orderId, order.charge, 'dispatch_failed');
           tgRefundAlert({ orderId: order.orderId, amount: order.charge, charge: order.charge, qty: order.quantity, status: 'Cancelled', reason: 'dispatch_failed', source: 'auto' });
           voidCommissions(order.id, 'dispatch_failed').catch(() => {});
-          if (order.charge >= 5000) await refundOrder(order, null, true);
+          if (order.charge >= 5000) await refundOrder(order, order.charge, true, 'Order cancelled');
         } catch (err) {
           log.warn(`Auto-refund ${order.orderId}`, err.message);
         }
@@ -419,26 +431,30 @@ export async function GET(req) {
             await prisma.order.update({ where: { id: order.id }, data: { refundedAt: new Date() } });
             continue;
           }
-          await prisma.$transaction(async (tx) => {
-            const existing = await tx.transaction.aggregate({
-              where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
-              _sum: { amount: true },
-            });
-            const safeRefund = Math.max(0, refundAmount - (existing._sum.amount || 0));
+          const { safeRefund: recoveredRefund } = await prisma.$transaction(async (tx) => {
+            const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
+            const safeRefund = Math.max(0, refundAmount - alreadyRefunded);
             if (safeRefund <= 0) {
               await tx.order.update({ where: { id: order.id }, data: { refundedAt: new Date() } });
-              return;
+              return { safeRefund: 0 };
             }
-            await tx.$executeRaw`UPDATE users SET balance = balance + ${safeRefund} WHERE id = ${order.userId}`;
-            await tx.transaction.create({
-              data: { userId: order.userId, type: 'refund', amount: safeRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Recovered refund for ${order.orderId}` },
-            });
+            const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, safeRefund);
+            if (walletRefund > 0) {
+              await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
+              await tx.transaction.create({
+                data: { userId: order.userId, type: 'refund', amount: walletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Recovered refund for ${order.orderId}` },
+              });
+            }
+            await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: safeRefund });
             await tx.order.update({ where: { id: order.id }, data: { refundedAt: new Date() } });
+            return { safeRefund };
           });
-          stats.recovered++;
-          log.warn(`Recovered refund ${order.orderId}`, `₦${(refundAmount / 100).toLocaleString()} credited`);
-          tgRefundAlert({ orderId: order.orderId, amount: refundAmount, charge: order.charge, qty: order.quantity, remains: order.remains, status: order.status, reason: 'recovered', source: 'auto' });
-          refundOrder(order, order.status === 'Partial' ? refundAmount : null, true).catch(() => {});
+          if (recoveredRefund > 0) {
+            stats.recovered++;
+            log.warn(`Recovered refund ${order.orderId}`, `₦${(recoveredRefund / 100).toLocaleString()} credited`);
+            tgRefundAlert({ orderId: order.orderId, amount: recoveredRefund, charge: order.charge, qty: order.quantity, remains: order.remains, status: order.status, reason: 'recovered', source: 'auto' });
+            refundOrder(order, recoveredRefund, true, order.status === 'Partial' ? 'Partial delivery' : 'Order cancelled').catch(() => {});
+          }
         } catch (err) {
           log.warn(`Recovery refund ${order.orderId}`, err.message);
         }
@@ -475,9 +491,10 @@ export async function GET(req) {
   }
 }
 
-async function refundOrder(order, amount = null, emailOnly = false) {
+async function refundOrder(order, amount = null, emailOnly = false, failReason = null) {
   const refundAmount = amount || order.charge;
   if (!refundAmount || refundAmount <= 0) return;
+  const reason = failReason || (order.status === 'Partial' ? 'Partial delivery' : 'Order cancelled');
 
   let user = null;
   try {
@@ -486,40 +503,41 @@ async function refundOrder(order, amount = null, emailOnly = false) {
 
   if (!emailOnly) {
     await prisma.$transaction(async (tx) => {
-      const existing = await tx.transaction.aggregate({
-        where: { userId: order.userId, type: 'refund', status: 'Completed', reference: { in: [`REF-${order.orderId}`, `ADM-REF-${order.orderId}`] } },
-        _sum: { amount: true },
-      });
-      const alreadyRefunded = existing._sum.amount || 0;
+      const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
       const safeRefund = Math.max(0, (amount || order.charge) - alreadyRefunded);
       if (safeRefund <= 0) return;
-      await tx.$executeRaw`UPDATE users SET balance = balance + ${safeRefund} WHERE id = ${order.userId}`;
-      await tx.transaction.create({
-        data: {
-          userId: order.userId,
-          type: 'refund',
-          amount: safeRefund,
-          method: 'wallet',
-          status: 'Completed',
-          reference: `REF-${order.orderId}`,
-          note: amount
-            ? `Partial refund for ${order.orderId}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} prior)` : ''}`
-            : `Auto-refund for cancelled order ${order.orderId}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} prior)` : ''}`,
-        },
-      });
+      const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, safeRefund);
+      if (walletRefund > 0) {
+        await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
+        await tx.transaction.create({
+          data: {
+            userId: order.userId,
+            type: 'refund',
+            amount: walletRefund,
+            method: 'wallet',
+            status: 'Completed',
+            reference: `REF-${order.orderId}`,
+            note: `${reason} – ${order.orderId}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} prior)` : ''}`,
+          },
+        });
+      }
+      await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: safeRefund });
     });
   }
 
-  // Send refund email notification
   if (user?.email && user.notifEmail !== false && user.notifOrders !== false) {
     try {
-      const isPartial = amount && amount !== order.charge;
-      const nairaAmount = refundAmount / 100;
-      const subject = `₦${nairaAmount.toLocaleString()} refunded to your Nitro wallet`;
-      const html = walletCreditEmail(user.name || 'there', nairaAmount, null, {
+      const { walletRefund: eWallet, pointsRestore: ePoints } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, refundAmount);
+      const wN = eWallet / 100;
+      const pN = ePoints / 100;
+      const subject = pN > 0
+        ? `₦${wN.toLocaleString()} refunded + ${pN.toLocaleString()} points restored`
+        : `₦${wN.toLocaleString()} refunded to your Nitro wallet`;
+      const html = walletCreditEmail(user.name || 'there', wN, null, {
         kind: 'refund',
         orderRef: `#${order.orderId}`,
-        failReason: isPartial ? 'Partial delivery' : 'Order cancelled',
+        failReason: reason,
+        pointsRestored: pN,
       });
       sendEmail(user.email, subject, html).catch(err => log.warn(`Refund email ${order.orderId}`, err.message));
     } catch (emailErr) {

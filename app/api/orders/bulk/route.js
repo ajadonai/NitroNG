@@ -6,12 +6,14 @@ import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { sendEmail, batchPlacementEmail } from '@/lib/email';
+import { getWhatsAppChannelUrl } from '@/lib/settings';
 import { cleanLink } from '@/lib/clean-link';
 import { calculateIntradayDrip, getDripConfig } from '@/lib/drip-feed';
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
 import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
+import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints, reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -108,7 +110,8 @@ async function dispatchBatch(createdOrders, userId, batchId, totalCharge) {
   try {
     const u = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true, notifEmail: true, notifOrders: true } });
     if (u?.email && u.notifEmail !== false && u.notifOrders !== false) {
-      const html = await batchPlacementEmail(u.name, batchId, createdOrders.length, placed, createdOrders.length - placed, totalCharge / 100);
+      const waChannelUrl = await getWhatsAppChannelUrl();
+      const html = batchPlacementEmail(u.name, batchId, createdOrders.length, placed, createdOrders.length - placed, totalCharge / 100, { waChannelUrl });
       await sendEmail(u.email, `Bulk Order — ${createdOrders.length} orders placed`, html).catch(e => log.warn('Batch email', e.message));
     }
   } catch {}
@@ -194,22 +197,29 @@ export async function PATCH(req) {
       const result = await prisma.$transaction(async (tx) => {
         const cancellable = await tx.order.findMany({
           where: { batchId, userId: session.id, status: { in: ['Pending', 'Processing'] }, apiOrderId: null, deletedAt: null },
-          select: { id: true, charge: true, orderId: true },
+          select: { id: true, charge: true, orderId: true, nitroPointsRedeemedKobo: true },
         });
         if (cancellable.length === 0) return { cancelled: 0, refunded: 0 };
         await tx.order.updateMany({
           where: { id: { in: cancellable.map(o => o.id) } },
           data: { status: 'Cancelled', lastError: 'user_cancelled', refundedAt: new Date() },
         });
+        let totalWalletRefund = 0;
         for (const o of cancellable) {
           await restoreBonusForRefund(tx, o.id);
+          await reverseOrderPoints(tx, { orderDbId: o.id, refundAmountKobo: o.charge });
+          const walletPart = o.charge - (o.nitroPointsRedeemedKobo || 0);
+          if (walletPart > 0) {
+            await tx.transaction.create({
+              data: { userId: session.id, type: 'refund', amount: walletPart, method: 'wallet', status: 'Completed', reference: `REF-${o.orderId}`, note: `Refund for cancelled order ${o.orderId}` },
+            });
+            totalWalletRefund += walletPart;
+          }
         }
-        const refundAmount = cancellable.reduce((s, o) => s + o.charge, 0);
-        await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${session.id}`;
-        await tx.transaction.create({
-          data: { userId: session.id, type: 'refund', amount: refundAmount, method: 'wallet', status: 'Completed', reference: `REF-${batchId}`, note: `Cancelled ${cancellable.length} pending orders from ${batchId}` },
-        });
-        return { cancelled: cancellable.length, refunded: refundAmount / 100 };
+        if (totalWalletRefund > 0) {
+          await tx.$executeRaw`UPDATE users SET balance = balance + ${totalWalletRefund} WHERE id = ${session.id}`;
+        }
+        return { cancelled: cancellable.length, refunded: totalWalletRefund / 100 };
       });
       if (result.cancelled === 0) return Response.json({ error: 'No cancellable orders — all have been sent to providers' }, { status: 400 });
       tgRefundAlert({ orderId: batchId, amount: result.refunded * 100, charge: result.refunded * 100, qty: result.cancelled, status: 'Cancelled', reason: 'user_cancelled (bulk)', source: 'user' });
@@ -236,35 +246,39 @@ export async function PATCH(req) {
           updated++;
 
           if (newStatus === 'Cancelled') {
-            const alreadyRefunded = await prisma.transaction.findFirst({ where: { userId: session.id, type: 'refund', reference: `REF-${order.orderId}` } });
-            if (!alreadyRefunded) {
-              await prisma.$transaction(async (tx) => {
-                const exists = await tx.transaction.findFirst({ where: { userId: session.id, type: 'refund', reference: `REF-${order.orderId}` } });
-                if (exists) return;
-                await tx.$executeRaw`UPDATE users SET balance = balance + ${order.charge} WHERE id = ${session.id}`;
+            await prisma.$transaction(async (tx) => {
+              const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: session.id });
+              const cappedRefund = Math.max(0, order.charge - alreadyRefunded);
+              if (cappedRefund <= 0) return;
+              const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, cappedRefund);
+              if (walletRefund > 0) {
+                await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${session.id}`;
                 await tx.transaction.create({
-                  data: { userId: session.id, type: 'refund', amount: order.charge, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund cancelled ${order.orderId}` },
+                  data: { userId: session.id, type: 'refund', amount: walletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund cancelled ${order.orderId}` },
                 });
-              });
-            }
+              }
+              await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: cappedRefund });
+            });
           }
 
           if (newStatus === 'Partial' && result.remains) {
             const remains = Number(result.remains) || 0;
             if (remains > 0 && order.charge > 0 && order.quantity > 0) {
-              const alreadyRefunded = await prisma.transaction.findFirst({ where: { userId: session.id, type: 'refund', reference: `REF-${order.orderId}` } });
-              if (!alreadyRefunded) {
-                const refundAmount = Math.round((remains / order.quantity) * order.charge);
-                if (refundAmount > 0) {
-                  await prisma.$transaction(async (tx) => {
-                    const exists = await tx.transaction.findFirst({ where: { userId: session.id, type: 'refund', reference: `REF-${order.orderId}` } });
-                    if (exists) return;
-                    await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${session.id}`;
+              const refundAmount = Math.round((remains / order.quantity) * order.charge);
+              if (refundAmount > 0) {
+                await prisma.$transaction(async (tx) => {
+                  const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: session.id });
+                  const cappedRefund = Math.max(0, refundAmount - alreadyRefunded);
+                  if (cappedRefund <= 0) return;
+                  const { walletRefund: partialWalletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, cappedRefund);
+                  if (partialWalletRefund > 0) {
+                    await tx.$executeRaw`UPDATE users SET balance = balance + ${partialWalletRefund} WHERE id = ${session.id}`;
                     await tx.transaction.create({
-                      data: { userId: session.id, type: 'refund', amount: refundAmount, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Partial refund ${order.orderId}` },
+                      data: { userId: session.id, type: 'refund', amount: partialWalletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Partial refund ${order.orderId}` },
                     });
-                  });
-                }
+                  }
+                  await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: cappedRefund });
+                });
               }
             }
           }
@@ -502,36 +516,22 @@ export async function POST(req) {
     const batchId = isSingleOrder ? null : await nextBatchId();
 
     const result = await prisma.$transaction(async (tx) => {
-      // Loyalty discount — computed inside transaction for concurrency safety
-      let loyaltyPercent = 0;
-      let loyaltyTierName = null;
+      // Nitro Status discount — computed inside transaction for concurrency safety
+      let nitroTier = null;
       try {
-        const loyaltyEnabledRow = await tx.setting.findUnique({ where: { key: 'loyalty_enabled' } });
-        if (loyaltyEnabledRow?.value !== 'false') {
-          const ltRow = await tx.setting.findUnique({ where: { key: 'loyalty_tiers' } });
-          if (ltRow) {
-            const tiers = JSON.parse(ltRow.value);
-            const spendAgg = await tx.order.aggregate({ where: { userId: session.id, deletedAt: null, status: { not: 'Cancelled' } }, _sum: { charge: true } });
-            const totalSpend = spendAgg._sum.charge || 0;
-            let userTier = tiers[0];
-            for (const t of tiers) { if (totalSpend >= t.threshold) userTier = t; }
-            if (userTier.discount > 0) {
-              loyaltyPercent = userTier.discount;
-              loyaltyTierName = userTier.name;
-            }
-          }
-        }
-      } catch (err) { log.warn('Bulk loyalty discount', err.message); }
+        const spendKobo = await getEligibleSpendKoboTx(tx, session.id);
+        nitroTier = getNitroStatus(Math.floor(spendKobo / 100));
+      } catch (err) { log.warn('Bulk Nitro Status discount', err.message); }
 
       // Check for active promotion
       let activePromo = null;
       let promoType = null;
       try { const ap = await getActivePromotion(); if (ap) { activePromo = ap.promotion; promoType = ap.type; } } catch {}
 
-      // Apply loyalty + promotion discounts and compute total
+      // Apply Nitro Status + promotion discounts and compute total
       const orderData = resolved.map(r => {
-        const discount = loyaltyPercent > 0 ? Math.round(r.charge * (loyaltyPercent / 100)) : 0;
-        let afterLoyalty = Math.max(100, Math.round((r.charge - discount) / 100) * 100);
+        const discount = computeNitroDiscount(r.charge, nitroTier);
+        let afterLoyalty = discount > 0 ? Math.max(100, Math.round((r.charge - discount) / 100) * 100) : r.charge;
         const promoDiscount = activePromo ? applyPromotionDiscount(afterLoyalty, activePromo, activePromo.maxDiscountPerOrder) : 0;
         const finalCharge = Math.max(100, Math.round((afterLoyalty - promoDiscount) / 100) * 100);
         return { ...r, discount, promoDiscount, finalCharge };
@@ -568,6 +568,7 @@ export async function POST(req) {
             cost: o.cost,
             comments: o.comments,
             loyaltyDiscount: o.discount,
+            nitroStatusAtPurchase: nitroTier?.key || null,
             campaignDiscount: o.promoDiscount,
             campaignPercent: activePromo ? activePromo.discountPercent : null,
             platformCampaignId: promoType === 'platform' ? activePromo.id : null,
@@ -576,7 +577,11 @@ export async function POST(req) {
             ...(o.dripSchedule ? { dripDays: 1 } : {}),
           },
         });
-        await trackBonusConsumption(tx, session.id, order.id, o.finalCharge);
+        const bulkBonusUsed = await trackBonusConsumption(tx, session.id, order.id, o.finalCharge);
+        if (nitroTier) {
+          const bulkEligibleCharge = o.finalCharge - bulkBonusUsed;
+          await awardOrderPoints(tx, { userId: session.id, orderId, orderDbId: order.id, chargeKobo: bulkEligibleCharge, tier: nitroTier });
+        }
         if (o.dripSchedule) {
           await tx.dripDispatch.createMany({
             data: o.dripSchedule.dispatches.map(d => ({
@@ -601,12 +606,12 @@ export async function POST(req) {
           status: 'Completed',
           reference: txRef,
           note: isSingleOrder
-            ? `Order ${ids[0]} — ${orderData[0].tierName} x${orderData[0].qty.toLocaleString()}${loyaltyPercent > 0 ? ` (${loyaltyTierName} -${loyaltyPercent}%)` : ''}${activePromo ? ` (Promo -${activePromo.discountPercent}%)` : ''}`
-            : `Bulk ${batchId} — ${orderData.length} orders${loyaltyPercent > 0 ? ` (${loyaltyTierName} -${loyaltyPercent}%)` : ''}${activePromo ? ` (Promo -${activePromo.discountPercent}%)` : ''}${idempotencyKey ? ` [${idempotencyKey}]` : ''}`,
+            ? `Order ${ids[0]} — ${orderData[0].tierName} x${orderData[0].qty.toLocaleString()}${nitroTier && nitroTier.discountPct > 0 ? ` (${nitroTier.name} -${nitroTier.discountPct}%)` : ''}${activePromo ? ` (Promo -${activePromo.discountPercent}%)` : ''}`
+            : `Bulk ${batchId} — ${orderData.length} orders${nitroTier && nitroTier.discountPct > 0 ? ` (${nitroTier.name} -${nitroTier.discountPct}%)` : ''}${activePromo ? ` (Promo -${activePromo.discountPercent}%)` : ''}${idempotencyKey ? ` [${idempotencyKey}]` : ''}`,
         },
       });
 
-      return { createdOrders, totalCharge, loyaltyPercent, loyaltyTierName };
+      return { createdOrders, totalCharge, nitroTier };
     });
 
     const orderResults = result.createdOrders.map(o => ({ id: o.orderId, link: o.link, status: 'Pending', service: o.tierName }));
@@ -695,7 +700,7 @@ export async function POST(req) {
       failed: 0,
       totalCharge: result.totalCharge / 100,
       newBalance: newBalance / 100,
-      ...(result.loyaltyPercent > 0 ? { loyaltyDiscount: result.loyaltyPercent, loyaltyTier: result.loyaltyTierName } : {}),
+      ...(result.nitroTier && result.nitroTier.discountPct > 0 ? { loyaltyDiscount: result.nitroTier.discountPct, loyaltyTier: result.nitroTier.name } : {}),
       orders: orderResults,
     };
 

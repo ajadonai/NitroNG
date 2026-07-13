@@ -4,6 +4,7 @@ import { applyWelcomeBonus } from '@/lib/welcome-bonus';
 import { trackDeposit } from '@/lib/meta-capi';
 import { tgPayment } from '@/lib/telegram';
 import { sendEmail, walletCreditEmail, referralBonusEmail } from '@/lib/email';
+import { getWhatsAppChannelUrl } from '@/lib/settings';
 
 export async function POST(req) {
   try {
@@ -107,11 +108,13 @@ export async function POST(req) {
           tgPayment(u.name || u.email, amountKobo, couponBonus || 0, 'Flutterwave');
           // Deposit confirmation email (welcome bonus line renders only when > 0)
           const amtNaira = amountKobo / 100;
+          const waChannelUrl = await getWhatsAppChannelUrl();
           const depositHtml = walletCreditEmail(u.name || 'there', amtNaira, null, {
             kind: 'deposit',
             bonus: (welcomeBonus || 0) / 100,
             newBalance: u.balance / 100,
             method: 'Flutterwave',
+            waChannelUrl,
           });
           sendEmail(u.email, `₦${amtNaira.toLocaleString()} is in your wallet`, depositHtml,
             `Your deposit of ₦${amtNaira.toLocaleString()} landed and is ready to spend. Place an order: https://nitro.ng/dashboard`).catch(() => {});
