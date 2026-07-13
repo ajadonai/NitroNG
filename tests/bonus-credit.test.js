@@ -303,9 +303,9 @@ describe('applyWelcomeBonus', () => {
     expect(db.alert.create).not.toHaveBeenCalled();
   });
 
-  it('withholds bonus and creates alert when at IP cap', async () => {
+  it('withholds bonus when at IP cap (no alert record)', async () => {
     const db = makeWelcomeBonusDb();
-    db.user.findUnique.mockResolvedValue({ firstDepositBonusPaid: false, referredBy: null, signupIp: '1.2.3.4' });
+    db.user.findUnique.mockResolvedValue({ firstDepositBonusPaid: false, referredBy: null, signupIp: '1.2.3.4', name: 'Test', email: 'test@x.com' });
     db.user.updateMany.mockResolvedValue({ count: 1 });
     db.setting.findMany.mockResolvedValue([]);
     db.user.count.mockResolvedValue(2);
@@ -315,12 +315,7 @@ describe('applyWelcomeBonus', () => {
     expect(result).toBe(0);
     expect(db.user.update).not.toHaveBeenCalled();
     expect(db.transaction.create).not.toHaveBeenCalled();
-    expect(db.alert.create).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({
-        type: 'welcome_bonus_ip_flag',
-        target: 'admin',
-      }),
-    }));
+    expect(db.alert.create).not.toHaveBeenCalled();
   });
 
   it('pays normally when signupIp is unknown', async () => {
