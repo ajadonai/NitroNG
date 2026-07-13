@@ -385,13 +385,18 @@ describe('applyWelcomeBonus', () => {
     expect(db.user.count).not.toHaveBeenCalled();
   });
 
-  it('returns 0 for sub-₦2,500 deposits', async () => {
+  it('returns 0 for sub-₦2,500 deposits but burns the flag', async () => {
     const db = makeWelcomeBonusDb();
+    db.user.findUnique.mockResolvedValue({ firstDepositBonusPaid: false, referredBy: null, signupIp: '1.2.3.4' });
+    db.user.updateMany.mockResolvedValue({ count: 1 });
 
     const result = await applyWelcomeBonus(db, 'user8', 200000);
 
     expect(result).toBe(0);
-    expect(db.user.findUnique).not.toHaveBeenCalled();
+    expect(db.user.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { firstDepositBonusPaid: true } }),
+    );
+    expect(db.user.update).not.toHaveBeenCalled();
   });
 
   it('returns 0 for second deposits', async () => {
