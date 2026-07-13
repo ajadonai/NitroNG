@@ -19,7 +19,9 @@ export async function POST(req) {
 
     const { amount, couponId } = await req.json();
     const amountNum = Number(amount);
-    if (!Number.isFinite(amountNum) || amountNum < 500 || amountNum > 10000000) return Response.json({ error: 'Invalid amount' }, { status: 400 });
+    if (!Number.isFinite(amountNum) || amountNum <= 0) return Response.json({ error: 'Invalid amount' }, { status: 400 });
+    if (amountNum < 1000) return Response.json({ error: 'Minimum deposit is ₦1,000' }, { status: 400 });
+    if (amountNum > 10000000) return Response.json({ error: 'Maximum deposit is ₦10,000,000' }, { status: 400 });
 
     // Check for existing pending manual transfer
     const existingPending = await prisma.transaction.findFirst({

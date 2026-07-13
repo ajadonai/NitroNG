@@ -204,7 +204,7 @@ function PricingInner({ platforms }) {
           {/* Bottom CTA */}
           <div className="mt-14 p-8 max-md:p-6 rounded-2xl text-center" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)"}` }}>
             <h2 className="text-xl max-md:text-lg font-semibold mb-2" style={{ color: t.text }}>Ready to grow?</h2>
-            <p className="text-sm mb-5 max-w-[400px] mx-auto" style={{ color: t.textSoft }}>Create a free account, fund your wallet with as little as ₦500, and place your first order in under a minute.</p>
+            <p className="text-sm mb-5 max-w-[400px] mx-auto" style={{ color: t.textSoft }}>Create a free account, fund your wallet with as little as ₦1,000, and place your first order in under a minute.</p>
             <a href="/signup" className="inline-flex items-center gap-2 py-3.5 px-8 rounded-xl bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]">Create free account</a>
           </div>
         </main>
