@@ -1167,6 +1167,15 @@ function FinanceBreakdownTab({ dark, t, admin }) {
   const [topupNote, setTopupNote] = useState("");
   const [topupSaving, setTopupSaving] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
+  const [csvSections, setCsvSections] = useState({ wallet: true, orders: true, points: true, provider: true, affiliate: true, liabilities: true });
+  const [csvMenuOpen, setCsvMenuOpen] = useState(false);
+  const csvMenuRef = useRef(null);
+  useEffect(() => {
+    if (!csvMenuOpen) return;
+    const close = (e) => { if (csvMenuRef.current && !csvMenuRef.current.contains(e.target)) setCsvMenuOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [csvMenuOpen]);
 
   const buildParams = (extra = {}) => {
     const params = new URLSearchParams();
@@ -1189,16 +1198,16 @@ function FinanceBreakdownTab({ dark, t, admin }) {
   useEffect(() => { load(); }, [dateValue, platform, tier, provider]);
 
   const downloadReport = async () => {
+    const selected = Object.entries(csvSections).filter(([, v]) => v).map(([k]) => k);
+    if (!selected.length) { toast.error("No sections selected"); return; }
     setReportLoading(true);
+    setCsvMenuOpen(false);
     try {
-      const params = buildParams({ export: "csv" });
+      const params = buildParams({ export: "csv", sections: selected.join(",") });
       const res = await fetch(`/api/admin/financials?${params}`);
       if (!res.ok) {
         let msg = "Could not download report";
-        try {
-          const d = await res.json();
-          if (d.error) msg = d.error;
-        } catch {}
+        try { const d = await res.json(); if (d.error) msg = d.error; } catch {}
         toast.error("Download failed", msg);
         return;
       }
@@ -1209,7 +1218,7 @@ function FinanceBreakdownTab({ dark, t, admin }) {
       a.download = `nitro-finance-report-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("Report downloaded", "Finance CSV includes wallet, orders, rewards, provider and Pit money trails.");
+      toast.success("Report downloaded", `Exported ${selected.length} section${selected.length > 1 ? "s" : ""}.`);
     } catch {
       toast.error("Download failed", "Please try again.");
     } finally {
@@ -1295,9 +1304,25 @@ function FinanceBreakdownTab({ dark, t, admin }) {
           { value: "jap", label: "JAP" }, { value: "dao", label: "DaoSMM" },
         ]} />
         {['owner', 'superadmin'].includes(admin?.role) && (
-          <button onClick={downloadReport} disabled={reportLoading} className="h-9 px-3.5 rounded-lg text-xs font-semibold cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px disabled:opacity-60" style={{ background: dark ? "rgba(52,211,153,.12)" : "rgba(5,150,105,.08)", border: `1px solid ${dark ? "rgba(52,211,153,.28)" : "rgba(5,150,105,.18)"}`, color: green }}>
-            {reportLoading ? "Preparing..." : "↓ Finance CSV"}
-          </button>
+          <div className="relative" ref={csvMenuRef}>
+            <button onClick={() => setCsvMenuOpen(o => !o)} disabled={reportLoading} className="h-9 px-3.5 rounded-lg text-xs font-semibold cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px disabled:opacity-60" style={{ background: dark ? "rgba(52,211,153,.12)" : "rgba(5,150,105,.08)", border: `1px solid ${dark ? "rgba(52,211,153,.28)" : "rgba(5,150,105,.18)"}`, color: green }}>
+              {reportLoading ? "Preparing..." : "↓ Finance CSV"}
+            </button>
+            {csvMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 rounded-lg p-2.5 z-50 min-w-[180px]" style={{ background: dark ? "#1e1e2e" : "#fff", border: `1px solid ${cardBorder}`, boxShadow: "0 4px 16px rgba(0,0,0,.18)" }}>
+                <div className="text-[10px] font-semibold uppercase tracking-[1px] mb-2" style={{ color: subText }}>Include sections</div>
+                {[["wallet", "Wallet"], ["orders", "Orders"], ["points", "Nitro Points"], ["provider", "Provider Top-ups"], ["affiliate", "Affiliate"], ["liabilities", "Liabilities"]].map(([key, label]) => (
+                  <label key={key} className="flex items-center gap-2 py-1 text-xs cursor-pointer" style={{ color: t.text }}>
+                    <input type="checkbox" checked={csvSections[key]} onChange={() => setCsvSections(s => ({ ...s, [key]: !s[key] }))} className="rounded" />
+                    {label}
+                  </label>
+                ))}
+                <button onClick={downloadReport} disabled={reportLoading} className="mt-2 w-full h-8 rounded-md text-xs font-semibold cursor-pointer" style={{ background: green, color: dark ? "#111" : "#fff" }}>
+                  Download
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
 

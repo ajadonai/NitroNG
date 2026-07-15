@@ -736,8 +736,11 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
 
       {/* Delivery notice — mobile (sidebar handles desktop) */}
       {orders.some(o => o.status === "Processing" || o.status === "Pending") && (
-        <div className="desktop:hidden text-[11px] leading-relaxed px-1 mb-2" style={{ color: t.textMuted }}>
-          Orders are typically delivered within 0 to 6 hours. In some cases, delivery may take up to 24 hours. We are unable to act on delivery speed requests within the first 6 hours of order placement.
+        <div className="desktop:hidden flex gap-2.5 items-start rounded-xl px-3.5 py-3 mb-3" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(251,191,36,.1)", border: `1px solid ${dark ? "rgba(251,191,36,.2)" : "rgba(217,119,6,.18)"}` }}>
+          <span className="text-base leading-none mt-px shrink-0">⏱</span>
+          <div className="text-[11.5px] leading-[1.55]" style={{ color: dark ? "#fbbf24" : "#92400e" }}>
+            <span className="font-semibold">Delivery: 0–6 hrs</span> (up to 24 hrs in some cases). We cannot act on speed requests within the first 6 hours.
+          </div>
         </div>
       )}
 
@@ -824,9 +827,14 @@ export function OrdersSidebar({ orders, orderSummary, dark, t }) {
         ))}
       </div>
 
-      {activeCount > 0 && <div className="text-[11px] leading-relaxed px-1 mb-4" style={{ color: t.textMuted }}>
-        Orders are typically delivered within 0 to 6 hours. In some cases, delivery may take up to 24 hours. We are unable to act on delivery speed requests within the first 6 hours of order placement.
-      </div>}
+      {activeCount > 0 && (
+        <div className="flex gap-2.5 items-start rounded-xl px-3.5 py-3 mb-4" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(251,191,36,.1)", border: `1px solid ${dark ? "rgba(251,191,36,.2)" : "rgba(217,119,6,.18)"}` }}>
+          <span className="text-base leading-none mt-px shrink-0">⏱</span>
+          <div className="text-[11.5px] leading-[1.55]" style={{ color: dark ? "#fbbf24" : "#92400e" }}>
+            <span className="font-semibold">Delivery: 0–6 hrs</span> (up to 24 hrs in some cases). We cannot act on speed requests within the first 6 hours.
+          </div>
+        </div>
+      )}
 
       <div className="h-px mt-1 mb-4" style={{ background: t.sidebarBorder }} />
 
