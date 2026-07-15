@@ -212,7 +212,7 @@ export async function POST(req) {
 
       const delivered = order.remains != null && order.quantity > 0 ? Math.max(0, order.quantity - order.remains) : 0;
       const isPartial = delivered > 0 && delivered < order.quantity;
-      const maxRefund = isPartial ? Math.round((order.remains / order.quantity) * order.charge / 100) * 100 : order.charge;
+      const maxRefund = isPartial ? Math.floor((order.remains / order.quantity) * order.charge / 100) * 100 : order.charge;
 
       const result = await prisma.$transaction(async (tx) => {
         const claimed = await tx.order.updateMany({

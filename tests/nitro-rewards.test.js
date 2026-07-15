@@ -4,10 +4,10 @@ vi.mock('@/lib/logger', () => ({ log: { info: vi.fn(), warn: vi.fn(), error: vi.
 
 // Mock prisma before importing the module
 const mockPrisma = {
-  order: { findMany: vi.fn() },
+  order: { findMany: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
   transaction: { aggregate: vi.fn() },
   orderCreditUsage: { aggregate: vi.fn() },
-  nitroPointLedger: { aggregate: vi.fn(), findMany: vi.fn(), groupBy: vi.fn() },
+  nitroPointLedger: { aggregate: vi.fn(), findMany: vi.fn(), groupBy: vi.fn(), create: vi.fn() },
 };
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
 
@@ -22,6 +22,7 @@ const {
   computePointsEarnedKobo,
   awardOrderPoints,
   reverseOrderPoints,
+  awardPointsOnCompletion,
   computeRefundSplit,
   getTotalRefundedKobo,
   getPointsTotals,
@@ -796,5 +797,97 @@ describe('getPointsTotals', () => {
     ]);
     const totals = await getPointsTotals('u1');
     expect(totals.earned_order).toEqual({ kobo: 0, count: 0 });
+  });
+});
+
+// ── awardPointsOnCompletion — partial-aware ──
+
+describe('awardPointsOnCompletion', () => {
+  beforeEach(() => {
+    mockPrisma.order.findUnique.mockReset();
+    mockPrisma.nitroPointLedger.create.mockReset();
+  });
+
+  function mockOrder(overrides) {
+    mockPrisma.order.findUnique.mockResolvedValue({
+      id: 'db-1', orderId: 'NTR-100', userId: 'u1',
+      charge: 1000000, quantity: 1000, remains: 0, status: 'Completed',
+      nitroPointsEarnedKobo: 0, nitroPointsRedeemedKobo: 0,
+      nitroStatusAtPurchase: 'pulse',
+      creditUsages: [],
+      ...overrides,
+    });
+  }
+
+  it('awards full eligible charge for Completed order', async () => {
+    mockOrder({ status: 'Completed', remains: 0 });
+    // Pulse tier = 1% earn rate
+    const pts = await awardPointsOnCompletion('db-1');
+    expect(pts).toBe(10000); // 1000000 * 1%
+    expect(mockPrisma.nitroPointLedger.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: 'earned_order',
+        pointsKobo: 10000,
+        dedupeKey: 'earned_order:db-1',
+      }),
+    });
+  });
+
+  it('awards only delivered ratio for Partial order', async () => {
+    // charge ₦10,000 (1000000 kobo), qty 1000, remains 400 → 600 delivered
+    mockOrder({ status: 'Partial', quantity: 1000, remains: 400 });
+    const pts = await awardPointsOnCompletion('db-1');
+    // baseEligible = 1000000, deliveredRatio = 600/1000
+    // eligibleCharge = floor(1000000 * 600/1000) = 600000
+    // points = floor(600000 * 1%) = 6000
+    expect(pts).toBe(6000);
+  });
+
+  it('subtracts redeemed points and bonus before applying delivered ratio', async () => {
+    // charge 1000000, redeemed 200000, bonus 100000 → base = 700000
+    // qty 1000, remains 300 → delivered 700/1000
+    // eligible = floor(700000 * 700/1000) = 490000
+    // points = floor(490000 * 1%) = 4900
+    mockOrder({
+      status: 'Partial', quantity: 1000, remains: 300,
+      nitroPointsRedeemedKobo: 200000,
+      creditUsages: [{ amount: 100000 }],
+    });
+    const pts = await awardPointsOnCompletion('db-1');
+    expect(pts).toBe(4900);
+  });
+
+  it('returns 0 for Cancelled order', async () => {
+    mockOrder({ status: 'Cancelled' });
+    const pts = await awardPointsOnCompletion('db-1');
+    expect(pts).toBe(0);
+    expect(mockPrisma.nitroPointLedger.create).not.toHaveBeenCalled();
+  });
+
+  it('returns 0 for Pending order', async () => {
+    mockOrder({ status: 'Pending' });
+    const pts = await awardPointsOnCompletion('db-1');
+    expect(pts).toBe(0);
+    expect(mockPrisma.nitroPointLedger.create).not.toHaveBeenCalled();
+  });
+
+  it('returns 0 and skips duplicate when nitroPointsEarnedKobo > 0', async () => {
+    mockOrder({ status: 'Completed', nitroPointsEarnedKobo: 5000 });
+    const pts = await awardPointsOnCompletion('db-1');
+    expect(pts).toBe(0);
+    expect(mockPrisma.nitroPointLedger.create).not.toHaveBeenCalled();
+  });
+
+  it('returns 0 when nitroStatusAtPurchase is missing', async () => {
+    mockOrder({ status: 'Completed', nitroStatusAtPurchase: null });
+    const pts = await awardPointsOnCompletion('db-1');
+    expect(pts).toBe(0);
+    expect(mockPrisma.nitroPointLedger.create).not.toHaveBeenCalled();
+  });
+
+  it('returns 0 when order not found', async () => {
+    mockPrisma.order.findUnique.mockResolvedValue(null);
+    const pts = await awardPointsOnCompletion('db-nonexist');
+    expect(pts).toBe(0);
   });
 });

@@ -275,8 +275,8 @@ export async function PATCH(req) {
 
       // Recalculate charge from current tier/service price (not the old order's charge)
       const currentSellPer1k = Number(order.tier?.sellPer1k || order.service.sellPer1k);
-      let charge = Math.round((currentSellPer1k / 1000) * order.quantity / 100) * 100;
-      const cost = Math.round((Number(order.service.costPer1k) * usdRate / 1000) * order.quantity / 100) * 100;
+      let charge = Math.ceil((currentSellPer1k / 1000) * order.quantity / 100) * 100;
+      const cost = Math.ceil((Number(order.service.costPer1k) * usdRate / 1000) * order.quantity / 100) * 100;
 
       if (!charge || charge <= 0) {
         return Response.json({ error: 'Service pricing not configured' }, { status: 400 });
@@ -290,7 +290,7 @@ export async function PATCH(req) {
         reorderNitroTier = getNitroStatus(Math.floor(spendKobo / 100));
         reorderLoyaltyDiscount = computeNitroDiscount(charge, reorderNitroTier);
         if (reorderLoyaltyDiscount > 0) {
-          charge = Math.max(100, Math.round((charge - reorderLoyaltyDiscount) / 100) * 100);
+          charge = Math.max(100, Math.ceil((charge - reorderLoyaltyDiscount) / 100) * 100);
         }
       } catch (err) { log.warn('Reorder Nitro Status discount', err.message); }
 
@@ -310,7 +310,7 @@ export async function PATCH(req) {
             reorderPromoId = promo.id;
             reorderPromoType = type;
             reorderPromoLabel = promo.lineItemLabel;
-            charge = Math.max(1, charge - reorderPromoDiscount);
+            charge = Math.max(100, Math.ceil((charge - reorderPromoDiscount) / 100) * 100);
           }
         }
       } catch (err) { log.warn('Reorder promotion discount', err.message); }
@@ -555,8 +555,8 @@ export async function POST(req) {
       if (qty < effectiveMin || qty > service.max) {
         return Response.json({ error: `Quantity must be between ${effectiveMin.toLocaleString()} and ${service.max.toLocaleString()}` }, { status: 400 });
       }
-      charge = Math.round((Number(tier.sellPer1k) / 1000) * qty / 100) * 100;
-      cost = Math.round((Number(service.costPer1k) * usdRate / 1000) * qty / 100) * 100;
+      charge = Math.ceil((Number(tier.sellPer1k) / 1000) * qty / 100) * 100;
+      cost = Math.ceil((Number(service.costPer1k) * usdRate / 1000) * qty / 100) * 100;
     } else {
       // Legacy flow: direct serviceId
       service = await prisma.service.findUnique({ where: { id: serviceId } });
@@ -570,8 +570,8 @@ export async function POST(req) {
       if (qty < service.min || qty > service.max) {
         return Response.json({ error: `Quantity must be between ${service.min.toLocaleString()} and ${service.max.toLocaleString()}` }, { status: 400 });
       }
-      charge = Math.round((Number(service.sellPer1k) / 1000) * qty / 100) * 100;
-      cost = Math.round((Number(service.costPer1k) * usdRate / 1000) * qty / 100) * 100;
+      charge = Math.ceil((Number(service.sellPer1k) / 1000) * qty / 100) * 100;
+      cost = Math.ceil((Number(service.costPer1k) * usdRate / 1000) * qty / 100) * 100;
       tierName = service.name;
     }
 
@@ -686,7 +686,7 @@ export async function POST(req) {
       nitroTier = getNitroStatus(Math.floor(spendKobo / 100));
       loyaltyDiscount = computeNitroDiscount(charge, nitroTier);
       if (loyaltyDiscount > 0) {
-        charge = Math.max(100, Math.round((charge - loyaltyDiscount) / 100) * 100);
+        charge = Math.max(100, Math.ceil((charge - loyaltyDiscount) / 100) * 100);
       }
     } catch (err) { log.warn('Nitro Status discount', err.message); }
 
@@ -706,7 +706,7 @@ export async function POST(req) {
           activePromoId = promo.id;
           activePromoType = type;
           promoLabel = promo.lineItemLabel;
-          charge = Math.max(100, Math.round((charge - promoDiscount) / 100) * 100);
+          charge = Math.max(100, Math.ceil((charge - promoDiscount) / 100) * 100);
         }
       }
     } catch (err) { log.warn('Promotion discount', err.message); }

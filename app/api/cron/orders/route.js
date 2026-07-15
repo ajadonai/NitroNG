@@ -158,7 +158,7 @@ export async function GET(req) {
           } else if (newStatus === 'Partial' && result.remains) {
             const remains = Number(result.remains) || 0;
             const refundAmount = remains > 0 && order.charge > 0 && order.quantity > 0
-              ? Math.round((remains / order.quantity) * order.charge / 100) * 100 : 0;
+              ? Math.floor((remains / order.quantity) * order.charge / 100) * 100 : 0;
             // Atomic: status update + partial refund
             const { safeRefund: partialRefund } = await prisma.$transaction(async (tx) => {
               await tx.order.update({
@@ -424,7 +424,7 @@ export async function GET(req) {
           if (order.status === 'Partial') {
             const remains = order.remains || 0;
             refundAmount = remains > 0 && order.quantity > 0
-              ? Math.round((remains / order.quantity) * order.charge / 100) * 100
+              ? Math.floor((remains / order.quantity) * order.charge / 100) * 100
               : 0;
           } else {
             refundAmount = order.charge;

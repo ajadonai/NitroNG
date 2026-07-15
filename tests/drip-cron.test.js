@@ -17,6 +17,7 @@ vi.mock('@/lib/logger', () => ({ log: { error: vi.fn(), warn: vi.fn() } }));
 vi.mock('@/lib/smm', () => ({ placeOrder: vi.fn(), checkOrder: vi.fn() }));
 vi.mock('@/lib/telegram', () => ({ tgDripTimeout: vi.fn() }));
 vi.mock('@/lib/drip-feed', () => ({ getDripConfig: () => ({ intervalHours: 2 }) }));
+vi.mock('@/lib/nitro-rewards', () => ({ awardPointsOnCompletion: vi.fn().mockResolvedValue(0) }));
 
 function makeReq(secret = 'test-secret') {
   return {
@@ -320,5 +321,79 @@ describe('drip cron — section 4 rollup (set-based UPDATE)', () => {
 
     expect(res.status).toBe(500);
     expect(body.stats.rolledUp).toBe(0);
+  });
+});
+
+describe('drip cron — section 4 rollup awards points', () => {
+  function setupEmpty() {
+    mockDripDispatch.findMany.mockResolvedValue([]);
+  }
+
+  it('calls awardPointsOnCompletion for Partial parent orders', async () => {
+    setupEmpty();
+    const { awardPointsOnCompletion } = await import('@/lib/nitro-rewards');
+
+    mockOrder.findMany.mockResolvedValue([
+      {
+        id: 'ord-partial', startCount: null,
+        dripDispatches: [
+          { status: 'completed', quantity: 500, remains: 0, startCount: 100, day: 1, batch: 1 },
+          { status: 'failed', quantity: 500, remains: 500, startCount: null, day: 1, batch: 2 },
+        ],
+      },
+    ]);
+
+    const { GET } = await import('@/app/api/cron/drip/route');
+    const res = await GET(makeReq());
+    const body = await res.json();
+
+    expect(body.stats.rolledUp).toBe(1);
+    const [, status] = mockExecuteRawUnsafe.mock.calls[0].slice(1);
+    expect(status).toBe('Partial');
+    expect(awardPointsOnCompletion).toHaveBeenCalledWith('ord-partial');
+  });
+
+  it('calls awardPointsOnCompletion for Completed parent orders', async () => {
+    setupEmpty();
+    const { awardPointsOnCompletion } = await import('@/lib/nitro-rewards');
+
+    mockOrder.findMany.mockResolvedValue([
+      {
+        id: 'ord-done', startCount: null,
+        dripDispatches: [
+          { status: 'completed', quantity: 500, remains: 0, startCount: 100, day: 1, batch: 1 },
+          { status: 'completed', quantity: 500, remains: 0, startCount: null, day: 1, batch: 2 },
+        ],
+      },
+    ]);
+
+    const { GET } = await import('@/app/api/cron/drip/route');
+    const res = await GET(makeReq());
+    const body = await res.json();
+
+    expect(body.stats.rolledUp).toBe(1);
+    expect(awardPointsOnCompletion).toHaveBeenCalledWith('ord-done');
+  });
+
+  it('does not call awardPointsOnCompletion for Cancelled parent orders', async () => {
+    setupEmpty();
+    const { awardPointsOnCompletion } = await import('@/lib/nitro-rewards');
+
+    mockOrder.findMany.mockResolvedValue([
+      {
+        id: 'ord-cancel', startCount: null,
+        dripDispatches: [
+          { status: 'failed', quantity: 500, remains: 500, startCount: null, day: 1, batch: 1 },
+          { status: 'failed', quantity: 500, remains: 500, startCount: null, day: 1, batch: 2 },
+        ],
+      },
+    ]);
+
+    const { GET } = await import('@/app/api/cron/drip/route');
+    const res = await GET(makeReq());
+    const body = await res.json();
+
+    expect(body.stats.rolledUp).toBe(1);
+    expect(awardPointsOnCompletion).not.toHaveBeenCalled();
   });
 });
