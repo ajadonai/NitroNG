@@ -5,6 +5,7 @@ import { log } from '@/lib/logger';
 import { placeOrder, checkOrder } from '@/lib/smm';
 import { tgDripTimeout } from '@/lib/telegram';
 import { getDripConfig } from '@/lib/drip-feed';
+import { awardPointsOnCompletion } from '@/lib/nitro-rewards';
 
 // Drip dispatch cron — runs twice per hour (:05 and :35)
 // 1. Dispatches pending drip batches that are due (scheduledAt <= now)
@@ -298,6 +299,11 @@ export async function GET(req) {
         ...prms,
       );
       stats.rolledUp = doneCount;
+      for (const r of rollupRows) {
+        if (r.status === 'Completed' || r.status === 'Partial') {
+          awardPointsOnCompletion(r.id).catch(() => {});
+        }
+      }
     }
   } catch (err) {
     log.error('Drip cron', err.message);

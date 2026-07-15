@@ -7,7 +7,7 @@ import { sendEmail, walletCreditEmail, batchCompletionEmail } from '@/lib/email'
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { tgRefund, tgOrderCancelled, tgRefundAlert } from '@/lib/telegram';
 import { createCommission, voidCommissions } from '@/lib/commissions';
-import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
+import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo, awardPointsOnCompletion } from '@/lib/nitro-rewards';
 
 // Polls provider APIs for order status updates
 // Auto-refunds failed/cancelled orders
@@ -171,6 +171,7 @@ export async function GET(req) {
                   ...(refundAmount > 0 ? { refundedAt: new Date() } : {}),
                 },
               });
+              await awardPointsOnCompletion(order.id, tx);
               let safeRefund = 0;
               if (refundAmount > 0) {
                 const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
@@ -213,6 +214,7 @@ export async function GET(req) {
             stats.updated++;
             if (newStatus === 'Completed') {
               createCommission(order.id, order.userId, order.charge, order.cost).catch(() => {});
+              awardPointsOnCompletion(order.id).catch(() => {});
             }
           }
 

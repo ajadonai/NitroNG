@@ -355,11 +355,7 @@ export async function PATCH(req) {
             ...(reorderDripSchedule ? { dripDays: 1 } : {}),
           },
         });
-        const reorderBonusUsed = await trackBonusConsumption(tx, session.id, created.id, charge);
-        if (reorderNitroTier) {
-          const reorderEligibleCharge = charge - reorderBonusUsed;
-          await awardOrderPoints(tx, { userId: session.id, orderId: newOrderId, orderDbId: created.id, chargeKobo: reorderEligibleCharge, tier: reorderNitroTier });
-        }
+        await trackBonusConsumption(tx, session.id, created.id, charge);
         if (reorderDripSchedule) {
           await tx.dripDispatch.createMany({
             data: reorderDripSchedule.dispatches.map(d => ({
@@ -803,11 +799,7 @@ export async function POST(req) {
               },
             });
           }
-          const bonusUsed = await trackBonusConsumption(tx, session.id, order.id, walletCharge);
-          if (nitroTier) {
-            const eligibleChargeKobo = walletCharge - bonusUsed;
-            await awardOrderPoints(tx, { userId: session.id, orderId, orderDbId: order.id, chargeKobo: eligibleChargeKobo, tier: nitroTier });
-          }
+          await trackBonusConsumption(tx, session.id, order.id, walletCharge);
           if (dripSchedule) {
             await tx.dripDispatch.createMany({
               data: dripSchedule.dispatches.map(d => ({
