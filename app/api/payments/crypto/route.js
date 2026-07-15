@@ -31,8 +31,8 @@ export async function POST(req) {
     const { amount, couponId } = await req.json();
     const amountNgn = Number(amount);
 
-    if (!amountNgn || amountNgn < 500) {
-      return Response.json({ error: 'Minimum deposit is ₦500' }, { status: 400 });
+    if (!amountNgn || amountNgn < 1000) {
+      return Response.json({ error: 'Minimum deposit is ₦1,000' }, { status: 400 });
     }
 
     // Convert NGN to USD

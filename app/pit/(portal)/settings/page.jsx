@@ -1,14 +1,13 @@
-import prisma from "@/lib/prisma";
 import { getCrewSession, memberToClient } from "@/lib/crew";
+import { getAffiliateSettings } from "@/lib/affiliate-settings";
 import SettingsPage from "@/components/m/settings-page";
 
 export default async function Settings() {
   const member = await getCrewSession();
-  const [groupLinkSetting, proRateSetting] = await Promise.all([
-    prisma.setting.findUnique({ where: { key: "crew_telegram_group_link" } }),
-    member.role === "chief" ? prisma.setting.findUnique({ where: { key: "affiliate_pro_rate" } }) : null,
-  ]);
-  member._telegramGroupLink = groupLinkSetting?.value || null;
-  if (member.role === "chief") member.commissionRate = parseInt(proRateSetting?.value) || 50;
+  const keys = ['crew_telegram_group_link'];
+  if (member.role === 'chief') keys.push('affiliate_pro_rate');
+  const s = await getAffiliateSettings(keys);
+  member._telegramGroupLink = s.crew_telegram_group_link || null;
+  if (member.role === 'chief') member.commissionRate = s.affiliate_pro_rate;
   return <SettingsPage member={memberToClient(member, true)} />;
 }

@@ -1,12 +1,11 @@
 import prisma from "@/lib/prisma";
 import { getCrewSession } from "@/lib/crew";
 import { getMemberEarnings } from "@/lib/commissions";
-
-const DEFAULT_MIN_PAYOUT = 500000;
+import { getAffiliateSettings } from "@/lib/affiliate-settings";
 
 async function getMinPayout() {
-  const row = await prisma.setting.findUnique({ where: { key: 'affiliate_min_payout' } });
-  return row ? parseInt(row.value) * 100 : DEFAULT_MIN_PAYOUT;
+  const s = await getAffiliateSettings(['affiliate_min_payout']);
+  return s.affiliate_min_payout * 100;
 }
 
 export async function GET() {

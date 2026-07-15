@@ -24,7 +24,7 @@ From your dashboard, click **Add Funds** in the sidebar. Nitro uses a wallet sys
 
 We accept payments through Flutterwave — that means bank transfers, debit/credit cards (Visa, Mastercard, Verve), and bank USSD. Funds appear in your wallet instantly after payment confirms.
 
-The minimum deposit is **₦500**. There's no maximum.
+The minimum deposit is **₦1,000**. There's no maximum.
 
 **Got a coupon?** Before you hit deposit, look for the "Have a coupon code?" link below the amount field. Enter your code and you'll get bonus funds added to your deposit. For example, a 20% coupon on a ₦5,000 deposit means you pay ₦5,000 but get ₦6,000 in your wallet. Free money.
 

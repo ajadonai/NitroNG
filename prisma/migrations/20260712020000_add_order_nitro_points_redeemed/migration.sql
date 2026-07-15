@@ -1,0 +1,1 @@
+ALTER TABLE "orders" ADD COLUMN "nitroPointsRedeemedKobo" INTEGER NOT NULL DEFAULT 0;

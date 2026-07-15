@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getServices, isProviderConfigured, getProviderName, PROVIDER_IDS } from '@/lib/smm';
 import { calculateTierPrice } from '@/lib/markup';
+import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 
 function categorize(cat) {
   if (!cat) return 'Other';
@@ -43,7 +44,9 @@ export async function GET(req) {
     if (configured.length === 0) return Response.json({ skipped: true, reason: 'No providers configured' });
 
     const now = new Date();
-    const weekKey = `${now.getUTCFullYear()}-W${Math.ceil(((now - new Date(now.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7)}`;
+    const weekNum = Math.ceil(((now - new Date(now.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7);
+    const half = now.getUTCDay() >= 4 || now.getUTCDay() === 0 ? 'b' : 'a';
+    const weekKey = `${now.getUTCFullYear()}-W${weekNum}${half}`;
 
     const setting = await prisma.setting.findUnique({ where: { key: SETTING_KEY } });
     let state = {};
@@ -136,6 +139,8 @@ export async function GET(req) {
       update: { value: JSON.stringify(state) },
       create: { key: SETTING_KEY, value: JSON.stringify(state) },
     });
+
+    if (created > 0 || updated > 0 || disabled > 0) invalidateServiceCatalogue();
 
     log.info('CronSync', `${getProviderName(next)}: ${created} new, ${updated} updated, ${disabled} disabled (${state.done.length}/${configured.length} done for ${weekKey})`);
 

@@ -349,8 +349,9 @@ export function AdminPaymentsPage({ dark, t }) {
 export function AdminFinancePage({ dark, t, admin }) {
   const [tab, setTab] = useState("overview");
   const canBreakdown = admin?.pages === "*" || (Array.isArray(admin?.pages) && admin.pages.includes("financials"));
+  const canRewards = admin?.pages === "*" || (Array.isArray(admin?.pages) && admin.pages.includes("rewards"));
 
-
+  const subtitles = { overview: "Revenue, growth, and performance", breakdown: "Complete money flow breakdown", rewards: "Nitro Points liability and activity" };
 
   return (
     <>
@@ -358,13 +359,15 @@ export function AdminFinancePage({ dark, t, admin }) {
         <div className="adm-header-row">
           <div>
             <div className="adm-title" style={{ color: t.text }}>Finance</div>
-            <div className="adm-subtitle" style={{ color: t.textMuted }}>{tab === "overview" ? "Revenue, growth, and performance" : "Complete money flow breakdown"}</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>{subtitles[tab] || subtitles.overview}</div>
           </div>
-          <SegPill value={tab} options={[{value: "overview", label: "Overview"}, ...(canBreakdown ? [{value: "breakdown", label: "Breakdown"}] : [])]} onChange={setTab} dark={dark} t={t} />
+          <SegPill value={tab} options={[{value: "overview", label: "Overview"}, ...(canBreakdown ? [{value: "breakdown", label: "Breakdown"}] : []), ...(canRewards ? [{value: "rewards", label: "Rewards"}] : [])]} onChange={setTab} dark={dark} t={t} />
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
-      {tab === "overview" ? <FinanceOverviewTab dark={dark} t={t} /> : <FinanceBreakdownTab dark={dark} t={t} />}
+      {tab === "overview" && <FinanceOverviewTab dark={dark} t={t} />}
+      {tab === "breakdown" && <FinanceBreakdownTab dark={dark} t={t} admin={admin} />}
+      {tab === "rewards" && <FinanceRewardsTab dark={dark} t={t} />}
     </>
   );
 }
@@ -796,7 +799,7 @@ function CleanupButton({ dark, t }) {
 
 export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, setDark, onLogout, notifPrefs, updateNotifPref }) {
   const confirm = useConfirm();
-  const [social, setSocial] = useState({ social_instagram: "", social_twitter: "", social_whatsapp_support: "", social_telegram_support: "" });
+  const [social, setSocial] = useState({ social_instagram: "", social_twitter: "", social_whatsapp_support: "", social_whatsapp_channel: "", social_telegram_support: "" });
   const [emails, setEmails] = useState({ site_email_general: "", site_email_support: "" });
   const [socialLoading, setSocialLoading] = useState(true);
   const [socialSaving, setSocialSaving] = useState(false);
@@ -1049,6 +1052,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
             ["social_instagram", "Instagram Handle", "Nitro.ng", "Handle, @handle, or full URL — all work"],
             ["social_twitter", "X / Twitter Handle", "TheNitroNG", "Handle, @handle, or full URL — all work"],
             ["social_whatsapp_support", "WhatsApp Number", "2348012345678", "Any format — spaces, dashes, + prefix all stripped automatically"],
+            ["social_whatsapp_channel", "WhatsApp Channel URL", "https://whatsapp.com/channel/...", "Full URL to your WhatsApp channel page"],
             ["social_telegram_support", "Telegram Handle", "TheNitroNG", "Handle, @handle, or full URL — all work"],
           ].map(([key, label, placeholder, hint]) => (
             <div key={key} className="mb-3">
@@ -1150,7 +1154,8 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
 /* ═══════════════════════════════════════════ */
 /* ═══ FINANCIALS PAGE                     ═══ */
 /* ═══════════════════════════════════════════ */
-function FinanceBreakdownTab({ dark, t }) {
+function FinanceBreakdownTab({ dark, t, admin }) {
+  const toast = useToast();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dateValue, setDateValue] = useState(null);
@@ -1161,9 +1166,18 @@ function FinanceBreakdownTab({ dark, t }) {
   const [topupAmount, setTopupAmount] = useState("");
   const [topupNote, setTopupNote] = useState("");
   const [topupSaving, setTopupSaving] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [csvSections, setCsvSections] = useState({ wallet: true, orders: true, points: true, provider: true, affiliate: true, liabilities: true });
+  const [csvMenuOpen, setCsvMenuOpen] = useState(false);
+  const csvMenuRef = useRef(null);
+  useEffect(() => {
+    if (!csvMenuOpen) return;
+    const close = (e) => { if (csvMenuRef.current && !csvMenuRef.current.contains(e.target)) setCsvMenuOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [csvMenuOpen]);
 
-  const load = () => {
-    setLoading(true);
+  const buildParams = (extra = {}) => {
     const params = new URLSearchParams();
     if (dateValue?.start) params.set("from", localDate(dateValue.start));
     if (dateValue?.end) params.set("to", localDate(dateValue.end));
@@ -1171,10 +1185,46 @@ function FinanceBreakdownTab({ dark, t }) {
     if (platform !== "all") params.set("platform", platform);
     if (tier !== "all") params.set("tier", tier);
     if (provider !== "all") params.set("provider", provider);
+    Object.entries(extra).forEach(([key, value]) => params.set(key, value));
+    return params;
+  };
+
+  const load = () => {
+    setLoading(true);
+    const params = buildParams();
     fetch(`/api/admin/financials?${params}`)
       .then(r => r.json()).then(d => { setStats(d); setLoading(false); }).catch(() => setLoading(false));
   };
   useEffect(() => { load(); }, [dateValue, platform, tier, provider]);
+
+  const downloadReport = async () => {
+    const selected = Object.entries(csvSections).filter(([, v]) => v).map(([k]) => k);
+    if (!selected.length) { toast.error("No sections selected"); return; }
+    setReportLoading(true);
+    setCsvMenuOpen(false);
+    try {
+      const params = buildParams({ export: "csv", sections: selected.join(",") });
+      const res = await fetch(`/api/admin/financials?${params}`);
+      if (!res.ok) {
+        let msg = "Could not download report";
+        try { const d = await res.json(); if (d.error) msg = d.error; } catch {}
+        toast.error("Download failed", msg);
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `nitro-finance-report-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Report downloaded", `Exported ${selected.length} section${selected.length > 1 ? "s" : ""}.`);
+    } catch {
+      toast.error("Download failed", "Please try again.");
+    } finally {
+      setReportLoading(false);
+    }
+  };
 
   const handleTopup = async () => {
     const amt = parseFloat(topupAmount);
@@ -1253,6 +1303,27 @@ function FinanceBreakdownTab({ dark, t }) {
           { value: "all", label: "All providers" }, { value: "mtp", label: "MTP" },
           { value: "jap", label: "JAP" }, { value: "dao", label: "DaoSMM" },
         ]} />
+        {['owner', 'superadmin'].includes(admin?.role) && (
+          <div className="relative" ref={csvMenuRef}>
+            <button onClick={() => setCsvMenuOpen(o => !o)} disabled={reportLoading} className="h-9 px-3.5 rounded-lg text-xs font-semibold cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px disabled:opacity-60" style={{ background: dark ? "rgba(52,211,153,.12)" : "rgba(5,150,105,.08)", border: `1px solid ${dark ? "rgba(52,211,153,.28)" : "rgba(5,150,105,.18)"}`, color: green }}>
+              {reportLoading ? "Preparing..." : "↓ Finance CSV"}
+            </button>
+            {csvMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 rounded-lg p-2.5 z-50 min-w-[180px]" style={{ background: dark ? "#1e1e2e" : "#fff", border: `1px solid ${cardBorder}`, boxShadow: "0 4px 16px rgba(0,0,0,.18)" }}>
+                <div className="text-[10px] font-semibold uppercase tracking-[1px] mb-2" style={{ color: subText }}>Include sections</div>
+                {[["wallet", "Wallet"], ["orders", "Orders"], ["points", "Nitro Points"], ["provider", "Provider Top-ups"], ["affiliate", "Affiliate"], ["liabilities", "Liabilities"]].map(([key, label]) => (
+                  <label key={key} className="flex items-center gap-2 py-1 text-xs cursor-pointer" style={{ color: t.text }}>
+                    <input type="checkbox" checked={csvSections[key]} onChange={() => setCsvSections(s => ({ ...s, [key]: !s[key] }))} className="rounded" />
+                    {label}
+                  </label>
+                ))}
+                <button onClick={downloadReport} disabled={reportLoading} className="mt-2 w-full h-8 rounded-md text-xs font-semibold cursor-pointer" style={{ background: green, color: dark ? "#111" : "#fff" }}>
+                  Download
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {loading ? <div className="adm-stats">{[1,2,3,4,5,6].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-20 rounded-xl`} />)}</div> : <>
@@ -1261,7 +1332,7 @@ function FinanceBreakdownTab({ dark, t }) {
       <div className={sectionHeading} style={{ color: subText }}>Profitability</div>
       <div className="adm-stats mb-5">
         <MetricCard label="Gross Revenue" value={fN(p.grossRevenue || 0)} sub="Before discounts" />
-        <MetricCard label="Discounts" value={fN(p.totalDiscounts || 0)} sub={`Promo ₦${(p.promoDiscounts || 0).toLocaleString()} | Loyalty ₦${(p.loyaltyDiscounts || 0).toLocaleString()}`} color={amber} />
+        <MetricCard label="Discounts" value={fN(p.totalDiscounts || 0)} sub={`Promo ₦${(p.promoDiscounts || 0).toLocaleString()} | Status ₦${(p.loyaltyDiscounts || 0).toLocaleString()}`} color={amber} />
         <MetricCard label="Net Revenue" value={fN(p.netRevenue || 0)} sub="What users actually paid" color={green} />
         <MetricCard label="Provider Cost" value={fN(p.totalCost || 0)} sub="MTP + JAP + DAO" color={red} />
         <MetricCard label="Gross Profit" value={fN(p.grossProfit || 0)} sub={`${p.margin || 0}% markup`} color={p.grossProfit >= 0 ? green : red} />
@@ -1426,5 +1497,142 @@ function FinanceBreakdownTab({ dark, t }) {
       </>}
       </>}
     </>
+  );
+}
+
+function FinanceRewardsTab({ dark, t }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const reqRef = useRef(0);
+
+  const load = (fromVal, toVal) => {
+    const reqId = ++reqRef.current;
+    setLoading(true);
+    const params = new URLSearchParams({ view: 'summary' });
+    if (fromVal) params.set('from', fromVal);
+    if (toVal) params.set('to', toVal);
+    fetch(`/api/admin/rewards?${params}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (reqId === reqRef.current) { setData(d); setLoading(false); } })
+      .catch(() => { if (reqId === reqRef.current) setLoading(false); });
+  };
+
+  useEffect(() => { load(from, to); }, []);
+
+  const cardBg = dark ? 'rgba(255,255,255,.06)' : '#fff';
+  const cardBd = `1px solid ${dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)'}`;
+
+  const TYPES = [
+    { key: 'earned_order', label: 'Earned', color: t.green },
+    { key: 'redeemed_order', label: 'Redeemed', color: t.red },
+    { key: 'reversed_refund', label: 'Reversed', color: t.amber },
+    { key: 'restored_refund', label: 'Restored', color: t.green },
+    { key: 'manual_credit', label: 'Manual credit', color: t.accent },
+    { key: 'manual_debit', label: 'Manual debit', color: t.red },
+  ];
+
+  const koboToNaira = (kobo) => Math.round((kobo || 0) / 100);
+  const cost = data?.cost || {};
+  const checkout = cost.checkoutReductions || {};
+  const movement = cost.pointsMovement || {};
+  const accrual = cost.accrualRewardCost || {};
+  const movementColor = (movement.netLiabilityChangeKobo || 0) >= 0 ? t.amber : t.green;
+  const fSignedKobo = (kobo) => `${(kobo || 0) < 0 ? '-' : ''}${fN(koboToNaira(kobo))}`;
+
+  return (
+    <div className="p-6 max-w-[900px]">
+      {/* Date filter */}
+      <div className="flex flex-wrap gap-2 mb-5 items-center">
+        <span className="text-[12px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.textMuted }}>Period</span>
+        <input type="date" value={from} onChange={e => { setFrom(e.target.value); load(e.target.value, to); }} className="py-1.5 px-2.5 rounded-lg text-[12px] outline-none font-[inherit]" style={{ border: cardBd, background: cardBg, color: t.text }} />
+        <span className="text-[11px]" style={{ color: t.textMuted }}>to</span>
+        <input type="date" value={to} onChange={e => { setTo(e.target.value); load(from, e.target.value); }} className="py-1.5 px-2.5 rounded-lg text-[12px] outline-none font-[inherit]" style={{ border: cardBd, background: cardBg, color: t.text }} />
+        {(from || to) && <button onClick={() => { setFrom(''); setTo(''); load('', ''); }} className="text-[11px] font-semibold cursor-pointer font-[inherit] border-none bg-transparent" style={{ color: t.accent }}>Clear</button>}
+      </div>
+
+      {loading ? (
+        <div className="space-y-3">
+          {[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? 'skel-dark' : 'skel-light'}`} style={{ height: 60, borderRadius: 10 }} />)}
+        </div>
+      ) : data ? (
+        <>
+          {/* Liability card */}
+          <div className="rounded-xl p-5 mb-5" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.05)', border: `1px solid ${dark ? 'rgba(196,125,142,.2)' : 'rgba(196,125,142,.12)'}` }}>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>Outstanding Points Liability</div>
+            <div className="text-[28px] font-bold" style={{ color: t.accent, fontFamily: 'JetBrains Mono, monospace' }}>{(data.liability.points || 0).toLocaleString()} <span className="text-[14px] font-medium" style={{ color: t.textSoft }}>pts</span></div>
+            <div className="text-[13px] mt-1" style={{ color: t.textSoft }}>₦{(data.liability.points || 0).toLocaleString()} redeemable value</div>
+          </div>
+
+          {/* Cost reporting */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+            <div className="rounded-xl p-4" style={{ background: cardBg, border: cardBd }}>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>Reward cost</div>
+              <div className="text-[20px] font-bold" style={{ color: t.red, fontFamily: 'JetBrains Mono, monospace' }}>{fN(koboToNaira(accrual.kobo))}</div>
+              <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>Status/campaign discounts + points issued</div>
+            </div>
+            <div className="rounded-xl p-4" style={{ background: cardBg, border: cardBd }}>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>Checkout reductions</div>
+              <div className="text-[20px] font-bold" style={{ color: t.amber, fontFamily: 'JetBrains Mono, monospace' }}>{fN(koboToNaira(checkout.totalKobo))}</div>
+              <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>Discounts + points used at checkout</div>
+            </div>
+            <div className="rounded-xl p-4" style={{ background: cardBg, border: cardBd }}>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>Net points liability change</div>
+              <div className="text-[20px] font-bold" style={{ color: movementColor, fontFamily: 'JetBrains Mono, monospace' }}>{fSignedKobo(movement.netLiabilityChangeKobo)}</div>
+              <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>{(movement.netLiabilityChangeKobo || 0) >= 0 ? 'Liability increased' : 'Liability reduced'} this period</div>
+            </div>
+          </div>
+
+          <div className="rounded-xl p-4 mb-5" style={{ background: cardBg, border: cardBd }}>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-3" style={{ color: t.textMuted }}>Monthly rewards report breakdown</div>
+            {[
+              ['Nitro Status discounts', checkout.statusDiscountKobo, 'Immediate revenue reduction on orders', t.amber],
+              ['Campaign discounts', checkout.campaignDiscountKobo, 'Platform/recurring promotion reduction', t.amber],
+              ['Points redeemed at checkout', checkout.pointsRedeemedKobo, 'Existing liability used to pay for orders', t.red],
+              ['Points earned from orders', movement.earnedKobo, 'New points liability created by spend', t.green],
+              ['Manual point credits', movement.manualCreditKobo, 'Admin-issued points liability', t.accent],
+              ['Opening balances', movement.openingBalanceKobo, 'Imported/launch points liability', t.accent],
+              ['Points restored on refunds', movement.restoredKobo, 'Redeemed points returned after refunds', t.green],
+              ['Earned points reversed', movement.reversedKobo, 'Earned points removed after refunds', t.red],
+              ['Manual point debits', movement.manualDebitKobo, 'Admin-reduced liability', t.red],
+            ].map(([label, kobo, note, color]) => (
+              <div key={label} className="flex items-start justify-between gap-3 py-2.5" style={{ borderBottom: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)'}` }}>
+                <div>
+                  <div className="text-[13px] font-semibold" style={{ color: t.text }}>{label}</div>
+                  <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>{note}</div>
+                </div>
+                <div className="text-[13px] font-bold text-right whitespace-nowrap" style={{ color, fontFamily: 'JetBrains Mono, monospace' }}>{fN(koboToNaira(kobo))}</div>
+              </div>
+            ))}
+            <div className="text-[11px] mt-3 leading-relaxed" style={{ color: t.textMuted }}>
+              Reward cost excludes points redeemed because those points were already counted when issued. Checkout reductions include points redeemed so cash collected can still be reconciled.
+            </div>
+          </div>
+
+          {/* Movement metrics */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {TYPES.map(({ key, label, color }) => {
+              const entry = data.byType?.[key];
+              if (!entry) return null;
+              const pts = Math.abs(Math.round((entry.kobo || 0) / 100));
+              return (
+                <div key={key} className="rounded-xl p-4" style={{ background: cardBg, border: cardBd }}>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>{label}</div>
+                  <div className="text-[18px] font-bold" style={{ color, fontFamily: 'JetBrains Mono, monospace' }}>{pts.toLocaleString()}</div>
+                  <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>{entry.count} {entry.count === 1 ? 'entry' : 'entries'}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {data.dateFiltered && (
+            <div className="mt-4 text-[11px]" style={{ color: t.textMuted }}>Metrics filtered by date range. Liability is always the current total.</div>
+          )}
+        </>
+      ) : (
+        <div className="py-8 text-center text-[13px]" style={{ color: t.textMuted }}>Could not load rewards data</div>
+      )}
+    </div>
   );
 }

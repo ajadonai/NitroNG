@@ -93,11 +93,13 @@ export function AdminCrewPage({ dark, t }) {
   const [payoutsLoading, setPayoutsLoading] = useState(false);
   const [payoutFilter, setPayoutFilter] = useState("all");
   const [refInput, setRefInput] = useState({});
-  const [tierCfg, setTierCfg] = useState({ crew_enabled: "1", affiliate_starter_rate: "30", affiliate_growth_rate: "40", affiliate_pro_rate: "50", affiliate_growth_threshold: "50", affiliate_pro_threshold: "150", affiliate_lead_split: "40", affiliate_hold_days: "7", affiliate_min_payout: "5000", affiliate_min_order: "1000", affiliate_max_links: "5" });
+  const [tierCfg, setTierCfg] = useState({ affiliate_enabled: "true", affiliate_starter_rate: "30", affiliate_growth_rate: "40", affiliate_pro_rate: "50", affiliate_growth_threshold: "50", affiliate_pro_threshold: "150", affiliate_lead_split: "40", affiliate_hold_days: "7", affiliate_min_payout: "5000", affiliate_min_order: "1000", affiliate_max_links: "5" });
   const [tierCfgLoading, setTierCfgLoading] = useState(false);
   const [tierCfgSaving, setTierCfgSaving] = useState(false);
   const [activityLogs, setActivityLogs] = useState([]);
   const [activityLoading, setActivityLoading] = useState(false);
+  const [affiliateEnabled, setAffiliateEnabled] = useState(true);
+  const [moneyIssues, setMoneyIssues] = useState([]);
   const [drawerMember, setDrawerMember] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
   const [showTeamPicker, setShowTeamPicker] = useState(false);
@@ -116,6 +118,8 @@ export function AdminCrewPage({ dark, t }) {
       if (d.error) return null;
       setMembers(d.members || []);
       setStats(d.stats || {});
+      if (d.affiliateEnabled !== undefined) setAffiliateEnabled(d.affiliateEnabled);
+      if (d.moneyIssues) setMoneyIssues(d.moneyIssues);
       return d.members || [];
     } catch { return null; } finally { setLoading(false); }
   }, []);
@@ -132,7 +136,7 @@ export function AdminCrewPage({ dark, t }) {
   const loadTierCfg = useCallback(async () => {
     setTierCfgLoading(true);
     try {
-      const res = await fetch("/api/admin/settings?keys=crew_enabled,affiliate_starter_rate,affiliate_growth_rate,affiliate_pro_rate,affiliate_growth_threshold,affiliate_pro_threshold,affiliate_lead_split,affiliate_hold_days,affiliate_min_payout,affiliate_min_order,affiliate_max_links");
+      const res = await fetch("/api/admin/settings?keys=affiliate_enabled,affiliate_starter_rate,affiliate_growth_rate,affiliate_pro_rate,affiliate_growth_threshold,affiliate_pro_threshold,affiliate_lead_split,affiliate_hold_days,affiliate_min_payout,affiliate_min_order,affiliate_max_links");
       const d = await res.json();
       if (d.settings) setTierCfg(prev => ({ ...prev, ...d.settings }));
     } catch {} finally { setTierCfgLoading(false); }
@@ -258,6 +262,26 @@ export function AdminCrewPage({ dark, t }) {
         <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage your crew, chiefs, tiers, and payouts</div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
+
+      {/* Status banner */}
+      {(!affiliateEnabled || moneyIssues.length > 0) && (
+        <div className="flex flex-col gap-2 mb-4">
+          {!affiliateEnabled && (
+            <div className="flex items-center gap-[10px] py-[11px] px-[16px] rounded-[12px]" style={{ background: dark ? "rgba(217,119,6,.12)" : "rgba(217,119,6,.06)", border: `1px solid ${dark ? "rgba(217,119,6,.25)" : "rgba(217,119,6,.18)"}` }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span className="text-[13px] font-semibold" style={{ color: dark ? "#fbbf24" : "#b45309" }}>Affiliate program paused</span>
+              <span className="text-[12px]" style={{ color: dark ? "rgba(251,191,36,.7)" : "rgba(180,83,9,.6)" }}>No new commissions are being created. Re-enable in Settings.</span>
+            </div>
+          )}
+          {moneyIssues.length > 0 && (
+            <div className="flex items-center gap-[10px] py-[11px] px-[16px] rounded-[12px]" style={{ background: dark ? "rgba(220,38,38,.1)" : "rgba(220,38,38,.04)", border: `1px solid ${dark ? "rgba(220,38,38,.22)" : "rgba(220,38,38,.14)"}` }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span className="text-[13px] font-semibold" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{moneyIssues.length} open money-path issue{moneyIssues.length !== 1 ? "s" : ""}</span>
+              <span className="text-[12px]" style={{ color: dark ? "rgba(252,165,165,.7)" : "rgba(220,38,38,.6)" }}>{moneyIssues.map(i => i.title).join(", ")}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 mb-5 p-1 rounded-xl w-fit" style={{ background: cardBg, border: cardBd, boxShadow: shadow }}>
@@ -469,8 +493,8 @@ export function AdminCrewPage({ dark, t }) {
                     <div className="text-[13.5px] font-semibold" style={{ color: t.text }}>Pit Crew program</div>
                     <div className="text-[11.5px] mt-[3px] leading-[1.4]" style={{ color: t.textMuted }}>Master switch. When off, the apply page is hidden and no new commissions are created.</div>
                   </div>
-                  <button onClick={() => setTierCfg(p => ({ ...p, crew_enabled: p.crew_enabled === "1" ? "0" : "1" }))} className="relative w-[44px] h-[24px] rounded-[12px] border-none cursor-pointer shrink-0" style={{ background: tierCfg.crew_enabled === "1" ? t.accent : (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.08)") }}>
-                    <span className="absolute top-[3px] w-[18px] h-[18px] rounded-full bg-white shadow-sm" style={{ left: tierCfg.crew_enabled === "1" ? 23 : 3, transition: "left .25s" }} />
+                  <button onClick={() => setTierCfg(p => ({ ...p, affiliate_enabled: p.affiliate_enabled === "true" ? "false" : "true" }))} className="relative w-[44px] h-[24px] rounded-[12px] border-none cursor-pointer shrink-0" style={{ background: tierCfg.affiliate_enabled === "true" ? t.accent : (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.08)") }}>
+                    <span className="absolute top-[3px] w-[18px] h-[18px] rounded-full bg-white shadow-sm" style={{ left: tierCfg.affiliate_enabled === "true" ? 23 : 3, transition: "left .25s" }} />
                   </button>
                 </div>
               </div>

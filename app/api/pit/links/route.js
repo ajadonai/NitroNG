@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { getCrewSession } from "@/lib/crew";
 import { getTeamIds, verifyLinkOwnership } from "@/lib/link-ownership";
+import { getAffiliateSettings } from "@/lib/affiliate-settings";
 
 function slugify(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30);
@@ -75,6 +76,11 @@ export async function POST(req) {
     const member = await getCrewSession();
     if (!member || member.role !== "chief") return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+    const { affiliate_enabled } = await getAffiliateSettings(['affiliate_enabled']);
+    if (affiliate_enabled === 'false') {
+      return Response.json({ error: "Link creation is paused while the affiliate program is disabled" }, { status: 403 });
+    }
+
     const { name, slug: customSlug, affiliateId } = await req.json().catch(() => ({}));
     if (!name || name.trim().length < 2) return Response.json({ error: "Name is required (min 2 characters)" }, { status: 400 });
 
@@ -96,11 +102,11 @@ export async function POST(req) {
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
         link = await prisma.$transaction(async (tx) => {
-          const [maxLinksRow, activeCount] = await Promise.all([
-            tx.setting.findUnique({ where: { key: 'affiliate_max_links' } }),
+          const [affSettings, activeCount] = await Promise.all([
+            getAffiliateSettings(['affiliate_max_links'], tx),
             tx.acquisitionLink.count({ where: { createdByChiefId: member.id, archivedAt: null } }),
           ]);
-          const maxLinks = parseInt(maxLinksRow?.value) || 5;
+          const maxLinks = affSettings.affiliate_max_links;
           if (activeCount >= maxLinks) throw Object.assign(new Error('limit'), { _limit: maxLinks });
           return tx.acquisitionLink.create({ data: { name: name.trim(), slug, affiliateId: assigneeId, createdByChiefId: member.id } });
         }, { isolationLevel: 'Serializable' });

@@ -2,6 +2,10 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { cookies } from "next/headers";
+import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
+import { hashToken } from "@/lib/crew";
+import { validatePassword, validatePhone } from "@/lib/validate";
+import { getAffiliateSettings } from "@/lib/affiliate-settings";
 
 const MAX_RETRIES = 3;
 
@@ -23,9 +27,18 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
+    const { limited } = await rateLimit(req, { maxAttempts: 5, windowMs: 10 * 60 * 1000 });
+    if (limited) return tooManyRequests("Too many attempts. Try again in 10 minutes.");
+
+    const { affiliate_enabled } = await getAffiliateSettings(['affiliate_enabled']);
+    if (affiliate_enabled === 'false') {
+      return Response.json({ error: "The affiliate program is currently paused" }, { status: 403 });
+    }
+
     const { token, password, phone, xHandle } = await req.json().catch(() => ({}));
     if (!token || !password) return Response.json({ error: "Token and password required" }, { status: 400 });
-    if (password.length < 6) return Response.json({ error: "Password must be at least 6 characters" }, { status: 400 });
+    if (!validatePassword(password)) return Response.json({ error: "Password must be 6-128 characters" }, { status: 400 });
+    if (phone && !validatePhone(phone)) return Response.json({ error: "Please enter a valid phone number" }, { status: 400 });
 
     const hashed = await bcrypt.hash(password, 12);
     const sessionToken = crypto.randomBytes(32).toString("hex");
@@ -64,7 +77,7 @@ export async function POST(req) {
             });
 
             await tx.crewSession.create({
-              data: { memberId: member.id, token: sessionToken, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+              data: { memberId: member.id, token: hashToken(sessionToken), expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
             });
           }, { isolationLevel: 'Serializable' });
           break;

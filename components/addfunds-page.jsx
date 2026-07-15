@@ -4,6 +4,7 @@ import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
 import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
+import { WalletPointsCard, PointsModal } from "./rewards";
 
 const TX_META = {
   deposit:      { label: "Deposit",       icon: "↓", clr: dk => dk ? "#6ee7b7" : "#059669" },
@@ -58,6 +59,11 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   const toast = useToast();
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("");
+  const [pointsOpen, setPointsOpen] = useState(false);
+  const [rewards, setRewards] = useState(null);
+  useEffect(() => {
+    fetch('/api/rewards').then(r => r.ok ? r.json() : null).then(d => { if (d) setRewards(d); });
+  }, []);
   const [loading, setLoading] = useState(false);
   const [mobileStep, setMobileStep] = useState(1);
   const [gateways, setGateways] = useState([]);
@@ -133,7 +139,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   }, [txs]);
 
   const numAmount = Number(amount) || 0;
-  const valid = numAmount >= 500;
+  const valid = numAmount >= 1000;
   const balance = user?.balance || 0;
 
   const lastFunded = txs?.find(tx => tx.type === 'deposit' && tx.status === 'Completed');
@@ -315,7 +321,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           </div>
         );
       })()}
-      {welcomeEligible && numAmount >= 500 && (() => {
+      {welcomeEligible && numAmount >= 1000 && (() => {
         const nt = nextBonusTier(numAmount);
         if (!nt) return null;
         const diff = nt.min - numAmount;
@@ -335,13 +341,13 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         );
       })()}
       <div className="min-h-6 mt-2.5 flex items-center">
-        {numAmount > 0 && numAmount < 500 ? (
+        {numAmount > 0 && numAmount < 1000 ? (
           <div className="text-sm font-medium flex items-center gap-1.5" style={{ color: dark ? "#fcd34d" : "#d97706" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            Minimum deposit is ₦500
+            Minimum deposit is ₦1,000
           </div>
         ) : !valid && (
-          <div className="text-[12px]" style={{ color: t.textMuted }}>Minimum deposit is ₦500</div>
+          <div className="text-[12px]" style={{ color: t.textMuted }}>Minimum deposit is ₦1,000</div>
         )}
       </div>
     </>
@@ -403,6 +409,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 
   return (
     <>
+      <PointsModal open={pointsOpen} onClose={() => setPointsOpen(false)} rewards={rewards} dark={dark} t={t} onUse={() => { setPointsOpen(false); onPlaceOrder?.(); }} />
+
       {/* Payment error — toast handles success */}
       {paymentStatus && paymentStatus.type !== "success" && (
         <div className="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl mb-4" style={{
@@ -461,6 +469,9 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             })()}
           </div>
         </div>
+
+        {/* Nitro Points (compact) */}
+        <WalletPointsCard rewards={rewards} dark={dark} t={t} onView={() => setPointsOpen(true)} />
 
         {/* Two columns */}
         <div className="flex gap-4 flex-1 items-stretch">
@@ -554,6 +565,9 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                 })()}
               </div>
             </div>
+
+            {/* Nitro Points (compact) */}
+            <WalletPointsCard rewards={rewards} dark={dark} t={t} onView={() => setPointsOpen(true)} />
 
             {/* Amount card */}
             <div className="rounded-xl p-4" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>

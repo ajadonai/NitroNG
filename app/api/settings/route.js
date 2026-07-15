@@ -5,7 +5,7 @@ export const revalidate = 300;
 
 const PUBLIC_KEYS = [
   'social_instagram', 'social_twitter',
-  'social_whatsapp_support', 'social_telegram_support',
+  'social_whatsapp_support', 'social_whatsapp_channel', 'social_telegram_support',
   'site_email_general', 'site_email_support',
   'ref_referrer_bonus', 'ref_invitee_bonus', 'ref_min_deposit',
 ];
