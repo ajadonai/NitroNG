@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { getCrewSession } from "@/lib/crew";
 import { getMemberEarnings, getMemberHeld } from "@/lib/commissions";
+import { getTierConfig } from "@/lib/affiliate-settings";
 
 export async function GET() {
   try {
@@ -92,16 +93,7 @@ export async function GET() {
       where: { ...(isChief ? { leadId: id } : { memberId: id }), status: "approved" },
     });
 
-    const tierSettings = await prisma.setting.findMany({
-      where: { key: { in: ['affiliate_starter_rate', 'affiliate_growth_rate', 'affiliate_pro_rate', 'affiliate_growth_threshold', 'affiliate_pro_threshold', 'affiliate_lead_split'] } },
-    });
-    const sv = Object.fromEntries(tierSettings.map(r => [r.key, parseInt(r.value)]));
-    const tierConfig = {
-      starter: { rate: sv.affiliate_starter_rate || 30, min: 0 },
-      growth:  { rate: sv.affiliate_growth_rate || 40, min: sv.affiliate_growth_threshold || 30 },
-      pro:     { rate: sv.affiliate_pro_rate || 50, min: sv.affiliate_pro_threshold || 100 },
-      leadSplit: sv.affiliate_lead_split || 40,
-    };
+    const tierConfig = await getTierConfig();
 
     return Response.json({
       stats: {
@@ -115,7 +107,7 @@ export async function GET() {
         conversions: totalCommissions,
         activeReferrals: activeReferrals.length,
       },
-      tier: { name: member.tier, rate: member.role === "chief" ? (sv.affiliate_pro_rate || 50) : member.commissionRate },
+      tier: { name: member.tier, rate: member.role === "chief" ? tierConfig.pro.rate : member.commissionRate },
       tierConfig,
       recentCommissions: recent,
       links: links.map((l) => ({ slug: l.slug, enabled: l.enabled })),

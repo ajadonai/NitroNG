@@ -38,8 +38,8 @@ export async function POST(req) {
       return Response.json({ error: 'Missing idempotency key' }, { status: 400 });
     }
 
-    if (!amountNum || amountNum < 500) {
-      return Response.json({ error: 'Minimum deposit is ₦500' }, { status: 400 });
+    if (!amountNum || amountNum < 1000) {
+      return Response.json({ error: 'Minimum deposit is ₦1,000' }, { status: 400 });
     }
     if (amountNum > 10000000) {
       return Response.json({ error: 'Maximum deposit is ₦10,000,000' }, { status: 400 });

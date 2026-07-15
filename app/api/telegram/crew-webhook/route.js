@@ -280,11 +280,26 @@ export async function POST(req) {
       }
 
       const member = await prisma.crewMember.findFirst({
-        where: { telegramLinkCode: code.toUpperCase(), status: 'approved' },
+        where: { telegramLinkCode: code.toUpperCase(), status: 'approved', deletedAt: null },
         include: { lead: { select: { name: true, telegramUserId: true } } },
       });
       if (!member) {
         await sendDM(chatId, 'Invalid or expired code. Generate a new one at nitro.ng/pit/settings.');
+        return Response.json({ ok: true });
+      }
+
+      if (!member.telegramLinkCodeExpiresAt || member.telegramLinkCodeExpiresAt < new Date()) {
+        await prisma.crewMember.update({ where: { id: member.id }, data: { telegramLinkCode: null, telegramLinkCodeExpiresAt: null } });
+        await sendDM(chatId, 'This code has expired. Generate a new one at nitro.ng/pit/settings.');
+        return Response.json({ ok: true });
+      }
+
+      const alreadyLinked = await prisma.crewMember.findFirst({
+        where: { telegramUserId: userId, id: { not: member.id } },
+        select: { id: true },
+      });
+      if (alreadyLinked) {
+        await sendDM(chatId, 'This Telegram account is already linked to another Pit member. Disconnect it there first.');
         return Response.json({ ok: true });
       }
 
@@ -301,11 +316,16 @@ export async function POST(req) {
         ].join('\n'));
         return Response.json({ ok: true });
       }
-      await prisma.crewMember.update({
-        where: { id: member.id },
-        data: { telegramUserId: userId, telegramHandle: tgHandle, telegramLinkCode: null },
+      const { count } = await prisma.crewMember.updateMany({
+        where: { id: member.id, telegramLinkCode: code.toUpperCase(), status: 'approved', deletedAt: null },
+        data: { telegramUserId: userId, telegramHandle: tgHandle, telegramLinkCode: null, telegramLinkCodeExpiresAt: null },
       });
+      if (count === 0) {
+        await sendDM(chatId, 'This code is no longer valid. Generate a new one at nitro.ng/pit/settings.');
+        return Response.json({ ok: true });
+      }
       await sendDM(chatId, `✅ Linked as <b>${member.name}</b>!\n\nType /help to see what I can do.`);
+      prisma.activityLog.create({ data: { adminName: member.name, action: `Pit member linked Telegram (@${tgHandle})`, type: 'pit-self' } }).catch(() => {});
 
       const teamName = member.lead?.name || member.name;
       crewWelcome(member.name, teamName);

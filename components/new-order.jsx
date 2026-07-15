@@ -21,6 +21,15 @@ const crossSells = {
   view: { title: "Boost the engagement", body: "High views + low likes looks off. Add likes so the numbers tell the right story.", cta: "Add Likes", color: "#f43f5e", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="#f43f5e" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> },
 };
 const getCrossSell = (svc) => { const s = (svc || "").toLowerCase(); return s.includes("follower") ? crossSells.follower : s.includes("comment") ? crossSells.comment : s.includes("like") ? crossSells.like : s.includes("view") ? crossSells.view : crossSells.follower; };
+const formatDeliverySpeed = (speed) => {
+  if (!speed) return "Processing now";
+  return String(speed)
+    .replace(/\s*[-–—]\s*/g, " to ")
+    .replace(/\/\s*day\b/gi, " per day")
+    .replace(/\/\s*hr(s)?\b/gi, " per hour")
+    .replace(/\bhrs\b/gi, "hours")
+    .replace(/\bhr\b/gi, "hour");
+};
 const I = (d, vb = "0 0 24 24") => <svg width="24" height="24" viewBox={vb} fill="currentColor">{d}</svg>;
 const IS = (d, vb = "0 0 24 24") => <svg width="24" height="24" viewBox={vb} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{d}</svg>;
 
@@ -219,8 +228,8 @@ const LINK_EXAMPLES = {
   instagram: { profile: ["instagram.com/username"], channel: ["instagram.com/channel/ABC123"], post: ["instagram.com/p/ABC123", "instagram.com/reel/ABC123", "ig.me/abc123"] },
   tiktok: { profile: ["tiktok.com/@username", "@username"], post: ["tiktok.com/@user/video/123...", "vm.tiktok.com/ABC123"] },
   twitter: { profile: ["x.com/username", "twitter.com/username"], post: ["x.com/username/status/123...", "t.co/abc123"] },
-  youtube: { profile: ["youtube.com/@channel", "youtube.com/c/name"], post: ["youtube.com/watch?v=ABC123", "youtu.be/ABC123", "youtube.com/shorts/ABC123"] },
-  facebook: { profile: ["facebook.com/pagename", "fb.com/pagename"], channel: ["facebook.com/groups/groupname"], post: ["facebook.com/share/r/ABC123", "facebook.com/user/posts/123...", "fb.watch/abc123"] },
+  youtube: { profile: ["youtube.com/@channel", "youtube.com/c/name"], post: ["youtube.com/watch?v=ABC123", "youtu.be/ABC123", "youtube.com/shorts/ABC123"], commentLike: ["youtube.com/watch?v=VIDEO_ID&lc=COMMENT_ID"] },
+  facebook: { profile: ["facebook.com/pagename", "fb.com/pagename"], channel: ["facebook.com/groups/groupname"], post: ["facebook.com/share/r/ABC123", "facebook.com/user/posts/123...", "fb.watch/abc123"], commentLike: ["facebook.com/comment/permalink/COMMENT_ID"] },
   threads: { profile: ["threads.net/@username"], post: ["threads.net/@username/post/ABC123"] },
   telegram: { profile: ["t.me/channelname"], post: ["t.me/channelname/123"] },
   linkedin: { profile: ["linkedin.com/in/username", "linkedin.com/company/name"], post: ["linkedin.com/posts/user_title-123..."] },
@@ -257,6 +266,59 @@ function isValidLink(link) {
   return /^@?[a-zA-Z0-9._]{1,100}$/.test(v);
 }
 
+function getRowPricePer1k(row, menu) {
+  if (!menu?.groups) return 0;
+  for (const g of menu.groups) {
+    const tier = g.tiers.find(t2 => t2.id === row.tierId);
+    if (tier) return tier.price;
+  }
+  return 0;
+}
+
+function normalizePriceUpdates(rows = []) {
+  const updates = new Map();
+  for (const row of rows) {
+    const price = Number(row.currentPrice ?? (row.serverPrice != null ? row.serverPrice / 100 : 0));
+    if (row.tierId && Number.isFinite(price) && price > 0) updates.set(row.tierId, price);
+  }
+  return updates;
+}
+
+function applyPriceUpdatesToCartRows(rows, priceRows = [], menuData = null) {
+  const serverUpdates = normalizePriceUpdates(priceRows);
+  let changed = false;
+  const next = rows.map(row => {
+    const nextPrice = serverUpdates.get(row.tierId) || getRowPricePer1k(row, menuData);
+    if (nextPrice > 0 && row.storedPricePer1k !== nextPrice) {
+      changed = true;
+      return { ...row, storedPricePer1k: nextPrice };
+    }
+    return row;
+  });
+  return changed ? next : rows;
+}
+
+function applyPriceUpdatesToMenu(menuData, priceRows = []) {
+  if (!menuData?.groups) return menuData;
+  const serverUpdates = normalizePriceUpdates(priceRows);
+  if (serverUpdates.size === 0) return menuData;
+  let changed = false;
+  const groups = menuData.groups.map(group => {
+    let groupChanged = false;
+    const tiers = group.tiers.map(tier => {
+      const nextPrice = serverUpdates.get(tier.id);
+      if (nextPrice > 0 && tier.price !== nextPrice) {
+        changed = true;
+        groupChanged = true;
+        return { ...tier, price: nextPrice };
+      }
+      return tier;
+    });
+    return groupChanged ? { ...group, tiers } : group;
+  });
+  return changed ? { ...menuData, groups } : menuData;
+}
+
 const CART_KEY = "nitro_bulk_cart_v1";
 const CART_TTL = 86400000;
 
@@ -285,7 +347,7 @@ function maxDripDays(qty) { return qty <= 5000 ? 5 : qty <= 10000 ? 7 : qty <= 2
 const MIN_DAYS_FLOOR = { followers: 3, views: 1, plays: 1, likes: 2, comments: 3, reviews: 3, engagement: 2 };
 function minDripDays(qty, type) { const floor = MIN_DAYS_FLOOR[(type || "").toLowerCase()] || 3; return Math.max(floor, Math.ceil(qty / safeDailyCap(type))); }
 
-export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible }) {
+export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible, pointsRedeemable = false, pointsBalance = 0, redeemPoints = false, setRedeemPoints }) {
   const minQty = selTier?.min || 100;
   const maxQty = selTier?.max || 50000;
   const isPackage = minQty === maxQty;
@@ -297,7 +359,9 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const afterLoyalty = Math.max(0, basePrice - discountAmount);
   const promoDiscountAmt = activePromotion ? Math.round(afterLoyalty * (activePromotion.discountPercent / 100)) : 0;
   const cappedPromoDiscount = activePromotion?.maxDiscountPerOrder ? Math.min(promoDiscountAmt, activePromotion.maxDiscountPerOrder / 100) : promoDiscountAmt;
-  const price = Math.max(0, afterLoyalty - cappedPromoDiscount);
+  const priceBeforePoints = Math.max(0, afterLoyalty - cappedPromoDiscount);
+  const pointsDiscount = redeemPoints && pointsRedeemable ? Math.min(pointsBalance, priceBeforePoints) : 0;
+  const price = Math.max(0, priceBeforePoints - pointsDiscount);
   const s = selTier ? TS[selTier.tier] : null;
   const [linkError, setLinkError] = useState("");
   const [linkHelpOpen, setLinkHelpOpen] = useState(false);
@@ -364,7 +428,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   /* Detect service type from provider apiType (reliable) with name fallback */
   const svcName = (selSvc?.name || "").toLowerCase();
   const apiType = (selTier?.apiType || "").toLowerCase();
-  const isComment = apiType.includes("comment") || ((svcName.includes("comment")) && !svcName.includes("comment like"));
+  const isComment = apiType.includes("comment") || ((svcName.includes("comment")) && !svcName.includes("comment like") || svcName.includes("likes (comments)") && !svcName.includes("likes (comments)"));
   const isCustomComment = apiType.includes("custom comment") || apiType.includes("comment replies");
   const isMention = apiType.includes("mention");
   const isPoll = apiType === "poll";
@@ -386,7 +450,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const isProfileSvc = (/follow|subscri|member|profile visit/i.test(svcName) || isMultiPostSvc || isAutoSvc) && !isChannelSvc;
   const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays/i.test(svcName) && !isProfileSvc && !isChannelSvc;
 
-  const linkPlaceholder = (LINK_EXAMPLES[platform] ? (isPostSvc ? LINK_EXAMPLES[platform].post?.[0] : isChannelSvc ? (LINK_EXAMPLES[platform].channel?.[0] || LINK_EXAMPLES[platform].profile?.[0]) : isProfileSvc ? LINK_EXAMPLES[platform].profile?.[0] : null) : null) || LINK_HINTS[platform] || `${platform}.com/...`;
+  const isCommentLikeSvc = svcName.includes("comment like") || svcName.includes("likes (comments)");
+  const linkPlaceholder = (LINK_EXAMPLES[platform] ? (isCommentLikeSvc ? LINK_EXAMPLES[platform].commentLike?.[0] : isPostSvc ? LINK_EXAMPLES[platform].post?.[0] : isChannelSvc ? (LINK_EXAMPLES[platform].channel?.[0] || LINK_EXAMPLES[platform].profile?.[0]) : isProfileSvc ? LINK_EXAMPLES[platform].profile?.[0] : null) : null) || LINK_HINTS[platform] || `${platform}.com/...`;
   const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
 
   const plat = PLATFORMS.find(pl => pl.id === platform);
@@ -465,7 +530,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           </div>
           {linkError && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626" }}>{linkError}</div>}
           {!linkError && LINK_EXAMPLES[platform] && (isProfileSvc || isPostSvc || isChannelSvc) && (() => {
-              const type = isChannelSvc ? "channel" : isProfileSvc ? "profile" : "post";
+              const isCommentLike = svcName.includes("comment like") || svcName.includes("likes (comments)");
+              const type = isCommentLike ? "commentLike" : isChannelSvc ? "channel" : isProfileSvc ? "profile" : "post";
               const examples = LINK_EXAMPLES[platform][type] || LINK_EXAMPLES[platform].profile;
               if (!examples || !examples.length) return null;
               return <div className="mt-1.5">
@@ -540,12 +606,25 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             Large delivery may flag the target account
           </div>}
           </>)}
+        {pointsRedeemable && priceBeforePoints > 0 && (
+          <div className="flex items-center justify-between gap-3 rounded-[10px] p-2.5 mb-2 border border-solid cursor-pointer select-none" onClick={() => setRedeemPoints(!redeemPoints)} style={{ background: redeemPoints ? (dark ? "rgba(251,191,36,.08)" : "rgba(251,191,36,.07)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)"), borderColor: redeemPoints ? (dark ? "rgba(251,191,36,.25)" : "rgba(251,191,36,.35)") : t.cardBorder }}>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-semibold" style={{ color: redeemPoints ? (dark ? "#fbbf24" : "#92400e") : t.text }}>Use Nitro Points</div>
+              <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{pointsBalance.toLocaleString()} pts available · saves ₦{Math.min(pointsBalance, priceBeforePoints).toLocaleString()}</div>
+            </div>
+            <div className="relative w-10 h-[22px] shrink-0" aria-hidden="true">
+              <div className="absolute inset-0 rounded-[11px] transition-colors duration-200" style={{ background: redeemPoints ? "#fbbf24" : (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.15)") }} />
+              <div className="absolute top-[2px] w-[18px] h-[18px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.2)] transition-[left] duration-200" style={{ left: redeemPoints ? 20 : 2 }} />
+            </div>
+          </div>
+        )}
         <div className="rounded-[10px] p-2.5 mb-3 border border-solid" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", borderColor: t.cardBorder }}>
-          {discountAmount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}><span>{loyaltyTier} discount ({loyaltyDiscount}%)</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{discountAmount.toLocaleString()}</span></div>}
+          {discountAmount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}><span>Nitro Status discount ({loyaltyDiscount}%)</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{discountAmount.toLocaleString()}</span></div>}
           {cappedPromoDiscount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#f9a8d4" : "#be185d" }}><span>Discount ({activePromotion.discountPercent}%){cappedPromoDiscount < promoDiscountAmt ? ` · capped at ₦${cappedPromoDiscount.toLocaleString()}` : ''}</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{cappedPromoDiscount.toLocaleString()}</span></div>}
-          <div className={`flex justify-between items-baseline${(discountAmount > 0 || cappedPromoDiscount > 0) ? " border-t border-solid pt-2 mt-1" : ""}`} style={(discountAmount > 0 || cappedPromoDiscount > 0) ? { borderColor: t.cardBorder } : undefined}>
+          {pointsDiscount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#fbbf24" : "#92400e" }}><span>Nitro Points</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{pointsDiscount.toLocaleString()}</span></div>}
+          <div className={`flex justify-between items-baseline${(discountAmount > 0 || cappedPromoDiscount > 0 || pointsDiscount > 0) ? " border-t border-solid pt-2 mt-1" : ""}`} style={(discountAmount > 0 || cappedPromoDiscount > 0 || pointsDiscount > 0) ? { borderColor: t.cardBorder } : undefined}>
             <span className="text-[13px] font-semibold" style={{ color: t.textMuted }}>Total</span>
-            <span className="font-bold text-[20px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>{(discountAmount > 0 || cappedPromoDiscount > 0) && <span className="text-[14px] font-normal line-through mr-1.5" style={{ color: t.textMuted }}>₦{basePrice.toLocaleString()}</span>}₦{price.toLocaleString()}</span>
+            <span className="font-bold text-[20px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>{(discountAmount > 0 || cappedPromoDiscount > 0 || pointsDiscount > 0) && <span className="text-[14px] font-normal line-through mr-1.5" style={{ color: t.textMuted }}>₦{basePrice.toLocaleString()}</span>}₦{price.toLocaleString()}</span>
           </div>
         </div>
           {balance != null && qtyNum > 0 && price > balance ? (
@@ -642,7 +721,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
 /* ═══════════════════════════════════════════ */
 /* ═══ NEW ORDER PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
-export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrders, onTopUp, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, catModal, setCatModal, tourActive, activePromotion }) {
+export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrders, onTopUp, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, catModal, setCatModal, tourActive, activePromotion, rewards, socialLinks, refreshRewards }) {
   const toast = useToast();
   const [filterType, setFilterType] = useState("all");
   const [search, setSearch] = useState("");
@@ -652,8 +731,14 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   const [menuError, setMenuError] = useState("");
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(null);
+  const [redeemPoints, setRedeemPoints] = useState(false);
   const successTierClr = orderSuccess ? (tierClr[orderSuccess.tier] || tierClr.Budget) : null;
-  const successCrossSell = orderSuccess ? getCrossSell(orderSuccess.service) : null;
+  const successPlatformIcon = orderSuccess ? PLATFORMS.find(p => p.id === platform || p.label.toLowerCase().includes((orderSuccess.platform || "").toLowerCase()))?.icon : null;
+  const successChrome = dark
+    ? { card: "#10131f", hair: "#232a3d", text: "#eceef5", muted: "#8a90a5", money: "#4fd1a1", waTint: "#12261c", wa: "#1faa59", waHover: "#128c46" }
+    : { card: "#ffffff", hair: "#eee7de", text: "#2a2723", muted: "#98918a", money: "#0a7d54", waTint: "#eaf7ef", wa: "#1faa59", waHover: "#128c46" };
+
+  const waChannelUrl = socialLinks?.social_whatsapp_channel || 'https://whatsapp.com/channel/0029Vb8hC6rJ3jv7Ig2m3D3Q';
 
   // Bulk mode state — hydrate from storage after mount to avoid SSR mismatch
   const [orderMode, setOrderMode] = useState("single");
@@ -726,6 +811,10 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
   useEffect(() => { try { sessionStorage.setItem("nitro_order_mode", orderMode); } catch {} }, [orderMode]);
   useEffect(() => { saveCart(cartRows); }, [cartRows]);
+  useEffect(() => {
+    if (!menuData?.groups || cartRows.length === 0) return;
+    setCartRows(prev => applyPriceUpdatesToCartRows(prev, [], menuData));
+  }, [menuData, cartRows.length]);
 
   /* Fetch real services from API */
   useEffect(() => {
@@ -791,7 +880,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   const price = selTier ? Math.round(((Number(qty) || 0) / 1000) * (selTier.pricePer1k || selTier.price)) : 0;
   const activePlat = PLATFORMS.find(p => p.id === platform);
 
-  useEffect(() => { setSelSvc(null); setSelTier(null); setFilterType("all"); setOrderModal(false); setOrderSuccess(null); setSearch(""); setLink(""); setComments(""); setQty(""); }, [platform]);
+  useEffect(() => { setSelSvc(null); setSelTier(null); setFilterType("all"); setOrderModal(false); setOrderSuccess(null); setSearch(""); setLink(""); setComments(""); setQty(""); setRedeemPoints(false); }, [platform]);
 
   /* Click outside any card → collapse */
   const listRef = useRef(null);
@@ -890,12 +979,13 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   /* Place order */
   const submitOrder = async (dripDaysArg, confirmDuplicate) => {
     if (!selTier?.id || !link || orderLoading) return;
+    const shouldRedeem = redeemPoints && rewards?.points?.redeemable;
     setOrderLoading(true);
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tierId: selTier.id, link: `https://${link.trim()}`, quantity: qty, ...(comments?.trim() ? { comments: comments.trim() } : {}), serviceType: selSvc?.type || "", ...(dripDaysArg != null ? { dripDays: dripDaysArg } : {}), ...(confirmDuplicate ? { confirmDuplicate: true } : {}) }),
+        body: JSON.stringify({ tierId: selTier.id, link: `https://${link.trim()}`, quantity: qty, ...(comments?.trim() ? { comments: comments.trim() } : {}), serviceType: selSvc?.type || "", ...(dripDaysArg != null ? { dripDays: dripDaysArg } : {}), ...(confirmDuplicate ? { confirmDuplicate: true } : {}), ...(shouldRedeem ? { redeemPoints: true } : {}) }),
         signal: AbortSignal.timeout(30000),
       });
       const data = await res.json();
@@ -905,11 +995,14 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
         return;
       }
       if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong"); setOrderLoading(false); return; }
-      setOrderSuccess({ ...data.order, queued: data.queued, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", speed: selTier?.speed || null, tier: selTier?.tier || null, link: link.trim(), balanceAfter: data.order?.charge != null && user?.balance != null ? Math.max(0, user.balance - data.order.charge) : null });
+      const walletCharge = (data.order?.charge || 0) - (data.order?.pointsRedeemed || 0);
+      setOrderSuccess({ ...data.order, queued: data.queued, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", speed: selTier?.speed || null, tier: selTier?.tier || null, link: link.trim(), balanceAfter: walletCharge > 0 && user?.balance != null ? Math.max(0, user.balance - walletCharge) : (user?.balance ?? null) });
       if (typeof window.fbq === "function") fbq("track", "Purchase", { value: data.order?.charge || 0, currency: "NGN", content_name: selSvc?.name || "Order", content_category: platform || "unknown" }, { eventID: data.eventId });
       if (typeof window.gtag === "function") gtag("event", "conversion", { send_to: "AW-18121451903/9P3HCL_TlaMcEP_S_cBD", transaction_id: data.order?.id || "" });
       setLink("");
+      setRedeemPoints(false);
       if (onOrderSuccess) onOrderSuccess();
+      if (refreshRewards) refreshRewards();
     } catch (err) {
       const msg = err?.name === "TimeoutError" ? "Request timed out" : "Network error";
       toast.error(msg, "Check your connection and try again.");
@@ -974,7 +1067,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       }
       if (drifted.length > 0) {
         toast.error("Prices changed", "Review updated prices before placing");
-        setCartRows(prev => prev.map(r => ({ ...r, storedPricePer1k: getRowPricePer1k(r, menuData) })));
+        setCartRows(prev => applyPriceUpdatesToCartRows(prev, [], menuData));
         return;
       }
     }
@@ -1000,8 +1093,11 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       if (!res.ok) {
         if (data.error === "price_drift") {
           sessionStorage.removeItem("nitro_bulk_pending_key");
-          setCartRows(prev => prev.map(r => ({ ...r, storedPricePer1k: getRowPricePer1k(r, menuData) })));
-          toast.error("Prices updated", "Some prices changed since you added them. Review your cart and try again.");
+          const priceRows = Array.isArray(data.rows) ? data.rows : [];
+          setMenuData(prev => applyPriceUpdatesToMenu(prev, priceRows));
+          setCartRows(prev => applyPriceUpdatesToCartRows(prev, priceRows, menuData));
+          const count = priceRows.length;
+          toast.error("Prices updated", count > 0 ? `${count} row${count !== 1 ? "s" : ""} updated with current prices. Review your cart and try again.` : "Some prices changed since you added them. Review your cart and try again.");
         } else if (data.error === "Insufficient balance") {
           sessionStorage.removeItem("nitro_bulk_pending_key");
           setBulkError({ type: "balance", needed: data.needed || 0 });
@@ -1027,12 +1123,6 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     }
     setBulkLoading(false);
   };
-
-  function getRowPricePer1k(row, menu) {
-    if (!menu?.groups) return 0;
-    for (const g of menu.groups) { const ti = g.tiers.find(t2 => t2.id === row.tierId); if (ti) return ti.price; }
-    return 0;
-  }
 
   // Keyboard shortcuts: Esc closes cart, Cmd/Ctrl+Enter submits
   const submitBulkRef = useRef(submitBulk);
@@ -1190,82 +1280,89 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {/* Order modal — single mode only */}
       {orderMode === "single" && (orderModal || orderSuccess) && hasOrder && (
-        <div className="no-modal-overlay flex fixed inset-0 z-50 items-end justify-center px-3.5 pb-[70px] desktop:items-center desktop:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { setOrderModal(false); setOrderSuccess(null); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null)}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!orderSuccess&&!orderLoading){submitOrder()}}} style={{ background: "rgba(0,0,0,.45)" }}>
-          <div role="dialog" aria-modal="true" aria-label="Order summary" className="w-full rounded-2xl overflow-y-auto border border-solid max-h-[calc(100dvh-84px)] desktop:max-w-[420px] desktop:max-h-[90vh] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
+        <div className="no-modal-overlay flex fixed inset-0 z-50 items-end justify-center px-3.5 pb-[70px] desktop:items-center desktop:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { setOrderModal(false); setOrderSuccess(null); setRedeemPoints(false); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null);setRedeemPoints(false);}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!orderSuccess&&!orderLoading){submitOrder()}}} style={{ background: "rgba(0,0,0,.45)" }}>
+          <div role="dialog" aria-modal="true" aria-label="Order summary" className={`w-full overflow-y-auto border border-solid max-h-[calc(100dvh-84px)] desktop:max-h-[90vh] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] ${orderSuccess ? "rounded-[26px] desktop:max-w-[460px]" : "rounded-2xl desktop:max-w-[420px]"}`} onClick={e => e.stopPropagation()} style={{ background: orderSuccess ? successChrome.card : (dark ? "#0e1120" : "#fff"), borderColor: orderSuccess ? "transparent" : (dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"), boxShadow: orderSuccess ? "0 30px 80px rgba(20,10,14,.35)" : (dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)") }}>
             {orderSuccess ? (
-              <div className="p-5 max-md:p-4">
-                {/* Header — platform icon + title + check */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textMuted }}>
-                    {PLATFORM_GROUPS.flatMap(g => g.platforms).find(p => p.label.toLowerCase().includes((orderSuccess.platform || "").toLowerCase()))?.icon || <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/></svg>}
+              <div className="p-[30px] pb-[26px] max-md:p-5 max-md:pb-6">
+                {/* Header — calm success state */}
+                <div className="flex items-start gap-3.5">
+                  <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style={{ background: successChrome.money, boxShadow: dark ? "0 6px 18px rgba(79,209,161,.22)" : "0 6px 18px rgba(10,125,84,.28)" }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-base font-semibold" style={{ color: t.text }}>{orderSuccess.queued ? "Order queued" : "Order placed!"}</div>
-                    <div className="text-xs mt-0.5" style={{ color: t.textMuted }}>
-                      {orderSuccess.queued ? "Starts when your active order completes" : orderSuccess.speed ? `Est. delivery: ${orderSuccess.speed}` : "Processing now"}
+                    <div className="text-xl font-extrabold tracking-[-.2px]" style={{ color: successChrome.text }}>{orderSuccess.queued ? "Order queued" : "Order placed"}</div>
+                    <div className="text-[13.5px] mt-[3px] flex items-center gap-[7px] min-w-0 flex-wrap" style={{ color: successChrome.muted }}>
+                      <span className="font-semibold truncate max-w-full" style={{ color: successChrome.text }}>{orderSuccess.service}</span>
+                      {successTierClr && orderSuccess.tier && <span className="text-[10px] font-extrabold tracking-[.6px] uppercase px-2 py-[2.5px] rounded-full shrink-0" style={{ background: successTierClr.bg, color: successTierClr.text }}>{orderSuccess.tier}</span>}
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: orderSuccess.queued ? (dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)") : (dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)") }}>
-                    {orderSuccess.queued
-                      ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                </div>
+
+                {orderSuccess.link && (
+                  <div className="flex items-center gap-2 mt-[18px] py-3 border-t border-solid text-[13px] min-w-0" style={{ borderColor: successChrome.hair, color: successChrome.muted }}>
+                    <span className="w-[15px] h-[15px] flex items-center justify-center shrink-0 opacity-75 [&>svg]:!w-[15px] [&>svg]:!h-[15px]">
+                      {successPlatformIcon || <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/></svg>}
+                    </span>
+                    <span className="truncate min-w-0">{orderSuccess.link}</span>
+                  </div>
+                )}
+
+                {/* Stats row */}
+                <div className="flex flex-wrap border-y border-solid py-3.5 mb-3.5" style={{ borderColor: successChrome.hair }}>
+                  <div className="flex-1 basis-1/3 min-w-0 pr-3">
+                    <div className="text-[10px] font-extrabold tracking-[1.1px] uppercase" style={{ color: successChrome.muted }}>Qty</div>
+                    <div className="mt-1 text-[16.5px] font-bold truncate" style={{ color: successChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{(orderSuccess.quantity || 0).toLocaleString()}</div>
+                  </div>
+                  <div className="flex-1 basis-1/3 min-w-0 border-l border-solid px-[18px] max-[380px]:pr-0" style={{ borderColor: successChrome.hair }}>
+                    <div className="text-[10px] font-extrabold tracking-[1.1px] uppercase" style={{ color: successChrome.muted }}>Charged</div>
+                    <div className="mt-1 text-[16.5px] font-bold truncate" style={{ color: successChrome.money, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>₦{(orderSuccess.charge || 0).toLocaleString()}</div>
+                  </div>
+                  <div className="flex-1 basis-1/3 min-w-0 border-l border-solid pl-[18px] max-[380px]:basis-full max-[380px]:border-l-0 max-[380px]:border-t max-[380px]:pt-3 max-[380px]:mt-3 max-[380px]:pl-0" style={{ borderColor: successChrome.hair }}>
+                    <div className="text-[10px] font-extrabold tracking-[1.1px] uppercase" style={{ color: successChrome.muted }}>Balance</div>
+                    <div className="mt-1 text-[16.5px] font-bold truncate" style={{ color: successChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{orderSuccess.balanceAfter != null ? `₦${orderSuccess.balanceAfter.toLocaleString()}` : "—"}</div>
                   </div>
                 </div>
 
-                {/* Service + tier + link card */}
-                <div className="rounded-xl p-3.5 mb-3" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${t.cardBorder}` }}>
-                  <div className="text-sm font-medium truncate" style={{ color: t.text }}>{orderSuccess.service}</div>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    {successTierClr && orderSuccess.tier && <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md" style={{ background: successTierClr.bg, color: successTierClr.text }}>{orderSuccess.tier}</span>}
-                    {orderSuccess.link && <span className="text-[11px] truncate max-w-[200px]" style={{ color: t.textMuted }}>{orderSuccess.link}</span>}
-                  </div>
+                {/* Meta rows */}
+                <div className="flex items-center justify-between gap-4 py-[3px] text-[12.5px]" style={{ color: successChrome.muted }}>
+                  <span>Order ID</span>
+                  <span className="font-semibold min-w-0 truncate" style={{ color: successChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>#{orderSuccess.id}</span>
                 </div>
-
-                {/* 3-col numbers grid */}
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${t.cardBorder}` }}>
-                    <div className="text-[11px] mb-0.5" style={{ color: t.textMuted }}>Qty</div>
-                    <div className="text-sm font-semibold" style={{ color: t.text }}>{(orderSuccess.quantity || 0).toLocaleString()}</div>
-                  </div>
-                  <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${t.cardBorder}` }}>
-                    <div className="text-[11px] mb-0.5" style={{ color: t.textMuted }}>Charged</div>
-                    <div className="text-sm font-semibold" style={{ color: t.green }}>₦{(orderSuccess.charge || 0).toLocaleString()}</div>
-                  </div>
-                  <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${t.cardBorder}` }}>
-                    <div className="text-[11px] mb-0.5" style={{ color: t.textMuted }}>Balance</div>
-                    <div className="text-sm font-semibold" style={{ color: t.text }}>{orderSuccess.balanceAfter != null ? `₦${orderSuccess.balanceAfter.toLocaleString()}` : "—"}</div>
-                  </div>
+                <div className="flex items-center justify-between gap-4 py-[3px] text-[12.5px]" style={{ color: successChrome.muted }}>
+                  <span>Est. delivery</span>
+                  <span className="font-semibold text-right min-w-0 truncate" style={{ color: successChrome.text }}>{orderSuccess.queued ? "Starts when active order completes" : formatDeliverySpeed(orderSuccess.speed)}</span>
                 </div>
+                {orderSuccess.pointsRedeemed > 0 && (
+                  <div className="flex items-center justify-between gap-4 py-[3px] text-[12.5px]" style={{ color: successChrome.muted }}>
+                    <span>Points used</span>
+                    <span className="font-semibold min-w-0 truncate" style={{ color: dark ? "#fbbf24" : "#92400e", fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>₦{orderSuccess.pointsRedeemed.toLocaleString()}</span>
+                  </div>
+                )}
 
-                {/* Order ID accent row */}
-                <div className="flex items-center justify-between rounded-lg py-2 px-3 mb-4" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)" }}>
-                  <span className="text-[11px] font-medium" style={{ color: t.textMuted }}>Order ID</span>
-                  <span className="text-xs font-semibold" style={{ color: t.accent }}>#{orderSuccess.id}</span>
-                </div>
+                <p className="text-xs leading-[1.65] mt-3 mb-0" style={{ color: successChrome.muted }}>
+                  Most orders finish within 6 hours, though some take up to 24. Delivery speed can't be adjusted in the first 6 hours, so no need to message support before then.
+                </p>
 
-                {/* Delivery notice */}
-                <div className="text-[11px] leading-relaxed mb-4 px-1" style={{ color: t.textMuted }}>
-                  Orders are typically delivered within 0 to 6 hours. In some cases, delivery may take up to 24 hours. We are unable to act on delivery speed requests within the first 6 hours of order placement.
-                </div>
-
-                {/* Cross-sell spotlight */}
-                {successCrossSell && <div className="rounded-xl p-3.5 mb-4 flex items-center gap-3 cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: successCrossSell.color + "08", border: `1px solid ${successCrossSell.color}20` }} onClick={() => { setOrderSuccess(null); setOrderModal(false); }}>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: successCrossSell.color + "15" }}>{successCrossSell.icon}</div>
+                {/* WhatsApp channel card */}
+                <div className="rounded-2xl p-[15px] pr-4 mt-[18px] flex items-center gap-[13px] max-[380px]:items-start" style={{ background: successChrome.waTint }}>
+                  <div className="w-[42px] h-[42px] rounded-full flex items-center justify-center shrink-0 text-white" style={{ background: "linear-gradient(135deg,#2bc76a,#128c46)", boxShadow: "0 6px 16px rgba(18,140,70,.25)" }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-3-.2-.3A8.2 8.2 0 1112 20.2zm4.6-6.1c-.3-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.2-.3.2-.5.1a6.7 6.7 0 01-2-1.2 7.5 7.5 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5v-.5c0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 .6.3 1.1.4 1.5.6.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.4z"/></svg>
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-semibold mb-0.5" style={{ color: t.text }}>{successCrossSell.title}</div>
-                    <div className="text-[12px] leading-relaxed" style={{ color: t.textMuted }}>{successCrossSell.body}</div>
+                    <div className="text-[13.5px] font-bold" style={{ color: successChrome.text }}>Follow The Nitro NG on WhatsApp</div>
+                    <div className="text-xs leading-normal mt-0.5" style={{ color: successChrome.muted }}>Delivery updates, deal days and service news, straight from us.</div>
                   </div>
-                  <span className="text-[11px] font-semibold whitespace-nowrap shrink-0 px-2.5 py-1 rounded-md" style={{ background: successCrossSell.color, color: "#fff" }}>{successCrossSell.cta}</span>
-                </div>}
+                  <a href={waChannelUrl} target="_blank" rel="noopener" className="shrink-0 text-white text-[12.5px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap hover:!bg-[#128c46]" style={{ background: successChrome.wa }}>Follow</a>
+                </div>
 
                 {/* Action buttons */}
-                <div className="flex gap-2.5">
-                  <button onClick={() => { setOrderSuccess(null); setOrderModal(true); }} className="flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold border border-solid cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", borderColor: t.cardBorder, color: t.text }}>Place another</button>
-                  {onViewOrders && <button onClick={() => { setOrderSuccess(null); setOrderModal(false); onViewOrders(); }} className="flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>View orders</button>}
+                <div className="flex gap-2.5 mt-5">
+                  <button onClick={() => { setOrderSuccess(null); setOrderModal(true); }} className="flex-1 py-[13px] px-4 rounded-[14px] text-sm font-bold border border-solid cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", borderColor: successChrome.hair, color: successChrome.text }}>Place another</button>
+                  {onViewOrders && <button onClick={() => { setOrderSuccess(null); setOrderModal(false); onViewOrders(); }} className="flex-1 py-[13px] px-4 rounded-[14px] text-sm font-extrabold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>View orders</button>}
                 </div>
               </div>
             ) : (
-              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => setOrderModal(false)} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} welcomeBonusEligible={user?.welcomeBonusEligible} />
+              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => { setOrderModal(false); setRedeemPoints(false); }} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} welcomeBonusEligible={user?.welcomeBonusEligible} pointsRedeemable={rewards?.points?.redeemable || false} pointsBalance={rewards?.points?.balance || 0} redeemPoints={redeemPoints} setRedeemPoints={setRedeemPoints} />
             )}
           </div>
         </div>
@@ -1273,7 +1370,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {/* ═══ BULK CART BAR + EXPANDED ═══ */}
       {orderMode === "bulk" && cartBounds && cartRows.length > 0 && <BulkCartBar ref={cartBarRef} rows={cartRows} dark={dark} t={t} menuData={menuData} bounds={cartBounds} cartOpen={cartOpen} onClick={() => setCartOpen(true)} />}
-      {orderMode === "bulk" && cartOpen && cartBounds && <BulkCartExpanded rows={cartRows} setRows={setCartRows} dark={dark} t={t} menuData={menuData} bounds={cartBounds} onClose={() => setCartOpen(false)} onClear={() => { setCartRows([]); setCartOpen(false); }} onPlace={submitBulk} loading={bulkLoading} rowsScrollRef={cartRowsRef} bulkError={bulkError} setBulkError={setBulkError} bulkSuccess={bulkSuccess} setBulkSuccess={setBulkSuccess} onViewOrders={onViewOrders} onTopUp={onTopUp} />}
+      {orderMode === "bulk" && cartOpen && cartBounds && <BulkCartExpanded rows={cartRows} setRows={setCartRows} dark={dark} t={t} menuData={menuData} bounds={cartBounds} onClose={() => setCartOpen(false)} onClear={() => { setCartRows([]); setCartOpen(false); }} onPlace={submitBulk} loading={bulkLoading} rowsScrollRef={cartRowsRef} bulkError={bulkError} setBulkError={setBulkError} bulkSuccess={bulkSuccess} setBulkSuccess={setBulkSuccess} onViewOrders={onViewOrders} onTopUp={onTopUp} waChannelUrl={waChannelUrl} />}
       </>}
     </div>
   );
@@ -1338,12 +1435,8 @@ function MobileGuide({ dark, t }) {
 const CartIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1.5"/><circle cx="18" cy="21" r="1.5"/><path d="M3 3h2l2.6 13.2a2 2 0 002 1.6h8.4a2 2 0 002-1.6L22 6H6"/></svg>;
 
 function getRowPrice(row, menuData) {
-  if (!menuData?.groups) return 0;
-  for (const g of menuData.groups) {
-    const tier = g.tiers.find(t2 => t2.id === row.tierId);
-    if (tier) return Math.round((tier.price / 1000) * row.qty);
-  }
-  return 0;
+  const pricePer1k = getRowPricePer1k(row, menuData) || row.storedPricePer1k || 0;
+  return Math.round((pricePer1k / 1000) * row.qty);
 }
 
 const BulkCartBar = forwardRef(function BulkCartBar({ rows, dark, t, menuData, bounds, cartOpen, onClick }, ref) {
@@ -1412,12 +1505,15 @@ function isDuplicate(rows, idx) {
   return rows.some((r, i) => i !== idx && r.svcId === row.svcId && r.tier === row.tier && r.link.trim() === row.link.trim());
 }
 
-function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, onClear, onPlace, loading, rowsScrollRef, bulkError, setBulkError, bulkSuccess, setBulkSuccess, onViewOrders, onTopUp }) {
+function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, onClear, onPlace, loading, rowsScrollRef, bulkError, setBulkError, bulkSuccess, setBulkSuccess, onViewOrders, onTopUp, waChannelUrl }) {
   const loyaltyDiscount = menuData?.loyaltyDiscount || 0;
   const loyaltyTier = menuData?.loyaltyTier || null;
   const subtotal = rows.reduce((s, r) => s + getRowPrice(r, menuData), 0);
   const discount = loyaltyDiscount > 0 ? Math.round(subtotal * (loyaltyDiscount / 100)) : 0;
   const total = subtotal - discount;
+  const bulkChrome = dark
+    ? { card: "#10131f", hair: "#232a3d", text: "#eceef5", muted: "#8a90a5", money: "#4fd1a1", waTint: "#12261c", wa: "#1faa59", soft: "#161b2c" }
+    : { card: "#ffffff", hair: "#eee7de", text: "#2a2723", muted: "#98918a", money: "#0a7d54", waTint: "#eaf7ef", wa: "#1faa59", soft: "#faf7f3" };
 
   const updateRow = (idx, patch) => setRows(prev => prev.map((r, i) => i === idx ? { ...r, ...patch } : r));
   const removeRow = (idx) => setRows(prev => prev.filter((_, i) => i !== idx));
@@ -1472,11 +1568,11 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
   return (
     <>
     <div className="fixed inset-0 z-[55]" onClick={onClose} style={{ background: dark ? "rgba(0,0,0,.45)" : "rgba(0,0,0,.2)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }} />
-    <div role="dialog" aria-modal="true" aria-label="Bulk order cart" aria-busy={loading} className="fixed max-h-[85vh] max-md:max-h-[75vh] rounded-[14px] border border-solid flex flex-col z-[60] overflow-hidden" style={{ left: bounds.left, right: bounds.right, bottom: bounds.bottom, background: dark ? "#12172a" : "#fff", borderColor: "rgba(196,125,142,.28)", boxShadow: "0 -16px 48px rgba(0,0,0,.22), 0 -4px 12px rgba(0,0,0,.12)" }}>
+    <div role="dialog" aria-modal="true" aria-label="Bulk order cart" aria-busy={loading} className={`fixed max-h-[85vh] max-md:max-h-[75vh] border border-solid flex flex-col z-[60] overflow-hidden ${bulkSuccess ? "rounded-[26px]" : "rounded-[14px]"}`} style={{ left: bounds.left, right: bounds.right, bottom: bounds.bottom, background: bulkSuccess ? bulkChrome.card : (dark ? "#12172a" : "#fff"), borderColor: bulkSuccess ? "transparent" : "rgba(196,125,142,.28)", boxShadow: bulkSuccess ? "0 30px 80px rgba(20,10,14,.35)" : "0 -16px 48px rgba(0,0,0,.22), 0 -4px 12px rgba(0,0,0,.12)" }}>
       <input ref={fileInputRef} type="file" accept=".txt,text/plain" className="hidden" onChange={handleTxtUpload} aria-label="Upload comments file" />
 
       {/* Header */}
-      <div className="py-3.5 px-[18px] flex items-center gap-4 border-b border-solid select-none shrink-0" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}>
+      {!bulkSuccess && <div className="py-3.5 px-[18px] flex items-center gap-4 border-b border-solid select-none shrink-0" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}>
         <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: t.accent, color: "#fff" }}><CartIcon /></div>
         <div className="flex flex-col gap-px flex-1 min-w-0">
           <span className="text-[13.5px] font-medium" style={{ color: t.text }}>{rows.length} {rows.length === 1 ? "order" : "orders"}</span>
@@ -1489,86 +1585,95 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
             <span className="w-2 h-2 border-r-2 border-t-2 border-solid rotate-[135deg]" style={{ borderColor: "#fff" }} />
           </button>
         </div>
-      </div>
+      </div>}
 
       {/* Success overlay */}
       {bulkSuccess && (
-        <div className="flex-1 overflow-y-auto py-5 px-[18px] max-md:py-4 max-md:px-3.5">
-          {/* Header — cart icon + title + check */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textMuted }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+        <div className="flex-1 overflow-y-auto p-[30px] pb-[26px] max-md:p-5 max-md:pb-6">
+          {/* Header */}
+          <div className="flex items-start gap-3.5">
+            <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style={{ background: bulkChrome.money, boxShadow: dark ? "0 6px 18px rgba(79,209,161,.22)" : "0 6px 18px rgba(10,125,84,.28)" }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-base font-semibold" style={{ color: t.text }}>{bulkSuccess.total} order{bulkSuccess.total !== 1 ? "s" : ""} placed!</div>
-              <div className="text-xs mt-0.5" style={{ color: t.textMuted }}>Dispatching to providers now</div>
-            </div>
-            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <div className="text-xl font-extrabold tracking-[-.2px]" style={{ color: bulkChrome.text }}>{bulkSuccess.total} order{bulkSuccess.total !== 1 ? "s" : ""} placed</div>
+              <div className="text-[13px] mt-[3px]" style={{ color: bulkChrome.muted }}>Dispatching to providers now</div>
             </div>
           </div>
 
-          {/* Loyalty discount badge */}
+          {/* Stats row */}
+          <div className="flex flex-wrap border-y border-solid py-3.5 my-[18px] mb-3.5" style={{ borderColor: bulkChrome.hair }}>
+            <div className="flex-1 basis-1/3 min-w-0 pr-3">
+              <div className="text-[10px] font-extrabold tracking-[1.1px] uppercase" style={{ color: bulkChrome.muted }}>Orders</div>
+              <div className="mt-1 text-[16.5px] font-bold truncate" style={{ color: bulkChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{bulkSuccess.total}</div>
+            </div>
+            <div className="flex-1 basis-1/3 min-w-0 border-l border-solid px-[18px] max-[380px]:pr-0" style={{ borderColor: bulkChrome.hair }}>
+              <div className="text-[10px] font-extrabold tracking-[1.1px] uppercase" style={{ color: bulkChrome.muted }}>Charged</div>
+              <div className="mt-1 text-[16.5px] font-bold truncate" style={{ color: bulkChrome.money, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>₦{(bulkSuccess.totalCharge || 0).toLocaleString()}</div>
+            </div>
+            <div className="flex-1 basis-1/3 min-w-0 border-l border-solid pl-[18px] max-[380px]:basis-full max-[380px]:border-l-0 max-[380px]:border-t max-[380px]:pt-3 max-[380px]:mt-3 max-[380px]:pl-0" style={{ borderColor: bulkChrome.hair }}>
+              <div className="text-[10px] font-extrabold tracking-[1.1px] uppercase" style={{ color: bulkChrome.muted }}>Balance</div>
+              <div className="mt-1 text-[16.5px] font-bold truncate" style={{ color: bulkChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{bulkSuccess.newBalance != null ? `₦${bulkSuccess.newBalance.toLocaleString()}` : "—"}</div>
+            </div>
+          </div>
+
+          {/* Meta rows */}
+          <div className="flex items-center justify-between gap-4 py-[3px] text-[12.5px]" style={{ color: bulkChrome.muted }}>
+            <span>Batch ID</span>
+            <span className="font-semibold min-w-0 truncate" style={{ color: bulkChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{bulkSuccess.batchId}</span>
+          </div>
           {bulkSuccess.loyaltyDiscount > 0 && (
-            <div className="text-[12px] mb-3 py-1.5 px-3 rounded-full text-center" style={{ background: dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.06)", color: dark ? "#6ee7b7" : "#059669" }}>{bulkSuccess.loyaltyTier} discount applied ({bulkSuccess.loyaltyDiscount}%)</div>
+            <div className="flex items-center justify-between gap-4 py-[3px] text-[12.5px]" style={{ color: bulkChrome.muted }}>
+              <span>Nitro Status discount</span>
+              <span className="font-semibold text-right min-w-0 truncate" style={{ color: bulkChrome.money }}>{bulkSuccess.loyaltyTier} · {bulkSuccess.loyaltyDiscount}%</span>
+            </div>
           )}
 
-          {/* 3-col numbers grid */}
-          <div className="grid grid-cols-3 gap-2 mb-3">
-            <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${t.cardBorder}` }}>
-              <div className="text-[11px] mb-0.5" style={{ color: t.textMuted }}>Orders</div>
-              <div className="text-sm font-semibold" style={{ color: t.text }}>{bulkSuccess.total}</div>
-            </div>
-            <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${t.cardBorder}` }}>
-              <div className="text-[11px] mb-0.5" style={{ color: t.textMuted }}>Charged</div>
-              <div className="text-sm font-semibold" style={{ color: t.green }}>₦{(bulkSuccess.totalCharge || 0).toLocaleString()}</div>
-            </div>
-            <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${t.cardBorder}` }}>
-              <div className="text-[11px] mb-0.5" style={{ color: t.textMuted }}>Balance</div>
-              <div className="text-sm font-semibold" style={{ color: t.text }}>{bulkSuccess.newBalance != null ? `₦${bulkSuccess.newBalance.toLocaleString()}` : "—"}</div>
-            </div>
-          </div>
-
-          {/* Batch ID accent row */}
-          <div className="flex items-center justify-between rounded-lg py-2 px-3 mb-3" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)" }}>
-            <span className="text-[11px] font-medium" style={{ color: t.textMuted }}>Batch ID</span>
-            <span className="text-xs font-semibold" style={{ color: t.accent }}>{bulkSuccess.batchId}</span>
-          </div>
-
-          {/* Order list card */}
-          <div className="w-full rounded-xl mb-3 border border-solid overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", borderColor: t.cardBorder }}>
+          {/* Order list */}
+          <div className="w-full mt-4 border-y border-solid overflow-y-auto max-h-[292px]" style={{ borderColor: bulkChrome.hair }}>
             {(bulkSuccess.rows || bulkSuccess.orders || []).map((o, i) => {
               const status = (bulkSuccess.orders || [])[i]?.status || o.status || "Pending";
               const isProcessing = status === "Processing";
               const plat = PLATFORMS.find(pl => pl.id === o.platform);
               return (
-                <div key={i} className="flex items-center gap-2.5 py-2.5 px-3.5" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
-                  {plat && <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 [&_svg]:w-[18px] [&_svg]:h-[18px]" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>{plat.icon}</div>}
+                <div key={i} className="flex items-center gap-2.5 py-3" style={{ borderTop: i > 0 ? `1px solid ${bulkChrome.hair}` : "none" }}>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 [&_svg]:w-[17px] [&_svg]:h-[17px]" style={{ background: bulkChrome.soft, color: bulkChrome.muted }}>{plat?.icon || <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/></svg>}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[12.5px] font-medium truncate" style={{ color: t.text }}>{o.name || o.service || o.link}</div>
+                    <div className="text-[12.5px] font-semibold truncate" style={{ color: bulkChrome.text }}>{o.name || o.service || o.link}</div>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       {o.tier && <span className="text-[9px] font-semibold py-0.5 px-1.5 rounded-md shrink-0" style={{ background: dark ? TS[o.tier]?.bgD : TS[o.tier]?.bg, color: TS[o.tier]?.text }}>{o.tier}</span>}
-                      <span className="text-[10px]" style={{ color: t.textMuted }}>{(o.qty || 0).toLocaleString()}</span>
+                      <span className="text-[10px]" style={{ color: bulkChrome.muted, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{(o.qty || 0).toLocaleString()}</span>
                     </div>
                   </div>
-                  <span className="flex items-center gap-1 shrink-0 py-0.5 px-2 rounded-md" style={{ background: isProcessing ? (dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.06)") : (dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.06)") }}>
+                  <span className="flex items-center gap-1.5 shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full" style={{ background: isProcessing ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fbbf24" : "#d97706") }} />
-                    <span className="text-[10px] font-medium" style={{ color: isProcessing ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fbbf24" : "#d97706") }}>{isProcessing ? "Processing" : "Pending"}</span>
+                    <span className="text-[10px] font-semibold" style={{ color: bulkChrome.muted }}>{isProcessing ? "Processing" : "Pending"}</span>
                   </span>
                 </div>
               );
             })}
           </div>
 
-          {/* Dispatch info */}
-          <div className="w-full text-[11px] text-center mb-4 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", color: dark ? "#6ee7b7" : "#059669" }}>
-            Orders are being dispatched — check your order history for live status
+          <p className="text-xs leading-[1.65] mt-3 mb-0" style={{ color: bulkChrome.muted }}>
+            Orders are on their way to providers. Pending ones follow automatically, and you can track live status in your order history.
+          </p>
+
+          {/* WhatsApp channel card */}
+          <div className="rounded-2xl p-[15px] pr-4 mt-[18px] flex items-center gap-[13px] max-[380px]:items-start" style={{ background: bulkChrome.waTint }}>
+            <div className="w-[42px] h-[42px] rounded-full flex items-center justify-center shrink-0 text-white" style={{ background: "linear-gradient(135deg,#2bc76a,#128c46)", boxShadow: "0 6px 16px rgba(18,140,70,.25)" }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-3-.2-.3A8.2 8.2 0 1112 20.2zm4.6-6.1c-.3-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.2-.3.2-.5.1a6.7 6.7 0 01-2-1.2 7.5 7.5 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5v-.5c0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 .6.3 1.1.4 1.5.6.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.4z"/></svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13.5px] font-bold" style={{ color: bulkChrome.text }}>Follow The Nitro NG on WhatsApp</div>
+              <div className="text-xs leading-normal mt-0.5" style={{ color: bulkChrome.muted }}>Delivery updates, deal days and service news, straight from us.</div>
+            </div>
+            <a href={waChannelUrl || 'https://whatsapp.com/channel/0029Vb8hC6rJ3jv7Ig2m3D3Q'} target="_blank" rel="noopener" className="shrink-0 text-white text-[12.5px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap hover:!bg-[#128c46]" style={{ background: bulkChrome.wa }}>Follow</a>
           </div>
 
           {/* Action buttons */}
-          <div className="flex gap-2.5 w-full">
-            <button onClick={() => { setBulkSuccess(null); onClose(); }} className="flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold border border-solid cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", borderColor: t.cardBorder, color: t.text }}>Place another</button>
-            {onViewOrders && <button onClick={() => { setBulkSuccess(null); onClose(); onViewOrders(); }} className="flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>View orders</button>}
+          <div className="flex gap-2.5 w-full mt-5">
+            <button onClick={() => { setBulkSuccess(null); onClose(); }} className="flex-1 py-[13px] px-4 rounded-[14px] text-sm font-bold border border-solid cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", borderColor: bulkChrome.hair, color: bulkChrome.text }}>Place another</button>
+            {onViewOrders && <button onClick={() => { setBulkSuccess(null); onClose(); onViewOrders(); }} className="flex-1 py-[13px] px-4 rounded-[14px] text-sm font-extrabold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>View orders</button>}
           </div>
         </div>
       )}
@@ -1701,7 +1806,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
           </div>
           {discount > 0 && (
             <div className="flex justify-between text-[12.5px] mb-1.5" style={{ color: dark ? "#b4db7a" : "#27500A" }}>
-              <span>Loyalty discount ({loyaltyDiscount}%)</span><span>−₦{discount.toLocaleString()}</span>
+              <span>Nitro Status discount ({loyaltyDiscount}%)</span><span>−₦{discount.toLocaleString()}</span>
             </div>
           )}
           <div className="flex justify-between items-baseline my-2.5">

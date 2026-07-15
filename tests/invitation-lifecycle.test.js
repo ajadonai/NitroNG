@@ -12,6 +12,7 @@ const mockPrisma = {
   },
   user: { findUnique: vi.fn(), create: vi.fn() },
   crewSession: { create: vi.fn() },
+  setting: { findMany: vi.fn() },
   $transaction: vi.fn(),
 };
 
@@ -22,8 +23,24 @@ vi.mock('next/headers', () => ({
   cookies: vi.fn().mockResolvedValue({ set: vi.fn() }),
 }));
 
+vi.mock('@/lib/rate-limit', () => ({
+  rateLimit: vi.fn().mockResolvedValue({ limited: false }),
+  tooManyRequests: vi.fn((msg) => Response.json({ error: msg }, { status: 429 })),
+}));
+vi.mock('@/lib/validate', () => ({
+  validatePassword: vi.fn(() => true),
+  validatePhone: vi.fn(() => true),
+  validateEmail: vi.fn(() => true),
+  validateName: vi.fn(() => true),
+  sanitizeEmail: vi.fn((e) => e?.toLowerCase?.().trim?.() || ''),
+  isDisposableEmail: vi.fn(() => false),
+}));
+
 const mockGetCrewSession = vi.fn();
-vi.mock('@/lib/crew', () => ({ getCrewSession: (...a) => mockGetCrewSession(...a) }));
+vi.mock('@/lib/crew', () => ({
+  getCrewSession: (...a) => mockGetCrewSession(...a),
+  hashToken: (t) => `hashed_${t}`,
+}));
 
 const CHIEF = { id: 'chief1', role: 'chief', name: 'Boss' };
 
@@ -62,6 +79,7 @@ beforeEach(() => {
   mockPrisma.$transaction.mockImplementation(async (fn) => fn(mockPrisma));
   mockPrisma.crewMember.updateMany.mockResolvedValue({ count: 1 });
   mockPrisma.crewMember.deleteMany.mockResolvedValue({ count: 1 });
+  mockPrisma.setting.findMany.mockResolvedValue([{ key: 'affiliate_enabled', value: 'true' }]);
 });
 
 // ──────────────────────────────────────

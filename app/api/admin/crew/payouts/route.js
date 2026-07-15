@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { requireAdmin, logActivity, canSeeSensitive, maskEmail, maskAccountNo } from "@/lib/admin";
-import { getMemberEarnings } from "@/lib/commissions";
+import { getMemberEarnings, raiseMoneyIssue } from "@/lib/commissions";
+import { sendEmail, payoutCompletedEmail, payoutRejectedEmail } from "@/lib/email";
 
 export async function GET() {
   const { admin, error } = await requireAdmin("crew");
@@ -40,11 +41,13 @@ export async function POST(req) {
   const { admin, error } = await requireAdmin("crew", true);
   if (error) return error;
 
+  let action, payoutId, payout;
   try {
-    const { action, payoutId, reference } = await req.json();
-    const payout = await prisma.affiliatePayout.findUnique({
+    let reference;
+    ({ action, payoutId, reference } = await req.json());
+    payout = await prisma.affiliatePayout.findUnique({
       where: { id: payoutId },
-      include: { member: { select: { name: true, id: true, totalPaid: true } } },
+      include: { member: { select: { name: true, id: true, totalPaid: true, email: true, bankName: true, bankAccountNo: true } } },
     });
     if (!payout) return Response.json({ error: "Payout not found" }, { status: 404 });
 
@@ -54,7 +57,7 @@ export async function POST(req) {
         WHERE id = ${payoutId} AND status = 'pending'
       `;
       if (affected === 0) return Response.json({ error: "Payout is not pending" }, { status: 400 });
-      await logActivity(admin.name, `Marked payout ${payoutId} as processing for ${payout.member.name}`);
+      await logActivity(admin.name, `Marked payout ${payoutId} as processing for ${payout.member.name}`, 'crew');
       return Response.json({ ok: true });
     }
 
@@ -94,7 +97,18 @@ export async function POST(req) {
         if (result.reason === 'insufficient') return Response.json({ error: "Insufficient approved earnings — commissions may have been voided" }, { status: 400 });
         return Response.json({ error: payout.status === "completed" ? "Already completed" : "Cannot complete a rejected payout" }, { status: 400 });
       }
-      await logActivity(admin.name, `Completed payout ${payoutId} for ${payout.member.name} (₦${(payout.amount / 100).toLocaleString()})`);
+      await logActivity(admin.name, `Completed payout ${payoutId} for ${payout.member.name} (₦${(payout.amount / 100).toLocaleString()})`, 'crew');
+      if (payout.member.email) {
+        const amtN = payout.amount / 100;
+        const bankName = payout.bankName || payout.member.bankName;
+        const acctNo = payout.bankAccountNo || payout.member.bankAccountNo;
+        const bankLabel = bankName ? `${bankName}${acctNo ? ` ····${String(acctNo).slice(-4)}` : ''}` : null;
+        const dateStr = now.toLocaleDateString('en-NG', { timeZone: 'Africa/Lagos', day: 'numeric', month: 'short' }) + ' · ' + now.toLocaleTimeString('en-NG', { timeZone: 'Africa/Lagos', hour: 'numeric', minute: '2-digit' });
+        const payoutRef = ref || payoutId;
+        sendEmail(payout.member.email, `Your payout of ₦${amtN.toLocaleString()} has been sent`,
+          payoutCompletedEmail(payout.member.name || 'there', amtN, payoutRef, bankLabel, dateStr),
+          `Your payout of ₦${amtN.toLocaleString()} has been sent to your bank. Reference: ${payoutRef}. Earnings: https://nitro.ng/pit`).catch(() => {});
+      }
       return Response.json({ ok: true });
     }
 
@@ -109,13 +123,22 @@ export async function POST(req) {
       if (affected === 0) {
         return Response.json({ error: payout.status === "rejected" ? "Already rejected" : "Cannot reject a completed payout" }, { status: 400 });
       }
-      await logActivity(admin.name, `Rejected payout ${payoutId} for ${payout.member.name}`);
+      await logActivity(admin.name, `Rejected payout ${payoutId} for ${payout.member.name}`, 'crew');
+      if (payout.member.email) {
+        const amtN = payout.amount / 100;
+        sendEmail(payout.member.email, 'About your payout request',
+          payoutRejectedEmail(payout.member.name || 'there', amtN, payout.reference || null),
+          `We couldn't process your payout this time. The held ₦${amtN.toLocaleString()} is back in your commission balance. Earnings: https://nitro.ng/pit`).catch(() => {});
+      }
       return Response.json({ ok: true });
     }
 
     return Response.json({ error: "Unknown action" }, { status: 400 });
   } catch (e) {
     console.error("Admin crew payouts POST error:", e);
+    raiseMoneyIssue('payout_failed', {
+      payoutId, action, memberId: payout?.memberId, amount: payout?.amount, error: e.message,
+    }).catch(() => {});
     return Response.json({ error: "Something went wrong" }, { status: 500 });
   }
 }

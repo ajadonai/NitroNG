@@ -1,7 +1,7 @@
 import { log } from "@/lib/logger";
-import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { getServiceCatalogue } from '@/lib/service-catalog';
+import { getEligibleSpendKobo, getNitroStatus } from '@/lib/nitro-rewards';
 
 export async function GET(req) {
   try {
@@ -12,28 +12,14 @@ export async function GET(req) {
     const platform = new URL(req.url).searchParams.get('platform');
     const groups = platform ? catalogue.groups.filter(g => g.platform === platform) : catalogue.groups;
 
-    // Get user's loyalty discount
     let loyaltyDiscount = 0;
     let loyaltyTierName = null;
     try {
-      const [settings, spendAgg] = await Promise.all([
-        prisma.setting.findMany({ where: { key: { in: ['loyalty_enabled', 'loyalty_tiers'] } }, select: { key: true, value: true } }),
-        prisma.order.aggregate({ where: { userId: session.id, deletedAt: null, status: { not: 'Cancelled' } }, _sum: { charge: true } }),
-      ]);
-      const settingMap = Object.fromEntries(settings.map(s => [s.key, s.value]));
-      const loyaltyEnabledRow = settingMap.loyalty_enabled;
-      if (loyaltyEnabledRow !== 'false') {
-        const ltRow = settingMap.loyalty_tiers;
-        if (ltRow) {
-          const tiers = JSON.parse(ltRow);
-          const totalSpend = spendAgg._sum.charge || 0;
-          let userTier = tiers[0];
-          for (const t2 of tiers) { if (totalSpend >= t2.threshold) userTier = t2; }
-          if (userTier.discount > 0) {
-            loyaltyDiscount = userTier.discount;
-            loyaltyTierName = userTier.name;
-          }
-        }
+      const spendKobo = await getEligibleSpendKobo(session.id);
+      const tier = getNitroStatus(Math.floor(spendKobo / 100));
+      if (tier.discountPct > 0) {
+        loyaltyDiscount = tier.discountPct;
+        loyaltyTierName = tier.name;
       }
     } catch {}
 

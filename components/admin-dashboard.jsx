@@ -265,6 +265,8 @@ function AdminRightSidebar({ data, dark, t, active }) {
     maintenance: ["maintenance"],
     issues: ["system", "alert"],
     api: ["settings"],
+    crew: ["crew"],
+    acquisition: ["acquisition"],
   };
   const allowedTypes = activityTypeMap[active] || null;
   const filteredActivity = allowedTypes

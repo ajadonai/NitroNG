@@ -5,6 +5,7 @@ import { getServices, getBalance, isProviderConfigured, getProviderName, checkOr
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { calculateTierPrice } from '@/lib/markup';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
+import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
 
 export const maxDuration = 60;
 
@@ -184,11 +185,16 @@ export async function POST(req) {
             stats.updated++;
 
             if (newStatus === 'Cancelled' && order.charge > 0) {
-              const exists = await prisma.transaction.findFirst({ where: { userId: order.userId, type: 'refund', reference: `REF-${order.orderId}` } });
-              if (!exists) {
+              const alreadyRefunded = await getTotalRefundedKobo(prisma, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
+              const refundAmount = Math.max(0, order.charge - alreadyRefunded);
+              if (refundAmount > 0) {
                 await prisma.$transaction(async (tx) => {
-                  await tx.$executeRaw`UPDATE users SET balance = balance + ${order.charge} WHERE id = ${order.userId}`;
-                  await tx.transaction.create({ data: { userId: order.userId, type: 'refund', amount: order.charge, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund for cancelled order ${order.orderId}` } });
+                  const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, refundAmount);
+                  if (walletRefund > 0) {
+                    await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
+                    await tx.transaction.create({ data: { userId: order.userId, type: 'refund', amount: walletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund for cancelled order ${order.orderId}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} already refunded)` : ''}` } });
+                  }
+                  await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
                 });
                 stats.refunded++;
               }
@@ -199,11 +205,16 @@ export async function POST(req) {
               if (remains > 0 && order.charge > 0 && order.quantity > 0) {
                 const refundAmount = Math.round((remains / order.quantity) * order.charge);
                 if (refundAmount > 0) {
-                  const exists = await prisma.transaction.findFirst({ where: { userId: order.userId, type: 'refund', reference: `REF-${order.orderId}` } });
-                  if (!exists) {
+                  const alreadyRefunded = await getTotalRefundedKobo(prisma, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
+                  const cappedRefund = Math.max(0, refundAmount - alreadyRefunded);
+                  if (cappedRefund > 0) {
                     await prisma.$transaction(async (tx) => {
-                      await tx.$executeRaw`UPDATE users SET balance = balance + ${refundAmount} WHERE id = ${order.userId}`;
-                      await tx.transaction.create({ data: { userId: order.userId, type: 'refund', amount: refundAmount, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Partial refund for ${order.orderId}` } });
+                      const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, cappedRefund);
+                      if (walletRefund > 0) {
+                        await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
+                        await tx.transaction.create({ data: { userId: order.userId, type: 'refund', amount: walletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Partial refund for ${order.orderId}` } });
+                      }
+                      await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: cappedRefund });
                     });
                     stats.refunded++;
                   }

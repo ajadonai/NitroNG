@@ -7,6 +7,7 @@ import { sendEmail, emailWrap, emailRow, emailDataBox, sendNudgeIdleFunds, sendN
 import { tgProviderBalance, tgDailySummary } from '@/lib/telegram';
 import { releaseHeldCommissions } from '@/lib/commissions';
 import { expireBonusCredits, grantWinbackCredit } from '@/lib/bonus-credit';
+import { getTierConfig } from '@/lib/affiliate-settings';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -243,7 +244,7 @@ export async function GET(req) {
           none: { status: 'Completed', deletedAt: null, createdAt: { gt: thirtyDaysAgo } },
         },
       },
-      select: { id: true, name: true, email: true, winback30SentAt: true },
+      select: { id: true, name: true, email: true, winback30SentAt: true, winbackSpendFloor: true },
       take: 50,
     });
     for (const user of wb30Batch) {
@@ -270,9 +271,12 @@ export async function GET(req) {
             where: { userId: user.id, status: 'Completed', deletedAt: null },
             _sum: { charge: true },
           });
-          const creditKobo = winbackCredit(agg._sum.charge || 0, wb30Pct, wb30Min, wb30Cap);
+          const totalSpend = agg._sum.charge || 0;
+          const spendSinceFloor = Math.max(0, totalSpend - (user.winbackSpendFloor || 0));
+          const creditKobo = winbackCredit(spendSinceFloor, wb30Pct, wb30Min, wb30Cap);
           creditNaira = creditKobo / 100;
           await grantWinbackCredit(prisma, user.id, creditKobo, wbExpiryDays);
+          await prisma.user.update({ where: { id: user.id }, data: { winbackSpendFloor: totalSpend } });
           daysLeft = wbExpiryDays;
         }
 
@@ -310,7 +314,7 @@ export async function GET(req) {
           none: { status: 'Completed', deletedAt: null, createdAt: { gt: sixtyDaysAgo } },
         },
       },
-      select: { id: true, name: true, email: true, winback60SentAt: true },
+      select: { id: true, name: true, email: true, winback60SentAt: true, winbackSpendFloor: true },
       take: 50,
     });
     for (const user of wb60Batch) {
@@ -337,9 +341,12 @@ export async function GET(req) {
             where: { userId: user.id, status: 'Completed', deletedAt: null },
             _sum: { charge: true },
           });
-          const creditKobo = winbackCredit(agg._sum.charge || 0, wb60Pct, wb60Min, wb60Cap);
+          const totalSpend = agg._sum.charge || 0;
+          const spendSinceFloor = Math.max(0, totalSpend - (user.winbackSpendFloor || 0));
+          const creditKobo = winbackCredit(spendSinceFloor, wb60Pct, wb60Min, wb60Cap);
           creditNaira = creditKobo / 100;
           await grantWinbackCredit(prisma, user.id, creditKobo, wbExpiryDays);
+          await prisma.user.update({ where: { id: user.id }, data: { winbackSpendFloor: totalSpend } });
           daysLeft = wbExpiryDays;
         }
 
@@ -449,18 +456,10 @@ export async function GET(req) {
   // ═══ TIER RECALCULATION: promote/demote crew members by active referred users ═══
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const tierSettings = await prisma.setting.findMany({
-      where: { key: { in: ['affiliate_starter_rate', 'affiliate_growth_rate', 'affiliate_pro_rate', 'affiliate_growth_threshold', 'affiliate_pro_threshold'] } },
-    });
-    const s = Object.fromEntries(tierSettings.map(r => [r.key, parseInt(r.value)]));
-    const TIERS = {
-      starter: { rate: s.affiliate_starter_rate || 30, min: 0 },
-      growth:  { rate: s.affiliate_growth_rate || 40, min: s.affiliate_growth_threshold || 30 },
-      pro:     { rate: s.affiliate_pro_rate || 50, min: s.affiliate_pro_threshold || 100 },
-    };
+    const TIERS = await getTierConfig();
 
     const members = await prisma.crewMember.findMany({
-      where: { status: 'approved' },
+      where: { status: 'approved', role: { not: 'chief' } },
       select: { id: true, tier: true, commissionRate: true, links: { select: { slug: true } } },
     });
 

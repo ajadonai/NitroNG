@@ -1,7 +1,10 @@
 import prisma from "@/lib/prisma";
-import { getCrewSession } from "@/lib/crew";
+import { getCrewSession, hashToken } from "@/lib/crew";
 import { sendDM } from "@/lib/crew-bot";
+import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import { validatePassword } from "@/lib/validate";
 
 export async function GET(req) {
   try {
@@ -37,49 +40,76 @@ export async function PATCH(req) {
     }
 
     if (section === "bank") {
-      const { bankName, bankAccountNo, bankAccountName } = body;
+      const { bankName, bankAccountNo, bankAccountName, currentPassword } = body;
+      if (!currentPassword) return Response.json({ error: "Current password is required to change bank details" }, { status: 400 });
       if (!bankName?.trim() || !bankAccountNo?.trim() || !bankAccountName?.trim()) {
         return Response.json({ error: "All bank fields are required" }, { status: 400 });
       }
+      const valid = await bcrypt.compare(currentPassword, member.password);
+      if (!valid) return Response.json({ error: "Incorrect password" }, { status: 400 });
       await prisma.crewMember.update({
         where: { id: member.id },
         data: { bankName: bankName.trim(), bankAccountNo: bankAccountNo.trim(), bankAccountName: bankAccountName.trim() },
       });
+      if (member.telegramUserId) {
+        sendDM(member.telegramUserId, '🏦 Your bank details were just updated. If this wasn\'t you, change your password immediately at nitro.ng/pit/settings.').catch(() => {});
+      }
+      prisma.activityLog.create({ data: { adminName: member.name, action: `Pit member updated bank details`, type: 'pit-self' } }).catch(() => {});
       return Response.json({ ok: true });
     }
 
     if (section === "password") {
       const { current, newPassword } = body;
       if (!current || !newPassword) return Response.json({ error: "Both fields are required" }, { status: 400 });
-      if (newPassword.length < 6) return Response.json({ error: "Password must be at least 6 characters" }, { status: 400 });
+      if (!validatePassword(newPassword)) return Response.json({ error: "Password must be 6-128 characters" }, { status: 400 });
 
       const valid = await bcrypt.compare(current, member.password);
       if (!valid) return Response.json({ error: "Current password is incorrect" }, { status: 400 });
 
-      const hashed = await bcrypt.hash(newPassword, 10);
+      const hashed = await bcrypt.hash(newPassword, 12);
       await prisma.crewMember.update({ where: { id: member.id }, data: { password: hashed } });
+
+      const jar = await cookies();
+      const currentToken = jar.get("crew_session")?.value;
+      const currentHash = currentToken ? hashToken(currentToken) : null;
+      await prisma.crewSession.deleteMany({
+        where: { memberId: member.id, ...(currentHash ? { token: { not: currentHash } } : {}) },
+      });
+
+      if (member.telegramUserId) {
+        sendDM(member.telegramUserId, '🔑 Your Pit password was just changed. If this wasn\'t you, contact support immediately.').catch(() => {});
+      }
+      prisma.activityLog.create({ data: { adminName: member.name, action: `Pit member changed password`, type: 'pit-self' } }).catch(() => {});
       return Response.json({ ok: true });
     }
 
     if (section === "telegram") {
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      let code = '';
-      for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+      let code;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const bytes = crypto.randomBytes(6);
+        code = '';
+        for (let i = 0; i < 6; i++) code += chars[bytes[i] % chars.length];
+        const collision = await prisma.crewMember.findFirst({ where: { telegramLinkCode: code } });
+        if (!collision) break;
+        if (attempt === 4) return Response.json({ error: "Please try again" }, { status: 500 });
+      }
       await prisma.crewMember.update({
         where: { id: member.id },
-        data: { telegramLinkCode: code },
+        data: { telegramLinkCode: code, telegramLinkCodeExpiresAt: new Date(Date.now() + 10 * 60 * 1000) },
       });
       return Response.json({ ok: true, code });
     }
 
     if (section === "telegram_disconnect") {
       if (member.telegramUserId) {
-        sendDM(member.telegramUserId, '🔓 Your Telegram has been disconnected from Nitro. Re-link anytime at nitro.ng/pit/settings.');
+        sendDM(member.telegramUserId, '🔓 Your Telegram has been disconnected from Nitro. Re-link anytime at nitro.ng/pit/settings.').catch(() => {});
       }
       await prisma.crewMember.update({
         where: { id: member.id },
-        data: { telegramUserId: null, telegramHandle: null, telegramLinkCode: null },
+        data: { telegramUserId: null, telegramHandle: null, telegramLinkCode: null, telegramLinkCodeExpiresAt: null },
       });
+      prisma.activityLog.create({ data: { adminName: member.name, action: `Pit member disconnected Telegram`, type: 'pit-self' } }).catch(() => {});
       return Response.json({ ok: true });
     }
 

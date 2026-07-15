@@ -268,6 +268,7 @@ export default function SettingsPage({ member }) {
   const [bankOpen, setBankOpen] = useState(false);
   const [bankSaving, setBankSaving] = useState(false);
   const [bankError, setBankError] = useState(null);
+  const [bankPassword, setBankPassword] = useState("");
 
   const [pwOpen, setPwOpen] = useState(false);
   const [currentPw, setCurrentPw] = useState("");
@@ -279,6 +280,7 @@ export default function SettingsPage({ member }) {
     setBankName(savedBank.name);
     setBankAccountNo(savedBank.no);
     setBankAccountName(savedBank.acct);
+    setBankPassword("");
     setBankError(null);
     setBankOpen(true);
   };
@@ -286,12 +288,13 @@ export default function SettingsPage({ member }) {
   const handleBankSave = async () => {
     setBankError(null);
     if (!bankName.trim() || !bankAccountNo.trim() || !bankAccountName.trim()) { setBankError("All fields are required"); return; }
+    if (!bankPassword) { setBankError("Password is required to update bank details"); return; }
     setBankSaving(true);
     try {
       const res = await fetch("/api/pit/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ section: "bank", bankName: bankName.trim(), bankAccountNo: bankAccountNo.trim(), bankAccountName: bankAccountName.trim() }),
+        body: JSON.stringify({ section: "bank", bankName: bankName.trim(), bankAccountNo: bankAccountNo.trim(), bankAccountName: bankAccountName.trim(), currentPassword: bankPassword }),
       });
       const d = await res.json();
       if (d.error) { setBankError(d.error); return; }
@@ -377,6 +380,7 @@ export default function SettingsPage({ member }) {
         <Field label="Bank name" value={bankName} onChange={setBankName} placeholder="e.g. GTBank" t={t} />
         <Field label="Account number" value={bankAccountNo} onChange={setBankAccountNo} placeholder="0123456789" t={t} />
         <Field label="Account name" value={bankAccountName} onChange={setBankAccountName} placeholder="Full name on account" t={t} />
+        <Field label="Current password" value={bankPassword} onChange={setBankPassword} type="password" placeholder="Required to save changes" t={t} />
         {bankError && <div className="text-[12.5px]" style={{ color: t.red }}>{bankError}</div>}
         <div className="flex gap-2 justify-end mt-1">
           <button onClick={() => setBankOpen(false)} className="py-[7px] px-4 rounded-lg text-[12.5px] font-medium border-none cursor-pointer" style={{ background: "transparent", color: t.muted, fontFamily: "inherit" }}>Cancel</button>
