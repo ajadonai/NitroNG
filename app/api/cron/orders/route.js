@@ -214,7 +214,7 @@ export async function GET(req) {
             stats.updated++;
             if (newStatus === 'Completed') {
               createCommission(order.id, order.userId, order.charge, order.cost).catch(() => {});
-              awardPointsOnCompletion(order.id).catch(() => {});
+              await awardPointsOnCompletion(order.id).catch(() => {});
             }
           }
 

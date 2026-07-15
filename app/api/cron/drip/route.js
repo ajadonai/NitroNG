@@ -301,7 +301,7 @@ export async function GET(req) {
       stats.rolledUp = doneCount;
       for (const r of rollupRows) {
         if (r.status === 'Completed' || r.status === 'Partial') {
-          awardPointsOnCompletion(r.id).catch(() => {});
+          await awardPointsOnCompletion(r.id).catch(() => {});
         }
       }
     }
