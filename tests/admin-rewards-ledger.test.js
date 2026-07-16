@@ -28,9 +28,13 @@ const mockPrisma = {
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
 
 const mockGetBalanceTx = vi.fn();
-vi.mock('@/lib/nitro-rewards', () => ({
-  getPointsBalanceKoboTx: (...args) => mockGetBalanceTx(...args),
-}));
+vi.mock('@/lib/nitro-rewards', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    getPointsBalanceKoboTx: (...args) => mockGetBalanceTx(...args),
+  };
+});
 
 const { GET, POST } = await import('@/app/api/admin/rewards/route');
 
@@ -127,7 +131,7 @@ describe('GET /api/admin/rewards', () => {
 
   it('returns shaped response', async () => {
     mockFindMany.mockResolvedValue([{
-      id: 'led1', userId: 'u1', type: 'earned_order', pointsKobo: 5000,
+      id: 'led1', userId: 'u1', type: 'earned_order', pointsKobo: 149,
       reason: null, createdAt: new Date('2026-06-01'),
       user: { id: 'u1', name: 'Test User', email: 'test@x.com' },
       order: { orderId: 'NTR-100' },
@@ -145,8 +149,8 @@ describe('GET /api/admin/rewards', () => {
       userName: 'Test User',
       userEmail: 'test@x.com',
       type: 'earned_order',
-      points: 50,
-      pointsKobo: 5000,
+      points: 1.49,
+      pointsKobo: 149,
       orderRef: 'NTR-100',
       reason: null,
       adminName: null,
@@ -317,6 +321,15 @@ describe('GET /api/admin/rewards?view=summary', () => {
       pointsIssuedKobo: 120000,
     });
     expect(data.dateFiltered).toBe(false);
+  });
+
+  it('preserves fractional liability points', async () => {
+    mockLedgerAggregate.mockResolvedValue({ _sum: { pointsKobo: 11112 } });
+
+    const res = await GET(makeReq({ view: 'summary' }));
+    const data = await res.json();
+
+    expect(data.liability).toEqual({ kobo: 11112, points: 111.12 });
   });
 
   it('passes date filter to groupBy', async () => {

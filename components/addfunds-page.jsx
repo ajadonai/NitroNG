@@ -5,6 +5,7 @@ import { fN, fD } from "../lib/format";
 import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { WalletPointsCard, PointsModal } from "./rewards";
+import { PAYMENT_STATES, isCreditedPaymentResult, paymentStateFromTransactionStatus } from "../lib/payment-state";
 
 const TX_META = {
   deposit:      { label: "Deposit",       icon: "↓", clr: dk => dk ? "#6ee7b7" : "#059669" },
@@ -15,10 +16,50 @@ const TX_META = {
   admin_gift:   { label: "Gift",          icon: "✦", clr: dk => dk ? "#f0abfc" : "#a855f7" },
 };
 function txClr(type, dk) { return (TX_META[type] || TX_META.order).clr(dk); }
+function isFlutterwaveDeposit(tx) {
+  return tx.type === "deposit" && (tx.method === "flutterwave" || tx.method == null);
+}
+function txPaymentState(tx) {
+  if (!isFlutterwaveDeposit(tx)) return null;
+  return tx.paymentState || paymentStateFromTransactionStatus(tx.status);
+}
+function txIsCompleted(tx) {
+  const paymentState = txPaymentState(tx);
+  return tx.status === "Completed" && (!paymentState || paymentState === PAYMENT_STATES.CREDITED);
+}
 function txRowClr(tx, dk) {
+  const paymentState = txPaymentState(tx);
+  if (paymentState === PAYMENT_STATES.VERIFYING) return dk ? "#a5b4fc" : "#4f46e5";
+  if (paymentState === PAYMENT_STATES.PROVIDER_PENDING) return dk ? "#fcd34d" : "#d97706";
+  if (paymentState === PAYMENT_STATES.RETRYABLE) return dk ? "#fdba74" : "#ea580c";
+  if (paymentState === PAYMENT_STATES.FAILED) return dk ? "#fca5a5" : "#dc2626";
+  if (paymentState === PAYMENT_STATES.CREDITED && tx.status !== "Completed") return dk ? "#a5b4fc" : "#4f46e5";
   if (tx.status === "Failed" || tx.status === "Rejected") return dk ? "#fca5a5" : "#dc2626";
   if (tx.status === "Pending") return dk ? "#fcd34d" : "#d97706";
+  if (tx.status === "Processing") return dk ? "#a5b4fc" : "#4f46e5";
+  if (tx.status === "Expired") return dk ? "#fdba74" : "#ea580c";
+  if (tx.status === "Cancelled") return dk ? "#a1a1aa" : "#71717a";
   return txClr(tx.type, dk);
+}
+function txStatusMeta(tx, dk) {
+  const paymentState = txPaymentState(tx);
+  const status = paymentState || tx.status;
+  const styles = {
+    [PAYMENT_STATES.VERIFYING]: { label: "Verifying", color: dk ? "#a5b4fc" : "#4f46e5", bg: dk ? "rgba(165,180,252,.12)" : "rgba(79,70,229,.08)" },
+    [PAYMENT_STATES.PROVIDER_PENDING]: { label: "Pending", color: dk ? "#fcd34d" : "#d97706", bg: dk ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)" },
+    [PAYMENT_STATES.RETRYABLE]: { label: "Retrying", color: dk ? "#fdba74" : "#ea580c", bg: dk ? "rgba(253,186,116,.12)" : "rgba(234,88,12,.08)" },
+    [PAYMENT_STATES.FAILED]: { label: "Failed", color: dk ? "#fca5a5" : "#dc2626", bg: dk ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)" },
+    Processing: { label: "Processing", color: dk ? "#a5b4fc" : "#4f46e5", bg: dk ? "rgba(165,180,252,.12)" : "rgba(79,70,229,.08)" },
+    Pending: { label: "Pending", color: dk ? "#fcd34d" : "#d97706", bg: dk ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)" },
+    Expired: { label: "Expired", color: dk ? "#fdba74" : "#ea580c", bg: dk ? "rgba(253,186,116,.12)" : "rgba(234,88,12,.08)" },
+    Failed: { label: "Failed", color: dk ? "#fca5a5" : "#dc2626", bg: dk ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)" },
+    Rejected: { label: "Rejected", color: dk ? "#fca5a5" : "#dc2626", bg: dk ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)" },
+    Cancelled: { label: "Cancelled", color: dk ? "#a1a1aa" : "#71717a", bg: dk ? "rgba(161,161,170,.12)" : "rgba(113,113,122,.08)" },
+  };
+  return styles[status] || null;
+}
+function txAmountPrefix(tx) {
+  return tx.amount > 0 && txIsCompleted(tx) ? "+" : "";
 }
 function fNShort(v) { const a = Math.abs(v); if (a >= 1e8) return `₦${(a/1e6).toFixed(1).replace(/\.0$/,"")}M`; if (a >= 1e6) return `₦${(a/1e6).toFixed(2).replace(/\.?0+$/,"")}M`; if (a >= 1e5) return `₦${(a/1e3).toFixed(1).replace(/\.0$/,"")}K`; return fN(v); }
 function txIcon(type) { return (TX_META[type] || TX_META.order).icon; }
@@ -55,7 +96,16 @@ const GW_META = {
 /* ═══════════════════════════════════════════ */
 /* ═══ ADD FUNDS PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
-export default function AddFundsPage({ user, txs, transactionsTotal, walletSummary, dark, t, paymentStatus, setPaymentStatus, onPlaceOrder, onRefresh }) {
+export function recoverableFlutterwaveDeposits(txs, excludedReference = null) {
+  return (txs || []).filter(tx => (
+    isFlutterwaveDeposit(tx)
+    && ["Pending", "Expired", "Processing"].includes(tx.status)
+    && tx.reference
+    && tx.reference !== excludedReference
+  ));
+}
+
+export default function AddFundsPage({ user, txs, transactionsTotal, walletSummary, dark, t, paymentStatus, setPaymentStatus, gatewayReturnReference, onPlaceOrder, onRefresh }) {
   const toast = useToast();
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("");
@@ -79,13 +129,16 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 
   const toastShown = useRef(false);
   useEffect(() => {
-    if (paymentStatus?.type === "success" && !toastShown.current) {
+    if (isCreditedPaymentResult(paymentStatus) && !toastShown.current) {
       toastShown.current = true;
       const amt = paymentStatus.amount ? `₦${Number(paymentStatus.amount).toLocaleString()} credited` : "Your wallet has been credited";
       toast.success("Payment successful!", amt);
       if (paymentStatus.welcomeBonus > 0) {
         setTimeout(() => toast.success("🎁 Welcome bonus!", `₦${Number(paymentStatus.welcomeBonus).toLocaleString()} bonus added to your wallet`), 1500);
       }
+      // A completed credit only needs to survive long enough to show once.
+      // Consuming it prevents success from replaying when this page remounts.
+      setPaymentStatus?.(null);
     }
     if (!paymentStatus) toastShown.current = false;
   }, [paymentStatus]);
@@ -116,10 +169,11 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   const recoveryRan = useRef(false);
   useEffect(() => {
     if (recoveryRan.current || !txs?.length) return;
-    const pending = txs.filter(tx => tx.type === "deposit" && (tx.status === "Pending" || tx.status === "Expired") && tx.method === "flutterwave" && tx.reference);
+    const pending = recoverableFlutterwaveDeposits(txs, gatewayReturnReference);
     if (pending.length === 0) return;
     recoveryRan.current = true;
     (async () => {
+      let shouldRefresh = false;
       for (const tx of pending) {
         try {
           const res = await fetch("/api/payments/verify", {
@@ -128,23 +182,32 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             body: JSON.stringify({ reference: tx.reference }),
           });
           const data = await res.json();
-          if (data.success) {
+          if (isCreditedPaymentResult(data)) {
             toast.success("Payment recovered!", `₦${Number(data.amount).toLocaleString()} has been credited to your wallet`);
             onRefresh?.();
             return;
           }
+          if (data.paymentState) shouldRefresh = true;
         } catch {}
       }
+      if (shouldRefresh) onRefresh?.();
     })();
-  }, [txs]);
+  }, [txs, gatewayReturnReference]);
 
   const numAmount = Number(amount) || 0;
   const valid = numAmount >= 1000;
   const balance = user?.balance || 0;
 
   const lastFunded = txs?.find(tx => tx.type === 'deposit' && tx.status === 'Completed');
-  const pendingDeposits = txs?.filter(tx => tx.type === 'deposit' && tx.status === 'Pending') || [];
+  const pendingDeposits = txs?.filter(tx => tx.type === 'deposit' && (
+    tx.status === 'Pending'
+    || ((tx.method === 'flutterwave' || tx.method == null) && (tx.status === 'Processing' || tx.status === 'Expired'))
+  )) || [];
   const pendingTotal = pendingDeposits.reduce((s, tx) => s + (tx.amount || 0), 0);
+  const hasNonManualProgress = pendingDeposits.some(tx => tx.method !== 'manual');
+  const pendingSummaryText = hasNonManualProgress
+    ? `${pendingDeposits.length} deposit${pendingDeposits.length === 1 ? '' : 's'}${pendingTotal > 0 ? ` · ${fN(pendingTotal)}` : ''} in progress`
+    : `${pendingDeposits.length} pending deposit${pendingDeposits.length === 1 ? '' : 's'}${pendingTotal > 0 ? ` · ${fN(pendingTotal)}` : ''} awaiting confirmation`;
 
   // Coupon state
   const [showCoupon, setShowCoupon] = useState(false);
@@ -407,31 +470,48 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
     </button>
   );
 
+  const paymentNotice = paymentStatus && typeof paymentStatus === "object" && paymentStatus.type !== "success"
+    ? paymentStatus
+    : null;
+  const paymentNoticeTone = paymentNotice?.type === "info" ? {
+    title: "Verifying payment",
+    color: dark ? "#a5b4fc" : "#4f46e5",
+    background: dark ? "linear-gradient(135deg, rgba(99,102,241,.12), rgba(99,102,241,.04))" : "linear-gradient(135deg, rgba(79,70,229,.08), rgba(79,70,229,.02))",
+    border: dark ? "rgba(165,180,252,.2)" : "rgba(79,70,229,.16)",
+    symbol: "…",
+  } : paymentNotice?.type === "warning" ? {
+    title: paymentNotice.paymentState === PAYMENT_STATES.PROVIDER_PENDING ? "Payment pending" : "Verification delayed",
+    color: dark ? "#fcd34d" : "#d97706",
+    background: dark ? "linear-gradient(135deg, rgba(245,158,11,.12), rgba(245,158,11,.04))" : "linear-gradient(135deg, rgba(217,119,6,.08), rgba(217,119,6,.02))",
+    border: dark ? "rgba(252,211,77,.2)" : "rgba(217,119,6,.16)",
+    symbol: "!",
+  } : {
+    title: "Payment unsuccessful",
+    color: dark ? "#fca5a5" : "#dc2626",
+    background: dark ? "linear-gradient(135deg, rgba(239,68,68,.10), rgba(239,68,68,.04))" : "linear-gradient(135deg, rgba(220,38,38,.07), rgba(220,38,38,.02))",
+    border: dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.15)",
+    symbol: "×",
+  };
+
   return (
     <>
       <PointsModal open={pointsOpen} onClose={() => setPointsOpen(false)} rewards={rewards} dark={dark} t={t} onUse={() => { setPointsOpen(false); onPlaceOrder?.(); }} />
 
-      {/* Payment error — toast handles success */}
-      {paymentStatus && paymentStatus.type !== "success" && (
+      {/* Payment state notice — toast handles completed credits */}
+      {paymentNotice && (
         <div className="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl mb-4" style={{
-          background: dark
-            ? "linear-gradient(135deg, rgba(239,68,68,.10), rgba(239,68,68,.04))"
-            : "linear-gradient(135deg, rgba(220,38,38,.07), rgba(220,38,38,.02))",
-          border: `1px solid ${dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.15)"}`,
+          background: paymentNoticeTone.background,
+          border: `1px solid ${paymentNoticeTone.border}`,
         }}>
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{
-            background: dark ? "rgba(239,68,68,.15)" : "rgba(220,38,38,.10)",
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-sm font-bold" style={{
+            background: `${paymentNoticeTone.color}18`, color: paymentNoticeTone.color,
           }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="1.5" opacity=".35" />
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill={dark ? "#fca5a5" : "#dc2626"} opacity=".12" />
-              <path d="M15 9l-6 6M9 9l6 6" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            {paymentNoticeTone.symbol}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[12px] font-semibold" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Payment unsuccessful <span className="font-normal" style={{ color: dark ? "rgba(252,165,165,.6)" : "rgba(220,38,38,.55)" }}>— {paymentStatus.message}</span></div>
+            <div className="text-[12px] font-semibold" style={{ color: paymentNoticeTone.color }}>{paymentNoticeTone.title} <span className="font-normal opacity-75">— {paymentNotice.message}</span></div>
           </div>
-          <button onClick={() => setPaymentStatus(null)} className="bg-transparent border-none cursor-pointer p-1 rounded-md shrink-0" style={{ color: dark ? "rgba(252,165,165,.4)" : "rgba(220,38,38,.3)" }}>
+          <button onClick={() => setPaymentStatus(null)} className="bg-transparent border-none cursor-pointer p-1 rounded-md shrink-0" style={{ color: paymentNoticeTone.color, opacity: .45 }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
@@ -462,7 +542,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               return (
                 <div className="flex items-center gap-1.5 mt-2 py-2.5 px-2.5 rounded-lg text-[12px]" style={{ background: dark ? "rgba(252,211,77,.06)" : "rgba(217,119,6,.04)", border: `1px solid ${dark ? "rgba(252,211,77,.14)" : "rgba(217,119,6,.1)"}`, color: dark ? "#fcd34d" : "#d97706" }}>
                   <div className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ background: dark ? "#fcd34d" : "#d97706" }} />
-                  <span className="flex-1">{pendingDeposits.length} pending deposit{pendingDeposits.length > 1 ? "s" : ""}{pendingTotal > 0 ? ` · ${fN(pendingTotal)}` : ""} awaiting confirmation</span>
+                  <span className="flex-1">{pendingSummaryText}</span>
                   {awaitingTx && <button onClick={() => { setConfirmModal(awaitingTx); setSenderName(""); }} className="py-0.5 px-2 rounded-md text-[11px] font-semibold cursor-pointer shrink-0 border-none transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,211,77,.15)" : "rgba(217,119,6,.12)", color: dark ? "#fcd34d" : "#d97706" }}>I've paid</button>}
                 </div>
               );
@@ -558,7 +638,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                   return (
                     <div className="flex items-center gap-1.5 mt-1.5 py-2 px-2 rounded-lg text-[11px]" style={{ background: dark ? "rgba(252,211,77,.06)" : "rgba(217,119,6,.04)", border: `1px solid ${dark ? "rgba(252,211,77,.14)" : "rgba(217,119,6,.1)"}`, color: dark ? "#fcd34d" : "#d97706" }}>
                       <div className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ background: dark ? "#fcd34d" : "#d97706" }} />
-                      <span className="flex-1">{pendingDeposits.length} pending{pendingTotal > 0 ? ` · ${fN(pendingTotal)}` : ""}</span>
+                      <span className="flex-1">{pendingSummaryText}</span>
                       {awaitingTx && <button onClick={() => { setConfirmModal(awaitingTx); setSenderName(""); }} className="py-0.5 px-2 rounded-md text-[11px] font-semibold cursor-pointer shrink-0 border-none" style={{ background: dark ? "rgba(252,211,77,.15)" : "rgba(217,119,6,.12)", color: dark ? "#fcd34d" : "#d97706" }}>I've paid</button>}
                     </div>
                   );
@@ -907,27 +987,29 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
 
       {/* Transaction list */}
       <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-        {historyTxs.length > 0 ? historyTxs.map((tx, i) => (
-          <div key={tx.id} className="flex items-center gap-2.5 desktop:gap-3.5 py-3 px-3.5 desktop:py-3.5 desktop:px-[18px]" style={{ borderBottom: i < historyTxs.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: tx.status === "Pending" ? (dark ? "rgba(252,211,77,.04)" : "rgba(217,119,6,.03)") : (tx.status === "Failed" || tx.status === "Rejected") ? (dark ? "rgba(252,165,165,.04)" : "rgba(220,38,38,.03)") : (tx.orderStatus && !["Completed","Cancelled"].includes(tx.orderStatus)) ? (dark ? "rgba(252,211,77,.04)" : "rgba(217,119,6,.03)") : "transparent" }}>
-            <div className="w-8 h-8 desktop:w-9 desktop:h-9 rounded-[10px] flex items-center justify-center text-base font-semibold shrink-0" style={{ background: dark ? `${txRowClr(tx, dark)}15` : `${txRowClr(tx, dark)}10`, color: txRowClr(tx, dark) }}>{txIcon(tx.type)}</div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm desktop:text-[15px] font-medium overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{txLabel(tx.type)}</span>
-                {tx.status === "Pending" && <span className="text-[10px] font-semibold py-px px-1.5 rounded" style={{ background: dark ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)", color: dark ? "#fcd34d" : "#d97706" }}>Pending</span>}
-                {tx.status === "Failed" && <span className="text-[10px] font-semibold py-px px-1.5 rounded" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Failed</span>}
-                {tx.status === "Rejected" && <span className="text-[10px] font-semibold py-px px-1.5 rounded" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Rejected</span>}
-                {tx.orderStatus && !["Completed", "Cancelled"].includes(tx.orderStatus) && <span className="text-[10px] font-semibold py-px px-1.5 rounded" style={{ background: tx.orderStatus === "Processing" ? (dark ? "rgba(165,180,252,.12)" : "rgba(99,102,241,.08)") : (dark ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)"), color: tx.orderStatus === "Processing" ? (dark ? "#a5b4fc" : "#6366f1") : (dark ? "#fcd34d" : "#d97706") }}>{tx.orderStatus}</span>}
+        {historyTxs.length > 0 ? historyTxs.map((tx, i) => {
+          const statusMeta = txStatusMeta(tx, dark);
+          const rowColor = txRowClr(tx, dark);
+          return (
+            <div key={tx.id} className="flex items-center gap-2.5 desktop:gap-3.5 py-3 px-3.5 desktop:py-3.5 desktop:px-[18px]" style={{ borderBottom: i < historyTxs.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: statusMeta ? `${rowColor}${dark ? "0a" : "08"}` : (tx.orderStatus && !["Completed","Cancelled"].includes(tx.orderStatus)) ? (dark ? "rgba(252,211,77,.04)" : "rgba(217,119,6,.03)") : "transparent" }}>
+              <div className="w-8 h-8 desktop:w-9 desktop:h-9 rounded-[10px] flex items-center justify-center text-base font-semibold shrink-0" style={{ background: dark ? `${rowColor}15` : `${rowColor}10`, color: rowColor }}>{txIcon(tx.type)}</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm desktop:text-[15px] font-medium overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{txLabel(tx.type)}</span>
+                  {statusMeta && <span className="text-[10px] font-semibold py-px px-1.5 rounded" style={{ background: statusMeta.bg, color: statusMeta.color }}>{statusMeta.label}</span>}
+                  {tx.orderStatus && !["Completed", "Cancelled"].includes(tx.orderStatus) && <span className="text-[10px] font-semibold py-px px-1.5 rounded" style={{ background: tx.orderStatus === "Processing" ? (dark ? "rgba(165,180,252,.12)" : "rgba(99,102,241,.08)") : (dark ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)"), color: tx.orderStatus === "Processing" ? (dark ? "#a5b4fc" : "#6366f1") : (dark ? "#fcd34d" : "#d97706") }}>{tx.orderStatus}</span>}
+                </div>
+                <div className="text-[12px] desktop:text-[13px] mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.textMuted }}>{txDesc(tx)}</div>
               </div>
-              <div className="text-[12px] desktop:text-[13px] mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.textMuted }}>{txDesc(tx)}</div>
-            </div>
-            <div className="text-right shrink-0">
-              <div className="m text-[14px] desktop:text-[15px] font-bold" style={{ color: (tx.status === "Failed" || tx.status === "Rejected") ? (dark ? "#fca5a5" : "#dc2626") : tx.status === "Pending" ? (dark ? "#fcd34d" : "#d97706") : tx.amount > 0 ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>
-                {tx.amount > 0 ? "+" : ""}{fN(tx.amount)}
+              <div className="text-right shrink-0">
+                <div className="m text-[14px] desktop:text-[15px] font-bold" style={{ color: rowColor }}>
+                  {txAmountPrefix(tx)}{fN(tx.amount)}
+                </div>
+                <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{tx.date ? fD(tx.date, true) : ""}</div>
               </div>
-              <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{tx.date ? fD(tx.date, true) : ""}</div>
             </div>
-          </div>
-        )) : (
+          );
+        }) : (
           <div className="p-10 text-center text-[15px]" style={{ color: t.textMuted }}>
             <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>{filter !== "all" || dateRange ? "No matching transactions" : "No transactions in the last 6 months"}</div>
             <div className="text-[15px]" style={{ color: t.textMuted }}>{filter !== "all" || dateRange ? "Try adjusting your filters" : "New wallet activity will appear here"}</div>

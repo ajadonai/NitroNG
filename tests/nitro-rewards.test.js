@@ -26,6 +26,8 @@ const {
   computeRefundSplit,
   getTotalRefundedKobo,
   getPointsTotals,
+  pointsFromKobo,
+  pointsFromKoboExact,
   STATUS_TIERS,
   MIN_REDEEM_POINTS,
 } = await import('@/lib/nitro-rewards');
@@ -281,6 +283,16 @@ describe('getRewardsPayload', () => {
     expect(r.points.neededToRedeem).toBe(0);
   });
 
+  it('floors fractional points in the balance', async () => {
+    setupMocks({ balanceKobo: 11112 });
+    const r = await getRewardsPayload('user1');
+
+    expect(r.points.balance).toBe(111);
+    expect(r.points.valueNaira).toBe(111);
+    expect(r.points.redeemable).toBe(false);
+    expect(r.points.neededToRedeem).toBe(1889);
+  });
+
   it('shows not redeemable when balance < 2000 points', async () => {
     // 1200 points = 120000 pointsKobo
     setupMocks({ balanceKobo: 120000 });
@@ -315,6 +327,42 @@ describe('getRewardsPayload', () => {
     expect(r.history[0]).toEqual({ kind: 'earned', label: 'Earned', ref: '#NTR-2475', refType: 'order', pts: 125 });
     expect(r.history[1]).toEqual({ kind: 'spent', label: 'Spent', ref: '#NTR-2480', refType: 'order', pts: -5000 });
     expect(r.history[2]).toEqual({ kind: 'earned', label: 'Credit', ref: 'Goodwill', refType: 'admin', pts: 100 });
+  });
+
+  it('preserves exact signed points in history entries', async () => {
+    setupMocks({
+      history: [
+        { type: 'earned_order', pointsKobo: 149, order: { orderId: 'NTR-2862' }, orderId: 'abc', reason: null },
+        { type: 'manual_debit', pointsKobo: -6540, order: { orderId: 'NTR-2860' }, orderId: 'def', reason: 'Correction' },
+        { type: 'manual_credit', pointsKobo: 60, order: null, orderId: null, reason: 'Small credit' },
+        { type: 'manual_debit', pointsKobo: -60, order: null, orderId: null, reason: 'Small correction' },
+      ],
+    });
+    const r = await getRewardsPayload('user1');
+
+    expect(r.history[0].pts).toBe(1.49);
+    expect(r.history[1].pts).toBe(-65.4);
+    expect(r.history[2].pts).toBe(0.6);
+    expect(r.history[3].pts).toBe(-0.6);
+  });
+});
+
+describe('pointsFromKobo', () => {
+  it('truncates kobo to whole display points without exaggerating signed values', () => {
+    expect(pointsFromKobo(149)).toBe(1);
+    expect(pointsFromKobo(6540)).toBe(65);
+    expect(pointsFromKobo(5000)).toBe(50);
+    expect(pointsFromKobo(99)).toBe(0);
+    expect(pointsFromKobo(-99)).toBe(0);
+    expect(pointsFromKobo(-6540)).toBe(-65);
+    expect(pointsFromKobo(0)).toBe(0);
+  });
+
+  it('preserves two-decimal precision for ledger and finance displays', () => {
+    expect(pointsFromKoboExact(149)).toBe(1.49);
+    expect(pointsFromKoboExact(60)).toBe(0.6);
+    expect(pointsFromKoboExact(-60)).toBe(-0.6);
+    expect(pointsFromKoboExact(-6540)).toBe(-65.4);
   });
 });
 

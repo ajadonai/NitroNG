@@ -1,9 +1,8 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction, canSeeSensitive, maskEmail } from '@/lib/admin';
-import { applyWelcomeBonus } from '@/lib/welcome-bonus';
-import { trackDeposit } from '@/lib/meta-capi';
-import { tgPayment } from '@/lib/telegram';
+import { finalizeDeposit } from '@/lib/deposit-finalization';
+import { notifyDepositFinalized } from '@/lib/deposit-notifications';
 
 const DEFAULT_GATEWAYS = [
   { id: 'flutterwave', name: 'Flutterwave', desc: 'Cards, Bank Transfer, Mobile Money', enabled: false, priority: 1, fields: { secretKey: '', publicKey: '' } },
@@ -216,97 +215,24 @@ export async function POST(req) {
       if (!canPerformAction(admin, 'payments.approve')) return Response.json({ error: 'Not authorized to approve deposits' }, { status: 403 });
       const txId = gatewayId; // gatewayId carries the transaction ID for approve/reject actions
       const tx = await prisma.transaction.findUnique({ where: { id: txId } });
-      if (!tx || tx.method !== 'manual' || tx.status !== 'Pending') return Response.json({ error: 'Transaction not found or already processed' }, { status: 404 });
+      if (!tx || tx.type !== 'deposit' || tx.method !== 'manual' || tx.status !== 'Pending') return Response.json({ error: 'Transaction not found or already processed' }, { status: 404 });
 
-      // Atomic claim + credit + coupon bonus — all inside one transaction to prevent double-credit/double-coupon
-      const couponMatch = (tx.note || '').match(/\[coupon:([^\]]+)\]/);
-      const couponId = couponMatch?.[1];
-
-      const approved = await prisma.$transaction(async (db) => {
-        const claimed = await db.transaction.updateMany({
-          where: { id: txId, status: 'Pending' },
-          data: { status: 'Completed', note: tx.note.replace(/\[user_confirmed[^\]]*\]|\[awaiting_confirmation\]/, `[approved_by:${admin.name}]`) },
-        });
-        if (claimed.count === 0) return false;
-
-        let bonus = 0;
-        if (couponId) {
-          const alreadyUsed = await db.transaction.findFirst({
-            where: { userId: tx.userId, type: 'bonus', note: { contains: `[cid:${couponId}]` } },
-          });
-          if (!alreadyUsed) {
-            const [row] = await db.$queryRaw`SELECT value FROM settings WHERE key = 'coupons' FOR UPDATE`;
-            if (row) {
-              const coupons = JSON.parse(row.value);
-              const coupon = coupons.find(c => c.id === couponId && c.enabled !== false);
-              if (coupon) {
-                const notExpired = !coupon.expires || new Date(coupon.expires) >= new Date();
-                const notMaxed = !coupon.maxUses || coupon.maxUses === 0 || (coupon.used || 0) < coupon.maxUses;
-                if (notExpired && notMaxed) {
-                  const cappedAmount = coupon.maxDeposit > 0 ? Math.min(tx.amount, coupon.maxDeposit * 100) : tx.amount;
-                  bonus = coupon.type === 'percent' ? Math.round(cappedAmount * (coupon.value / 100)) : coupon.value * 100;
-                  await db.setting.update({
-                    where: { key: 'coupons' },
-                    data: { value: JSON.stringify(coupons.map(c => c.id === couponId ? { ...c, used: (c.used || 0) + 1 } : c)) },
-                  });
-                }
-              }
-            }
-          }
-        }
-
-        await db.user.update({ where: { id: tx.userId }, data: { balance: { increment: tx.amount + bonus } } });
-        if (bonus > 0) {
-          await db.transaction.create({ data: { userId: tx.userId, type: 'bonus', amount: bonus, status: 'Completed', note: `Coupon bonus [cid:${couponId}]` } });
-        }
-        await applyWelcomeBonus(db, tx.userId, tx.amount);
-        return true;
+      const finalized = await finalizeDeposit({
+        transactionId: txId,
+        paidAmountKobo: tx.amount,
+        claimableStatuses: ['Pending'],
+        approvedBy: admin.name,
       });
-      if (!approved) return Response.json({ error: 'Transaction already processed' }, { status: 409 });
+      if (!finalized.finalized) return Response.json({ error: 'Transaction already processed' }, { status: 409 });
 
-      // Deferred referral bonus — same logic as payments/verify
       try {
-        const user = await prisma.user.findUnique({ where: { id: tx.userId }, select: { referredBy: true, name: true, signupIp: true } });
-        if (user?.referredBy) {
-          const markerNote = `[ref-marker:${tx.userId}]`;
-          const alreadyPaid = await prisma.transaction.findFirst({ where: { userId: tx.userId, type: 'referral', note: { contains: markerNote } } });
-          if (!alreadyPaid) {
-            const refSettings = await prisma.setting.findMany({ where: { key: { in: ['ref_referrer_bonus', 'ref_invitee_bonus', 'ref_enabled', 'ref_min_deposit'] } } });
-            const rs = {};
-            refSettings.forEach(s => { rs[s.key] = s.value; });
-            const refEnabled = rs.ref_enabled === 'true' || rs.ref_enabled === undefined;
-            const refMinDeposit = Number(rs.ref_min_deposit) || 0;
-            if (refEnabled && refMinDeposit > 0 && tx.amount >= refMinDeposit) {
-              const referrer = await prisma.user.findUnique({ where: { referralCode: user.referredBy } });
-              const sameIp = referrer?.signupIp && user.signupIp
-                && referrer.signupIp !== 'unknown' && referrer.signupIp === user.signupIp;
-              if (sameIp) log.warn('Referral', `Self-referral suspected: ${tx.userId} → ${referrer.id} (same IP ${user.signupIp})`);
-              if (referrer && !sameIp) {
-                const referrerBonus = Number(rs.ref_referrer_bonus) || 50000;
-                const inviteeBonus = Number(rs.ref_invitee_bonus) || 50000;
-                try {
-                  await prisma.$transaction(async (db) => {
-                    const exists = await db.transaction.findFirst({ where: { userId: tx.userId, type: 'referral', note: { contains: markerNote } } });
-                    if (exists) return;
-                    await db.user.update({ where: { id: referrer.id }, data: { balance: { increment: referrerBonus } } });
-                    await db.transaction.create({ data: { userId: referrer.id, type: 'referral', amount: referrerBonus, note: `Referral bonus: ${user.name} deposited` } });
-                    if (inviteeBonus > 0) {
-                      await db.user.update({ where: { id: tx.userId }, data: { balance: { increment: inviteeBonus } } });
-                    }
-                    await db.transaction.create({ data: { userId: tx.userId, type: 'referral', amount: inviteeBonus, note: `Referral welcome bonus ${markerNote}` } });
-                  });
-                  log.info('Referral', `Deferred bonus paid on manual deposit approval for ${tx.userId}`);
-                } catch (txErr) { log.warn('Referral race', txErr.message); }
-              }
-            }
-          }
-        }
-      } catch (err) { log.error('Deferred referral (manual)', err.message); }
+        await notifyDepositFinalized(finalized, { channel: 'Manual', approvedBy: admin.name });
+      } catch (notifyErr) {
+        log.warn('Admin Payments', `Deposit notification failed for ${tx.reference}: ${notifyErr.message}`);
+      }
 
-      const approvedUser = await prisma.user.findUnique({ where: { id: tx.userId }, select: { name: true, email: true, phone: true, lastIp: true, lastUa: true, lastFbp: true, lastFbc: true } });
-      await trackDeposit({ email: approvedUser?.email, phone: approvedUser?.phone, userId: tx.userId, reference: tx.reference, amountKobo: tx.amount, clientIp: approvedUser?.lastIp, userAgent: approvedUser?.lastUa, fbp: approvedUser?.lastFbp, fbc: approvedUser?.lastFbc });
+      const approvedUser = finalized.user;
       await logActivity(admin.name, `Approved manual deposit ₦${(tx.amount / 100).toLocaleString()} for ${approvedUser?.name || approvedUser?.email || tx.userId}`, 'payment');
-      try { tgPayment(approvedUser?.name || approvedUser?.email || 'Unknown', tx.amount, 0, 'Manual', admin.name); } catch {}
       return Response.json({ success: true });
     }
 
@@ -314,7 +240,7 @@ export async function POST(req) {
       if (!canPerformAction(admin, 'payments.reject')) return Response.json({ error: 'Not authorized to reject deposits' }, { status: 403 });
       const txId = gatewayId;
       const tx = await prisma.transaction.findUnique({ where: { id: txId } });
-      if (!tx || tx.method !== 'manual' || tx.status !== 'Pending') return Response.json({ error: 'Transaction not found or already processed' }, { status: 404 });
+      if (!tx || tx.type !== 'deposit' || tx.method !== 'manual' || tx.status !== 'Pending') return Response.json({ error: 'Transaction not found or already processed' }, { status: 404 });
       await prisma.transaction.update({ where: { id: txId }, data: { status: 'Rejected', note: tx.note.replace(/\[user_confirmed[^\]]*\]|\[awaiting_confirmation\]/, `[rejected_by:${admin.name}]`) } });
       const rejectedUser = await prisma.user.findUnique({ where: { id: tx.userId }, select: { name: true, email: true } });
       await logActivity(admin.name, `Rejected manual deposit ₦${(tx.amount / 100).toLocaleString()} for ${rejectedUser?.name || rejectedUser?.email || tx.userId}`, 'payment');

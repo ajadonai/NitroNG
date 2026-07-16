@@ -240,18 +240,16 @@ function PlaceholderPage({ title, subtitle, dark, t }) {
 /* ═══ RIGHT SIDEBAR                       ═══ */
 /* ═══════════════════════════════════════════ */
 function AdminRightSidebar({ data, dark, t, active }) {
-  const showTickets = active === "overview";
   const showProviderColors = ["orders", "services", "menu-builder", "pricing", "finance", "payments"].includes(active);
   const showActivity = !["leaderboard"].includes(active);
 
-  // Filter activity by active tab
   const activityTypeMap = {
-    overview: null, // show all
+    overview: null,
     orders: ["order"],
     finance: ["order", "payment", "user"],
     users: ["user"],
     blog: ["blog"],
-    tickets: ["ticket"],
+    tickets: ["ticket"], // support moved to WhatsApp — page kept for history
     services: ["service"],
     "menu-builder": ["service"],
     pricing: ["service", "settings"],
@@ -280,51 +278,41 @@ function AdminRightSidebar({ data, dark, t, active }) {
     notifications: "Notification Activity", maintenance: "Maintenance Activity",
   }[active] || "Recent Activity";
 
+  const activityDotColor = (type) => type === "order" ? t.green : type === "user" ? t.blue : type === "deposit" || type === "payment" ? t.green : type === "ticket" ? t.amber : type === "blog" ? (dark ? "#a5b4fc" : "#4f46e5") : t.accent;
+
   return (
     <>
-      {showTickets && (<>
-        <div className="text-xs font-semibold uppercase tracking-[1px] mt-2.5 mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Open Tickets</div>
-        {(data.openTickets || []).length > 0 ? (data.openTickets || []).slice(0, 4).map((tk, i) => (
-          <div key={tk.id || i} className="adm-rs-ticket" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
-            <div className="adm-rs-ticket-top">
-              <span className="text-[13px]" style={{ color: t.accent }}>{tk.id}</span>
-              <span className="text-xs" style={{ color: t.textMuted }}>{tk.created ? fD(tk.created) : ""}</span>
-            </div>
-            <div className="text-sm font-medium mt-[3px]" style={{ color: t.text }}>{tk.subject}</div>
-            <div className="text-[13px] mt-0.5" style={{ color: t.textMuted }}>{tk.user || "user"}</div>
+      {showProviderColors && (
+        <div className="shrink-0">
+          <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Providers</div>
+          <div className="rounded-[14px] py-2.5 px-3.5 flex gap-4" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
+            {[["MTP", "#ef4444"], ["JAP", "#3b82f6"], ["DAO", "#22c55e"]].map(([name, color]) => (
+              <div key={name} className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full" style={{ background: color }} />
+                <span className="text-xs font-semibold" style={{ color: t.textSoft }}>{name}</span>
+              </div>
+            ))}
           </div>
-        )) : (
-          <div className="text-sm py-2 px-1" style={{ color: t.textMuted }}>No open tickets</div>
-        )}
-        <div className="adm-rs-divider" style={{ background: t.sidebarBorder }} />
-      </>)}
-
-      {showProviderColors && (<>
-        <div className="text-xs font-semibold uppercase tracking-[1px] mt-2.5 mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Provider Colors</div>
-        <div className="flex gap-3 py-1">
-          {[["MTP", "#ef4444"], ["JAP", "#3b82f6"], ["DAO", "#22c55e"]].map(([name, color]) => (
-            <div key={name} className="flex items-center gap-[5px]">
-              <span className="w-[7px] h-[7px] rounded-full" style={{ background: color }} />
-              <span className="text-xs font-medium" style={{ color: t.textMuted }}>{name}</span>
-            </div>
-          ))}
         </div>
-        <div className="adm-rs-divider" style={{ background: t.sidebarBorder }} />
-      </>)}
+      )}
 
-      {showActivity && (<>
-        <div className="text-xs font-semibold uppercase tracking-[1px] mt-2.5 mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>{activityLabel}</div>
-        {filteredActivity.slice(0, 6).map((a, i) => (
-          <div key={i} className="adm-rs-activity">
-            <div className="adm-rs-dot" style={{ background: a.type === "order" ? t.green : a.type === "user" ? t.blue : a.type === "deposit" || a.type === "payment" ? t.green : a.type === "ticket" ? t.amber : a.type === "blog" ? (dark ? "#a5b4fc" : "#4f46e5") : t.accent }} />
-            <div>
-              <div className="text-sm font-medium" style={{ color: t.text }}>{a.action}</div>
-              <div className="text-[13px]" style={{ color: t.textMuted }}>{a.detail} · {a.time ? fD(a.time) : ""}</div>
-            </div>
+      {showActivity && (
+        <div className="flex-1 overflow-auto min-h-0">
+          <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>{activityLabel}</div>
+          <div className="rounded-[14px] p-1.5" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
+            {filteredActivity.slice(0, 6).map((a, i) => (
+              <div key={i} className="flex gap-2.5 py-2.5 px-2.5 rounded-[10px]" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` : "none" }}>
+                <div className="w-[6px] h-[6px] rounded-full mt-[7px] shrink-0" style={{ background: activityDotColor(a.type) }} />
+                <div className="min-w-0">
+                  <div className="text-sm font-medium" style={{ color: t.text }}>{a.action}</div>
+                  <div className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{a.detail} · {a.time ? fD(a.time) : ""}</div>
+                </div>
+              </div>
+            ))}
+            {filteredActivity.length === 0 && <div className="text-sm py-3 px-3" style={{ color: t.textMuted }}>No recent activity</div>}
           </div>
-        ))}
-        {filteredActivity.length === 0 && <div className="text-sm py-2 px-1" style={{ color: t.textMuted }}>No recent activity</div>}
-      </>)}
+        </div>
+      )}
     </>
   );
 }

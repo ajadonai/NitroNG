@@ -2,7 +2,9 @@ import { fetchWithRetry } from '@/lib/fetch';
 import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
-import { trackDeposit, parseFbCookies } from '@/lib/meta-capi';
+import { parseFbCookies } from '@/lib/meta-capi';
+import { finalizeDeposit } from '@/lib/deposit-finalization';
+import { notifyDepositFinalized } from '@/lib/deposit-notifications';
 
 const NP_KEY = process.env.NOWPAYMENTS_API_KEY;
 const NP_URL = 'https://api.nowpayments.io/v1';
@@ -145,7 +147,7 @@ export async function GET(req) {
     if (!reference) return Response.json({ error: 'Reference required' }, { status: 400 });
 
     const tx = await prisma.transaction.findFirst({
-      where: { reference, userId: session.id },
+      where: { reference, userId: session.id, type: 'deposit', method: 'crypto' },
     });
     if (!tx) return Response.json({ error: 'Transaction not found' }, { status: 404 });
 
@@ -165,95 +167,20 @@ export async function GET(req) {
 
     // Update our transaction if NowPayments confirms — atomic claim prevents double-credit
     if ((npStatus === 'finished' || npStatus === 'confirmed') && tx.status === 'Pending') {
-      const couponMatch = (tx.note || '').match(/\[coupon:([^\]]+)\]/);
-      const couponId = couponMatch?.[1];
-
-      const credited = await prisma.$transaction(async (db) => {
-        const claimed = await db.transaction.updateMany({
-          where: { id: tx.id, status: 'Pending' },
-          data: { status: 'Completed' },
-        });
-        if (claimed.count === 0) return false;
-
-        let bonus = 0;
-        if (couponId) {
-          const alreadyUsed = await db.transaction.findFirst({
-            where: { userId: tx.userId, type: 'bonus', note: { contains: `[cid:${couponId}]` } },
-          });
-          if (!alreadyUsed) {
-            const [row] = await db.$queryRaw`SELECT value FROM settings WHERE key = 'coupons' FOR UPDATE`;
-            if (row) {
-              const coupons = JSON.parse(row.value);
-              const coupon = coupons.find(c => c.id === couponId && c.enabled !== false);
-              if (coupon) {
-                const notExpired = !coupon.expires || new Date(coupon.expires) >= new Date();
-                const notMaxed = !coupon.maxUses || coupon.maxUses === 0 || (coupon.used || 0) < coupon.maxUses;
-                if (notExpired && notMaxed) {
-                  bonus = coupon.type === 'percent' ? Math.round(tx.amount * (coupon.value / 100)) : coupon.value * 100;
-                  await db.setting.update({
-                    where: { key: 'coupons' },
-                    data: { value: JSON.stringify(coupons.map(c => c.id === couponId ? { ...c, used: (c.used || 0) + 1 } : c)) },
-                  });
-                }
-              }
-            }
-          }
-        }
-
-        await db.user.update({ where: { id: tx.userId }, data: { balance: { increment: tx.amount + bonus } } });
-        if (bonus > 0) {
-          await db.transaction.create({ data: { userId: tx.userId, type: 'bonus', amount: bonus, status: 'Completed', note: `Coupon bonus [cid:${couponId}]` } });
-        }
-        return true;
+      const finalization = await finalizeDeposit({
+        prismaClient: prisma,
+        transactionId: tx.id,
+        paidAmountKobo: tx.amount,
+        claimableStatuses: ['Pending'],
       });
 
-      if (!credited) {
-        return Response.json({ status: 'Completed', reference });
-      }
-
-      try {
-        const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true, phone: true, lastIp: true, lastUa: true, lastFbp: true, lastFbc: true } });
-        if (u) await trackDeposit({ email: u.email, phone: u.phone, userId: tx.userId, reference, amountKobo: tx.amount, clientIp: u.lastIp, userAgent: u.lastUa, fbp: u.lastFbp, fbc: u.lastFbc });
-      } catch {}
-
-      // Deferred referral bonus
-      try {
-        const user = await prisma.user.findUnique({ where: { id: tx.userId }, select: { referredBy: true, name: true, signupIp: true } });
-        if (user?.referredBy) {
-          const markerNote = `[ref-marker:${tx.userId}]`;
-          const alreadyPaid = await prisma.transaction.findFirst({ where: { userId: tx.userId, type: 'referral', note: { contains: markerNote } } });
-          if (!alreadyPaid) {
-            const refSettings = await prisma.setting.findMany({ where: { key: { in: ['ref_referrer_bonus', 'ref_invitee_bonus', 'ref_enabled', 'ref_min_deposit'] } } });
-            const rs = {};
-            refSettings.forEach(s => { rs[s.key] = s.value; });
-            const refEnabled = rs.ref_enabled === 'true' || rs.ref_enabled === undefined;
-            const refMinDeposit = Number(rs.ref_min_deposit) || 0;
-            if (refEnabled && refMinDeposit > 0 && tx.amount >= refMinDeposit) {
-              const referrer = await prisma.user.findUnique({ where: { referralCode: user.referredBy } });
-              const sameIp = referrer?.signupIp && user.signupIp
-                && referrer.signupIp !== 'unknown' && referrer.signupIp === user.signupIp;
-              if (sameIp) log.warn('Referral', `Self-referral suspected: ${tx.userId} → ${referrer.id} (same IP ${user.signupIp})`);
-              if (referrer && !sameIp) {
-                const referrerBonus = Number(rs.ref_referrer_bonus) || 50000;
-                const inviteeBonus = Number(rs.ref_invitee_bonus) || 50000;
-                try {
-                  await prisma.$transaction(async (db) => {
-                    const exists = await db.transaction.findFirst({ where: { userId: tx.userId, type: 'referral', note: { contains: markerNote } } });
-                    if (exists) return;
-                    await db.user.update({ where: { id: referrer.id }, data: { balance: { increment: referrerBonus } } });
-                    await db.transaction.create({ data: { userId: referrer.id, type: 'referral', amount: referrerBonus, note: `Referral bonus: ${user.name} deposited` } });
-                    if (inviteeBonus > 0) {
-                      await db.user.update({ where: { id: tx.userId }, data: { balance: { increment: inviteeBonus } } });
-                    }
-                    await db.transaction.create({ data: { userId: tx.userId, type: 'referral', amount: inviteeBonus, note: `Referral welcome bonus ${markerNote}` } });
-                  });
-                  log.info('Referral', `Deferred bonus paid on crypto confirm for ${tx.userId}`);
-                } catch (txErr) { log.warn('Referral race', txErr.message); }
-              }
-            }
-          }
+      if (finalization.finalized) {
+        try {
+          await notifyDepositFinalized(finalization, { channel: 'Crypto' });
+        } catch (error) {
+          log.warn('Crypto Payment Check', `Deposit notification failed for ${reference}: ${error.message}`);
         }
-      } catch (err) { log.error('Deferred referral (crypto)', err.message); }
+      }
 
       return Response.json({ status: 'Completed', reference });
     }

@@ -14,6 +14,7 @@ import { headers as getHeaders } from 'next/headers';
 import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
 import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints, reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
+import { isReservedProviderQueryLeaseKey } from '@/lib/provider-query-lease';
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -393,6 +394,9 @@ export async function POST(req) {
 
     // Idempotency guard
     if (idempotencyKey) {
+      if (isReservedProviderQueryLeaseKey(idempotencyKey)) {
+        return Response.json({ error: 'Invalid idempotency key' }, { status: 400 });
+      }
       const existing = await prisma.idempotencyKey.findUnique({ where: { key: idempotencyKey } });
       if (existing) {
         if (existing.userId !== session.id) {

@@ -12,6 +12,7 @@ import { fN, fD } from "../lib/format";
 import { Avatar } from "./avatar";
 import OrderTour from "./order-tour";
 import { RewardsStrip, ChannelLane, StatusModal, PointsModal } from "./rewards";
+import { PAYMENT_STATES, isCreditedPaymentResult, paymentStateFromTransactionStatus } from "../lib/payment-state";
 
 /* Dynamic imports — only load when user navigates to that page */
 const NewOrderPage = dynamic(() => import("./new-order").then(m => m.default), { ssr: false });
@@ -84,6 +85,46 @@ const MORE_ITEMS = [
 const MoreIcon = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>;
 const OrderIcon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 
+export const PAYMENT_STATUS_STORAGE_KEY = "nitro-payment-status";
+export const PAYMENT_STATUS_STORAGE_TTL_MS = 15 * 60 * 1000;
+
+export function readStoredPaymentStatus(storage, userId, now = Date.now()) {
+  if (!storage || !userId) return null;
+  try {
+    const raw = storage.getItem(PAYMENT_STATUS_STORAGE_KEY);
+    if (!raw) return null;
+    const record = JSON.parse(raw);
+    const age = now - record?.savedAt;
+    const isValid = record?.version === 1
+      && record.userId === userId
+      && Number.isFinite(record.savedAt)
+      && age >= 0
+      && age <= PAYMENT_STATUS_STORAGE_TTL_MS
+      && record.status != null;
+    if (isValid) return record.status;
+    storage.removeItem(PAYMENT_STATUS_STORAGE_KEY);
+  } catch {
+    try { storage.removeItem(PAYMENT_STATUS_STORAGE_KEY); } catch {}
+  }
+  return null;
+}
+
+export function persistPaymentStatus(storage, status, userId, now = Date.now()) {
+  if (!storage) return;
+  try {
+    if (status == null || !userId) {
+      storage.removeItem(PAYMENT_STATUS_STORAGE_KEY);
+      return;
+    }
+    storage.setItem(PAYMENT_STATUS_STORAGE_KEY, JSON.stringify({
+      version: 1,
+      userId,
+      savedAt: now,
+      status,
+    }));
+  } catch {}
+}
+
 
 /* ── Status helpers ── */
 function sClr(s, dk) { return s === "Completed" ? (dk ? "#6ee7b7" : "#059669") : s === "Processing" ? (dk ? "#a5b4fc" : "#4f46e5") : s === "Pending" ? (dk ? "#fcd34d" : "#d97706") : s === "Partial" ? (dk ? "#fdba74" : "#ea580c") : (s === "Failed" || s === "Rejected") ? (dk ? "#fca5a5" : "#dc2626") : s === "Cancelled" ? (dk ? "#a1a1aa" : "#71717a") : (dk ? "#555250" : "#8a8785"); }
@@ -92,6 +133,42 @@ function sBrd(s, dk) { return s === "Completed" ? (dk ? "#166534" : "#a7f3d0") :
 
 function Badge({ status, dark }) {
   return <span className="text-[13px] font-semibold py-0.5 px-2 rounded-[5px] whitespace-nowrap inline-block" style={{ background: sBg(status, dark), color: sClr(status, dark), borderWidth: .5, borderStyle: "solid", borderColor: sBrd(status, dark) }}>{status}</span>;
+}
+
+function paymentNoticeFromResult(result, reference) {
+  const paymentState = result?.paymentState;
+  const common = {
+    success: false,
+    reference: result?.reference || reference,
+    paymentState,
+    transactionStatus: result?.transactionStatus,
+  };
+
+  if (paymentState === PAYMENT_STATES.VERIFYING) {
+    return { ...common, type: "info", message: result.message || "We’re confirming your payment. This normally takes a moment." };
+  }
+  if (paymentState === PAYMENT_STATES.PROVIDER_PENDING) {
+    return { ...common, type: "warning", message: result.message || "Flutterwave has not confirmed the payment yet. We’ll keep checking." };
+  }
+  if (paymentState === PAYMENT_STATES.RETRYABLE || result?.retryable) {
+    return { ...common, type: "warning", paymentState: PAYMENT_STATES.RETRYABLE, message: result.message || result.error || "We couldn’t reach Flutterwave. Your payment is safe and can be checked again." };
+  }
+  return { ...common, type: "error", paymentState: paymentState || PAYMENT_STATES.FAILED, message: result?.message || result?.error || "Payment verification failed" };
+}
+
+function paymentNoticeFromTransaction(tx) {
+  const paymentState = tx.paymentState || paymentStateFromTransactionStatus(tx.status);
+  const base = {
+    success: false,
+    reference: tx.reference,
+    paymentState,
+    transactionStatus: tx.status,
+  };
+
+  if (paymentState === PAYMENT_STATES.CREDITED && tx.status === "Completed") {
+    return { ...base, success: true, type: "success", amount: tx.amount, message: "Payment successful!" };
+  }
+  return paymentNoticeFromResult(base, tx.reference);
 }
 
 /* ═══════════════════════════════════════════ */
@@ -410,70 +487,80 @@ function WaitlistPage({ feature, dark, t }) {
 /* ═══════════════════════════════════════════ */
 function RightSidebar({ activeOrders, orderSummary, user, dark, t, setActive }) {
   const activeCount = orderSummary?.active ?? activeOrders.length;
+  const topPlatform = orderSummary?.topPlatform;
+  const avgQty = orderSummary?.averageQuantity || 0;
+  const memberDate = user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : "—";
+  const wkOrders = orderSummary?.thisWeek || 0;
+
+  const statTiles = [
+    { label: "Top platform", value: topPlatform ? topPlatform.charAt(0).toUpperCase() + topPlatform.slice(1) : "—", iconBg: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg> },
+    { label: "Avg size", value: avgQty > 0 ? avgQty.toLocaleString() : "—", iconBg: dark ? "rgba(165,180,252,.1)" : "rgba(79,70,229,.07)", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark ? "#a5b4fc" : "#4f46e5"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg> },
+    { label: "This week", value: wkOrders > 0 ? String(wkOrders) : "0", iconBg: dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.06)", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
+    { label: "Member", value: memberDate, iconBg: dark ? "rgba(224,164,88,.08)" : "rgba(217,119,6,.06)", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark ? "#e0a458" : "#d97706"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+  ];
+
   return (
     <>
       {/* ── Your Stats ── */}
       <div className="shrink-0">
-        <div className="text-sm font-semibold uppercase tracking-[1.5px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Your Stats</div>
-        <div className="flex flex-col">
-          {(() => {
-            const topPlatform = orderSummary?.topPlatform;
-            const avgQty = orderSummary?.averageQuantity || 0;
-            const memberDate = user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : "—";
-            const wkOrders = orderSummary?.thisWeek || 0;
-            return [
-              ["Most Ordered", topPlatform ? topPlatform.charAt(0).toUpperCase() + topPlatform.slice(1) : "—", <svg key="ig" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>],
-              ["Avg Order Size", avgQty > 0 ? avgQty.toLocaleString() + " qty" : "—", <svg key="sz" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#a5b4fc" : "#4f46e5"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>],
-              ["This Week", wkOrders > 0 ? wkOrders + " orders" : "No orders", <svg key="wk" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>],
-              ["Member Since", memberDate, <svg key="ms" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#e0a458" : "#d97706"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>],
-            ];
-          })().map(([label, val, icon], i, arr) => (
-            <div key={label} className="flex items-center gap-2.5 py-[9px] px-1" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0">{icon}</div>
-              <div className="flex-1">
-                <div className="text-sm font-medium" style={{ color: t.textMuted }}>{label}</div>
-                <div className="text-sm font-semibold mt-px" style={{ color: t.text }}>{val}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-        {/* Walkthrough trigger — inside stats section */}
-      </div>
-
-      {/* Divider */}
-      <div className="h-0.5 my-1 shrink-0" style={{ background: t.sidebarBorder }} />
-
-      {/* ── Active Orders ── */}
-      <div className="flex-1 overflow-auto pt-2">
-        <div className="text-sm font-semibold uppercase tracking-[1.5px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Active Orders</div>
-        {activeCount === 0 && <div className="text-sm mb-2.5" style={{ color: t.textMuted }}>No active orders</div>}
-        <div className="flex flex-col gap-1.5">
-          {activeOrders.slice(0, 5).map(o => (
-            <div key={o.id} className="py-2.5 px-3 rounded-[10px]" style={{ background: t.cardBg }}>
-              <div className="flex items-center gap-2.5">
-                <PlatformIcon platform={o.platform} dark={dark} size={28} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium mb-[3px] overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{o.service}{o.tier ? ` · ${o.tier}` : ""}</div>
-                  <div className="text-[13px]" style={{ color: t.textMuted }}>{o.quantity?.toLocaleString() || 0} qty</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Your Stats</div>
+        <div className="rounded-[14px] p-3" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
+          <div className="grid grid-cols-2 gap-2.5">
+            {statTiles.map(({ label, value, iconBg, icon }) => (
+              <div key={label} className="flex items-center gap-2.5 py-2.5 px-2.5 rounded-[10px]" style={{ background: dark ? "rgba(14,17,34,.6)" : "rgba(236,234,229,.5)" }}>
+                <div className="w-8 h-8 rounded-[9px] flex items-center justify-center shrink-0" style={{ background: iconBg }}>{icon}</div>
+                <div className="min-w-0">
+                  <div className="text-[10.5px] font-medium mb-0.5" style={{ color: t.textMuted, letterSpacing: "0.3px" }}>{label}</div>
+                  <div className="text-[13px] font-semibold" style={{ fontVariantNumeric: "tabular-nums", color: t.text }}>{value}</div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-        {activeCount > 5 && (
-          <button onClick={() => setActive("orders")} className="w-full py-1.5 text-sm font-medium text-center bg-none border-none cursor-pointer mt-1 transition-transform duration-200 hover:-translate-y-px" style={{ color: t.accent }}>View all {activeCount} active →</button>
-        )}
       </div>
 
-      {/* Divider */}
-      <div className="h-0.5 my-1 shrink-0" style={{ background: t.sidebarBorder }} />
+      {/* ── Active Orders ── */}
+      <div className="flex-1 overflow-auto">
+        <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Active Orders</div>
+        <div className="rounded-[14px] p-1.5" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
+          {activeCount === 0 && <div className="text-sm py-3 px-2.5" style={{ color: t.textMuted }}>No active orders</div>}
+          {activeOrders.slice(0, 5).map((o, i) => (
+            <div key={o.id} className="flex items-center gap-2.5 py-2.5 px-2.5 rounded-[10px] transition-colors duration-150" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` : "none" }}>
+              <PlatformIcon platform={o.platform} dark={dark} size={36} />
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-medium overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{o.service}</div>
+                <div className="text-[11.5px] mt-0.5" style={{ color: t.textMuted }}>{o.tier ? `${o.tier} · ` : ""}{o.quantity?.toLocaleString() || 0} qty</div>
+              </div>
+              <div className="flex items-center gap-1 text-[10.5px] font-semibold shrink-0 py-0.5 px-2 rounded-md" style={{ background: o.status === "Pending" ? (dark ? "rgba(165,180,252,.1)" : "rgba(79,70,229,.07)") : (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.07)"), color: o.status === "Pending" ? (dark ? "#a5b4fc" : "#4f46e5") : (dark ? "#fcd34d" : "#d97706"), letterSpacing: "0.3px" }}>
+                <span className="w-[5px] h-[5px] rounded-full" style={{ background: "currentColor", animation: o.status !== "Pending" ? "sidebarPulse 2s ease-in-out infinite" : "none" }} />
+                {o.status === "Pending" ? "Pending" : "Active"}
+              </div>
+            </div>
+          ))}
+          {activeCount > 5 && (
+            <button onClick={() => setActive("orders")} className="w-full py-2 text-[12.5px] font-semibold text-center bg-none border-none cursor-pointer mt-0.5 transition-opacity duration-150 hover:opacity-70" style={{ color: t.accent, borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` }}>View all {activeCount} active →</button>
+          )}
+        </div>
+      </div>
 
       {/* ── Referral Card ── */}
-      <div className="shrink-0 flex items-center pt-2">
-        <div className="p-3.5 rounded-xl text-center w-full" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
-          <div className="text-[13px] uppercase tracking-[1.5px] mb-1" style={{ color: t.textMuted }}>Your referral code</div>
-          <div className="m text-lg font-semibold tracking-[2px]" style={{ color: t.accent }}>{user?.refCode || "—"}</div>
-          <div className="text-sm mt-1" style={{ color: t.textMuted }}>{user?.refs || 0} referrals · {fN(user?.earnings || 0)} earned</div>
+      <div className="shrink-0">
+        <div className="rounded-[14px] p-4 text-center relative overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(196,125,142,.22)" : "rgba(196,125,142,.15)"}` }}>
+          <div className="absolute inset-0 pointer-events-none" style={{ background: `linear-gradient(135deg, ${dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)"} 0%, transparent 60%)` }} />
+          <div className="relative">
+            <div className="text-[10px] font-semibold uppercase tracking-[2px] mb-1.5" style={{ color: t.textMuted }}>Referral Code</div>
+            <div className="text-xl font-bold tracking-[3px] mb-2.5" style={{ color: t.accent }}>{user?.refCode || "—"}</div>
+            <div className="flex justify-center gap-5">
+              <div className="text-center">
+                <div className="text-base font-bold" style={{ fontVariantNumeric: "tabular-nums", color: t.text }}>{user?.refs || 0}</div>
+                <div className="text-[10.5px]" style={{ color: t.textMuted }}>Referrals</div>
+              </div>
+              <div className="text-center">
+                <div className="text-base font-bold" style={{ fontVariantNumeric: "tabular-nums", color: t.text }}>{fN(user?.earnings || 0)}</div>
+                <div className="text-[10.5px]" style={{ color: t.textMuted }}>Earned</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </>
@@ -709,15 +796,44 @@ function DashboardInner({ initialData }) {
   const [socialLinks, setSocialLinks] = useState({});
   const [rewards, setRewards] = useState(null);
   const [activePromotion, setActivePromotion] = useState(null);
+  const [gatewayReturnReference] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    const params = new URLSearchParams(window.location.search);
+    return params.get("verify") || params.get("reference") || params.get("trxref");
+  });
   const [paymentStatus, setPaymentStatusRaw] = useState(() => {
     if (typeof window === 'undefined') return null;
-    try { const s = sessionStorage.getItem("nitro-payment-status"); return s ? JSON.parse(s) : null; } catch { return null; }
+    return readStoredPaymentStatus(sessionStorage, initialData?.user?.id);
   });
+  const paymentStatusRef = useRef(paymentStatus);
   const setPaymentStatus = (val) => {
+    paymentStatusRef.current = val;
     setPaymentStatusRaw(val);
-    try { if (val) sessionStorage.setItem("nitro-payment-status", JSON.stringify(val)); else sessionStorage.removeItem("nitro-payment-status"); } catch {}
+    persistPaymentStatus(sessionStorage, val, user?.id || initialData?.user?.id);
   };
   const notifRef = useRef(null);
+
+  // Reconcile a persisted transient notice only against the exact Flutterwave
+  // deposit that created it. A confirmed success is never downgraded by stale
+  // dashboard data, while a later durable completion can safely upgrade it.
+  useEffect(() => {
+    const current = paymentStatusRef.current;
+    if (!current?.reference || isCreditedPaymentResult(current)) return;
+    const tx = txs.find(item => (
+      item.type === "deposit"
+      && (item.method === "flutterwave" || item.method == null)
+      && item.reference === current.reference
+    ));
+    if (!tx) return;
+
+    const next = paymentNoticeFromTransaction(tx);
+    if (
+      current.type === next.type
+      && current.paymentState === next.paymentState
+      && current.transactionStatus === next.transactionStatus
+    ) return;
+    setPaymentStatus(next);
+  }, [txs]);
 
   // Build notification items — single source of truth for both bell badge and dropdown
   const notifItems = useMemo(() => {
@@ -967,13 +1083,20 @@ function DashboardInner({ initialData }) {
 
   /* Verify payment return from gateway */
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const ref = params.get("verify") || params.get("reference") || params.get("trxref");
+    const ref = gatewayReturnReference;
     if (!ref) return;
 
     /* Clean URL immediately */
     window.history.replaceState({}, "", "/dashboard");
     setActive("add-funds");
+    setPaymentStatus({
+      success: false,
+      type: "info",
+      reference: ref,
+      paymentState: PAYMENT_STATES.VERIFYING,
+      transactionStatus: null,
+      message: "We’re confirming your payment with Flutterwave.",
+    });
 
     async function verify() {
       try {
@@ -983,9 +1106,17 @@ function DashboardInner({ initialData }) {
           body: JSON.stringify({ reference: ref }),
         });
         const data = await res.json();
-        if (data.success) {
-          setPaymentStatus({ type: "success", message: "Payment successful!", amount: data.amount, welcomeBonus: data.welcomeBonus || 0 });
-          if (typeof window.fbq === "function") fbq("track", "AddPaymentInfo", { value: data.amount, currency: "NGN" }, { eventID: data.eventId });
+        if (isCreditedPaymentResult(data)) {
+          setPaymentStatus({
+            ...data,
+            type: "success",
+            reference: data.reference || ref,
+            message: data.message || "Payment successful!",
+            welcomeBonus: data.welcomeBonus || 0,
+          });
+          if (data.eventId && typeof window.fbq === "function") {
+            window.fbq("track", "AddPaymentInfo", { value: data.amount, currency: "NGN" }, { eventID: data.eventId });
+          }
           /* Refresh user balance */
           try {
             const dashRes = await fetch("/api/dashboard");
@@ -999,14 +1130,19 @@ function DashboardInner({ initialData }) {
             }
           } catch {}
         } else {
-          setPaymentStatus({ type: "error", message: data.error || "Payment verification failed" });
+          setPaymentStatus(paymentNoticeFromResult(data, ref));
         }
       } catch {
-        setPaymentStatus({ type: "error", message: "Could not verify payment. Please contact support." });
+        setPaymentStatus(paymentNoticeFromResult({
+          paymentState: PAYMENT_STATES.RETRYABLE,
+          transactionStatus: null,
+          retryable: true,
+          message: "We couldn’t reach Flutterwave. Your payment is safe and can be checked again.",
+        }, ref));
       }
     }
     verify();
-  }, []);
+  }, [gatewayReturnReference]);
 
   /* Close notif on outside click */
   useEffect(() => {
@@ -1016,7 +1152,11 @@ function DashboardInner({ initialData }) {
     return () => document.removeEventListener("mousedown", handler);
   }, [notifOpen]);
 
-  const handleLogout = async () => { try { await fetch("/api/auth/logout", { method: "POST" }); } catch {} window.location.replace("/?logout=1"); };
+  const handleLogout = async () => {
+    try { sessionStorage.removeItem(PAYMENT_STATUS_STORAGE_KEY); } catch {}
+    try { await fetch("/api/auth/logout", { method: "POST" }); } catch {}
+    window.location.replace("/?logout=1");
+  };
 
   /* Reset services state when leaving */
   useEffect(() => { if (!isServices) { setNoSelSvc(null); setNoSelTier(null); setNoLink(""); setNoComments(""); setNoCatModal(false); } }, [active]);
@@ -1111,7 +1251,7 @@ function DashboardInner({ initialData }) {
         if (socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setActive("overview"); return null; }
         return <SupportPage dark={dark} t={t} />;
       case "add-funds":
-        return <AddFundsPage user={user} txs={enrichedTxs} transactionsTotal={transactionsTotal} walletSummary={walletSummary} dark={dark} t={t} paymentStatus={paymentStatus} setPaymentStatus={setPaymentStatus} onPlaceOrder={() => setActive("services")} onRefresh={refreshDashboard} />;
+        return <AddFundsPage user={user} txs={enrichedTxs} transactionsTotal={transactionsTotal} walletSummary={walletSummary} dark={dark} t={t} paymentStatus={paymentStatus} setPaymentStatus={setPaymentStatus} gatewayReturnReference={gatewayReturnReference} onPlaceOrder={() => setActive("services")} onRefresh={refreshDashboard} />;
       case "guide":
         return <GuidePage dark={dark} t={t} />;
       case "earn":

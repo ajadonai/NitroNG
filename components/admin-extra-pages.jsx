@@ -10,6 +10,7 @@ import InlineAlert from "./inline-alert";
 
 
 const ROLE_COLORS = { superadmin: "#c47d8e", admin: "#a5b4fc", support: "#6ee7b7", finance: "#fcd34d" };
+const fPts = (points) => (Number(points) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 /* ═══════════════════════════════════════════ */
 /* ═══ ACTIVITY LOG                        ═══ */
@@ -938,7 +939,7 @@ export function AdminCouponsPage({ dark, t }) {
                           color: e.points >= 0 ? t.green : t.red,
                         }}>{e.type.replace(/_/g, ' ').replace('order', '').replace('refund', '').trim()}</span>
                       </td>
-                      <td className="py-2 px-3 font-bold whitespace-nowrap" style={{ color: e.points >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>{e.points >= 0 ? '+' : ''}{e.points.toLocaleString()}</td>
+                      <td className="py-2 px-3 font-bold whitespace-nowrap" style={{ color: e.points >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>{e.points >= 0 ? '+' : ''}{fPts(e.points)}</td>
                       <td className="py-2 px-3 whitespace-nowrap" style={{ color: t.textSoft }}>{e.orderRef ? `#${e.orderRef}` : '—'}</td>
                       <td className="py-2 px-3 max-w-[160px] truncate" style={{ color: t.textSoft }}>{e.adminName ? `[${e.adminName}] ` : ''}{e.reason || '—'}</td>
                     </tr>

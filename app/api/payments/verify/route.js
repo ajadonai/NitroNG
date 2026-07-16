@@ -1,18 +1,47 @@
-import prisma from '@/lib/prisma';
-import { log } from "@/lib/logger";
-import { getCurrentUser } from '@/lib/auth';
-import { applyWelcomeBonus } from '@/lib/welcome-bonus';
-import { trackDeposit, parseFbCookies } from '@/lib/meta-capi';
-import { tgPayment } from '@/lib/telegram';
 import { headers as getHeaders } from 'next/headers';
+import { getCurrentUser } from '@/lib/auth';
+import { log } from '@/lib/logger';
+import { parseFbCookies } from '@/lib/meta-capi';
+import { rateLimit } from '@/lib/rate-limit';
+import {
+  isCreditedPaymentResult,
+  reconcileFlutterwaveDeposit,
+} from '@/lib/flutterwave-payment';
+import { notifyDepositFinalized } from '@/lib/deposit-notifications';
 
-async function getGatewayKeys(gatewayId) {
-  const setting = await prisma.setting.findUnique({ where: { key: `gateway_${gatewayId}` } });
-  if (setting) {
-    try { const data = JSON.parse(setting.value); if (data.fields) return data.fields; } catch {}
+function nonCreditedResponse(outcome) {
+  const common = {
+    success: false,
+    paymentState: outcome.paymentState,
+    transactionStatus: outcome.transactionStatus,
+    retryable: Boolean(outcome.retryable),
+    reference: outcome.transaction?.reference || null,
+    message: outcome.message || 'Payment verification failed',
+    error: outcome.message || 'Payment verification failed',
+  };
+
+  if (outcome.reason === 'not_found') {
+    return Response.json(common, { status: 404 });
   }
-  if (gatewayId === 'flutterwave') return { secretKey: process.env.FLUTTERWAVE_SECRET_KEY || '' };
-  return {};
+  if (outcome.paymentState === 'verifying' || outcome.paymentState === 'provider_pending') {
+    return Response.json(common, { status: 202 });
+  }
+  if (outcome.paymentState === 'retryable') {
+    return Response.json(common, { status: 503 });
+  }
+  return Response.json(common, { status: 422 });
+}
+
+function inconsistentOutcome(outcome) {
+  return Response.json({
+    success: false,
+    paymentState: 'retryable',
+    transactionStatus: outcome.transactionStatus || null,
+    retryable: true,
+    reference: outcome.transaction?.reference || null,
+    message: 'Payment status could not be confirmed. Please try again.',
+    error: 'Payment status could not be confirmed. Please try again.',
+  }, { status: 503 });
 }
 
 export async function POST(req) {
@@ -20,187 +49,112 @@ export async function POST(req) {
     const session = await getCurrentUser();
     if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
 
-    const { reference } = await req.json();
+    const { limited } = await rateLimit(req, {
+      maxAttempts: 12,
+      windowMs: 60 * 1000,
+      key: `rl:payment-verify:${session.id}`,
+    });
+    if (limited) {
+      const message = 'Too many verification attempts. Please wait a minute and try again.';
+      return Response.json({
+        success: false,
+        paymentState: 'retryable',
+        transactionStatus: null,
+        retryable: true,
+        message,
+        error: message,
+      }, { status: 429, headers: { 'Retry-After': '60' } });
+    }
+
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return Response.json({ error: 'Invalid request' }, { status: 400 });
+    }
+    const reference = typeof body?.reference === 'string' ? body.reference.trim() : '';
     if (!reference) return Response.json({ error: 'Reference required' }, { status: 400 });
 
-    // Atomically claim the transaction — accepts Pending or Expired (webhook may have failed)
-    const claimed = await prisma.transaction.updateMany({
-      where: { reference, userId: session.id, status: { in: ['Pending', 'Expired'] } },
-      data: { status: 'Processing' },
-    });
-
-    if (claimed.count === 0) {
-      // Check if it was already completed (by webhook)
-      const completed = await prisma.transaction.findFirst({
-        where: { reference, userId: session.id, status: { in: ['Completed', 'Processing'] } },
-      });
-      if (completed) {
-        return Response.json({ success: true, message: 'Already credited', amount: completed.amount / 100 });
-      }
-      return Response.json({ error: 'Transaction not found' }, { status: 404 });
-    }
-
-    const existing = await prisma.transaction.findFirst({
-      where: { reference, userId: session.id, status: 'Processing' },
-    });
-
-    const gateway = existing.method || 'flutterwave';
-    const keys = await getGatewayKeys(gateway);
-
-    if (!keys.secretKey) {
-      return Response.json({ error: 'Payment gateway not configured' }, { status: 503 });
-    }
-
-    let verified = false;
-    let paidAmount = existing.amount; // fallback
-
-    // ═══ FLUTTERWAVE VERIFY ═══
-    if (gateway === 'flutterwave') {
-      // Flutterwave verifies by tx_ref
-      const res = await fetch(`https://api.flutterwave.com/v3/transactions/verify_by_reference?tx_ref=${encodeURIComponent(reference)}`, {
-        headers: { 'Authorization': `Bearer ${keys.secretKey}` },
-      });
-      const data = await res.json();
-      if (data.status === 'success' && data.data.status === 'successful') {
-        paidAmount = Math.round(data.data.amount * 100); // convert to kobo
-        if (paidAmount !== existing.amount) {
-          log.warn('Payments Verify', `Amount mismatch: expected ${existing.amount}, got ${paidAmount} (ref: ${reference})`);
-          await prisma.transaction.update({ where: { id: existing.id }, data: { status: 'Failed', note: `Amount mismatch: paid ${paidAmount}, expected ${existing.amount}` } });
-          return Response.json({ error: 'Amount mismatch' }, { status: 400 });
-        }
-        verified = true;
-      }
-    }
-
-    if (!verified) {
-      await prisma.transaction.update({
-        where: { id: existing.id },
-        data: { status: 'Failed', note: `Payment verification failed via ${gateway}` },
-      });
-      return Response.json({ error: 'Payment not successful' }, { status: 400 });
-    }
-
-    // Credit wallet + apply coupon atomically
-    const couponMatch = (existing.note || '').match(/\[coupon:([^\]]+)\]/);
-    const couponId = couponMatch?.[1];
-
-    const result = await prisma.$transaction(async (tx) => {
-      let couponBonus = 0;
-      let couponLabel = '';
-
-      if (couponId) {
-        // Check inside transaction — prevents race where two requests both pass the check
-        const alreadyUsed = await tx.transaction.findFirst({
-          where: { userId: session.id, type: 'bonus', note: { contains: `[cid:${couponId}]` } },
-        });
-        if (!alreadyUsed) {
-          const [row] = await tx.$queryRaw`SELECT value FROM settings WHERE key = 'coupons' FOR UPDATE`;
-          if (row) {
-            const coupons = JSON.parse(row.value);
-            const coupon = coupons.find(c => c.id === couponId && c.enabled !== false);
-            if (coupon) {
-              const notExpired = !coupon.expires || new Date(coupon.expires) >= new Date();
-              const notMaxed = !coupon.maxUses || coupon.maxUses === 0 || (coupon.used || 0) < coupon.maxUses;
-              if (notExpired && notMaxed) {
-                const cappedAmount = coupon.maxDeposit > 0 ? Math.min(paidAmount, coupon.maxDeposit * 100) : paidAmount;
-                couponBonus = coupon.type === 'percent' ? Math.round(cappedAmount * (coupon.value / 100)) : coupon.value * 100;
-                couponLabel = `Coupon ${coupon.code}: ${coupon.type === 'percent' ? `${coupon.value}%` : `₦${coupon.value}`} bonus [cid:${couponId}]`;
-                await tx.setting.update({ where: { key: 'coupons' }, data: { value: JSON.stringify(coupons.map(c => c.id === couponId ? { ...c, used: (c.used || 0) + 1 } : c)) } });
-              }
-            }
-          }
-        }
-      }
-
-      const totalCredit = paidAmount + couponBonus;
-      await tx.user.update({ where: { id: session.id }, data: { balance: { increment: totalCredit } } });
-      await tx.transaction.update({ where: { id: existing.id }, data: { status: 'Completed', amount: paidAmount, note: existing.note?.replace(/\[coupon:[^\]]+\]/, '').trim() || undefined } });
-      if (couponBonus > 0) {
-        await tx.transaction.create({ data: { userId: session.id, type: 'bonus', amount: couponBonus, status: 'Completed', note: couponLabel } });
-      }
-      const welcomeBonus = await applyWelcomeBonus(tx, session.id, paidAmount);
-      return { couponBonus, totalCredit: totalCredit + welcomeBonus, welcomeBonus };
-    });
-
-    const { couponBonus, totalCredit, welcomeBonus } = result;
-
-    log.info('Payments Verify', `₦${paidAmount / 100} + ₦${couponBonus / 100} coupon + ₦${welcomeBonus / 100} welcome credited (ref: ${reference})`);
-
-    // Check for deferred referral bonus (if ref_min_deposit is set)
-    try {
-      const user = await prisma.user.findUnique({ where: { id: session.id }, select: { referredBy: true, name: true, signupIp: true } });
-      if (user?.referredBy) {
-        const markerNote = `[ref-marker:${session.id}]`;
-        const alreadyPaid = await prisma.transaction.findFirst({ where: { userId: session.id, type: 'referral', note: { contains: markerNote } } });
-        if (!alreadyPaid) {
-          const refSettings = await prisma.setting.findMany({ where: { key: { in: ['ref_referrer_bonus', 'ref_invitee_bonus', 'ref_enabled', 'ref_min_deposit'] } } });
-          const rs = {};
-          refSettings.forEach(s => { rs[s.key] = s.value; });
-          const refEnabled = rs.ref_enabled === 'true' || rs.ref_enabled === undefined;
-          const refMinDeposit = Number(rs.ref_min_deposit) || 0;
-          if (refEnabled && refMinDeposit > 0 && paidAmount >= refMinDeposit) {
-            const referrer = await prisma.user.findUnique({ where: { referralCode: user.referredBy } });
-            // Self-referral guard
-            const sameIp = referrer?.signupIp && user.signupIp
-              && referrer.signupIp !== 'unknown' && referrer.signupIp === user.signupIp;
-            if (sameIp) { log.warn('Referral', `Self-referral suspected: ${session.id} → ${referrer.id} (same IP ${user.signupIp})`); }
-            if (referrer && !sameIp) {
-              const referrerBonus = Number(rs.ref_referrer_bonus) || 50000;
-              const inviteeBonus = Number(rs.ref_invitee_bonus) || 50000;
-              try {
-                // Atomic: create invitee marker first — if this fails due to race, the whole $transaction rolls back
-                await prisma.$transaction(async (tx) => {
-                  // Double-check inside transaction
-                  const exists = await tx.transaction.findFirst({ where: { userId: session.id, type: 'referral', note: { contains: markerNote } } });
-                  if (exists) return; // another request already paid it
-                  await tx.user.update({ where: { id: referrer.id }, data: { balance: { increment: referrerBonus } } });
-                  await tx.transaction.create({ data: { userId: referrer.id, type: 'referral', amount: referrerBonus, note: `Referral bonus: ${user.name} deposited` } });
-                  if (inviteeBonus > 0) {
-                    await tx.user.update({ where: { id: session.id }, data: { balance: { increment: inviteeBonus } } });
-                  }
-                  // Create marker transaction — the note pattern prevents duplicates on re-check
-                  await tx.transaction.create({ data: { userId: session.id, type: 'referral', amount: inviteeBonus, note: `Referral welcome bonus ${markerNote}` } });
-                });
-                log.info('Referral', `Deferred bonus paid (ref: ${reference})`);
-              } catch (txErr) {
-                // If the transaction failed, likely another request won the race — that's fine
-                log.warn('Referral race', txErr.message);
-              }
-            }
-          }
-        }
-      }
-    } catch (err) { log.error('Deferred referral', err.message); }
-
-    try { tgPayment(session.email, paidAmount, couponBonus || 0, 'Flutterwave'); } catch {}
-
-    const eventId = `apinfo_${reference}`;
-    const hdrs = await getHeaders();
-    const { fbp, fbc } = parseFbCookies(hdrs.get('cookie'));
-    const verifyUser = await prisma.user.findUnique({ where: { id: session.id }, select: { phone: true } });
-    await trackDeposit({
-      email: session.email,
-      phone: verifyUser?.phone,
-      userId: session.id,
+    // Provider I/O happens before any financial status claim. A timeout or
+    // process interruption therefore cannot strand a newly Processing row.
+    const outcome = await reconcileFlutterwaveDeposit({
       reference,
-      amountKobo: paidAmount,
-      clientIp: hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip'),
-      userAgent: hdrs.get('user-agent'),
-      fbp, fbc,
-      sourceUrl: hdrs.get('referer'),
+      userId: session.id,
     });
+
+    const candidate = {
+      success: true,
+      paymentState: outcome.paymentState,
+      transactionStatus: outcome.transactionStatus,
+    };
+    const outcomeClaimsCredit = outcome.paymentState === 'credited'
+      || outcome.transactionStatus === 'Completed';
+    const storedCompletionConfirmed = outcome.transaction?.status === 'Completed';
+
+    if (!isCreditedPaymentResult(candidate) || !storedCompletionConfirmed) {
+      if (outcomeClaimsCredit) return inconsistentOutcome(outcome);
+      return nonCreditedResponse(outcome);
+    }
+
+    const finalization = outcome.finalization;
+    const amountKobo = finalization?.depositAmount ?? outcome.transaction?.amount ?? 0;
+    const couponBonus = finalization?.couponBonus || 0;
+    const welcomeBonus = finalization?.welcomeBonus || 0;
+    const totalCredit = finalization?.totalUserCredit
+      ?? (amountKobo + couponBonus + welcomeBonus);
+    const eventId = outcome.newlyFinalized
+      ? `apinfo_${outcome.transaction.reference}`
+      : undefined;
+
+    if (outcome.newlyFinalized && finalization) {
+      try {
+        // Everything after the financial commit is best effort. Header access,
+        // attribution parsing, or notification delivery must never turn a
+        // completed deposit into a retryable response.
+        const hdrs = await getHeaders();
+        const { fbp, fbc } = parseFbCookies(hdrs.get('cookie'));
+        await notifyDepositFinalized(finalization, {
+          channel: 'Flutterwave',
+          clientIp: hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip'),
+          userAgent: hdrs.get('user-agent'),
+          fbp,
+          fbc,
+          sourceUrl: hdrs.get('referer'),
+        });
+      } catch (notifyError) {
+        log.warn('Payments Verify notifications', notifyError.message);
+      }
+
+      log.info(
+        'Payments Verify',
+        `Credited verified Flutterwave deposit (ref: ${outcome.transaction.reference})`,
+      );
+    }
 
     return Response.json({
       success: true,
-      eventId,
-      message: couponBonus > 0 ? `Payment successful! ₦${couponBonus / 100} bonus applied.` : 'Payment successful',
-      amount: paidAmount / 100,
+      paymentState: 'credited',
+      transactionStatus: 'Completed',
+      retryable: false,
+      reference: outcome.transaction.reference,
+      ...(eventId ? { eventId } : {}),
+      message: outcome.newlyFinalized
+        ? (couponBonus > 0 ? `Payment successful! ₦${couponBonus / 100} bonus applied.` : 'Payment successful')
+        : 'Already credited',
+      amount: amountKobo / 100,
       bonus: couponBonus / 100,
       welcomeBonus: welcomeBonus / 100,
       total: totalCredit / 100,
     });
-  } catch (err) {
-    log.error('Payments Verify', err.message);
-    return Response.json({ error: 'Verification failed' }, { status: 500 });
+  } catch (error) {
+    log.error('Payments Verify', error.message);
+    return Response.json({
+      success: false,
+      paymentState: 'retryable',
+      transactionStatus: null,
+      retryable: true,
+      message: 'Payment verification is temporarily unavailable. Please try again.',
+      error: 'Payment verification is temporarily unavailable. Please try again.',
+    }, { status: 503 });
   }
 }

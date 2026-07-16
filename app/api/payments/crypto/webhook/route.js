@@ -1,9 +1,8 @@
 import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 import crypto from 'crypto';
-import { applyWelcomeBonus } from '@/lib/welcome-bonus';
-import { trackDeposit } from '@/lib/meta-capi';
-import { tgPayment } from '@/lib/telegram';
+import { finalizeDeposit } from '@/lib/deposit-finalization';
+import { notifyDepositFinalized } from '@/lib/deposit-notifications';
 
 const NP_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 
@@ -30,7 +29,7 @@ export async function POST(req) {
       return Response.json({ error: 'Invalid signature' }, { status: 403 });
     }
 
-    const { payment_status, order_id, payment_id, pay_amount, actually_paid } = body;
+    const { payment_status, order_id, pay_amount, actually_paid } = body;
 
     if (!order_id) {
       return Response.json({ error: 'Missing order_id' }, { status: 400 });
@@ -42,7 +41,7 @@ export async function POST(req) {
     if (payment_status === 'finished' || payment_status === 'confirmed') {
       // Atomically claim the pending transaction — prevents double credit on webhook retries
       const claimed = await prisma.transaction.updateMany({
-        where: { reference: order_id, method: 'crypto', status: 'Pending' },
+        where: { reference: order_id, type: 'deposit', method: 'crypto', status: 'Pending' },
         data: { status: 'Processing' },
       });
 
@@ -52,95 +51,37 @@ export async function POST(req) {
       }
 
       const tx = await prisma.transaction.findFirst({
-        where: { reference: order_id, method: 'crypto', status: 'Processing' },
+        where: { reference: order_id, type: 'deposit', method: 'crypto', status: 'Processing' },
       });
 
       if (!tx) {
         return Response.json({ ok: true });
       }
 
-      // Credit wallet + apply coupon atomically
-      const couponMatch = (tx.note || '').match(/\[coupon:([^\]]+)\]/);
-      const couponId = couponMatch?.[1];
-
-      const couponBonus = await prisma.$transaction(async (db) => {
-        let bonus = 0;
-        if (couponId) {
-          const alreadyUsed = await db.transaction.findFirst({ where: { userId: tx.userId, type: 'bonus', note: { contains: `[cid:${couponId}]` } } });
-          if (!alreadyUsed) {
-            const [row] = await db.$queryRaw`SELECT value FROM settings WHERE key = 'coupons' FOR UPDATE`;
-            if (row) {
-              const coupons = JSON.parse(row.value);
-              const coupon = coupons.find(c => c.id === couponId && c.enabled !== false);
-              if (coupon) {
-                const notExpired = !coupon.expires || new Date(coupon.expires) >= new Date();
-                const notMaxed = !coupon.maxUses || coupon.maxUses === 0 || (coupon.used || 0) < coupon.maxUses;
-                if (notExpired && notMaxed) {
-                  const cappedAmount = coupon.maxDeposit > 0 ? Math.min(tx.amount, coupon.maxDeposit * 100) : tx.amount;
-                  bonus = coupon.type === 'percent' ? Math.round(cappedAmount * (coupon.value / 100)) : coupon.value * 100;
-                  await db.setting.update({ where: { key: 'coupons' }, data: { value: JSON.stringify(coupons.map(c => c.id === couponId ? { ...c, used: (c.used || 0) + 1 } : c)) } });
-                }
-              }
-            }
-          }
-        }
-        await db.transaction.update({ where: { id: tx.id }, data: { status: 'Completed', note: tx.note + ` [paid:${actually_paid || pay_amount}]` } });
-        await db.user.update({ where: { id: tx.userId }, data: { balance: { increment: tx.amount + bonus } } });
-        if (bonus > 0) {
-          await db.transaction.create({ data: { userId: tx.userId, type: 'bonus', amount: bonus, status: 'Completed', note: `Coupon bonus [cid:${couponId}]` } });
-        }
-        await applyWelcomeBonus(db, tx.userId, tx.amount);
-        return bonus;
+      const finalization = await finalizeDeposit({
+        prismaClient: prisma,
+        transactionId: tx.id,
+        paidAmountKobo: tx.amount,
+        claimableStatuses: ['Processing'],
+        providerPaidAmount: actually_paid ?? pay_amount,
       });
-      log.info('NowPayments Webhook', `✓ Credited ${tx.amount / 100} + ₦${couponBonus / 100} bonus to user ${tx.userId}`);
 
-      try {
-        const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true, name: true, phone: true, lastIp: true, lastUa: true, lastFbp: true, lastFbc: true } });
-        if (u) {
-          await trackDeposit({ email: u.email, phone: u.phone, userId: tx.userId, reference: order_id, amountKobo: tx.amount, clientIp: u.lastIp, userAgent: u.lastUa, fbp: u.lastFbp, fbc: u.lastFbc });
-          tgPayment(u.name || u.email, tx.amount, couponBonus || 0, 'Crypto');
+      if (finalization.finalized) {
+        log.info('NowPayments Webhook', `✓ Credited ${tx.amount / 100} + ₦${finalization.couponBonus / 100} coupon bonus to user ${tx.userId}`);
+        try {
+          await notifyDepositFinalized(finalization, { channel: 'Crypto' });
+        } catch (error) {
+          log.warn('NowPayments Webhook', `Deposit notification failed for ${order_id}: ${error.message}`);
         }
-      } catch {}
-
-      // Deferred referral bonus
-      try {
-        const user = await prisma.user.findUnique({ where: { id: tx.userId }, select: { referredBy: true, name: true, signupIp: true } });
-        if (user?.referredBy) {
-          const markerNote = `[ref-marker:${tx.userId}]`;
-          const alreadyPaid = await prisma.transaction.findFirst({ where: { userId: tx.userId, type: 'referral', note: { contains: markerNote } } });
-          if (!alreadyPaid) {
-            const refSettings = await prisma.setting.findMany({ where: { key: { in: ['ref_referrer_bonus', 'ref_invitee_bonus', 'ref_enabled', 'ref_min_deposit'] } } });
-            const rs = {};
-            refSettings.forEach(s => { rs[s.key] = s.value; });
-            const refEnabled = rs.ref_enabled === 'true' || rs.ref_enabled === undefined;
-            const refMinDeposit = Number(rs.ref_min_deposit) || 0;
-            if (refEnabled && refMinDeposit > 0 && tx.amount >= refMinDeposit) {
-              const referrer = await prisma.user.findUnique({ where: { referralCode: user.referredBy } });
-              const sameIp = referrer?.signupIp && user.signupIp && referrer.signupIp !== 'unknown' && referrer.signupIp === user.signupIp;
-              if (referrer && !sameIp) {
-                const referrerBonus = Number(rs.ref_referrer_bonus) || 50000;
-                const inviteeBonus = Number(rs.ref_invitee_bonus) || 50000;
-                await prisma.$transaction(async (db) => {
-                  const exists = await db.transaction.findFirst({ where: { userId: tx.userId, type: 'referral', note: { contains: markerNote } } });
-                  if (exists) return;
-                  await db.user.update({ where: { id: referrer.id }, data: { balance: { increment: referrerBonus } } });
-                  await db.transaction.create({ data: { userId: referrer.id, type: 'referral', amount: referrerBonus, note: `Referral bonus: ${user.name} deposited` } });
-                  if (inviteeBonus > 0) {
-                    await db.user.update({ where: { id: tx.userId }, data: { balance: { increment: inviteeBonus } } });
-                  }
-                  await db.transaction.create({ data: { userId: tx.userId, type: 'referral', amount: inviteeBonus, note: `Referral welcome bonus ${markerNote}` } });
-                }).catch(e => log.warn('Referral race (crypto webhook)', e.message));
-              }
-            }
-          }
-        }
-      } catch (err) { log.error('Deferred referral (crypto webhook)', err.message); }
+      } else {
+        log.info('NowPayments Webhook', `Finalization skipped for ${order_id}: ${finalization.reason}`);
+      }
     }
 
     // Payment failed or expired
     if (payment_status === 'expired' || payment_status === 'failed' || payment_status === 'refunded') {
       const tx = await prisma.transaction.findFirst({
-        where: { reference: order_id, method: 'crypto', status: { in: ['Pending', 'Processing'] } },
+        where: { reference: order_id, type: 'deposit', method: 'crypto', status: { in: ['Pending', 'Processing'] } },
       });
       if (tx) {
         await prisma.transaction.update({

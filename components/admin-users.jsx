@@ -4,10 +4,12 @@ import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
 import { FilterDropdown } from "./date-range-picker";
+import { pointsFromKoboExact } from "../lib/nitro-rewards-core";
 
 const PER_PAGE = 15;
 const TX_PER_PAGE = 15;
 const initials = (name) => (name || 'U').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+const fPts = (points) => (Number(points) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 const STATUS_MAP = {
   Active: { key: 'active', label: 'Active' },
@@ -863,7 +865,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
                           ['manual_credit', 'Credited', t.accent],
                           ['manual_debit', 'Debited', t.red],
                         ].filter(([type]) => rewards.totals[type]).map(([type, label, color]) => (
-                          <span key={type} style={{ color }}>{label}: <span className="font-bold" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{Math.abs(Math.round((rewards.totals[type].kobo || 0) / 100)).toLocaleString()}</span></span>
+                          <span key={type} style={{ color }}>{label}: <span className="font-bold" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{fPts(Math.abs(pointsFromKoboExact(rewards.totals[type].kobo || 0)))}</span></span>
                         ))}
                       </div>
                     </div>
@@ -881,7 +883,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
                             color: entry.kind === 'earned' ? t.green : entry.kind === 'spent' ? t.red : t.amber
                           }}>{entry.label}</span>
                           <span className="flex-1 min-w-0 truncate" style={{ color: t.textSoft }}>{entry.ref}</span>
-                          <span className="font-bold shrink-0" style={{ color: entry.pts >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>{entry.pts >= 0 ? '+' : ''}{entry.pts}</span>
+                          <span className="font-bold shrink-0" style={{ color: entry.pts >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>{entry.pts >= 0 ? '+' : ''}{fPts(entry.pts)}</span>
                         </div>
                       ))}
                     </div>

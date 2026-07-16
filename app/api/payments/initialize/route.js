@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { parseFbCookies } from '@/lib/meta-capi';
+import { isReservedDepositEffectKey } from '@/lib/deposit-finalization';
 
 async function getGatewayKeys(gatewayId) {
   // Try Settings DB first
@@ -36,6 +37,9 @@ export async function POST(req) {
 
     if (!idempotencyKey || typeof idempotencyKey !== 'string') {
       return Response.json({ error: 'Missing idempotency key' }, { status: 400 });
+    }
+    if (idempotencyKey.length > 200 || isReservedDepositEffectKey(idempotencyKey)) {
+      return Response.json({ error: 'Invalid idempotency key' }, { status: 400 });
     }
 
     if (!amountNum || amountNum < 1000) {

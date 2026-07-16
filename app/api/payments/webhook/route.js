@@ -1,18 +1,17 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { applyWelcomeBonus } from '@/lib/welcome-bonus';
-import { trackDeposit } from '@/lib/meta-capi';
-import { tgPayment } from '@/lib/telegram';
-import { sendEmail, walletCreditEmail, referralBonusEmail } from '@/lib/email';
-import { getWhatsAppChannelUrl } from '@/lib/settings';
+import { notifyDepositFinalized } from '@/lib/deposit-notifications';
+import {
+  getFlutterwaveSecretKey,
+  reconcileFlutterwaveDeposit,
+} from '@/lib/flutterwave-payment';
+
+function acknowledge() {
+  return Response.json({ received: true });
+}
 
 export async function POST(req) {
   try {
-    const secretKey = process.env.FLUTTERWAVE_SECRET_KEY;
-    if (!secretKey) {
-      return Response.json({ error: 'Not configured' }, { status: 503 });
-    }
-
     // Verify Flutterwave webhook signature
     const body = await req.text();
     const signature = req.headers.get('verif-hash');
@@ -30,142 +29,45 @@ export async function POST(req) {
 
     const event = JSON.parse(body);
 
-    if (event.event === 'charge.completed' && event.data?.status === 'successful') {
-      const { tx_ref: reference, amount } = event.data;
-      const amountKobo = Math.round(amount * 100);
+    if (event.event !== 'charge.completed') return acknowledge();
 
-      // Atomically claim the transaction — accepts Pending or Expired (late webhook)
-      const claimed = await prisma.transaction.updateMany({
-        where: { reference, status: { in: ['Pending', 'Expired'] } },
-        data: { status: 'Processing' },
-      });
-
-      if (claimed.count === 0) {
-        log.info('Webhook', `No claimable tx for ref: ${reference} (already completed or missing)`);
-        return Response.json({ received: true });
-      }
-
-      const tx = await prisma.transaction.findFirst({
-        where: { reference, status: 'Processing' },
-      });
-
-      if (!tx) {
-        return Response.json({ received: true });
-      }
-
-      if (amountKobo !== tx.amount) {
-        log.warn('Webhook', `Amount mismatch: expected ${tx.amount}, got ${amountKobo} (ref: ${reference})`);
-        await prisma.transaction.update({ where: { id: tx.id }, data: { status: 'Failed', note: `Amount mismatch: paid ${amountKobo}, expected ${tx.amount}` } });
-        return Response.json({ received: true });
-      }
-
-      // Credit wallet + apply coupon atomically
-      const couponMatch = (tx.note || '').match(/\[coupon:([^\]]+)\]/);
-      const couponId = couponMatch?.[1];
-
-      const { couponBonus, welcomeBonus } = await prisma.$transaction(async (db) => {
-        let bonus = 0;
-        let bonusLabel = '';
-
-        if (couponId) {
-          const alreadyUsed = await db.transaction.findFirst({
-            where: { userId: tx.userId, type: 'bonus', note: { contains: `[cid:${couponId}]` } },
-          });
-          if (!alreadyUsed) {
-            const [row] = await db.$queryRaw`SELECT value FROM settings WHERE key = 'coupons' FOR UPDATE`;
-            if (row) {
-              const coupons = JSON.parse(row.value);
-              const coupon = coupons.find(c => c.id === couponId && c.enabled !== false);
-              if (coupon) {
-                const notExpired = !coupon.expires || new Date(coupon.expires) >= new Date();
-                const notMaxed = !coupon.maxUses || coupon.maxUses === 0 || (coupon.used || 0) < coupon.maxUses;
-                if (notExpired && notMaxed) {
-                  const cappedAmount = coupon.maxDeposit > 0 ? Math.min(amountKobo, coupon.maxDeposit * 100) : amountKobo;
-                  bonus = coupon.type === 'percent' ? Math.round(cappedAmount * (coupon.value / 100)) : coupon.value * 100;
-                  bonusLabel = `Coupon ${coupon.code}: bonus [cid:${couponId}]`;
-                  await db.setting.update({ where: { key: 'coupons' }, data: { value: JSON.stringify(coupons.map(c => c.id === couponId ? { ...c, used: (c.used || 0) + 1 } : c)) } });
-                }
-              }
-            }
-          }
-        }
-
-        await db.user.update({ where: { id: tx.userId }, data: { balance: { increment: amountKobo + bonus } } });
-        await db.transaction.update({ where: { id: tx.id }, data: { status: 'Completed', amount: amountKobo } });
-        if (bonus > 0) {
-          await db.transaction.create({ data: { userId: tx.userId, type: 'bonus', amount: bonus, status: 'Completed', note: bonusLabel } });
-        }
-        const wb = await applyWelcomeBonus(db, tx.userId, amountKobo);
-        return { couponBonus: bonus, welcomeBonus: wb };
-      });
-
-      log.info('Webhook', `₦${amountKobo / 100} + ₦${couponBonus / 100} bonus credited (ref: ${reference})`);
-
-      try {
-        const u = await prisma.user.findUnique({ where: { id: tx.userId }, select: { email: true, name: true, phone: true, balance: true, lastIp: true, lastUa: true, lastFbp: true, lastFbc: true } });
-        if (u) {
-          await trackDeposit({ email: u.email, phone: u.phone, userId: tx.userId, reference, amountKobo, clientIp: u.lastIp, userAgent: u.lastUa, fbp: u.lastFbp, fbc: u.lastFbc });
-          tgPayment(u.name || u.email, amountKobo, couponBonus || 0, 'Flutterwave');
-          // Deposit confirmation email (welcome bonus line renders only when > 0)
-          const amtNaira = amountKobo / 100;
-          const waChannelUrl = await getWhatsAppChannelUrl();
-          const depositHtml = walletCreditEmail(u.name || 'there', amtNaira, null, {
-            kind: 'deposit',
-            bonus: (welcomeBonus || 0) / 100,
-            newBalance: u.balance / 100,
-            method: 'Flutterwave',
-            waChannelUrl,
-          });
-          sendEmail(u.email, `₦${amtNaira.toLocaleString()} is in your wallet`, depositHtml,
-            `Your deposit of ₦${amtNaira.toLocaleString()} landed and is ready to spend. Place an order: https://nitro.ng/dashboard`).catch(() => {});
-        }
-      } catch {}
-
-      // Deferred referral bonus
-      try {
-        const user = await prisma.user.findUnique({ where: { id: tx.userId }, select: { referredBy: true, name: true, signupIp: true } });
-        if (user?.referredBy) {
-          const markerNote = `[ref-marker:${tx.userId}]`;
-          const alreadyPaid = await prisma.transaction.findFirst({ where: { userId: tx.userId, type: 'referral', note: { contains: markerNote } } });
-          if (!alreadyPaid) {
-            const refSettings = await prisma.setting.findMany({ where: { key: { in: ['ref_referrer_bonus', 'ref_invitee_bonus', 'ref_enabled', 'ref_min_deposit'] } } });
-            const rs = {};
-            refSettings.forEach(s => { rs[s.key] = s.value; });
-            const refEnabled = rs.ref_enabled === 'true' || rs.ref_enabled === undefined;
-            const refMinDeposit = Number(rs.ref_min_deposit) || 0;
-            if (refEnabled && refMinDeposit > 0 && amountKobo >= refMinDeposit) {
-              const referrer = await prisma.user.findUnique({ where: { referralCode: user.referredBy } });
-              const sameIp = referrer?.signupIp && user.signupIp && referrer.signupIp !== 'unknown' && referrer.signupIp === user.signupIp;
-              if (referrer && !sameIp) {
-                const referrerBonus = Number(rs.ref_referrer_bonus) || 50000;
-                const inviteeBonus = Number(rs.ref_invitee_bonus) || 50000;
-                const paid = await prisma.$transaction(async (db) => {
-                  const exists = await db.transaction.findFirst({ where: { userId: tx.userId, type: 'referral', note: { contains: markerNote } } });
-                  if (exists) return false;
-                  await db.user.update({ where: { id: referrer.id }, data: { balance: { increment: referrerBonus } } });
-                  await db.transaction.create({ data: { userId: referrer.id, type: 'referral', amount: referrerBonus, note: `Referral bonus: ${user.name} deposited` } });
-                  if (inviteeBonus > 0) {
-                    await db.user.update({ where: { id: tx.userId }, data: { balance: { increment: inviteeBonus } } });
-                  }
-                  await db.transaction.create({ data: { userId: tx.userId, type: 'referral', amount: inviteeBonus, note: `Referral welcome bonus ${markerNote}` } });
-                  return true;
-                }).catch(e => { log.warn('Referral race (webhook)', e.message); return false; });
-                if (paid && referrer.email) {
-                  const refNaira = referrerBonus / 100;
-                  sendEmail(referrer.email, `You received ₦${refNaira.toLocaleString()} on Nitro!`,
-                    referralBonusEmail(referrer.name || 'there', refNaira),
-                    `Someone you referred just made their first deposit. ₦${refNaira.toLocaleString()} landed in your wallet: https://nitro.ng/dashboard`).catch(() => {});
-                }
-              }
-            }
-          }
-        }
-      } catch (err) { log.error('Deferred referral (webhook)', err.message); }
+    const reference = event.data?.tx_ref;
+    if (!reference || typeof reference !== 'string') {
+      log.warn('Webhook', 'Signed charge.completed event has no tx_ref');
+      return acknowledge();
     }
 
-    return Response.json({ received: true });
+    const transaction = await prisma.transaction.findUnique({ where: { reference } });
+    if (!transaction || transaction.type !== 'deposit' || (transaction.method && transaction.method !== 'flutterwave')) {
+      log.info('Webhook', `No Flutterwave deposit for ref: ${reference}`);
+      return acknowledge();
+    }
+
+    const secretKey = await getFlutterwaveSecretKey();
+    if (!secretKey) {
+      log.error('Webhook', 'Flutterwave verification key is not configured');
+    }
+
+    // The signed callback is a prompt to reconcile, not proof of payment. Always
+    // re-query Flutterwave and let the shared reconciler own durable state.
+    const result = await reconcileFlutterwaveDeposit({
+      transaction,
+      secretKey: secretKey || '',
+      recoveredBy: 'webhook',
+    });
+
+    if (result.newlyFinalized && result.finalization) {
+      log.info('Webhook', `Flutterwave deposit credited (ref: ${reference})`);
+      try {
+        await notifyDepositFinalized(result.finalization, { channel: 'Flutterwave' });
+      } catch (notifyError) {
+        log.warn('Webhook notifications', notifyError.message);
+      }
+    }
+
+    return acknowledge();
   } catch (err) {
     log.error('Webhook', err.message);
-    return Response.json({ received: true });
+    return acknowledge();
   }
 }

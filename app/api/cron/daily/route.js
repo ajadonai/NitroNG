@@ -8,6 +8,7 @@ import { tgProviderBalance, tgDailySummary } from '@/lib/telegram';
 import { releaseHeldCommissions } from '@/lib/commissions';
 import { expireBonusCredits, grantWinbackCredit } from '@/lib/bonus-credit';
 import { getTierConfig } from '@/lib/affiliate-settings';
+import { cleanupStaleSignups } from '@/lib/stale-signup-cleanup';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -19,28 +20,15 @@ export async function GET(req) {
   const isScheduled = req.headers.get('x-vercel-cron') === '1';
   const results = { cleanup: {}, balance: {} };
 
-  // ═══ CLEANUP: stale users + permanent deletions ═══
+  // ═══ CLEANUP: unverified signups + permanent deletions ═══
   try {
-    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-
-    const stale = await prisma.user.findMany({
-      where: { createdAt: { lt: cutoff }, balance: 0 },
-      select: { id: true, email: true, createdAt: true, _count: { select: { orders: true } } },
-    });
-
-    const toDelete = stale.filter(u => u._count.orders === 0);
-
-    if (toDelete.length > 0) {
-      const ids = toDelete.map(u => u.id);
-      await prisma.$transaction([
-        prisma.transaction.deleteMany({ where: { userId: { in: ids } } }),
-        prisma.session.deleteMany({ where: { userId: { in: ids } } }),
-        prisma.user.deleteMany({ where: { id: { in: ids } } }),
-      ]);
-      log.info('Cleanup', `Deleted ${toDelete.length} stale users`);
+    const staleCleanup = await cleanupStaleSignups(prisma);
+    if (staleCleanup.deleted > 0) {
+      log.info('Cleanup', `Deleted ${staleCleanup.deleted} unverified stale signups`);
     }
 
-    results.cleanup.deleted = toDelete.length;
+    results.cleanup.deleted = staleCleanup.deleted;
+    results.cleanup.checked = staleCleanup.checked;
 
     // Permanent deletion for users past 30-day window
     const pendingUsers = await prisma.user.findMany({

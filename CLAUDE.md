@@ -6,6 +6,10 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 
 Before building or shipping ANYTHING related to the Tasks page, task rewards, or the tasks launch email: **read `docs/TASKS_LAUNCH_GATE.md` and ask Trip the questions in it first.** The launch email already promises users specific numbers; do not ship task amounts Trip has not confirmed in that conversation.
 
+## ⛔ Support tickets moved to WhatsApp
+
+Customer support is handled entirely through WhatsApp — there is no in-app ticket system. The admin `tickets` page and `SupportPage` exist only as legacy read-only views of old data. **Do not** build, fix, improve, or redesign any ticket-related features: no ticket sidebar widgets, no ticket notifications, no ticket status flows, no new ticket creation UI. If a task mentions tickets, clarify with Trip first — the answer is almost certainly "that's handled on WhatsApp now."
+
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
 ## 1. Think Before Coding

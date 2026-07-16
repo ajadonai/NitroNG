@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { requireAdmin, logActivity } from '@/lib/admin';
-import { getPointsBalanceKoboTx } from '@/lib/nitro-rewards';
+import { getPointsBalanceKoboTx, pointsFromKoboExact } from '@/lib/nitro-rewards';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('rewards');
@@ -68,7 +68,7 @@ export async function GET(req) {
     const netLiabilityChangeKobo = Object.values(byType).reduce((sum, row) => sum + (row.kobo || 0), 0);
 
     return Response.json({
-      liability: { kobo: liability._sum.pointsKobo || 0, points: Math.floor((liability._sum.pointsKobo || 0) / 100) },
+      liability: { kobo: liability._sum.pointsKobo || 0, points: pointsFromKoboExact(liability._sum.pointsKobo || 0) },
       byType,
       cost: {
         orderCount: orderRewards._count || 0,
@@ -158,7 +158,7 @@ export async function GET(req) {
     userName: e.user?.name || null,
     userEmail: e.user?.email || null,
     type: e.type,
-    points: Math.round(e.pointsKobo / 100),
+    points: pointsFromKoboExact(e.pointsKobo),
     pointsKobo: e.pointsKobo,
     orderRef: e.order?.orderId || null,
     reason: e.reason || null,
@@ -203,7 +203,7 @@ export async function POST(req) {
         if (type === 'manual_debit') {
           const balance = await getPointsBalanceKoboTx(tx, userId);
           if (pointsKobo > balance) {
-            return { error: `Cannot debit ${points} pts — user only has ${Math.floor(balance / 100)} pts`, status: 400 };
+            return { error: `Cannot debit ${points} pts — user only has ${pointsFromKoboExact(balance)} pts`, status: 400 };
           }
         }
 
@@ -232,8 +232,8 @@ export async function POST(req) {
 
       return Response.json({
         success: true,
-        entry: { id: result.entry.id, type: result.entry.type, points: Math.round(result.entry.pointsKobo / 100), reason: result.entry.reason },
-        newBalance: Math.floor(result.newBalance / 100),
+        entry: { id: result.entry.id, type: result.entry.type, points: pointsFromKoboExact(result.entry.pointsKobo), reason: result.entry.reason },
+        newBalance: pointsFromKoboExact(result.newBalance),
       });
     } catch (e) {
       if (e.code === 'P2034' && attempt < MAX_RETRIES - 1) continue;
