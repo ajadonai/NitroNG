@@ -13,9 +13,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - run: npm ci
       - run: npx prisma generate
       - run: npx vitest run
       - run: npx next build
+        env:
+          JWT_SECRET: ci-build-only-user-secret-not-for-runtime
+          JWT_ADMIN_SECRET: ci-build-only-admin-secret-not-for-runtime
