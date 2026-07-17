@@ -7,6 +7,7 @@ import { voidCommissions } from '@/lib/commissions';
 import { cleanLink } from '@/lib/clean-link';
 import { tgRefundAlert } from '@/lib/telegram';
 import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
+import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer-display';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -50,8 +51,8 @@ export async function GET(req) {
 
     const include = {
       user: { select: { name: true, email: true, phone: true } },
-      service: { select: { name: true, category: true, provider: true, apiId: true, costPer1k: true } },
-      tier: { select: { tier: true, sellPer1k: true, group: { select: { name: true, platform: true, type: true } }, service: { select: { apiId: true, costPer1k: true } } } },
+      service: { select: { name: true, category: true, provider: true, apiId: true, costPer1k: true, enabled: true } },
+      tier: { select: { tier: true, sellPer1k: true, enabled: true, serviceId: true, group: { select: { name: true, platform: true, type: true, enabled: true } }, service: { select: { apiId: true, costPer1k: true } } } },
       dripDispatches: { select: { id: true, day: true, batch: true, quantity: true, status: true, apiOrderId: true, scheduledAt: true, dispatchedAt: true, completedAt: true, lastError: true }, orderBy: { scheduledAt: 'asc' } },
     };
     if (search && searchCondition.OR) searchCondition.OR.push({ dripDispatches: { some: { apiOrderId: { contains: search, mode: 'insensitive' } } } });
@@ -136,16 +137,20 @@ export async function GET(req) {
     return Response.json({
       total,
       counts,
-      orders: orders.map(o => ({
+      orders: orders.map(o => {
+        const offer = getOrderOfferDisplay(o);
+        return {
         id: o.orderId || o.id,
         internalId: o.id,
         userId: o.userId,
         user: o.user?.name || 'Unknown',
         email: sensitive ? (o.user?.email || '') : maskEmail(o.user?.email),
         phone: sensitive ? (o.user?.phone || null) : maskPhone(o.user?.phone),
-        service: o.tier?.group?.name || o.service?.name || o.serviceId,
-        tier: o.tier?.tier || null,
-        platform: o.tier?.group?.platform || o.service?.category || 'unknown',
+        service: offer.serviceName,
+        tier: offer.tierLabel,
+        tierLabel: offer.tierLabel,
+        offerDisabled: offer.offerDisabled,
+        platform: offer.platform,
         category: o.service?.category || 'unknown',
         provider: o.service?.provider || 'mtp',
         serviceApiId: o.service?.apiId || null,
@@ -165,7 +170,7 @@ export async function GET(req) {
         queuedBehind: o.queuedBehind || null,
         retryCount: o.retryCount || 0,
         created: o.createdAt.toISOString(),
-        serviceType: o.tier?.group?.type || null,
+        serviceType: offer.serviceType,
         refundedAt: o.refundedAt?.toISOString() || null,
         redispatchedAt: o.redispatchedAt?.toISOString() || null,
         parentOrderId: o.parentOrderId || null,
@@ -176,7 +181,8 @@ export async function GET(req) {
         })(),
         tierServiceApiId: o.tier?.service?.apiId || null,
         tierCurrentPrice: o.tier?.sellPer1k ? Math.round(Number(o.tier.sellPer1k) * o.quantity / 1000) / 100 : null,
-      })),
+        };
+      }),
     });
   } catch (err) {
     log.error('Admin Orders', err.message);
@@ -652,6 +658,11 @@ export async function POST(req) {
       }
 
       const newId = await nextOrderId();
+      const childOfferSnapshot = buildOrderOfferSnapshot({
+        tier: fullOrder.tier,
+        service,
+        sourceOrder: fullOrder,
+      });
       const newOrder = await prisma.$transaction(async (tx) => {
         if (newCharge > 0) {
           await tx.$executeRaw`UPDATE users SET balance = balance - ${newCharge} WHERE id = ${fullOrder.user.id} AND balance >= ${newCharge}`;
@@ -662,6 +673,7 @@ export async function POST(req) {
             orderId: newId, userId: fullOrder.userId, serviceId: service.id, tierId: fullOrder.tierId,
             link, quantity: remainingQty, charge: newCharge, cost: newCost, status: 'Processing',
             parentOrderId: fullOrder.orderId, comments: fullOrder.comments,
+            ...childOfferSnapshot,
             ...(dripSchedule ? { dripDays: fullOrder.dripDays || 1 } : {}),
           },
         });

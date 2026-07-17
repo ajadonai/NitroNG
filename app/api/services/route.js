@@ -1,6 +1,7 @@
 import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { getPublicServiceLabel } from '@/lib/public-service-label';
 
 export async function GET() {
   try {
@@ -20,7 +21,7 @@ export async function GET() {
     return Response.json({
       services: services.map(s => ({
         id: s.id,
-        name: s.name,
+        name: getPublicServiceLabel(s.name, s.category),
         category: s.category,
         platform: s.category.toLowerCase().replace('twitter/x', 'twitter'),
         rate: Number(s.sellPer1k) / 100,

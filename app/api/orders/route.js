@@ -13,6 +13,7 @@ import { voidCommissions } from '@/lib/commissions';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
 import { buildOrderDisplayGroups } from '@/lib/order-history';
 import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints, reverseOrderPoints, getPointsBalanceKoboTx, computeRefundSplit, MIN_REDEEM_POINTS } from '@/lib/nitro-rewards';
+import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer-display';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -99,7 +100,7 @@ export async function GET(req) {
         ],
       },
       orderBy: { createdAt: 'desc' },
-      include: { service: { select: { name: true, category: true } }, tier: { select: { tier: true, speed: true, refill: true, refillDays: true, group: { select: { name: true, platform: true, type: true } } } }, dripDispatches: { where: { status: { in: ['pending', 'dispatching', 'processing'] } }, select: { scheduledAt: true }, orderBy: { scheduledAt: 'desc' }, take: 1 } },
+      include: { service: { select: { name: true, category: true, enabled: true } }, tier: { select: { tier: true, speed: true, refill: true, refillDays: true, enabled: true, serviceId: true, group: { select: { name: true, platform: true, type: true, enabled: true } } } }, dripDispatches: { where: { status: { in: ['pending', 'dispatching', 'processing'] } }, select: { scheduledAt: true }, orderBy: { scheduledAt: 'desc' }, take: 1 } },
     });
 
     return Response.json({
@@ -107,13 +108,16 @@ export async function GET(req) {
       matchingOrdersTotal: matchingRefs.length,
       page,
       totalPages: Math.max(1, Math.ceil(total / perPage)),
-      orders: orders.map(o => ({
+      orders: orders.map(o => {
+        const offer = getOrderOfferDisplay(o);
+        return {
         id: o.orderId || o.id,
         internalId: o.id,
-        service: o.tier?.group?.name || o.service?.name || o.serviceId,
-        tier: o.tier?.group?.name && o.tier?.tier ? o.tier.tier : null,
+        service: offer.serviceName,
+        tier: offer.tierLabel,
+        offerDisabled: offer.offerDisabled,
         speed: o.tier?.speed || null,
-        platform: o.tier?.group?.platform || o.service?.category || 'unknown',
+        platform: offer.platform,
         link: o.link,
         quantity: o.quantity,
         charge: o.charge / 100,
@@ -128,11 +132,12 @@ export async function GET(req) {
         refillDays: o.tier?.refillDays || 0,
         completedAt: o.completedAt?.toISOString() || null,
         created: o.createdAt.toISOString(),
-        serviceType: o.tier?.group?.type || null,
+        serviceType: offer.serviceType,
         dripDays: o.dripDays || null,
         dripEndAt: o.dripDispatches?.[0]?.scheduledAt?.toISOString() || null,
         queuedBehind: o.queuedBehind || null,
-      })),
+        };
+      }),
     });
   } catch (err) {
     log.error('Orders GET', err.message);
@@ -150,7 +155,7 @@ export async function PATCH(req) {
 
     const order = await prisma.order.findFirst({
       where: { OR: [{ orderId }, { id: orderId }], userId: session.id, deletedAt: null },
-      include: { service: true, tier: { select: { sellPer1k: true, tier: true, group: { select: { name: true, tags: true, type: true } } } } },
+      include: { service: true, tier: { select: { sellPer1k: true, tier: true, enabled: true, serviceId: true, group: { select: { name: true, tags: true, type: true, platform: true, enabled: true } } } } },
     });
     if (!order) return Response.json({ error: 'Order not found' }, { status: 404 });
 
@@ -252,7 +257,7 @@ export async function PATCH(req) {
         return true;
       });
       if (!refunded) return Response.json({ error: 'Order already sent to provider' }, { status: 409 });
-      tgRefundAlert({ orderId: order.orderId, amount: order.charge, charge: order.charge, qty: order.quantity, status: 'Cancelled', reason: 'user_cancelled', service: order.tier?.group?.name, source: 'user' });
+      tgRefundAlert({ orderId: order.orderId, amount: order.charge, charge: order.charge, qty: order.quantity, status: 'Cancelled', reason: 'user_cancelled', service: getOrderOfferDisplay(order).serviceName, source: 'user' });
       voidCommissions(order.id, 'user_cancelled').catch(() => {});
       const cancelResponse = { success: true, status: 'Cancelled', refunded: cancelWalletRefund / 100 };
       if (cancelPointsRestore > 0) cancelResponse.pointsRestored = cancelPointsRestore / 100;
@@ -261,9 +266,11 @@ export async function PATCH(req) {
 
     if (action === 'reorder') {
       // Re-place the same order with same service, link, quantity — but at CURRENT price
-      if (!order.service || !order.service.enabled) {
+      const reorderOffer = getOrderOfferDisplay(order);
+      if (!order.service || !order.service.enabled || reorderOffer.offerDisabled) {
         return Response.json({ error: 'Service no longer available' }, { status: 400 });
       }
+      const reorderSnapshot = buildOrderOfferSnapshot({ tier: order.tier, service: order.service });
 
       const reorderActiveForLink = await prisma.order.findFirst({
         where: { serviceId: order.serviceId, link: order.link, status: { in: ['Pending', 'Processing', 'In progress'] }, deletedAt: null },
@@ -346,6 +353,7 @@ export async function PATCH(req) {
             comments: order.comments,
             loyaltyDiscount: reorderLoyaltyDiscount,
             nitroStatusAtPurchase: reorderNitroTier?.key || null,
+            ...reorderSnapshot,
             campaignDiscount: reorderPromoDiscount,
             campaignPercent: reorderPromoPercent,
             platformCampaignId: reorderPromoType === 'platform' ? reorderPromoId : null,
@@ -376,7 +384,7 @@ export async function PATCH(req) {
           data: {
             userId: session.id, type: 'order', amount: -charge,
             method: 'wallet', status: 'Completed', reference: newOrderId,
-            note: `Reorder ${newOrderId} — ${order.tier?.group?.name ? `${order.tier.group.name} (${order.tier.tier})` : order.service.name} x${order.quantity.toLocaleString()}${reorderDiscountParts.length > 0 ? ` (${reorderDiscountParts.join(', ')})` : ''}`,
+            note: `Reorder ${newOrderId} — ${reorderOffer.serviceName}${reorderOffer.tierLabel ? ` (${reorderOffer.tierLabel})` : ''} x${order.quantity.toLocaleString()}${reorderDiscountParts.length > 0 ? ` (${reorderDiscountParts.join(', ')})` : ''}`,
           },
         });
         return created;
@@ -448,13 +456,13 @@ export async function PATCH(req) {
         }
       }
 
-      tgNewOrder(newOrderId, order.tier?.group?.name || order.service.name, order.quantity, charge, session.email, order.link, order.service.category);
+      tgNewOrder(newOrderId, reorderOffer.serviceName, order.quantity, charge, session.email, order.link, reorderOffer.platform);
 
       return Response.json({
         success: true,
         ...(reorderQueued ? { queued: true, message: 'Order queued — will start when your current order for this link completes.' } : {}),
         order: {
-          id: newOrderId, service: order.service.name, quantity: order.quantity,
+          id: newOrderId, service: reorderOffer.serviceName, tier: reorderOffer.tierLabel, quantity: order.quantity,
           charge: charge / 100, status: (apiOrderId || reorderDripSchedule) ? 'Processing' : 'Pending',
           ...(reorderLoyaltyDiscount > 0 ? { loyaltyDiscount: reorderLoyaltyDiscount / 100, loyaltyTier: reorderNitroTier?.name } : {}),
           ...(reorderPromoDiscount > 0 ? { promoDiscount: reorderPromoDiscount / 100, promoPercent: reorderPromoPercent, promoLabel: reorderPromoLabel } : {}),
@@ -529,7 +537,7 @@ export async function POST(req) {
       }
     }
 
-    let service, tier, charge, cost, tierName, qty;
+    let service, tier, charge, cost, tierName, qty, offerSnapshot;
 
     if (tierId) {
       // New flow: resolve service from tier
@@ -537,14 +545,13 @@ export async function POST(req) {
         where: { id: tierId },
         include: { service: true, group: true },
       });
-      if (!tier || !tier.enabled) {
+      if (!tier || !tier.enabled || !tier.group?.enabled) {
         return Response.json({ error: 'Service tier not available' }, { status: 400 });
       }
       service = tier.service;
       if (!service || !service.enabled) {
         return Response.json({ error: 'Backing service not available' }, { status: 400 });
       }
-      tierName = `${tier.group.name} (${tier.tier})`;
       // Nitro minimum order floors
       const NITRO_MINS = { followers: 100, likes: 100, views: 500, comments: 10, engagement: 50, plays: 500, reviews: 10 };
       const nitroMin = NITRO_MINS[tier.group.type?.toLowerCase()] || 50;
@@ -573,8 +580,10 @@ export async function POST(req) {
       }
       charge = Math.ceil((Number(service.sellPer1k) / 1000) * qty / 100) * 100;
       cost = Math.ceil((Number(service.costPer1k) * usdRate / 1000) * qty / 100) * 100;
-      tierName = service.name;
     }
+
+    offerSnapshot = buildOrderOfferSnapshot({ tier, service });
+    tierName = `${offerSnapshot.serviceNameAtPurchase}${offerSnapshot.tierNameAtPurchase ? ` (${offerSnapshot.tierNameAtPurchase})` : ''}`;
 
     // Reject zero/negative charges (misconfigured service)
     if (!charge || charge <= 0) {
@@ -778,6 +787,7 @@ export async function POST(req) {
               comments: comments ? comments.split('\n').map(l => l.trim().replace(/^[“”””]+|[“”””]+$/g, '').trim()).filter(Boolean).join('\n').slice(0, 5000) : null,
               loyaltyDiscount,
               nitroStatusAtPurchase: nitroTier?.key || null,
+              ...offerSnapshot,
               nitroPointsRedeemedKobo: pointsDiscountKobo,
               campaignDiscount: promoDiscount,
               campaignPercent: promoPercent,

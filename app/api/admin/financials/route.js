@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, canSeeSensitive, maskEmail } from '@/lib/admin';
 import { watBounds } from '@/lib/format';
+import { getOrderOfferDisplay } from '@/lib/order-offer-display';
 
 const ALL_SECTIONS = ['wallet', 'orders', 'points', 'provider', 'affiliate', 'liabilities'];
 
@@ -64,8 +65,8 @@ async function buildFinanceCsvReport({ dateCond, txWhere, filters, range, sectio
       where: orderWhere,
       include: {
         user: { select: { id: true, name: true, email: true } },
-        service: { select: { name: true, category: true, provider: true } },
-        tier: { select: { tier: true } },
+        service: { select: { name: true, category: true, provider: true, enabled: true } },
+        tier: { select: { tier: true, enabled: true, serviceId: true, group: { select: { name: true, platform: true, type: true, enabled: true } } } },
         creditUsages: { select: { amount: true } },
       },
       orderBy: { createdAt: 'asc' },
@@ -150,6 +151,7 @@ async function buildFinanceCsvReport({ dateCond, txWhere, filters, range, sectio
   if (has('orders') && orders.length) {
     const cols = ['date', 'orderId', 'status', 'user', 'platform', 'service', 'tier', 'provider', 'revenue_naira', 'cost_naira', 'profit_naira', 'status_discount_naira', 'campaign_discount_naira', 'points_redeemed_naira', 'bonus_used_naira'];
     const rows = orders.map(order => {
+      const offer = getOrderOfferDisplay(order);
       const isCancelled = order.status === 'Cancelled';
       const bonusUsed = order.creditUsages.reduce((s, u) => s + (u.amount || 0), 0);
       const rev = isCancelled ? 0 : (order.charge || 0);
@@ -159,9 +161,9 @@ async function buildFinanceCsvReport({ dateCond, txWhere, filters, range, sectio
         orderId: order.orderId,
         status: order.status,
         user: order.user?.name || '',
-        platform: order.service?.category || '',
-        service: order.service?.name || '',
-        tier: order.tier?.tier || '',
+        platform: offer.platform,
+        service: offer.serviceName,
+        tier: offer.tierLabel || '',
         provider: order.service?.provider || '',
         revenue_naira: n(rev),
         cost_naira: n(cost),

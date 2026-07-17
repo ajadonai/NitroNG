@@ -15,6 +15,7 @@ import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
 import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints, reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
 import { isReservedProviderQueryLeaseKey } from '@/lib/provider-query-lease';
+import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer-display';
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -129,13 +130,19 @@ export async function GET(req) {
     if (batchId) {
       const orders = await prisma.order.findMany({
         where: { batchId, userId: session.id, deletedAt: null },
-        include: { service: { select: { name: true, category: true } } },
+        include: {
+          service: { select: { name: true, category: true, enabled: true } },
+          tier: { select: { tier: true, enabled: true, serviceId: true, group: { select: { name: true, platform: true, type: true, enabled: true } } } },
+        },
         orderBy: { createdAt: 'asc' },
       });
       if (orders.length === 0) return Response.json({ error: 'Batch not found' }, { status: 404 });
       return Response.json({
         batchId,
-        orders: orders.map(o => ({ id: o.orderId, link: o.link, quantity: o.quantity, charge: o.charge / 100, status: o.status, service: o.service?.name, created: o.createdAt.toISOString() })),
+        orders: orders.map(o => {
+          const offer = getOrderOfferDisplay(o);
+          return { id: o.orderId, link: o.link, quantity: o.quantity, charge: o.charge / 100, status: o.status, service: offer.serviceName, tier: offer.tierLabel, offerDisabled: offer.offerDisabled, created: o.createdAt.toISOString() };
+        }),
         summary: {
           total: orders.length,
           completed: orders.filter(o => o.status === 'Completed').length,
@@ -190,7 +197,7 @@ export async function PATCH(req) {
 
     const batchOrders = await prisma.order.findMany({
       where: { batchId, userId: session.id, deletedAt: null },
-      include: { service: { select: { provider: true, apiId: true, name: true, category: true, costPer1k: true } }, tier: { include: { group: true } } },
+      include: { service: { select: { provider: true, apiId: true, name: true, category: true, costPer1k: true, enabled: true } }, tier: { include: { group: true } } },
     });
     if (batchOrders.length === 0) return Response.json({ error: 'Batch not found' }, { status: 404 });
 
@@ -323,6 +330,9 @@ export async function PATCH(req) {
     if (action === 'reorder_completed') {
       const completed = batchOrders.filter(o => o.status === 'Completed');
       if (completed.length === 0) return Response.json({ error: 'No completed orders to reorder' }, { status: 400 });
+      if (completed.some(o => getOrderOfferDisplay(o).offerDisabled)) {
+        return Response.json({ error: 'One or more services in this batch are no longer available' }, { status: 400 });
+      }
 
       const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
       const usdRate = Number(usdRateSetting?.value || 1600);
@@ -345,11 +355,12 @@ export async function PATCH(req) {
           const d = orderData[i];
           const o = d.original;
           const orderId = ids[i];
+          const offerSnapshot = buildOrderOfferSnapshot({ tier: o.tier, service: o.service });
           const created = await tx.order.create({
-            data: { orderId, userId: session.id, serviceId: o.serviceId, tierId: o.tierId, batchId: newBatchId, link: o.link, quantity: o.quantity, charge: d.charge, cost: d.cost, comments: o.comments, status: 'Pending' },
+            data: { orderId, userId: session.id, serviceId: o.serviceId, tierId: o.tierId, batchId: newBatchId, link: o.link, quantity: o.quantity, charge: d.charge, cost: d.cost, comments: o.comments, status: 'Pending', ...offerSnapshot },
           });
           await trackBonusConsumption(tx, session.id, created.id, d.charge);
-          createdOrders.push({ dbId: created.id, orderId, service: o.service, tier: o.tier, link: o.link, qty: o.quantity, comments: o.comments });
+          createdOrders.push({ dbId: created.id, orderId, service: o.service, tier: o.tier, link: o.link, qty: o.quantity, charge: d.charge, comments: o.comments, offerSnapshot });
         }
 
         await tx.transaction.create({
@@ -360,7 +371,7 @@ export async function PATCH(req) {
       });
 
       for (const o of result.createdOrders) {
-        const tierName = o.tier?.group?.name ? `${o.tier.group.name} — ${o.tier.tier}` : o.service?.name || 'Unknown';
+        const tierName = `${o.offerSnapshot.serviceNameAtPurchase}${o.offerSnapshot.tierNameAtPurchase ? ` — ${o.offerSnapshot.tierNameAtPurchase}` : ''}`;
         tgNewOrder(o.orderId, tierName, o.qty, o.charge || 0, session.email, o.link, o.service?.category);
       }
 
@@ -451,7 +462,7 @@ export async function POST(req) {
         where: { id: row.tierId },
         include: { service: true, group: true },
       });
-      if (!tier || !tier.enabled) {
+      if (!tier || !tier.enabled || !tier.group?.enabled) {
         return Response.json({ error: `Row ${i + 1}: service tier not available` }, { status: 400 });
       }
       const service = tier.service;
@@ -471,11 +482,12 @@ export async function POST(req) {
 
       const serverPrice = Number(tier.sellPer1k);
       const clientPrice = row.expectedPrice ? row.expectedPrice * 100 : null;
+      const offerSnapshot = buildOrderOfferSnapshot({ tier, service });
       if (clientPrice && serverPrice > clientPrice && (serverPrice - clientPrice) / clientPrice > 0.05) {
         driftRows.push({
           row: i + 1,
           tierId: tier.id,
-          service: tier.group?.name || service.name,
+          service: offerSnapshot.serviceNameAtPurchase,
           tier: tier.tier,
           clientPrice,
           serverPrice,
@@ -490,7 +502,7 @@ export async function POST(req) {
         return Response.json({ error: `Row ${i + 1}: service pricing not configured` }, { status: 400 });
       }
 
-      const tierName = `${tier.group.name} (${tier.tier})`;
+      const tierName = `${offerSnapshot.serviceNameAtPurchase} (${offerSnapshot.tierNameAtPurchase})`;
       const comments = row.comments?.trim().slice(0, 5000) || null;
 
       const at = (service.apiType || '').toLowerCase();
@@ -509,7 +521,7 @@ export async function POST(req) {
       const bulkPlatform = (service.category || '').toLowerCase();
       const bulkDripCfg = getDripConfig(bulkGroupType, bulkPlatform);
       const dripSchedule = process.env.NODE_ENV !== 'development' && tier.group?.tags?.includes('drip') && bulkDripCfg && qty >= bulkDripCfg.threshold ? calculateIntradayDrip(qty, service.min || 50, new Date(), bulkGroupType, bulkPlatform) : null;
-      resolved.push({ tier, service, link: trimmedLink, qty, charge, cost, tierName, comments, dripSchedule });
+      resolved.push({ tier, service, link: trimmedLink, qty, charge, cost, tierName, comments, dripSchedule, offerSnapshot });
     }
 
     if (driftRows.length > 0) {
@@ -574,6 +586,7 @@ export async function POST(req) {
             comments: o.comments,
             loyaltyDiscount: o.discount,
             nitroStatusAtPurchase: nitroTier?.key || null,
+            ...o.offerSnapshot,
             campaignDiscount: o.promoDiscount,
             campaignPercent: activePromo ? activePromo.discountPercent : null,
             platformCampaignId: promoType === 'platform' ? activePromo.id : null,

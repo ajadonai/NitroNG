@@ -4,27 +4,32 @@ import { getCurrentUser } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
 import { getBonusInfo } from '@/lib/bonus-credit';
 import { serializeTransaction, transactionHistoryCutoff } from '@/lib/transaction-history';
+import { getOrderOfferDisplay } from '@/lib/order-offer-display';
 
 const ORDER_INCLUDE = {
-  service: { select: { name: true, category: true } },
+  service: { select: { name: true, category: true, enabled: true } },
   tier: {
     select: {
       tier: true,
+      enabled: true,
+      serviceId: true,
       speed: true,
       refill: true,
       refillDays: true,
-      group: { select: { name: true, platform: true, type: true } },
+      group: { select: { name: true, platform: true, type: true, enabled: true } },
     },
   },
 };
 
 function serializeOrder(o) {
+  const offer = getOrderOfferDisplay(o);
   return {
     id: o.orderId || o.id,
     internalId: o.id,
-    service: o.tier?.group?.name || o.service?.name || o.serviceId,
-    platform: o.tier?.group?.platform || o.service?.category || 'unknown',
-    tier: o.tier?.tier || null,
+    service: offer.serviceName,
+    platform: offer.platform,
+    tier: offer.tierLabel,
+    offerDisabled: offer.offerDisabled,
     speed: o.tier?.speed || null,
     link: o.link,
     quantity: o.quantity,
@@ -40,7 +45,7 @@ function serializeOrder(o) {
     refillDays: o.tier?.refillDays || 0,
     completedAt: o.completedAt?.toISOString() || null,
     created: o.createdAt.toISOString(),
-    serviceType: o.tier?.group?.type || null,
+    serviceType: offer.serviceType,
     dripDays: o.dripDays || null,
   };
 }
@@ -56,7 +61,7 @@ async function getOrderSummary(userId) {
         o."lastError",
         o."apiOrderId",
         o."queuedBehind",
-        COALESCE(sg.platform, s.category, 'unknown') AS platform
+        COALESCE(o."platformAtPurchase", sg.platform, s.category, 'unknown') AS platform
       FROM orders o
       JOIN services s ON s.id = o."serviceId"
       LEFT JOIN service_tiers st ON st.id = o."tierId"

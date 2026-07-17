@@ -490,8 +490,13 @@ export default function AdminOrdersPage({ dark, t }) {
                             <PlatformIcon platform={o.platform} dark={dark} size={22} />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
-                            {o.tier && <div className="text-[10px] desktop:text-[11px] font-medium mt-0.5" style={{ color: t.accent }}>{o.tier}</div>}
+                            <div title={o.service} className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
+                            {(o.tierLabel || o.offerDisabled) && (
+                              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                {o.tierLabel && <span className="text-[10px] desktop:text-[11px] font-medium" style={{ color: t.accent }}>{o.tierLabel}</span>}
+                                {o.offerDisabled && <span className="inline-flex items-center rounded-full py-px px-1.5 text-[9px] desktop:text-[10px] font-semibold uppercase tracking-[0.4px]" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.07)", color: dark ? "#fca5a5" : "#dc2626", border: `1px solid ${dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.12)"}` }}>Disabled</span>}
+                              </div>
+                            )}
                             <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5 flex-wrap" style={{ color: t.textMuted }}>
                               <span>{o.created ? fD(o.created, true) : ""}</span>
                               <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
@@ -652,8 +657,13 @@ export default function AdminOrdersPage({ dark, t }) {
                   <PlatformIcon platform={o.platform} dark={dark} size={26} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
-                  {o.tier && <div className="text-[11px] desktop:text-xs font-medium mt-0.5" style={{ color: t.accent }}>{o.tier}</div>}
+                  <div title={o.service} className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
+                  {(o.tierLabel || o.offerDisabled) && (
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      {o.tierLabel && <span className="text-[11px] desktop:text-xs font-medium" style={{ color: t.accent }}>{o.tierLabel}</span>}
+                      {o.offerDisabled && <span className="inline-flex items-center rounded-full py-px px-1.5 text-[9px] desktop:text-[10px] font-semibold uppercase tracking-[0.4px]" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.07)", color: dark ? "#fca5a5" : "#dc2626", border: `1px solid ${dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.12)"}` }}>Disabled</span>}
+                    </div>
+                  )}
                   <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5 flex-wrap" style={{ color: t.textMuted }}>
                     <span>{o.created ? fD(o.created, true) : ""}</span>
                     <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />

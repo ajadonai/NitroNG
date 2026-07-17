@@ -288,6 +288,10 @@ model Order {
   parentOrderId           String?
   loyaltyDiscount         Int       @default(0)
   nitroStatusAtPurchase   String?
+  serviceNameAtPurchase   String?
+  tierNameAtPurchase      String?
+  platformAtPurchase      String?
+  serviceTypeAtPurchase   String?
   nitroPointsEarnedKobo   Int       @default(0)
   nitroPointsRedeemedKobo Int       @default(0)
   campaignDiscount        Int       @default(0)

@@ -122,13 +122,30 @@ export async function POST(req) {
       const { groupId } = body;
       if (!groupId) return Response.json({ error: 'Group ID required' }, { status: 400 });
 
-      const group = await prisma.serviceGroup.findUnique({ where: { id: groupId } });
+      const group = await prisma.serviceGroup.findUnique({
+        where: { id: groupId },
+        include: { tiers: { select: { id: true } } },
+      });
       if (!group) return Response.json({ error: 'Group not found' }, { status: 404 });
 
-      await prisma.serviceGroup.delete({ where: { id: groupId } }); // cascade deletes tiers
-      await logActivity(admin.name, `Deleted service group "${group.name}"`, 'service');
+      const tierIds = group.tiers.map(tier => tier.id);
+      const referencedOrders = tierIds.length > 0
+        ? await prisma.order.count({ where: { tierId: { in: tierIds } } })
+        : 0;
+      const archived = referencedOrders > 0;
+
+      if (archived) {
+        await prisma.$transaction([
+          prisma.serviceGroup.update({ where: { id: groupId }, data: { enabled: false } }),
+          prisma.serviceTier.updateMany({ where: { groupId }, data: { enabled: false } }),
+        ]);
+      } else {
+        await prisma.serviceGroup.delete({ where: { id: groupId } }); // cascade deletes unused tiers
+      }
+
+      await logActivity(admin.name, `${archived ? 'Archived' : 'Deleted'} service group "${group.name}"`, 'service');
       invalidateServiceCatalogue();
-      return Response.json({ success: true });
+      return Response.json({ success: true, archived });
     }
 
     // ── Tier actions ──
@@ -201,10 +218,21 @@ export async function POST(req) {
       const existing = await prisma.serviceTier.findUnique({ where: { id: tierIdToDelete }, include: { group: true } });
       if (!existing) return Response.json({ error: 'Tier not found' }, { status: 404 });
 
-      await prisma.serviceTier.delete({ where: { id: tierIdToDelete } });
-      await logActivity(admin.name, `Deleted ${existing.tier} tier from "${existing.group.name}"`, 'service');
+      const referencedOrders = await prisma.order.count({ where: { tierId: tierIdToDelete } });
+      const archived = referencedOrders > 0;
+
+      if (archived) {
+        await prisma.serviceTier.update({
+          where: { id: tierIdToDelete },
+          data: { enabled: false },
+        });
+      } else {
+        await prisma.serviceTier.delete({ where: { id: tierIdToDelete } });
+      }
+
+      await logActivity(admin.name, `${archived ? 'Archived' : 'Deleted'} ${existing.tier} tier from "${existing.group.name}"`, 'service');
       invalidateServiceCatalogue();
-      return Response.json({ success: true });
+      return Response.json({ success: true, archived });
     }
 
     if (action === 'recalculate-prices') {

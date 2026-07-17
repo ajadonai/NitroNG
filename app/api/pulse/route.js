@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { watBounds } from '@/lib/format';
+import { getOrderOfferDisplay } from '@/lib/order-offer-display';
 import {
   internalDashboardAccessError,
   requireInternalDashboardAccess,
@@ -111,8 +112,15 @@ export async function GET(req) {
         take: 15,
         include: {
           user: { select: { name: true, email: true } },
-          service: { select: { name: true, category: true } },
-          tier: { select: { tier: true, group: { select: { name: true } } } },
+          service: { select: { name: true, category: true, enabled: true } },
+          tier: {
+            select: {
+              tier: true,
+              enabled: true,
+              serviceId: true,
+              group: { select: { name: true, platform: true, type: true, enabled: true } },
+            },
+          },
         },
       }),
       prisma.transaction.findMany({
@@ -127,8 +135,15 @@ export async function GET(req) {
         take: 15,
         include: {
           user: { select: { name: true, email: true } },
-          service: { select: { name: true, category: true } },
-          tier: { select: { tier: true, group: { select: { name: true } } } },
+          service: { select: { name: true, category: true, enabled: true } },
+          tier: {
+            select: {
+              tier: true,
+              enabled: true,
+              serviceId: true,
+              group: { select: { name: true, platform: true, type: true, enabled: true } },
+            },
+          },
         },
       }),
       prisma.order.findMany({
@@ -306,16 +321,20 @@ export async function GET(req) {
       chartData,
       topPlatforms,
       byStatus: ordersByStatus.map(s => ({ status: s.status, count: s._count })),
-      recentOrders: recentOrders.map(o => ({
-        id: o.orderId || o.id,
-        service: o.tier?.group?.name || o.service?.name || o.serviceId,
-        platform: o.service?.category || 'unknown',
-        user: o.user?.name || o.user?.email || 'Unknown',
-        charge: (o.charge || 0) / 100,
-        status: o.status,
-        cancelReason: o.status === 'Cancelled' ? (o.lastError || null) : null,
-        created: o.createdAt.toISOString(),
-      })),
+      recentOrders: recentOrders.map(o => {
+        const offer = getOrderOfferDisplay(o);
+        return {
+          id: o.orderId || o.id,
+          service: offer.serviceName,
+          tier: offer.tierLabel,
+          platform: offer.platform,
+          user: o.user?.name || o.user?.email || 'Unknown',
+          charge: (o.charge || 0) / 100,
+          status: o.status,
+          cancelReason: o.status === 'Cancelled' ? (o.lastError || null) : null,
+          created: o.createdAt.toISOString(),
+        };
+      }),
       recentRefunds: await (async () => {
         const refOrderIds = recentRefunds.map(o => o.orderId || o.id);
         const refTotals = refOrderIds.length > 0
@@ -325,10 +344,12 @@ export async function GET(req) {
         for (const r of refTotals) { const oid = r.reference.replace(/^(ADM-)?REF-/, ''); refMap[oid] = (refMap[oid] || 0) + (r._sum.amount || 0); }
         return recentRefunds.map(o => {
           const oid = o.orderId || o.id;
+          const offer = getOrderOfferDisplay(o);
           return {
             id: oid,
-            service: o.tier?.group?.name || o.service?.name || o.serviceId,
-            platform: o.service?.category || 'unknown',
+            service: offer.serviceName,
+            tier: offer.tierLabel,
+            platform: offer.platform,
             user: o.user?.name || o.user?.email || 'Unknown',
             charge: (o.charge || 0) / 100,
             refunded: (refMap[oid] || 0) / 100,

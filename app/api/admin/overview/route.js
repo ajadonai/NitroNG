@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, getAdminPages, canSeeSensitive, maskEmail } from '@/lib/admin';
 import { watBounds } from '@/lib/format';
+import { getOrderOfferDisplay } from '@/lib/order-offer-display';
 
 function humanize(raw, admin) {
   const name = admin?.split(' ')[0] || 'Admin';
@@ -135,7 +136,18 @@ export async function GET() {
         where: { deletedAt: null },
         orderBy: { createdAt: 'desc' },
         take: 5,
-        include: { user: { select: { name: true, email: true } }, service: { select: { name: true, category: true } }, tier: { select: { tier: true, group: { select: { name: true } } } } },
+        include: {
+          user: { select: { name: true, email: true } },
+          service: { select: { name: true, category: true, enabled: true } },
+          tier: {
+            select: {
+              tier: true,
+              enabled: true,
+              serviceId: true,
+              group: { select: { name: true, platform: true, type: true, enabled: true } },
+            },
+          },
+        },
       }),
       prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
@@ -197,13 +209,12 @@ export async function GET() {
         created: tk.createdAt.toISOString(),
       })),
       recentOrders: recentOrders.map(o => {
-        const groupName = o.tier?.group?.name;
-        const tierLabel = o.tier?.tier;
+        const offer = getOrderOfferDisplay(o);
         return {
           id: o.orderId || o.id,
-          service: groupName || o.service?.name || o.serviceId,
-          tier: groupName && tierLabel ? tierLabel : null,
-          platform: o.service?.category || 'unknown',
+          service: offer.serviceName,
+          tier: offer.tierLabel,
+          platform: offer.platform,
           user: o.user?.name || (sensitive ? o.user?.email : maskEmail(o.user?.email)) || 'Unknown',
           charge: (o.charge || 0) / 100,
           status: o.status,

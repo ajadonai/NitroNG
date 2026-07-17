@@ -421,7 +421,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
             {!o.apiOrderId && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cancel</button>}
           </>
         )}
-        {(o.status === "Completed" || o.status === "Cancelled") && (
+        {(o.status === "Completed" || o.status === "Cancelled") && !o.offerDisabled && (
           <button onClick={async () => { const ok = await confirm({ title: "Reorder", message: `Reorder ${o.service}? ₦${o.charge?.toLocaleString()} will be charged from your wallet.`, confirmLabel: "Place Reorder" }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", color: t.accent }}>{actionLoading === o.id ? <Spinner size={14} color={t.accent} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>}Reorder</button>
         )}
         {reportIssueButton}
@@ -440,7 +440,8 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
 
   const hasActive = batch.orders.some(o => o.status === "Processing" || o.status === "Pending");
   const hasCancellable = batch.orders.some(o => (o.status === "Processing" || o.status === "Pending") && !o.apiOrderId);
-  const hasReorderable = batch.orders.some(o => o.status === "Completed" || o.status === "Cancelled");
+  const reorderableOrders = batch.orders.filter(o => o.status === "Completed" || o.status === "Cancelled");
+  const hasReorderable = reorderableOrders.length > 0 && reorderableOrders.every(o => !o.offerDisabled);
 
   const batchSt = batch.orders.every(o => o.status === "Completed") ? "Completed"
     : batch.orders.every(o => o.status === "Cancelled") ? "Cancelled"

@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { HEARTBEAT_ACTIVE_WINDOW_MS } from '@/lib/heartbeat';
 import { log } from '@/lib/logger';
+import { getOrderOfferDisplay } from '@/lib/order-offer-display';
 import {
   internalDashboardAccessError,
   requireInternalDashboardAccess,
@@ -63,7 +64,27 @@ export async function GET(req) {
             id: true, name: true, email: true, balance: true, createdAt: true, signupSource: true,
             orders: {
               orderBy: { createdAt: 'desc' }, take: 3, where: { deletedAt: null },
-              select: { orderId: true, charge: true, status: true, createdAt: true, service: { select: { name: true, category: true } }, tier: { select: { tier: true, group: { select: { name: true } } } } },
+              select: {
+                orderId: true,
+                serviceId: true,
+                tierId: true,
+                serviceNameAtPurchase: true,
+                tierNameAtPurchase: true,
+                platformAtPurchase: true,
+                serviceTypeAtPurchase: true,
+                charge: true,
+                status: true,
+                createdAt: true,
+                service: { select: { name: true, category: true, enabled: true } },
+                tier: {
+                  select: {
+                    tier: true,
+                    enabled: true,
+                    serviceId: true,
+                    group: { select: { name: true, platform: true, type: true, enabled: true } },
+                  },
+                },
+              },
             },
             transactions: {
               where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed' },
@@ -99,14 +120,18 @@ export async function GET(req) {
           lastOrder: u.orders[0]?.createdAt?.toISOString() || null,
           joined: u.createdAt.toISOString(),
           source: u.signupSource || null,
-          recentOrders: u.orders.map(o => ({
-            id: o.orderId,
-            service: o.tier?.group?.name || o.service?.name || 'Unknown',
-            platform: o.service?.category || null,
-            charge: o.charge / 100,
-            status: o.status,
-            date: o.createdAt.toISOString(),
-          })),
+          recentOrders: u.orders.map(o => {
+            const offer = getOrderOfferDisplay(o);
+            return {
+              id: o.orderId,
+              service: offer.serviceName,
+              tier: offer.tierLabel,
+              platform: offer.platform,
+              charge: o.charge / 100,
+              status: o.status,
+              date: o.createdAt.toISOString(),
+            };
+          }),
         } : admin ? {
           name: admin.name,
           email: admin.email,
