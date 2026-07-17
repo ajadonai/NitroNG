@@ -238,7 +238,7 @@ export function ReferralsSidebar({ user, dark, t }) {
   ];
 
   return (
-    <div className="flex flex-col gap-0 overflow-auto">
+    <div className="flex flex-col gap-0">
       <HowItWorks steps={steps} dark={dark} t={t} />
 
       <div className="h-px my-3" style={{ background: t.sidebarBorder }} />

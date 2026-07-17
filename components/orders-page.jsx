@@ -810,7 +810,7 @@ export function OrdersSidebar({ orders, orderSummary, dark, t }) {
   const totalOrders = orderSummary?.total ?? 0;
 
   return (
-    <div className="flex flex-col gap-0 overflow-auto">
+    <div className="flex flex-col gap-0">
       <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Order Summary</div>
       <div className="grid grid-cols-2 gap-1.5 mb-3">
         {[
