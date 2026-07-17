@@ -744,6 +744,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   const [orderMode, setOrderMode] = useState("single");
   const [cartRows, setCartRows] = useState([]);
   const [tiktokDisclaimer, setTiktokDisclaimer] = useState(false);
+  const [duplicateConfirm, setDuplicateConfirm] = useState(null);
   const hydratedRef = useRef(false);
   useEffect(() => {
     if (hydratedRef.current) return;
@@ -1002,7 +1003,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       const data = await res.json();
       if (data.duplicate) {
         setOrderLoading(false);
-        if (window.confirm(data.message)) submitOrder(dripDaysArg, true);
+        setDuplicateConfirm({ message: data.message, dripDays: dripDaysArg });
         return;
       }
       if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong"); setOrderLoading(false); return; }
@@ -1397,6 +1398,28 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 We recommend starting with a small order to test before committing to larger quantities. Refills and refunds follow our standard policy.
               </div>
               <button onClick={() => { try { localStorage.setItem('nitro_tiktok_disclaimer', String(Date.now())); } catch {} setTiktokDisclaimer(false); }} className="w-full py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>I understand</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {duplicateConfirm && (
+        <div className="no-modal-overlay flex fixed inset-0 z-50 items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => setDuplicateConfirm(null)} style={{ background: "rgba(0,0,0,.45)" }}>
+          <div role="dialog" aria-modal="true" aria-label="Duplicate order confirmation" className="w-full max-w-[380px] rounded-2xl border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
+            <div className="py-5 px-5">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dark ? "rgba(251,191,36,.15)" : "rgba(251,191,36,.12)" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <div className="text-base font-semibold" style={{ color: t.text }}>Duplicate order</div>
+              </div>
+              <div className="text-[13.5px] leading-[1.65] mb-4" style={{ color: t.textMuted }}>
+                {duplicateConfirm.message}
+              </div>
+              <div className="flex gap-2.5">
+                <button onClick={() => setDuplicateConfirm(null)} className="flex-1 py-[11px] rounded-lg border border-solid text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.15)", color: t.text }}>Cancel</button>
+                <button onClick={() => { const d = duplicateConfirm.dripDays; setDuplicateConfirm(null); submitOrder(d, true); }} className="flex-1 py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>Place anyway</button>
+              </div>
             </div>
           </div>
         </div>
