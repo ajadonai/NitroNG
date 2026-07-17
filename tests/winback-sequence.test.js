@@ -111,6 +111,15 @@ describe('spacing guard', () => {
 });
 
 describe('grant-vs-send ordering and retry', () => {
+  it('does not send a winback message when the final account fence declines the grant', async () => {
+    const { readFileSync } = await import('fs');
+    const cron = readFileSync('app/api/cron/daily/route.js', 'utf8');
+
+    expect(cron.match(/const granted = await grantWinbackCredit/g)).toHaveLength(2);
+    expect(cron.match(/if \(!granted\)/g)).toHaveLength(2);
+    expect(cron).toContain("status: 'Active', deletedAt: null, anonymizedAt: null");
+  });
+
   it('credit grant is gated by spacing guard — both delayed together', () => {
     const spacingBlocked = true;
     const grantHappened = !spacingBlocked;

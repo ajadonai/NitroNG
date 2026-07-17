@@ -1,18 +1,23 @@
 import prisma from '@/lib/prisma';
-import { verifyUserToken, verifyAdminToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
 import {
+  HEARTBEAT_ACTIVE_WINDOW_MS,
   normalizeHeartbeatUserAgent,
   parseHeartbeatPayloadText,
+  persistBoundedAnonymousHeartbeat,
   persistHeartbeat,
   readHeartbeatRequestText,
 } from '@/lib/heartbeat';
+import { resolveHeartbeatActor } from '@/lib/heartbeat-actor';
 import {
   createHeartbeatPresence,
+  deriveAnonymousHeartbeatSessionId,
   deriveHeartbeatSessionId,
   heartbeatAdmissionKey,
+  heartbeatAnonymousSessionPrefix,
+  heartbeatSourceKey,
   HEARTBEAT_NEW_PRESENCE_MAX,
   HEARTBEAT_NEW_PRESENCE_WINDOW_MS,
   HEARTBEAT_PRESENCE_COOKIE,
@@ -76,14 +81,12 @@ export async function POST(req) {
     const cookieStore = await cookies();
     const token = cookieStore.get('nitro_token')?.value;
     const adminToken = cookieStore.get('nitro_admin_token')?.value;
-    const userPayload = token ? verifyUserToken(token) : null;
-    const adminPayload = !userPayload && adminToken ? verifyAdminToken(adminToken) : null;
-    const payload = userPayload || adminPayload;
-    const identityScope = userPayload?.id
-      ? `user:${userPayload.id}`
-      : adminPayload?.id
-        ? `admin:${adminPayload.id}`
-        : 'anonymous';
+    const actor = await resolveHeartbeatActor(prisma, {
+      page: parsed.value.page,
+      userToken: token,
+      adminToken,
+    });
+    const identityScope = actor?.identityScope || 'anonymous';
 
     let presence = verifyHeartbeatPresence(
       cookieStore.get(HEARTBEAT_PRESENCE_COOKIE)?.value,
@@ -117,14 +120,31 @@ export async function POST(req) {
       presence = { ok: true, presenceId: mintedPresence.presenceId };
     }
 
-    const sid = deriveHeartbeatSessionId(presence.presenceId, identityScope);
+    const sourceKey = actor ? null : heartbeatSourceKey(req);
+    const sourcePrefix = sourceKey
+      ? heartbeatAnonymousSessionPrefix(sourceKey)
+      : null;
+    const sid = actor
+      ? deriveHeartbeatSessionId(presence.presenceId, identityScope)
+      : deriveAnonymousHeartbeatSessionId(presence.presenceId, sourceKey);
 
-    const result = await persistHeartbeat(prisma, {
+    const observation = {
       sid,
       page: parsed.value.page,
-      userId: payload?.id || null,
       userAgent: normalizeHeartbeatUserAgent(req.headers.get('user-agent')),
-    });
+    };
+    const result = actor
+      ? await persistHeartbeat(prisma, { ...observation, userId: actor.id })
+      : await persistBoundedAnonymousHeartbeat(prisma, {
+          ...observation,
+          sourcePrefix,
+        });
+    if (result.admitted === false) {
+      return tooManyRequests(
+        'Anonymous heartbeat capacity is temporarily full.',
+        Math.ceil(HEARTBEAT_ACTIVE_WINDOW_MS / 1000),
+      );
+    }
 
     const response = NextResponse.json({ ok: true, written: result.written });
     response.headers.set('Cache-Control', 'private, no-store, max-age=0');

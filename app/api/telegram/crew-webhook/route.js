@@ -43,7 +43,7 @@ async function getMemberSlugs(memberId) {
 
 async function getTeamSlugs(chiefId) {
   const members = await prisma.crewMember.findMany({
-    where: { OR: [{ id: chiefId }, { leadId: chiefId }], status: 'approved' },
+    where: { OR: [{ id: chiefId }, { leadId: chiefId }], status: 'approved', deletedAt: null },
     select: { id: true },
   });
   const ids = members.map(m => m.id);
@@ -106,7 +106,10 @@ async function handleEarnings(member) {
 
 async function handleTeam(member) {
   const chiefId = member.leadId || member.id;
-  const chief = chiefId === member.id ? member : await prisma.crewMember.findUnique({ where: { id: chiefId }, select: { name: true } });
+  const chief = chiefId === member.id ? member : await prisma.crewMember.findFirst({
+    where: { id: chiefId, status: 'approved', deletedAt: null },
+    select: { name: true },
+  });
   if (!chief) return 'Could not find your team.';
 
   const { memberIds, links } = await getTeamSlugs(chiefId);
@@ -120,7 +123,7 @@ async function handleTeam(member) {
   ]);
 
   const members = await prisma.crewMember.findMany({
-    where: { id: { in: memberIds } },
+    where: { id: { in: memberIds }, status: 'approved', deletedAt: null },
     select: { id: true, name: true, role: true },
   });
 
@@ -143,7 +146,7 @@ async function handleTeam(member) {
 
 async function handleTop() {
   const chiefs = await prisma.crewMember.findMany({
-    where: { role: 'chief', status: 'approved' },
+    where: { role: 'chief', status: 'approved', deletedAt: null },
     select: { id: true, name: true },
   });
   if (!chiefs.length) return '🏆 <b>Leaderboard</b>\n\nNo teams yet.';
@@ -204,19 +207,20 @@ async function handleChatMember(update) {
 
   // Check if this TG user is already linked to an approved member by ID
   let crew = await prisma.crewMember.findFirst({
-    where: { telegramUserId: tgId, status: 'approved' },
+    where: { telegramUserId: tgId, status: 'approved', deletedAt: null },
   });
 
   // If not linked by ID, try matching by username
   if (!crew && tgUsername) {
     crew = await prisma.crewMember.findFirst({
-      where: { telegramHandle: tgUsername, status: 'approved' },
+      where: { telegramHandle: tgUsername, status: 'approved', deletedAt: null },
     });
     if (crew) {
-      await prisma.crewMember.update({
-        where: { id: crew.id },
+      const { count } = await prisma.crewMember.updateMany({
+        where: { id: crew.id, telegramHandle: tgUsername, status: 'approved', deletedAt: null },
         data: { telegramUserId: tgId },
       });
+      if (count !== 1) crew = null;
     }
   }
 
@@ -234,7 +238,10 @@ async function handleChatMember(update) {
   }
 
   const teamName = crew.leadId
-    ? (await prisma.crewMember.findUnique({ where: { id: crew.leadId }, select: { name: true } }))?.name || crew.name
+    ? (await prisma.crewMember.findFirst({
+        where: { id: crew.leadId, status: 'approved', deletedAt: null },
+        select: { name: true },
+      }))?.name || crew.name
     : crew.name;
   crewWelcome(crew.name, teamName);
 }
@@ -289,13 +296,21 @@ export async function POST(req) {
       }
 
       if (!member.telegramLinkCodeExpiresAt || member.telegramLinkCodeExpiresAt < new Date()) {
-        await prisma.crewMember.update({ where: { id: member.id }, data: { telegramLinkCode: null, telegramLinkCodeExpiresAt: null } });
+        await prisma.crewMember.updateMany({
+          where: {
+            id: member.id,
+            telegramLinkCode: code.toUpperCase(),
+            status: 'approved',
+            deletedAt: null,
+          },
+          data: { telegramLinkCode: null, telegramLinkCodeExpiresAt: null },
+        });
         await sendDM(chatId, 'This code has expired. Generate a new one at nitro.ng/pit/settings.');
         return Response.json({ ok: true });
       }
 
       const alreadyLinked = await prisma.crewMember.findFirst({
-        where: { telegramUserId: userId, id: { not: member.id } },
+        where: { telegramUserId: userId, id: { not: member.id }, deletedAt: null },
         select: { id: true },
       });
       if (alreadyLinked) {
@@ -325,7 +340,7 @@ export async function POST(req) {
         return Response.json({ ok: true });
       }
       await sendDM(chatId, `✅ Linked as <b>${member.name}</b>!\n\nType /help to see what I can do.`);
-      prisma.activityLog.create({ data: { adminName: member.name, action: `Pit member linked Telegram (@${tgHandle})`, type: 'pit-self' } }).catch(() => {});
+      prisma.activityLog.create({ data: { adminName: `Pit member ${member.id}`, action: 'Pit member linked Telegram', type: 'pit-self' } }).catch(() => {});
 
       const teamName = member.lead?.name || member.name;
       crewWelcome(member.name, teamName);
@@ -352,7 +367,7 @@ export async function POST(req) {
     if (!COMMANDS.includes(command)) return Response.json({ ok: true });
 
     const member = await prisma.crewMember.findFirst({
-      where: { telegramUserId: userId, status: 'approved' },
+      where: { telegramUserId: userId, status: 'approved', deletedAt: null },
     });
     if (!member) {
       const hint = 'Link your account first at <b>nitro.ng/pit/settings</b>';
@@ -363,10 +378,16 @@ export async function POST(req) {
 
     // /unlink
     if (command === '/unlink') {
-      await prisma.crewMember.update({
-        where: { id: member.id },
+      const { count } = await prisma.crewMember.updateMany({
+        where: { id: member.id, telegramUserId: userId, status: 'approved', deletedAt: null },
         data: { telegramUserId: null, telegramHandle: null, telegramLinkCode: null },
       });
+      if (count !== 1) {
+        const hint = 'Link your account first at <b>nitro.ng/pit/settings</b>';
+        if (isGroup) replyInGroup(chatId, msg.message_id, hint);
+        else await sendDM(chatId, hint);
+        return Response.json({ ok: true });
+      }
       const reply = '🔓 Telegram unlinked. Re-link anytime at nitro.ng/pit/settings.';
       if (isGroup) replyInGroup(chatId, msg.message_id, reply);
       else await sendDM(chatId, reply);

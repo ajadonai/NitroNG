@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+  count: vi.fn(),
   findMany: vi.fn(),
   deleteMany: vi.fn(),
   logInfo: vi.fn(),
@@ -10,6 +11,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/lib/prisma', () => ({
   default: {
     liveSession: {
+      count: (...args) => mocks.count(...args),
       findMany: (...args) => mocks.findMany(...args),
       deleteMany: (...args) => mocks.deleteMany(...args),
     },
@@ -36,6 +38,7 @@ function request({ authorization, querySecret } = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   process.env.CRON_SECRET = 'cron-secret';
+  mocks.count.mockResolvedValue(0);
   mocks.findMany.mockResolvedValue([]);
   mocks.deleteMany.mockResolvedValue({ count: 0 });
 });
@@ -90,6 +93,18 @@ describe('scheduled heartbeat cleanup', () => {
       'Heartbeat Cleanup',
       'Deleted 7 expired heartbeat sessions',
     );
+  });
+
+  it('uses the larger bounded cleanup batch when the stale backlog is high', async () => {
+    mocks.count.mockResolvedValue(2_501);
+
+    const response = await GET(request({ authorization: 'Bearer cron-secret' }));
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mocks.findMany.mock.calls[0][0].take).toBe(5_000);
+    expect(data.batchSize).toBe(5_000);
+    expect(data.backlogEstimate).toBe(2_501);
   });
 
   it('contains database failures and leaves them observable', async () => {

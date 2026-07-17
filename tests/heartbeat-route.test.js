@@ -4,7 +4,8 @@ import {
   HEARTBEAT_NEW_PRESENCE_WINDOW_MS,
   HEARTBEAT_PRESENCE_COOKIE,
   createHeartbeatPresence,
-  deriveHeartbeatSessionId,
+  deriveAnonymousHeartbeatSessionId,
+  heartbeatSourceKey,
   verifyHeartbeatPresence,
 } from '@/lib/heartbeat-presence';
 
@@ -19,6 +20,11 @@ const mocks = vi.hoisted(() => ({
   cookieGet: vi.fn(),
   verifyUserToken: vi.fn(),
   verifyAdminToken: vi.fn(),
+  sessionFindUnique: vi.fn(),
+  adminSessionFindUnique: vi.fn(),
+  liveSessionFindUnique: vi.fn(),
+  liveSessionCount: vi.fn(),
+  queryRaw: vi.fn(),
   executeRaw: vi.fn(),
   logError: vi.fn(),
 }));
@@ -32,11 +38,25 @@ vi.mock('next/headers', () => ({
   cookies: vi.fn(async () => ({ get: (...args) => mocks.cookieGet(...args) })),
 }));
 vi.mock('@/lib/auth', () => ({
+  hashToken: token => `hash:${token}`,
   verifyUserToken: (...args) => mocks.verifyUserToken(...args),
   verifyAdminToken: (...args) => mocks.verifyAdminToken(...args),
 }));
 vi.mock('@/lib/prisma', () => ({
-  default: { $executeRaw: (...args) => mocks.executeRaw(...args) },
+  default: (() => {
+    const db = {
+      $executeRaw: (...args) => mocks.executeRaw(...args),
+      $queryRaw: (...args) => mocks.queryRaw(...args),
+      session: { findUnique: (...args) => mocks.sessionFindUnique(...args) },
+      adminSession: { findUnique: (...args) => mocks.adminSessionFindUnique(...args) },
+      liveSession: {
+        findUnique: (...args) => mocks.liveSessionFindUnique(...args),
+        count: (...args) => mocks.liveSessionCount(...args),
+      },
+    };
+    db.$transaction = callback => callback(db);
+    return db;
+  })(),
 }));
 vi.mock('@/lib/logger', () => ({
   log: { error: (...args) => mocks.logError(...args) },
@@ -105,6 +125,14 @@ beforeEach(() => {
   ));
   mocks.verifyUserToken.mockReturnValue(null);
   mocks.verifyAdminToken.mockReturnValue(null);
+  mocks.sessionFindUnique.mockResolvedValue(null);
+  mocks.adminSessionFindUnique.mockResolvedValue(null);
+  mocks.liveSessionFindUnique.mockResolvedValue({
+    sessionId: 'existing',
+    lastSeen: new Date(Date.now() + 60_000),
+  });
+  mocks.liveSessionCount.mockResolvedValue(0);
+  mocks.queryRaw.mockResolvedValue([]);
   mocks.executeRaw.mockResolvedValue(1);
 });
 
@@ -215,9 +243,13 @@ describe('server-issued presence admission', () => {
     expect(response.headers.get('set-cookie')).toContain('SameSite=strict');
     expect(response.headers.get('set-cookie')).toContain('Path=/api/heartbeat');
     expect(verified.ok).toBe(true);
-    expect(sid).toBe(deriveHeartbeatSessionId(verified.presenceId, 'anonymous', {
+    expect(sid).toBe(deriveAnonymousHeartbeatSessionId(
+      verified.presenceId,
+      heartbeatSourceKey(request()),
+      {
       secret: ROUTE_SECRET,
-    }));
+      },
+    ));
     expect(sid).not.toBe('attacker-controlled-legacy-id');
     expect(userId).toBeNull();
     expect(page).toBe('/dashboard/orders');
@@ -242,9 +274,13 @@ describe('server-issued presence admission', () => {
     expect(response.status).toBe(200);
     expect(mocks.rateLimit).toHaveBeenCalledTimes(1);
     expect(response.headers.get('set-cookie')).toBeNull();
-    expect(sid).toBe(deriveHeartbeatSessionId(presence.presenceId, 'anonymous', {
+    expect(sid).toBe(deriveAnonymousHeartbeatSessionId(
+      presence.presenceId,
+      heartbeatSourceKey(request()),
+      {
       secret: ROUTE_SECRET,
-    }));
+      },
+    ));
   });
 
   it('treats a tampered presence as new and rotates it only after admission succeeds', async () => {
@@ -290,6 +326,19 @@ describe('server-issued presence admission', () => {
     expect(mocks.executeRaw).not.toHaveBeenCalled();
   });
 
+  it('returns 429 without minting when the database-backed anonymous cap is full', async () => {
+    mocks.liveSessionFindUnique.mockResolvedValue(null);
+    mocks.liveSessionCount.mockResolvedValueOnce(500).mockResolvedValueOnce(0);
+
+    const response = await POST(request());
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get('Retry-After')).toBe('150');
+    expect(response.headers.get('set-cookie')).toBeNull();
+    expect(mocks.executeRaw).not.toHaveBeenCalled();
+    expect(mocks.queryRaw).toHaveBeenCalledOnce();
+  });
+
   it('fails closed when production presence signing is not configured', async () => {
     process.env.NODE_ENV = 'production';
     delete process.env.HEARTBEAT_SECRET;
@@ -315,12 +364,20 @@ describe('identity-scoped persistence', () => {
 
     cookieValues.set('nitro_token', 'signed-user-token');
     mocks.verifyUserToken.mockReturnValue({ id: 'user-1', type: 'user' });
+    mocks.sessionFindUnique.mockResolvedValue({
+      userId: 'user-1',
+      user: { id: 'user-1', status: 'Active' },
+    });
     await POST(request());
 
     cookieValues.delete('nitro_token');
     cookieValues.set('nitro_admin_token', 'signed-admin-token');
     mocks.verifyUserToken.mockReturnValue(null);
     mocks.verifyAdminToken.mockReturnValue({ id: 'admin-1', type: 'admin' });
+    mocks.adminSessionFindUnique.mockResolvedValue({
+      adminId: 'admin-1',
+      admin: { id: 'admin-1', status: 'Active' },
+    });
     await POST(request());
 
     const [anonymousSid, anonymousUser] = persistedValues(0);
@@ -340,11 +397,34 @@ describe('identity-scoped persistence', () => {
     cookieValues.set('nitro_token', 'signed-user-token');
     cookieValues.set('nitro_admin_token', 'signed-admin-token');
     mocks.verifyUserToken.mockReturnValue({ id: 'user-1', type: 'user' });
+    mocks.sessionFindUnique.mockResolvedValue({
+      userId: 'user-1',
+      user: { id: 'user-1', status: 'Active' },
+    });
 
     await POST(request());
 
     expect(persistedValues()[1]).toBe('user-1');
     expect(mocks.verifyAdminToken).not.toHaveBeenCalled();
+  });
+
+  it('attributes internal dashboard pages to the live admin session when both cookies exist', async () => {
+    cookieValues.set(HEARTBEAT_PRESENCE_COOKIE, presenceToken());
+    cookieValues.set('nitro_token', 'signed-user-token');
+    cookieValues.set('nitro_admin_token', 'signed-admin-token');
+    mocks.verifyUserToken.mockReturnValue({ id: 'user-1', type: 'user' });
+    mocks.verifyAdminToken.mockReturnValue({ id: 'admin-1', type: 'admin' });
+    mocks.adminSessionFindUnique.mockResolvedValue({
+      adminId: 'admin-1',
+      admin: { id: 'admin-1', status: 'Active' },
+    });
+
+    const response = await POST(request({ body: JSON.stringify({ page: '/live' }) }));
+
+    expect(response.status).toBe(200);
+    expect(persistedValues()[1]).toBe('admin-1');
+    expect(mocks.verifyAdminToken).toHaveBeenCalledWith('signed-admin-token');
+    expect(mocks.verifyUserToken).not.toHaveBeenCalled();
   });
 
   it('returns 500 and logs persistence failures without exposing details', async () => {

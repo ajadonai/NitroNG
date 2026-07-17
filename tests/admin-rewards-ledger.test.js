@@ -53,7 +53,7 @@ beforeEach(() => {
   mockRequireAdmin.mockResolvedValue({ admin: { id: 'adm1', name: 'Admin', role: 'admin' }, error: null });
   mockFindMany.mockResolvedValue([]);
   mockCount.mockResolvedValue(0);
-  mockUserFindUnique.mockResolvedValue({ id: 'u1', name: 'Test User' });
+  mockUserFindUnique.mockResolvedValue({ id: 'u1', name: 'Test User', status: 'Active' });
   mockGetBalanceTx.mockResolvedValue(500000);
   mockCreate.mockResolvedValue({ id: 'led1', type: 'manual_credit', pointsKobo: 10000, reason: 'test' });
   mockLogActivity.mockResolvedValue(undefined);
@@ -209,6 +209,14 @@ describe('POST /api/admin/rewards', () => {
     mockUserFindUnique.mockResolvedValue(null);
     const res = await POST(makePostReq({ userId: 'bad', type: 'manual_credit', points: 100, reason: 'test' }));
     expect(res.status).toBe(404);
+  });
+
+  it.each(['PendingDeletion', 'Deleted'])('blocks points changes for %s users', async (status) => {
+    mockRequireAdmin.mockResolvedValue({ admin: { id: 'adm1', name: 'Owner', role: 'owner' }, error: null });
+    mockUserFindUnique.mockResolvedValue({ id: 'u1', name: 'Test User', status });
+    const res = await POST(makePostReq({ userId: 'u1', type: 'manual_credit', points: 100, reason: 'test' }));
+    expect(res.status).toBe(409);
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 
   it('caps debit at current balance', async () => {

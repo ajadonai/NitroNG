@@ -3,9 +3,15 @@ import { log } from "@/lib/logger";
 import bcrypt from 'bcryptjs';
 import { signUserToken, setUserCookie, detectDevice, hashToken } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
-import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
+import {
+  accountRateLimitKey,
+  rateLimit,
+  rateLimitUnavailable,
+  tooManyRequests,
+} from '@/lib/rate-limit';
 import { sanitizeEmail } from '@/lib/validate';
 import { headers } from 'next/headers';
+import { isAccountDeletionGraceActive } from '@/lib/account-deletion';
 
 export async function POST(req) {
   try {
@@ -19,6 +25,21 @@ export async function POST(req) {
 
     if (!email || !password) {
       return error('Email and password are required');
+    }
+
+    const accountLimit = await rateLimit(req, {
+      maxAttempts: 8,
+      windowMs: 15 * 60 * 1000,
+      key: accountRateLimitKey(email, 'user-login'),
+    });
+    if (accountLimit.unavailable) {
+      return rateLimitUnavailable(undefined, accountLimit.retryAfter);
+    }
+    if (accountLimit.limited) {
+      return tooManyRequests(
+        'Too many login attempts for this account. Try again in 15 minutes.',
+        accountLimit.retryAfter,
+      );
     }
 
     const user = await prisma.user.findUnique({
@@ -36,7 +57,10 @@ export async function POST(req) {
       return error('Invalid email or password', 401);
     }
     if (user.status === 'PendingDeletion') {
-      return Response.json({ error: 'Account pending deletion. Contact support@nitro.ng.', banned: false }, { status: 403 });
+      const error = isAccountDeletionGraceActive(user)
+        ? 'Account pending deletion. Contact support@nitro.ng before the deletion deadline to cancel.'
+        : 'This account’s deletion deadline has passed and it cannot be restored.';
+      return Response.json({ error, banned: false }, { status: 403 });
     }
 
     const valid = await bcrypt.compare(password, user.password);

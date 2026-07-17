@@ -4,7 +4,6 @@ import prisma from '@/lib/prisma';
 import {
   cleanupStaleHeartbeats,
   HEARTBEAT_ANONYMOUS_RETENTION_MS,
-  HEARTBEAT_CLEANUP_BATCH_SIZE,
   HEARTBEAT_RETENTION_DAYS,
 } from '@/lib/heartbeat';
 import { log } from '@/lib/logger';
@@ -25,7 +24,8 @@ export async function GET(req) {
       checked: result.checked,
       deleted: result.deleted,
       hasMore: result.hasMore,
-      batchSize: HEARTBEAT_CLEANUP_BATCH_SIZE,
+      batchSize: result.batchSize,
+      backlogEstimate: result.backlogEstimate,
       retentionDays: HEARTBEAT_RETENTION_DAYS,
       anonymousRetentionHours: HEARTBEAT_ANONYMOUS_RETENTION_MS / (60 * 60 * 1000),
       identifiedCutoff: result.identifiedCutoff.toISOString(),

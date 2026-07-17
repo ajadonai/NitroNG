@@ -14,6 +14,7 @@ const mockPrisma = {
 const mockTx = {
   setting: { findMany: vi.fn() },
   acquisitionLink: { count: vi.fn(), create: vi.fn() },
+  $queryRaw: vi.fn(),
 };
 
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
@@ -54,6 +55,7 @@ const { POST: linksPost } = await import('@/app/api/pit/links/route');
 beforeEach(() => {
   vi.clearAllMocks();
   mockPrisma.$transaction.mockImplementation(async (fn) => fn(mockTx));
+  mockTx.$queryRaw.mockResolvedValue([{ id: 'chief1' }]);
 });
 
 // ──────────────────────────────────────

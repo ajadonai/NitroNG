@@ -9,6 +9,7 @@ import { releaseHeldCommissions } from '@/lib/commissions';
 import { expireBonusCredits, grantWinbackCredit } from '@/lib/bonus-credit';
 import { getTierConfig } from '@/lib/affiliate-settings';
 import { cleanupStaleSignups } from '@/lib/stale-signup-cleanup';
+import { finalizeDueAccountDeletions } from '@/lib/account-deletion';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -30,34 +31,12 @@ export async function GET(req) {
     results.cleanup.deleted = staleCleanup.deleted;
     results.cleanup.checked = staleCleanup.checked;
 
-    // Permanent deletion for users past 30-day window
-    const pendingUsers = await prisma.user.findMany({
-      where: { status: 'PendingDeletion', deletedAt: { lt: new Date() } },
-      select: { id: true, email: true, deletedEmail: true, deletedName: true },
-    });
-
-    let permDeleted = 0;
-    for (const pu of pendingUsers) {
-      try {
-        const uid = pu.id;
-        await prisma.user.updateMany({ where: { referredBy: uid }, data: { referredBy: null } });
-        await prisma.$transaction([
-          prisma.ticketReply.deleteMany({ where: { ticket: { userId: uid } } }),
-          prisma.ticket.deleteMany({ where: { userId: uid } }),
-          prisma.session.deleteMany({ where: { userId: uid } }),
-          prisma.order.updateMany({ where: { userId: uid }, data: { deletedAt: new Date() } }),
-          prisma.user.update({ where: { id: uid }, data: {
-            status: 'Deleted', name: 'Deleted User', email: `deleted_${uid}@nitro.ng`,
-            password: '', balance: 0, emailVerified: false, verifyToken: null, resetToken: null, phone: null,
-          } }),
-        ]);
-        permDeleted++;
-        log.info('Cleanup', `Permanently deleted user ${pu.deletedEmail || pu.email} (${uid})`);
-      } catch (e) {
-        log.error('Cleanup', `Failed to permanently delete user ${pu.id}: ${e.message}`);
-      }
+    const deletionFinalization = await finalizeDueAccountDeletions(prisma, new Date(), { limit: 100 });
+    results.cleanup.permanentlyDeleted = deletionFinalization.finalized;
+    results.cleanup.deletionFinalization = deletionFinalization;
+    if (deletionFinalization.finalized > 0 || deletionFinalization.failed > 0) {
+      log.info('Cleanup', `Finalized ${deletionFinalization.finalized} account deletions; ${deletionFinalization.failed} failed`);
     }
-    results.cleanup.permanentlyDeleted = permDeleted;
   } catch (err) {
     log.error('Cleanup', err.message);
     results.cleanup.error = err.message;
@@ -263,7 +242,17 @@ export async function GET(req) {
           const spendSinceFloor = Math.max(0, totalSpend - (user.winbackSpendFloor || 0));
           const creditKobo = winbackCredit(spendSinceFloor, wb30Pct, wb30Min, wb30Cap);
           creditNaira = creditKobo / 100;
-          await grantWinbackCredit(prisma, user.id, creditKobo, wbExpiryDays);
+          const granted = await grantWinbackCredit(prisma, user.id, creditKobo, wbExpiryDays);
+          if (!granted) {
+            // The eligibility query can go stale while this batch runs. Do not
+            // send a credit email when the final active-account fence declined
+            // the grant (for example because deletion won the race).
+            await prisma.user.updateMany({
+              where: { id: user.id, status: 'Active', deletedAt: null, anonymizedAt: null },
+              data: { winback30SentAt: new Date(0) },
+            });
+            continue;
+          }
           await prisma.user.update({ where: { id: user.id }, data: { winbackSpendFloor: totalSpend } });
           daysLeft = wbExpiryDays;
         }
@@ -333,7 +322,14 @@ export async function GET(req) {
           const spendSinceFloor = Math.max(0, totalSpend - (user.winbackSpendFloor || 0));
           const creditKobo = winbackCredit(spendSinceFloor, wb60Pct, wb60Min, wb60Cap);
           creditNaira = creditKobo / 100;
-          await grantWinbackCredit(prisma, user.id, creditKobo, wbExpiryDays);
+          const granted = await grantWinbackCredit(prisma, user.id, creditKobo, wbExpiryDays);
+          if (!granted) {
+            await prisma.user.updateMany({
+              where: { id: user.id, status: 'Active', deletedAt: null, anonymizedAt: null },
+              data: { winback60SentAt: new Date(0) },
+            });
+            continue;
+          }
           await prisma.user.update({ where: { id: user.id }, data: { winbackSpendFloor: totalSpend } });
           daysLeft = wbExpiryDays;
         }

@@ -180,7 +180,7 @@ describe('expired token', () => {
     expect(res.status).toBe(410);
 
     expect(mockPrisma.crewMember.updateMany).toHaveBeenCalledWith({
-      where: { inviteToken: 'expired-tok' },
+      where: { inviteToken: 'expired-tok', status: 'pending', deletedAt: null },
       data: { inviteToken: null, inviteExpiresAt: null },
     });
   });
@@ -228,7 +228,10 @@ describe('transactional join', () => {
     await joinPOST(makeJoinPost({ token: 'tok', password: 'abc123' }));
 
     expect(mockPrisma.user.create).toHaveBeenCalled();
-    const updateCall = mockPrisma.crewMember.update.mock.calls[0][0];
+    const updateCall = mockPrisma.crewMember.updateMany.mock.calls[0][0];
+    expect(updateCall.where).toEqual({
+      id: 'm1', inviteToken: 'tok', status: 'pending', deletedAt: null,
+    });
     expect(updateCall.data.userId).toBe('user-new');
     expect(updateCall.data.inviteToken).toBeNull();
   });
@@ -250,6 +253,17 @@ describe('transactional join', () => {
     await joinPOST(makeJoinPost({ token: 'tok', password: 'abc123' }));
 
     expect(findCalledInsideTx).toBe(true);
+  });
+
+  it('rolls back user/session creation when deletion wins the final invite CAS', async () => {
+    mockPrisma.crewMember.findUnique.mockResolvedValue(VALID_MEMBER);
+    mockPrisma.user.findUnique.mockResolvedValue({ id: 'user1' });
+    mockPrisma.crewMember.updateMany.mockResolvedValue({ count: 0 });
+
+    const res = await joinPOST(makeJoinPost({ token: 'tok', password: 'abc123' }));
+
+    expect(res.status).toBe(409);
+    expect(mockPrisma.crewSession.create).not.toHaveBeenCalled();
   });
 });
 

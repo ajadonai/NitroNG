@@ -3,8 +3,12 @@ import fc from 'fast-check';
 import { readFileSync } from 'node:fs';
 import {
   HEARTBEAT_ACTIVE_WINDOW_MS,
+  HEARTBEAT_ANONYMOUS_ACTIVE_GLOBAL_MAX,
+  HEARTBEAT_ANONYMOUS_ACTIVE_SOURCE_MAX,
   HEARTBEAT_ANONYMOUS_RETENTION_MS,
   HEARTBEAT_CLEANUP_BATCH_SIZE,
+  HEARTBEAT_CLEANUP_PRESSURE_BATCH_SIZE,
+  HEARTBEAT_CLEANUP_PRESSURE_THRESHOLD,
   HEARTBEAT_INTERVAL_MS,
   HEARTBEAT_MAX_BODY_BYTES,
   HEARTBEAT_PAGE_MAX_LENGTH,
@@ -17,6 +21,7 @@ import {
   normalizeHeartbeatUserAgent,
   parseHeartbeatPayload,
   parseHeartbeatPayloadText,
+  persistBoundedAnonymousHeartbeat,
   persistHeartbeat,
   readHeartbeatRequestText,
 } from '@/lib/heartbeat';
@@ -26,8 +31,10 @@ import {
   HEARTBEAT_PRESENCE_COOKIE,
   HEARTBEAT_PRESENCE_TTL_SECONDS,
   createHeartbeatPresence,
+  deriveAnonymousHeartbeatSessionId,
   deriveHeartbeatSessionId,
   heartbeatAdmissionKey,
+  heartbeatAnonymousSessionPrefix,
   heartbeatPresenceCookieOptions,
   heartbeatRequestHeaderError,
   resolveHeartbeatPresenceSecret,
@@ -305,6 +312,24 @@ describe('server-issued heartbeat presence', () => {
     expect(HEARTBEAT_NEW_PRESENCE_MAX).toBe(30);
     expect(HEARTBEAT_NEW_PRESENCE_WINDOW_MS).toBe(60 * 60 * 1000);
   });
+
+  it('binds anonymous session IDs to a private, bounded source prefix', () => {
+    const sourceA = 'a'.repeat(32);
+    const sourceB = 'b'.repeat(32);
+    const presenceId = 'abcdefghijklmnopqrstuv';
+    const prefixA = heartbeatAnonymousSessionPrefix(sourceA, { secret: 'test-secret' });
+    const sidA = deriveAnonymousHeartbeatSessionId(presenceId, sourceA, {
+      secret: 'test-secret',
+    });
+
+    expect(prefixA).toMatch(/^a_[A-Za-z0-9_-]{16}_$/);
+    expect(sidA).toMatch(/^[A-Za-z0-9_-]{62}$/);
+    expect(sidA.startsWith(prefixA)).toBe(true);
+    expect(sidA).not.toContain(sourceA);
+    expect(sidA).not.toBe(deriveAnonymousHeartbeatSessionId(presenceId, sourceB, {
+      secret: 'test-secret',
+    }));
+  });
 });
 
 describe('heartbeat request origin policy', () => {
@@ -434,6 +459,125 @@ describe('heartbeat monotonic persistence', () => {
   });
 });
 
+describe('bounded anonymous heartbeat admission', () => {
+  function boundedDb({ existing = null, globalActive = 0, sourceActive = 0 } = {}) {
+    const executeRaw = vi.fn().mockResolvedValue(1);
+    const findUnique = vi.fn().mockResolvedValue(existing);
+    const count = vi.fn()
+      .mockResolvedValueOnce(globalActive)
+      .mockResolvedValueOnce(sourceActive);
+    const queryRaw = vi.fn().mockResolvedValue([]);
+    const tx = {
+      $executeRaw: executeRaw,
+      $queryRaw: queryRaw,
+      liveSession: { findUnique, count },
+    };
+    return {
+      db: {
+        $executeRaw: executeRaw,
+        liveSession: { findUnique },
+        $transaction: vi.fn(callback => callback(tx)),
+      },
+      tx,
+      executeRaw,
+      findUnique,
+      count,
+      queryRaw,
+    };
+  }
+
+  function anonymousObservation() {
+    const sourceKey = 'a'.repeat(32);
+    const secret = 'test-secret';
+    return {
+      sid: deriveAnonymousHeartbeatSessionId(
+        'abcdefghijklmnopqrstuv',
+        sourceKey,
+        { secret },
+      ),
+      sourcePrefix: heartbeatAnonymousSessionPrefix(sourceKey, { secret }),
+      page: '/',
+      now: new Date('2026-07-17T12:00:00.000Z'),
+    };
+  }
+
+  it('serializes new rows before enforcing exact global and source active caps', async () => {
+    const global = boundedDb({ globalActive: HEARTBEAT_ANONYMOUS_ACTIVE_GLOBAL_MAX });
+    await expect(persistBoundedAnonymousHeartbeat(global.db, anonymousObservation()))
+      .resolves.toEqual({
+        written: false,
+        admitted: false,
+        reason: 'global_capacity',
+      });
+    expect(global.queryRaw).toHaveBeenCalledOnce();
+    expect(global.executeRaw).not.toHaveBeenCalled();
+    expect(global.count.mock.calls[0][0].where).toMatchObject({ userId: null });
+
+    const source = boundedDb({ sourceActive: HEARTBEAT_ANONYMOUS_ACTIVE_SOURCE_MAX });
+    await expect(persistBoundedAnonymousHeartbeat(source.db, anonymousObservation()))
+      .resolves.toEqual({
+        written: false,
+        admitted: false,
+        reason: 'source_capacity',
+      });
+    expect(source.count.mock.calls[1][0].where.sessionId.startsWith)
+      .toBe(anonymousObservation().sourcePrefix);
+    expect(source.executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('admits below both caps and rechecks after acquiring the cross-instance fence', async () => {
+    const bounded = boundedDb({
+      globalActive: HEARTBEAT_ANONYMOUS_ACTIVE_GLOBAL_MAX - 1,
+      sourceActive: HEARTBEAT_ANONYMOUS_ACTIVE_SOURCE_MAX - 1,
+    });
+
+    await expect(persistBoundedAnonymousHeartbeat(bounded.db, anonymousObservation()))
+      .resolves.toEqual({ written: true, admitted: true });
+    expect(bounded.findUnique).toHaveBeenCalledTimes(2);
+    expect(bounded.queryRaw).toHaveBeenCalledOnce();
+    expect(bounded.executeRaw).toHaveBeenCalledOnce();
+  });
+
+  it('refreshes an existing anonymous row without consuming admission capacity', async () => {
+    const bounded = boundedDb({
+      existing: {
+        sessionId: 'existing',
+        lastSeen: new Date('2026-07-17T11:59:00.000Z'),
+      },
+      globalActive: HEARTBEAT_ANONYMOUS_ACTIVE_GLOBAL_MAX,
+      sourceActive: HEARTBEAT_ANONYMOUS_ACTIVE_SOURCE_MAX,
+    });
+
+    await expect(persistBoundedAnonymousHeartbeat(bounded.db, anonymousObservation()))
+      .resolves.toEqual({ written: true });
+    expect(bounded.db.$transaction).not.toHaveBeenCalled();
+    expect(bounded.count).not.toHaveBeenCalled();
+    expect(bounded.executeRaw).toHaveBeenCalledOnce();
+  });
+
+  it('makes a retained but inactive row reacquire admission before reactivation', async () => {
+    const bounded = boundedDb({
+      existing: {
+        sessionId: 'retained-stale-row',
+        lastSeen: new Date('2026-07-17T11:50:00.000Z'),
+      },
+      globalActive: HEARTBEAT_ANONYMOUS_ACTIVE_GLOBAL_MAX,
+      sourceActive: 0,
+    });
+
+    await expect(persistBoundedAnonymousHeartbeat(bounded.db, anonymousObservation()))
+      .resolves.toEqual({
+        written: false,
+        admitted: false,
+        reason: 'global_capacity',
+      });
+    expect(bounded.db.$transaction).toHaveBeenCalledOnce();
+    expect(bounded.queryRaw).toHaveBeenCalledOnce();
+    expect(bounded.count).toHaveBeenCalledTimes(2);
+    expect(bounded.executeRaw).not.toHaveBeenCalled();
+  });
+});
+
 describe('heartbeat retention and batched cleanup', () => {
   it('uses separate six-hour anonymous and 31-day identified cutoffs, then rechecks before delete', async () => {
     const now = new Date('2026-07-17T12:00:00.000Z');
@@ -473,6 +617,8 @@ describe('heartbeat retention and batched cleanup', () => {
       checked: 2,
       deleted: 2,
       hasMore: false,
+      batchSize: HEARTBEAT_CLEANUP_BATCH_SIZE,
+      backlogEstimate: null,
       identifiedCutoff,
       anonymousCutoff,
     });
@@ -491,6 +637,8 @@ describe('heartbeat retention and batched cleanup', () => {
       checked: 0,
       deleted: 0,
       hasMore: false,
+      batchSize: HEARTBEAT_CLEANUP_BATCH_SIZE,
+      backlogEstimate: null,
       identifiedCutoff: new Date(now.getTime() - HEARTBEAT_RETENTION_MS),
       anonymousCutoff: new Date(now.getTime() - HEARTBEAT_ANONYMOUS_RETENTION_MS),
     });
@@ -514,5 +662,20 @@ describe('heartbeat retention and batched cleanup', () => {
     expect(result.checked).toBe(1_000);
     expect(result.deleted).toBe(999);
     expect(result.hasMore).toBe(true);
+  });
+
+  it('drains a larger but still hard-bounded batch under stale-backlog pressure', async () => {
+    const count = vi.fn().mockResolvedValue(HEARTBEAT_CLEANUP_PRESSURE_THRESHOLD + 1);
+    const findMany = vi.fn().mockResolvedValue([]);
+    const deleteMany = vi.fn();
+
+    const result = await cleanupStaleHeartbeats({
+      liveSession: { count, findMany, deleteMany },
+    }, new Date('2026-07-17T12:00:00.000Z'));
+
+    expect(findMany.mock.calls[0][0].take).toBe(HEARTBEAT_CLEANUP_PRESSURE_BATCH_SIZE);
+    expect(result.batchSize).toBe(HEARTBEAT_CLEANUP_PRESSURE_BATCH_SIZE);
+    expect(result.backlogEstimate).toBe(HEARTBEAT_CLEANUP_PRESSURE_THRESHOLD + 1);
+    expect(result.hasMore).toBe(false);
   });
 });

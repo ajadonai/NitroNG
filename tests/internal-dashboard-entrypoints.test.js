@@ -86,19 +86,28 @@ describe('internal dashboard leakage retirement', () => {
 
   it('registers the permission and clears the child grant on admin logout', () => {
     expect(source('lib/admin.js')).toContain("'internalDashboards.view': ['owner', 'superadmin']");
-    expect(source('app/api/auth/admin/logout/route.js')).toContain('clearInternalDashboardGrantCookie');
+    const logout = source('app/api/auth/admin/logout/route.js');
+    expect(logout).toContain('clearInternalDashboardGrantCookie');
+    expect(logout.indexOf('await prisma.adminSession.deleteMany'))
+      .toBeLessThan(logout.indexOf('clearInternalDashboardGrantCookie(cookieStore)'));
+    expect(logout).toContain("return error('Unable to log out. Please try again.', 503)");
+    const dashboard = source('components/admin-dashboard.jsx');
+    expect(dashboard.indexOf('if (!res.ok)'))
+      .toBeLessThan(dashboard.indexOf('window.location.replace("/admin/login?logout=1")'));
   });
 
   it('clears inherited grants on account switches and revokes sessions on password reset', () => {
     const login = source('app/api/auth/admin/login/route.js');
     const team = source('app/api/admin/team/route.js');
-    expect(login).toContain('clearInternalDashboardGrantCookie(await cookies())');
-    expect(login.indexOf('clearInternalDashboardGrantCookie(await cookies())'))
+    expect(login).toContain('clearInternalDashboardGrantCookie(cookieStore)');
+    expect(login.indexOf('clearInternalDashboardGrantCookie(cookieStore)'))
       .toBeLessThan(login.indexOf('await setAdminCookie(token, admin.role)'));
     expect(login).toContain('FOR UPDATE');
     expect(login.indexOf('FOR UPDATE')).toBeLessThan(login.indexOf('tx.adminSession.create'));
+    expect(login.indexOf('tx.adminSession.deleteMany'))
+      .toBeLessThan(login.indexOf('tx.adminSession.create'));
     expect(login.indexOf('prisma.$transaction(async tx =>'))
-      .toBeLessThan(login.indexOf('clearInternalDashboardGrantCookie(await cookies())'));
+      .toBeLessThan(login.indexOf('clearInternalDashboardGrantCookie(cookieStore)'));
     const resetPassword = team.slice(team.indexOf("if (action === 'resetPassword')"));
     expect(resetPassword).toContain('prisma.$transaction([');
     expect(resetPassword).toContain('prisma.adminSession.deleteMany({ where: { adminId } })');

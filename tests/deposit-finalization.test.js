@@ -23,7 +23,14 @@ function matches(row, where = {}) {
   return true;
 }
 
-function createPaymentDb({ deposits, users, coupons = [], settings = {} }) {
+function createPaymentDb({
+  deposits,
+  users,
+  coupons = [],
+  settings = {},
+  beforeReferralClaim,
+  beforeWalletFence,
+}) {
   const state = {
     transactions: deposits.map(row => ({ type: 'deposit', status: 'Pending', note: '', ...row })),
     users: users.map(row => ({
@@ -31,6 +38,10 @@ function createPaymentDb({ deposits, users, coupons = [], settings = {} }) {
       firstDepositBonusPaid: false,
       referredBy: null,
       signupIp: null,
+      status: 'Active',
+      emailVerified: true,
+      deletedAt: null,
+      anonymizedAt: null,
       createdAt: new Date('2026-01-01T00:00:00Z'),
       ...row,
     })),
@@ -68,6 +79,10 @@ function createPaymentDb({ deposits, users, coupons = [], settings = {} }) {
       }),
     },
     user: {
+      findFirst: vi.fn(async ({ where }) => {
+        const row = state.users.find(item => matches(item, where));
+        return row ? { ...row } : null;
+      }),
       findUnique: vi.fn(async ({ where }) => {
         const row = state.users.find(item => matches(item, where));
         return row ? { ...row } : null;
@@ -82,8 +97,19 @@ function createPaymentDb({ deposits, users, coupons = [], settings = {} }) {
         return { ...row };
       }),
       updateMany: vi.fn(async ({ where, data }) => {
+        if (where.status?.not === 'Deleted' && where.anonymizedAt === null) {
+          await beforeWalletFence?.(state);
+        }
+        if (where.status === 'Active' && where.emailVerified === true && where.deletedAt === null) {
+          await beforeReferralClaim?.(state);
+        }
         const rows = state.users.filter(item => matches(item, where));
-        for (const row of rows) Object.assign(row, data);
+        for (const row of rows) {
+          if (data.balance?.increment !== undefined) row.balance += data.balance.increment;
+          for (const [key, value] of Object.entries(data)) {
+            if (key !== 'balance') row[key] = value;
+          }
+        }
         return { count: rows.length };
       }),
       count: vi.fn(async ({ where }) => state.users.filter(item => {
@@ -131,6 +157,89 @@ function user(id, overrides = {}) {
 beforeEach(() => vi.clearAllMocks());
 
 describe('finalizeDeposit', () => {
+  it('moves a verified late payment to Review without crediting a permanently deleted wallet', async () => {
+    const { db, state, tx } = createPaymentDb({
+      deposits: [deposit('deleted-wallet', { note: 'Flutterwave deposit' })],
+      users: [user('user-1', {
+        status: 'Deleted',
+        anonymizedAt: new Date('2026-07-17T11:00:00Z'),
+        balance: 0,
+      })],
+      coupons: [{
+        id: 'unused', code: 'UNUSED', type: 'percent', value: 10,
+        used: 0, enabled: true,
+      }],
+    });
+
+    const result = await finalizeDeposit({
+      prismaClient: db,
+      transactionId: 'deleted-wallet',
+      paidAmountKobo: 500_000,
+      now: new Date('2026-07-17T12:00:00Z'),
+    });
+
+    expect(result).toMatchObject({
+      finalized: false,
+      reason: 'account_deleted',
+      transaction: {
+        id: 'deleted-wallet',
+        status: 'Review',
+        paymentReviewReason: 'account_deleted',
+      },
+    });
+    expect(state.users[0].balance).toBe(0);
+    expect(state.transactions).toHaveLength(1);
+    expect(state.transactions[0].note).toContain('[account_deleted:credit_blocked]');
+    expect(state.coupons[0].used).toBe(0);
+    expect(tx.setting.findMany).not.toHaveBeenCalled();
+    expect(tx.transaction.create).not.toHaveBeenCalled();
+  });
+
+  it('closes the deletion race at the conditional wallet fence', async () => {
+    const { db, state } = createPaymentDb({
+      deposits: [deposit('deletion-race')],
+      users: [user('user-1')],
+      beforeWalletFence: paymentState => {
+        Object.assign(paymentState.users[0], {
+          status: 'Deleted',
+          anonymizedAt: new Date('2026-07-17T11:59:59Z'),
+        });
+      },
+    });
+
+    const result = await finalizeDeposit({
+      prismaClient: db,
+      transactionId: 'deletion-race',
+      paidAmountKobo: 500_000,
+    });
+
+    expect(result.reason).toBe('account_deleted');
+    expect(state.users[0].balance).toBe(0);
+    expect(state.transactions[0].status).toBe('Review');
+    expect(state.transactions).toHaveLength(1);
+  });
+
+  it('still credits a PendingDeletion wallet during its reversible grace period', async () => {
+    const { db, state } = createPaymentDb({
+      deposits: [deposit('pending-deletion')],
+      users: [user('user-1', {
+        status: 'PendingDeletion',
+        deletedAt: new Date('2026-08-16T12:00:00Z'),
+        firstDepositBonusPaid: true,
+      })],
+    });
+
+    const result = await finalizeDeposit({
+      prismaClient: db,
+      transactionId: 'pending-deletion',
+      paidAmountKobo: 500_000,
+    });
+
+    expect(result.finalized).toBe(true);
+    expect(state.users[0].balance).toBe(500_000);
+    expect(state.transactions[0].status).toBe('Completed');
+  });
+
   it('commits principal, capped coupon and welcome credit as one financial result', async () => {
     const { db, state } = createPaymentDb({
       deposits: [deposit('one', { note: 'Flutterwave deposit [coupon:coupon-1]' })],
@@ -197,6 +306,82 @@ describe('finalizeDeposit', () => {
     const referralRows = state.transactions.filter(row => row.type === 'referral');
     expect(referralRows).toHaveLength(2);
     expect(new Set(referralRows.map(row => row.idempotencyKey)).size).toBe(2);
+    const referrerRow = referralRows.find(row => row.userId === 'referrer');
+    expect(referrerRow.note).toBe('Referral bonus [ref-marker:user-1]');
+    expect(referrerRow.note).not.toContain('user-1@example.test');
+    expect(referrerRow.note).not.toContain('user-1 deposited');
+  });
+
+  it.each([
+    ['PendingDeletion', true, null],
+    ['Deleted', true, new Date('2026-07-15T12:00:00Z')],
+    ['Suspended', true, null],
+    ['Active', false, null],
+  ])('withholds referral rewards when the referrer is %s (verified: %s)', async (status, emailVerified, deletedAt) => {
+    const { db, state } = createPaymentDb({
+      deposits: [deposit(`ineligible-${status}-${emailVerified}`)],
+      users: [
+        user('user-1', { referredBy: 'REF-ineligible', signupIp: '1.1.1.1' }),
+        user('ineligible', {
+          referralCode: 'REF-ineligible',
+          signupIp: '2.2.2.2',
+          status,
+          emailVerified,
+          deletedAt,
+        }),
+      ],
+      settings: { ref_enabled: 'true', ref_min_deposit: '250000' },
+    });
+
+    const result = await finalizeDeposit({
+      prismaClient: db,
+      transactionId: `ineligible-${status}-${emailVerified}`,
+      paidAmountKobo: 500_000,
+    });
+
+    expect(result).toMatchObject({
+      finalized: true,
+      referralPaid: false,
+      referralWithheldReason: 'referrer_ineligible',
+      referrerBonus: 0,
+      inviteeBonus: 0,
+      totalUserCredit: 500_000,
+    });
+    expect(state.users.find(row => row.id === 'user-1').balance).toBe(500_000);
+    expect(state.users.find(row => row.id === 'ineligible').balance).toBe(0);
+    expect(state.transactions.filter(row => row.type === 'referral')).toHaveLength(0);
+  });
+
+  it('creates no referral effects when the referrer becomes ineligible at the final credit fence', async () => {
+    const { db, state } = createPaymentDb({
+      deposits: [deposit('referrer-cas-race')],
+      users: [
+        user('user-1', { referredBy: 'REF-racing', signupIp: '1.1.1.1' }),
+        user('racing', { referralCode: 'REF-racing', signupIp: '2.2.2.2' }),
+      ],
+      settings: { ref_enabled: 'true', ref_min_deposit: '250000' },
+      beforeReferralClaim: paymentState => {
+        paymentState.users.find(row => row.id === 'racing').status = 'PendingDeletion';
+      },
+    });
+
+    const result = await finalizeDeposit({
+      prismaClient: db,
+      transactionId: 'referrer-cas-race',
+      paidAmountKobo: 500_000,
+    });
+
+    expect(result).toMatchObject({
+      finalized: true,
+      referralPaid: false,
+      referralWithheldReason: 'referrer_eligibility_changed',
+      referrerBonus: 0,
+      inviteeBonus: 0,
+      totalUserCredit: 500_000,
+    });
+    expect(state.users.find(row => row.id === 'user-1').balance).toBe(500_000);
+    expect(state.users.find(row => row.id === 'racing').balance).toBe(0);
+    expect(state.transactions.filter(row => row.type === 'referral')).toHaveLength(0);
   });
 
   it('credits one deposit only once when every entry point races to finalise it', async () => {

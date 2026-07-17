@@ -3,7 +3,12 @@ import { log } from "@/lib/logger";
 import bcrypt from 'bcryptjs';
 import { signAdminToken, setAdminCookie, hashToken, detectDevice } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
-import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
+import {
+  accountRateLimitKey,
+  rateLimit,
+  rateLimitUnavailable,
+  tooManyRequests,
+} from '@/lib/rate-limit';
 import { sanitizeEmail } from '@/lib/validate';
 import { cookies, headers } from 'next/headers';
 import { clearInternalDashboardGrantCookie } from '@/lib/internal-dashboard-access';
@@ -22,6 +27,21 @@ export async function POST(req) {
       return error('Email and password are required');
     }
 
+    const accountLimit = await rateLimit(req, {
+      maxAttempts: 8,
+      windowMs: 15 * 60 * 1000,
+      key: accountRateLimitKey(email, 'admin-login'),
+    });
+    if (accountLimit.unavailable) {
+      return rateLimitUnavailable(undefined, accountLimit.retryAfter);
+    }
+    if (accountLimit.limited) {
+      return tooManyRequests(
+        'Too many login attempts for this account. Try again in 15 minutes.',
+        accountLimit.retryAfter,
+      );
+    }
+
     const admin = await prisma.admin.findUnique({
       where: { email },
     });
@@ -38,6 +58,10 @@ export async function POST(req) {
     if (!valid) {
       return error('Invalid credentials. Contact the super admin if you need access.', 401);
     }
+
+    const cookieStore = await cookies();
+    const previousToken = cookieStore.get('nitro_admin_token')?.value;
+    const previousTokenHash = previousToken ? hashToken(previousToken) : null;
 
     // Sign first so the durable session can be created while the admin row is
     // locked. The cookie is not exposed until that transaction succeeds.
@@ -59,6 +83,15 @@ export async function POST(req) {
         || lockedAdmin.status !== 'Active'
         || lockedAdmin.password !== admin.password) {
         return false;
+      }
+
+      // Account switching must revoke the browser's previous durable session in
+      // the same transaction that creates its replacement. This also revokes
+      // every short-lived internal-dashboard grant bound to the old session.
+      if (previousTokenHash) {
+        await tx.adminSession.deleteMany({
+          where: { tokenHash: previousTokenHash },
+        });
       }
 
       await tx.adminSession.create({
@@ -83,7 +116,7 @@ export async function POST(req) {
 
     // A browser may switch directly from one admin account to another. Never
     // let the previous account's short-lived dashboard grant cross that boundary.
-    clearInternalDashboardGrantCookie(await cookies());
+    clearInternalDashboardGrantCookie(cookieStore);
     await setAdminCookie(token, admin.role);
 
     return ok({

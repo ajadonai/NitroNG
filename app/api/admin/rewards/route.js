@@ -197,8 +197,11 @@ export async function POST(req) {
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       const result = await prisma.$transaction(async (tx) => {
-        const user = await tx.user.findUnique({ where: { id: userId }, select: { id: true, name: true } });
+        const user = await tx.user.findUnique({ where: { id: userId }, select: { id: true, name: true, status: true } });
         if (!user) return { error: 'User not found', status: 404 };
+        if (['PendingDeletion', 'Deleted'].includes(user.status)) {
+          return { error: 'Accounts awaiting or past deletion cannot receive points adjustments', status: 409 };
+        }
 
         if (type === 'manual_debit') {
           const balance = await getPointsBalanceKoboTx(tx, userId);

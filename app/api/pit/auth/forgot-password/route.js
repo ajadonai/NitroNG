@@ -19,17 +19,18 @@ export async function POST(req) {
       select: { id: true, name: true, email: true, status: true, deletedAt: true },
     });
 
-    if (!member || member.deletedAt || member.status === "rejected") {
+    if (!member || member.deletedAt || member.status !== "approved") {
       return Response.json({ message: GENERIC });
     }
 
     const resetToken = crypto.randomBytes(32).toString("hex");
     const resetTokenHash = crypto.createHash("sha256").update(resetToken).digest("hex");
 
-    await prisma.crewMember.update({
-      where: { id: member.id },
+    const { count } = await prisma.crewMember.updateMany({
+      where: { id: member.id, status: 'approved', deletedAt: null },
       data: { resetToken: resetTokenHash, resetExpires: new Date(Date.now() + 30 * 60 * 1000) },
     });
+    if (count !== 1) return Response.json({ message: GENERIC });
 
     const origin = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const resetUrl = `${origin}/pit/reset-password?token=${resetToken}`;

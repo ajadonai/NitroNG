@@ -93,7 +93,7 @@ describe('Telegram code generation (settings)', () => {
     const mathRandomSpy = vi.spyOn(Math, 'random');
     mockGetCrewSession.mockResolvedValue({ id: 'mem1', name: 'Test' });
     mockPrisma.crewMember.findFirst.mockResolvedValue(null);
-    mockPrisma.crewMember.update.mockResolvedValue({});
+    mockPrisma.crewMember.updateMany.mockResolvedValue({ count: 1 });
 
     const res = await settingsPATCH(makeSettingsReq({ section: 'telegram' }));
     const data = await res.json();
@@ -107,11 +107,11 @@ describe('Telegram code generation (settings)', () => {
   it('sets 10-minute expiry on generated code', async () => {
     mockGetCrewSession.mockResolvedValue({ id: 'mem1', name: 'Test' });
     mockPrisma.crewMember.findFirst.mockResolvedValue(null);
-    mockPrisma.crewMember.update.mockResolvedValue({});
+    mockPrisma.crewMember.updateMany.mockResolvedValue({ count: 1 });
 
     await settingsPATCH(makeSettingsReq({ section: 'telegram' }));
 
-    const updateCall = mockPrisma.crewMember.update.mock.calls[0][0];
+    const updateCall = mockPrisma.crewMember.updateMany.mock.calls[0][0];
     expect(updateCall.data.telegramLinkCodeExpiresAt).toBeInstanceOf(Date);
     const diffMs = updateCall.data.telegramLinkCodeExpiresAt.getTime() - Date.now();
     expect(diffMs).toBeGreaterThan(9 * 60 * 1000);
@@ -123,7 +123,7 @@ describe('Telegram code generation (settings)', () => {
     mockPrisma.crewMember.findFirst
       .mockResolvedValueOnce({ id: 'other' })
       .mockResolvedValueOnce(null);
-    mockPrisma.crewMember.update.mockResolvedValue({});
+    mockPrisma.crewMember.updateMany.mockResolvedValue({ count: 1 });
 
     const res = await settingsPATCH(makeSettingsReq({ section: 'telegram' }));
     const data = await res.json();
@@ -144,7 +144,7 @@ describe('Telegram webhook /start linking', () => {
       telegramLinkCodeExpiresAt: expired,
       lead: null,
     });
-    mockPrisma.crewMember.update.mockResolvedValue({});
+    mockPrisma.crewMember.updateMany.mockResolvedValue({ count: 1 });
 
     const res = await webhookPOST(makeWebhookReq(makeTgUpdate('ABC123')));
     expect(res.status).toBe(200);
@@ -153,8 +153,8 @@ describe('Telegram webhook /start linking', () => {
       expect.any(Number),
       expect.stringContaining('expired'),
     );
-    expect(mockPrisma.crewMember.update).toHaveBeenCalledWith({
-      where: { id: 'mem1' },
+    expect(mockPrisma.crewMember.updateMany).toHaveBeenCalledWith({
+      where: { id: 'mem1', telegramLinkCode: 'ABC123', status: 'approved', deletedAt: null },
       data: { telegramLinkCode: null, telegramLinkCodeExpiresAt: null },
     });
   });
@@ -166,7 +166,7 @@ describe('Telegram webhook /start linking', () => {
       telegramLinkCodeExpiresAt: null,
       lead: null,
     });
-    mockPrisma.crewMember.update.mockResolvedValue({});
+    mockPrisma.crewMember.updateMany.mockResolvedValue({ count: 1 });
 
     const res = await webhookPOST(makeWebhookReq(makeTgUpdate('OLD123')));
     expect(res.status).toBe(200);
@@ -175,8 +175,8 @@ describe('Telegram webhook /start linking', () => {
       expect.any(Number),
       expect.stringContaining('expired'),
     );
-    expect(mockPrisma.crewMember.update).toHaveBeenCalledWith({
-      where: { id: 'mem1' },
+    expect(mockPrisma.crewMember.updateMany).toHaveBeenCalledWith({
+      where: { id: 'mem1', telegramLinkCode: 'OLD123', status: 'approved', deletedAt: null },
       data: { telegramLinkCode: null, telegramLinkCodeExpiresAt: null },
     });
   });
@@ -296,5 +296,12 @@ describe('Telegram webhook /start linking', () => {
     );
     expect(mockCrewWelcome).toHaveBeenCalledWith('Test', 'Boss');
     expect(mockCrewDmChiefNewLink).toHaveBeenCalledWith('111', 'Test');
+    expect(mockPrisma.activityLog.create).toHaveBeenCalledWith({
+      data: {
+        adminName: 'Pit member mem1',
+        action: 'Pit member linked Telegram',
+        type: 'pit-self',
+      },
+    });
   });
 });

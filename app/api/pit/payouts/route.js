@@ -83,9 +83,19 @@ export async function POST(req) {
         payout = await prisma.$transaction(async (tx) => {
           // FOR UPDATE on the member row serializes concurrent payout requests
           const [lockedMember] = await tx.$queryRaw`
-            SELECT id, "totalPaid", role FROM crew_members WHERE id = ${member.id} FOR UPDATE
+            SELECT id, "totalPaid", role, status, "deletedAt",
+                   "bankName", "bankAccountNo", "bankAccountName"
+            FROM crew_members
+            WHERE id = ${member.id}
+            FOR UPDATE
           `;
           if (!lockedMember) throw new Error("Member not found");
+          if (lockedMember.status !== 'approved' || lockedMember.deletedAt) {
+            throw new Error('Member is not eligible for payouts');
+          }
+          if (!lockedMember.bankName || !lockedMember.bankAccountNo || !lockedMember.bankAccountName) {
+            throw new Error('Member bank details are unavailable');
+          }
 
           const [earnings, pendingPayouts] = await Promise.all([
             getMemberEarnings(member.id, lockedMember.role, tx),
@@ -107,9 +117,9 @@ export async function POST(req) {
             data: {
               memberId: member.id,
               amount: amountKobo,
-              bankName: member.bankName,
-              bankAccountNo: member.bankAccountNo,
-              bankAccountName: member.bankAccountName,
+              bankName: lockedMember.bankName,
+              bankAccountNo: lockedMember.bankAccountNo,
+              bankAccountName: lockedMember.bankAccountName,
             },
           });
         }, { isolationLevel: 'Serializable' });
@@ -128,6 +138,12 @@ export async function POST(req) {
   } catch (e) {
     if (e.message === "Insufficient balance") {
       return Response.json({ error: "Insufficient balance" }, { status: 400 });
+    }
+    if (e.message === 'Member is not eligible for payouts') {
+      return Response.json({ error: e.message }, { status: 409 });
+    }
+    if (e.message === 'Member bank details are unavailable') {
+      return Response.json({ error: e.message }, { status: 409 });
     }
     console.error("Payouts POST error:", e);
     return Response.json({ error: "Something went wrong" }, { status: 500 });

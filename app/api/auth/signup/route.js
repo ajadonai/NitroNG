@@ -11,6 +11,7 @@ import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { tgNewUser } from '@/lib/telegram';
 import { notifyCrewSignup } from '@/lib/commissions';
 import { resolveSignupAttribution } from '@/lib/link-ownership';
+import { isAccountDeletionGraceActive } from '@/lib/account-deletion';
 
 export async function POST(req) {
   try {
@@ -66,7 +67,9 @@ export async function POST(req) {
     const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (existing) {
       if (existing.status === 'PendingDeletion') {
-        return error('Account pending deletion. Contact support@nitro.ng.');
+        return error(isAccountDeletionGraceActive(existing)
+          ? 'Account pending deletion. Contact support@nitro.ng before the deletion deadline to cancel.'
+          : 'This account’s deletion deadline has passed and it cannot be restored.');
       }
       return error('An account with this email already exists');
     }
@@ -83,7 +86,15 @@ export async function POST(req) {
     // Check if referral code is valid
     let referredBy = null;
     if (referralCode) {
-      const referrer = await prisma.user.findUnique({ where: { referralCode } });
+      const referrer = await prisma.user.findFirst({
+        where: {
+          referralCode,
+          status: 'Active',
+          emailVerified: true,
+          deletedAt: null,
+        },
+        select: { referralCode: true },
+      });
       if (referrer) {
         referredBy = referralCode;
       }

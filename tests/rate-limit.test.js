@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import fc from 'fast-check';
+import { Redis } from '@upstash/redis';
 import {
+  accountRateLimitKey,
   createRateLimiter,
   rateLimitUnavailable,
   tooManyRequests,
@@ -16,6 +18,32 @@ function mockReq(ip = '127.0.0.1', path = '/api/test') {
 function silentLogger() {
   return { error: vi.fn() };
 }
+
+describe('accountRateLimitKey', () => {
+  it('normalizes equivalent identifiers without exposing them in the key', () => {
+    const first = accountRateLimitKey('  Person@Example.Test ', 'user-login');
+    const second = accountRateLimitKey('person@example.test', 'user-login');
+
+    expect(first).toBe(second);
+    expect(first).toMatch(/^rl:acct:user-login:[a-f0-9]{64}$/);
+    expect(first).not.toContain('person');
+    expect(first).not.toContain('example');
+  });
+
+  it('domain-separates keys for different login surfaces', () => {
+    expect(accountRateLimitKey('person@example.test', 'user-login'))
+      .not.toBe(accountRateLimitKey('person@example.test', 'admin-login'));
+  });
+
+  it.each([
+    ['', 'user-login'],
+    ['   ', 'user-login'],
+    ['person@example.test', 'Admin Login'],
+    ['person@example.test', '../login'],
+  ])('rejects invalid key inputs', (identifier, scope) => {
+    expect(() => accountRateLimitKey(identifier, scope)).toThrow(TypeError);
+  });
+});
 
 describe('createRateLimiter memory mode', () => {
   it('allows exactly N requests and blocks N + 1 for every positive threshold', async () => {
@@ -161,9 +189,37 @@ describe('createRateLimiter Redis mode', () => {
     expect(redisFactory).toHaveBeenCalledWith(expect.objectContaining({
       url: 'https://redis.example.test',
       token: 'secret-token',
-      retry: false,
+      retry: { retries: 0 },
       signal: expect.any(Function),
     }));
+  });
+
+  it('configures the installed Upstash requester for exactly one HTTP attempt', async () => {
+    let capturedConfig;
+    const redisFactory = vi.fn(config => {
+      capturedConfig = config;
+      return { eval: vi.fn().mockResolvedValue([1, 60_000]) };
+    });
+    const limit = createRateLimiter({
+      env: {
+        NODE_ENV: 'production',
+        UPSTASH_REDIS_REST_URL: 'https://redis.example.test',
+        UPSTASH_REDIS_REST_TOKEN: 'secret-token',
+      },
+      redisFactory,
+      logger: silentLogger(),
+    });
+    await limit(mockReq(), { key: 'rl:test:request-count' });
+
+    const fetch = vi.fn().mockRejectedValue(new Error('network unavailable'));
+    vi.stubGlobal('fetch', fetch);
+    try {
+      const client = new Redis(capturedConfig);
+      await expect(client.eval('return 1', [], [])).rejects.toThrow('network unavailable');
+      expect(fetch).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
 
@@ -218,8 +274,34 @@ describe('fail-closed production behavior', () => {
     expect(memoryStore.size).toBe(0);
     expect(logger.error).toHaveBeenCalledWith(
       '[RateLimit] Distributed rate limiting unavailable',
-      { reason: 'redis_request_failed', error: 'redis down' },
+      { reason: 'redis_request_failed' },
     );
+  });
+
+  it('never logs raw Redis errors, keys, credentials, or account identifiers', async () => {
+    const logger = silentLogger();
+    const sensitiveMessage = [
+      'token=secret-token',
+      'key=rl:acct:user-login:person@example.test',
+      'command=["INCR","person@example.test"]',
+    ].join(' ');
+    const redis = { eval: vi.fn().mockRejectedValue(new Error(sensitiveMessage)) };
+    const limit = createRateLimiter({
+      redis,
+      env: { NODE_ENV: 'production' },
+      now: () => 0,
+      logger,
+    });
+
+    await expect(limit(mockReq(), {
+      key: accountRateLimitKey('person@example.test', 'user-login'),
+    })).resolves.toMatchObject({ unavailable: true });
+
+    const logged = JSON.stringify(logger.error.mock.calls);
+    expect(logged).toContain('redis_request_failed');
+    expect(logged).not.toContain('secret-token');
+    expect(logged).not.toContain('person@example.test');
+    expect(logged).not.toContain('command');
   });
 
   it('returns unavailable when default Redis client construction fails', async () => {

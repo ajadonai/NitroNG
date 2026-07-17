@@ -601,6 +601,30 @@ describe('reconcileNowPaymentsDeposit', () => {
     expect(storedTransaction.paymentReviewResolvedAt).toBeNull();
   });
 
+  it('preserves the account-deleted review reason on later provider verification', async () => {
+    const { result } = await reconcile(
+      transaction({
+        status: 'Review',
+        paymentReviewReason: 'account_deleted',
+        paymentReviewAt: new Date('2026-07-17T00:30:00.000Z'),
+        paymentReviewResolvedAt: null,
+      }),
+      providerPayload(),
+    );
+
+    expect(result).toEqual(expect.objectContaining({
+      success: false,
+      paymentState: 'review',
+      transactionStatus: 'Review',
+      reason: 'account_deleted',
+    }));
+    expect(mocks.finalizeDeposit).not.toHaveBeenCalled();
+    expect(storedTransaction.paymentReviewReason).toBe('account_deleted');
+    expect(storedTransaction.paymentReviewResolvedAt).toBeNull();
+    expect(adminIssues).toHaveLength(1);
+    expect(JSON.parse(adminIssues[0].metadata).reason).toBe('account_deleted');
+  });
+
   it.each(['Cancelled', 'Expired', 'Failed'])(
     'recovers a late exact confirmation from %s',
     async initialStatus => {

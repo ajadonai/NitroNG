@@ -87,6 +87,7 @@ model User {
   deletedAt              DateTime?
   deletedName            String?
   deletedEmail           String?
+  anonymizedAt           DateTime?
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
@@ -791,7 +792,7 @@ model LinkClick {
 model CrewMember {
   id                        String    @id @default(cuid())
   role                      String    @default("crew") // "chief" | "crew"
-  status                    String    @default("pending") // "pending" | "approved" | "suspended" | "rejected"
+  status                    String    @default("pending") // "pending" | "approved" | "suspended" | "rejected" | "deleted"
   name                      String
   email                     String    @unique
   password                  String
@@ -854,22 +855,24 @@ model CrewSession {
 }
 
 model AffiliateCommission {
-  id             String    @id @default(cuid())
-  orderId        String
-  linkId         String
-  memberId       String
-  leadId         String?
-  orderCharge    Int // kobo — the order.charge that earned this commission
-  orderCost      Int       @default(0) // kobo — the order.cost at time of commission
-  commissionRate Int // % of profit to crew side at time of creation
-  leadSplit      Int // % at time of creation
-  leadAmount     Int // kobo — chief's cut
-  marketerAmount Int // kobo — crew member's cut
-  status         String    @default("held") // "held" | "approved" | "voided"
-  releasesAt     DateTime
-  voidedAt       DateTime?
-  voidReason     String?
-  createdAt      DateTime  @default(now())
+  id                String    @id @default(cuid())
+  orderId           String
+  linkId            String
+  memberId          String
+  leadId            String?
+  orderCharge       Int // kobo — the order.charge that earned this commission
+  orderCost         Int       @default(0) // kobo — the order.cost at time of commission
+  commissionRate    Int // % of profit to crew side at time of creation
+  leadSplit         Int // % at time of creation
+  leadAmount        Int // kobo — chief's cut
+  marketerAmount    Int // kobo — crew member's cut
+  status            String    @default("held") // "held" | "approved" | "voided"
+  releasesAt        DateTime
+  voidedAt          DateTime?
+  voidReason        String?
+  leadForfeitedAt   DateTime?
+  leadForfeitReason String?
+  createdAt         DateTime  @default(now())
 
   order  Order           @relation(fields: [orderId], references: [id])
   link   AcquisitionLink @relation(fields: [linkId], references: [id])
@@ -1040,7 +1043,7 @@ model TaskSubmission {
 model NitroPointLedger {
   id                String   @id @default(cuid())
   userId            String
-  type              String // earned_order, redeemed_order, reversed_refund, restored_refund, manual_credit, manual_debit, opening_balance
+  type              String // earned_order, redeemed_order, reversed_refund, restored_refund, manual_credit, manual_debit, opening_balance, account_closure
   pointsKobo        Int // positive = credit, negative = debit
   dedupeKey         String?  @unique // event-level idempotency, e.g. "earned_order:{orderId}", "reversed_refund:{orderId}:{txId}"
   orderId           String?

@@ -66,8 +66,13 @@ export async function POST(req) {
               userId = newUser.id;
             }
 
-            await tx.crewMember.update({
-              where: { id: member.id },
+            const activated = await tx.crewMember.updateMany({
+              where: {
+                id: member.id,
+                inviteToken: token,
+                status: 'pending',
+                deletedAt: null,
+              },
               data: {
                 password: hashed, status: "approved", approvedAt: new Date(),
                 inviteToken: null, inviteExpiresAt: null,
@@ -76,6 +81,9 @@ export async function POST(req) {
                 ...(userId ? { userId } : {}),
               },
             });
+            if (activated.count !== 1) {
+              throw Object.assign(new Error('Invitation state changed'), { _status: 409 });
+            }
 
             await tx.crewSession.create({
               data: { memberId: member.id, token: hashToken(sessionToken), expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
@@ -90,7 +98,7 @@ export async function POST(req) {
     } catch (e) {
       if (e._status === 410) {
         await prisma.crewMember.updateMany({
-          where: { inviteToken: token },
+          where: { inviteToken: token, status: 'pending', deletedAt: null },
           data: { inviteToken: null, inviteExpiresAt: null },
         }).catch(() => {});
       }

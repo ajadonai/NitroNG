@@ -2,7 +2,7 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { cookies } from "next/headers";
-import { rateLimit, rateLimitUnavailable, tooManyRequests } from "@/lib/rate-limit";
+import { accountRateLimitKey, rateLimit, rateLimitUnavailable, tooManyRequests } from "@/lib/rate-limit";
 import { hashToken } from "@/lib/crew";
 import { validateEmail, validatePassword, sanitizeEmail } from "@/lib/validate";
 
@@ -19,7 +19,7 @@ export async function POST(req) {
 
     const clean = sanitizeEmail(email);
 
-    const accountLimit = await rateLimit(req, { maxAttempts: 8, windowMs: 15 * 60 * 1000, key: `rl:acct:${clean}:pit-login` });
+    const accountLimit = await rateLimit(req, { maxAttempts: 8, windowMs: 15 * 60 * 1000, key: accountRateLimitKey(clean, 'pit-login') });
     if (accountLimit.unavailable) return rateLimitUnavailable(undefined, accountLimit.retryAfter);
     if (accountLimit.limited) return tooManyRequests("Too many login attempts for this account. Try again in 15 minutes.", accountLimit.retryAfter);
     const member = await prisma.crewMember.findUnique({ where: { email: clean } });
@@ -29,6 +29,10 @@ export async function POST(req) {
       if (isNitroUser) {
         return Response.json({ error: "This email has a Nitro account but hasn't joined the Pit yet. Apply to get started." }, { status: 401 });
       }
+      return Response.json({ error: "No account found with this email" }, { status: 401 });
+    }
+
+    if (member.deletedAt || member.status === 'deleted') {
       return Response.json({ error: "No account found with this email" }, { status: 401 });
     }
 

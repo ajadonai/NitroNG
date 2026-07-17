@@ -9,6 +9,7 @@ const mockPrisma = {
   transaction: { aggregate: vi.fn() },
   orderCreditUsage: { aggregate: vi.fn() },
   nitroPointLedger: { aggregate: vi.fn(), findMany: vi.fn(), groupBy: vi.fn(), create: vi.fn() },
+  user: { updateMany: vi.fn() },
 };
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
 
@@ -38,6 +39,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockPrisma.$queryRaw.mockResolvedValue([]);
   mockPrisma.orderCreditUsage.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
+  mockPrisma.user.updateMany.mockResolvedValue({ count: 1 });
 });
 
 // ── Tier calculation ──
@@ -480,11 +482,14 @@ describe('awardOrderPoints', () => {
   const mockTx = {
     nitroPointLedger: { create: vi.fn() },
     order: { update: vi.fn() },
+    user: { updateMany: vi.fn() },
   };
 
   beforeEach(() => {
     mockTx.nitroPointLedger.create.mockReset();
     mockTx.order.update.mockReset();
+    mockTx.user.updateMany.mockReset();
+    mockTx.user.updateMany.mockResolvedValue({ count: 1 });
   });
 
   it('creates ledger entry and updates order', async () => {
@@ -509,6 +514,30 @@ describe('awardOrderPoints', () => {
       where: { id: 'db-1' },
       data: { nitroPointsEarnedKobo: 5000 },
     });
+    expect(mockTx.user.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'u1',
+        status: { not: 'Deleted' },
+        anonymizedAt: null,
+      },
+      data: { balance: { increment: 0 } },
+    });
+  });
+
+  it('does not award points when permanent deletion won the user-row fence', async () => {
+    mockTx.user.updateMany.mockResolvedValue({ count: 0 });
+
+    const result = await awardOrderPoints(mockTx, {
+      userId: 'deleted-user',
+      orderId: 'NTR-LATE',
+      orderDbId: 'db-late',
+      chargeKobo: 500000,
+      tier: getNitroStatus(100000),
+    });
+
+    expect(result).toBe(0);
+    expect(mockTx.nitroPointLedger.create).not.toHaveBeenCalled();
+    expect(mockTx.order.update).not.toHaveBeenCalled();
   });
 
   it('returns 0 and skips writes for Spark with tiny charge', () => {
@@ -553,6 +582,7 @@ describe('reverseOrderPoints', () => {
   const mockTx = {
     order: { findUnique: vi.fn() },
     nitroPointLedger: { aggregate: vi.fn(), create: vi.fn() },
+    user: { updateMany: vi.fn() },
   };
 
   beforeEach(() => {
@@ -560,6 +590,8 @@ describe('reverseOrderPoints', () => {
     mockTx.nitroPointLedger.aggregate.mockReset();
     mockTx.nitroPointLedger.create.mockReset();
     mockTx.nitroPointLedger.aggregate.mockResolvedValue({ _sum: { pointsKobo: 0 } });
+    mockTx.user.updateMany.mockReset();
+    mockTx.user.updateMany.mockResolvedValue({ count: 1 });
   });
 
   it('reverses full earned points on full refund', async () => {
@@ -721,6 +753,7 @@ describe('reverseOrderPoints — point restoration', () => {
   const mockTx = {
     order: { findUnique: vi.fn() },
     nitroPointLedger: { aggregate: vi.fn(), create: vi.fn() },
+    user: { updateMany: vi.fn() },
   };
 
   beforeEach(() => {
@@ -728,6 +761,8 @@ describe('reverseOrderPoints — point restoration', () => {
     mockTx.nitroPointLedger.aggregate.mockReset();
     mockTx.nitroPointLedger.create.mockReset();
     mockTx.nitroPointLedger.aggregate.mockResolvedValue({ _sum: { pointsKobo: 0 } });
+    mockTx.user.updateMany.mockReset();
+    mockTx.user.updateMany.mockResolvedValue({ count: 1 });
   });
 
   it('restores redeemed points on full refund', async () => {
@@ -740,6 +775,33 @@ describe('reverseOrderPoints — point restoration', () => {
     expect(calls).toHaveLength(2);
     expect(calls[0][0].data).toEqual(expect.objectContaining({ type: 'reversed_refund', pointsKobo: -5000 }));
     expect(calls[1][0].data).toEqual(expect.objectContaining({ type: 'restored_refund', pointsKobo: 500000, orderId: 'db-r1' }));
+  });
+
+  it('blocks every post-closure points mutation after deletion', async () => {
+    mockTx.order.findUnique.mockResolvedValue({
+      charge: 1000000,
+      nitroPointsEarnedKobo: 5000,
+      nitroPointsRedeemedKobo: 500000,
+      userId: 'deleted-user',
+      nitroStatusAtPurchase: 'pulse',
+    });
+    mockTx.user.updateMany.mockResolvedValue({ count: 0 });
+
+    const reversed = await reverseOrderPoints(mockTx, {
+      orderDbId: 'db-deleted-refund',
+      refundAmountKobo: 1000000,
+    });
+
+    expect(reversed).toBe(0);
+    expect(mockTx.nitroPointLedger.create).not.toHaveBeenCalled();
+    expect(mockTx.user.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'deleted-user',
+        status: { not: 'Deleted' },
+        anonymizedAt: null,
+      },
+      data: { balance: { increment: 0 } },
+    });
   });
 
   it('restores proportionally on partial refund', async () => {
@@ -837,12 +899,15 @@ describe('reverseOrderPoints — partial then cancelled (bulk check regression)'
   const mockTx = {
     order: { findUnique: vi.fn() },
     nitroPointLedger: { aggregate: vi.fn(), create: vi.fn() },
+    user: { updateMany: vi.fn() },
   };
 
   beforeEach(() => {
     mockTx.order.findUnique.mockReset();
     mockTx.nitroPointLedger.aggregate.mockReset();
     mockTx.nitroPointLedger.create.mockReset();
+    mockTx.user.updateMany.mockReset();
+    mockTx.user.updateMany.mockResolvedValue({ count: 1 });
   });
 
   it('restores remaining redeemed points after prior partial refund', async () => {

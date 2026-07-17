@@ -15,6 +15,8 @@ import {
 
 export const dynamic = 'force-dynamic';
 const LIVE_SESSION_RESULT_LIMIT = 500;
+const LIVE_IDENTIFIED_RESERVED_SLOTS = 400;
+const LIVE_ANONYMOUS_RESULT_LIMIT = LIVE_SESSION_RESULT_LIMIT - LIVE_IDENTIFIED_RESERVED_SLOTS;
 
 export async function GET(req) {
   let limit;
@@ -50,15 +52,29 @@ export async function GET(req) {
 
   try {
     const cutoff = new Date(Date.now() - HEARTBEAT_ACTIVE_WINDOW_MS);
-    const sessions = await prisma.liveSession.findMany({
-      where: { lastSeen: { gte: cutoff } },
-      orderBy: { lastSeen: 'desc' },
-      take: LIVE_SESSION_RESULT_LIMIT,
-    });
+    // Anonymous traffic can never consume the slots reserved for signed-in
+    // customers and admins. Identified sessions may use any unused anonymous
+    // capacity, while the final merge preserves newest-first display order.
+    const [identifiedSessions, anonymousSessions] = await Promise.all([
+      prisma.liveSession.findMany({
+        where: { lastSeen: { gte: cutoff }, userId: { not: null } },
+        orderBy: { lastSeen: 'desc' },
+        take: LIVE_SESSION_RESULT_LIMIT,
+      }),
+      prisma.liveSession.findMany({
+        where: { lastSeen: { gte: cutoff }, userId: null },
+        orderBy: { lastSeen: 'desc' },
+        take: LIVE_ANONYMOUS_RESULT_LIMIT,
+      }),
+    ]);
+    const sessions = [...identifiedSessions, ...anonymousSessions]
+      .sort((left, right) => right.lastSeen.getTime() - left.lastSeen.getTime())
+      .slice(0, LIVE_SESSION_RESULT_LIMIT);
 
     const userIds = [...new Set(sessions.map(s => s.userId).filter(Boolean))];
-    const users = userIds.length
-      ? await prisma.user.findMany({
+    const [users, depositTotals] = userIds.length
+      ? await Promise.all([
+        prisma.user.findMany({
           where: { id: { in: userIds } },
           select: {
             id: true, name: true, email: true, balance: true, createdAt: true, signupSource: true,
@@ -86,15 +102,24 @@ export async function GET(req) {
                 },
               },
             },
-            transactions: {
-              where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed' },
-              select: { amount: true },
-            },
             _count: { select: { orders: { where: { deletedAt: null } } } },
           },
-        })
-      : [];
+        }),
+        prisma.transaction.groupBy({
+          by: ['userId'],
+          where: {
+            userId: { in: userIds },
+            type: { in: ['deposit', 'admin_credit'] },
+            status: 'Completed',
+          },
+          _sum: { amount: true },
+        }),
+      ])
+      : [[], []];
     const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+    const depositTotalMap = Object.fromEntries(
+      depositTotals.map(row => [row.userId, row._sum.amount || 0]),
+    );
 
     const unmatchedIds = userIds.filter(id => !userMap[id]);
     const admins = unmatchedIds.length
@@ -116,7 +141,7 @@ export async function GET(req) {
           email: u.email,
           balance: u.balance / 100,
           orderCount: u._count.orders,
-          totalDeposited: u.transactions.reduce((s, t) => s + t.amount, 0) / 100,
+          totalDeposited: (depositTotalMap[u.id] || 0) / 100,
           lastOrder: u.orders[0]?.createdAt?.toISOString() || null,
           joined: u.createdAt.toISOString(),
           source: u.signupSource || null,
@@ -143,7 +168,8 @@ export async function GET(req) {
     return withInternalDashboardNoStore(Response.json({
       sessions: result,
       count: result.length,
-      truncated: result.length === LIVE_SESSION_RESULT_LIMIT,
+      truncated: identifiedSessions.length === LIVE_SESSION_RESULT_LIMIT
+        || anonymousSessions.length === LIVE_ANONYMOUS_RESULT_LIMIT,
       ts: Date.now(),
     }));
   } catch (err) {
