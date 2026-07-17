@@ -4,6 +4,7 @@ vi.mock('@/lib/logger', () => ({ log: { info: vi.fn(), warn: vi.fn(), error: vi.
 
 // Mock prisma before importing the module
 const mockPrisma = {
+  $queryRaw: vi.fn(),
   order: { findMany: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
   transaction: { aggregate: vi.fn() },
   orderCreditUsage: { aggregate: vi.fn() },
@@ -15,6 +16,7 @@ const {
   getNitroStatus,
   getStatusTiers,
   getEligibleSpendKobo,
+  getEligibleSpendKoboBatch,
   getPointsBalanceKobo,
   getPointsBalanceKoboTx,
   getRewardsPayload,
@@ -34,6 +36,7 @@ const {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockPrisma.$queryRaw.mockResolvedValue([]);
   mockPrisma.orderCreditUsage.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
 });
 
@@ -202,6 +205,51 @@ describe('getEligibleSpendKobo', () => {
   });
 });
 
+describe('getEligibleSpendKoboBatch', () => {
+  it('returns DB-aggregated canonical spend for each user with zero defaults', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([
+      { userId: 'user1', eligibleSpendKobo: 11000000n },
+      { userId: 'user2', eligibleSpendKobo: 2000000n },
+    ]);
+
+    const result = await getEligibleSpendKoboBatch(['user1', 'user2', 'user1', 'user3']);
+
+    expect([...result.entries()]).toEqual([
+      ['user1', 11000000],
+      ['user2', 2000000],
+      ['user3', 0],
+    ]);
+    expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.$queryRaw.mock.calls[0][1]).toEqual(['user1', 'user2', 'user3']);
+  });
+
+  it('encodes the same eligibility and deduction rules as the single-user helper', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+
+    await getEligibleSpendKoboBatch(['user1', 'user2']);
+
+    const sql = [...mockPrisma.$queryRaw.mock.calls[0][0]].join(' ');
+    expect(sql).toContain("o.status IN ('Completed', 'Partial')");
+    expect(sql).toContain('o."deletedAt" IS NULL');
+    expect(sql).toContain('JOIN transactions t');
+    expect(sql).toContain('t."userId" = eo."userId"');
+    expect(sql).toContain("t.reference = 'REF-' || eo.\"orderId\"");
+    expect(sql).toContain("t.reference = 'ADM-REF-' || eo.\"orderId\"");
+    expect(sql).toContain("t.type = 'refund'");
+    expect(sql).toContain("t.status = 'Completed'");
+    expect(sql).toContain('JOIN order_credit_usages ocu ON ocu."orderId" = eo.id');
+    expect(sql).toContain('ot.points_redeemed');
+    expect(sql).toContain('GREATEST(');
+  });
+
+  it('returns immediately for an empty user list', async () => {
+    const result = await getEligibleSpendKoboBatch([]);
+
+    expect(result).toEqual(new Map());
+    expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
+  });
+});
+
 // ── Points balance ──
 
 describe('getPointsBalanceKobo', () => {
@@ -243,10 +291,12 @@ describe('getRewardsPayload', () => {
 
     expect(r.status.key).toBe('spark');
     expect(r.status.name).toBe('Spark');
+    expect(r.status.color).toBe('#9ca3af');
     expect(r.status.eligibleSpend).toBe(0);
     expect(r.status.discountPct).toBe(0);
     expect(r.status.pointEarnPct).toBe(0.5);
     expect(r.status.nextName).toBe('Pulse');
+    expect(r.status.nextColor).toBe('#60a5fa');
     expect(r.status.nextMin).toBe(100000);
     expect(r.status.remainingToNext).toBe(100000);
     expect(r.status.progressPct).toBe(0);
@@ -310,6 +360,7 @@ describe('getRewardsPayload', () => {
 
     expect(r.status.key).toBe('legend');
     expect(r.status.nextName).toBe(null);
+    expect(r.status.nextColor).toBe(null);
     expect(r.status.progressPct).toBe(100);
     expect(r.status.remainingToNext).toBe(0);
   });

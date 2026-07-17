@@ -29,8 +29,8 @@
 | 1 | Critical containment | 1, 2, 3, 27 | Included in Phase 1–3 consolidation |
 | 2 | Payment foundation | 7, 8, 28 | Included in Phase 1–3 consolidation |
 | 3 | Flutterwave reliability | 4 | Approved; included in Phase 1–3 consolidation |
-| 4 | Crypto payment integrity | 5, 6 | Not started |
-| 5 | Internal dashboard protection | 9, 10, 16, 17 | Not started |
+| 4 | Crypto payment integrity | 5, 6 | Included in Phase 4–5 consolidation; independently approved |
+| 5 | Internal dashboard protection | 9, 10, 16, 17 | Included in consolidation; user review pending |
 | 6 | Privacy and account deletion | 11, 12 | Not started |
 | 7 | Public UI correctness | 13, 14, 15, 23, 24, 25 | Not started |
 | 8 | Deployment safety | 18, 19, 20, 21, 22 | Not started |
@@ -314,6 +314,78 @@ Deliberately deferred:
 - Refunds cannot leave unearned funds available without an alert or controlled recovery action.
 - Duplicate or reordered provider callbacks are safe.
 
+### Phase 4 implementation record
+
+**Status:** Fixed locally on 17 July 2026, independently reviewed, and approved with no remaining crypto-payment flaws. Deliberately left unstaged and uncommitted for the next user-approved consolidation checkpoint.
+
+Financial and provider invariants now enforced:
+
+1. A NOWPayments status can never credit a wallet by itself. The shared verifier requires the exact provider payment ID, Nitro order reference, USD price, price currency, quoted crypto amount, crypto asset, and authoritative `actually_paid` amount before the Phase 2 finaliser can run.
+2. Provider monetary values use exact canonical decimals with the database storing `DECIMAL(36,18)`. Unsafe numbers, malformed values, missing terminal amounts, underpayments, overpayments, partial payments, wrong assets, repeated child payments, and every identity or quote mismatch are rejected from automatic credit.
+3. The signed webhook is only a trigger. It validates NOWPayments' recursively sorted HMAC-SHA512 signature, then performs a fresh bounded provider query through the same reconciler used by authenticated polling and cron recovery. Callback amounts are never trusted.
+4. Provider queries use the Phase 3 cross-instance lease and renew-before-apply ownership fence. A callback carrying a distinct provider ID remains retryable when the lease is held, lost, or the provider times out, so a repeated child payment cannot be acknowledged before that exact observation is processed.
+5. One durable local transaction is created before the single provider invoice request. Creation is user-idempotent, ambiguous failures preserve the row for safe replay, provider facts bind first-write-wins, and disabling Crypto blocks only new invoices while existing payments continue to reconcile.
+6. The Phase 2 finaliser remains the only wallet-credit path. `Review` and `Rejected` are not claimable statuses. Late exact confirmations after a manual rejection open a new review and never silently credit the wallet.
+7. Every material anomaly or later provider transition has a stable SHA-256 observation fingerprint. Exact duplicates are idempotent; distinct child payments and later verified, refund, or terminal evidence remain separate admin observations instead of overwriting one another.
+8. The transaction stores the current review fingerprint. Admin disposition requires that exact generation and guards the atomic write with it, so a stale admin screen receives `409` and reloads instead of dismissing newer unseen evidence. One current disposition closes all observations already shown for that payment.
+9. Refund-before-credit is terminal and uncredited. Refund or terminal regression after credit preserves the completed wallet transaction and opens a high-priority manual recovery review; no unsafe automatic balance debit is attempted.
+10. Recovery uses separate bounded queues for ordinary unsettled payments, reviewed/rejected payments, and recent completed-payment audits. Persisted reconciliation-attempt timestamps plus null-first least-recently-attempted ordering prevent permanent provider errors or cooldown-changing membership from starving other rows.
+11. Legacy note-based provider IDs remain recoverable. Ambiguous duplicates are left unbound by the migration, included in reconciliation, and sent to review rather than aborting the unique index or binding one provider payment to two deposits.
+12. Customer status and history now distinguish provider-pending, retryable, review, refunded, rejected, and credited states. Polling stops only on true terminal outcomes, and success UI requires a durably completed transaction with no open review.
+
+Files added:
+
+- `lib/crypto-payment-ui.js`
+- `lib/nowpayments-payment.js`
+- `lib/nowpayments-verification.js`
+- `prisma/migrations/20260717010000_add_payment_provider_audit_fields/migration.sql`
+- `prisma/migrations/20260717010100_add_payment_provider_unique_index/migration.sql`
+- `prisma/migrations/20260717010200_add_payment_provider_reconcile_index/migration.sql`
+- `prisma/migrations/20260717010300_add_payment_review_index/migration.sql`
+- `tests/admin-crypto-payment-review.test.js`
+- `tests/crypto-payment-route.test.js`
+- `tests/crypto-payment-ui.test.js`
+- `tests/nowpayments-reconciliation.test.js`
+- `tests/nowpayments-schema.test.js`
+- `tests/nowpayments-verification.test.js`
+- `tests/nowpayments-webhook-route.test.js`
+
+Existing Phase 4 files changed:
+
+- `app/api/admin/issues/route.js`
+- `app/api/cron/payments/route.js`
+- `app/api/payments/crypto/route.js`
+- `app/api/payments/crypto/webhook/route.js`
+- `components/addfunds-page.jsx`
+- `components/admin-extra-pages.jsx`
+- `lib/payment-recovery.js`
+- `lib/payment-state.js`
+- `lib/transaction-history.js`
+- `package.json`
+- `package-lock.json`
+- `prisma/schema.prisma`
+- payment entry-point, recovery, history, and webhook regression tests
+
+Verification completed:
+
+- Focused Phase 4 suite: 318 passed.
+- Independent correction review: approved with no remaining Phase 4 flaws.
+- Production build: passed.
+- Prisma format, schema validation, and client generation: passed.
+- Migration status: 28 migrations found; the four Phase 4 migrations are pending and were not applied.
+- Production dependency audit: 0 known vulnerabilities.
+- Scoped ESLint: 0 errors. Thirty-one existing unused-code warnings remain in the two large shared UI components.
+- `git diff --check`: passed.
+- Whole-repository Vitest run: 865 passed and 3 skipped; one separate dashboard-summary test currently fails because concurrently authored Nitro Status work added another order query without updating its test. The 318-test Phase 4 boundary is green.
+
+Deliberately deferred:
+
+- Phase 5 still owns fail-closed production rate limiting when Redis is absent or unavailable.
+- Phase 8 still owns required production URL/environment validation and deployment gating on pending migrations.
+- Refund-after-credit and other post-credit anomalies intentionally require an owner/superadmin recovery decision; Phase 4 does not guess at an automatic wallet debit policy.
+- Deposit notifications remain post-commit without a durable outbox. A crash can lose a notification but cannot change or duplicate the financial result.
+- The four Phase 4 migrations must be reviewed and applied before this code can be deployed. The three transaction indexes are split into separate `CONCURRENTLY` migrations so their builds do not block live payment writes.
+
 ## Phase 5 — Internal dashboard protection
 
 ### Scope
@@ -329,6 +401,59 @@ Deliberately deferred:
 - Dashboard access is revocable and expires.
 - Redis failure does not silently remove important production protection.
 - Heartbeat traffic is bounded, rate-limited, and cleaned without dashboard activity.
+
+### Phase 5 implementation record
+
+**Status:** Fixed locally on 17 July 2026, corrected after two independent review passes, and ready for the combined Phase 4–5 review. All work remains unstaged and uncommitted.
+
+Internal dashboard access:
+
+1. The long-lived `pulse_secret_key` URL credential is retired. Pulse and Live now use a 15-minute, HttpOnly, Secure-in-production, SameSite Strict child grant tied to a live database-backed admin session.
+2. Only active owners and superadmins can mint or use the grant. Logout, account switching, deactivation, session deletion, and owner-driven password resets revoke it through the parent session lifecycle.
+3. Admin login locks and rechecks the password/status row before creating a session, preventing an old-password login from racing a password reset and recreating access after revocation.
+4. Pulse and Live APIs authenticate before sensitive queries, return private no-store responses, clear browser state after either authentication or authorization loss, and never place credentials in URLs, props, browser history, copied links, analytics payloads, or request logs.
+5. The legacy setting is hidden immediately and deleted by migration `20260717020000_retire_pulse_secret_key`.
+
+Reliable rate limiting:
+
+1. Upstash counters now use one atomic Lua increment/expiry operation with a 1.5-second request timeout and accurate retry timing.
+2. Production fails closed with an explicit retryable `503` when Redis configuration is missing, incomplete, cannot initialise, times out, or errors. The per-instance memory fallback remains development/test only.
+3. Every existing rate-limited API entry point handles unavailable protection before the ordinary `429` branch and forwards the calculated `Retry-After` value.
+
+Heartbeat and Live traffic:
+
+1. The browser no longer controls the database session ID. The server issues a signed seven-day presence cookie and derives separate database IDs for anonymous, user, and admin activity. A separate 30-per-hour admission budget limits new presence creation.
+2. Requests require same-origin JSON, stream bodies through a real 1KB read ceiling, canonicalise and bound page/agent values, and are globally rate-limited before parsing.
+3. One monotonic PostgreSQL upsert coalesces unchanged writes for 45 seconds and rejects delayed observations that would move page, identity, or `lastSeen` backward.
+4. The client heartbeat interval is 60 seconds and the 150-second active window tolerates one missed beat. Live responses are read-only and capped at the 500 most recently seen sessions.
+5. Anonymous rows expire after six hours. Identified rows remain for 31 days so Phase 1's 30-day stale-signup activity guard stays safe. Cleanup runs independently every 15 minutes and rechecks at most 1,000 indexed candidates per invocation.
+6. Migrations `20260717020100_ensure_live_sessions` and `20260717020200_add_live_session_user_seen_index` make fresh installs deployable and add concurrent cleanup/activity indexes without blocking live heartbeat writes.
+
+Main implementation areas:
+
+- `lib/internal-dashboard-access.js`, `lib/internal-dashboard-path.js`, and `app/api/internal-dashboard/access/route.js`
+- Pulse/Live pages, APIs, clients, admin login/logout/session lifecycle, settings filtering, and global analytics suppression
+- `lib/rate-limit.js` and all existing rate-limited authentication, order, coupon, payment, and PIT entry points
+- `lib/heartbeat.js`, `lib/heartbeat-presence.js`, the heartbeat API/client, the dedicated cleanup cron, Live API, Prisma schema/migrations, and Vercel cron configuration
+- Focused internal-dashboard, rate-limit, heartbeat, migration, cleanup, payment-compatibility, and admin-session regression tests
+
+Verification completed:
+
+- Focused Phase 5 suite: 189 passed.
+- Phase 4 regression boundary after Phase 5: 348 passed.
+- Whole repository after the Nitro Status correction: 982 passed and 3 skipped.
+- Production build: passed.
+- Prisma format, schema validation, and client generation: passed.
+- Migration status: 31 migrations found; all four Phase 4 and all three Phase 5 migrations are pending and were not applied.
+- Production dependency audit: 0 known vulnerabilities.
+- Scoped ESLint: 0 errors; existing unused-code warnings remain.
+- `git diff --check`: passed. Nothing is staged.
+
+Deployment requirements and deliberate deferrals:
+
+- Upstash Redis and the JWT secrets must be valid in production. The optional `INTERNAL_DASHBOARD_SECRET` and `HEARTBEAT_SECRET` provide domain-separated keys and otherwise fall back to the corresponding admin/user JWT secrets.
+- The seven Phase 4–5 migrations must be reviewed and applied before deploying this code.
+- Browser-level journey coverage remains Phase 9 work. No production request, cleanup, migration, deployment, staging, or commit action was performed in Phase 5.
 
 ## Phase 6 — Privacy and account deletion
 
@@ -461,3 +586,31 @@ Add a dated entry after each phase with:
 - The six local commits and approved Phase 3 working changes were flattened into one coherent checkpoint while preserving the existing sidebar redesign and its final polish.
 - Unrelated untracked reviews, scripts, skills, migrations, demos, and planning material were deliberately excluded.
 - This checkpoint establishes the clean remediation boundary for Phase 4.
+
+### 17 July 2026 — Phase 4 crypto payment integrity
+
+- Status: implementation complete, independently reviewed, and approved with no remaining Phase 4 flaws.
+- Verification: 318 focused tests passed; production build passed; Prisma format, validation, and generation passed; production dependency audit found 0 vulnerabilities; scoped lint had 0 errors; `git diff --check` passed.
+- Migration safety: four Phase 4 migrations are pending and unapplied. Provider/review indexes are built in separate concurrent migrations to protect live transaction writes.
+- Whole-tree note: 865 tests passed and 3 were skipped. One unrelated dashboard-summary test fails against concurrently authored Nitro Status changes in the shared worktree; Phase 4 tests are green and those files were not modified by this phase.
+- Safety: no production payment, balance adjustment, migration application, deployment, staging, or commit was performed.
+- Next: consolidate only when the user approves, then begin Phase 5 from a deliberate clean boundary.
+
+### 17 July 2026 — Phase 5 internal dashboard protection
+
+- Status: implementation and review corrections complete; included in the user-approved consolidation before the user's later Phase 5 review.
+- Access: replaced URL bearer keys with revocable 15-minute admin-session grants and closed logout, account-switch, password-reset, and concurrent-login revocation gaps.
+- Rate limiting: production now fails closed when distributed Redis protection is unavailable; all existing callers return explicit retryable responses with accurate timing.
+- Heartbeat: moved identity issuance to a signed server cookie, bounded new-row admission/body/page/write/read/cleanup volume, preserved the stale-signup safety marker across logout, and scheduled independent batched cleanup.
+- Verification: 189 focused Phase 5 tests and the 348-test Phase 4 boundary passed; build, Prisma checks, dependency audit, scoped lint, and diff checks passed. After the Nitro Status correction, the full suite has 982 passes and 3 skips.
+- Migration safety: all seven Phase 4–5 migrations remain pending and unapplied.
+- Safety: no database write, cleanup, migration application, deployment, staging, or commit was performed.
+
+### 17 July 2026 — Phase 4–5 and Nitro Status consolidation
+
+- The user approved one consolidated commit before completing the later Phase 5 review.
+- Nitro Status now has one canonical dashboard rewards source and one database-side eligible-spend batch for leaderboard badges. The bounded dashboard query guard is green again.
+- The previously untracked CI workflow and applied signup-IP migration are intentionally included so a fresh checkout does not omit them. The seven new Phase 4–5 migrations remain pending and unapplied.
+- Verification: 101 focused Nitro Status tests passed; the full repository passed with 982 tests and 3 intentional skips; the production build and `git diff --check` passed.
+- Deployment remains separate. No migration, production request, balance adjustment, cleanup, or deployment was run during consolidation.
+- Phase 5 is committed for continuity but still awaits the user's planned review.

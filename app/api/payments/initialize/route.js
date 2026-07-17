@@ -2,7 +2,7 @@ import { fetchWithRetry } from '@/lib/fetch';
 import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
-import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { parseFbCookies } from '@/lib/meta-capi';
 import { isReservedDepositEffectKey } from '@/lib/deposit-finalization';
 
@@ -22,8 +22,9 @@ async function getGatewayKeys(gatewayId) {
 
 export async function POST(req) {
   try {
-    const { limited } = await rateLimit(req, { maxAttempts: 10, windowMs: 60 * 1000 });
-    if (limited) return tooManyRequests('Too many payment attempts. Try again in a minute.');
+    const limit = await rateLimit(req, { maxAttempts: 10, windowMs: 60 * 1000 });
+    if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
+    if (limit.limited) return tooManyRequests('Too many payment attempts. Try again in a minute.', limit.retryAfter);
 
     const session = await getCurrentUser();
     if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });

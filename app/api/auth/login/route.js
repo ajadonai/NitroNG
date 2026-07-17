@@ -3,14 +3,15 @@ import { log } from "@/lib/logger";
 import bcrypt from 'bcryptjs';
 import { signUserToken, setUserCookie, detectDevice, hashToken } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
-import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { sanitizeEmail } from '@/lib/validate';
 import { headers } from 'next/headers';
 
 export async function POST(req) {
   try {
-    const { limited } = await rateLimit(req, { maxAttempts: 10, windowMs: 60 * 1000 });
-    if (limited) return tooManyRequests('Too many login attempts. Try again in a minute.');
+    const limit = await rateLimit(req, { maxAttempts: 10, windowMs: 60 * 1000 });
+    if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
+    if (limit.limited) return tooManyRequests('Too many login attempts. Try again in a minute.', limit.retryAfter);
 
     const body = await req.json();
     const email = sanitizeEmail(body.email);

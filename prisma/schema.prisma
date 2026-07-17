@@ -35,43 +35,43 @@ enum DayOfWeek {
 // ──────────────────────────────────────
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  password      String
-  name          String
-  firstName     String?
-  lastName      String?
-  phone         String?  @unique
-  balance       Int      @default(0)
-  referralCode  String   @unique @default(cuid())
-  referredBy    String?
-  emailVerified Boolean  @default(false)
-  verifyToken   String?
-  verifyExpires DateTime?
-  resetToken    String?
-  resetExpires  DateTime?
-  apiKey        String?   @unique
-  notifOrders   Boolean  @default(true)
-  notifPromo    Boolean  @default(true)
-  notifEmail    Boolean  @default(true)
-  notifClearedAt DateTime?
-  notifReadAllAt DateTime?
-  notifReadIds  String?  // JSON array of read notification IDs
-  themePreference String @default("auto") // "auto" | "night" | "day"
-  perPagePreference Int @default(10) // Orders per page: 10, 25, 50
-  tourCompleted     Boolean @default(false)
-  orderTourCompleted Boolean @default(false)
-  signupSource        String?
-  signupIp            String?
-  lastIp              String?
-  lastUa              String?  @db.Text
-  lastFbp             String?
-  lastFbc             String?
-  referredByMemberId  String?
-  referredByLinkId    String?
-  tosAcceptedAt   DateTime?
-  tosVersion      String?
-  firstDepositBonusPaid Boolean @default(false)
+  id                     String    @id @default(cuid())
+  email                  String    @unique
+  password               String
+  name                   String
+  firstName              String?
+  lastName               String?
+  phone                  String?   @unique
+  balance                Int       @default(0)
+  referralCode           String    @unique @default(cuid())
+  referredBy             String?
+  emailVerified          Boolean   @default(false)
+  verifyToken            String?
+  verifyExpires          DateTime?
+  resetToken             String?
+  resetExpires           DateTime?
+  apiKey                 String?   @unique
+  notifOrders            Boolean   @default(true)
+  notifPromo             Boolean   @default(true)
+  notifEmail             Boolean   @default(true)
+  notifClearedAt         DateTime?
+  notifReadAllAt         DateTime?
+  notifReadIds           String? // JSON array of read notification IDs
+  themePreference        String    @default("auto") // "auto" | "night" | "day"
+  perPagePreference      Int       @default(10) // Orders per page: 10, 25, 50
+  tourCompleted          Boolean   @default(false)
+  orderTourCompleted     Boolean   @default(false)
+  signupSource           String?
+  signupIp               String?
+  lastIp                 String?
+  lastUa                 String?   @db.Text
+  lastFbp                String?
+  lastFbc                String?
+  referredByMemberId     String?
+  referredByLinkId       String?
+  tosAcceptedAt          DateTime?
+  tosVersion             String?
+  firstDepositBonusPaid  Boolean   @default(false)
   winbackSentAt          DateTime?
   winback30SentAt        DateTime?
   winback60SentAt        DateTime?
@@ -83,26 +83,26 @@ model User {
   adActivationDay1SentAt DateTime?
   adActivationDay3SentAt DateTime?
   adActivationDay6SentAt DateTime?
-  status        String   @default("Active")
-  deletedAt     DateTime?
-  deletedName   String?
-  deletedEmail  String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  status                 String    @default("Active")
+  deletedAt              DateTime?
+  deletedName            String?
+  deletedEmail           String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
-  orders        Order[]
-  transactions  Transaction[]
-  tickets       Ticket[]
-  sessions      Session[]
-  waitlist      Waitlist[]
-  gameSessions  GameSession[]
-  gameScores    GameScore[]
-  gameRewards   GameReward[]
-  videoWatches  VideoWatch[]
-  crewMember    CrewMember?
-  bonusCredits      BonusCredit[]
-  taskSubmissions   TaskSubmission[]
-  nitroPointLedger  NitroPointLedger[]
+  orders           Order[]
+  transactions     Transaction[]
+  tickets          Ticket[]
+  sessions         Session[]
+  waitlist         Waitlist[]
+  gameSessions     GameSession[]
+  gameScores       GameScore[]
+  gameRewards      GameReward[]
+  videoWatches     VideoWatch[]
+  crewMember       CrewMember?
+  bonusCredits     BonusCredit[]
+  taskSubmissions  TaskSubmission[]
+  nitroPointLedger NitroPointLedger[]
 
   @@index([signupIp])
   @@index([createdAt])
@@ -118,14 +118,14 @@ model User {
 // ──────────────────────────────────────
 
 model Session {
-  id          String   @id @default(cuid())
-  userId      String
-  tokenHash   String   @unique
-  deviceType  String   @default("web") // "web" or "mobile"
-  deviceInfo  String?  // e.g. "Chrome · macOS", "Safari · iPhone"
-  ip          String?
-  lastActive  DateTime @default(now())
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  deviceType String   @default("web") // "web" or "mobile"
+  deviceInfo String? // e.g. "Chrome · macOS", "Safari · iPhone"
+  ip         String?
+  lastActive DateTime @default(now())
+  createdAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -139,20 +139,20 @@ model Session {
 // ──────────────────────────────────────
 
 model Admin {
-  id         String   @id @default(cuid())
-  email      String   @unique
-  password   String
-  name       String
-  role       String   @default("admin")
-  status      String   @default("Active")
-  customPages String?  // JSON array of page slugs — overrides role defaults when set
-  customActions String? // JSON array of granted action keys — e.g. ["payments.approve"]
-  lastActive  DateTime @default(now())
-  themePreference String @default("auto") // "auto" | "night" | "day"
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              String   @id @default(cuid())
+  email           String   @unique
+  password        String
+  name            String
+  role            String   @default("admin")
+  status          String   @default("Active")
+  customPages     String? // JSON array of page slugs — overrides role defaults when set
+  customActions   String? // JSON array of granted action keys — e.g. ["payments.approve"]
+  lastActive      DateTime @default(now())
+  themePreference String   @default("auto") // "auto" | "night" | "day"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  sessions    AdminSession[]
+  sessions                  AdminSession[]
   platformCampaignsCreated  PlatformCampaign[]  @relation("PlatformCampaignCreator")
   platformCampaignsUpdated  PlatformCampaign[]  @relation("PlatformCampaignUpdater")
   recurringCampaignsCreated RecurringCampaign[] @relation("RecurringCampaignCreator")
@@ -183,22 +183,22 @@ model AdminSession {
 // ──────────────────────────────────────
 
 model Service {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   apiId     Int
   name      String
   category  String
-  provider  String  @default("mtp") // 'mtp' | 'jap' | 'dao'
+  provider  String   @default("mtp") // 'mtp' | 'jap' | 'dao'
   costPer1k BigInt
   sellPer1k BigInt
-  markup    Int     @default(54)
-  min       Int     @default(100)
-  max       Int     @default(50000)
-  refill    Boolean @default(false)
-  dripfeed  Boolean @default(false)
+  markup    Int      @default(54)
+  min       Int      @default(100)
+  max       Int      @default(50000)
+  refill    Boolean  @default(false)
+  dripfeed  Boolean  @default(false)
   tags      String[] @default([])
-  apiType   String  @default("Default")
-  avgTime   String  @default("0-2 hrs")
-  enabled   Boolean @default(true)
+  apiType   String   @default("Default")
+  avgTime   String   @default("0-2 hrs")
+  enabled   Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -215,13 +215,13 @@ model Service {
 // ──────────────────────────────────────
 
 model ServiceGroup {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
   platform    String
-  type        String  @default("Standard")
-  nigerian    Boolean @default(false)
-  enabled     Boolean @default(true)
-  sortOrder   Int     @default(0)
+  type        String   @default("Standard")
+  nigerian    Boolean  @default(false)
+  enabled     Boolean  @default(true)
+  sortOrder   Int      @default(0)
   description String?
   tags        String[] @default([])
   createdAt   DateTime @default(now())
@@ -233,18 +233,18 @@ model ServiceGroup {
 }
 
 model ServiceTier {
-  id        String  @id @default(cuid())
-  groupId   String
-  serviceId String?
-  tier      String  @default("Standard")
-  sellPer1k BigInt
-  refill     Boolean @default(false)
-  refillDays Int     @default(0)
-  speed      String  @default("0-2 hrs")
-  enabled   Boolean @default(true)
-  sortOrder Int     @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  groupId    String
+  serviceId  String?
+  tier       String   @default("Standard")
+  sellPer1k  BigInt
+  refill     Boolean  @default(false)
+  refillDays Int      @default(0)
+  speed      String   @default("0-2 hrs")
+  enabled    Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   group   ServiceGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   service Service?     @relation(fields: [serviceId], references: [id])
@@ -260,53 +260,53 @@ model ServiceTier {
 // ──────────────────────────────────────
 
 model Order {
-  id         String   @id @default(cuid())
-  orderId    String   @unique
-  userId     String
-  serviceId  String
-  link       String
-  quantity   Int
-  charge     Int
-  cost       Int
-  status          String   @default("Pending")
-  apiOrderId      String?
-  tierId          String?
-  batchId         String?
-  remains         Int?
-  startCount      Int?
-  comments        String?  @db.Text
-  protected       Boolean  @default(false)
-  retryCount      Int      @default(0)
-  lastError       String?
-  queuedBehind    String?
-  dripDays        Int?
-  dripDelivered   Int      @default(0)
-  dispatchedAt    DateTime?
-  completedAt     DateTime?
-  refundedAt      DateTime?
-  redispatchedAt  DateTime?
-  parentOrderId   String?
-  loyaltyDiscount       Int      @default(0)
-  nitroStatusAtPurchase String?
-  nitroPointsEarnedKobo    Int      @default(0)
-  nitroPointsRedeemedKobo  Int      @default(0)
-  campaignDiscount      Int      @default(0)
-  campaignPercent       Int?
-  platformCampaignId    String?
-  recurringCampaignId   String?
-  createdAt       DateTime @default(now())
-  deletedAt       DateTime?
-  updatedAt       DateTime @updatedAt
+  id                      String    @id @default(cuid())
+  orderId                 String    @unique
+  userId                  String
+  serviceId               String
+  link                    String
+  quantity                Int
+  charge                  Int
+  cost                    Int
+  status                  String    @default("Pending")
+  apiOrderId              String?
+  tierId                  String?
+  batchId                 String?
+  remains                 Int?
+  startCount              Int?
+  comments                String?   @db.Text
+  protected               Boolean   @default(false)
+  retryCount              Int       @default(0)
+  lastError               String?
+  queuedBehind            String?
+  dripDays                Int?
+  dripDelivered           Int       @default(0)
+  dispatchedAt            DateTime?
+  completedAt             DateTime?
+  refundedAt              DateTime?
+  redispatchedAt          DateTime?
+  parentOrderId           String?
+  loyaltyDiscount         Int       @default(0)
+  nitroStatusAtPurchase   String?
+  nitroPointsEarnedKobo   Int       @default(0)
+  nitroPointsRedeemedKobo Int       @default(0)
+  campaignDiscount        Int       @default(0)
+  campaignPercent         Int?
+  platformCampaignId      String?
+  recurringCampaignId     String?
+  createdAt               DateTime  @default(now())
+  deletedAt               DateTime?
+  updatedAt               DateTime  @updatedAt
 
-  user              User               @relation(fields: [userId], references: [id])
-  service           Service            @relation(fields: [serviceId], references: [id])
-  tier              ServiceTier?       @relation(fields: [tierId], references: [id])
-  platformCampaign  PlatformCampaign?  @relation(fields: [platformCampaignId], references: [id])
-  recurringCampaign RecurringCampaign? @relation(fields: [recurringCampaignId], references: [id])
-  dripDispatches        DripDispatch[]
-  affiliateCommissions  AffiliateCommission[]
-  creditUsages          OrderCreditUsage[]
-  nitroPointLedger      NitroPointLedger[]
+  user                 User                  @relation(fields: [userId], references: [id])
+  service              Service               @relation(fields: [serviceId], references: [id])
+  tier                 ServiceTier?          @relation(fields: [tierId], references: [id])
+  platformCampaign     PlatformCampaign?     @relation(fields: [platformCampaignId], references: [id])
+  recurringCampaign    RecurringCampaign?    @relation(fields: [recurringCampaignId], references: [id])
+  dripDispatches       DripDispatch[]
+  affiliateCommissions AffiliateCommission[]
+  creditUsages         OrderCreditUsage[]
+  nitroPointLedger     NitroPointLedger[]
 
   @@index([userId])
   @@index([userId, batchId])
@@ -354,27 +354,44 @@ model DripDispatch {
 // ──────────────────────────────────────
 
 model Transaction {
-  id              String   @id @default(cuid())
-  userId          String
-  type            String
-  amount          Int
-  method          String?
-  reference       String?  @unique
-  idempotencyKey  String?
-  gatewayUrl      String?
-  status          String   @default("Completed")
-  note            String?
-  createdAt       DateTime @default(now())
+  id                             String    @id @default(cuid())
+  userId                         String
+  type                           String
+  amount                         Int
+  method                         String?
+  reference                      String?   @unique
+  idempotencyKey                 String?
+  gatewayUrl                     String?
+  status                         String    @default("Completed")
+  note                           String?
+  providerPaymentId              String?
+  providerPriceAmount            Decimal?  @db.Decimal(36, 18)
+  providerPriceCurrency          String?
+  providerPayAmount              Decimal?  @db.Decimal(36, 18)
+  providerPayCurrency            String?
+  providerPayAddress             String?
+  providerPaymentStatus          String?
+  providerActuallyPaid           Decimal?  @db.Decimal(36, 18)
+  providerLastVerifiedAt         DateTime?
+  paymentReconciliationAttemptAt DateTime?
+  paymentReviewFingerprint       String?
+  paymentReviewReason            String?
+  paymentReviewAt                DateTime?
+  paymentReviewResolvedAt        DateTime?
+  createdAt                      DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id])
 
   @@unique([userId, idempotencyKey])
+  @@unique([method, providerPaymentId], map: "transactions_method_provider_payment_id_key")
   @@index([userId])
   @@index([userId, createdAt])
   @@index([userId, type])
   @@index([type])
   @@index([type, status, createdAt])
   @@index([type, status, method, createdAt])
+  @@index([method, providerPaymentStatus, paymentReconciliationAttemptAt], map: "transactions_provider_reconcile_idx")
+  @@index([paymentReviewResolvedAt, paymentReviewAt], map: "transactions_payment_review_idx")
   @@index([createdAt])
   @@index([reference(ops: raw("gin_trgm_ops"))], type: Gin, map: "transactions_reference_trgm_idx")
   @@index([note(ops: raw("gin_trgm_ops"))], type: Gin, map: "transactions_note_trgm_idx")
@@ -386,19 +403,19 @@ model Transaction {
 // ──────────────────────────────────────
 
 model Ticket {
-  id        String   @id @default(cuid())
-  ticketId  String   @unique
-  userId    String
-  subject   String
-  message   String
-  orderId   String?
-  status    String   @default("Open")
+  id            String    @id @default(cuid())
+  ticketId      String    @unique
+  userId        String
+  subject       String
+  message       String
+  orderId       String?
+  status        String    @default("Open")
   lockedBy      String?
   lockedAt      DateTime?
-  unreadByAdmin Boolean  @default(true)
-  unreadByUser  Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  unreadByAdmin Boolean   @default(true)
+  unreadByUser  Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   user    User          @relation(fields: [userId], references: [id])
   replies TicketReply[]
@@ -467,7 +484,7 @@ model ActivityLog {
 
 model AdminIssue {
   id         String    @id @default(cuid())
-  type       String    // 'dead_service' | 'low_balance' | 'order_failure' etc.
+  type       String // 'dead_service' | 'low_balance' | 'order_failure' etc.
   title      String
   message    String
   metadata   String?   @db.Text // JSON with tier/service/provider details
@@ -529,7 +546,7 @@ model IdempotencyKey {
   key       String   @id
   userId    String
   batchId   String?
-  status    String   // 'processing' | 'completed' | 'failed'
+  status    String // 'processing' | 'completed' | 'failed'
   response  Json?
   createdAt DateTime @default(now())
   expiresAt DateTime
@@ -583,8 +600,8 @@ model GameScore {
   sessionId String
   score     Int
   moves     Int
-  duration  Int      // seconds played
-  monthKey  String   // "2026-05"
+  duration  Int // seconds played
+  monthKey  String // "2026-05"
   verified  Boolean  @default(false)
   createdAt DateTime @default(now())
 
@@ -602,10 +619,10 @@ model GameScore {
 model GameReward {
   id        String   @id @default(cuid())
   userId    String
-  monthKey  String   // "2026-05"
-  rank      Int      // 1-5
+  monthKey  String // "2026-05"
+  rank      Int // 1-5
   score     Int
-  amount    Int      // kobo
+  amount    Int // kobo
   credited  Boolean  @default(false)
   createdAt DateTime @default(now())
 
@@ -624,8 +641,8 @@ model VideoWatch {
   id        String   @id @default(cuid())
   userId    String
   adUnitId  String?
-  earned    Int      // kobo credited to user
-  revenue   Int?     // kobo total ad revenue (for tracking split)
+  earned    Int // kobo credited to user
+  revenue   Int? // kobo total ad revenue (for tracking split)
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
@@ -660,8 +677,8 @@ model PlatformCampaign {
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 
-  createdBy Admin  @relation("PlatformCampaignCreator", fields: [createdById], references: [id])
-  updatedBy Admin? @relation("PlatformCampaignUpdater", fields: [updatedById], references: [id])
+  createdBy Admin   @relation("PlatformCampaignCreator", fields: [createdById], references: [id])
+  updatedBy Admin?  @relation("PlatformCampaignUpdater", fields: [updatedById], references: [id])
   orders    Order[]
 
   @@index([status, startAt, endAt])
@@ -694,8 +711,8 @@ model RecurringCampaign {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  createdBy Admin  @relation("RecurringCampaignCreator", fields: [createdById], references: [id])
-  updatedBy Admin? @relation("RecurringCampaignUpdater", fields: [updatedById], references: [id])
+  createdBy Admin   @relation("RecurringCampaignCreator", fields: [createdById], references: [id])
+  updatedBy Admin?  @relation("RecurringCampaignUpdater", fields: [updatedById], references: [id])
   orders    Order[]
 
   @@index([active, dayOfWeek])
@@ -707,21 +724,21 @@ model RecurringCampaign {
 // ──────────────────────────────────────
 
 model AcquisitionLink {
-  id               String      @id @default(cuid())
+  id               String                @id @default(cuid())
   name             String
-  slug             String      @unique
-  enabled          Boolean     @default(true)
+  slug             String                @unique
+  enabled          Boolean               @default(true)
   affiliateId      String?
   createdByChiefId String
   archivedAt       DateTime?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
   clicks           LinkClick[]
-  affiliate        CrewMember? @relation("LinkAffiliate", fields: [affiliateId], references: [id])
-  createdByChief   CrewMember  @relation("LinkCreator", fields: [createdByChiefId], references: [id], onDelete: Restrict)
+  affiliate        CrewMember?           @relation("LinkAffiliate", fields: [affiliateId], references: [id])
+  createdByChief   CrewMember            @relation("LinkCreator", fields: [createdByChiefId], references: [id], onDelete: Restrict)
   commissions      AffiliateCommission[]
 
-  logs             LinkLog[]
+  logs LinkLog[]
 
   @@index([affiliateId])
   @@index([createdByChiefId])
@@ -768,49 +785,49 @@ model LinkClick {
 // ──────────────────────────────────────
 
 model CrewMember {
-  id               String   @id @default(cuid())
-  role             String   @default("crew") // "chief" | "crew"
-  status           String   @default("pending") // "pending" | "approved" | "suspended" | "rejected"
-  name             String
-  email            String   @unique
-  password         String
-  phone            String?
-  xHandle          String?
-  telegramHandle   String?
-  whyApply         String?  @db.Text
-  bankAccountName  String?
-  bankName         String?
-  bankAccountNo    String?
-  tier             String   @default("starter") // "starter" | "growth" | "pro"
-  commissionRate   Int      @default(30) // % of profit going to crew side
-  totalEarned      Int      @default(0) // kobo
-  totalPaid        Int      @default(0) // kobo
-  userId           String?  @unique
-  telegramUserId   String?  @unique
+  id                        String    @id @default(cuid())
+  role                      String    @default("crew") // "chief" | "crew"
+  status                    String    @default("pending") // "pending" | "approved" | "suspended" | "rejected"
+  name                      String
+  email                     String    @unique
+  password                  String
+  phone                     String?
+  xHandle                   String?
+  telegramHandle            String?
+  whyApply                  String?   @db.Text
+  bankAccountName           String?
+  bankName                  String?
+  bankAccountNo             String?
+  tier                      String    @default("starter") // "starter" | "growth" | "pro"
+  commissionRate            Int       @default(30) // % of profit going to crew side
+  totalEarned               Int       @default(0) // kobo
+  totalPaid                 Int       @default(0) // kobo
+  userId                    String?   @unique
+  telegramUserId            String?   @unique
   telegramLinkCode          String?
   telegramLinkCodeExpiresAt DateTime?
   teamName                  String?
-  leadId           String?
-  inviteToken      String?  @unique
-  inviteExpiresAt  DateTime?
-  approvedAt       DateTime?
-  suspendedAt      DateTime?
-  deletedAt        DateTime?
-  resetToken       String?
-  resetExpires     DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  leadId                    String?
+  inviteToken               String?   @unique
+  inviteExpiresAt           DateTime?
+  approvedAt                DateTime?
+  suspendedAt               DateTime?
+  deletedAt                 DateTime?
+  resetToken                String?
+  resetExpires              DateTime?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
 
-  user             User?        @relation(fields: [userId], references: [id])
-  lead             CrewMember?  @relation("CrewHierarchy", fields: [leadId], references: [id])
-  crew             CrewMember[] @relation("CrewHierarchy")
-  links            AcquisitionLink[] @relation("LinkAffiliate")
-  createdLinks     AcquisitionLink[] @relation("LinkCreator")
-  linkLogs         LinkLog[]
-  commissions      AffiliateCommission[] @relation("CommissionMember")
-  leadCommissions  AffiliateCommission[] @relation("CommissionLead")
-  payouts          AffiliatePayout[]
-  sessions         CrewSession[]
+  user            User?                 @relation(fields: [userId], references: [id])
+  lead            CrewMember?           @relation("CrewHierarchy", fields: [leadId], references: [id])
+  crew            CrewMember[]          @relation("CrewHierarchy")
+  links           AcquisitionLink[]     @relation("LinkAffiliate")
+  createdLinks    AcquisitionLink[]     @relation("LinkCreator")
+  linkLogs        LinkLog[]
+  commissions     AffiliateCommission[] @relation("CommissionMember")
+  leadCommissions AffiliateCommission[] @relation("CommissionLead")
+  payouts         AffiliatePayout[]
+  sessions        CrewSession[]
 
   @@index([leadId])
   @@index([status])
@@ -833,22 +850,22 @@ model CrewSession {
 }
 
 model AffiliateCommission {
-  id              String   @id @default(cuid())
-  orderId         String
-  linkId          String
-  memberId        String
-  leadId          String?
-  orderCharge     Int      // kobo — the order.charge that earned this commission
-  orderCost       Int      @default(0) // kobo — the order.cost at time of commission
-  commissionRate  Int      // % of profit to crew side at time of creation
-  leadSplit       Int      // % at time of creation
-  leadAmount      Int      // kobo — chief's cut
-  marketerAmount  Int      // kobo — crew member's cut
-  status          String   @default("held") // "held" | "approved" | "voided"
-  releasesAt      DateTime
-  voidedAt        DateTime?
-  voidReason      String?
-  createdAt       DateTime @default(now())
+  id             String    @id @default(cuid())
+  orderId        String
+  linkId         String
+  memberId       String
+  leadId         String?
+  orderCharge    Int // kobo — the order.charge that earned this commission
+  orderCost      Int       @default(0) // kobo — the order.cost at time of commission
+  commissionRate Int // % of profit to crew side at time of creation
+  leadSplit      Int // % at time of creation
+  leadAmount     Int // kobo — chief's cut
+  marketerAmount Int // kobo — crew member's cut
+  status         String    @default("held") // "held" | "approved" | "voided"
+  releasesAt     DateTime
+  voidedAt       DateTime?
+  voidReason     String?
+  createdAt      DateTime  @default(now())
 
   order  Order           @relation(fields: [orderId], references: [id])
   link   AcquisitionLink @relation(fields: [linkId], references: [id])
@@ -866,7 +883,7 @@ model AffiliateCommission {
 model AffiliatePayout {
   id              String    @id @default(cuid())
   memberId        String
-  amount          Int       // kobo
+  amount          Int // kobo
   status          String    @default("pending") // "pending" | "processing" | "completed" | "rejected"
   reference       String?
   bankName        String?
@@ -907,6 +924,7 @@ model LiveSession {
   firstSeen DateTime @default(now())
 
   @@index([lastSeen])
+  @@index([userId, lastSeen], map: "live_sessions_userId_lastSeen_idx")
   @@map("live_sessions")
 }
 
@@ -929,7 +947,7 @@ model ChangelogEntry {
 model BonusCredit {
   id              String    @id @default(cuid())
   userId          String
-  source          String    // 'welcome_bonus' | 'winback' | 'campaign'
+  source          String // 'welcome_bonus' | 'winback' | 'campaign'
   amountGranted   Int
   amountRemaining Int
   grantedAt       DateTime  @default(now())
@@ -962,27 +980,27 @@ model OrderCreditUsage {
 // ──────────────────────────────────────
 
 model Task {
-  id                 String           @id
+  id                 String   @id
   platform           String
   title              String
   instructions       String
   category           String
   proofType          String
   reward             Int
-  frequency          String           @default("one_time")
-  maxPerMonth        Int              @default(0)
-  minViews           Int              @default(0)
-  minFollowers       Int              @default(0)
-  keepDays           Int              @default(0)
-  monthlyCap         Int              @default(0)
-  viralBonus         Boolean          @default(false)
-  viralThreshold     Int              @default(0)
-  viralAmount        Int              @default(0)
-  allowNonDepositors Boolean          @default(true)
-  active             Boolean          @default(true)
-  sortOrder          Int              @default(0)
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  frequency          String   @default("one_time")
+  maxPerMonth        Int      @default(0)
+  minViews           Int      @default(0)
+  minFollowers       Int      @default(0)
+  keepDays           Int      @default(0)
+  monthlyCap         Int      @default(0)
+  viralBonus         Boolean  @default(false)
+  viralThreshold     Int      @default(0)
+  viralAmount        Int      @default(0)
+  allowNonDepositors Boolean  @default(true)
+  active             Boolean  @default(true)
+  sortOrder          Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   submissions TaskSubmission[]
 
@@ -1018,20 +1036,20 @@ model TaskSubmission {
 model NitroPointLedger {
   id                String   @id @default(cuid())
   userId            String
-  type              String   // earned_order, redeemed_order, reversed_refund, restored_refund, manual_credit, manual_debit, opening_balance
-  pointsKobo        Int      // positive = credit, negative = debit
+  type              String // earned_order, redeemed_order, reversed_refund, restored_refund, manual_credit, manual_debit, opening_balance
+  pointsKobo        Int // positive = credit, negative = debit
   dedupeKey         String?  @unique // event-level idempotency, e.g. "earned_order:{orderId}", "reversed_refund:{orderId}:{txId}"
   orderId           String?
-  transactionId     String?  // link to refund/redemption transaction
-  statusAtEvent     String?  // Nitro Status key at time of event
-  pointRateAtEvent  Float?   // earn rate % at time of event
-  eligibleSpendKobo Int?     // eligible spend for this event
+  transactionId     String? // link to refund/redemption transaction
+  statusAtEvent     String? // Nitro Status key at time of event
+  pointRateAtEvent  Float? // earn rate % at time of event
+  eligibleSpendKobo Int? // eligible spend for this event
   reason            String?
   createdByAdminId  String?
   createdAt         DateTime @default(now())
 
-  user         User   @relation(fields: [userId], references: [id])
-  order        Order? @relation(fields: [orderId], references: [id])
+  user           User   @relation(fields: [userId], references: [id])
+  order          Order? @relation(fields: [orderId], references: [id])
   createdByAdmin Admin? @relation(fields: [createdByAdminId], references: [id])
 
   @@index([userId])

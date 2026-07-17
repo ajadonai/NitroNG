@@ -25,6 +25,7 @@ vi.mock('next/headers', () => ({
 
 vi.mock('@/lib/rate-limit', () => ({
   rateLimit: vi.fn().mockResolvedValue({ limited: false }),
+  rateLimitUnavailable: vi.fn((msg) => Response.json({ error: msg }, { status: 503 })),
   tooManyRequests: vi.fn((msg) => Response.json({ error: msg }, { status: 429 })),
 }));
 vi.mock('@/lib/validate', () => ({

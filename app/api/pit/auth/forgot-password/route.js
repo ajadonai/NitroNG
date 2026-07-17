@@ -1,14 +1,15 @@
 import prisma from "@/lib/prisma";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "@/lib/email";
-import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
+import { rateLimit, rateLimitUnavailable, tooManyRequests } from "@/lib/rate-limit";
 
 const GENERIC = "If an account exists, a reset link has been sent.";
 
 export async function POST(req) {
   try {
-    const { limited } = await rateLimit(req, { maxAttempts: 5, windowMs: 15 * 60 * 1000 });
-    if (limited) return tooManyRequests("Too many requests. Try again in 15 minutes.");
+    const limit = await rateLimit(req, { maxAttempts: 5, windowMs: 15 * 60 * 1000 });
+    if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
+    if (limit.limited) return tooManyRequests("Too many requests. Try again in 15 minutes.", limit.retryAfter);
 
     const { email } = await req.json().catch(() => ({}));
     if (!email) return Response.json({ error: "Email is required" }, { status: 400 });

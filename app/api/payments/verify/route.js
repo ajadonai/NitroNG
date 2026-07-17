@@ -49,12 +49,24 @@ export async function POST(req) {
     const session = await getCurrentUser();
     if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
 
-    const { limited } = await rateLimit(req, {
+    const limit = await rateLimit(req, {
       maxAttempts: 12,
       windowMs: 60 * 1000,
       key: `rl:payment-verify:${session.id}`,
     });
-    if (limited) {
+    if (limit.unavailable) {
+      const message = 'Payment verification protection is temporarily unavailable. Please try again shortly.';
+      return Response.json({
+        success: false,
+        paymentState: 'retryable',
+        transactionStatus: null,
+        retryable: true,
+        unavailable: true,
+        message,
+        error: message,
+      }, { status: 503, headers: { 'Retry-After': String(limit.retryAfter ?? 5) } });
+    }
+    if (limit.limited) {
       const message = 'Too many verification attempts. Please wait a minute and try again.';
       return Response.json({
         success: false,
@@ -63,7 +75,7 @@ export async function POST(req) {
         retryable: true,
         message,
         error: message,
-      }, { status: 429, headers: { 'Retry-After': '60' } });
+      }, { status: 429, headers: { 'Retry-After': String(limit.retryAfter ?? 60) } });
     }
 
     let body;

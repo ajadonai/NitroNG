@@ -20,6 +20,7 @@ vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
 vi.mock('@/lib/logger', () => ({ log: { error: vi.fn(), info: vi.fn() } }));
 vi.mock('@/lib/rate-limit', () => ({
   rateLimit: vi.fn().mockResolvedValue({ limited: false }),
+  rateLimitUnavailable: (msg) => Response.json({ error: msg }, { status: 503 }),
   tooManyRequests: (msg) => Response.json({ error: msg }, { status: 429 }),
 }));
 vi.mock('@/lib/crew-bot', () => ({

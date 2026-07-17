@@ -1,30 +1,7 @@
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { watBounds } from '@/lib/format';
-
-const DEFAULT_TIERS = [
-  { name: "Starter", threshold: 0, discount: 0, color: "#6B7280" },
-  { name: "Regular", threshold: 5000000, discount: 3, color: "#F59E0B" },
-  { name: "Power User", threshold: 25000000, discount: 5, color: "#3B82F6" },
-  { name: "Elite", threshold: 100000000, discount: 8, color: "#8B5CF6" },
-  { name: "Legend", threshold: 500000000, discount: 12, color: "#EF4444" },
-];
-
-async function getLoyaltyTiers() {
-  try {
-    const row = await prisma.setting.findUnique({ where: { key: 'loyalty_tiers' } });
-    if (row) return JSON.parse(row.value);
-  } catch {}
-  return DEFAULT_TIERS;
-}
-
-function getBadge(totalSpend, tiers) {
-  let badge = tiers[0];
-  for (const t of tiers) {
-    if (totalSpend >= t.threshold) badge = t;
-  }
-  return badge;
-}
+import { getEligibleSpendKoboBatch, getNitroStatus, STATUS_TIERS } from '@/lib/nitro-rewards';
 
 export async function GET(req) {
   try {
@@ -36,7 +13,6 @@ export async function GET(req) {
 
     const { monthStart } = watBounds();
     const dateFilter = period === 'month' ? { createdAt: { gte: monthStart } } : {};
-    const tiers = await getLoyaltyTiers();
 
     // Top spenders — ranked by order count (no amount exposed)
     const spenders = await prisma.order.groupBy({
@@ -53,27 +29,6 @@ export async function GET(req) {
       select: { id: true, name: true, firstName: true, lastName: true },
     });
     const spenderMap = Object.fromEntries(spenderUsers.map(u => [u.id, u]));
-
-    // Get all-time spend for badges (sum of charge on all orders)
-    const allTimeSpend = await prisma.order.groupBy({
-      by: ['userId'],
-      where: { userId: { in: spenderIds }, deletedAt: null, status: { not: 'Cancelled' } },
-      _sum: { charge: true },
-    });
-    const spendMap = Object.fromEntries(allTimeSpend.map(a => [a.userId, a._sum.charge || 0]));
-
-    const topSpenders = spenders.map((s, i) => {
-      const u = spenderMap[s.userId] || {};
-      const badge = getBadge(spendMap[s.userId] || 0, tiers);
-      return {
-        rank: i + 1,
-        name: formatName(u),
-        orders: s._count.id,
-        badge: badge.name,
-        badgeColor: badge.color,
-        isYou: s.userId === session.id,
-      };
-    });
 
     // Top referrers — by referral count
     const referrers = await prisma.user.findMany({
@@ -116,17 +71,33 @@ export async function GET(req) {
     });
     const activeMap = Object.fromEntries(activeUsers.map(u => [u.id, u]));
 
-    // All-time spend for active badges
-    const activeAllTimeSpend = await prisma.order.groupBy({
-      by: ['userId'],
-      where: { userId: { in: activeIds }, deletedAt: null, status: { not: 'Cancelled' } },
-      _sum: { charge: true },
+    // Status badges use the same eligible-spend rules as checkout and rewards.
+    // Fetch all list users plus the current user in one DB-side batch rather
+    // than recalculating lifetime spend once per leaderboard entry.
+    const badgeUserIds = [...new Set([...spenderIds, ...activeIds, session.id])];
+    const [eligibleSpendByUser, yourTotalOrders] = await Promise.all([
+      getEligibleSpendKoboBatch(badgeUserIds),
+      prisma.order.count({
+        where: { userId: session.id, deletedAt: null, status: { not: 'Cancelled' } },
+      }),
+    ]);
+
+    const topSpenders = spenders.map((s, i) => {
+      const u = spenderMap[s.userId] || {};
+      const badge = getNitroStatus((eligibleSpendByUser.get(s.userId) || 0) / 100);
+      return {
+        rank: i + 1,
+        name: formatName(u),
+        orders: s._count.id,
+        badge: badge.name,
+        badgeColor: badge.color,
+        isYou: s.userId === session.id,
+      };
     });
-    const activeSpendMap = Object.fromEntries(activeAllTimeSpend.map(a => [a.userId, a._sum.charge || 0]));
 
     const mostActive = active.map((a, i) => {
       const u = activeMap[a.userId] || {};
-      const badge = getBadge(activeSpendMap[a.userId] || 0, tiers);
+      const badge = getNitroStatus((eligibleSpendByUser.get(a.userId) || 0) / 100);
       return {
         rank: i + 1,
         name: formatName(u),
@@ -137,15 +108,12 @@ export async function GET(req) {
       };
     });
 
-    // Your all-time badge (by spend)
-    const yourSpendAgg = await prisma.order.aggregate({ where: { userId: session.id, deletedAt: null, status: { not: 'Cancelled' } }, _sum: { charge: true }, _count: { id: true } });
-    const yourTotalSpend = yourSpendAgg._sum.charge || 0;
-    const yourTotalOrders = yourSpendAgg._count.id || 0;
-    const yourBadge = getBadge(yourTotalSpend, tiers);
+    // Your all-time badge uses the same canonical batch result.
+    const yourBadge = getNitroStatus((eligibleSpendByUser.get(session.id) || 0) / 100);
 
     // Next tier info
-    const currentIdx = tiers.findIndex(t2 => t2.name === yourBadge.name);
-    const nextTier = currentIdx < tiers.length - 1 ? tiers[currentIdx + 1] : null;
+    const currentIdx = STATUS_TIERS.findIndex(t2 => t2.key === yourBadge.key);
+    const nextTier = currentIdx < STATUS_TIERS.length - 1 ? STATUS_TIERS[currentIdx + 1] : null;
 
     // Your ranks
     const yourSpenderRank = topSpenders.findIndex(s => s.isYou) + 1 || null;
@@ -165,8 +133,8 @@ export async function GET(req) {
       referrers: topReferrers,
       active: mostActive,
       yourRank: { spenders: yourSpenderRank, referrers: yourRefRank, active: yourActiveRank },
-      yourBadge: { name: yourBadge.name, color: yourBadge.color, discount: yourBadge.discount, perks: yourBadge.perks, totalOrders: yourTotalOrders, nextTier: nextTier ? { name: nextTier.name, color: nextTier.color } : null },
-      tiers,
+      yourBadge: { name: yourBadge.name, color: yourBadge.color, totalOrders: yourTotalOrders, nextTier: nextTier ? { name: nextTier.name, color: nextTier.color } : null },
+      tiers: STATUS_TIERS.map(t => ({ name: t.name, color: t.color, min: t.min })),
       rewardAnnouncement,
       period,
     });

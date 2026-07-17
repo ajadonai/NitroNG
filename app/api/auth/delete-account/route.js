@@ -3,15 +3,16 @@ import { log } from "@/lib/logger";
 import { getCurrentUser, clearUserCookie } from '@/lib/auth';
 import { sendEmail, accountDeletionEmail, emailWrap, emailDataBox, emailRow } from '@/lib/email';
 import { cancelOrder, isProviderConfigured } from '@/lib/smm';
-import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import bcrypt from 'bcryptjs';
 import { tgUserDeleted } from '@/lib/telegram';
 import { reverseOrderPoints, computeRefundSplit } from '@/lib/nitro-rewards';
 
 export async function POST(req) {
   try {
-    const { limited } = await rateLimit(req, { maxAttempts: 3, windowMs: 5 * 60 * 1000 });
-    if (limited) return tooManyRequests('Too many attempts. Try again in 5 minutes.');
+    const limit = await rateLimit(req, { maxAttempts: 3, windowMs: 5 * 60 * 1000 });
+    if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
+    if (limit.limited) return tooManyRequests('Too many attempts. Try again in 5 minutes.', limit.retryAfter);
 
     const payload = await getCurrentUser();
     if (!payload) return Response.json({ error: 'Not authenticated' }, { status: 401 });

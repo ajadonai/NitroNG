@@ -20,6 +20,9 @@ export async function GET(req) {
       verifying: stats.verifying,
       retryable: stats.retryable,
       failed: stats.failed,
+      review: stats.review,
+      refunded: stats.refunded,
+      audited: stats.audited,
       expired: stats.expired,
       errors: stats.errors.length ? stats.errors : undefined,
     });

@@ -1946,6 +1946,7 @@ export function AdminIssuesPage({ dark, t }) {
   const [issues, setIssues] = useState([]);
   const [balances, setBalances] = useState(null);
   const [priceAlerts, setPriceAlerts] = useState(null);
+  const [canResolveCryptoReviews, setCanResolveCryptoReviews] = useState(false);
   const [loading, setLoading] = useState(true);
   const [resolving, setResolving] = useState(null);
   const [firingCrons, setFiringCrons] = useState(false);
@@ -1960,6 +1961,7 @@ export function AdminIssuesPage({ dark, t }) {
       setIssues(d.issues || []);
       setBalances(d.balances || null);
       setPriceAlerts(d.priceAlerts || null);
+      setCanResolveCryptoReviews(d.canResolveCryptoReviews === true);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
@@ -1972,9 +1974,9 @@ export function AdminIssuesPage({ dark, t }) {
       const res = await fetch("/api/admin/issues", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "resolve", issueId: id }) });
       const d = await res.json();
       if (res.ok) {
-        setIssues(prev => prev.map(i => i.id === id ? { ...i, status: "resolved", resolvedAt: new Date().toISOString() } : i));
+        load();
         toast.success(d.detail || "Issue resolved");
-      } else { toast.error(d.error || "Failed"); }
+      } else { if (res.status === 409) load(); toast.error(d.error || "Failed"); }
     } catch { toast.error("Network error"); }
     setResolving(null);
   };
@@ -1985,9 +1987,9 @@ export function AdminIssuesPage({ dark, t }) {
       const res = await fetch("/api/admin/issues", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "ignore", issueId: id }) });
       const d = await res.json();
       if (res.ok) {
-        setIssues(prev => prev.map(i => i.id === id ? { ...i, status: "ignored", resolvedAt: new Date().toISOString() } : i));
+        load();
         toast.success("Issue ignored");
-      } else { toast.error(d.error || "Failed"); }
+      } else { if (res.status === 409) load(); toast.error(d.error || "Failed"); }
     } catch { toast.error("Network error"); }
     setResolving(null);
   };
@@ -2015,6 +2017,7 @@ export function AdminIssuesPage({ dark, t }) {
   const orderFailures = issues.filter(i => i.type === "order_failure" && i.status === "open");
   const lowBalanceIssues = issues.filter(i => i.type === "low_balance" && i.status === "open");
   const priceIssues = issues.filter(i => i.type === "price_alert" && i.status === "open");
+  const cryptoPaymentReviews = issues.filter(i => i.type === "crypto_payment_review" && i.status === "open");
   const resolvedIssues = issues.filter(i => i.status === "resolved" || i.status === "ignored");
 
   const balanceEntries = balances ? Object.entries(balances).filter(([k]) => k !== "checkedAt") : [];
@@ -2033,7 +2036,7 @@ export function AdminIssuesPage({ dark, t }) {
         <div className="adm-header-row">
           <div>
             <div className="adm-title" style={{ color: t.text }}>Platform Issues</div>
-            <div className="adm-subtitle" style={{ color: t.textMuted }}>Provider health, service status, and cron management</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>Payment reviews, provider health, service status, and cron management</div>
           </div>
           <button onClick={handleFireCrons} disabled={firingCrons} className="flex items-center gap-2 py-2 px-4 rounded-xl border-none text-sm font-semibold cursor-pointer font-[inherit] transition-all duration-200 shrink-0" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent, opacity: firingCrons ? .6 : 1 }}>
             {firingCrons ? (
@@ -2046,6 +2049,22 @@ export function AdminIssuesPage({ dark, t }) {
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
+
+      {/* ═══ CRYPTO PAYMENT REVIEWS ═══ */}
+      <IssueSection title="Crypto Payment Reviews" defaultOpen={cryptoPaymentReviews.length > 0} dark={dark} t={t}
+        icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
+        count={cryptoPaymentReviews.length}
+        countColor={cryptoPaymentReviews.length > 0 ? redBadge : greenBadge}
+      >
+        {cryptoPaymentReviews.length > 0 ? <>
+          <div className="py-2 px-4 text-[12px]" style={{ color: t.textMuted, borderBottom: `1px solid ${rowBorder}` }}>Review the newest observation before acting. One disposition closes all observations currently shown for that payment.</div>
+          {cryptoPaymentReviews.map((issue, i) => (
+            <IssueRow key={issue.id} issue={issue} i={i} total={cryptoPaymentReviews.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} canAct={canResolveCryptoReviews} />
+          ))}
+        </> : (
+          <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>No crypto payments need manual review</div>
+        )}
+      </IssueSection>
 
       {/* ═══ CRON RESULTS ═══ */}
       <IssueSection title="Cron Results" defaultOpen={!!cronResults} dark={dark} t={t}
@@ -2221,7 +2240,7 @@ export function AdminIssuesPage({ dark, t }) {
   );
 }
 
-function IssueRow({ issue, i, total, dark, t, rowBorder, expanded, setExpanded, resolving, onResolve, onIgnore }) {
+function IssueRow({ issue, i, total, dark, t, rowBorder, expanded, setExpanded, resolving, onResolve, onIgnore, canAct = true }) {
   const isExpanded = expanded === issue.id;
   let meta = null;
   try { meta = issue.metadata ? JSON.parse(issue.metadata) : null; } catch {}
@@ -2232,7 +2251,7 @@ function IssueRow({ issue, i, total, dark, t, rowBorder, expanded, setExpanded, 
           <div className="text-[13px] font-medium" style={{ color: t.text }}>{issue.title}</div>
           <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(issue.createdAt)}</div>
         </div>
-        {issue.status === "open" ? (
+        {issue.status === "open" && canAct ? (
           <div className="flex items-center gap-1.5 shrink-0">
             <button onClick={(e) => { e.stopPropagation(); onIgnore(issue.id); }} disabled={resolving === issue.id} className="text-[11px] font-medium py-1 px-2.5 rounded-lg border-none cursor-pointer font-[inherit]" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textMuted, opacity: resolving === issue.id ? .5 : 1 }}>
               Ignore
@@ -2241,6 +2260,8 @@ function IssueRow({ issue, i, total, dark, t, rowBorder, expanded, setExpanded, 
               {resolving === issue.id ? "..." : "Resolve"}
             </button>
           </div>
+        ) : issue.status === "open" ? (
+          <span className="text-[11px] font-semibold py-0.5 px-2 rounded-[5px] shrink-0" style={{ background: dark ? "rgba(252,211,77,.10)" : "#fffbeb", color: dark ? "#fcd34d" : "#d97706" }}>Owner review</span>
         ) : (
           <span className="text-[11px] font-semibold py-0.5 px-2 rounded-[5px] shrink-0" style={{ background: issue.status === "ignored" ? (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)") : (dark ? "rgba(110,231,183,.08)" : "#ecfdf5"), color: issue.status === "ignored" ? t.textMuted : t.green }}>{issue.status === "ignored" ? "Ignored" : "Resolved"}</span>
         )}

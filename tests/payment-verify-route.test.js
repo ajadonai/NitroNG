@@ -150,13 +150,13 @@ describe('POST /api/payments/verify response contract', () => {
   });
 
   it('rate-limits provider verification per authenticated account', async () => {
-    mocks.rateLimit.mockResolvedValueOnce({ limited: true, remaining: 0 });
+    mocks.rateLimit.mockResolvedValueOnce({ limited: true, unavailable: false, remaining: 0, retryAfter: 37 });
 
     const response = await POST(request());
     const body = await bodyOf(response);
 
     expect(response.status).toBe(429);
-    expect(response.headers.get('retry-after')).toBe('60');
+    expect(response.headers.get('retry-after')).toBe('37');
     expect(body).toMatchObject({
       success: false,
       paymentState: 'retryable',
@@ -166,6 +166,28 @@ describe('POST /api/payments/verify response contract', () => {
       maxAttempts: 12,
       key: `rl:payment-verify:${USER_ID}`,
     }));
+    expect(mocks.reconcileFlutterwaveDeposit).not.toHaveBeenCalled();
+  });
+
+  it('returns a retryable 503 before reconciliation when protection is unavailable', async () => {
+    mocks.rateLimit.mockResolvedValueOnce({
+      limited: true,
+      unavailable: true,
+      remaining: 0,
+      retryAfter: 7,
+    });
+
+    const response = await POST(request());
+    const body = await bodyOf(response);
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get('retry-after')).toBe('7');
+    expect(body).toMatchObject({
+      success: false,
+      paymentState: 'retryable',
+      retryable: true,
+      unavailable: true,
+    });
     expect(mocks.reconcileFlutterwaveDeposit).not.toHaveBeenCalled();
   });
 

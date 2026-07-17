@@ -142,4 +142,29 @@ describe('GET /api/transactions — 180-day history boundary', () => {
       paymentState: 'verifying',
     });
   });
+
+  it('surfaces an open crypto review even when the credited status stays Completed', async () => {
+    mockTransaction.findMany.mockResolvedValue([{
+      id: 'crypto-refund-review',
+      userId: 'user-1',
+      type: 'deposit',
+      reference: 'NTR-CRYPTO-REVIEW',
+      amount: 500_000,
+      status: 'Completed',
+      method: 'crypto',
+      note: 'Crypto deposit',
+      paymentReviewReason: 'refunded_after_credit',
+      paymentReviewResolvedAt: null,
+      createdAt: new Date('2026-07-10T12:00:00.000Z'),
+    }]);
+
+    const response = await GET(request());
+    const body = await response.json();
+
+    expect(body.transactions[0]).toMatchObject({
+      method: 'crypto',
+      status: 'Completed',
+      paymentState: 'review',
+    });
+  });
 });

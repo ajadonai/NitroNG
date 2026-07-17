@@ -1,101 +1,113 @@
-import { log } from "@/lib/logger";
-import prisma from '@/lib/prisma';
-import crypto from 'crypto';
-import { finalizeDeposit } from '@/lib/deposit-finalization';
+import { log } from '@/lib/logger';
 import { notifyDepositFinalized } from '@/lib/deposit-notifications';
+import { reconcileNowPaymentsDeposit } from '@/lib/nowpayments-payment';
+import {
+  normalizeNowPaymentsProviderId,
+  verifyNowPaymentsIpnSignature,
+} from '@/lib/nowpayments-verification';
 
-const NP_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
+const WEBHOOK_PROVIDER_TIMEOUT_MS = 2_200;
 
-function verifySignature(body, signature) {
-  const hmac = crypto.createHmac('sha512', NP_IPN_SECRET);
-  // NowPayments sorts keys alphabetically for HMAC
-  const sorted = Object.keys(body).sort().reduce((acc, k) => { acc[k] = body[k]; return acc; }, {});
-  hmac.update(JSON.stringify(sorted));
-  return hmac.digest('hex') === signature;
+function nowPaymentsIpnSecret() {
+  return process.env.NOWPAYMENTS_IPN_SECRET?.trim() || '';
+}
+
+function validOrderReference(value) {
+  return typeof value === 'string'
+    && value.length > 0
+    && value.length <= 200
+    && value === value.trim()
+    && /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value);
+}
+
+function retryableWebhookResponse(message, status = 503) {
+  return Response.json({ ok: false, retryable: true, error: message }, {
+    status,
+    headers: { 'Retry-After': '15' },
+  });
 }
 
 export async function POST(req) {
   try {
-    if (!NP_IPN_SECRET) {
-      log.error('NowPayments Webhook', 'NOWPAYMENTS_IPN_SECRET not set — refusing unsigned webhook');
-      return Response.json({ error: 'Webhook not configured' }, { status: 503 });
+    // Read at request time so rotated secrets take effect without a module reload.
+    const secret = nowPaymentsIpnSecret();
+    if (!secret) {
+      log.error('NOWPayments Webhook', 'NOWPAYMENTS_IPN_SECRET is not configured');
+      return retryableWebhookResponse('Webhook not configured');
     }
 
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return Response.json({ ok: false, error: 'Invalid JSON' }, { status: 400 });
+    }
+
     const signature = req.headers.get('x-nowpayments-sig');
-
-    if (!verifySignature(body, signature)) {
-      log.warn('NowPayments Webhook', 'Invalid signature');
-      return Response.json({ error: 'Invalid signature' }, { status: 403 });
+    if (!verifyNowPaymentsIpnSignature(body, signature, secret)) {
+      log.warn('NOWPayments Webhook', 'Invalid signature');
+      return Response.json({ ok: false, error: 'Invalid signature' }, { status: 403 });
     }
 
-    const { payment_status, order_id, pay_amount, actually_paid } = body;
-
-    if (!order_id) {
-      return Response.json({ error: 'Missing order_id' }, { status: 400 });
+    const providerPaymentId = normalizeNowPaymentsProviderId(body?.payment_id);
+    const reference = body?.order_id;
+    if (!providerPaymentId || !validOrderReference(reference)) {
+      return Response.json({
+        ok: false,
+        error: !providerPaymentId ? 'Missing or invalid payment_id' : 'Missing or invalid order_id',
+      }, { status: 400 });
     }
 
-    log.info('NowPayments Webhook', `${order_id} → ${payment_status} (paid: ${actually_paid})`);
+    // The signed callback is only a trigger. Crediting uses a fresh,
+    // authoritative GET and the same reconciler as polling and cron recovery.
+    const outcome = await reconcileNowPaymentsDeposit({
+      reference,
+      providerPaymentId,
+      timeoutMs: WEBHOOK_PROVIDER_TIMEOUT_MS,
+      auditCompleted: true,
+      recoveredBy: 'webhook',
+    });
 
-    // Payment confirmed
-    if (payment_status === 'finished' || payment_status === 'confirmed') {
-      // Atomically claim the pending transaction — prevents double credit on webhook retries
-      const claimed = await prisma.transaction.updateMany({
-        where: { reference: order_id, type: 'deposit', method: 'crypto', status: 'Pending' },
-        data: { status: 'Processing' },
-      });
-
-      if (claimed.count === 0) {
-        log.info('NowPayments Webhook', `No pending tx for ${order_id} (already claimed or missing)`);
-        return Response.json({ ok: true });
-      }
-
-      const tx = await prisma.transaction.findFirst({
-        where: { reference: order_id, type: 'deposit', method: 'crypto', status: 'Processing' },
-      });
-
-      if (!tx) {
-        return Response.json({ ok: true });
-      }
-
-      const finalization = await finalizeDeposit({
-        prismaClient: prisma,
-        transactionId: tx.id,
-        paidAmountKobo: tx.amount,
-        claimableStatuses: ['Processing'],
-        providerPaidAmount: actually_paid ?? pay_amount,
-      });
-
-      if (finalization.finalized) {
-        log.info('NowPayments Webhook', `✓ Credited ${tx.amount / 100} + ₦${finalization.couponBonus / 100} coupon bonus to user ${tx.userId}`);
-        try {
-          await notifyDepositFinalized(finalization, { channel: 'Crypto' });
-        } catch (error) {
-          log.warn('NowPayments Webhook', `Deposit notification failed for ${order_id}: ${error.message}`);
-        }
-      } else {
-        log.info('NowPayments Webhook', `Finalization skipped for ${order_id}: ${finalization.reason}`);
+    const confirmedCredit = outcome.success === true
+      && outcome.paymentState === 'credited'
+      && outcome.transactionStatus === 'Completed'
+      && outcome.transaction?.status === 'Completed'
+      && !(
+        outcome.transaction.paymentReviewReason
+        && !outcome.transaction.paymentReviewResolvedAt
+      );
+    if (outcome.newlyFinalized && outcome.finalization && confirmedCredit) {
+      try {
+        await notifyDepositFinalized(outcome.finalization, { channel: 'Crypto' });
+      } catch (notifyError) {
+        log.warn('NOWPayments Webhook', `Deposit notification failed: ${notifyError.message}`);
       }
     }
 
-    // Payment failed or expired
-    if (payment_status === 'expired' || payment_status === 'failed' || payment_status === 'refunded') {
-      const tx = await prisma.transaction.findFirst({
-        where: { reference: order_id, type: 'deposit', method: 'crypto', status: { in: ['Pending', 'Processing'] } },
-      });
-      if (tx) {
-        await prisma.transaction.update({
-          where: { id: tx.id },
-          data: { status: 'Cancelled' },
-        });
-      }
-      log.info('NowPayments Webhook', `✗ ${payment_status}: ${order_id}`);
+    if (outcome.reason === 'not_found') {
+      log.warn('NOWPayments Webhook', `No matching deposit for ${reference}`);
+      return retryableWebhookResponse('Transaction not found', 404);
+    }
+    if (outcome.paymentState === 'retryable' || outcome.paymentState === 'verifying') {
+      log.warn('NOWPayments Webhook', `${reference}: ${outcome.reason || outcome.paymentState}`);
+      return retryableWebhookResponse(
+        outcome.message || 'Provider verification is temporarily unavailable',
+      );
     }
 
-    return Response.json({ ok: true });
-
-  } catch (err) {
-    log.error('NowPayments Webhook', err.message);
-    return Response.json({ ok: true }); // Always 200 so NP doesn't retry forever
+    log.info(
+      'NOWPayments Webhook',
+      `${reference}: ${outcome.paymentState} (${outcome.providerStatus || 'provider status unavailable'})`,
+    );
+    return Response.json({
+      ok: true,
+      paymentState: outcome.paymentState,
+      status: outcome.transactionStatus,
+      reason: outcome.reason || null,
+      reference,
+    });
+  } catch (error) {
+    log.error('NOWPayments Webhook', error.message);
+    return retryableWebhookResponse('Webhook processing failed', 500);
   }
 }

@@ -2,7 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { placeOrder, checkOrder } from '@/lib/smm';
-import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { cleanLink } from '@/lib/clean-link';
 import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig } from '@/lib/drip-feed';
@@ -474,8 +474,9 @@ export async function PATCH(req) {
 
 export async function POST(req) {
   try {
-    const { limited } = await rateLimit(req, { maxAttempts: 10, windowMs: 60 * 1000 });
-    if (limited) return tooManyRequests('Too many orders. Slow down.');
+    const limit = await rateLimit(req, { maxAttempts: 10, windowMs: 60 * 1000 });
+    if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
+    if (limit.limited) return tooManyRequests('Too many orders. Slow down.', limit.retryAfter);
 
     const session = await getCurrentUser();
     if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });

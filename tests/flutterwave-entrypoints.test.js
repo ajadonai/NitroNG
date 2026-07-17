@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
   transactionUpdateMany: vi.fn(),
   getFlutterwaveSecretKey: vi.fn(),
   reconcileFlutterwaveDeposit: vi.fn(),
+  getNowPaymentsApiKey: vi.fn(),
+  reconcileNowPaymentsDeposit: vi.fn(),
   finalizeDeposit: vi.fn(),
   notifyDepositFinalized: vi.fn(),
   info: vi.fn(),
@@ -29,6 +31,14 @@ vi.mock('@/lib/prisma', () => ({
 vi.mock('@/lib/flutterwave-payment', () => ({
   getFlutterwaveSecretKey: mocks.getFlutterwaveSecretKey,
   reconcileFlutterwaveDeposit: mocks.reconcileFlutterwaveDeposit,
+}));
+
+vi.mock('@/lib/nowpayments-payment', () => ({
+  getNowPaymentsApiKey: mocks.getNowPaymentsApiKey,
+  NOWPAYMENTS_RECONCILABLE_STATUSES: [
+    'Pending', 'Processing', 'Expired', 'Failed', 'Cancelled', 'Review', 'Rejected', 'Refunded',
+  ],
+  reconcileNowPaymentsDeposit: mocks.reconcileNowPaymentsDeposit,
 }));
 
 vi.mock('@/lib/deposit-finalization', () => ({
@@ -67,9 +77,24 @@ function deposit(status = 'Pending', overrides = {}) {
   };
 }
 
-function useRecoveryBuckets({ pending = [], processing = [], expired = [], crypto = [] } = {}) {
+function useRecoveryBuckets({
+  pending = [],
+  processing = [],
+  expired = [],
+  crypto = [],
+  cryptoReviewed = [],
+  cryptoCompleted = [],
+} = {}) {
   const rowsFor = where => {
-    if (where.method === 'crypto') return crypto;
+    if (where.method === 'crypto') {
+      if (where.status === 'Completed') return cryptoCompleted;
+      if (
+        Array.isArray(where.status?.in)
+        && where.status.in.length === 2
+        && where.status.in.includes('Rejected')
+      ) return cryptoReviewed;
+      return crypto;
+    }
     if (where.status === 'Pending') return pending;
     if (where.status === 'Processing') return processing;
     if (where.status === 'Expired') return expired;
@@ -108,6 +133,7 @@ beforeEach(() => {
   mocks.transactionCount.mockResolvedValue(0);
   mocks.transactionFindMany.mockResolvedValue([]);
   mocks.getFlutterwaveSecretKey.mockResolvedValue('flw-secret');
+  mocks.getNowPaymentsApiKey.mockResolvedValue('nowpayments-key');
   mocks.transactionUpdateMany.mockResolvedValue({ count: 0 });
   mocks.notifyDepositFinalized.mockResolvedValue({ attempted: 1, failed: [] });
 });
@@ -239,7 +265,7 @@ describe('recoverStalePendingPayments', () => {
     expect(stats).toMatchObject({ checked: 1, retryable: 1, recovered: 0 });
   });
 
-  it('delegates every stale Flutterwave recovery status and guards crypto cancellation races', async () => {
+  it('delegates every provider bucket through its shared reconciler', async () => {
     const flutterwaveRows = [deposit('Pending'), deposit('Expired'), deposit('Processing')];
     const crypto = deposit('Pending', {
       id: 'tx-crypto',
@@ -283,12 +309,14 @@ describe('recoverStalePendingPayments', () => {
         newlyFinalized: false,
       };
     });
-    mocks.fetch.mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue({ payment_status: 'failed' }),
+    mocks.reconcileNowPaymentsDeposit.mockResolvedValue({
+      paymentState: 'review',
+      transactionStatus: 'Review',
+      retryable: false,
+      transaction: { ...crypto, status: 'Review' },
+      finalization: null,
+      newlyFinalized: false,
     });
-    // Simulate the crypto row becoming Completed before the cancellation write.
-    mocks.transactionUpdateMany.mockResolvedValue({ count: 0 });
 
     const stats = await recoverStalePendingPayments();
 
@@ -298,19 +326,36 @@ describe('recoverStalePendingPayments', () => {
     ));
     const flutterwaveProcessing = queries.find(query => query.where.status === 'Processing');
     const flutterwaveExpired = queries.find(query => query.where.status === 'Expired');
-    const cryptoPending = queries.find(query => query.where.method === 'crypto');
-    expect(queries).toHaveLength(4);
+    const cryptoUnsettled = queries.find(query => (
+      query.where.method === 'crypto'
+      && Array.isArray(query.where.status?.in)
+      && Array.isArray(query.where.status?.notIn)
+    ));
+    const cryptoReviewedAudit = queries.find(query => (
+      query.where.method === 'crypto'
+      && query.where.status?.in?.length === 2
+      && query.where.status.in.includes('Rejected')
+    ));
+    const cryptoCompletedAudit = queries.find(query => (
+      query.where.method === 'crypto' && query.where.status === 'Completed'
+    ));
+    expect(queries).toHaveLength(6);
     expect(flutterwavePending.take).toBe(4);
     expect(flutterwaveProcessing.take).toBe(3);
     expect(flutterwaveExpired.take).toBe(3);
-    expect(cryptoPending.take).toBe(2);
-    for (const query of [flutterwavePending, flutterwaveProcessing, flutterwaveExpired]) {
+    expect(cryptoUnsettled.take).toBe(3);
+    expect(cryptoReviewedAudit.take).toBe(1);
+    for (const query of [
+      flutterwavePending,
+      flutterwaveProcessing,
+      flutterwaveExpired,
+      cryptoUnsettled,
+    ]) {
       expect(query.orderBy).toEqual([
         { createdAt: 'desc' },
         { id: 'desc' },
       ]);
     }
-    expect(cryptoPending.orderBy).toEqual({ createdAt: 'asc' });
     expect(flutterwavePending.where.OR).toEqual(expect.arrayContaining([
       { method: 'flutterwave' },
       { method: null },
@@ -318,7 +363,49 @@ describe('recoverStalePendingPayments', () => {
     expect(flutterwavePending.where.createdAt.lt).toEqual(flutterwaveExpired.where.createdAt.lt);
     expect(flutterwaveProcessing.where.createdAt.lt.getTime())
       .toBeGreaterThan(flutterwavePending.where.createdAt.lt.getTime());
-    expect(cryptoPending.where.createdAt).toEqual(flutterwavePending.where.createdAt);
+    expect(cryptoUnsettled.where.createdAt).toEqual(flutterwaveExpired.where.createdAt);
+    expect(cryptoUnsettled.where.status).toEqual({
+      in: expect.arrayContaining(['Pending', 'Review', 'Rejected']),
+      notIn: ['Review', 'Rejected'],
+    });
+    expect(cryptoReviewedAudit.where.AND).toEqual([
+      {
+        OR: [
+          { providerPaymentId: { not: null } },
+          { note: { contains: '[np:' } },
+        ],
+      },
+      {
+        OR: [
+          { paymentReconciliationAttemptAt: null },
+          { paymentReconciliationAttemptAt: { lt: expect.any(Date) } },
+        ],
+      },
+    ]);
+    expect(cryptoReviewedAudit.orderBy).toEqual([
+      {
+        paymentReconciliationAttemptAt: {
+          sort: 'asc',
+          nulls: 'first',
+        },
+      },
+      { createdAt: 'asc' },
+      { id: 'asc' },
+    ]);
+    expect(cryptoCompletedAudit.where.AND).toEqual([
+      {
+        OR: [
+          { providerPaymentId: { not: null } },
+          { note: { contains: '[np:' } },
+        ],
+      },
+      {
+        OR: [
+          { paymentReconciliationAttemptAt: null },
+          { paymentReconciliationAttemptAt: { lt: expect.any(Date) } },
+        ],
+      },
+    ]);
     expect(flutterwaveExpired.where.createdAt.gt.getTime())
       .toBeLessThan(flutterwavePending.where.createdAt.gt.getTime());
     expect(mocks.reconcileFlutterwaveDeposit).toHaveBeenCalledTimes(3);
@@ -331,19 +418,20 @@ describe('recoverStalePendingPayments', () => {
       });
     }
     expect(mocks.notifyDepositFinalized).toHaveBeenCalledTimes(1);
-    expect(mocks.fetch).toHaveBeenCalledWith(
-      `https://api.nowpayments.io/v1/payment/${crypto.reference}`,
-      expect.objectContaining({ signal: expect.any(AbortSignal) }),
-    );
-    expect(mocks.transactionUpdateMany).toHaveBeenCalledWith({
-      where: { id: crypto.id, status: 'Pending' },
-      data: expect.objectContaining({ status: 'Cancelled' }),
+    expect(mocks.reconcileNowPaymentsDeposit).toHaveBeenCalledWith({
+      transaction: crypto,
+      apiKey: 'nowpayments-key',
+      recoveredBy: 'cron',
+      timeoutMs: 8_000,
+      auditCompleted: false,
+      now: expect.any(Date),
     });
     expect(stats).toMatchObject({
       checked: 4,
       recovered: 1,
       pending: 1,
       retryable: 1,
+      review: 1,
       expired: 0,
     });
   });
@@ -388,6 +476,206 @@ describe('recoverStalePendingPayments', () => {
     for (const [input] of mocks.reconcileFlutterwaveDeposit.mock.calls) {
       expect(input.timeoutMs).toBe(8_000);
     }
+  });
+
+  it('audits recent completed crypto deposits without re-crediting them', async () => {
+    const completed = deposit('Completed', {
+      id: 'crypto-completed',
+      method: 'crypto',
+      reference: 'CRYPTO-COMPLETED',
+      providerPaymentId: 'np-completed',
+    });
+    useRecoveryBuckets({ cryptoCompleted: [completed] });
+    mocks.reconcileNowPaymentsDeposit.mockResolvedValue({
+      paymentState: 'review',
+      transactionStatus: 'Completed',
+      reason: 'refunded_after_credit',
+      retryable: false,
+      transaction: {
+        ...completed,
+        paymentReviewReason: 'refunded_after_credit',
+      },
+      finalization: null,
+      newlyFinalized: false,
+    });
+
+    const now = new Date('2026-07-17T12:00:00.000Z');
+    const stats = await recoverStalePendingPayments({ now });
+
+    const completedQuery = mocks.transactionFindMany.mock.calls
+      .map(([query]) => query)
+      .find(query => query.where.method === 'crypto' && query.where.status === 'Completed');
+    expect(completedQuery).toEqual(expect.objectContaining({
+      take: 1,
+      orderBy: [
+        {
+          paymentReconciliationAttemptAt: {
+            sort: 'asc',
+            nulls: 'first',
+          },
+        },
+        { createdAt: 'asc' },
+        { id: 'asc' },
+      ],
+    }));
+
+    expect(mocks.reconcileNowPaymentsDeposit).toHaveBeenCalledWith({
+      transaction: completed,
+      apiKey: 'nowpayments-key',
+      recoveredBy: 'cron',
+      timeoutMs: 8_000,
+      auditCompleted: true,
+      now,
+    });
+    expect(mocks.notifyDepositFinalized).not.toHaveBeenCalled();
+    expect(stats).toMatchObject({ checked: 1, audited: 1, review: 1, recovered: 0 });
+  });
+
+  it('audits a provider-bound Rejected payment without making it finalizable', async () => {
+    const rejected = deposit('Rejected', {
+      id: 'crypto-rejected',
+      method: 'crypto',
+      reference: 'CRYPTO-REJECTED',
+      providerPaymentId: 'np-rejected',
+      paymentReviewReason: 'underpayment',
+      paymentReviewResolvedAt: new Date('2026-07-17T05:00:00.000Z'),
+      paymentReconciliationAttemptAt: null,
+    });
+    useRecoveryBuckets({ cryptoReviewed: [rejected] });
+    mocks.reconcileNowPaymentsDeposit.mockResolvedValue({
+      paymentState: 'review',
+      transactionStatus: 'Rejected',
+      reason: 'provider_verified_after_rejection',
+      retryable: false,
+      transaction: {
+        ...rejected,
+        paymentReviewResolvedAt: null,
+      },
+      finalization: null,
+      newlyFinalized: false,
+    });
+
+    const now = new Date('2026-07-17T12:00:00.000Z');
+    const stats = await recoverStalePendingPayments({ now });
+
+    expect(mocks.reconcileNowPaymentsDeposit).toHaveBeenCalledWith({
+      transaction: rejected,
+      apiKey: 'nowpayments-key',
+      recoveredBy: 'cron',
+      timeoutMs: 8_000,
+      auditCompleted: false,
+      auditRejected: true,
+      now,
+    });
+    expect(stats).toMatchObject({ checked: 1, reviewAudited: 1, review: 1 });
+    expect(mocks.notifyDepositFinalized).not.toHaveBeenCalled();
+  });
+
+  it('audits a changing Review/Rejected backlog by least recent attempt', async () => {
+    const reviewed = Array.from({ length: 203 }, (_, index) => deposit(
+      index % 2 === 0 ? 'Review' : 'Rejected',
+      {
+        id: `crypto-reviewed-${String(index).padStart(3, '0')}`,
+        method: 'crypto',
+        reference: `CRYPTO-REVIEWED-${index}`,
+        providerPaymentId: `np-reviewed-${index}`,
+        paymentReconciliationAttemptAt: null,
+      },
+    ));
+    mocks.transactionCount.mockResolvedValue(0);
+    mocks.transactionFindMany.mockImplementation(async ({ where, take }) => {
+      if (
+        where.method !== 'crypto'
+        || !Array.isArray(where.status?.in)
+        || where.status.in.length !== 2
+      ) return [];
+      const cutoff = where.AND[1].OR[1].paymentReconciliationAttemptAt.lt;
+      const eligible = reviewed
+        .filter(transaction => (
+          transaction.paymentReconciliationAttemptAt === null
+          || transaction.paymentReconciliationAttemptAt < cutoff
+        ))
+        .sort((left, right) => {
+          if (left.paymentReconciliationAttemptAt === null) return -1;
+          if (right.paymentReconciliationAttemptAt === null) return 1;
+          const attemptOrder = left.paymentReconciliationAttemptAt
+            - right.paymentReconciliationAttemptAt;
+          return attemptOrder || left.id.localeCompare(right.id);
+        });
+      return eligible.slice(0, take);
+    });
+    mocks.reconcileNowPaymentsDeposit.mockImplementation(async ({ transaction, now }) => {
+      transaction.paymentReconciliationAttemptAt = now;
+      return {
+        paymentState: 'review',
+        transactionStatus: transaction.status,
+        reason: transaction.paymentReviewReason,
+        retryable: false,
+        transaction,
+        finalization: null,
+        newlyFinalized: false,
+      };
+    });
+
+    const audited = new Set();
+    for (let slot = 0; slot < reviewed.length; slot++) {
+      mocks.reconcileNowPaymentsDeposit.mockClear();
+      const now = new Date(Date.UTC(2026, 6, 17) + (slot * 5 * 60 * 1000));
+      await recoverStalePendingPayments({ now });
+      audited.add(mocks.reconcileNowPaymentsDeposit.mock.calls[0][0].transaction.id);
+    }
+
+    expect(audited.size).toBe(reviewed.length);
+  });
+
+  it('audits a changing completed backlog by least recent attempt without starvation', async () => {
+    const completed = Array.from({ length: 145 }, (_, index) => deposit('Completed', {
+      id: `crypto-completed-${index}`,
+      method: 'crypto',
+      reference: `CRYPTO-COMPLETED-${index}`,
+      providerPaymentId: `np-completed-${index}`,
+      paymentReconciliationAttemptAt: null,
+    }));
+    mocks.transactionCount.mockResolvedValue(0);
+    mocks.transactionFindMany.mockImplementation(async ({ where, take }) => {
+      if (where.method !== 'crypto' || where.status !== 'Completed') return [];
+      const cutoff = where.AND[1].OR[1].paymentReconciliationAttemptAt.lt;
+      const eligible = completed
+        .filter(transaction => (
+          transaction.paymentReconciliationAttemptAt === null
+          || transaction.paymentReconciliationAttemptAt < cutoff
+        ))
+        .sort((left, right) => {
+          if (left.paymentReconciliationAttemptAt === null) return -1;
+          if (right.paymentReconciliationAttemptAt === null) return 1;
+          const attemptOrder = left.paymentReconciliationAttemptAt
+            - right.paymentReconciliationAttemptAt;
+          return attemptOrder || left.id.localeCompare(right.id);
+        });
+      return eligible.slice(0, take);
+    });
+    mocks.reconcileNowPaymentsDeposit.mockImplementation(async ({ transaction, now }) => {
+      transaction.paymentReconciliationAttemptAt = now;
+      return {
+      paymentState: 'retryable',
+      transactionStatus: 'Completed',
+      reason: 'provider_http_error',
+      retryable: true,
+      transaction,
+      finalization: null,
+      newlyFinalized: false,
+      };
+    });
+
+    const audited = new Set();
+    for (let slot = 0; slot < completed.length; slot++) {
+      mocks.reconcileNowPaymentsDeposit.mockClear();
+      const now = new Date(Date.UTC(2026, 6, 17) + (slot * 5 * 60 * 1000));
+      await recoverStalePendingPayments({ now });
+      audited.add(mocks.reconcileNowPaymentsDeposit.mock.calls[0][0].transaction.id);
+    }
+
+    expect(audited.size).toBe(completed.length);
   });
 
   it('rotates through every eligible row across successive five-minute slots', async () => {

@@ -1,12 +1,13 @@
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
+import { rateLimit, rateLimitUnavailable, tooManyRequests } from "@/lib/rate-limit";
 
 export async function POST(req) {
   try {
-    const { limited } = await rateLimit(req, { maxAttempts: 5, windowMs: 5 * 60 * 1000 });
-    if (limited) return tooManyRequests("Too many reset attempts. Try again in 5 minutes.");
+    const limit = await rateLimit(req, { maxAttempts: 5, windowMs: 5 * 60 * 1000 });
+    if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
+    if (limit.limited) return tooManyRequests("Too many reset attempts. Try again in 5 minutes.", limit.retryAfter);
 
     const { token, password } = await req.json().catch(() => ({}));
 

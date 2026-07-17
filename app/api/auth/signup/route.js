@@ -3,7 +3,7 @@ import { log } from "@/lib/logger";
 import bcrypt from 'bcryptjs';
 import { signUserToken, setUserCookie, detectDevice, hashToken } from '@/lib/auth';
 import { generateReferralCode, ok, error } from '@/lib/utils';
-import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { validateEmail, validatePassword, validateName, sanitizeEmail, sanitizeString, isDisposableEmail } from '@/lib/validate';
 import { headers } from 'next/headers';
 import { sendWelcomeEmail } from '@/lib/email';
@@ -14,8 +14,9 @@ import { resolveSignupAttribution } from '@/lib/link-ownership';
 
 export async function POST(req) {
   try {
-    const { limited } = await rateLimit(req, { maxAttempts: 5, windowMs: 60 * 1000 });
-    if (limited) return tooManyRequests('Too many signup attempts. Try again in a minute.');
+    const limit = await rateLimit(req, { maxAttempts: 5, windowMs: 60 * 1000 });
+    if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
+    if (limit.limited) return tooManyRequests('Too many signup attempts. Try again in a minute.', limit.retryAfter);
 
     const body = await req.json();
     const titleCase = (s) => s ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : s;

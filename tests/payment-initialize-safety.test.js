@@ -21,6 +21,7 @@ vi.mock('@/lib/prisma', () => ({
 vi.mock('@/lib/auth', () => ({ getCurrentUser: mocks.getCurrentUser }));
 vi.mock('@/lib/rate-limit', () => ({
   rateLimit: mocks.rateLimit,
+  rateLimitUnavailable: vi.fn(() => Response.json({ error: 'unavailable' }, { status: 503 })),
   tooManyRequests: vi.fn(() => Response.json({ error: 'limited' }, { status: 429 })),
 }));
 vi.mock('@/lib/meta-capi', () => ({ parseFbCookies: vi.fn(() => ({})) }));

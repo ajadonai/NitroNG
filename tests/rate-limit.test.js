@@ -1,5 +1,10 @@
-import { describe, it, expect } from 'vitest';
-import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { describe, it, expect, vi } from 'vitest';
+import fc from 'fast-check';
+import {
+  createRateLimiter,
+  rateLimitUnavailable,
+  tooManyRequests,
+} from '@/lib/rate-limit';
 
 function mockReq(ip = '127.0.0.1', path = '/api/test') {
   return {
@@ -8,59 +13,292 @@ function mockReq(ip = '127.0.0.1', path = '/api/test') {
   };
 }
 
-describe('rateLimit (in-memory fallback)', () => {
-  it('allows requests under the limit', async () => {
-    const req = mockReq('10.0.0.1', '/api/rate-test-1');
-    const result = await rateLimit(req, { maxAttempts: 3, windowMs: 60000 });
-    expect(result.limited).toBe(false);
-    expect(result.remaining).toBe(2);
+function silentLogger() {
+  return { error: vi.fn() };
+}
+
+describe('createRateLimiter memory mode', () => {
+  it('allows exactly N requests and blocks N + 1 for every positive threshold', async () => {
+    await fc.assert(fc.asyncProperty(
+      fc.integer({ min: 1, max: 25 }),
+      async maxAttempts => {
+        const limit = createRateLimiter({
+          env: { NODE_ENV: 'test' },
+          now: () => 1_000,
+          logger: silentLogger(),
+        });
+        const req = mockReq('10.0.0.1', `/api/threshold-${maxAttempts}`);
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+          const result = await limit(req, { maxAttempts, windowMs: 60_000 });
+          expect(result).toMatchObject({
+            limited: false,
+            unavailable: false,
+            remaining: maxAttempts - attempt,
+            resetAt: 61_000,
+            retryAfter: 60,
+          });
+        }
+
+        await expect(limit(req, { maxAttempts, windowMs: 60_000 })).resolves.toMatchObject({
+          limited: true,
+          unavailable: false,
+          remaining: 0,
+          resetAt: 61_000,
+          retryAfter: 60,
+        });
+      },
+    ), { numRuns: 40 });
   });
 
-  it('blocks after exceeding limit', async () => {
-    const req = mockReq('10.0.0.2', '/api/rate-test-2');
-    for (let i = 0; i < 3; i++) {
-      await rateLimit(req, { maxAttempts: 3, windowMs: 60000 });
-    }
-    const result = await rateLimit(req, { maxAttempts: 3, windowMs: 60000 });
-    expect(result.limited).toBe(true);
-    expect(result.remaining).toBe(0);
+  it('tracks different IPs and routes independently', async () => {
+    const limit = createRateLimiter({ env: { NODE_ENV: 'development' }, logger: silentLogger() });
+    const reqA = mockReq('10.0.0.2', '/api/route-a');
+    const reqB = mockReq('10.0.0.2', '/api/route-b');
+    const reqC = mockReq('10.0.0.3', '/api/route-a');
+
+    await limit(reqA, { maxAttempts: 1 });
+
+    await expect(limit(reqA, { maxAttempts: 1 })).resolves.toMatchObject({ limited: true });
+    await expect(limit(reqB, { maxAttempts: 1 })).resolves.toMatchObject({ limited: false });
+    await expect(limit(reqC, { maxAttempts: 1 })).resolves.toMatchObject({ limited: false });
   });
 
-  it('tracks different IPs separately', async () => {
-    const req1 = mockReq('10.0.0.3', '/api/rate-test-3');
-    const req2 = mockReq('10.0.0.4', '/api/rate-test-3');
-    for (let i = 0; i < 5; i++) {
-      await rateLimit(req1, { maxAttempts: 5, windowMs: 60000 });
-    }
-    const blocked = await rateLimit(req1, { maxAttempts: 5, windowMs: 60000 });
-    const allowed = await rateLimit(req2, { maxAttempts: 5, windowMs: 60000 });
-    expect(blocked.limited).toBe(true);
-    expect(allowed.limited).toBe(false);
-  });
+  it('reports reset and retry values from an injected clock', async () => {
+    let current = 10_000;
+    const limit = createRateLimiter({
+      env: { NODE_ENV: 'test' },
+      now: () => current,
+      logger: silentLogger(),
+    });
+    const req = mockReq('10.0.0.4', '/api/reset');
 
-  it('tracks different routes separately', async () => {
-    const reqA = mockReq('10.0.0.5', '/api/route-a');
-    const reqB = mockReq('10.0.0.5', '/api/route-b');
-    for (let i = 0; i < 2; i++) {
-      await rateLimit(reqA, { maxAttempts: 2, windowMs: 60000 });
-    }
-    const blockedA = await rateLimit(reqA, { maxAttempts: 2, windowMs: 60000 });
-    const allowedB = await rateLimit(reqB, { maxAttempts: 2, windowMs: 60000 });
-    expect(blockedA.limited).toBe(true);
-    expect(allowedB.limited).toBe(false);
+    const first = await limit(req, { maxAttempts: 1, windowMs: 1_500 });
+    expect(first).toMatchObject({ resetAt: 11_500, retryAfter: 2, limited: false });
+
+    current = 11_000;
+    const blocked = await limit(req, { maxAttempts: 1, windowMs: 1_500 });
+    expect(blocked).toMatchObject({ resetAt: 11_500, retryAfter: 1, limited: true });
+
+    current = 11_500;
+    const reset = await limit(req, { maxAttempts: 1, windowMs: 1_500 });
+    expect(reset).toMatchObject({ resetAt: 13_000, retryAfter: 2, limited: false });
   });
 });
 
-describe('tooManyRequests', () => {
-  it('returns 429 with Retry-After header', () => {
+describe('createRateLimiter Redis mode', () => {
+  it('uses one atomic eval with the key and millisecond window', async () => {
+    const redis = { eval: vi.fn().mockResolvedValue([3, 4_501]) };
+    const limit = createRateLimiter({
+      redis,
+      env: { NODE_ENV: 'production' },
+      now: () => 20_000,
+      logger: silentLogger(),
+    });
+    const req = mockReq();
+
+    const result = await limit(req, {
+      maxAttempts: 3,
+      windowMs: 60_000,
+      key: 'rl:test:atomic',
+    });
+
+    expect(redis.eval).toHaveBeenCalledTimes(1);
+    expect(redis.eval).toHaveBeenCalledWith(
+      expect.stringContaining("redis.call('INCR', KEYS[1])"),
+      ['rl:test:atomic'],
+      ['60000'],
+    );
+    expect(redis.eval.mock.calls[0][0]).toContain("redis.call('PEXPIRE', KEYS[1], ARGV[1])");
+    expect(result).toEqual({
+      limited: false,
+      unavailable: false,
+      remaining: 0,
+      resetAt: 24_501,
+      retryAfter: 5,
+    });
+  });
+
+  it('blocks only after the Redis count exceeds the threshold', async () => {
+    const redis = { eval: vi.fn()
+      .mockResolvedValueOnce([2, 2_000])
+      .mockResolvedValueOnce([3, 1_900]) };
+    const limit = createRateLimiter({
+      redis,
+      env: { NODE_ENV: 'production' },
+      now: () => 5_000,
+      logger: silentLogger(),
+    });
+    const options = { maxAttempts: 2, windowMs: 2_000, key: 'rl:test:threshold' };
+
+    await expect(limit(mockReq(), options)).resolves.toMatchObject({
+      limited: false,
+      remaining: 0,
+    });
+    await expect(limit(mockReq(), options)).resolves.toMatchObject({
+      limited: true,
+      remaining: 0,
+    });
+  });
+
+  it('constructs the default client only when both credentials exist', async () => {
+    const redis = { eval: vi.fn().mockResolvedValue([1, 60_000]) };
+    const redisFactory = vi.fn(() => redis);
+    const limit = createRateLimiter({
+      env: {
+        NODE_ENV: 'production',
+        UPSTASH_REDIS_REST_URL: 'https://redis.example.test',
+        UPSTASH_REDIS_REST_TOKEN: 'secret-token',
+      },
+      redisFactory,
+      now: () => 0,
+      logger: silentLogger(),
+    });
+
+    await limit(mockReq(), { key: 'rl:test:configured' });
+
+    expect(redisFactory).toHaveBeenCalledTimes(1);
+    expect(redisFactory).toHaveBeenCalledWith(expect.objectContaining({
+      url: 'https://redis.example.test',
+      token: 'secret-token',
+      retry: false,
+      signal: expect.any(Function),
+    }));
+  });
+});
+
+describe('fail-closed production behavior', () => {
+  it.each([
+    ['both missing', {}],
+    ['URL only', { UPSTASH_REDIS_REST_URL: 'https://redis.example.test' }],
+    ['token only', { UPSTASH_REDIS_REST_TOKEN: 'secret-token' }],
+    ['blank token', {
+      UPSTASH_REDIS_REST_URL: 'https://redis.example.test',
+      UPSTASH_REDIS_REST_TOKEN: '   ',
+    }],
+  ])('returns unavailable and never touches memory when %s', async (_label, config) => {
+    const memoryStore = new Map();
+    const redisFactory = vi.fn();
+    const limit = createRateLimiter({
+      env: { NODE_ENV: 'production', ...config },
+      memoryStore,
+      redisFactory,
+      now: () => 0,
+      logger: silentLogger(),
+    });
+
+    const result = await limit(mockReq(), { maxAttempts: 3 });
+
+    expect(result).toEqual({
+      limited: true,
+      unavailable: true,
+      remaining: 0,
+      resetAt: null,
+      retryAfter: 5,
+    });
+    expect(memoryStore.size).toBe(0);
+    expect(redisFactory).not.toHaveBeenCalled();
+  });
+
+  it('never falls back to memory when Redis throws in production', async () => {
+    const memoryStore = new Map();
+    const logger = silentLogger();
+    const redis = { eval: vi.fn().mockRejectedValue(new Error('redis down')) };
+    const limit = createRateLimiter({
+      redis,
+      env: { NODE_ENV: 'production' },
+      memoryStore,
+      now: () => 0,
+      logger,
+    });
+
+    const result = await limit(mockReq(), { maxAttempts: 3 });
+
+    expect(result).toMatchObject({ limited: true, unavailable: true, retryAfter: 5 });
+    expect(memoryStore.size).toBe(0);
+    expect(logger.error).toHaveBeenCalledWith(
+      '[RateLimit] Distributed rate limiting unavailable',
+      { reason: 'redis_request_failed', error: 'redis down' },
+    );
+  });
+
+  it('returns unavailable when default Redis client construction fails', async () => {
+    const memoryStore = new Map();
+    const limit = createRateLimiter({
+      env: {
+        NODE_ENV: 'production',
+        UPSTASH_REDIS_REST_URL: 'https://redis.example.test',
+        UPSTASH_REDIS_REST_TOKEN: 'secret-token',
+      },
+      memoryStore,
+      redisFactory: () => { throw new Error('invalid Redis config'); },
+      now: () => 0,
+      logger: silentLogger(),
+    });
+
+    await expect(limit(mockReq())).resolves.toMatchObject({
+      limited: true,
+      unavailable: true,
+    });
+    expect(memoryStore.size).toBe(0);
+  });
+
+  it('uses memory after a Redis failure outside production', async () => {
+    const memoryStore = new Map();
+    const redis = { eval: vi.fn().mockRejectedValue(new Error('redis down')) };
+    const limit = createRateLimiter({
+      redis,
+      env: { NODE_ENV: 'development' },
+      memoryStore,
+      now: () => 1_000,
+      logger: silentLogger(),
+    });
+
+    const result = await limit(mockReq(), { maxAttempts: 2, windowMs: 5_000 });
+
+    expect(result).toEqual({
+      limited: false,
+      unavailable: false,
+      remaining: 1,
+      resetAt: 6_000,
+      retryAfter: 5,
+    });
+    expect(memoryStore.size).toBe(1);
+  });
+});
+
+describe('rate-limit responses', () => {
+  it('keeps the historical 429 defaults', async () => {
     const res = tooManyRequests();
     expect(res.status).toBe(429);
     expect(res.headers.get('Retry-After')).toBe('60');
+    await expect(res.json()).resolves.toEqual({
+      error: 'Too many requests. Please try again later.',
+    });
   });
 
-  it('includes custom message', async () => {
+  it('keeps the historical one-message 429 call compatible', async () => {
     const res = tooManyRequests('Slow down');
-    const body = await res.json();
-    expect(body.error).toBe('Slow down');
+    expect(res.status).toBe(429);
+    expect(res.headers.get('Retry-After')).toBe('60');
+    await expect(res.json()).resolves.toEqual({ error: 'Slow down' });
+  });
+
+  it('accepts an accurate retry duration for 429 responses', async () => {
+    const res = tooManyRequests('Slow down', 301);
+    expect(res.status).toBe(429);
+    expect(res.headers.get('Retry-After')).toBe('301');
+    await expect(res.json()).resolves.toEqual({ error: 'Slow down' });
+  });
+
+  it('returns an explicit retryable 503 when protection is unavailable', async () => {
+    const res = rateLimitUnavailable('Try shortly', 7);
+    expect(res.status).toBe(503);
+    expect(res.headers.get('Retry-After')).toBe('7');
+    await expect(res.json()).resolves.toEqual({
+      error: 'Try shortly',
+      unavailable: true,
+      retryable: true,
+    });
   });
 });

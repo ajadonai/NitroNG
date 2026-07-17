@@ -2,7 +2,7 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { cookies } from "next/headers";
-import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
+import { rateLimit, rateLimitUnavailable, tooManyRequests } from "@/lib/rate-limit";
 import { hashToken } from "@/lib/crew";
 import { validatePassword, validatePhone } from "@/lib/validate";
 import { getAffiliateSettings } from "@/lib/affiliate-settings";
@@ -27,8 +27,9 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { limited } = await rateLimit(req, { maxAttempts: 5, windowMs: 10 * 60 * 1000 });
-    if (limited) return tooManyRequests("Too many attempts. Try again in 10 minutes.");
+    const limit = await rateLimit(req, { maxAttempts: 5, windowMs: 10 * 60 * 1000 });
+    if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
+    if (limit.limited) return tooManyRequests("Too many attempts. Try again in 10 minutes.", limit.retryAfter);
 
     const { affiliate_enabled } = await getAffiliateSettings(['affiliate_enabled']);
     if (affiliate_enabled === 'false') {

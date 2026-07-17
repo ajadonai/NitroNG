@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import Script from 'next/script';
+import { usePathname } from 'next/navigation';
 import { hasConsent } from './cookie-banner';
+import { isInternalDashboardPath } from '@/lib/internal-dashboard-path';
 
 export default function AnalyticsScripts() {
   const [enabled, setEnabled] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const sync = () => setEnabled(hasConsent());
@@ -18,7 +21,7 @@ export default function AnalyticsScripts() {
     };
   }, []);
 
-  if (!enabled) return null;
+  if (!enabled || isInternalDashboardPath(pathname)) return null;
 
   return (
     <>

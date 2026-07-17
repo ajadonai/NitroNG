@@ -7,6 +7,8 @@ const FINALIZE_IMPORT = /import\s*\{[^}]*\bfinalizeDeposit\b[^}]*\}\s*from\s*['"
 const FINALIZE_CALL = /\bfinalizeDeposit\s*\(/;
 const RECONCILE_IMPORT = /import\s*\{[^}]*\breconcileFlutterwaveDeposit\b[^}]*\}\s*from\s*['"][^'"]+['"]/s;
 const RECONCILE_CALL = /\breconcileFlutterwaveDeposit\s*\(/;
+const CRYPTO_RECONCILE_IMPORT = /import\s*\{[^}]*\breconcileNowPaymentsDeposit\b[^}]*\}\s*from\s*['"][^'"]+['"]/s;
+const CRYPTO_RECONCILE_CALL = /\breconcileNowPaymentsDeposit\s*\(/;
 const RECOVERY_IMPORT = /import\s*\{[^}]*\brecoverStalePendingPayments\b[^}]*\}\s*from\s*['"][^'"]+['"]/s;
 const RECOVERY_CALL = /\brecoverStalePendingPayments\s*\(/;
 
@@ -17,9 +19,10 @@ const DIRECT_EFFECT_ROW = /\btransaction\s*\.\s*create(?:Many)?\s*\(\s*\{[\s\S]{
 function expectSharedFinalizer(source, name) {
   const usesFinalizer = FINALIZE_IMPORT.test(source) && FINALIZE_CALL.test(source);
   const usesFlutterwaveReconciler = RECONCILE_IMPORT.test(source) && RECONCILE_CALL.test(source);
+  const usesCryptoReconciler = CRYPTO_RECONCILE_IMPORT.test(source) && CRYPTO_RECONCILE_CALL.test(source);
   expect(
-    usesFinalizer || usesFlutterwaveReconciler,
-    `${name} must delegate to finalizeDeposit or reconcileFlutterwaveDeposit`,
+    usesFinalizer || usesFlutterwaveReconciler || usesCryptoReconciler,
+    `${name} must delegate to a shared deposit finalizer or provider reconciler`,
   ).toBe(true);
 }
 

@@ -1,29 +1,30 @@
 'use client';
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import {
+  HEARTBEAT_INTERVAL_MS,
+  normalizeHeartbeatPage,
+} from '@/lib/heartbeat';
 
 export default function Heartbeat() {
   const pathname = usePathname();
 
   useEffect(() => {
-    let sid = sessionStorage.getItem('nitro_hb_sid');
-    if (!sid) {
-      sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
-      sessionStorage.setItem('nitro_hb_sid', sid);
-    }
-
     const beat = () => {
-      let page = pathname;
+      let page = normalizeHeartbeatPage(pathname) || '/';
       if (pathname === '/dashboard') {
         try {
           const sub = localStorage.getItem('nitro-page');
-          if (sub && sub !== 'home') page = `/dashboard/${sub}`;
+          const dashboardPage = sub && sub !== 'home'
+            ? normalizeHeartbeatPage(`/dashboard/${sub}`)
+            : null;
+          if (dashboardPage) page = dashboardPage;
         } catch {}
       }
       fetch('/api/heartbeat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sid, page }),
+        body: JSON.stringify({ page }),
         keepalive: true,
       }).catch(() => {});
     };
@@ -31,7 +32,7 @@ export default function Heartbeat() {
     beat();
     const iv = setInterval(() => {
       if (document.visibilityState === 'visible') beat();
-    }, 30_000);
+    }, HEARTBEAT_INTERVAL_MS);
     const onVisible = () => { if (document.visibilityState === 'visible') beat(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {

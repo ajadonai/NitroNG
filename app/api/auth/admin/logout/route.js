@@ -2,6 +2,7 @@ import { clearAdminCookie, hashToken } from '@/lib/auth';
 import { ok } from '@/lib/utils';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
+import { clearInternalDashboardGrantCookie } from '@/lib/internal-dashboard-access';
 
 export async function POST() {
   try {
@@ -12,6 +13,8 @@ export async function POST() {
       await prisma.adminSession.deleteMany({ where: { tokenHash: tHash } });
     }
   } catch {}
+  const cookieStore = await cookies();
+  clearInternalDashboardGrantCookie(cookieStore);
   await clearAdminCookie();
   return ok({ message: 'Logged out' });
 }

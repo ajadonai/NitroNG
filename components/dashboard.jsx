@@ -13,6 +13,7 @@ import { Avatar } from "./avatar";
 import OrderTour from "./order-tour";
 import { RewardsStrip, ChannelLane, StatusModal, PointsModal } from "./rewards";
 import { PAYMENT_STATES, isCreditedPaymentResult, paymentStateFromTransactionStatus } from "../lib/payment-state";
+import { STATUS_TIERS } from "../lib/nitro-rewards-core";
 
 /* Dynamic imports — only load when user navigates to that page */
 const NewOrderPage = dynamic(() => import("./new-order").then(m => m.default), { ssr: false });
@@ -123,6 +124,24 @@ export function persistPaymentStatus(storage, status, userId, now = Date.now()) 
       status,
     }));
   } catch {}
+}
+
+export function decorateUserWithRewardsStatus(user, rewards) {
+  if (!user) return user;
+  if (!rewards?.status) {
+    return { ...user, badge: 'Status unavailable', badgeColor: null, nextTier: null };
+  }
+  const currentTier = STATUS_TIERS.find(tier => tier.key === rewards.status.key);
+  if (!currentTier) {
+    return { ...user, badge: 'Status unavailable', badgeColor: null, nextTier: null };
+  }
+  const nextTier = STATUS_TIERS.find(tier => tier.name === rewards.status.nextName) || null;
+  return {
+    ...user,
+    badge: currentTier.name,
+    badgeColor: currentTier.color,
+    nextTier: nextTier ? { name: nextTier.name, color: nextTier.color } : null,
+  };
 }
 
 
@@ -794,7 +813,11 @@ function DashboardInner({ initialData }) {
   const [phonePromptError, setPhonePromptError] = useState("");
   const [phonePromptDone, setPhonePromptDone] = useState(false);
   const [socialLinks, setSocialLinks] = useState({});
-  const [rewards, setRewards] = useState(null);
+  const [rewards, setRewards] = useState(initialData?.rewards || null);
+  const userWithRewardsStatus = useMemo(
+    () => decorateUserWithRewardsStatus(user, rewards),
+    [user, rewards],
+  );
   const [activePromotion, setActivePromotion] = useState(null);
   const [gatewayReturnReference] = useState(() => {
     if (typeof window === 'undefined') return null;
@@ -996,7 +1019,9 @@ function DashboardInner({ initialData }) {
         /* Fetch social links + active promotion + rewards */
         try { const sr = await fetch("/api/settings"); if (sr.ok) { const sd = await sr.json(); setSocialLinks(sd.settings || {}); } } catch {}
         try { const cr = await fetch("/api/promotion"); if (cr.ok) { const cd = await cr.json(); if (cd.active) setActivePromotion(cd); } } catch {}
-        fetch('/api/rewards').then(r => r.ok ? r.json() : null).then(d => { if (d) setRewards(d); }).catch(() => {});
+        if (!initialData?.rewards) {
+          fetch('/api/rewards').then(r => r.ok ? r.json() : null).then(d => { if (d) setRewards(d); }).catch(() => {});
+        }
         /* Load notification state + preferences from server (merges with localStorage) */
         try {
           const nr = await fetch("/api/auth/notifications");
@@ -1246,7 +1271,7 @@ function DashboardInner({ initialData }) {
       case "referrals":
         return <ReferralsPage user={user} dark={dark} t={t} />;
       case "settings":
-        return <SettingsPage user={user} dark={dark} t={t} themeMode={themeMode} setThemeMode={setThemeMode} setDark={setDark} />;
+        return <SettingsPage user={userWithRewardsStatus} dark={dark} t={t} themeMode={themeMode} setThemeMode={setThemeMode} setDark={setDark} />;
       case "support":
         if (socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setActive("overview"); return null; }
         return <SupportPage dark={dark} t={t} />;

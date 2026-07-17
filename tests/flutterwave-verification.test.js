@@ -51,6 +51,7 @@ describe('durable payment state', () => {
       VERIFYING: 'verifying',
       PROVIDER_PENDING: 'provider_pending',
       RETRYABLE: 'retryable',
+      REVIEW: 'review',
       FAILED: 'failed',
     });
   });
@@ -61,8 +62,10 @@ describe('durable payment state', () => {
       ['Processing', PAYMENT_STATES.VERIFYING],
       ['Pending', PAYMENT_STATES.PROVIDER_PENDING],
       ['Expired', PAYMENT_STATES.RETRYABLE],
+      ['Review', PAYMENT_STATES.REVIEW],
       ['Failed', PAYMENT_STATES.FAILED],
       ['Cancelled', PAYMENT_STATES.FAILED],
+      ['Refunded', PAYMENT_STATES.FAILED],
     ];
 
     for (const [transactionStatus, expectedState] of cases) {

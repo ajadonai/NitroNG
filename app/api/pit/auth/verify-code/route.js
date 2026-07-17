@@ -1,13 +1,14 @@
 import prisma from "@/lib/prisma";
 import crypto from "crypto";
-import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
+import { rateLimit, rateLimitUnavailable, tooManyRequests } from "@/lib/rate-limit";
 
 const SECRET = process.env.CRON_SECRET;
 
 export async function POST(req) {
   try {
-    const { limited } = await rateLimit(req, { maxAttempts: 8, windowMs: 10 * 60 * 1000 });
-    if (limited) return tooManyRequests("Too many attempts. Try again in 10 minutes.");
+    const limit = await rateLimit(req, { maxAttempts: 8, windowMs: 10 * 60 * 1000 });
+    if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
+    if (limit.limited) return tooManyRequests("Too many attempts. Try again in 10 minutes.", limit.retryAfter);
 
     const { email, code, token } = await req.json().catch(() => ({}));
     if (!email || !code || !token) return Response.json({ error: "Missing fields" }, { status: 400 });

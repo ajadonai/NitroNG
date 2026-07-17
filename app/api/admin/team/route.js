@@ -131,7 +131,10 @@ export async function POST(req) {
       if (!newPassword || newPassword.length < 6) return Response.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
 
       const hash = await bcrypt.hash(newPassword, 12);
-      await prisma.admin.update({ where: { id: adminId }, data: { password: hash } });
+      await prisma.$transaction([
+        prisma.admin.update({ where: { id: adminId }, data: { password: hash } }),
+        prisma.adminSession.deleteMany({ where: { adminId } }),
+      ], { isolationLevel: 'Serializable' });
       await logActivity(admin.name, `Reset password for ${target.name}`, 'admin');
       return Response.json({ success: true });
     }

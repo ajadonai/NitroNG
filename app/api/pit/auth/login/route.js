@@ -2,14 +2,15 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { cookies } from "next/headers";
-import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
+import { rateLimit, rateLimitUnavailable, tooManyRequests } from "@/lib/rate-limit";
 import { hashToken } from "@/lib/crew";
 import { validateEmail, validatePassword, sanitizeEmail } from "@/lib/validate";
 
 export async function POST(req) {
   try {
-    const { limited } = await rateLimit(req, { maxAttempts: 5, windowMs: 5 * 60 * 1000 });
-    if (limited) return tooManyRequests("Too many login attempts. Try again in 5 minutes.");
+    const ipLimit = await rateLimit(req, { maxAttempts: 5, windowMs: 5 * 60 * 1000 });
+    if (ipLimit.unavailable) return rateLimitUnavailable(undefined, ipLimit.retryAfter);
+    if (ipLimit.limited) return tooManyRequests("Too many login attempts. Try again in 5 minutes.", ipLimit.retryAfter);
 
     const { email, password } = await req.json().catch(() => ({}));
     if (!email || !password) return Response.json({ error: "Email and password required" }, { status: 400 });
@@ -18,8 +19,9 @@ export async function POST(req) {
 
     const clean = sanitizeEmail(email);
 
-    const { limited: emailLimited } = await rateLimit(req, { maxAttempts: 8, windowMs: 15 * 60 * 1000, key: `rl:acct:${clean}:pit-login` });
-    if (emailLimited) return tooManyRequests("Too many login attempts for this account. Try again in 15 minutes.");
+    const accountLimit = await rateLimit(req, { maxAttempts: 8, windowMs: 15 * 60 * 1000, key: `rl:acct:${clean}:pit-login` });
+    if (accountLimit.unavailable) return rateLimitUnavailable(undefined, accountLimit.retryAfter);
+    if (accountLimit.limited) return tooManyRequests("Too many login attempts for this account. Try again in 15 minutes.", accountLimit.retryAfter);
     const member = await prisma.crewMember.findUnique({ where: { email: clean } });
 
     if (!member) {

@@ -6,6 +6,14 @@ import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonu
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { WalletPointsCard, PointsModal } from "./rewards";
 import { PAYMENT_STATES, isCreditedPaymentResult, paymentStateFromTransactionStatus } from "../lib/payment-state";
+import {
+  creditedCryptoPaymentStatus,
+  cryptoPaymentPresentation,
+  getCryptoPaymentAttempt,
+  isDefinitiveCryptoCreationRejection,
+  isTerminalCryptoPaymentResult,
+  releaseCryptoPaymentAttempt,
+} from "../lib/crypto-payment-ui";
 
 const TX_META = {
   deposit:      { label: "Deposit",       icon: "↓", clr: dk => dk ? "#6ee7b7" : "#059669" },
@@ -20,8 +28,9 @@ function isFlutterwaveDeposit(tx) {
   return tx.type === "deposit" && (tx.method === "flutterwave" || tx.method == null);
 }
 function txPaymentState(tx) {
+  if (tx.paymentState) return tx.paymentState;
   if (!isFlutterwaveDeposit(tx)) return null;
-  return tx.paymentState || paymentStateFromTransactionStatus(tx.status);
+  return paymentStateFromTransactionStatus(tx.status);
 }
 function txIsCompleted(tx) {
   const paymentState = txPaymentState(tx);
@@ -32,12 +41,15 @@ function txRowClr(tx, dk) {
   if (paymentState === PAYMENT_STATES.VERIFYING) return dk ? "#a5b4fc" : "#4f46e5";
   if (paymentState === PAYMENT_STATES.PROVIDER_PENDING) return dk ? "#fcd34d" : "#d97706";
   if (paymentState === PAYMENT_STATES.RETRYABLE) return dk ? "#fdba74" : "#ea580c";
+  if (paymentState === PAYMENT_STATES.REVIEW) return dk ? "#fcd34d" : "#d97706";
   if (paymentState === PAYMENT_STATES.FAILED) return dk ? "#fca5a5" : "#dc2626";
   if (paymentState === PAYMENT_STATES.CREDITED && tx.status !== "Completed") return dk ? "#a5b4fc" : "#4f46e5";
   if (tx.status === "Failed" || tx.status === "Rejected") return dk ? "#fca5a5" : "#dc2626";
   if (tx.status === "Pending") return dk ? "#fcd34d" : "#d97706";
   if (tx.status === "Processing") return dk ? "#a5b4fc" : "#4f46e5";
   if (tx.status === "Expired") return dk ? "#fdba74" : "#ea580c";
+  if (tx.status === "Review") return dk ? "#fcd34d" : "#d97706";
+  if (tx.status === "Refunded") return dk ? "#fca5a5" : "#dc2626";
   if (tx.status === "Cancelled") return dk ? "#a1a1aa" : "#71717a";
   return txClr(tx.type, dk);
 }
@@ -48,10 +60,13 @@ function txStatusMeta(tx, dk) {
     [PAYMENT_STATES.VERIFYING]: { label: "Verifying", color: dk ? "#a5b4fc" : "#4f46e5", bg: dk ? "rgba(165,180,252,.12)" : "rgba(79,70,229,.08)" },
     [PAYMENT_STATES.PROVIDER_PENDING]: { label: "Pending", color: dk ? "#fcd34d" : "#d97706", bg: dk ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)" },
     [PAYMENT_STATES.RETRYABLE]: { label: "Retrying", color: dk ? "#fdba74" : "#ea580c", bg: dk ? "rgba(253,186,116,.12)" : "rgba(234,88,12,.08)" },
+    [PAYMENT_STATES.REVIEW]: { label: "Manual review", color: dk ? "#fcd34d" : "#d97706", bg: dk ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)" },
     [PAYMENT_STATES.FAILED]: { label: "Failed", color: dk ? "#fca5a5" : "#dc2626", bg: dk ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)" },
     Processing: { label: "Processing", color: dk ? "#a5b4fc" : "#4f46e5", bg: dk ? "rgba(165,180,252,.12)" : "rgba(79,70,229,.08)" },
     Pending: { label: "Pending", color: dk ? "#fcd34d" : "#d97706", bg: dk ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)" },
     Expired: { label: "Expired", color: dk ? "#fdba74" : "#ea580c", bg: dk ? "rgba(253,186,116,.12)" : "rgba(234,88,12,.08)" },
+    Review: { label: "Manual review", color: dk ? "#fcd34d" : "#d97706", bg: dk ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)" },
+    Refunded: { label: "Refunded", color: dk ? "#fca5a5" : "#dc2626", bg: dk ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)" },
     Failed: { label: "Failed", color: dk ? "#fca5a5" : "#dc2626", bg: dk ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)" },
     Rejected: { label: "Rejected", color: dk ? "#fca5a5" : "#dc2626", bg: dk ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)" },
     Cancelled: { label: "Cancelled", color: dk ? "#a1a1aa" : "#71717a", bg: dk ? "rgba(161,161,170,.12)" : "rgba(113,113,122,.08)" },
@@ -146,7 +161,40 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   /* Crypto payment modal */
   const [cryptoModal, setCryptoModal] = useState(null);
   const [cryptoStatus, setCryptoStatus] = useState(null);
+  const [cryptoResult, setCryptoResult] = useState(null);
   const [cryptoPolling, setCryptoPolling] = useState(false);
+  const cryptoAttemptCache = useRef(new Map());
+  const cryptoPollInterval = useRef(null);
+  const cryptoPollTimeout = useRef(null);
+  const stopCryptoPolling = useCallback(() => {
+    if (cryptoPollInterval.current) clearInterval(cryptoPollInterval.current);
+    if (cryptoPollTimeout.current) clearTimeout(cryptoPollTimeout.current);
+    cryptoPollInterval.current = null;
+    cryptoPollTimeout.current = null;
+    setCryptoPolling(false);
+  }, []);
+  useEffect(() => () => stopCryptoPolling(), [stopCryptoPolling]);
+
+  const applyCryptoStatusResult = useCallback((result, fallback = {}) => {
+    if (!result || typeof result !== "object") return false;
+    const normalizedResult = {
+      ...result,
+      reference: result.reference || fallback.reference,
+    };
+    setCryptoResult(normalizedResult);
+    setCryptoStatus(normalizedResult.status || "Pending");
+
+    if (!isTerminalCryptoPaymentResult(normalizedResult)) return false;
+
+    stopCryptoPolling();
+    const creditedStatus = creditedCryptoPaymentStatus(normalizedResult, {
+      amount: fallback.amount,
+      reference: fallback.reference,
+    });
+    if (creditedStatus) setPaymentStatus?.(creditedStatus);
+    onRefresh?.();
+    return true;
+  }, [onRefresh, setPaymentStatus, stopCryptoPolling]);
 
   /* Manual bank transfer modal */
   const [manualModal, setManualModal] = useState(null);
@@ -240,37 +288,78 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 
     // ═══ CRYPTO — different flow ═══
     if (method === "crypto") {
+      const couponId = couponApplied?.couponId || undefined;
+      const attempt = getCryptoPaymentAttempt(
+        cryptoAttemptCache.current,
+        numAmount,
+        couponId,
+        () => crypto.randomUUID(),
+      );
       try {
         const res = await fetch("/api/payments/crypto", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: numAmount, couponId: couponApplied?.couponId || undefined }),
+          body: JSON.stringify({ amount: numAmount, couponId, idempotencyKey: attempt.idempotencyKey }),
           signal: AbortSignal.timeout(30000),
         });
         const data = await res.json();
-        if (data.payAddress) {
+        const fallback = {
+          amount: data.amount ?? data.amountNgn ?? numAmount,
+          reference: data.reference,
+        };
+
+        if (res.ok && data.payAddress) {
+          releaseCryptoPaymentAttempt(cryptoAttemptCache.current, attempt.fingerprint);
+          stopCryptoPolling();
           setCryptoModal(data);
-          setCryptoStatus("Pending");
-          setCryptoPolling(true);
-          const poll = setInterval(async () => {
-            try {
-              const sr = await fetch(`/api/payments/crypto?reference=${data.reference}`);
-              if (!sr.ok) return;
-              const sd = await sr.json();
-              setCryptoStatus(sd.status || sd.npStatus || "Pending");
-              if (sd.status === "Completed" || sd.status === "Cancelled") {
-                clearInterval(poll);
-                setCryptoPolling(false);
-                if (sd.status === "Completed" && setPaymentStatus) setPaymentStatus("success");
-              }
-            } catch {}
-          }, 15000);
-          setTimeout(() => { clearInterval(poll); setCryptoPolling(false); }, 30 * 60 * 1000);
+          const initialResult = {
+            ...data,
+            status: data.status || "Pending",
+            paymentState: data.paymentState || "provider_pending",
+          };
+          const alreadyTerminal = applyCryptoStatusResult(initialResult, fallback);
+
+          if (!alreadyTerminal) {
+            setCryptoPolling(true);
+            const poll = async () => {
+              try {
+                const sr = await fetch(
+                  `/api/payments/crypto?reference=${encodeURIComponent(data.reference)}`,
+                  { signal: AbortSignal.timeout(10000) },
+                );
+                const sd = await sr.json();
+                const pollResult = {
+                  ...sd,
+                  status: sd.status || (sd.npStatus === "confirming" ? "Confirming" : "Pending"),
+                };
+                if (!sr.ok && !isTerminalCryptoPaymentResult(pollResult)) return;
+                applyCryptoStatusResult(pollResult, fallback);
+              } catch {}
+            };
+            cryptoPollInterval.current = setInterval(poll, 15000);
+            cryptoPollTimeout.current = setTimeout(stopCryptoPolling, 30 * 60 * 1000);
+          }
+        } else if (isTerminalCryptoPaymentResult(data) && data.reference) {
+          releaseCryptoPaymentAttempt(cryptoAttemptCache.current, attempt.fingerprint);
+          stopCryptoPolling();
+          setCryptoModal({
+            ...data,
+            amountNgn: data.amount ?? numAmount,
+          });
+          applyCryptoStatusResult(data, fallback);
         } else {
-          toast.error("Payment failed", data.error || "Failed to create crypto payment");
+          // A client error is definitive. Transport/server failures keep the
+          // key so a retry safely refers to the same creation attempt.
+          if (isDefinitiveCryptoCreationRejection(res.status)) {
+            releaseCryptoPaymentAttempt(cryptoAttemptCache.current, attempt.fingerprint);
+          }
+          toast.error("Payment failed", data.error || data.message || "Failed to create crypto payment");
         }
       } catch (err) {
-        toast.error(err?.name === "TimeoutError" ? "Timed out" : "Network error", "Check your connection");
+        toast.error(
+          err?.name === "TimeoutError" ? "Timed out" : "Network error",
+          "Try again — we’ll safely reuse this payment attempt.",
+        );
       }
       setLoading(false); payingRef.current = false;
       return;
@@ -321,6 +410,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   };
 
   const welcomeEligible = user?.welcomeBonusEligible;
+  const cryptoPresentation = cryptoPaymentPresentation(cryptoResult || { status: cryptoStatus });
+  const cryptoIsTerminal = cryptoPresentation.kind !== "pending";
 
   /* ── Shared sub-components ── */
   const amountInput = (
@@ -715,28 +806,38 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 
       {/* ═══ CRYPTO PAYMENT MODAL ═══ */}
       {cryptoModal && (
-        <div onClick={() => { if (cryptoStatus === "Completed" || cryptoStatus === "Cancelled") setCryptoModal(null); }} onKeyDown={e=>{if(e.key==='Escape'&&(cryptoStatus==="Completed"||cryptoStatus==="Cancelled"))setCryptoModal(null)}} className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" style={{ background: "rgba(0,0,0,.45)" }}>
+        <div onClick={() => { if (cryptoIsTerminal) { stopCryptoPolling(); setCryptoModal(null); } }} onKeyDown={e=>{if(e.key==='Escape'&&cryptoIsTerminal){stopCryptoPolling();setCryptoModal(null)}}} className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" style={{ background: "rgba(0,0,0,.45)" }}>
           <div role="dialog" aria-modal="true" aria-label="Crypto payment" onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl p-6 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
-            {cryptoStatus === "Completed" ? (
+            {cryptoPresentation.kind === "credited" ? (
               <>
                 <div className="text-center py-5">
                   <div className="mb-3 flex justify-center"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
-                  <div className="text-lg font-semibold mb-1.5" style={{ color: t.text }}>Payment Confirmed!</div>
-                  <div className="text-sm" style={{ color: t.textMuted }}>{fN(cryptoModal.amountNgn)} has been added to your wallet</div>
+                  <div className="text-lg font-semibold mb-1.5" style={{ color: t.text }}>{cryptoPresentation.title}</div>
+                  <div className="text-sm" style={{ color: t.textMuted }}>{fN(cryptoResult?.amount ?? cryptoModal.amountNgn)} has been added to your wallet</div>
                 </div>
                 <div className="flex max-md:flex-col gap-3">
-                  <button onClick={() => { setCryptoModal(null); window.location.reload(); }} className="flex-1 py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.text, fontFamily: "inherit" }}>Done</button>
-                  {onPlaceOrder && <button onClick={() => { setCryptoModal(null); onPlaceOrder(); }} className="flex-1 py-3 rounded-[10px] border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ fontFamily: "inherit" }}>Place an order</button>}
+                  <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); window.location.reload(); }} className="flex-1 py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.text, fontFamily: "inherit" }}>Done</button>
+                  {onPlaceOrder && <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); onPlaceOrder(); }} className="flex-1 py-3 rounded-[10px] border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ fontFamily: "inherit" }}>Place an order</button>}
                 </div>
               </>
-            ) : cryptoStatus === "Cancelled" ? (
+            ) : cryptoPresentation.kind === "review" ? (
+              <>
+                <div className="text-center py-5">
+                  <div className="mb-3 flex justify-center"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fcd34d" : "#d97706"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+                  <div className="text-lg font-semibold mb-1.5" style={{ color: t.text }}>{cryptoPresentation.title}</div>
+                  <div className="text-sm leading-normal" style={{ color: t.textMuted }}>{cryptoPresentation.message}</div>
+                  {cryptoResult?.reference && <div className="m text-[11px] mt-3 break-all" style={{ color: t.textMuted }}>Reference: {cryptoResult.reference}</div>}
+                </div>
+                <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); onRefresh?.(); }} className="w-full py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.text, fontFamily: "inherit" }}>Close</button>
+              </>
+            ) : cryptoPresentation.kind === "failed" ? (
               <>
                 <div className="text-center py-5">
                   <div className="mb-3 flex justify-center"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
-                  <div className="text-lg font-semibold mb-1.5" style={{ color: t.text }}>Payment Expired</div>
-                  <div className="text-sm" style={{ color: t.textMuted }}>This payment has expired or was cancelled. You can try another method.</div>
+                  <div className="text-lg font-semibold mb-1.5" style={{ color: t.text }}>{cryptoPresentation.title}</div>
+                  <div className="text-sm leading-normal" style={{ color: t.textMuted }}>{cryptoPresentation.message}</div>
                 </div>
-                <button onClick={() => { setCryptoModal(null); onRefresh?.(); }} className="w-full py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.text, fontFamily: "inherit" }}>Try another method</button>
+                <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); onRefresh?.(); }} className="w-full py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.text, fontFamily: "inherit" }}>Try another method</button>
               </>
             ) : (
               <>
@@ -767,7 +868,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                   <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>We check automatically every 15 seconds. Do not close this page.</div>
                 </div>
 
-                <button onClick={async () => { try { await fetch("/api/payments/crypto", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: cryptoModal.reference }) }); } catch {} setCryptoModal(null); onRefresh?.(); }} className="w-full py-2.5 rounded-lg bg-transparent text-sm font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted, fontFamily: "inherit" }}>Cancel</button>
+                <button onClick={async () => { stopCryptoPolling(); try { await fetch("/api/payments/crypto", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: cryptoModal.reference }) }); } catch {} setCryptoModal(null); onRefresh?.(); }} className="w-full py-2.5 rounded-lg bg-transparent text-sm font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted, fontFamily: "inherit" }}>Cancel</button>
               </>
             )}
           </div>
