@@ -266,8 +266,8 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
         toast.success('User activated');
       }
       if (action === 'reinstate') {
-        setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: 'Active', name: u.deletedName || u.name, email: u.deletedEmail || u.email } : u));
-        if (drawerUser?.id === userId) setDrawerUser(prev => ({ ...prev, status: 'Active', name: prev.deletedName || prev.name, email: prev.deletedEmail || prev.email }));
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: 'Active', name: u.deletedName || u.name, email: u.deletedEmail || u.email, deletedAt: null, deletedName: null, deletedEmail: null, canReinstate: false } : u));
+        if (drawerUser?.id === userId) setDrawerUser(prev => ({ ...prev, status: 'Active', name: prev.deletedName || prev.name, email: prev.deletedEmail || prev.email, deletedAt: null, deletedName: null, deletedEmail: null, canReinstate: false }));
         toast.success('Account restored');
       }
     } catch (err) {
@@ -289,14 +289,13 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
   };
 
   const handleStatusAction = async (user) => {
-    const isDeleted = user.status === 'Deleted' || user.status === 'PendingDeletion';
-    if (isDeleted) {
+    if (user.canReinstate) {
       const ok = await confirm({ title: 'Restore Account', message: `Restore ${user.deletedName || user.name}'s account? They will be able to log in again.`, confirmLabel: 'Restore' });
       if (ok) doAction(user.id, 'reinstate');
     } else if (user.status === 'Active') {
       const ok = await confirm({ title: 'Ban User', message: `Ban ${user.name} (${user.email})? They will lose access.`, confirmLabel: 'Ban User', danger: true });
       if (ok) doAction(user.id, 'suspend');
-    } else {
+    } else if (user.status === 'Suspended') {
       const ok = await confirm({ title: 'Activate User', message: `Reactivate ${user.name}'s account?`, confirmLabel: 'Activate' });
       if (ok) doAction(user.id, 'activate');
     }
@@ -426,7 +425,8 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
   /* ── Bulk actions ─────────────────────────────── */
 
   const bulkBan = async () => {
-    const ids = [...selected];
+    const ids = users.filter(u => selected.has(u.id) && u.status === 'Active').map(u => u.id);
+    if (!ids.length) return;
     const ok = await confirm({ title: 'Bulk Ban', message: `Ban ${ids.length} users? They will all lose access.`, confirmLabel: `Ban ${ids.length} users`, danger: true });
     if (!ok) return;
     for (const id of ids) {
@@ -437,10 +437,11 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
 
   /* ── Selection helpers ────────────────────────── */
 
-  const allSelected = users.length > 0 && users.every(u => selected.has(u.id));
+  const selectableUsers = users.filter(u => !['PendingDeletion', 'Deleted'].includes(u.status));
+  const allSelected = selectableUsers.length > 0 && selectableUsers.every(u => selected.has(u.id));
   const toggleAll = () => {
     if (allSelected) setSelected(new Set());
-    else setSelected(new Set(users.map(u => u.id)));
+    else setSelected(new Set(selectableUsers.map(u => u.id)));
   };
   const toggleOne = (id) => {
     setSelected(prev => {
@@ -470,7 +471,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
 
   const displayName = (u) => (u.status === 'Deleted' || u.status === 'PendingDeletion') ? (u.deletedName || u.name) : u.name;
   const displayEmail = (u) => (u.status === 'Deleted' || u.status === 'PendingDeletion') ? (u.deletedEmail || u.email) : u.email;
-  const isDeleted = (u) => u.status === 'Deleted' || u.status === 'PendingDeletion';
+  const isMutationLocked = (u) => ['PendingDeletion', 'Deleted'].includes(u.status);
 
   const rangeStart = (page - 1) * PER_PAGE + 1;
   const rangeEnd = Math.min(page * PER_PAGE, filteredCount);
@@ -628,13 +629,12 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
           const name = displayName(u);
           const email = displayEmail(u);
           const sd = statusDot(u.status, t);
-          const del = isDeleted(u);
           const sel = selected.has(u.id);
           const tag = u.status === 'Deleted' ? 'Deleted' : u.verified === false ? 'Unverified' : null;
 
           return (
             <div key={u.id} className="group flex items-center gap-3 py-2.5 px-4 transition-colors duration-150" style={{ background: sel ? selectedBg : 'transparent', borderBottom: `1px solid ${dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)'}` }} onMouseEnter={(e) => { if (!sel) e.currentTarget.style.background = hoverBg; }} onMouseLeave={(e) => { e.currentTarget.style.background = sel ? selectedBg : 'transparent'; }}>
-              <span className="w-[17px] shrink-0"><Checkbox checked={sel} onChange={() => toggleOne(u.id)} /></span>
+              <span className="w-[17px] shrink-0">{isMutationLocked(u) ? null : <Checkbox checked={sel} onChange={() => toggleOne(u.id)} />}</span>
 
               {/* Avatar + name */}
               <div className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -673,12 +673,14 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
 
               {/* Row actions — visible on hover */}
               <div className="w-[80px] max-sm:w-[28px] flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 max-sm:opacity-100 transition-opacity duration-150">
-                <button onClick={() => openDrawer(u, true)} title="Credit" className="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer border-none p-0 transition-colors duration-150 max-sm:hidden" style={{ background: 'transparent', color: t.accent }} onMouseEnter={e => e.currentTarget.style.background = dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                  <CreditIcon />
-                </button>
-                <button onClick={() => { const link = waLink(u); if (link) window.open(link, '_blank'); else toast.info('No WhatsApp', `${name} hasn't added a phone number`); }} title="WhatsApp" className="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer border-none p-0 transition-colors duration-150 max-sm:hidden" style={{ background: 'transparent', color: '#25d366' }} onMouseEnter={e => e.currentTarget.style.background = dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                  <WAIcon />
-                </button>
+                {!isMutationLocked(u) && <>
+                  <button onClick={() => openDrawer(u, true)} title="Credit" className="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer border-none p-0 transition-colors duration-150 max-sm:hidden" style={{ background: 'transparent', color: t.accent }} onMouseEnter={e => e.currentTarget.style.background = dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <CreditIcon />
+                  </button>
+                  <button onClick={() => { const link = waLink(u); if (link) window.open(link, '_blank'); else toast.info('No WhatsApp', `${name} hasn't added a phone number`); }} title="WhatsApp" className="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer border-none p-0 transition-colors duration-150 max-sm:hidden" style={{ background: 'transparent', color: '#25d366' }} onMouseEnter={e => e.currentTarget.style.background = dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <WAIcon />
+                  </button>
+                </>}
                 <button onClick={(e) => openMenu(e, u)} title="More" className="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer border-none p-0 transition-colors duration-150" style={{ background: 'transparent', color: t.textMuted }} onMouseEnter={e => e.currentTarget.style.background = dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                   <MoreIcon />
                 </button>
@@ -719,16 +721,17 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
         <div ref={menuRef} className="fixed z-[1000] rounded-xl py-1.5 shadow-lg" style={{ ...(menuPos.top != null ? { top: menuPos.top } : { bottom: menuPos.bottom }), right: menuPos.right, width: 150, background: dark ? '#1a1e2e' : '#fff', border: `1px solid ${t.cardBorder}` }}>
           {[
             { label: 'View profile', action: () => openDrawer(menuUser) },
-            { label: 'Credit wallet', action: () => openDrawer(menuUser, true) },
+            { label: 'Credit wallet', hidden: isMutationLocked(menuUser), action: () => openDrawer(menuUser, true) },
             { label: 'Transactions', action: () => openDrawer(menuUser) },
-            { label: 'WhatsApp', action: () => { const link = waLink(menuUser); if (link) window.open(link, '_blank'); else toast.info('No WhatsApp', `${displayName(menuUser)} hasn't added a phone number`); setMenuUser(null); } },
-            { sep: true },
+            { label: 'WhatsApp', hidden: isMutationLocked(menuUser), action: () => { const link = waLink(menuUser); if (link) window.open(link, '_blank'); else toast.info('No WhatsApp', `${displayName(menuUser)} hasn't added a phone number`); setMenuUser(null); } },
+            { sep: true, hidden: !menuUser.canReinstate && !['Active', 'Suspended'].includes(menuUser.status) },
             {
-              label: isDeleted(menuUser) ? 'Restore account' : menuUser.status === 'Active' ? 'Ban user' : 'Activate user',
-              danger: menuUser.status === 'Active' && !isDeleted(menuUser),
+              label: menuUser.canReinstate ? 'Restore account' : menuUser.status === 'Active' ? 'Ban user' : 'Activate user',
+              hidden: !menuUser.canReinstate && !['Active', 'Suspended'].includes(menuUser.status),
+              danger: menuUser.status === 'Active',
               action: () => { handleStatusAction(menuUser); setMenuUser(null); },
             },
-          ].map((item, i) => item.sep ? (
+          ].filter(item => !item.hidden).map((item, i) => item.sep ? (
             <div key={i} className="my-1.5 mx-3" style={{ height: 1, background: t.cardBorder }} />
           ) : (
             <button key={i} onClick={item.action} className="w-full text-left py-2 px-3 text-[13px] font-medium cursor-pointer font-[inherit] border-none transition-colors duration-150 whitespace-nowrap" style={{ background: 'transparent', color: item.danger ? t.red : t.text }} onMouseEnter={e => e.currentTarget.style.background = dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.03)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
@@ -775,7 +778,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <div className="text-[17px] font-bold truncate" style={{ color: t.text }}>{displayName(drawerUser)}</div>
-                    {canEdit && <button onClick={startEditing} className="shrink-0 w-6 h-6 rounded flex items-center justify-center cursor-pointer border-none p-0" style={{ background: dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)', color: t.textMuted }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>}
+                    {canEdit && !isMutationLocked(drawerUser) && <button onClick={startEditing} className="shrink-0 w-6 h-6 rounded flex items-center justify-center cursor-pointer border-none p-0" style={{ background: dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)', color: t.textMuted }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>}
                   </div>
                   <div className="text-[13px] truncate" style={{ color: t.textMuted }}>{displayEmail(drawerUser)}</div>
                   {drawerUser.phone && <div className="text-[12px] truncate" style={{ color: t.textMuted }}>{drawerUser.phone}</div>}
@@ -804,11 +807,11 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
 
               {/* Action buttons */}
               <div className="flex gap-2">
-                <button onClick={() => setDrawerCreditOpen(!drawerCreditOpen)} className="flex-1 py-2 rounded-lg text-[12px] font-semibold cursor-pointer font-[inherit] border-none flex items-center justify-center gap-1.5" style={{ background: accentGrad, color: '#fff' }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Credit</button>
-                <button onClick={() => { const link = waLink(drawerUser); if (link) window.open(link, '_blank'); else toast.info('No WhatsApp', `${displayName(drawerUser)} hasn't added a phone number`); }} className="flex-1 py-2 rounded-lg text-[12px] font-semibold cursor-pointer font-[inherit] border-none flex items-center justify-center gap-1.5" style={{ background: dark ? 'rgba(37,211,102,.15)' : 'rgba(37,211,102,.1)', color: '#25d366' }}><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>WhatsApp</button>
-                <button onClick={() => handleStatusAction(drawerUser)} className="flex-1 py-2 rounded-lg text-[12px] font-semibold cursor-pointer font-[inherit] border-none flex items-center justify-center gap-1.5" style={{ background: dark ? 'rgba(252,165,165,.1)' : 'rgba(220,38,38,.06)', color: t.red }}>
-                  {isDeleted(drawerUser) ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>Restore</> : drawerUser.status === 'Active' ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Ban</> : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Activate</>}
-                </button>
+                {!isMutationLocked(drawerUser) && <button onClick={() => setDrawerCreditOpen(!drawerCreditOpen)} className="flex-1 py-2 rounded-lg text-[12px] font-semibold cursor-pointer font-[inherit] border-none flex items-center justify-center gap-1.5" style={{ background: accentGrad, color: '#fff' }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Credit</button>}
+                {!isMutationLocked(drawerUser) && <button onClick={() => { const link = waLink(drawerUser); if (link) window.open(link, '_blank'); else toast.info('No WhatsApp', `${displayName(drawerUser)} hasn't added a phone number`); }} className="flex-1 py-2 rounded-lg text-[12px] font-semibold cursor-pointer font-[inherit] border-none flex items-center justify-center gap-1.5" style={{ background: dark ? 'rgba(37,211,102,.15)' : 'rgba(37,211,102,.1)', color: '#25d366' }}><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>WhatsApp</button>}
+                {(drawerUser.canReinstate || ['Active', 'Suspended'].includes(drawerUser.status)) && <button onClick={() => handleStatusAction(drawerUser)} className="flex-1 py-2 rounded-lg text-[12px] font-semibold cursor-pointer font-[inherit] border-none flex items-center justify-center gap-1.5" style={{ background: dark ? 'rgba(252,165,165,.1)' : 'rgba(220,38,38,.06)', color: t.red }}>
+                  {drawerUser.canReinstate ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>Restore</> : drawerUser.status === 'Active' ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Ban</> : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Activate</>}
+                </button>}
               </div>
             </div>
 
@@ -864,6 +867,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
                           ['restored_refund', 'Restored', t.green],
                           ['manual_credit', 'Credited', t.accent],
                           ['manual_debit', 'Debited', t.red],
+                          ['account_closure', 'Closed', t.textMuted],
                         ].filter(([type]) => rewards.totals[type]).map(([type, label, color]) => (
                           <span key={type} style={{ color }}>{label}: <span className="font-bold" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{fPts(Math.abs(pointsFromKoboExact(rewards.totals[type].kobo || 0)))}</span></span>
                         ))}
@@ -895,7 +899,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
             </div>
 
             {/* Points adjustment */}
-            {canAdjustPoints && rewards && (
+            {canAdjustPoints && rewards && !isMutationLocked(drawerUser) && (
               <div className="mx-6 mb-4">
                 {!ptsAdjOpen ? (
                   <button onClick={() => setPtsAdjOpen(true)} className="w-full py-2 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] border-none" style={{ background: dark ? 'rgba(251,191,36,.1)' : 'rgba(217,119,6,.06)', color: t.amber }}>Adjust Points</button>
@@ -920,7 +924,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
             )}
 
             {/* Credit form */}
-            {drawerCreditOpen && (
+            {drawerCreditOpen && !isMutationLocked(drawerUser) && (
               <div className="mx-6 mb-4 p-4 rounded-xl" style={cardStyle}>
                 <div className="flex rounded-lg overflow-hidden mb-3" style={{ border: `1px solid ${t.cardBorder}` }}>
                   {[['credit', 'Payment'], ['gift', 'Gift']].map(([val, label]) => (

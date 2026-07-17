@@ -605,7 +605,19 @@ function AdminDashboardInner({ initialData }) {
     return () => { stop(); };
   }, [redirecting]);
 
-  const handleLogout = async () => { try { await fetch("/api/auth/admin/logout", { method: "POST" }); } catch {} window.location.replace("/admin/login?logout=1"); };
+  const handleLogout = async () => {
+    try {
+      const res = await fetch("/api/auth/admin/logout", { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toastRef.current?.error("Logout failed", data.error || "Please try again.");
+        return;
+      }
+      window.location.replace("/admin/login?logout=1");
+    } catch {
+      toastRef.current?.error("Logout failed", "Please check your connection and try again.");
+    }
+  };
 
   const t = useMemo(() => ({
     bg: dark ? "#080b14" : "#f4f1ed",
