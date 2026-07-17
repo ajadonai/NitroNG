@@ -211,6 +211,23 @@ export async function POST(req) {
       return Response.json({ success: true, tier: updated });
     }
 
+    if (action === 'swap-tier-order') {
+      const { tierA, tierB } = body;
+      if (!tierA || !tierB) return Response.json({ error: 'Two tier IDs required' }, { status: 400 });
+      const [a, b] = await Promise.all([
+        prisma.serviceTier.findUnique({ where: { id: tierA } }),
+        prisma.serviceTier.findUnique({ where: { id: tierB } }),
+      ]);
+      if (!a || !b) return Response.json({ error: 'Tier not found' }, { status: 404 });
+      await prisma.$transaction([
+        prisma.serviceTier.update({ where: { id: tierA }, data: { sortOrder: b.sortOrder } }),
+        prisma.serviceTier.update({ where: { id: tierB }, data: { sortOrder: a.sortOrder } }),
+      ]);
+      await logActivity(admin.name, `Reordered tiers in group`, 'service');
+      invalidateServiceCatalogue();
+      return Response.json({ success: true });
+    }
+
     if (action === 'delete-tier') {
       const { tierIdToDelete } = body;
       if (!tierIdToDelete) return Response.json({ error: 'Tier ID required' }, { status: 400 });
