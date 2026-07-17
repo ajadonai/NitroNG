@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   txTransactionCreate: vi.fn(),
   txUserUpdate: vi.fn(),
   txSessionDeleteMany: vi.fn(),
+  txDripDispatchUpdateMany: vi.fn(),
   txQueryRaw: vi.fn(),
   logError: vi.fn(),
 }));
@@ -31,6 +32,7 @@ const tx = {
   transaction: { create: (...args) => mocks.txTransactionCreate(...args) },
   user: { update: (...args) => mocks.txUserUpdate(...args) },
   session: { deleteMany: (...args) => mocks.txSessionDeleteMany(...args) },
+  dripDispatch: { updateMany: (...args) => mocks.txDripDispatchUpdateMany(...args) },
 };
 
 const mockPrisma = {

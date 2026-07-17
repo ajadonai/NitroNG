@@ -1406,17 +1406,21 @@ function FinanceBreakdownTab({ dark, t, admin }) {
       {/* Record Top-up */}
       <div className="rounded-[14px] py-3.5 px-4 mb-5" style={{ background: cardBg, border: `0.5px solid ${cardBorder}` }}>
         <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-3" style={{ color: subText }}>Record Provider Top-up</div>
-        <div className="flex gap-2 flex-wrap items-end">
-          <select value={topupProvider} onChange={e => setTopupProvider(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }}>
-            <option value="dao">DaoSMM</option>
-            <option value="mtp">MTP</option>
-            <option value="jap">JAP</option>
-          </select>
-          <input type="number" placeholder="Amount (₦)" value={topupAmount} onChange={e => setTopupAmount(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] w-32 outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }} />
-          <input type="text" placeholder="Note (optional)" value={topupNote} onChange={e => setTopupNote(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] flex-1 min-w-[120px] outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }} />
-          <button onClick={handleTopup} disabled={topupSaving || !topupAmount} className="h-9 px-4 rounded-lg text-[13px] font-semibold text-white" style={{ background: t.accent, opacity: topupSaving || !topupAmount ? 0.5 : 1 }}>
-            {topupSaving ? "Saving..." : "Record"}
-          </button>
+        <div className="flex gap-2 items-end flex-wrap max-sm:flex-col max-sm:items-stretch">
+          <div className="flex gap-2 items-end">
+            <select value={topupProvider} onChange={e => setTopupProvider(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }}>
+              <option value="dao">DaoSMM</option>
+              <option value="mtp">MTP</option>
+              <option value="jap">JAP</option>
+            </select>
+            <input type="number" placeholder="Amount (₦)" value={topupAmount} onChange={e => setTopupAmount(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] w-32 outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }} />
+          </div>
+          <div className="flex gap-2 items-end flex-1 min-w-0">
+            <input type="text" placeholder="Note (optional)" value={topupNote} onChange={e => setTopupNote(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] flex-1 min-w-0 outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }} />
+            <button onClick={handleTopup} disabled={topupSaving || !topupAmount} className="h-9 px-4 rounded-lg text-[13px] font-semibold text-white shrink-0" style={{ background: t.accent, opacity: topupSaving || !topupAmount ? 0.5 : 1 }}>
+              {topupSaving ? "Saving..." : "Record"}
+            </button>
+          </div>
         </div>
       </div>
 

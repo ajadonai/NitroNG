@@ -6,7 +6,6 @@ import { cancelOrder, isProviderConfigured } from '@/lib/smm';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import bcrypt from 'bcryptjs';
 import { tgUserDeletionRequested } from '@/lib/telegram';
-import { reverseOrderPoints, computeRefundSplit } from '@/lib/nitro-rewards';
 
 export async function POST(req) {
   try {
@@ -34,7 +33,7 @@ export async function POST(req) {
 
     // Cancel active orders on providers (best-effort, before transaction)
     const activeOrders = await prisma.order.findMany({
-      where: { userId: user.id, status: { in: ['Pending', 'Processing'] }, deletedAt: null },
+      where: { userId: user.id, status: { in: ['Pending', 'Processing', 'Dispatching', 'In progress'] }, deletedAt: null },
       include: { service: { select: { provider: true } } },
     });
     for (const order of activeOrders) {
@@ -44,8 +43,8 @@ export async function POST(req) {
       }
     }
 
-    // Atomic: claim active orders, refund, mark deletion, clear sessions
-    const totalRefund = await prisma.$transaction(async (tx) => {
+    // Atomic: cancel active orders (no refund), mark deletion, clear sessions
+    await prisma.$transaction(async (tx) => {
       // Serialize deletion against order placement. Order creation acquires the
       // same user-row lock through deductBalance, so a request that won first is
       // visible below and a request that lost can no longer spend afterward.
@@ -56,36 +55,24 @@ export async function POST(req) {
         throw new Error('ACCOUNT_STATE_CHANGED');
       }
 
-      const claimable = await tx.order.findMany({
-        where: { userId: user.id, status: { in: ['Pending', 'Processing'] }, deletedAt: null },
-        select: { id: true, orderId: true, charge: true, nitroPointsRedeemedKobo: true },
+      // Cancel all ongoing orders without refunding — the provider has already
+      // been charged, so refunding would let a reactivated user double-dip.
+      const ongoingStatuses = ['Pending', 'Processing', 'Dispatching', 'In progress'];
+      await tx.order.updateMany({
+        where: { userId: user.id, status: { in: ongoingStatuses }, deletedAt: null },
+        data: { status: 'Cancelled' },
       });
-      let refund = 0;
-      for (const order of claimable) {
-        const claimed = await tx.order.updateMany({
-          where: { id: order.id, status: { in: ['Pending', 'Processing'] } },
-          data: { status: 'Cancelled' },
-        });
-        if (claimed.count > 0) {
-          const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, order.charge);
-          if (walletRefund > 0) {
-            refund += walletRefund;
-            await tx.transaction.create({
-              data: { userId: user.id, type: 'refund', amount: walletRefund, status: 'Completed', reference: `REF-${order.orderId}`, note: `Refund — account deletion (order ${order.orderId})` },
-            });
-          }
-          await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: order.charge });
-        }
-      }
-      if (refund > 0) {
-        await tx.user.update({ where: { id: user.id }, data: { balance: { increment: refund } } });
-      }
+
+      // Cancel all pending drip dispatches so they don't fire after deletion
+      await tx.dripDispatch.updateMany({
+        where: { order: { userId: user.id }, status: 'pending' },
+        data: { status: 'cancelled' },
+      });
       await tx.user.update({
         where: { id: user.id },
         data: { status: 'PendingDeletion', deletedAt: deletionDate, deletedName: user.name, deletedEmail: user.email },
       });
       await tx.session.deleteMany({ where: { userId: user.id } });
-      return refund;
     });
 
     // Count user stats for admin email
@@ -100,8 +87,7 @@ export async function POST(req) {
     const rows = emailRow('User ID', user.id)
       + emailRow('Balance', '₦' + (user.balance / 100).toLocaleString(), '#059669')
       + emailRow('Total Orders', orderCount)
-      + emailRow('Active Orders', activeOrderCount + (activeOrderCount > 0 ? ' (cancelled + refunded)' : ''), activeOrderCount > 0 ? '#dc2626' : '#333')
-      + emailRow('Refunded', '₦' + (totalRefund / 100).toLocaleString(), totalRefund > 0 ? '#dc2626' : '#333')
+      + emailRow('Active Orders', activeOrderCount + (activeOrderCount > 0 ? ' (cancelled, no refund)' : ''), activeOrderCount > 0 ? '#dc2626' : '#333')
       + emailRow('Total Spent', '₦' + ((totalSpent._sum.amount || 0) / 100).toLocaleString())
       + emailRow('Signed Up', user.createdAt.toLocaleDateString('en-NG'));
     const adminHtml = await emailWrap({
