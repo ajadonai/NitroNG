@@ -8,6 +8,7 @@ import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { tgRefund, tgOrderCancelled, tgRefundAlert } from '@/lib/telegram';
 import { createCommission, voidCommissions } from '@/lib/commissions';
 import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo, awardPointsOnCompletion } from '@/lib/nitro-rewards';
+import { findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
 
 // Polls provider APIs for order status updates
 // Auto-refunds failed/cancelled orders
@@ -257,37 +258,63 @@ export async function GET(req) {
     stats.retried = 0;
     stats.retryPlaced = 0;
     try {
-      const retryable = await prisma.order.findMany({
-        where: {
-          status: 'Pending', apiOrderId: null, dripDays: null,
-          retryCount: { lt: 5 },
-          createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-          OR: [
-            { dispatchedAt: null },
-            { dispatchedAt: { lt: new Date(Date.now() - 15 * 60 * 1000) } },
-          ],
-        },
-        include: { service: true, tier: { include: { group: true } } },
-        take: 50, orderBy: { createdAt: 'asc' },
-      });
+      const directRetryBase = {
+        status: 'Pending', apiOrderId: null, dripDays: null, deletedAt: null,
+        dripDispatches: { none: {} },
+        OR: [
+          { dispatchedAt: null },
+          { dispatchedAt: { lt: new Date(Date.now() - 15 * 60 * 1000) } },
+        ],
+      };
+      const retryInclude = { service: true, tier: { include: { group: true } } };
+      const [recentRetryable, queuedRetryable, providerWaitingRetryable] = await Promise.all([
+        prisma.order.findMany({
+          where: {
+            ...directRetryBase,
+            retryCount: { lt: 5 },
+            queuedBehind: null,
+            createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+          },
+          include: retryInclude,
+          take: 50, orderBy: { createdAt: 'asc' },
+        }),
+        prisma.order.findMany({
+          where: { ...directRetryBase, queuedBehind: { not: null } },
+          include: retryInclude,
+          take: 50, orderBy: { createdAt: 'asc' },
+        }),
+        prisma.order.findMany({
+          where: { ...directRetryBase, lastError: PROVIDER_ACTIVE_WAIT },
+          include: retryInclude,
+          take: 50, orderBy: { createdAt: 'asc' },
+        }),
+      ]);
+      const retryable = [...new Map(
+        [...recentRetryable, ...queuedRetryable, ...providerWaitingRetryable].map(order => [order.id, order]),
+      ).values()].sort((a, b) => a.createdAt - b.createdAt).slice(0, 50);
 
       for (const order of retryable) {
-        // Skip if same service + link has an active order on the provider (queued duplicate)
-        if (order.link && order.serviceId) {
-          const blocking = await prisma.order.findFirst({
-            where: { serviceId: order.serviceId, link: order.link, status: { in: ['Pending', 'Processing', 'In progress'] }, apiOrderId: { not: null }, id: { not: order.id }, deletedAt: null },
-            select: { orderId: true },
-          });
-          if (blocking) {
-            if (order.queuedBehind !== blocking.orderId) {
-              await prisma.order.update({ where: { id: order.id }, data: { queuedBehind: blocking.orderId } }).catch(() => {});
-            }
-            continue;
+        // Preserve FIFO across direct and drip orders for the same service/link.
+        const blocking = await findSameLinkDispatchBlocker(prisma, order);
+        if (blocking) {
+          if (order.queuedBehind !== blocking.orderId) {
+            await prisma.order.updateMany({
+              where: { id: order.id, status: 'Pending', apiOrderId: null },
+              data: { queuedBehind: blocking.orderId },
+            }).catch(() => {});
           }
+          continue;
         }
 
         const claimed = await prisma.order.updateMany({
-          where: { id: order.id, status: 'Pending', apiOrderId: null },
+          where: {
+            id: order.id,
+            status: 'Pending',
+            apiOrderId: null,
+            dripDays: null,
+            dripDispatches: { none: {} },
+            queuedBehind: order.queuedBehind || null,
+          },
           data: { status: 'Dispatching', dispatchedAt: new Date(), queuedBehind: null },
         });
         if (claimed.count === 0) continue;
@@ -298,16 +325,26 @@ export async function GET(req) {
           if (apiOrderId) {
             stats.retryPlaced++;
           } else {
-            await prisma.order.update({ where: { id: order.id }, data: { status: 'Pending', retryCount: { increment: 1 } } });
+            await prisma.order.updateMany({
+              where: { id: order.id, status: 'Dispatching', apiOrderId: null },
+              data: { status: 'Pending', retryCount: { increment: 1 } },
+            });
           }
         } catch (err) {
-          const isTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(err.message);
+          if (isActiveOrderConflict(err)) {
+            const currentBlocker = await findSameLinkDispatchBlocker(prisma, order);
+            await prisma.order.updateMany({
+              where: { id: order.id, status: 'Dispatching', apiOrderId: null },
+              data: { status: 'Pending', dispatchedAt: null, queuedBehind: currentBlocker?.orderId || null, lastError: PROVIDER_ACTIVE_WAIT, retryCount: 0 },
+            });
+            continue;
+          }
           const isDuplicate = /duplicate/i.test(err.message);
           const hadTimeout = (order.lastError || '').startsWith('[TIMEOUT]');
 
           if (isDuplicate && hadTimeout) {
-            await prisma.order.update({
-              where: { id: order.id },
+            await prisma.order.updateMany({
+              where: { id: order.id, status: 'Dispatching', apiOrderId: null },
               data: { status: 'Pending', retryCount: 5, lastError: '[DUPLICATE] Provider has this order from a previous timed-out dispatch — check provider dashboard' },
             });
             prisma.adminIssue.create({
@@ -315,8 +352,8 @@ export async function GET(req) {
             }).catch(() => {});
             log.warn(`Cron retry ${order.orderId}`, `Duplicate after timeout — flagged for admin review`);
           } else {
-            await prisma.order.update({
-              where: { id: order.id },
+            await prisma.order.updateMany({
+              where: { id: order.id, status: 'Dispatching', apiOrderId: null },
               data: {
                 status: 'Dispatching',
                 retryCount: { increment: 1 },
@@ -366,12 +403,27 @@ export async function GET(req) {
     // Auto-refund permanently failed orders
     stats.autoRefunded = 0;
     try {
+      const exhaustedRetryCutoff = new Date(Date.now() - 6 * 60 * 60 * 1000);
+      const absoluteStaleCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const stale = await prisma.order.findMany({
         where: {
           status: 'Pending', apiOrderId: null, deletedAt: null,
-          OR: [
-            { retryCount: { gte: 5 }, createdAt: { lt: new Date(Date.now() - 6 * 60 * 60 * 1000) } },
-            { createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+          queuedBehind: null,
+          dripDays: null,
+          dripDispatches: { none: {} },
+          AND: [
+            {
+              OR: [
+                { retryCount: { gte: 5 }, createdAt: { lt: exhaustedRetryCutoff } },
+                { createdAt: { lt: absoluteStaleCutoff } },
+              ],
+            },
+            {
+              OR: [
+                { lastError: null },
+                { lastError: { not: PROVIDER_ACTIVE_WAIT } },
+              ],
+            },
           ],
         },
         take: 100,
@@ -379,12 +431,37 @@ export async function GET(req) {
 
       for (const order of stale) {
         try {
-          await prisma.$transaction(async (tx) => {
+          const claimed = await prisma.$transaction(async (tx) => {
             const claimed = await tx.order.updateMany({
-              where: { id: order.id, status: 'Pending', apiOrderId: null },
+              where: {
+                id: order.id,
+                status: 'Pending',
+                apiOrderId: null,
+                deletedAt: null,
+                queuedBehind: null,
+                dripDays: null,
+                dripDispatches: { none: {} },
+                // Any admin retry or concurrent edit advances @updatedAt and
+                // invalidates this stale snapshot before money can move.
+                updatedAt: order.updatedAt,
+                AND: [
+                  {
+                    OR: [
+                      { retryCount: { gte: 5 }, createdAt: { lt: exhaustedRetryCutoff } },
+                      { createdAt: { lt: absoluteStaleCutoff } },
+                    ],
+                  },
+                  {
+                    OR: [
+                      { lastError: null },
+                      { lastError: { not: PROVIDER_ACTIVE_WAIT } },
+                    ],
+                  },
+                ],
+              },
               data: { status: 'Cancelled', lastError: 'dispatch_failed', refundedAt: new Date() },
             });
-            if (claimed.count === 0) return;
+            if (claimed.count === 0) return false;
             const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, order.charge);
             if (walletRefund > 0) {
               await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
@@ -393,7 +470,9 @@ export async function GET(req) {
               });
             }
             await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: order.charge });
+            return true;
           });
+          if (!claimed) continue;
           stats.autoRefunded++;
           tgRefund(order.orderId, order.charge, 'dispatch_failed');
           tgRefundAlert({ orderId: order.orderId, amount: order.charge, charge: order.charge, qty: order.quantity, status: 'Cancelled', reason: 'dispatch_failed', source: 'auto' });

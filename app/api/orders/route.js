@@ -14,6 +14,7 @@ import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/l
 import { buildOrderDisplayGroups } from '@/lib/order-history';
 import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints, reverseOrderPoints, getPointsBalanceKoboTx, computeRefundSplit, MIN_REDEEM_POINTS } from '@/lib/nitro-rewards';
 import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer-display';
+import { findOpenSameLinkOrder, findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -272,9 +273,10 @@ export async function PATCH(req) {
       }
       const reorderSnapshot = buildOrderOfferSnapshot({ tier: order.tier, service: order.service });
 
-      const reorderActiveForLink = await prisma.order.findFirst({
-        where: { serviceId: order.serviceId, link: order.link, status: { in: ['Pending', 'Processing', 'In progress'] }, deletedAt: null },
-        select: { orderId: true },
+      const reorderActiveForLink = await findOpenSameLinkOrder(prisma, {
+        serviceId: order.serviceId,
+        link: order.link,
+        excludeOrderId: order.id,
       });
 
       const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
@@ -392,13 +394,32 @@ export async function PATCH(req) {
 
       // Step 2: Place on provider AFTER balance secured (skip in dev / skip if queued)
       let apiOrderId = null;
-      const reorderQueued = !!reorderActiveForLink;
+      let reorderQueued = !!reorderActiveForLink;
+      if (!reorderQueued) {
+        // Re-check after creation. Two simultaneous requests can both observe no
+        // blocker before either transaction inserts its order; FIFO chooses one
+        // winner before any provider request is made.
+        const blocker = await findSameLinkDispatchBlocker(prisma, newOrder);
+        if (blocker) {
+          const held = await prisma.order.updateMany({
+            where: { id: newOrder.id, status: 'Pending', apiOrderId: null, deletedAt: null },
+            data: { queuedBehind: blocker.orderId },
+          });
+          reorderQueued = held.count > 0;
+        }
+      }
       const isDevReorder = process.env.NODE_ENV === 'development';
-      if (isDevReorder) {
+      if (isDevReorder && !reorderQueued) {
         apiOrderId = `DEV-${Date.now()}`;
-        await prisma.order.update({ where: { id: newOrder.id }, data: { apiOrderId, status: 'Processing' } });
+        const recorded = await prisma.order.updateMany({
+          where: { id: newOrder.id, status: 'Pending', apiOrderId: null, queuedBehind: null, deletedAt: null },
+          data: { apiOrderId, status: 'Processing' },
+        });
+        if (recorded.count === 0) {
+          apiOrderId = null;
+          reorderQueued = true;
+        }
       } else if (order.service.apiId && !reorderQueued) {
-        await prisma.order.update({ where: { id: newOrder.id }, data: { dispatchedAt: new Date() } });
         const provider = order.service.provider || 'mtp';
         const extra = {};
         if (order.comments) {
@@ -416,42 +437,110 @@ export async function PATCH(req) {
         }
 
         if (reorderDripSchedule) {
-          await prisma.order.update({ where: { id: newOrder.id }, data: { status: 'Processing' } });
           const first = await prisma.dripDispatch.findFirst({ where: { orderId: newOrder.id, day: 1, batch: 1 } });
           if (first) {
-            try {
+            const batchClaim = await prisma.dripDispatch.updateMany({
+              where: { id: first.id, status: 'pending', order: { status: 'Pending', queuedBehind: null, deletedAt: null } },
+              data: { status: 'dispatching', dispatchedAt: new Date() },
+            });
+            if (batchClaim.count === 0) {
+              reorderQueued = true;
+            } else try {
+              await prisma.order.updateMany({
+                where: { id: newOrder.id, status: 'Pending', deletedAt: null },
+                data: { dispatchedAt: new Date() },
+              });
               const batchExtra = { ...extra };
               if (reorderApiType === 'subscriptions') { batchExtra.min = first.quantity; batchExtra.max = first.quantity; }
-              await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'dispatching', dispatchedAt: new Date() } });
               const provResult = await placeOrder(provider, order.service.apiId, order.link, first.quantity, batchExtra);
               const batchApiId = provResult.order ? String(provResult.order) : null;
               if (batchApiId) {
-                await prisma.dripDispatch.update({ where: { id: first.id }, data: { apiOrderId: batchApiId, status: 'processing' } });
-                await prisma.order.update({ where: { id: newOrder.id }, data: { dripDelivered: 1 } });
-                apiOrderId = batchApiId;
+                const recorded = await prisma.dripDispatch.updateMany({
+                  where: { id: first.id, status: 'dispatching', order: { status: 'Pending', deletedAt: null } },
+                  data: { apiOrderId: batchApiId, status: 'processing' },
+                });
+                if (recorded.count > 0) {
+                  await prisma.order.updateMany({ where: { id: newOrder.id, status: 'Pending', deletedAt: null }, data: { status: 'Processing', dripDelivered: 1, queuedBehind: null } });
+                  apiOrderId = batchApiId;
+                } else {
+                  prisma.adminIssue.create({
+                    data: { type: 'ghost_dispatch', title: `${newOrderId} batch 1: provider accepted after local cancellation`, message: `Provider order ${batchApiId} was created after the local order became terminal. Verify provider state before taking action.`, metadata: JSON.stringify({ orderId: newOrderId, batch: 1, providerOrderId: batchApiId, link: order.link }) },
+                  }).catch(() => {});
+                }
               } else {
-                await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'pending', dispatchedAt: null } });
+                await prisma.dripDispatch.updateMany({
+                  where: { id: first.id, status: 'dispatching', order: { status: 'Pending', deletedAt: null } },
+                  data: { status: 'pending', dispatchedAt: null, lastError: 'no_order_id' },
+                });
               }
             } catch (err) {
               log.error('Reorder drip batch 1', err.message);
               const rmsg = err.message || '';
-              const rIsTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(rmsg);
-              await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: rIsTimeout ? 'failed' : 'pending', lastError: (rIsTimeout ? '[TIMEOUT] ' : '') + rmsg.slice(0, 450), dispatchedAt: rIsTimeout ? undefined : null } }).catch(() => {});
+              if (isActiveOrderConflict(err)) {
+                reorderQueued = true;
+                const blocker = await findSameLinkDispatchBlocker(prisma, newOrder);
+                await prisma.dripDispatch.updateMany({
+                  where: { id: first.id, status: 'dispatching', order: { status: 'Pending', deletedAt: null } },
+                  data: { status: 'pending', lastError: null, dispatchedAt: null, scheduledAt: new Date(Date.now() + 30 * 60 * 1000) },
+                }).catch(() => {});
+                await prisma.order.updateMany({
+                  where: { id: newOrder.id, status: 'Pending', deletedAt: null },
+                  data: { status: 'Pending', queuedBehind: blocker?.orderId || null },
+                }).catch(() => {});
+              } else {
+                const rIsTimeout = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(rmsg);
+                await prisma.dripDispatch.updateMany({
+                  where: { id: first.id, status: 'dispatching', order: { status: 'Pending', deletedAt: null } },
+                  data: { status: rIsTimeout ? 'failed' : 'pending', lastError: (rIsTimeout ? '[TIMEOUT] ' : '') + rmsg.slice(0, 450), dispatchedAt: rIsTimeout ? undefined : null },
+                }).catch(() => {});
+              }
             }
           }
         } else {
-          try {
+          const directClaim = await prisma.order.updateMany({
+            where: { id: newOrder.id, status: 'Pending', apiOrderId: null, queuedBehind: null, deletedAt: null },
+            data: { status: 'Dispatching', dispatchedAt: new Date(), queuedBehind: null },
+          });
+          if (directClaim.count === 0) {
+            reorderQueued = true;
+          } else try {
             if (reorderApiType === 'subscriptions') { extra.min = order.quantity; extra.max = order.quantity; }
             const result = await placeOrder(provider, order.service.apiId, order.link, order.quantity, extra);
             apiOrderId = result.order ? String(result.order) : null;
             if (apiOrderId) {
-              await prisma.order.update({ where: { id: newOrder.id }, data: { apiOrderId, status: 'Processing' } });
+              const recorded = await prisma.order.updateMany({ where: { id: newOrder.id, status: 'Dispatching', apiOrderId: null, deletedAt: null }, data: { apiOrderId, status: 'Processing', lastError: null } });
+              if (recorded.count === 0) {
+                apiOrderId = null;
+                prisma.adminIssue.create({
+                  data: { type: 'ghost_dispatch', title: `${newOrderId}: provider accepted after local cancellation`, message: `Provider order ${String(result.order)} was created after the local order became terminal. Verify provider state before taking action.`, metadata: JSON.stringify({ orderId: newOrderId, providerOrderId: String(result.order), link: order.link }) },
+                }).catch(() => {});
+              }
+            } else {
+              await prisma.order.updateMany({
+                where: { id: newOrder.id, status: 'Dispatching', apiOrderId: null, deletedAt: null },
+                data: { status: 'Pending', dispatchedAt: null, retryCount: { increment: 1 } },
+              });
             }
           } catch (err) {
             log.error('Reorder', err.message);
             const rmsg2 = err.message || '';
-            const rIsTimeout2 = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(rmsg2);
-            try { await prisma.order.update({ where: { id: newOrder.id }, data: { lastError: (rIsTimeout2 ? '[TIMEOUT] ' : '') + rmsg2.slice(0, 450), ...(rIsTimeout2 ? { status: 'Dispatching' } : {}) } }); } catch {}
+            if (isActiveOrderConflict(err)) {
+              reorderQueued = true;
+              const blocker = await findSameLinkDispatchBlocker(prisma, newOrder);
+              try { await prisma.order.updateMany({ where: { id: newOrder.id, status: 'Dispatching', apiOrderId: null }, data: { status: 'Pending', dispatchedAt: null, queuedBehind: blocker?.orderId || null, lastError: PROVIDER_ACTIVE_WAIT, retryCount: 0 } }); } catch {}
+            } else {
+              const rIsTimeout2 = /timed?\s?out|ETIMEDOUT|ECONNABORTED|ECONNRESET|socket hang up|retries failed/i.test(rmsg2);
+              try {
+                await prisma.order.updateMany({
+                  where: { id: newOrder.id, status: 'Dispatching', apiOrderId: null },
+                  data: {
+                    status: rIsTimeout2 ? 'Dispatching' : 'Pending',
+                    dispatchedAt: rIsTimeout2 ? undefined : null,
+                    lastError: (rIsTimeout2 ? '[TIMEOUT] ' : '') + rmsg2.slice(0, 450),
+                  },
+                });
+              } catch {}
+            }
           }
         }
       }
@@ -463,7 +552,7 @@ export async function PATCH(req) {
         ...(reorderQueued ? { queued: true, message: 'Order queued — will start when your current order for this link completes.' } : {}),
         order: {
           id: newOrderId, service: reorderOffer.serviceName, tier: reorderOffer.tierLabel, quantity: order.quantity,
-          charge: charge / 100, status: (apiOrderId || reorderDripSchedule) ? 'Processing' : 'Pending',
+          charge: charge / 100, status: apiOrderId ? 'Processing' : 'Pending',
           ...(reorderLoyaltyDiscount > 0 ? { loyaltyDiscount: reorderLoyaltyDiscount / 100, loyaltyTier: reorderNitroTier?.name } : {}),
           ...(reorderPromoDiscount > 0 ? { promoDiscount: reorderPromoDiscount / 100, promoPercent: reorderPromoPercent, promoLabel: reorderPromoLabel } : {}),
         },
@@ -724,9 +813,9 @@ export async function POST(req) {
     qty = Math.floor(Number(quantity));
 
     // Check for active order on same service + link (providers reject duplicates)
-    const activeForLink = await prisma.order.findFirst({
-      where: { serviceId: service.id, link: trimmedLink, status: { in: ['Pending', 'Processing', 'In progress'] }, deletedAt: null },
-      select: { orderId: true },
+    const activeForLink = await findOpenSameLinkOrder(prisma, {
+      serviceId: service.id,
+      link: trimmedLink,
     });
 
     // Generate order ID
@@ -771,9 +860,9 @@ export async function POST(req) {
             }
           }
           const walletCharge = charge - pointsDiscountKobo;
-          if (walletCharge > 0) {
-            await deductBalance(tx, session.id, walletCharge);
-          }
+          // A zero wallet charge still acquires the active-user row fence. This
+          // prevents a points-only order racing past an account-deletion claim.
+          await deductBalance(tx, session.id, walletCharge);
           const order = await tx.order.create({
             data: {
               orderId,
@@ -850,11 +939,30 @@ export async function POST(req) {
 
     // Step 2: Place on provider AFTER balance is secured (skip in dev / skip if queued)
     let apiOrderId = null;
-    const queued = !!activeForLink;
+    let queued = !!activeForLink;
+    if (!queued) {
+      // Close the pre-insert race between simultaneous same-link orders. The
+      // deterministic FIFO blocker makes only the oldest row eligible to claim.
+      const blocker = await findSameLinkDispatchBlocker(prisma, result);
+      if (blocker) {
+        const held = await prisma.order.updateMany({
+          where: { id: result.id, status: 'Pending', apiOrderId: null, deletedAt: null },
+          data: { queuedBehind: blocker.orderId },
+        });
+        queued = held.count > 0;
+      }
+    }
     const isDev = process.env.NODE_ENV === 'development';
-    if (isDev) {
+    if (isDev && !queued) {
       apiOrderId = `DEV-${Date.now()}`;
-      await prisma.order.update({ where: { id: result.id }, data: { apiOrderId, status: 'Processing' } });
+      const recorded = await prisma.order.updateMany({
+        where: { id: result.id, status: 'Pending', apiOrderId: null, queuedBehind: null, deletedAt: null },
+        data: { apiOrderId, status: 'Processing' },
+      });
+      if (recorded.count === 0) {
+        apiOrderId = null;
+        queued = true;
+      }
     } else if (service.apiId && !queued) {
       const provider = service.provider || 'mtp';
       const extra = {};
@@ -873,21 +981,35 @@ export async function POST(req) {
 
       if (dripSchedule) {
         // Drip: dispatch batch 1 immediately, cron handles the rest
-        await prisma.order.update({ where: { id: result.id }, data: { status: 'Processing', dispatchedAt: new Date() } });
+        await prisma.order.updateMany({ where: { id: result.id, status: 'Pending', queuedBehind: null, deletedAt: null }, data: { dispatchedAt: new Date() } });
         const first = await prisma.dripDispatch.findFirst({ where: { orderId: result.id, day: 1, batch: 1 } });
         if (first) {
-          try {
+          const firstClaim = await prisma.dripDispatch.updateMany({
+            where: { id: first.id, status: 'pending', order: { status: 'Pending', queuedBehind: null, deletedAt: null } },
+            data: { status: 'dispatching', dispatchedAt: new Date() },
+          });
+          if (firstClaim.count === 0) {
+            queued = true;
+          } else try {
             const batchExtra = { ...extra };
             if (apiType === 'subscriptions') { batchExtra.min = first.quantity; batchExtra.max = first.quantity; }
-            await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'dispatching', dispatchedAt: new Date() } });
             const provResult = await placeOrder(provider, service.apiId, trimmedLink, first.quantity, batchExtra);
             const batchApiId = provResult.order ? String(provResult.order) : null;
             if (batchApiId) {
-              await prisma.dripDispatch.update({ where: { id: first.id }, data: { apiOrderId: batchApiId, status: 'processing' } });
-              await prisma.order.update({ where: { id: result.id }, data: { dripDelivered: 1 } });
-              apiOrderId = batchApiId;
+              const recorded = await prisma.dripDispatch.updateMany({
+                where: { id: first.id, status: 'dispatching', order: { status: 'Pending', deletedAt: null } },
+                data: { apiOrderId: batchApiId, status: 'processing' },
+              });
+              if (recorded.count > 0) {
+                await prisma.order.updateMany({ where: { id: result.id, status: 'Pending', deletedAt: null }, data: { status: 'Processing', dripDelivered: 1, queuedBehind: null } });
+                apiOrderId = batchApiId;
+              } else {
+                prisma.adminIssue.create({
+                  data: { type: 'ghost_dispatch', title: `${orderId} batch 1: provider accepted after local cancellation`, message: `Provider order ${batchApiId} was created after the local order became terminal. Verify provider state before taking action.`, metadata: JSON.stringify({ orderId, batch: 1, providerOrderId: batchApiId, link: trimmedLink }) },
+                }).catch(() => {});
+              }
             } else {
-              await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'failed', lastError: 'no_order_id' } });
+              await prisma.dripDispatch.updateMany({ where: { id: first.id, status: 'dispatching', order: { status: 'Pending', deletedAt: null } }, data: { status: 'failed', lastError: 'no_order_id' } });
             }
           } catch (err) {
             log.error('Drip batch 1', err.message);
@@ -907,18 +1029,49 @@ export async function POST(req) {
                 return Response.json({ error: 'This service is temporarily unavailable. You have been refunded.' }, { status: 409 });
               } catch (refundErr) { log.error('Drip auto-refund', refundErr.message); }
             }
-            try { await prisma.dripDispatch.update({ where: { id: first.id }, data: { status: 'failed', lastError: msg.slice(0, 450) } }); } catch {}
+            if (isActiveOrderConflict(err)) {
+              queued = true;
+              const blocker = await findSameLinkDispatchBlocker(prisma, result);
+              try {
+                await prisma.dripDispatch.updateMany({
+                  where: { id: first.id, status: 'dispatching', order: { status: 'Pending', deletedAt: null } },
+                  data: { status: 'pending', lastError: null, dispatchedAt: null, scheduledAt: new Date(Date.now() + 30 * 60 * 1000) },
+                });
+                await prisma.order.updateMany({
+                  where: { id: result.id, status: 'Pending', deletedAt: null },
+                  data: { status: 'Pending', dispatchedAt: null, queuedBehind: blocker?.orderId || null },
+                });
+              } catch {}
+            } else {
+              try { await prisma.dripDispatch.updateMany({ where: { id: first.id, status: 'dispatching', order: { status: 'Pending', deletedAt: null } }, data: { status: 'failed', lastError: msg.slice(0, 450) } }); } catch {}
+            }
           }
         }
       } else {
         // Direct dispatch (no drip)
-        try {
+        const directClaim = await prisma.order.updateMany({
+          where: { id: result.id, status: 'Pending', apiOrderId: null, queuedBehind: null, deletedAt: null },
+          data: { status: 'Dispatching', dispatchedAt: new Date(), queuedBehind: null },
+        });
+        if (directClaim.count === 0) {
+          queued = true;
+        } else try {
           if (apiType === 'subscriptions') { extra.min = qty; extra.max = qty; }
-          await prisma.order.update({ where: { id: result.id }, data: { dispatchedAt: new Date() } });
           const provResult = await placeOrder(provider, service.apiId, trimmedLink, qty, extra);
           apiOrderId = provResult.order ? String(provResult.order) : null;
           if (apiOrderId) {
-            await prisma.order.update({ where: { id: result.id }, data: { apiOrderId, status: 'Processing' } });
+            const recorded = await prisma.order.updateMany({
+              where: { id: result.id, status: 'Dispatching', apiOrderId: null, deletedAt: null },
+              data: { apiOrderId, status: 'Processing', lastError: null },
+            });
+            if (recorded.count === 0) {
+              apiOrderId = null;
+              prisma.adminIssue.create({
+                data: { type: 'ghost_dispatch', title: `${orderId}: provider accepted after local cancellation`, message: `Provider order ${String(provResult.order)} was created after the local order became terminal. Verify provider state before taking action.`, metadata: JSON.stringify({ orderId, providerOrderId: String(provResult.order), link: trimmedLink }) },
+              }).catch(() => {});
+            }
+          } else {
+            await prisma.order.updateMany({ where: { id: result.id, status: 'Dispatching', apiOrderId: null }, data: { status: 'Pending', dispatchedAt: null } });
           }
         } catch (err) {
         log.error('Order Place', err.message);
@@ -966,7 +1119,13 @@ export async function POST(req) {
             return Response.json({ error: 'This service is temporarily unavailable. You have been refunded.' }, { status: 409 });
           } catch (refundErr) { log.error('Order auto-refund', refundErr.message); }
         }
-          try { await prisma.order.update({ where: { id: result.id }, data: { status: 'Dispatching', lastError: msg.slice(0, 450) } }); } catch {}
+          if (isActiveOrderConflict(err)) {
+            queued = true;
+            const blocker = await findSameLinkDispatchBlocker(prisma, result);
+            try { await prisma.order.updateMany({ where: { id: result.id, status: 'Dispatching', apiOrderId: null }, data: { status: 'Pending', dispatchedAt: null, queuedBehind: blocker?.orderId || null, lastError: PROVIDER_ACTIVE_WAIT, retryCount: 0 } }); } catch {}
+          } else {
+            try { await prisma.order.updateMany({ where: { id: result.id, status: 'Dispatching', apiOrderId: null }, data: { lastError: msg.slice(0, 450) } }); } catch {}
+          }
         }
       }
     }
@@ -996,7 +1155,7 @@ export async function POST(req) {
         service: tierName,
         quantity: qty,
         charge: charge / 100,
-        status: (apiOrderId || dripSchedule) ? 'Processing' : 'Pending',
+        status: apiOrderId ? 'Processing' : 'Pending',
         ...(loyaltyDiscount > 0 ? { loyaltyDiscount: loyaltyDiscount / 100, loyaltyTier: nitroTier?.name } : {}),
         ...(promoDiscount > 0 ? { promoDiscount: promoDiscount / 100, promoPercent, promoLabel } : {}),
         ...(pointsDiscountKobo > 0 ? { pointsRedeemed: pointsDiscountKobo / 100 } : {}),

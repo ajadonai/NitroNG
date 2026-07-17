@@ -6,6 +6,7 @@ import { placeOrder, checkOrder } from '@/lib/smm';
 import { tgDripTimeout } from '@/lib/telegram';
 import { getDripConfig } from '@/lib/drip-feed';
 import { awardPointsOnCompletion } from '@/lib/nitro-rewards';
+import { findSameLinkDispatchBlocker, isActiveOrderConflict } from '@/lib/order-queue';
 
 // Drip dispatch cron — runs twice per hour (:05 and :35)
 // 1. Dispatches pending drip batches that are due (scheduledAt <= now)
@@ -81,6 +82,38 @@ export async function GET(req) {
       const order = dispatch.order;
       if (!order || order.status === 'Cancelled' || order.deletedAt) continue;
 
+      // Re-resolve the queue on every attempt. Earlier queued orders retain FIFO,
+      // while an in-flight direct or drip order blocks dispatch even if this row's
+      // queuedBehind pointer is stale or missing.
+      const blocker = await findSameLinkDispatchBlocker(prisma, order);
+      if (blocker) {
+        if (order.queuedBehind !== blocker.orderId) {
+          await prisma.order.updateMany({
+            where: { id: order.id, status: { in: ['Pending', 'Processing'] }, deletedAt: null },
+            data: { queuedBehind: blocker.orderId },
+          });
+        }
+        continue;
+      }
+
+      const earliestPending = await prisma.dripDispatch.findFirst({
+        where: { orderId: dispatch.orderId, status: 'pending' },
+        select: { id: true },
+        orderBy: [{ day: 'asc' }, { batch: 'asc' }, { scheduledAt: 'asc' }],
+      });
+      if (!earliestPending || earliestPending.id !== dispatch.id) continue;
+
+      const released = await prisma.order.updateMany({
+        where: {
+          id: order.id,
+          status: { in: ['Pending', 'Processing'] },
+          deletedAt: null,
+          queuedBehind: order.queuedBehind || null,
+        },
+        data: { queuedBehind: null },
+      });
+      if (released.count === 0) continue;
+
       // Skip if another batch for this order is already in flight
       const inFlight = await prisma.dripDispatch.findFirst({
         where: { orderId: dispatch.orderId, status: { in: ['dispatching', 'processing'] } },
@@ -89,7 +122,11 @@ export async function GET(req) {
 
       // Atomic claim to prevent double dispatch
       const claimed = await prisma.dripDispatch.updateMany({
-        where: { id: dispatch.id, status: 'pending' },
+        where: {
+          id: dispatch.id,
+          status: 'pending',
+          order: { status: { in: ['Pending', 'Processing'] }, deletedAt: null, queuedBehind: null },
+        },
         data: { status: 'dispatching', dispatchedAt: new Date() },
       });
       if (claimed.count === 0) continue;
@@ -118,35 +155,70 @@ export async function GET(req) {
         const apiOrderId = result.order ? String(result.order) : null;
 
         if (apiOrderId) {
-          await prisma.dripDispatch.update({
-            where: { id: dispatch.id },
+          const recorded = await prisma.dripDispatch.updateMany({
+            where: {
+              id: dispatch.id,
+              status: 'dispatching',
+              order: { status: { in: ['Pending', 'Processing'] }, deletedAt: null },
+            },
             data: { apiOrderId, status: 'processing' },
           });
-          await prisma.order.update({
-            where: { id: order.id },
-            data: { dripDelivered: { increment: 1 }, status: 'Processing' },
+          if (recorded.count === 0) {
+            log.warn('Drip dispatch fence', `${order.orderId} batch ${dispatch.batch}: provider accepted ${apiOrderId} after local state changed`);
+            prisma.adminIssue.create({
+              data: {
+                type: 'ghost_dispatch',
+                title: `${order.orderId} batch ${dispatch.batch}: provider accepted after local cancellation`,
+                message: `Provider order ${apiOrderId} was created after the local order became terminal. Verify provider state before taking action.`,
+                metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, providerOrderId: apiOrderId, link: order.link }),
+              },
+            }).catch(() => {});
+            continue;
+          }
+          await prisma.order.updateMany({
+            where: { id: order.id, status: { in: ['Pending', 'Processing'] }, deletedAt: null },
+            data: { dripDelivered: { increment: 1 }, status: 'Processing', queuedBehind: null },
           });
           stats.dispatched++;
         } else {
-          await prisma.dripDispatch.update({
-            where: { id: dispatch.id },
+          await prisma.dripDispatch.updateMany({
+            where: {
+              id: dispatch.id,
+              status: 'dispatching',
+              order: { status: { in: ['Pending', 'Processing'] }, deletedAt: null },
+            },
             data: { status: 'failed', lastError: 'no_order_id' },
           });
           stats.dispatchFailed++;
         }
       } catch (err) {
         const msg = err.message || '';
-        const retryable = /active order|wait until order/i.test(msg);
+        const retryable = isActiveOrderConflict(err);
 
         log.error('Drip dispatch', `${order.orderId} batch ${dispatch.batch}: ${msg}${retryable ? ' (will retry)' : ''}`);
-        await prisma.dripDispatch.update({
-          where: { id: dispatch.id },
+        const transitioned = await prisma.dripDispatch.updateMany({
+          where: {
+            id: dispatch.id,
+            status: 'dispatching',
+            order: { status: { in: ['Pending', 'Processing'] }, deletedAt: null },
+          },
           data: retryable
-            ? { status: 'pending', lastError: null, dispatchedAt: null }
+            ? { status: 'pending', lastError: null, dispatchedAt: null, scheduledAt: new Date(Date.now() + 30 * 60 * 1000) }
             : { status: 'failed', lastError: msg.slice(0, 450) },
         });
 
-        if (!retryable) {
+        if (retryable && transitioned.count > 0) {
+          const currentBlocker = await findSameLinkDispatchBlocker(prisma, order);
+          await prisma.order.updateMany({
+            where: { id: order.id, status: { in: ['Pending', 'Processing'] }, deletedAt: null },
+            data: {
+              status: order.dripDelivered > 0 ? 'Processing' : 'Pending',
+              queuedBehind: currentBlocker?.orderId || null,
+            },
+          });
+        }
+
+        if (!retryable && transitioned.count > 0) {
           prisma.adminIssue.create({
             data: { type: 'ghost_dispatch', title: `${order.orderId} batch ${dispatch.batch}: dispatch failed`, message: `Provider request failed. Check provider dashboard before re-dispatching.\nLink: ${order.link}\nError: ${msg.slice(0, 200)}`, metadata: JSON.stringify({ orderId: order.orderId, batch: dispatch.batch, day: dispatch.day, link: order.link }) },
           }).catch(() => {});

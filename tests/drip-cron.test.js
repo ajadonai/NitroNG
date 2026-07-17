@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockDripDispatch = { findMany: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() };
-const mockOrder = { findMany: vi.fn(), update: vi.fn() };
+const mockOrder = { findMany: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() };
 const mockAdminIssue = { create: vi.fn().mockReturnValue({ catch: () => {} }) };
 const mockExecuteRawUnsafe = vi.fn();
 
@@ -26,14 +26,25 @@ function makeReq(secret = 'test-secret') {
   };
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
+  for (const mock of Object.values(mockDripDispatch)) mock.mockReset();
+  for (const mock of Object.values(mockOrder)) mock.mockReset();
+  mockAdminIssue.create.mockReset().mockReturnValue({ catch: () => {} });
+  mockExecuteRawUnsafe.mockReset();
+  const { placeOrder, checkOrder } = await import('@/lib/smm');
+  placeOrder.mockReset();
+  checkOrder.mockReset();
+  const { awardPointsOnCompletion } = await import('@/lib/nitro-rewards');
+  awardPointsOnCompletion.mockReset().mockResolvedValue(0);
   process.env.CRON_SECRET = 'test-secret';
 
   // Default: no stale/stuck/due/processing dispatches, no drip orders
   mockDripDispatch.updateMany.mockResolvedValue({ count: 0 });
   mockDripDispatch.findMany.mockResolvedValue([]);
   mockOrder.findMany.mockResolvedValue([]);
+  mockOrder.findFirst.mockResolvedValue(null);
+  mockOrder.updateMany.mockResolvedValue({ count: 1 });
   mockExecuteRawUnsafe.mockResolvedValue(0);
 });
 
@@ -77,8 +88,10 @@ describe('drip cron — section 2 in-flight filter', () => {
       .mockResolvedValueOnce([])            // section 1
       .mockResolvedValueOnce([fakeDispatch]) // section 2: dispatch passed DB filter
       .mockResolvedValueOnce([]);            // section 3
-    // In-loop guard finds an in-flight batch (race condition)
-    mockDripDispatch.findFirst.mockResolvedValueOnce({ id: 'other-batch', status: 'processing' });
+    mockOrder.findFirst.mockResolvedValueOnce(null);
+    mockDripDispatch.findFirst
+      .mockResolvedValueOnce({ id: 'disp-race' })
+      .mockResolvedValueOnce({ id: 'other-batch', status: 'processing' });
     mockOrder.findMany.mockResolvedValue([]);
 
     const { GET } = await import('@/app/api/cron/drip/route');
@@ -87,8 +100,151 @@ describe('drip cron — section 2 in-flight filter', () => {
 
     expect(body.stats.dispatched).toBe(0);
     expect(placeOrder).not.toHaveBeenCalled();
-    expect(mockDripDispatch.findFirst).toHaveBeenCalledWith({
+    expect(mockDripDispatch.findFirst).toHaveBeenLastCalledWith({
       where: { orderId: 'ord-race', status: { in: ['dispatching', 'processing'] } },
+    });
+  });
+});
+
+describe('drip cron — same-link queue safety', () => {
+  function dueDispatch(overrides = {}) {
+    return {
+      id: 'disp-queued', orderId: 'order-queued', day: 1, batch: 1, quantity: 204,
+      status: 'pending', scheduledAt: new Date(Date.now() - 60_000),
+      order: {
+        id: 'order-queued', orderId: 'NTR-2913', serviceId: 'service-8871',
+        link: 'https://youtube.com/@thewargenerals', status: 'Pending',
+        queuedBehind: 'NTR-2890', dripDelivered: 0, createdAt: new Date('2026-07-16T10:44:58Z'),
+        deletedAt: null, comments: null,
+        service: { provider: 'mtp', apiId: 8871, apiType: 'Default' },
+        ...overrides,
+      },
+    };
+  }
+
+  function setupDue(dispatch) {
+    mockDripDispatch.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([dispatch])
+      .mockResolvedValueOnce([]);
+    mockOrder.findMany.mockResolvedValue([]);
+  }
+
+  it('keeps a due drip batch queued while an earlier same-link order is active', async () => {
+    const { placeOrder } = await import('@/lib/smm');
+    setupDue(dueDispatch());
+    mockOrder.findFirst.mockResolvedValueOnce({ orderId: 'NTR-2890' });
+
+    const { GET } = await import('@/app/api/cron/drip/route');
+    const res = await GET(makeReq());
+
+    expect(res.status).toBe(200);
+    expect(placeOrder).not.toHaveBeenCalled();
+    expect(mockOrder.update).not.toHaveBeenCalled();
+    expect(mockOrder.updateMany).not.toHaveBeenCalled();
+    expect(mockDripDispatch.updateMany).toHaveBeenCalledTimes(1); // stale-expiry sweep only
+  });
+
+  it('turns a provider active-order response back into a pending queued batch', async () => {
+    const { placeOrder } = await import('@/lib/smm');
+    const { tgDripTimeout } = await import('@/lib/telegram');
+    setupDue(dueDispatch({ queuedBehind: null }));
+    mockOrder.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ orderId: 'NTR-2890' });
+    mockDripDispatch.findFirst
+      .mockResolvedValueOnce({ id: 'disp-queued' })
+      .mockResolvedValueOnce(null);
+    mockDripDispatch.updateMany
+      .mockResolvedValueOnce({ count: 0 })
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 1 });
+    placeOrder.mockRejectedValueOnce(new Error('You have active order with this link. Please wait until order being completed.'));
+
+    const { GET } = await import('@/app/api/cron/drip/route');
+    const res = await GET(makeReq());
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.stats.dispatchFailed).toBe(1);
+    expect(mockDripDispatch.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'disp-queued',
+        status: 'dispatching',
+        order: { status: { in: ['Pending', 'Processing'] }, deletedAt: null },
+      },
+      data: {
+        status: 'pending',
+        lastError: null,
+        dispatchedAt: null,
+        scheduledAt: expect.any(Date),
+      },
+    });
+    expect(mockOrder.updateMany).toHaveBeenCalledWith({
+      where: { id: 'order-queued', status: { in: ['Pending', 'Processing'] }, deletedAt: null },
+      data: { status: 'Pending', queuedBehind: 'NTR-2890' },
+    });
+    expect(mockAdminIssue.create).not.toHaveBeenCalled();
+    expect(tgDripTimeout).not.toHaveBeenCalled();
+  });
+
+  it('clears queuedBehind once the delayed batch is accepted', async () => {
+    const { placeOrder } = await import('@/lib/smm');
+    setupDue(dueDispatch());
+    mockOrder.findFirst.mockResolvedValueOnce(null);
+    mockDripDispatch.findFirst
+      .mockResolvedValueOnce({ id: 'disp-queued' })
+      .mockResolvedValueOnce(null);
+    mockDripDispatch.updateMany
+      .mockResolvedValueOnce({ count: 0 })
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 1 });
+    placeOrder.mockResolvedValueOnce({ order: 4199999 });
+
+    const { GET } = await import('@/app/api/cron/drip/route');
+    const res = await GET(makeReq());
+
+    expect(res.status).toBe(200);
+    expect(mockOrder.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'order-queued',
+        status: { in: ['Pending', 'Processing'] },
+        deletedAt: null,
+        queuedBehind: 'NTR-2890',
+      },
+      data: { queuedBehind: null },
+    });
+    expect(mockOrder.updateMany).toHaveBeenCalledWith({
+      where: { id: 'order-queued', status: { in: ['Pending', 'Processing'] }, deletedAt: null },
+      data: { dripDelivered: { increment: 1 }, status: 'Processing', queuedBehind: null },
+    });
+  });
+
+  it('does not resurrect a parent cancelled while the provider request was in flight', async () => {
+    const { placeOrder } = await import('@/lib/smm');
+    setupDue(dueDispatch({ queuedBehind: null }));
+    mockOrder.findFirst.mockResolvedValueOnce(null);
+    mockDripDispatch.findFirst
+      .mockResolvedValueOnce({ id: 'disp-queued' })
+      .mockResolvedValueOnce(null);
+    mockDripDispatch.updateMany
+      .mockResolvedValueOnce({ count: 0 })
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 0 });
+    placeOrder.mockResolvedValueOnce({ order: 4200000 });
+
+    const { GET } = await import('@/app/api/cron/drip/route');
+    const res = await GET(makeReq());
+
+    expect(res.status).toBe(200);
+    expect(mockOrder.updateMany).not.toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: 'Processing' }),
+    }));
+    expect(mockAdminIssue.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: 'ghost_dispatch',
+        title: expect.stringContaining('provider accepted after local cancellation'),
+      }),
     });
   });
 });
