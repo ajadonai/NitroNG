@@ -810,9 +810,9 @@ export function OrdersSidebar({ orders, orderSummary, dark, t }) {
   const totalOrders = orderSummary?.total ?? 0;
 
   return (
-    <>
-      <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Order Summary</div>
-      <div className="grid grid-cols-2 gap-1.5 mb-4">
+    <div className="flex flex-col gap-0 overflow-auto">
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Order Summary</div>
+      <div className="grid grid-cols-2 gap-1.5 mb-3">
         {[
           ["Total", String(totalOrders), dark ? "#a5b4fc" : "#4f46e5"],
           ["Active", String(activeCount), dark ? "#fcd34d" : "#d97706"],
@@ -823,13 +823,13 @@ export function OrdersSidebar({ orders, orderSummary, dark, t }) {
         ].map(([label, val, color]) => (
           <div key={label} className="p-3 rounded-[10px]" style={{ background: t.cardBg }}>
             <div className="text-xs uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>{label}</div>
-            <div className="m text-base font-semibold" style={{ color }}>{val}</div>
+            <div className="text-base font-semibold" style={{ color }}>{val}</div>
           </div>
         ))}
       </div>
 
       {activeCount > 0 && (
-        <div className="flex gap-2.5 items-start rounded-xl px-3.5 py-3 mb-4" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(251,191,36,.1)", border: `1px solid ${dark ? "rgba(251,191,36,.2)" : "rgba(217,119,6,.18)"}` }}>
+        <div className="flex gap-2.5 items-start rounded-xl px-3.5 py-3 mb-3" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(251,191,36,.1)", border: `1px solid ${dark ? "rgba(251,191,36,.2)" : "rgba(217,119,6,.18)"}` }}>
           <span className="text-base leading-none mt-px shrink-0">⏱</span>
           <div className="text-[11.5px] leading-[1.55]" style={{ color: dark ? "#fbbf24" : "#92400e" }}>
             <span className="font-semibold">Delivery: 0–6 hrs</span> (up to 24 hrs in some cases). We cannot act on speed requests within the first 6 hours.
@@ -837,9 +837,9 @@ export function OrdersSidebar({ orders, orderSummary, dark, t }) {
         </div>
       )}
 
-      <div className="h-px mt-1 mb-4" style={{ background: t.sidebarBorder }} />
+      <div className="h-px mb-3" style={{ background: t.sidebarBorder }} />
 
-      <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Recent Activity</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Recent Activity</div>
       {orders.slice(0, 5).map(o => (
         <div key={o.id} className="py-2 px-2.5 rounded-lg mb-1" style={{ background: t.cardBg }}>
           <div className="flex items-center gap-2.5">
@@ -852,6 +852,6 @@ export function OrdersSidebar({ orders, orderSummary, dark, t }) {
           </div>
         </div>
       ))}
-    </>
+    </div>
   );
 }

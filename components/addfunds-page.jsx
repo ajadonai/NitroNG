@@ -1141,14 +1141,14 @@ export function AddFundsSidebar({ user, txs, dark, t }) {
   const balance = user?.balance || 0;
 
   return (
-    <>
-      <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>How It Works</div>
+    <div className="flex flex-col gap-0">
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>How It Works</div>
       {[["1", "Enter amount"], ["2", "Choose payment method"], ["3", "Pay securely"], ["4", "Balance updated instantly"]].map(([num, title]) => (
         <div key={num} className="flex gap-2.5 mb-2 px-1">
-          <div className="m w-[22px] h-[22px] rounded-md flex items-center justify-center text-[13px] font-semibold shrink-0" style={{ background: t.navActive, color: t.accent }}>{num}</div>
+          <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center text-[13px] font-semibold shrink-0" style={{ background: t.navActive, color: t.accent }}>{num}</div>
           <div className="text-sm font-medium pt-0.5" style={{ color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.55)" }}>{title}</div>
         </div>
       ))}
-    </>
+    </div>
   );
 }

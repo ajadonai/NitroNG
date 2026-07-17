@@ -1472,25 +1472,25 @@ function DashboardInner({ initialData }) {
           ) : isLeaderboard ? (
             <LeaderboardCard dark={dark} t={t} />
           ) : isAudit ? (
-            <>
-              <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>What you'll get</div>
+            <div className="flex flex-col gap-0">
+              <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>What you'll get</div>
               {[["Follower quality score", "See how many real vs ghost followers you have"],["Engagement rate", "Your true engagement compared to your follower count"],["Best posting times", "When your audience is most active"],["Growth trends", "Track follower gains and losses over time"]].map(([title, desc]) => (
                 <div key={title} className="py-2.5 px-3 rounded-lg mb-1.5" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.02)" }}>
                   <div className="text-sm font-medium mb-0.5" style={{ color: t.text }}>{title}</div>
                   <div className="text-xs" style={{ color: t.textMuted }}>{desc}</div>
                 </div>
               ))}
-            </>
+            </div>
           ) : isCleanup ? (
-            <>
-              <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Cleanup tools</div>
+            <div className="flex flex-col gap-0">
+              <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Cleanup tools</div>
               {[["Ghost followers", "Remove inactive accounts that never engage"],["Non-followers", "Unfollow people who don't follow you back"],["Mass unfollow", "Bulk unfollow with filters and safety limits"],["Inactive accounts", "Detect and remove accounts that haven't posted in months"]].map(([title, desc]) => (
                 <div key={title} className="py-2.5 px-3 rounded-lg mb-1.5" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.02)" }}>
                   <div className="text-sm font-medium mb-0.5" style={{ color: t.text }}>{title}</div>
                   <div className="text-xs" style={{ color: t.textMuted }}>{desc}</div>
                 </div>
               ))}
-            </>
+            </div>
           ) : (
             <RightSidebar activeOrders={activeOrders} orderSummary={orderSummary} user={user} dark={dark} t={t} setActive={setActive} />
           )}

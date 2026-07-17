@@ -185,13 +185,13 @@ export default function ReferralsPage({ user, dark, t }) {
 function HowItWorks({ steps, dark, t }) {
   return (
     <>
-      <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-3 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>How It Works</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>How It Works</div>
       {steps.map(([num, title, desc]) => (
-        <div key={num} className="flex gap-3 mb-3 px-1">
-          <div className="m w-7 h-7 rounded-lg flex items-center justify-center text-sm font-semibold shrink-0" style={{ background: t.navActive, color: t.accent }}>{num}</div>
+        <div key={num} className="flex gap-3 mb-2 px-1">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-semibold shrink-0" style={{ background: t.navActive, color: t.accent }}>{num}</div>
           <div>
             <div className="text-sm font-semibold mb-px" style={{ color: t.text }}>{title}</div>
-            <div className="text-sm" style={{ color: t.textMuted }}>{desc}</div>
+            <div className="text-[12.5px]" style={{ color: t.textMuted }}>{desc}</div>
           </div>
         </div>
       ))}
@@ -201,7 +201,7 @@ function HowItWorks({ steps, dark, t }) {
 
 function RewardBreakdown({ rs, dark, t }) {
   return (
-    <div className="p-4 rounded-xl mt-3" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+    <div className="p-3.5 rounded-[10px]" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
       <div className="flex justify-between py-2" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
         <span className="text-sm" style={{ color: t.textMuted }}>You earn</span>
         <span className="text-sm font-semibold" style={{ color: t.accent }}>{fK(rs.referrer)}</span>
@@ -238,19 +238,17 @@ export function ReferralsSidebar({ user, dark, t }) {
   ];
 
   return (
-    <>
+    <div className="flex flex-col gap-0 overflow-auto">
       <HowItWorks steps={steps} dark={dark} t={t} />
 
-      <div className="h-px my-2 mb-4" style={{ background: t.sidebarBorder }} />
+      <div className="h-px my-3" style={{ background: t.sidebarBorder }} />
 
-      {/* Rewards */}
-      <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-3 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Rewards</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Rewards</div>
       <RewardBreakdown rs={ref} dark={dark} t={t} />
 
-      <div className="h-px my-2 mb-4 mt-4" style={{ background: t.sidebarBorder }} />
+      <div className="h-px my-3" style={{ background: t.sidebarBorder }} />
 
-      {/* Performance */}
-      <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-3 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Your Performance</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Your Performance</div>
       <div className="p-3.5 rounded-[10px]" style={{ background: t.cardBg }}>
         {[
           ["This month", `${Math.min(totalRefs, 3)} referrals`, t.green],
@@ -263,6 +261,6 @@ export function ReferralsSidebar({ user, dark, t }) {
           </div>
         ))}
       </div>
-    </>
+    </div>
   );
 }

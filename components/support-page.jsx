@@ -587,29 +587,29 @@ export function SupportSidebar({ dark, t, socialLinks = {} }) {
   const rawTg = socialLinks.social_telegram_support;
   const telegramSupport = rawTg ? `https://t.me/${rawTg.replace(/^(https?:\/\/)?(t\.me\/)?@?/,"")}` : null;
   return (
-    <>
-      <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-3 pl-1" style={{ color: t.textMuted }}>Nitro Bot</div>
-      <div className="p-3.5 rounded-xl mb-4" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
+    <div className="flex flex-col gap-0 overflow-auto">
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Nitro Bot</div>
+      <div className="p-3.5 rounded-xl mb-3" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: dark ? "#a78bfa" : "#7c3aed" }} />
           <span className="text-sm font-semibold" style={{ color: dark ? "#a78bfa" : "#7c3aed" }}>Online</span>
         </div>
         <div className="text-sm leading-snug" style={{ color: t.textMuted }}>AI assistant available 24/7 for orders, pricing, refunds, and general questions.</div>
       </div>
-      <div className="h-px mb-4" style={{ background: t.sidebarBorder }} />
-      <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-3 pl-1" style={{ color: t.textMuted }}>Quick Help</div>
-      <div className="flex flex-col gap-1 mb-4">
+      <div className="h-px mb-3" style={{ background: t.sidebarBorder }} />
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Quick Help</div>
+      <div className="flex flex-col gap-1 mb-3">
         {[["Check order status","check_order"],["How to deposit","deposit"],["Delivery & refills","delivery"],["Refund policy","refund"],["Supported platforms","platforms"]].map(([label,id])=>
           <div key={label} className="flex items-center gap-2.5 py-2 px-2.5 rounded-lg text-[13px]" style={{ background: dark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)", color: t.textSoft || t.textMuted }}><QuickIcon id={id} size={14} />{label}</div>
         )}
       </div>
-      <div className="h-px mb-4" style={{ background: t.sidebarBorder }} />
-      <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-3 pl-1" style={{ color: t.textMuted }}>Contact Us</div>
+      <div className="h-px mb-3" style={{ background: t.sidebarBorder }} />
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Contact Us</div>
       <div className="p-3.5 rounded-[10px]" style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
         {[["Email",SITE.email.general],["Instagram","@Nitro.ng"],["Twitter/X","@TheNitroNG"], ...(telegramSupport ? [["Telegram", "Chat with us"]] : [])].map(([label,val])=>
           <div key={label} className="flex justify-between py-1.5 text-sm"><span style={{ color: t.textMuted }}>{label}</span>{label === "Telegram" ? <a href={telegramSupport} target="_blank" rel="noopener noreferrer" className="font-medium no-underline" style={{ color: t.accent }}>{val}</a> : <span className="font-medium" style={{ color: t.accent }}>{val}</span>}</div>
         )}
       </div>
-    </>
+    </div>
   );
 }

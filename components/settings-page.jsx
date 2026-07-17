@@ -337,8 +337,8 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
 /* ═══════════════════════════════════════════ */
 export function SettingsSidebar({ user, dark, t }) {
   return (
-    <>
-      <div className="text-xs font-semibold uppercase tracking-[1px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Quick Links</div>
+    <div className="flex flex-col gap-0">
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Quick Links</div>
       {[
         ["Change Password", "set-change-password"],
         ["Theme", "set-theme"],
@@ -351,6 +351,6 @@ export function SettingsSidebar({ user, dark, t }) {
       ].map(([label, id]) => (
         <div key={label} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })} className="py-2 px-3 rounded-lg mb-0.5 text-sm font-[450] cursor-pointer" style={{ color: label === "Account" ? (dark ? "#fca5a5" : "#dc2626") : t.textSoft }}>{label}</div>
       ))}
-    </>
+    </div>
   );
 }
