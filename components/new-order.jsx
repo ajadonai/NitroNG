@@ -743,6 +743,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   // Bulk mode state — hydrate from storage after mount to avoid SSR mismatch
   const [orderMode, setOrderMode] = useState("single");
   const [cartRows, setCartRows] = useState([]);
+  const [tiktokDisclaimer, setTiktokDisclaimer] = useState(false);
   const hydratedRef = useRef(false);
   useEffect(() => {
     if (hydratedRef.current) return;
@@ -881,6 +882,16 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   const activePlat = PLATFORMS.find(p => p.id === platform);
 
   useEffect(() => { setSelSvc(null); setSelTier(null); setFilterType("all"); setOrderModal(false); setOrderSuccess(null); setSearch(""); setLink(""); setComments(""); setQty(""); setRedeemPoints(false); }, [platform]);
+
+  useEffect(() => {
+    if (platform !== 'tiktok') return;
+    try {
+      const dismissed = localStorage.getItem('nitro_tiktok_disclaimer');
+      if (!dismissed || Date.now() - Number(dismissed) > 7 * 24 * 60 * 60 * 1000) {
+        setTiktokDisclaimer(true);
+      }
+    } catch { setTiktokDisclaimer(true); }
+  }, [platform]);
 
   /* Click outside any card → collapse */
   const listRef = useRef(null);
@@ -1364,6 +1375,29 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
             ) : (
               <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => { setOrderModal(false); setRedeemPoints(false); }} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} welcomeBonusEligible={user?.welcomeBonusEligible} pointsRedeemable={rewards?.points?.redeemable || false} pointsBalance={rewards?.points?.balance || 0} redeemPoints={redeemPoints} setRedeemPoints={setRedeemPoints} />
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ TIKTOK DISCLAIMER ═══ */}
+      {tiktokDisclaimer && (
+        <div className="no-modal-overlay flex fixed inset-0 z-50 items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { try { localStorage.setItem('nitro_tiktok_disclaimer', String(Date.now())); } catch {} setTiktokDisclaimer(false); }} style={{ background: "rgba(0,0,0,.45)" }}>
+          <div role="dialog" aria-modal="true" aria-label="TikTok service notice" className="w-full max-w-[380px] rounded-2xl border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
+            <div className="py-5 px-5">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: t.text }}><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.89 2.89 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.11V9.38a6.33 6.33 0 00-.79-.05A6.34 6.34 0 003.14 15.67 6.34 6.34 0 009.48 22a6.34 6.34 0 006.34-6.34V9.17a8.16 8.16 0 004.77 1.53V7.26a4.85 4.85 0 01-1-.57z"/></svg>
+                </div>
+                <div className="text-base font-semibold" style={{ color: t.text }}>Heads up about TikTok</div>
+              </div>
+              <div className="text-[13.5px] leading-[1.65] mb-1" style={{ color: t.textMuted }}>
+                TikTok services can be unpredictable. Orders may take longer than expected, deliver partially, or experience drops due to platform changes outside our control.
+              </div>
+              <div className="text-[13.5px] leading-[1.65] mb-4" style={{ color: t.textMuted }}>
+                We recommend starting with a small order to test before committing to larger quantities. Refills and refunds follow our standard policy.
+              </div>
+              <button onClick={() => { try { localStorage.setItem('nitro_tiktok_disclaimer', String(Date.now())); } catch {} setTiktokDisclaimer(false); }} className="w-full py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>I understand</button>
+            </div>
           </div>
         </div>
       )}
