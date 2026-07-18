@@ -4,77 +4,76 @@ import { requireAdmin, getAdminPages, canSeeSensitive, maskEmail } from '@/lib/a
 import { watBounds } from '@/lib/format';
 import { getOrderOfferDisplay } from '@/lib/order-offer-display';
 
-function humanize(raw, admin) {
-  const name = admin?.split(' ')[0] || 'Admin';
+function humanize(raw) {
   let m;
 
   // Orders
-  if ((m = raw.match(/^Checked order (.+?) via (.+?): (.+)$/))) return `${name} checked order ${m[1]} — ${m[3].toLowerCase()}`;
-  if ((m = raw.match(/^Cancelled order (.+?) \((.+?)\)(.*)/))) return `${name} cancelled order ${m[1]}${m[3] ? ` and refunded` : ''}`;
-  if ((m = raw.match(/^Requested refill for (.+?) \((.+?)\)/))) return `${name} requested a refill for order ${m[1]}`;
+  if ((m = raw.match(/^Checked order (.+?) via (.+?): (.+)$/))) return `Checked order ${m[1]} — ${m[3].toLowerCase()}`;
+  if ((m = raw.match(/^Cancelled order (.+?) \((.+?)\)(.*)/))) return `Cancelled order ${m[1]}${m[3] ? ` and refunded` : ''}`;
+  if ((m = raw.match(/^Requested refill for (.+?) \((.+?)\)/))) return `Refill requested for order ${m[1]}`;
 
   // Tickets
-  if ((m = raw.match(/^Claimed ticket (.+)/))) return `${name} claimed a support ticket`;
-  if ((m = raw.match(/^Replied to ticket (.+)/))) return `${name} replied to a ticket`;
-  if ((m = raw.match(/^Resolved ticket (.+)/))) return `${name} resolved a support ticket`;
-  if ((m = raw.match(/^Reopened ticket (.+)/))) return `${name} reopened a ticket`;
-  if ((m = raw.match(/^Archived ticket (.+)/))) return `${name} archived a ticket`;
+  if ((m = raw.match(/^Claimed ticket (.+)/))) return `Claimed a support ticket`;
+  if ((m = raw.match(/^Replied to ticket (.+)/))) return `Replied to a ticket`;
+  if ((m = raw.match(/^Resolved ticket (.+)/))) return `Resolved a support ticket`;
+  if ((m = raw.match(/^Reopened ticket (.+)/))) return `Reopened a ticket`;
+  if ((m = raw.match(/^Archived ticket (.+)/))) return `Archived a ticket`;
 
   // Payments
-  if ((m = raw.match(/^(Enabled|Disabled) (.+?) gateway$/))) return `${name} ${m[1].toLowerCase()} the ${m[2]} gateway`;
-  if ((m = raw.match(/^Configured (.+?) gateway keys$/))) return `${name} updated ${m[1]} gateway keys`;
-  if ((m = raw.match(/^Added (.+?) gateway$/))) return `${name} added the ${m[1]} gateway`;
-  if ((m = raw.match(/^Approved manual deposit (.+?) for (.+)/))) return `${name} approved ${m[1]} deposit for ${m[2]}`;
-  if ((m = raw.match(/^Rejected manual deposit (.+?) for (.+)/))) return `${name} rejected ${m[1]} deposit for ${m[2]}`;
+  if ((m = raw.match(/^(Enabled|Disabled) (.+?) gateway$/))) return `${m[1]} the ${m[2]} gateway`;
+  if ((m = raw.match(/^Configured (.+?) gateway keys$/))) return `Updated ${m[1]} gateway keys`;
+  if ((m = raw.match(/^Added (.+?) gateway$/))) return `Added the ${m[1]} gateway`;
+  if ((m = raw.match(/^Approved manual deposit (.+?) for (.+)/))) return `${m[1]} deposit for ${m[2]}`;
+  if ((m = raw.match(/^Rejected manual deposit (.+?) for (.+)/))) return `Rejected ${m[1]} deposit for ${m[2]}`;
 
   // Services
-  if ((m = raw.match(/^Sync-enabled (\d+) services/))) return `${name} synced and enabled ${m[1]} services`;
-  if ((m = raw.match(/^Disabled service \+ (\d+) tier\(s\): (.+)/))) return `${name} disabled ${m[2]} and ${m[1]} tier(s)`;
-  if ((m = raw.match(/^(Enabled|Disabled) service: (.+)/))) return `${name} ${m[1].toLowerCase()} ${m[2]}`;
-  if ((m = raw.match(/^Updated markup for (.+?) to (.+)/))) return `${name} set ${m[1]} markup to ${m[2]}`;
-  if ((m = raw.match(/^Edited service: (.+)/))) return `${name} edited ${m[1]}`;
-  if ((m = raw.match(/^Disabled service \(has (\d+) orders\): (.+)/))) return `${name} disabled ${m[2]}`;
-  if ((m = raw.match(/^Deleted service: (.+)/))) return `${name} deleted ${m[1]}`;
-  if ((m = raw.match(/^Created service group "(.+?)"/))) return `${name} created the ${m[1]} group`;
-  if ((m = raw.match(/^Updated service group "(.+?)"/))) return `${name} updated the ${m[1]} group`;
-  if ((m = raw.match(/^Deleted service group "(.+?)"/))) return `${name} deleted the ${m[1]} group`;
-  if ((m = raw.match(/^Added (.+?) tier to "(.+?)"/))) return `${name} added a ${m[1]} tier to ${m[2]}`;
-  if ((m = raw.match(/^Recalculated prices: (.+?) updated/))) return `${name} recalculated prices — ${m[1]} updated`;
+  if ((m = raw.match(/^Sync-enabled (\d+) services/))) return `Synced and enabled ${m[1]} services`;
+  if ((m = raw.match(/^Disabled service \+ (\d+) tier\(s\): (.+)/))) return `Disabled ${m[2]} and ${m[1]} tier(s)`;
+  if ((m = raw.match(/^(Enabled|Disabled) service: (.+)/))) return `${m[1]} ${m[2]}`;
+  if ((m = raw.match(/^Updated markup for (.+?) to (.+)/))) return `Set ${m[1]} markup to ${m[2]}`;
+  if ((m = raw.match(/^Edited service: (.+)/))) return `Edited ${m[1]}`;
+  if ((m = raw.match(/^Disabled service \(has (\d+) orders\): (.+)/))) return `Disabled ${m[2]}`;
+  if ((m = raw.match(/^Deleted service: (.+)/))) return `Deleted ${m[1]}`;
+  if ((m = raw.match(/^Created service group "(.+?)"/))) return `Created the ${m[1]} group`;
+  if ((m = raw.match(/^Updated service group "(.+?)"/))) return `Updated the ${m[1]} group`;
+  if ((m = raw.match(/^Deleted service group "(.+?)"/))) return `Deleted the ${m[1]} group`;
+  if ((m = raw.match(/^Added (.+?) tier to "(.+?)"/))) return `Added a ${m[1]} tier to ${m[2]}`;
+  if ((m = raw.match(/^Recalculated prices: (.+?) updated/))) return `Recalculated prices — ${m[1]} updated`;
 
   // Users
-  if ((m = raw.match(/^(Credited|Debited) (.+?) to (.+)/))) return `${name} ${m[1].toLowerCase()} ${m[2]} to ${m[3]}'s wallet`;
-  if ((m = raw.match(/^Suspended user (.+)/))) return `${name} suspended ${m[1]}`;
-  if ((m = raw.match(/^Activated user (.+)/))) return `${name} activated ${m[1]}`;
-  if ((m = raw.match(/^Reinstated user (.+)/))) return `${name} reinstated ${m[1]}`;
+  if ((m = raw.match(/^(Credited|Debited) (.+?) to (.+)/))) return `${m[1]} ${m[2]} to ${m[3]}'s wallet`;
+  if ((m = raw.match(/^Suspended user (.+)/))) return `Suspended ${m[1]}`;
+  if ((m = raw.match(/^Activated user (.+)/))) return `Activated ${m[1]}`;
+  if ((m = raw.match(/^Reinstated user (.+)/))) return `Reinstated ${m[1]}`;
 
   // Team
-  if ((m = raw.match(/^Created admin: (.+?) \((.+?)\)/))) return `${name} added ${m[1]} as ${m[2]}`;
-  if ((m = raw.match(/^Reset password for (.+)/))) return `${name} reset ${m[1]}'s password`;
-  if ((m = raw.match(/^Deleted admin: (.+?) \((.+?)\)/))) return `${name} removed admin ${m[1]}`;
+  if ((m = raw.match(/^Created admin: (.+?) \((.+?)\)/))) return `Added ${m[1]} as ${m[2]}`;
+  if ((m = raw.match(/^Reset password for (.+)/))) return `Reset ${m[1]}'s password`;
+  if ((m = raw.match(/^Deleted admin: (.+?) \((.+?)\)/))) return `Removed admin ${m[1]}`;
 
   // Alerts
-  if ((m = raw.match(/^Created (.+?) alert: "(.+?)"/))) return `${name} posted an alert: "${m[2]}"`;
-  if ((m = raw.match(/^(Enabled|Disabled) alert$/))) return `${name} ${m[1].toLowerCase()} an alert`;
-  if ((m = raw.match(/^Deleted alert/))) return `${name} deleted an alert`;
+  if ((m = raw.match(/^Created (.+?) alert: "(.+?)"/))) return `Posted an alert: "${m[2]}"`;
+  if ((m = raw.match(/^(Enabled|Disabled) alert$/))) return `${m[1]} an alert`;
+  if ((m = raw.match(/^Deleted alert/))) return `Deleted an alert`;
 
   // Settings
-  if (raw === 'Updated site settings') return `${name} updated site settings`;
+  if (raw === 'Updated site settings') return `Updated site settings`;
 
   // Sync
-  if ((m = raw.match(/^Synced from (.+?): (.+?) new, (.+?) updated/))) return `${name} synced from ${m[1]} — ${m[2]} new, ${m[3]} updated`;
-  if ((m = raw.match(/^Synced orders: (.+?) checked, (.+?) updated/))) return `${name} synced orders — ${m[1]} checked, ${m[2]} updated`;
-  if ((m = raw.match(/^Price sync: (.+?) costs updated/))) return `${name} ran a price sync — ${m[1]} costs updated`;
+  if ((m = raw.match(/^Synced from (.+?): (.+?) new, (.+?) updated/))) return `Synced from ${m[1]} — ${m[2]} new, ${m[3]} updated`;
+  if ((m = raw.match(/^Synced orders: (.+?) checked, (.+?) updated/))) return `Synced orders — ${m[1]} checked, ${m[2]} updated`;
+  if ((m = raw.match(/^Price sync: (.+?) costs updated/))) return `Price sync — ${m[1]} costs updated`;
 
   // Issues
-  if ((m = raw.match(/^Resolved issue: (.+)/))) return `${name} resolved "${m[1]}"`;
-  if ((m = raw.match(/^Fired all crons/))) return `${name} fired all crons manually`;
+  if ((m = raw.match(/^Resolved issue: (.+)/))) return `Resolved "${m[1]}"`;
+  if ((m = raw.match(/^Fired all crons/))) return `Fired all crons manually`;
 
   // Notifications
-  if ((m = raw.match(/^Queued notification "(.+?)" to (\d+)/))) return `${name} sent "${m[1]}" to ${m[2]} users`;
+  if ((m = raw.match(/^Queued notification "(.+?)" to (\d+)/))) return `Sent "${m[1]}" to ${m[2]} users`;
 
   // Acquisition
-  if ((m = raw.match(/^Created tracking link: (.+)/))) return `${name} created tracking link ${m[1]}`;
-  if ((m = raw.match(/^(Enabled|Disabled) tracking link: (.+)/))) return `${name} ${m[1].toLowerCase()} tracking link ${m[2]}`;
+  if ((m = raw.match(/^Created tracking link: (.+)/))) return `Created tracking link ${m[1]}`;
+  if ((m = raw.match(/^(Enabled|Disabled) tracking link: (.+)/))) return `${m[1]} tracking link ${m[2]}`;
 
   return raw;
 }
@@ -240,7 +239,7 @@ export async function GET() {
         }
         return activityLogs.map(a => {
           let text = ids.size > 0 ? a.action.replace(cuidRe, id => nameMap[id] || id) : a.action;
-          return { action: humanize(text, a.adminName), detail: a.adminName, type: a.type, time: a.createdAt.toISOString() };
+          return { action: humanize(text), detail: a.adminName, type: a.type, time: a.createdAt.toISOString() };
         });
       })(),
     });

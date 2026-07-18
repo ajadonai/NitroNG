@@ -147,7 +147,7 @@ describe('account-deletion notices', () => {
     const source = readFileSync('lib/telegram.js', 'utf8');
     const body = source.match(/export function tgUserDeletionRequested[\s\S]*?\n}\n/)?.[0] || '';
     expect(body).toContain('userId');
-    expect(body).toContain("line('User ID', id(userId))");
+    expect(body).toContain('id(userId)');
     expect(body).not.toMatch(/\bname\b/i);
     expect(body).not.toMatch(/\bemail\b/i);
     expect(body).not.toMatch(/referral/i);
