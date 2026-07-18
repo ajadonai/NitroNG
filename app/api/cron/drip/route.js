@@ -6,7 +6,7 @@ import { placeOrder, checkOrder } from '@/lib/smm';
 import { tgDripTimeout } from '@/lib/telegram';
 import { getDripConfig } from '@/lib/drip-feed';
 import { awardPointsOnCompletion } from '@/lib/nitro-rewards';
-import { findSameLinkDispatchBlocker, isActiveOrderConflict } from '@/lib/order-queue';
+import { findSameLinkDispatchBlocker, isActiveOrderConflict, wouldCreateCycle } from '@/lib/order-queue';
 
 // Drip dispatch cron — runs twice per hour (:05 and :35)
 // 1. Dispatches pending drip batches that are due (scheduledAt <= now)
@@ -116,7 +116,7 @@ export async function GET(req) {
       // while an in-flight direct or drip order blocks dispatch even if this row's
       // queuedBehind pointer is stale or missing.
       const blocker = await findSameLinkDispatchBlocker(prisma, order);
-      if (blocker) {
+      if (blocker && !(await wouldCreateCycle(prisma, order.orderId, blocker.orderId))) {
         if (order.queuedBehind !== blocker.orderId) {
           await prisma.order.updateMany({
             where: { id: order.id, status: { in: ['Pending', 'Processing'] }, deletedAt: null },
@@ -239,11 +239,13 @@ export async function GET(req) {
 
         if (retryable && transitioned.count > 0) {
           const currentBlocker = await findSameLinkDispatchBlocker(prisma, order);
+          const safeBlocker = currentBlocker && !(await wouldCreateCycle(prisma, order.orderId, currentBlocker.orderId))
+            ? currentBlocker.orderId : null;
           await prisma.order.updateMany({
             where: { id: order.id, status: { in: ['Pending', 'Processing'] }, deletedAt: null },
             data: {
               status: order.dripDelivered > 0 ? 'Processing' : 'Pending',
-              queuedBehind: currentBlocker?.orderId || null,
+              queuedBehind: safeBlocker,
             },
           });
         }
