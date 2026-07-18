@@ -7,7 +7,7 @@ const DEFAULTS = {
   monnify: { name: 'Monnify', desc: 'Auto-confirmed bank transfer', priority: 3 },
   korapay: { name: 'KoraPay', desc: 'Cards, Bank Transfer', priority: 4 },
   crypto: { name: 'Crypto', desc: 'USDT (TRC-20 / ERC-20)', priority: 5 },
-  manual: { name: 'Bank Transfer', desc: 'Manual bank transfer', priority: 6 },
+  manual: { name: 'Manual Transfer', desc: 'Direct bank transfer', priority: 6 },
 };
 
 export async function GET() {

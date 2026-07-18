@@ -106,7 +106,7 @@ const ACCEPTED_TYPES = [
 const GW_META = {
   flutterwave: { desc: "Card, bank transfer", speed: "Fast" },
   crypto: { desc: "USDT via TRC-20", speed: "5–30 min" },
-  manual: { desc: "Direct bank transfer", speed: "15–60 min" },
+  manual: { desc: "Transfer from any bank", speed: "15–60 min" },
 };
 
 /* ═══════════════════════════════════════════ */
@@ -698,6 +698,12 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                   ); })}
                 </div>
               )}
+              {method === "flutterwave" && gateways.some(g => g.id === "manual") && (
+                <div className="flex items-start gap-1.5 mt-1.5 py-1.5 px-2" style={{ color: t.textMuted }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  <span className="text-[10px] leading-snug">If our bank isn't on your app, try <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold" style={{ color: t.accent, background: "none", border: "none", padding: 0, fontFamily: "inherit", fontSize: "inherit" }}>Manual Transfer</button> as a backup.</span>
+                </div>
+              )}
 
               <div className="flex-1 min-h-4" />
 
@@ -795,6 +801,12 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                 </div>
               ) : (
                 <div className="py-3 text-center text-sm" style={{ color: t.textMuted }}>No payment methods available</div>
+              )}
+              {method === "flutterwave" && gateways.some(g => g.id === "manual") && (
+                <div className="flex items-start gap-1.5 mt-1.5 py-1.5 px-2" style={{ color: t.textMuted }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  <span className="text-[10px] leading-snug">If our bank isn't on your app, try <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold" style={{ color: t.accent, background: "none", border: "none", padding: 0, fontFamily: "inherit", fontSize: "inherit" }}>Manual Transfer</button> as a backup.</span>
+                </div>
               )}
               <PayButton onClick={handlePay} disabled={loading} loading={loading} text={loading ? "Processing..." : `Pay ${fN(numAmount)} Now`} className="mt-3" />
               <div className="flex items-center justify-center gap-1.5 mt-2.5 text-xs" style={{ color: t.textMuted }}>
