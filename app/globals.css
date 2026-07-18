@@ -793,3 +793,5 @@
 }
 @keyframes nl-draw{0%{stroke-dashoffset:100}52%{stroke-dashoffset:0}76%{stroke-dashoffset:0}100%{stroke-dashoffset:-100}}
 @keyframes nl-pop{0%,52%{transform:scale(1)}60%{transform:scale(1.05)}70%,100%{transform:scale(1)}}
+
+@keyframes promoFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
