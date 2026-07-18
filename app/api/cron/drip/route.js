@@ -60,6 +60,33 @@ export async function GET(req) {
       stats.stuckFailed++;
     }
 
+    // ═══ 1.5. RELEASE STALE QUEUES ═══
+    // Clear queuedBehind on drip orders whose blocker is no longer active
+    const queued = await prisma.order.findMany({
+      where: {
+        queuedBehind: { not: null },
+        status: { in: ['Pending', 'Processing'] },
+        deletedAt: null,
+        dripDispatches: { some: { status: 'pending' } },
+      },
+      select: { id: true, queuedBehind: true },
+      take: 200,
+    });
+    if (queued.length) {
+      const blockerIds = [...new Set(queued.map(o => o.queuedBehind))];
+      const activeBlockers = new Set(
+        (await prisma.order.findMany({
+          where: { orderId: { in: blockerIds }, status: { in: ['Pending', 'Processing', 'Dispatching', 'In progress'] }, deletedAt: null },
+          select: { orderId: true },
+        })).map(o => o.orderId),
+      );
+      const toRelease = queued.filter(o => !activeBlockers.has(o.queuedBehind)).map(o => o.id);
+      if (toRelease.length) {
+        await prisma.order.updateMany({ where: { id: { in: toRelease } }, data: { queuedBehind: null } });
+        stats.queueReleased = toRelease.length;
+      }
+    }
+
     // ═══ 2. DISPATCH DUE BATCHES ═══
     const due = await prisma.dripDispatch.findMany({
       where: {
@@ -68,6 +95,7 @@ export async function GET(req) {
         order: {
           status: { in: ['Pending', 'Processing'] },
           deletedAt: null,
+          queuedBehind: null,
           dripDispatches: {
             none: { status: { in: ['dispatching', 'processing'] } },
           },
@@ -76,7 +104,7 @@ export async function GET(req) {
       include: {
         order: { include: { service: true } },
       },
-      take: 100,
+      take: 50,
       orderBy: { scheduledAt: 'asc' },
     });
 
