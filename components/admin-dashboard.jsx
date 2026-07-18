@@ -304,7 +304,8 @@ function AdminRightSidebar({ data, dark, t, active }) {
               <div key={i} className="flex gap-2.5 py-2.5 px-2.5 rounded-[10px]" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` : "none" }}>
                 <div className="w-[6px] h-[6px] rounded-full mt-[7px] shrink-0" style={{ background: activityDotColor(a.type) }} />
                 <div className="min-w-0">
-                  <div className="text-sm font-medium" style={{ color: t.text }}>{a.action}</div>
+                  <div className="text-sm font-medium" style={{ color: t.text }}>{(a.action || "").split("\n")[0]}</div>
+                  {(a.action || "").includes("\n") && <div className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{a.action.split("\n")[1]}</div>}
                   <div className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{a.detail}</div>
                   <div className="text-[11px] mt-0.5" style={{ color: t.textMuted, opacity: 0.7 }}>{a.time ? fD(a.time) : ""}</div>
                 </div>

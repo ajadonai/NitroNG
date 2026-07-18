@@ -8,7 +8,7 @@ function humanize(raw) {
   let m;
 
   // Orders
-  if ((m = raw.match(/^Checked order (.+?) via (.+?): (.+)$/))) return `Checked order ${m[1]} — ${m[3].toLowerCase()}`;
+  if ((m = raw.match(/^Checked order (.+?) via (.+?): (.+)$/))) return `Checked order ${m[1]}\n${m[3].toLowerCase()}`;
   if ((m = raw.match(/^Cancelled order (.+?) \((.+?)\)(.*)/))) return `Cancelled order ${m[1]}${m[3] ? ` and refunded` : ''}`;
   if ((m = raw.match(/^Requested refill for (.+?) \((.+?)\)/))) return `Refill requested for order ${m[1]}`;
 
@@ -38,7 +38,7 @@ function humanize(raw) {
   if ((m = raw.match(/^Updated service group "(.+?)"/))) return `Updated the ${m[1]} group`;
   if ((m = raw.match(/^Deleted service group "(.+?)"/))) return `Deleted the ${m[1]} group`;
   if ((m = raw.match(/^Added (.+?) tier to "(.+?)"/))) return `Added a ${m[1]} tier to ${m[2]}`;
-  if ((m = raw.match(/^Recalculated prices: (.+?) updated/))) return `Recalculated prices — ${m[1]} updated`;
+  if ((m = raw.match(/^Recalculated prices: (.+?) updated/))) return `Recalculated prices\n${m[1]} updated`;
 
   // Users
   if ((m = raw.match(/^(Credited|Debited) (.+?) to (.+)/))) return `${m[1]} ${m[2]} to ${m[3]}'s wallet`;
@@ -60,9 +60,9 @@ function humanize(raw) {
   if (raw === 'Updated site settings') return `Updated site settings`;
 
   // Sync
-  if ((m = raw.match(/^Synced from (.+?): (.+?) new, (.+?) updated/))) return `Synced from ${m[1]} — ${m[2]} new, ${m[3]} updated`;
-  if ((m = raw.match(/^Synced orders: (.+?) checked, (.+?) updated/))) return `Synced orders — ${m[1]} checked, ${m[2]} updated`;
-  if ((m = raw.match(/^Price sync: (.+?) costs updated/))) return `Price sync — ${m[1]} costs updated`;
+  if ((m = raw.match(/^Synced from (.+?): (.+?) new, (.+?) updated/))) return `Synced from ${m[1]}\n${m[2]} new, ${m[3]} updated`;
+  if ((m = raw.match(/^Synced orders: (.+?) checked, (.+?) updated/))) return `Synced orders\n${m[1]} checked, ${m[2]} updated`;
+  if ((m = raw.match(/^Price sync: (.+?) costs updated/))) return `Price sync\n${m[1]} costs updated`;
 
   // Issues
   if ((m = raw.match(/^Resolved issue: (.+)/))) return `Resolved "${m[1]}"`;
