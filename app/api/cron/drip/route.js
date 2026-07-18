@@ -104,7 +104,7 @@ export async function GET(req) {
       include: {
         order: { include: { service: true } },
       },
-      take: 50,
+      take: 200,
       orderBy: { scheduledAt: 'asc' },
     });
 
