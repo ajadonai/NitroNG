@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import NitroLoader from './nitro-loader';
 
 function timeOnSite(firstSeen) {
   const s = Math.floor((Date.now() - new Date(firstSeen).getTime()) / 1000);
@@ -418,7 +419,7 @@ export default function LiveDashboard() {
 
         {/* Sessions list */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: '#8a8580' }}>Loading...</div>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><NitroLoader size={40} /></div>
         ) : sessions.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 60, color: '#8a8580' }}>No one online right now.</div>
         ) : (
