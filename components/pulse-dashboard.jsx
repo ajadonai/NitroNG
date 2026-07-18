@@ -484,7 +484,7 @@ function RefreshBar({ secondsAgo }) {
 }
 
 // ─── Main dashboard ─────────────────────────────────────────────
-export default function PulseDashboard({ secretKey }) {
+export default function PulseDashboard() {
   const [data, setData] = useState(null);
   const [secondsAgo, setSecondsAgo] = useState(0);
   const [error, setError] = useState(false);
@@ -507,7 +507,12 @@ export default function PulseDashboard({ secretKey }) {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(`/api/pulse?key=${encodeURIComponent(secretKey)}`);
+      const res = await fetch('/api/pulse', { cache: 'no-store' });
+      if (res.status === 401 || res.status === 403) {
+        setData(null);
+        window.location.replace('/pulse');
+        return;
+      }
       if (!res.ok) throw new Error('fetch failed');
       const json = await res.json();
       setData(json);
@@ -516,7 +521,7 @@ export default function PulseDashboard({ secretKey }) {
     } catch {
       setError(true);
     }
-  }, [secretKey]);
+  }, []);
 
   useEffect(() => {
     fetchData();

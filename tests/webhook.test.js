@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import crypto from 'crypto';
+import {
+  createNowPaymentsIpnSignature,
+  verifyNowPaymentsIpnSignature,
+} from '@/lib/nowpayments-verification';
 
 describe('Flutterwave webhook signature', () => {
   it('rejects when signature does not match hash', () => {
@@ -16,39 +19,37 @@ describe('Flutterwave webhook signature', () => {
 });
 
 describe('NowPayments webhook signature', () => {
-  function createNPSignature(body, secret) {
-    const hmac = crypto.createHmac('sha512', secret);
-    const sorted = Object.keys(body).sort().reduce((acc, k) => { acc[k] = body[k]; return acc; }, {});
-    hmac.update(JSON.stringify(sorted));
-    return hmac.digest('hex');
-  }
-
   it('verifies valid HMAC signature', () => {
     const secret = 'test-ipn-secret';
-    const body = { payment_status: 'finished', order_id: 'NTR-123', pay_amount: 10 };
-    const sig = createNPSignature(body, secret);
-    expect(createNPSignature(body, secret)).toBe(sig);
+    const body = {
+      payment_status: 'finished',
+      order_id: 'NTR-123',
+      pay_amount: 10,
+      nested: { z: 1, a: 2 },
+    };
+    const sig = createNowPaymentsIpnSignature(body, secret);
+    expect(verifyNowPaymentsIpnSignature(body, sig, secret)).toBe(true);
   });
 
   it('rejects tampered payload', () => {
     const secret = 'test-ipn-secret';
     const body = { payment_status: 'finished', order_id: 'NTR-123', pay_amount: 10 };
-    const sig = createNPSignature(body, secret);
+    const sig = createNowPaymentsIpnSignature(body, secret);
     const tampered = { ...body, pay_amount: 999 };
-    expect(createNPSignature(tampered, secret)).not.toBe(sig);
+    expect(verifyNowPaymentsIpnSignature(tampered, sig, secret)).toBe(false);
   });
 
   it('rejects wrong secret', () => {
     const body = { payment_status: 'finished', order_id: 'NTR-123' };
-    const sig = createNPSignature(body, 'correct-secret');
-    const fakeSig = createNPSignature(body, 'wrong-secret');
-    expect(fakeSig).not.toBe(sig);
+    const sig = createNowPaymentsIpnSignature(body, 'correct-secret');
+    expect(verifyNowPaymentsIpnSignature(body, sig, 'wrong-secret')).toBe(false);
   });
 
   it('sorts keys alphabetically for HMAC', () => {
     const secret = 'test';
-    const body1 = { z: 1, a: 2, m: 3 };
-    const body2 = { a: 2, m: 3, z: 1 };
-    expect(createNPSignature(body1, secret)).toBe(createNPSignature(body2, secret));
+    const body1 = { z: { y: 1, a: 2 }, a: 2, m: 3 };
+    const body2 = { a: 2, m: 3, z: { a: 2, y: 1 } };
+    expect(createNowPaymentsIpnSignature(body1, secret))
+      .toBe(createNowPaymentsIpnSignature(body2, secret));
   });
 });

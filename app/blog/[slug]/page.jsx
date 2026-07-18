@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import BlogPostView from '@/components/blog-post';
 import { getLiveValues, injectLiveValues } from '@/lib/blog-values';
+import { renderBlogContent, serializeJsonLd } from '@/lib/blog-rendering';
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
@@ -46,7 +47,7 @@ export default async function BlogPostPage({ params }) {
   ]);
   if (!post) notFound();
 
-  post.content = injectLiveValues(post.content, liveValues);
+  post.content = renderBlogContent(injectLiveValues(post.content, liveValues));
 
   // Increment views (fire-and-forget)
   prisma.blogPost.update({ where: { id: post.id }, data: { views: { increment: 1 } } }).catch(() => {});
@@ -83,8 +84,8 @@ export default async function BlogPostPage({ params }) {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }} />
       <BlogPostView post={serialized} />
     </>
   );

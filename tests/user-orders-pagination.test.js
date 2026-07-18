@@ -7,7 +7,11 @@ vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
 vi.mock('@/lib/logger', () => ({ log: { error: vi.fn() } }));
 vi.mock('@/lib/auth', () => ({ getCurrentUser: vi.fn().mockResolvedValue({ id: 'user-1' }) }));
 vi.mock('@/lib/smm', () => ({ placeOrder: vi.fn(), checkOrder: vi.fn() }));
-vi.mock('@/lib/rate-limit', () => ({ rateLimit: vi.fn(), tooManyRequests: vi.fn() }));
+vi.mock('@/lib/rate-limit', () => ({
+  rateLimit: vi.fn(),
+  rateLimitUnavailable: vi.fn(),
+  tooManyRequests: vi.fn(),
+}));
 vi.mock('@/lib/promotions', () => ({ getActivePromotion: vi.fn(), applyPromotionDiscount: vi.fn() }));
 vi.mock('@/lib/clean-link', () => ({ cleanLink: value => value }));
 vi.mock('@/lib/drip-feed', () => ({ calculateIntradayDrip: vi.fn(), calculateMultiDayDrip: vi.fn(), getDripConfig: vi.fn() }));

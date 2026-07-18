@@ -1,7 +1,8 @@
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
-import { applyWelcomeBonus } from '@/lib/welcome-bonus';
-import { tgAnswerCallback, tgEditMessage, tgDeleteMessage, tgPayment } from '@/lib/telegram';
+import { finalizeDeposit } from '@/lib/deposit-finalization';
+import { notifyDepositFinalized } from '@/lib/deposit-notifications';
+import { tgAnswerCallback, tgEditMessage, tgDeleteMessage } from '@/lib/telegram';
 import { watBounds } from '@/lib/format';
 import { getBalance, PROVIDER_IDS, getProviderName, isProviderConfigured } from '@/lib/smm';
 
@@ -584,7 +585,7 @@ export async function POST(req) {
 
   try {
     const tx = await prisma.transaction.findUnique({ where: { id: txId } });
-    if (!tx || tx.method !== 'manual') {
+    if (!tx || tx.type !== 'deposit' || tx.method !== 'manual') {
       await tgAnswerCallback(cb.id, 'Transaction not found');
       return Response.json({ ok: true });
     }
@@ -625,45 +626,19 @@ export async function POST(req) {
       });
 
     } else if (action === 'confirm_approve') {
-      const couponMatch = (tx.note || '').match(/\[coupon:([^\]]+)\]/);
-      const couponId = couponMatch?.[1];
-
-      await prisma.$transaction(async (db) => {
-        const claimed = await db.transaction.updateMany({
-          where: { id: txId, status: 'Pending' },
-          data: { status: 'Completed', note: tx.note.replace(/\[user_confirmed[^\]]*\]|\[awaiting_confirmation\]/, `[approved_by:${adminLabel}]`) },
-        });
-        if (claimed.count === 0) throw new Error('already_processed');
-
-        let bonus = 0;
-        if (couponId) {
-          const alreadyUsed = await db.transaction.findFirst({
-            where: { userId: tx.userId, type: 'bonus', note: { contains: `[cid:${couponId}]` } },
-          });
-          if (!alreadyUsed) {
-            const [row] = await db.$queryRaw`SELECT value FROM settings WHERE key = 'coupons' FOR UPDATE`;
-            if (row) {
-              const coupons = JSON.parse(row.value);
-              const coupon = coupons.find(c => c.id === couponId && c.enabled !== false);
-              if (coupon) {
-                const notExpired = !coupon.expires || new Date(coupon.expires) >= new Date();
-                const notMaxed = !coupon.maxUses || coupon.maxUses === 0 || (coupon.used || 0) < coupon.maxUses;
-                if (notExpired && notMaxed) {
-                  const cappedAmount = coupon.maxDeposit > 0 ? Math.min(tx.amount, coupon.maxDeposit * 100) : tx.amount;
-                  bonus = coupon.type === 'percent' ? Math.round(cappedAmount * (coupon.value / 100)) : coupon.value * 100;
-                  await db.setting.update({ where: { key: 'coupons' }, data: { value: JSON.stringify(coupons.map(c => c.id === couponId ? { ...c, used: (c.used || 0) + 1 } : c)) } });
-                }
-              }
-            }
-          }
-        }
-
-        await db.user.update({ where: { id: tx.userId }, data: { balance: { increment: tx.amount + bonus } } });
-        if (bonus > 0) {
-          await db.transaction.create({ data: { userId: tx.userId, type: 'bonus', amount: bonus, status: 'Completed', note: `Coupon bonus [cid:${couponId}]` } });
-        }
-        await applyWelcomeBonus(db, tx.userId, tx.amount);
+      const finalized = await finalizeDeposit({
+        transactionId: txId,
+        paidAmountKobo: tx.amount,
+        claimableStatuses: ['Pending'],
+        approvedBy: adminLabel,
       });
+      if (!finalized.finalized) throw new Error('already_processed');
+
+      try {
+        await notifyDepositFinalized(finalized, { channel: 'Manual', approvedBy: adminLabel });
+      } catch (notifyErr) {
+        log.warn('TG Webhook', `Deposit notification failed for ${tx.reference}: ${notifyErr.message}`);
+      }
 
       await prisma.activityLog.create({
         data: { adminName: adminLabel, action: `Approved manual deposit ${amt} for ${name}`, type: 'payment' },
@@ -671,7 +646,6 @@ export async function POST(req) {
 
       await tgAnswerCallback(cb.id, `Approved ${amt}`);
       await tgDeleteMessage(cb.message.message_id);
-      await tgPayment(name, tx.amount, 0, 'Manual', adminLabel);
       log.info('TG Webhook', `Approved manual deposit ${txId} for ${name}`);
 
     } else if (action === 'confirm_reject') {

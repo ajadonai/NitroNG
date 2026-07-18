@@ -2,7 +2,7 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { cookies } from "next/headers";
-import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
+import { rateLimit, rateLimitUnavailable, tooManyRequests } from "@/lib/rate-limit";
 import { hashToken } from "@/lib/crew";
 import { validatePassword, validatePhone } from "@/lib/validate";
 import { getAffiliateSettings } from "@/lib/affiliate-settings";
@@ -27,8 +27,9 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { limited } = await rateLimit(req, { maxAttempts: 5, windowMs: 10 * 60 * 1000 });
-    if (limited) return tooManyRequests("Too many attempts. Try again in 10 minutes.");
+    const limit = await rateLimit(req, { maxAttempts: 5, windowMs: 10 * 60 * 1000 });
+    if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
+    if (limit.limited) return tooManyRequests("Too many attempts. Try again in 10 minutes.", limit.retryAfter);
 
     const { affiliate_enabled } = await getAffiliateSettings(['affiliate_enabled']);
     if (affiliate_enabled === 'false') {
@@ -65,8 +66,13 @@ export async function POST(req) {
               userId = newUser.id;
             }
 
-            await tx.crewMember.update({
-              where: { id: member.id },
+            const activated = await tx.crewMember.updateMany({
+              where: {
+                id: member.id,
+                inviteToken: token,
+                status: 'pending',
+                deletedAt: null,
+              },
               data: {
                 password: hashed, status: "approved", approvedAt: new Date(),
                 inviteToken: null, inviteExpiresAt: null,
@@ -75,6 +81,9 @@ export async function POST(req) {
                 ...(userId ? { userId } : {}),
               },
             });
+            if (activated.count !== 1) {
+              throw Object.assign(new Error('Invitation state changed'), { _status: 409 });
+            }
 
             await tx.crewSession.create({
               data: { memberId: member.id, token: hashToken(sessionToken), expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
@@ -89,7 +98,7 @@ export async function POST(req) {
     } catch (e) {
       if (e._status === 410) {
         await prisma.crewMember.updateMany({
-          where: { inviteToken: token },
+          where: { inviteToken: token, status: 'pending', deletedAt: null },
           data: { inviteToken: null, inviteExpiresAt: null },
         }).catch(() => {});
       }

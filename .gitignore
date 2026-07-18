@@ -35,3 +35,4 @@ yarn-error.log*
 
 # claude code
 .claude/
+.env*

@@ -120,6 +120,42 @@ describe('releaseHeldCommissions', () => {
     expect(fullSql).toContain('RETURNING');
     expect(fullSql).toContain("status = 'approved'");
     expect(fullSql).toContain("status = 'held'");
+    expect(fullSql).toContain('member."deletedAt" IS NULL');
+    expect(fullSql).toContain('lead."deletedAt" IS NULL');
+    expect(fullSql).toContain('commission."leadAmount" = 0');
+    expect(fullSql).toContain('commission."leadForfeitedAt" IS NOT NULL');
+    const creditSql = [...mockTx.$executeRaw.mock.calls[0][0]].join('');
+    expect(creditSql).toContain("status = 'approved'");
+    expect(creditSql).toContain('"deletedAt" IS NULL');
+  });
+
+  it('releases the active marketer share after a deleted lead share is forfeited', async () => {
+    mockTx.$queryRaw.mockResolvedValue([
+      { id: 'c1', memberId: 'm1', leadId: 'deleted-lead', marketerAmount: 500, leadAmount: 0 },
+    ]);
+    mockTx.$executeRaw.mockResolvedValue(1);
+
+    const count = await releaseHeldCommissions();
+
+    expect(count).toBe(1);
+    expect(mockTx.$executeRaw).toHaveBeenCalledTimes(1);
+    const creditSql = [...mockTx.$executeRaw.mock.calls[0][0]].join('');
+    expect(creditSql).toContain('WHERE id = ');
+  });
+
+  it('rolls back the release when final member eligibility is lost', async () => {
+    mockTx.$queryRaw.mockResolvedValue([
+      { id: 'c1', memberId: 'm1', leadId: null, marketerAmount: 500, leadAmount: 0 },
+    ]);
+    mockTx.$executeRaw.mockResolvedValue(0);
+
+    const count = await releaseHeldCommissions();
+
+    expect(count).toBe(0);
+    expect(mockTx.$executeRaw).toHaveBeenCalledTimes(1);
+    const creditSql = [...mockTx.$executeRaw.mock.calls[0][0]].join('');
+    expect(creditSql).toContain("status = 'approved'");
+    expect(creditSql).toContain('"deletedAt" IS NULL');
   });
 
   it('does not re-credit older approved commissions', async () => {
@@ -247,6 +283,10 @@ describe('voidCommissions payout reconciliation', () => {
     expect(count).toBe(1);
     // 1 void UPDATE + 1 totalEarned decrement + 1 payout rejection = 3
     expect(mockTx.$executeRaw).toHaveBeenCalledTimes(3);
+    const rejectionSql = [...mockTx.$executeRaw.mock.calls[2][0]].join('');
+    expect(rejectionSql).toContain('"bankName" = NULL');
+    expect(rejectionSql).toContain('"bankAccountNo" = NULL');
+    expect(rejectionSql).toContain('"bankAccountName" = NULL');
   });
 
   it('keeps payouts that are still covered after void', async () => {

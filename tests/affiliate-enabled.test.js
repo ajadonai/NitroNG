@@ -14,12 +14,14 @@ const mockPrisma = {
 const mockTx = {
   setting: { findMany: vi.fn() },
   acquisitionLink: { count: vi.fn(), create: vi.fn() },
+  $queryRaw: vi.fn(),
 };
 
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
 vi.mock('@/lib/logger', () => ({ log: { error: vi.fn(), info: vi.fn() } }));
 vi.mock('@/lib/rate-limit', () => ({
   rateLimit: vi.fn().mockResolvedValue({ limited: false }),
+  rateLimitUnavailable: (msg) => Response.json({ error: msg }, { status: 503 }),
   tooManyRequests: (msg) => Response.json({ error: msg }, { status: 429 }),
 }));
 vi.mock('@/lib/crew-bot', () => ({
@@ -53,6 +55,7 @@ const { POST: linksPost } = await import('@/app/api/pit/links/route');
 beforeEach(() => {
   vi.clearAllMocks();
   mockPrisma.$transaction.mockImplementation(async (fn) => fn(mockTx));
+  mockTx.$queryRaw.mockResolvedValue([{ id: 'chief1' }]);
 });
 
 // ──────────────────────────────────────

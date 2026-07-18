@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ── Prisma mock ──
 const mockPrisma = {
-  crewMember: { update: vi.fn(), findFirst: vi.fn() },
+  crewMember: { updateMany: vi.fn(), findFirst: vi.fn() },
   crewSession: { deleteMany: vi.fn() },
   activityLog: { create: vi.fn() },
 };
@@ -43,7 +43,7 @@ const MEMBER = {
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetCrewSession.mockResolvedValue({ ...MEMBER });
-  mockPrisma.crewMember.update.mockResolvedValue({});
+  mockPrisma.crewMember.updateMany.mockResolvedValue({ count: 1 });
   mockPrisma.activityLog.create.mockResolvedValue({});
 });
 
@@ -55,7 +55,7 @@ describe('Bank detail changes', () => {
     const d = await res.json();
     expect(d.error).toMatch(/password.*required/i);
     expect(res.status).toBe(400);
-    expect(mockPrisma.crewMember.update).not.toHaveBeenCalled();
+    expect(mockPrisma.crewMember.updateMany).not.toHaveBeenCalled();
   });
 
   it('rejects wrong password', async () => {
@@ -63,7 +63,7 @@ describe('Bank detail changes', () => {
     const res = await PATCH(req({ section: 'bank', bankName: 'GTB', bankAccountNo: '123', bankAccountName: 'Test', currentPassword: 'wrong' }));
     const d = await res.json();
     expect(d.error).toMatch(/incorrect/i);
-    expect(mockPrisma.crewMember.update).not.toHaveBeenCalled();
+    expect(mockPrisma.crewMember.updateMany).not.toHaveBeenCalled();
   });
 
   it('saves with correct password and sends notification', async () => {
@@ -72,8 +72,25 @@ describe('Bank detail changes', () => {
     const res = await PATCH(req({ section: 'bank', bankName: 'GTB', bankAccountNo: '123', bankAccountName: 'Test', currentPassword: 'correct' }));
     const d = await res.json();
     expect(d.ok).toBe(true);
-    expect(mockPrisma.crewMember.update).toHaveBeenCalled();
+    expect(mockPrisma.crewMember.updateMany).toHaveBeenCalledWith({
+      where: { id: 'm1', status: 'approved', deletedAt: null },
+      data: { bankName: 'GTB', bankAccountNo: '123', bankAccountName: 'Test' },
+    });
     expect(mockSendDM).toHaveBeenCalledWith('999', expect.stringContaining('bank details'));
+  });
+
+  it('cannot restore bank PII when deletion wins the final write fence', async () => {
+    mockBcrypt.compare.mockResolvedValue(true);
+    mockPrisma.crewMember.updateMany.mockResolvedValue({ count: 0 });
+
+    const res = await PATCH(req({
+      section: 'bank', bankName: 'GTB', bankAccountNo: '123',
+      bankAccountName: 'Test', currentPassword: 'correct',
+    }));
+
+    expect(res.status).toBe(409);
+    expect(mockSendDM).not.toHaveBeenCalled();
+    expect(mockPrisma.activityLog.create).not.toHaveBeenCalled();
   });
 
   it('logs activity after bank change', async () => {
@@ -81,7 +98,9 @@ describe('Bank detail changes', () => {
     mockSendDM.mockResolvedValue(true);
     await PATCH(req({ section: 'bank', bankName: 'GTB', bankAccountNo: '123', bankAccountName: 'Test', currentPassword: 'ok' }));
     expect(mockPrisma.activityLog.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ action: expect.stringContaining('bank'), type: 'pit-self' }),
+      data: expect.objectContaining({
+        adminName: 'Pit member m1', action: expect.stringContaining('bank'), type: 'pit-self',
+      }),
     });
   });
 
@@ -120,7 +139,9 @@ describe('Password change notifications', () => {
     mockSendDM.mockResolvedValue(true);
     await PATCH(req({ section: 'password', current: 'old', newPassword: 'newpass1' }));
     expect(mockPrisma.activityLog.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ action: expect.stringContaining('password'), type: 'pit-self' }),
+      data: expect.objectContaining({
+        adminName: 'Pit member m1', action: expect.stringContaining('password'), type: 'pit-self',
+      }),
     });
   });
 
@@ -140,7 +161,9 @@ describe('Telegram disconnect', () => {
     mockSendDM.mockResolvedValue(true);
     await PATCH(req({ section: 'telegram_disconnect' }));
     expect(mockPrisma.activityLog.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ action: expect.stringContaining('Telegram'), type: 'pit-self' }),
+      data: expect.objectContaining({
+        adminName: 'Pit member m1', action: expect.stringContaining('Telegram'), type: 'pit-self',
+      }),
     });
   });
 

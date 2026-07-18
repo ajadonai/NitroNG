@@ -79,9 +79,9 @@ export default function GuidePage({ dark, t }) {
 // Right sidebar for Guide
 export function GuideSidebar({ dark, t }) {
   return (
-    <>
-      <div className="text-xs font-semibold uppercase tracking-[1px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>About Blog</div>
-      <div className="text-sm leading-[1.7] mb-4" style={{ color: t.textSoft }}>Step-by-step guides and tutorials to help you get the most out of Nitro. New content is added regularly.</div>
+    <div className="flex flex-col gap-0">
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>About Blog</div>
+      <div className="text-sm leading-[1.7] mb-3" style={{ color: t.textSoft }}>Step-by-step guides and tutorials to help you get the most out of Nitro. New content is added regularly.</div>
 
       <div className="py-3 px-3.5 rounded-[10px] border" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", borderColor: dark ? "rgba(196,125,142,.19)" : "rgba(196,125,142,.14)" }}>
         <div className="text-sm font-semibold mb-1" style={{ color: t.text }}>Need more help?</div>
@@ -91,6 +91,6 @@ export function GuideSidebar({ dark, t }) {
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         </a>
       </div>
-    </>
+    </div>
   );
 }

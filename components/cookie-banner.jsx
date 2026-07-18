@@ -1,5 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
+import { isInternalDashboardPath } from '@/lib/internal-dashboard-path';
 
 export function hasConsent() {
   if (typeof window === 'undefined') return false;
@@ -7,18 +9,21 @@ export function hasConsent() {
 }
 
 export function initPixel() {
-  if (typeof window === 'undefined' || window.fbq) return;
+  if (typeof window === 'undefined' || window.fbq || isInternalDashboardPath(window.location.pathname)) return;
   !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
   window.fbq('init','27456534517306114');
   window.fbq('track','PageView');
 }
 
 export default function CookieBanner() {
+  const pathname = usePathname();
+  const internalDashboard = isInternalDashboardPath(pathname);
   const [show, setShow] = useState(false);
   const [exiting, setExiting] = useState(false);
   const [dark, setDark] = useState(true);
 
   useEffect(() => {
+    if (internalDashboard) return;
     const consent = localStorage.getItem('nitro-cookie-consent');
     if (consent === 'accepted') {
       initPixel();
@@ -28,7 +33,7 @@ export default function CookieBanner() {
       const timer = setTimeout(() => setShow(true), 2000);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [internalDashboard]);
 
   useEffect(() => {
     const check = () => {
@@ -64,7 +69,7 @@ export default function CookieBanner() {
     return () => window.removeEventListener('nitro-cookie-reset', handler);
   }, []);
 
-  if (!show) return null;
+  if (!show || internalDashboard) return null;
 
   return (
     <div className="fixed bottom-0 inset-x-0 z-[9999] p-2.5 sm:px-3.5" style={{ animation: exiting ? "cookieSlideDown .35s ease-in forwards" : "cookieSlideUp .4s ease-out" }} onAnimationEnd={() => { if (exiting) setShow(false); }}>

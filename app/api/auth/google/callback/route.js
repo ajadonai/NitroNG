@@ -10,6 +10,7 @@ import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { tgNewUser } from '@/lib/telegram';
 import { notifyCrewSignup } from '@/lib/commissions';
 import { resolveSignupAttribution } from '@/lib/link-ownership';
+import { isAccountDeletionGraceActive } from '@/lib/account-deletion';
 
 export async function GET(req) {
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -101,7 +102,8 @@ export async function GET(req) {
         return NextResponse.redirect(`${APP_URL}/?error=google_account_deleted`);
       }
       if (user.status === 'PendingDeletion') {
-        return NextResponse.redirect(`${APP_URL}/?error=account_pending_deletion`);
+        const error = isAccountDeletionGraceActive(user) ? 'account_pending_deletion' : 'google_account_deleted';
+        return NextResponse.redirect(`${APP_URL}/?error=${error}`);
       }
 
     } else {
@@ -119,7 +121,15 @@ export async function GET(req) {
       // Validate referral
       let referredBy = null;
       if (referralCode) {
-        const referrer = await prisma.user.findUnique({ where: { referralCode } });
+        const referrer = await prisma.user.findFirst({
+          where: {
+            referralCode,
+            status: 'Active',
+            emailVerified: true,
+            deletedAt: null,
+          },
+          select: { referralCode: true },
+        });
         if (referrer) referredBy = referralCode;
       }
 

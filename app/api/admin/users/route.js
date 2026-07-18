@@ -3,6 +3,7 @@ import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction, canSeeSensitive, maskEmail, maskPhone } from '@/lib/admin';
 import { sendEmail, walletCreditEmail } from '@/lib/email';
 import { getRewardsPayload, getPointsTotals, getPointsHistory } from '@/lib/nitro-rewards';
+import { reinstatePendingAccountDeletion } from '@/lib/account-deletion';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('users');
@@ -133,6 +134,7 @@ export async function GET(req) {
         deletedAt: u.deletedAt?.toISOString() || null,
         deletedName: u.deletedName || null,
         deletedEmail: sensitive ? (u.deletedEmail || null) : maskEmail(u.deletedEmail),
+        canReinstate: u.status === 'PendingDeletion' && Boolean(u.deletedAt && u.deletedAt > now),
       })),
       filteredCount,
       totalPages,
@@ -186,6 +188,15 @@ export async function POST(req) {
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
+
+    // Permanent deletion is irreversible. Historical rewards and transactions remain
+    // readable for audit, but no admin mutation may recreate or enrich the account.
+    if (user.status === 'Deleted') {
+      return Response.json({ error: 'Permanently deleted accounts cannot be changed' }, { status: 409 });
+    }
+    if (user.status === 'PendingDeletion' && action !== 'reinstate') {
+      return Response.json({ error: 'Accounts awaiting deletion can only be restored' }, { status: 409 });
+    }
 
     if (action === 'edit') {
       if (!canPerformAction(admin, 'users.edit')) return Response.json({ error: 'Not authorized to edit users' }, { status: 403 });
@@ -243,33 +254,32 @@ export async function POST(req) {
 
     if (action === 'suspend') {
       if (!canPerformAction(admin, 'users.ban')) return Response.json({ error: 'Not authorized to suspend users' }, { status: 403 });
+      if (user.status !== 'Active') return Response.json({ error: 'Only active users can be suspended' }, { status: 409 });
       await prisma.user.update({ where: { id: userId }, data: { status: 'Suspended' } });
       await logActivity(admin.name, `Suspended user ${user.name}`, 'user');
       return Response.json({ success: true, message: `${user.name} suspended` });
     }
 
     if (action === 'activate') {
+      if (user.status !== 'Suspended') return Response.json({ error: 'Only suspended users can be activated' }, { status: 409 });
       await prisma.user.update({ where: { id: userId }, data: { status: 'Active' } });
       await logActivity(admin.name, `Activated user ${user.name}`, 'user');
       return Response.json({ success: true, message: `${user.name} activated` });
     }
 
     if (action === 'reinstate') {
-      const originalName = user.deletedName || user.name;
-      const originalEmail = user.deletedEmail || user.email;
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          status: 'Active',
-          name: originalName,
-          email: originalEmail,
-          deletedAt: null,
-          deletedName: null,
-          deletedEmail: null,
-        },
-      });
-      await logActivity(admin.name, `Reinstated user ${originalName} (${originalEmail})`, 'user');
-      return Response.json({ success: true, message: `${originalName} reinstated` });
+      if (user.status !== 'PendingDeletion') {
+        return Response.json({ error: 'Only accounts awaiting deletion can be restored' }, { status: 409 });
+      }
+      if (!user.deletedAt || user.deletedAt <= new Date()) {
+        return Response.json({ error: 'The account deletion deadline has passed' }, { status: 409 });
+      }
+      const result = await reinstatePendingAccountDeletion(prisma, userId);
+      if (!result?.reinstated) {
+        return Response.json({ error: 'This account can no longer be restored' }, { status: 409 });
+      }
+      await logActivity(admin.name, `Reinstated user ${result.user.name} (${result.user.email})`, 'user');
+      return Response.json({ success: true, message: `${result.user.name} reinstated` });
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });

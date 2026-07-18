@@ -85,4 +85,86 @@ describe('GET /api/transactions — 180-day history boundary', () => {
       date: '2026-07-01T12:00:00.000Z',
     });
   });
+
+  it('serializes the customer-facing payment state for every durable Flutterwave status', async () => {
+    const cases = [
+      ['Completed', 'credited'],
+      ['Processing', 'verifying'],
+      ['Pending', 'provider_pending'],
+      ['Expired', 'retryable'],
+      ['Failed', 'failed'],
+      ['Cancelled', 'failed'],
+    ];
+    mockTransaction.findMany.mockResolvedValue(cases.map(([status], index) => ({
+      id: `flutterwave-${index}`,
+      userId: 'user-1',
+      type: 'deposit',
+      reference: `NTR-FLW-${index}`,
+      amount: 500_000,
+      status,
+      method: 'flutterwave',
+      note: 'Flutterwave deposit',
+      createdAt: new Date(`2026-07-${String(index + 1).padStart(2, '0')}T12:00:00.000Z`),
+    })));
+
+    const response = await GET(request());
+    const body = await response.json();
+
+    expect(body.transactions).toHaveLength(cases.length);
+    for (const [index, [transactionStatus, paymentState]] of cases.entries()) {
+      expect(body.transactions[index], transactionStatus).toMatchObject({
+        status: transactionStatus,
+        method: 'flutterwave',
+        paymentState,
+      });
+    }
+  });
+
+  it('normalizes legacy null-method deposits as Flutterwave transactions', async () => {
+    mockTransaction.findMany.mockResolvedValue([{
+      id: 'legacy-flutterwave',
+      userId: 'user-1',
+      type: 'deposit',
+      reference: 'NTR-LEGACY-FLW',
+      amount: 500_000,
+      status: 'Processing',
+      method: null,
+      note: 'Legacy Flutterwave deposit',
+      createdAt: new Date('2026-07-10T12:00:00.000Z'),
+    }]);
+
+    const response = await GET(request());
+    const body = await response.json();
+
+    expect(body.transactions[0]).toMatchObject({
+      method: 'flutterwave',
+      status: 'Processing',
+      paymentState: 'verifying',
+    });
+  });
+
+  it('surfaces an open crypto review even when the credited status stays Completed', async () => {
+    mockTransaction.findMany.mockResolvedValue([{
+      id: 'crypto-refund-review',
+      userId: 'user-1',
+      type: 'deposit',
+      reference: 'NTR-CRYPTO-REVIEW',
+      amount: 500_000,
+      status: 'Completed',
+      method: 'crypto',
+      note: 'Crypto deposit',
+      paymentReviewReason: 'refunded_after_credit',
+      paymentReviewResolvedAt: null,
+      createdAt: new Date('2026-07-10T12:00:00.000Z'),
+    }]);
+
+    const response = await GET(request());
+    const body = await response.json();
+
+    expect(body.transactions[0]).toMatchObject({
+      method: 'crypto',
+      status: 'Completed',
+      paymentState: 'review',
+    });
+  });
 });

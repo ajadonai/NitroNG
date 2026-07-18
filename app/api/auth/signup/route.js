@@ -3,7 +3,7 @@ import { log } from "@/lib/logger";
 import bcrypt from 'bcryptjs';
 import { signUserToken, setUserCookie, detectDevice, hashToken } from '@/lib/auth';
 import { generateReferralCode, ok, error } from '@/lib/utils';
-import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { validateEmail, validatePassword, validateName, sanitizeEmail, sanitizeString, isDisposableEmail } from '@/lib/validate';
 import { headers } from 'next/headers';
 import { sendWelcomeEmail } from '@/lib/email';
@@ -11,11 +11,13 @@ import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { tgNewUser } from '@/lib/telegram';
 import { notifyCrewSignup } from '@/lib/commissions';
 import { resolveSignupAttribution } from '@/lib/link-ownership';
+import { isAccountDeletionGraceActive } from '@/lib/account-deletion';
 
 export async function POST(req) {
   try {
-    const { limited } = await rateLimit(req, { maxAttempts: 5, windowMs: 60 * 1000 });
-    if (limited) return tooManyRequests('Too many signup attempts. Try again in a minute.');
+    const limit = await rateLimit(req, { maxAttempts: 5, windowMs: 60 * 1000 });
+    if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
+    if (limit.limited) return tooManyRequests('Too many signup attempts. Try again in a minute.', limit.retryAfter);
 
     const body = await req.json();
     const titleCase = (s) => s ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : s;
@@ -65,7 +67,9 @@ export async function POST(req) {
     const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (existing) {
       if (existing.status === 'PendingDeletion') {
-        return error('Account pending deletion. Contact support@nitro.ng.');
+        return error(isAccountDeletionGraceActive(existing)
+          ? 'Account pending deletion. Contact support@nitro.ng before the deletion deadline to cancel.'
+          : 'This account’s deletion deadline has passed and it cannot be restored.');
       }
       return error('An account with this email already exists');
     }
@@ -82,7 +86,15 @@ export async function POST(req) {
     // Check if referral code is valid
     let referredBy = null;
     if (referralCode) {
-      const referrer = await prisma.user.findUnique({ where: { referralCode } });
+      const referrer = await prisma.user.findFirst({
+        where: {
+          referralCode,
+          status: 'Active',
+          emailVerified: true,
+          deletedAt: null,
+        },
+        select: { referralCode: true },
+      });
       if (referrer) {
         referredBy = referralCode;
       }

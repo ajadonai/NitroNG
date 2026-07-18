@@ -50,8 +50,20 @@ describe('getCurrentAdmin — no password leak', () => {
     const payload = await getCurrentAdmin();
 
     expect(payload._admin).toBeDefined();
+    expect(payload._sessionId).toBe('sess1');
     expect(payload._admin).not.toHaveProperty('password');
     expect(payload._admin.name).toBe('Admin');
+  });
+
+  it('can verify from a Server Component without trying to mutate an invalid cookie', async () => {
+    mockJwtVerify.mockImplementation(() => { throw new Error('expired'); });
+
+    const { getCurrentAdmin } = await import('@/lib/auth');
+    const payload = await getCurrentAdmin({ clearInvalidCookie: false });
+
+    expect(payload).toBeNull();
+    expect(mockCookieStore.set).not.toHaveBeenCalled();
+    expect(mockAdminSession.findUnique).not.toHaveBeenCalled();
   });
 });
 

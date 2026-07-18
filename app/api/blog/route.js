@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getLiveValues, injectLiveValues } from '@/lib/blog-values';
+import { renderBlogContent } from '@/lib/blog-rendering';
 
 const PER_PAGE = 9;
 
@@ -28,7 +29,7 @@ export async function GET(req) {
         post: {
           ...post,
           excerpt: post.excerpt ? injectLiveValues(post.excerpt, liveValues) : post.excerpt,
-          content: injectLiveValues(post.content, liveValues),
+          content: renderBlogContent(injectLiveValues(post.content, liveValues)),
           createdAt: post.createdAt.toISOString(),
           updatedAt: post.updatedAt.toISOString(),
         },

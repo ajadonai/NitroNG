@@ -35,6 +35,7 @@ export async function GET() {
     const sensitive = canSeeSensitive(admin);
     const settings = {};
     rows.forEach(r => {
+      if (r.key === 'pulse_secret_key') return;
       if (!sensitive && r.key.startsWith('gateway_')) return;
       settings[r.key] = r.value;
     });

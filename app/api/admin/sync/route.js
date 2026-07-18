@@ -6,6 +6,7 @@ import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { calculateTierPrice } from '@/lib/markup';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
+import { findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
 
 export const maxDuration = 60;
 
@@ -128,13 +129,16 @@ export async function POST(req) {
     }
 
     if (action === 'sync-orders') {
-      const stats = { checked: 0, updated: 0, refunded: 0, dispatched: 0, errors: 0 };
+      const stats = { checked: 0, updated: 0, refunded: 0, dispatched: 0, queued: 0, errors: 0 };
 
-      // 1. Check status of orders already placed with providers
+      // Drip parents and dispatches are exclusively owned by the drip cron.
+      // Admin sync only reconciles direct provider orders.
       const activeOrders = await prisma.order.findMany({
         where: {
           status: { in: ['Processing', 'Pending', 'In progress'] },
           apiOrderId: { not: null },
+          dripDays: null,
+          dripDispatches: { none: {} },
           deletedAt: null,
         },
         include: { service: { select: { provider: true } } },
@@ -170,7 +174,10 @@ export async function POST(req) {
             const liveStartCount = result.start_count != null ? Number(result.start_count) : null;
 
             if (!newStatus && liveRemains != null && liveRemains !== order.remains) {
-              await prisma.order.update({ where: { id: order.id }, data: { remains: liveRemains, ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}) } });
+              await prisma.order.updateMany({
+                where: { id: order.id, status: order.status, apiOrderId: order.apiOrderId, deletedAt: null },
+                data: { remains: liveRemains, ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}) },
+              });
               continue;
             }
 
@@ -181,7 +188,13 @@ export async function POST(req) {
               continue;
             }
 
-            await prisma.order.update({ where: { id: order.id }, data: { status: newStatus, ...(liveRemains != null ? { remains: liveRemains } : {}), ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}) } });
+            const transitioned = await prisma.order.updateMany({
+              where: { id: order.id, status: order.status, apiOrderId: order.apiOrderId, deletedAt: null },
+              data: { status: newStatus, ...(liveRemains != null ? { remains: liveRemains } : {}), ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}) },
+            });
+            // A concurrent cancel/partial/completion wins. Never revive or refund
+            // from the stale provider response captured above.
+            if (transitioned.count === 0) continue;
             stats.updated++;
 
             if (newStatus === 'Cancelled' && order.charge > 0) {
@@ -229,98 +242,93 @@ export async function POST(req) {
         }
       }
 
-      // 1b. Check status of drip parent orders (no direct apiOrderId — sync via dispatches)
-      const dripParents = await prisma.order.findMany({
-        where: {
-          status: { in: ['Processing', 'Pending', 'In progress'] },
-          apiOrderId: null,
-          deletedAt: null,
-          dripDispatches: { some: { apiOrderId: { not: null } } },
-        },
-        include: { service: { select: { provider: true } } },
-        take: 100,
-        orderBy: { createdAt: 'asc' },
-      });
-
-      for (const order of dripParents) {
-        try {
-          const provider = order.service?.provider || 'mtp';
-          if (!isProviderConfigured(provider)) { stats.errors++; continue; }
-          stats.checked++;
-
-          const dispatches = await prisma.dripDispatch.findMany({
-            where: { orderId: order.id, apiOrderId: { not: null }, status: { notIn: ['completed', 'partial', 'cancelled'] } },
-            select: { id: true, apiOrderId: true, quantity: true, status: true, startCount: true },
-          });
-          if (dispatches.length === 0) continue;
-
-          for (const d of dispatches) {
-            try {
-              const result = await checkOrder(provider, d.apiOrderId);
-              const sMap = { 'Completed': 'completed', 'In progress': 'processing', 'Processing': 'processing', 'Pending': 'pending', 'Partial': 'partial', 'Canceled': 'cancelled', 'Refunded': 'cancelled' };
-              const newSt = sMap[result.status] || d.status;
-              const upd = {};
-              if (newSt !== d.status) upd.status = newSt;
-              if (result.remains != null) upd.remains = Number(result.remains);
-              if (result.start_count != null && !d.startCount) upd.startCount = Number(result.start_count);
-              if (['completed', 'partial', 'cancelled'].includes(newSt)) upd.completedAt = new Date();
-              if (Object.keys(upd).length > 0) await prisma.dripDispatch.update({ where: { id: d.id }, data: upd });
-            } catch {}
-            await new Promise(r => setTimeout(r, 200));
-          }
-
-          const allDispatches = await prisma.dripDispatch.findMany({
-            where: { orderId: order.id },
-            select: { status: true, remains: true, quantity: true, startCount: true },
-          });
-          const allDone = allDispatches.length > 0 && allDispatches.every(d => ['completed', 'partial', 'cancelled'].includes(d.status));
-          const totalRemains = allDispatches.reduce((s, d) => s + (d.remains ?? d.quantity), 0);
-          const parentUpd = { remains: totalRemains };
-          if (allDone) {
-            parentUpd.status = totalRemains > 0 ? 'Partial' : 'Completed';
-            parentUpd.completedAt = new Date();
-            stats.updated++;
-          }
-          const first = allDispatches[0];
-          if (first?.startCount != null && !order.startCount) parentUpd.startCount = first.startCount;
-          await prisma.order.update({ where: { id: order.id }, data: parentUpd });
-        } catch (err) {
-          stats.errors++;
-          log.warn(`Sync drip order ${order.orderId}`, err.message);
-        }
-      }
-
-      // 2. Dispatch pending orders that haven't been placed with a provider yet
+      // Dispatch direct pending orders only. Old queued/provider-waiting orders
+      // remain eligible so a long-running blocker cannot strand them forever.
       const undispatched = await prisma.order.findMany({
         where: {
           status: 'Pending', apiOrderId: null, deletedAt: null,
+          dripDays: null,
+          dripDispatches: { none: {} },
           retryCount: { lt: 5 },
-          createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+          OR: [
+            { createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+            { queuedBehind: { not: null } },
+            { lastError: PROVIDER_ACTIVE_WAIT },
+          ],
         },
         include: { service: true, tier: { include: { group: true } } },
         take: 50, orderBy: { createdAt: 'asc' },
       });
 
       for (const order of undispatched) {
-        if (order.link && order.serviceId) {
-          const blocking = await prisma.order.findFirst({
-            where: { serviceId: order.serviceId, link: order.link, status: { in: ['Pending', 'Processing', 'In progress'] }, apiOrderId: { not: null }, id: { not: order.id }, deletedAt: null },
+        const blocking = await findSameLinkDispatchBlocker(prisma, order);
+        if (blocking) {
+          const queued = await prisma.order.updateMany({
+            where: {
+              id: order.id,
+              status: 'Pending',
+              apiOrderId: null,
+              deletedAt: null,
+              dripDays: null,
+              dripDispatches: { none: {} },
+              queuedBehind: order.queuedBehind || null,
+            },
+            data: { queuedBehind: blocking.orderId, lastError: PROVIDER_ACTIVE_WAIT },
           });
-          if (blocking) continue;
+          if (queued.count > 0) stats.queued++;
+          continue;
         }
+
         const claimed = await prisma.order.updateMany({
-          where: { id: order.id, status: 'Pending', apiOrderId: null },
-          data: { status: 'Dispatching', dispatchedAt: new Date() },
+          where: {
+            id: order.id,
+            status: 'Pending',
+            apiOrderId: null,
+            deletedAt: null,
+            dripDays: null,
+            dripDispatches: { none: {} },
+            queuedBehind: order.queuedBehind || null,
+          },
+          data: { status: 'Dispatching', dispatchedAt: new Date(), queuedBehind: null },
         });
         if (claimed.count === 0) continue;
         try {
           const apiOrderId = await placeWithProvider({ id: order.id, service: order.service, tier: order.tier, link: order.link, quantity: order.quantity, comments: order.comments });
-          if (apiOrderId) { stats.dispatched++; }
-          else { await prisma.order.update({ where: { id: order.id }, data: { status: 'Pending', retryCount: { increment: 1 } } }); }
+          if (apiOrderId) {
+            const recorded = await prisma.order.findUnique({
+              where: { id: order.id },
+              select: { status: true, apiOrderId: true, deletedAt: true },
+            });
+            if (recorded?.status === 'Processing' && recorded.apiOrderId === String(apiOrderId) && !recorded.deletedAt) stats.dispatched++;
+            else stats.errors++;
+          } else {
+            await prisma.order.updateMany({
+              where: { id: order.id, status: 'Dispatching', apiOrderId: null, deletedAt: null },
+              data: { status: 'Pending', retryCount: { increment: 1 } },
+            });
+          }
         } catch (err) {
-          await prisma.order.update({ where: { id: order.id }, data: { status: 'Pending', retryCount: { increment: 1 }, lastError: err.message.slice(0, 500) } });
-          stats.errors++;
-          log.warn(`Dispatch ${order.orderId}`, err.message);
+          if (isActiveOrderConflict(err)) {
+            const currentBlocker = await findSameLinkDispatchBlocker(prisma, order);
+            const queued = await prisma.order.updateMany({
+              where: { id: order.id, status: 'Dispatching', apiOrderId: null, deletedAt: null },
+              data: {
+                status: 'Pending',
+                dispatchedAt: null,
+                queuedBehind: currentBlocker?.orderId || null,
+                lastError: PROVIDER_ACTIVE_WAIT,
+                retryCount: 0,
+              },
+            });
+            if (queued.count > 0) stats.queued++;
+          } else {
+            await prisma.order.updateMany({
+              where: { id: order.id, status: 'Dispatching', apiOrderId: null, deletedAt: null },
+              data: { status: 'Pending', retryCount: { increment: 1 }, lastError: err.message.slice(0, 500) },
+            });
+            stats.errors++;
+            log.warn(`Dispatch ${order.orderId}`, err.message);
+          }
         }
         await new Promise(r => setTimeout(r, 300));
       }

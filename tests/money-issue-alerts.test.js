@@ -99,12 +99,17 @@ describe('createCommission failure', () => {
     mockTx.crewMember.findUnique.mockResolvedValue({
       id: 'member1',
       status: 'approved',
+      deletedAt: null,
       commissionRate: 10,
       leadId: null,
       role: 'chief',
       email: 'affiliate@test.com',
     });
     mockTx.affiliateCommission.findFirst.mockResolvedValue(null);
+    mockTx.$queryRaw.mockResolvedValue([{
+      id: 'member1', status: 'approved', deletedAt: null, commissionRate: 10,
+      leadId: null, role: 'chief', email: 'affiliate@test.com',
+    }]);
     mockTx.affiliateCommission.create.mockRejectedValue(new Error('unique constraint violated'));
 
     const result = await createCommission('ord1', 'user1', 100000, 50000);
@@ -130,12 +135,17 @@ describe('createCommission failure', () => {
     mockTx.crewMember.findUnique.mockResolvedValue({
       id: 'member1',
       status: 'approved',
+      deletedAt: null,
       commissionRate: 10,
       leadId: null,
       role: 'chief',
       email: 'affiliate@test.com',
     });
     mockTx.affiliateCommission.findFirst.mockResolvedValue(null);
+    mockTx.$queryRaw.mockResolvedValue([{
+      id: 'member1', status: 'approved', deletedAt: null, commissionRate: 10,
+      leadId: null, role: 'chief', email: 'affiliate@test.com',
+    }]);
     mockTx.affiliateCommission.create.mockResolvedValue({ id: 'comm1' });
     mockTx.affiliateCommission.count.mockResolvedValue(1);
 

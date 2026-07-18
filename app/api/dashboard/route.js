@@ -4,27 +4,32 @@ import { getCurrentUser } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
 import { getBonusInfo } from '@/lib/bonus-credit';
 import { serializeTransaction, transactionHistoryCutoff } from '@/lib/transaction-history';
+import { getOrderOfferDisplay } from '@/lib/order-offer-display';
 
 const ORDER_INCLUDE = {
-  service: { select: { name: true, category: true } },
+  service: { select: { name: true, category: true, enabled: true } },
   tier: {
     select: {
       tier: true,
+      enabled: true,
+      serviceId: true,
       speed: true,
       refill: true,
       refillDays: true,
-      group: { select: { name: true, platform: true, type: true } },
+      group: { select: { name: true, platform: true, type: true, enabled: true } },
     },
   },
 };
 
 function serializeOrder(o) {
+  const offer = getOrderOfferDisplay(o);
   return {
     id: o.orderId || o.id,
     internalId: o.id,
-    service: o.tier?.group?.name || o.service?.name || o.serviceId,
-    platform: o.tier?.group?.platform || o.service?.category || 'unknown',
-    tier: o.tier?.tier || null,
+    service: offer.serviceName,
+    platform: offer.platform,
+    tier: offer.tierLabel,
+    offerDisabled: offer.offerDisabled,
     speed: o.tier?.speed || null,
     link: o.link,
     quantity: o.quantity,
@@ -40,7 +45,7 @@ function serializeOrder(o) {
     refillDays: o.tier?.refillDays || 0,
     completedAt: o.completedAt?.toISOString() || null,
     created: o.createdAt.toISOString(),
-    serviceType: o.tier?.group?.type || null,
+    serviceType: offer.serviceType,
     dripDays: o.dripDays || null,
   };
 }
@@ -56,7 +61,7 @@ async function getOrderSummary(userId) {
         o."lastError",
         o."apiOrderId",
         o."queuedBehind",
-        COALESCE(sg.platform, s.category, 'unknown') AS platform
+        COALESCE(o."platformAtPurchase", sg.platform, s.category, 'unknown') AS platform
       FROM orders o
       JOIN services s ON s.id = o."serviceId"
       LEFT JOIN service_tiers st ON st.id = o."tierId"
@@ -243,20 +248,6 @@ export async function GET() {
       } catch {}
     }
 
-    // User badge based on total lifetime spend
-    const DEFAULT_TIERS = [
-      { name: "Starter", threshold: 0, discount: 0, color: "#6B7280", perks: "Welcome to Nitro" },
-      { name: "Regular", threshold: 5000000, discount: 3, color: "#F59E0B", perks: "3% discount on all orders" },
-      { name: "Power User", threshold: 25000000, discount: 5, color: "#3B82F6", perks: "5% discount + priority support" },
-      { name: "Elite", threshold: 100000000, discount: 8, color: "#8B5CF6", perks: "8% discount + priority support" },
-      { name: "Legend", threshold: 500000000, discount: 12, color: "#EF4444", perks: "12% discount + priority support + early access" },
-    ];
-    let loyaltyTiers = DEFAULT_TIERS;
-    try {
-      const ltRow = await prisma.setting.findUnique({ where: { key: 'loyalty_tiers' } });
-      if (ltRow) loyaltyTiers = JSON.parse(ltRow.value);
-    } catch {}
-
     let unreadTickets = [];
     try {
       unreadTickets = await prisma.ticket.findMany({
@@ -274,12 +265,6 @@ export async function GET() {
     } catch {}
 
     const totalOrders = orderSummary.nonCancelled;
-    const totalSpend = orderSummary.spentKobo;
-
-    let badge = loyaltyTiers[0];
-    for (const t2 of loyaltyTiers) { if (totalSpend >= t2.threshold) badge = t2; }
-    const currentIdx = loyaltyTiers.findIndex(t2 => t2.name === badge.name);
-    const nextTier = currentIdx < loyaltyTiers.length - 1 ? loyaltyTiers[currentIdx + 1] : null;
 
     const tc = (s) => s ? s.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase()) : '';
     const bonusCredit = await getBonusInfo(prisma, user.id);
@@ -301,12 +286,7 @@ export async function GET() {
         refMinDeposit: refMinDepositDisplay,
         themePreference: user.themePreference || 'auto',
         perPagePreference: user.perPagePreference || 10,
-        badge: badge.name,
-        badgeColor: badge.color,
-        badgeDiscount: badge.discount,
-        badgePerks: badge.perks,
         totalOrders,
-        nextTier: nextTier ? { name: nextTier.name, color: nextTier.color } : null,
         createdAt: user.createdAt,
         notifOrders: user.notifOrders,
         notifPromo: user.notifPromo,
