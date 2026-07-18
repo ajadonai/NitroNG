@@ -5,6 +5,7 @@ import { fN, fD } from "../lib/format";
 import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { WalletPointsCard, PointsModal } from "./rewards";
+import NitroLoader from "./nitro-loader";
 import { PAYMENT_STATES, isCreditedPaymentResult, paymentStateFromTransactionStatus } from "../lib/payment-state";
 import {
   creditedCryptoPaymentStatus,
@@ -555,8 +556,9 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
     </div>
   );
 
-  const PayButton = ({ onClick, disabled, text, className: cls }) => (
-    <button onClick={onClick} disabled={disabled} className={`w-full py-4 max-desktop:py-3.5 max-md:py-[13px] rounded-xl max-md:rounded-[10px] text-base font-semibold border-none cursor-pointer transition-[transform,box-shadow] duration-200 hover:translate-y-[-1px] hover:shadow-[0_6px_20px_rgba(196,125,142,.31)] ${cls || ""}`} style={{ background: valid ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"), color: valid ? "#fff" : t.textMuted }}>
+  const PayButton = ({ onClick, disabled, text, loading: busy, className: cls }) => (
+    <button onClick={onClick} disabled={disabled} className={`w-full py-4 max-desktop:py-3.5 max-md:py-[13px] rounded-xl max-md:rounded-[10px] text-base font-semibold border-none cursor-pointer flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:translate-y-[-1px] hover:shadow-[0_6px_20px_rgba(196,125,142,.31)] ${cls || ""}`} style={{ background: valid ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"), color: valid ? "#fff" : t.textMuted }}>
+      {busy && <NitroLoader size={16} mono ariaHidden />}
       {text}
     </button>
   );
@@ -699,7 +701,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 
               <div className="flex-1 min-h-4" />
 
-              <PayButton onClick={handlePay} disabled={!valid || loading} text={loading ? "Processing..." : valid ? `Pay ${fN(numAmount)} Now` : "Enter an amount"} />
+              <PayButton onClick={handlePay} disabled={!valid || loading} loading={loading} text={loading ? "Processing..." : valid ? `Pay ${fN(numAmount)} Now` : "Enter an amount"} />
               <div className="flex items-center justify-center gap-1.5 mt-2.5 text-xs" style={{ color: t.textMuted }}>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                 Encrypted & secure
@@ -794,7 +796,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               ) : (
                 <div className="py-3 text-center text-sm" style={{ color: t.textMuted }}>No payment methods available</div>
               )}
-              <PayButton onClick={handlePay} disabled={loading} text={loading ? "Processing..." : `Pay ${fN(numAmount)} Now`} className="mt-3" />
+              <PayButton onClick={handlePay} disabled={loading} loading={loading} text={loading ? "Processing..." : `Pay ${fN(numAmount)} Now`} className="mt-3" />
               <div className="flex items-center justify-center gap-1.5 mt-2.5 text-xs" style={{ color: t.textMuted }}>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                 Encrypted & secure
