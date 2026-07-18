@@ -539,7 +539,7 @@ export default function PulseDashboard() {
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#080b14', fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif" }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-          <NitroLoader size={56} />
+          <NitroLoader size={72} />
           <div style={{ color: '#555', fontSize: 12 }}>Connecting to live data...</div>
         </div>
       </div>
