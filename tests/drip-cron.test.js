@@ -69,6 +69,8 @@ describe('drip cron — section 2 in-flight filter', () => {
     expect(where.status).toBe('pending');
     expect(where.scheduledAt).toEqual({ lte: expect.any(Date) });
     expect(where.order).toEqual({
+      status: { in: ['Pending', 'Processing'] },
+      deletedAt: null,
       dripDispatches: {
         none: { status: { in: ['dispatching', 'processing'] } },
       },

@@ -66,6 +66,8 @@ export async function GET(req) {
         status: 'pending',
         scheduledAt: { lte: new Date() },
         order: {
+          status: { in: ['Pending', 'Processing'] },
+          deletedAt: null,
           dripDispatches: {
             none: { status: { in: ['dispatching', 'processing'] } },
           },
@@ -74,13 +76,13 @@ export async function GET(req) {
       include: {
         order: { include: { service: true } },
       },
-      take: 30,
+      take: 100,
       orderBy: { scheduledAt: 'asc' },
     });
 
     for (const dispatch of due) {
       const order = dispatch.order;
-      if (!order || order.status === 'Cancelled' || order.deletedAt) continue;
+      if (!order || order.deletedAt) continue;
 
       // Re-resolve the queue on every attempt. Earlier queued orders retain FIFO,
       // while an in-flight direct or drip order blocks dispatch even if this row's
