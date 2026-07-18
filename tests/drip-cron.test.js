@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockDripDispatch = { findMany: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() };
-const mockOrder = { findMany: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() };
+const mockOrder = { findMany: vi.fn(), findFirst: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() };
 const mockAdminIssue = { create: vi.fn().mockReturnValue({ catch: () => {} }) };
 const mockExecuteRawUnsafe = vi.fn();
 
@@ -44,6 +44,7 @@ beforeEach(async () => {
   mockDripDispatch.findMany.mockResolvedValue([]);
   mockOrder.findMany.mockResolvedValue([]);
   mockOrder.findFirst.mockResolvedValue(null);
+  mockOrder.findUnique.mockResolvedValue({ queuedBehind: null });
   mockOrder.updateMany.mockResolvedValue({ count: 1 });
   mockExecuteRawUnsafe.mockResolvedValue(0);
 });
