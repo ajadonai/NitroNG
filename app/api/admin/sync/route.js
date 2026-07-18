@@ -131,8 +131,7 @@ export async function POST(req) {
     if (action === 'sync-orders') {
       const stats = { checked: 0, updated: 0, refunded: 0, dispatched: 0, queued: 0, errors: 0 };
 
-      // Drip parents and dispatches are exclusively owned by the drip cron.
-      // Admin sync only reconciles direct provider orders.
+      // ── Sync direct (non-drip) provider orders ──
       const activeOrders = await prisma.order.findMany({
         where: {
           status: { in: ['Processing', 'Pending', 'In progress'] },
@@ -242,6 +241,80 @@ export async function POST(req) {
         }
       }
 
+      // ── Sync drip dispatches ──
+      const processingDispatches = await prisma.dripDispatch.findMany({
+        where: { status: 'processing', apiOrderId: { not: null } },
+        include: { order: { include: { service: { select: { provider: true } } } } },
+        take: 200,
+        orderBy: { dispatchedAt: 'asc' },
+      });
+
+      for (const dispatch of processingDispatches) {
+        try {
+          stats.checked++;
+          const provider = dispatch.order.service?.provider || 'mtp';
+          if (!isProviderConfigured(provider)) { stats.errors++; continue; }
+          const result = await checkOrder(provider, dispatch.apiOrderId);
+          const providerStatus = (result.status || '').toLowerCase();
+          const liveRemains = result.remains != null ? Number(result.remains) : null;
+          const liveStartCount = result.start_count != null ? Number(result.start_count) : null;
+
+          let newStatus = null;
+          if (['completed', 'complete'].includes(providerStatus)) newStatus = 'completed';
+          else if (['partial', 'partially completed'].includes(providerStatus)) newStatus = 'partial';
+          else if (['cancelled', 'canceled', 'refunded', 'fail', 'failed'].includes(providerStatus)) newStatus = 'failed';
+
+          if (!newStatus) {
+            if (liveRemains != null && liveRemains !== dispatch.remains) {
+              await prisma.dripDispatch.update({
+                where: { id: dispatch.id },
+                data: { remains: liveRemains, ...(liveStartCount != null && dispatch.startCount == null ? { startCount: liveStartCount } : {}) },
+              });
+              stats.updated++;
+            }
+            continue;
+          }
+
+          await prisma.dripDispatch.update({
+            where: { id: dispatch.id },
+            data: {
+              status: newStatus,
+              remains: liveRemains ?? undefined,
+              startCount: liveStartCount ?? undefined,
+              completedAt: ['completed', 'partial'].includes(newStatus) ? new Date() : undefined,
+              lastError: null,
+            },
+          });
+          stats.updated++;
+        } catch (err) {
+          stats.errors++;
+          log.warn(`Sync drip dispatch ${dispatch.id}`, err.message);
+        }
+        await new Promise(r => setTimeout(r, 200));
+      }
+
+      // Roll up drip parent order progress
+      if (processingDispatches.length > 0) {
+        const parentIds = [...new Set(processingDispatches.map(d => d.orderId))];
+        for (const parentId of parentIds) {
+          try {
+            const allDisp = await prisma.dripDispatch.findMany({ where: { orderId: parentId }, select: { status: true, quantity: true, remains: true } });
+            const totalRemains = allDisp.reduce((s, d) => {
+              if (d.remains != null) return s + d.remains;
+              if (d.status === 'completed') return s;
+              return s + d.quantity;
+            }, 0);
+            const allDone = allDisp.every(d => ['completed', 'partial', 'failed'].includes(d.status));
+            const anyPartial = allDisp.some(d => d.status === 'partial' || d.status === 'failed');
+            const parentStatus = allDone ? (anyPartial ? 'Partial' : 'Completed') : undefined;
+            await prisma.order.update({
+              where: { id: parentId },
+              data: { remains: totalRemains, ...(parentStatus ? { status: parentStatus } : {}) },
+            });
+          } catch {}
+        }
+      }
+
       // Dispatch direct pending orders only. Old queued/provider-waiting orders
       // remain eligible so a long-running blocker cannot strand them forever.
       const undispatched = await prisma.order.findMany({
@@ -333,7 +406,7 @@ export async function POST(req) {
         await new Promise(r => setTimeout(r, 300));
       }
 
-      await logActivity(admin.name, `Synced orders: ${stats.checked} checked, ${stats.updated} updated, ${stats.refunded} refunded, ${stats.dispatched} dispatched`, 'order');
+      await logActivity(admin.name, `Synced orders: ${stats.checked} checked, ${stats.updated} updated, ${stats.refunded} refunded`, 'order');
       return Response.json({ success: true, ...stats });
     }
 
