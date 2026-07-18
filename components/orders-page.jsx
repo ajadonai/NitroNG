@@ -421,7 +421,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
             {!o.apiOrderId && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cancel</button>}
           </>
         )}
-        {(o.status === "Completed" || o.status === "Cancelled") && (
+        {(o.status === "Completed" || o.status === "Cancelled") && !o.offerDisabled && (
           <button onClick={async () => { const ok = await confirm({ title: "Reorder", message: `Reorder ${o.service}? ₦${o.charge?.toLocaleString()} will be charged from your wallet.`, confirmLabel: "Place Reorder" }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", color: t.accent }}>{actionLoading === o.id ? <Spinner size={14} color={t.accent} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>}Reorder</button>
         )}
         {reportIssueButton}
@@ -440,7 +440,8 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
 
   const hasActive = batch.orders.some(o => o.status === "Processing" || o.status === "Pending");
   const hasCancellable = batch.orders.some(o => (o.status === "Processing" || o.status === "Pending") && !o.apiOrderId);
-  const hasReorderable = batch.orders.some(o => o.status === "Completed" || o.status === "Cancelled");
+  const reorderableOrders = batch.orders.filter(o => o.status === "Completed" || o.status === "Cancelled");
+  const hasReorderable = reorderableOrders.length > 0 && reorderableOrders.every(o => !o.offerDisabled);
 
   const batchSt = batch.orders.every(o => o.status === "Completed") ? "Completed"
     : batch.orders.every(o => o.status === "Cancelled") ? "Cancelled"
@@ -809,9 +810,9 @@ export function OrdersSidebar({ orders, orderSummary, dark, t }) {
   const totalOrders = orderSummary?.total ?? 0;
 
   return (
-    <>
-      <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Order Summary</div>
-      <div className="grid grid-cols-2 gap-1.5 mb-4">
+    <div className="flex flex-col gap-0">
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Order Summary</div>
+      <div className="grid grid-cols-2 gap-1.5 mb-3">
         {[
           ["Total", String(totalOrders), dark ? "#a5b4fc" : "#4f46e5"],
           ["Active", String(activeCount), dark ? "#fcd34d" : "#d97706"],
@@ -822,13 +823,13 @@ export function OrdersSidebar({ orders, orderSummary, dark, t }) {
         ].map(([label, val, color]) => (
           <div key={label} className="p-3 rounded-[10px]" style={{ background: t.cardBg }}>
             <div className="text-xs uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>{label}</div>
-            <div className="m text-base font-semibold" style={{ color }}>{val}</div>
+            <div className="text-base font-semibold" style={{ color }}>{val}</div>
           </div>
         ))}
       </div>
 
       {activeCount > 0 && (
-        <div className="flex gap-2.5 items-start rounded-xl px-3.5 py-3 mb-4" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(251,191,36,.1)", border: `1px solid ${dark ? "rgba(251,191,36,.2)" : "rgba(217,119,6,.18)"}` }}>
+        <div className="flex gap-2.5 items-start rounded-xl px-3.5 py-3 mb-3" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(251,191,36,.1)", border: `1px solid ${dark ? "rgba(251,191,36,.2)" : "rgba(217,119,6,.18)"}` }}>
           <span className="text-base leading-none mt-px shrink-0">⏱</span>
           <div className="text-[11.5px] leading-[1.55]" style={{ color: dark ? "#fbbf24" : "#92400e" }}>
             <span className="font-semibold">Delivery: 0–6 hrs</span> (up to 24 hrs in some cases). We cannot act on speed requests within the first 6 hours.
@@ -836,9 +837,9 @@ export function OrdersSidebar({ orders, orderSummary, dark, t }) {
         </div>
       )}
 
-      <div className="h-px mt-1 mb-4" style={{ background: t.sidebarBorder }} />
+      <div className="h-px mb-3" style={{ background: t.sidebarBorder }} />
 
-      <div className="text-[13px] font-semibold uppercase tracking-[1.5px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Recent Activity</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Recent Activity</div>
       {orders.slice(0, 5).map(o => (
         <div key={o.id} className="py-2 px-2.5 rounded-lg mb-1" style={{ background: t.cardBg }}>
           <div className="flex items-center gap-2.5">
@@ -851,6 +852,6 @@ export function OrdersSidebar({ orders, orderSummary, dark, t }) {
           </div>
         </div>
       ))}
-    </>
+    </div>
   );
 }

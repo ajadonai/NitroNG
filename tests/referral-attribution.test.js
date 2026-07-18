@@ -6,6 +6,8 @@ const mockPrisma = {
   crewMember: { findUnique: vi.fn() },
   affiliateCommission: { findFirst: vi.fn(), create: vi.fn() },
   setting: { findMany: vi.fn() },
+  $queryRaw: vi.fn(),
+  $transaction: vi.fn(),
 };
 
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
@@ -18,9 +20,11 @@ const { resolveSignupAttribution } = await import('@/lib/link-ownership');
 beforeEach(() => {
   vi.clearAllMocks();
   mockPrisma.setting.findMany.mockResolvedValue([]);
+  mockPrisma.$queryRaw.mockResolvedValue([MEMBER]);
+  mockPrisma.$transaction.mockImplementation(async work => work(mockPrisma));
 });
 
-const MEMBER = { id: 'member1', status: 'approved', commissionRate: 30, leadId: null, role: 'crew', email: 'crew@test.local' };
+const MEMBER = { id: 'member1', status: 'approved', deletedAt: null, commissionRate: 30, leadId: null, role: 'crew', email: 'crew@test.local' };
 const BEFORE_FREEZE = new Date('2026-06-01T00:00:00Z');
 const AFTER_FREEZE = new Date('2026-07-15T00:00:00Z');
 
@@ -122,6 +126,46 @@ describe('immutable referral attribution', () => {
     expect(mockPrisma.acquisitionLink.findUnique).not.toHaveBeenCalled();
     expect(mockPrisma.crewMember.findUnique).not.toHaveBeenCalled();
   });
+
+  it('does not create a commission for a soft-deleted member', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({
+      signupSource: 'old-slug',
+      email: 'user@test.local',
+      referredByMemberId: 'member1',
+      referredByLinkId: 'link1',
+      createdAt: AFTER_FREEZE,
+    });
+    mockPrisma.crewMember.findUnique.mockResolvedValue({ ...MEMBER, deletedAt: new Date() });
+
+    const result = await createCommission('order1', 'user1', 200000, 100000);
+
+    expect(result).toBeNull();
+    expect(mockPrisma.affiliateCommission.create).not.toHaveBeenCalled();
+  });
+
+  it('creates nothing when deletion wins the final locked eligibility fence', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({
+      signupSource: 'old-slug',
+      email: 'user@test.local',
+      referredByMemberId: 'member1',
+      referredByLinkId: 'link1',
+      createdAt: AFTER_FREEZE,
+    });
+    mockPrisma.crewMember.findUnique.mockResolvedValue(MEMBER);
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+
+    const result = await createCommission('order1', 'user1', 200000, 100000);
+
+    expect(result).toBeNull();
+    expect(mockPrisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'Serializable',
+    });
+    const fenceSql = [...mockPrisma.$queryRaw.mock.calls[0][0]].join('');
+    expect(fenceSql).toContain('FOR UPDATE');
+    expect(fenceSql).toContain("status = 'approved'");
+    expect(fenceSql).toContain('"deletedAt" IS NULL');
+    expect(mockPrisma.affiliateCommission.create).not.toHaveBeenCalled();
+  });
 });
 
 // ──────────────────────────────────────
@@ -131,6 +175,7 @@ describe('resolveSignupAttribution', () => {
   it('returns member and link IDs for a valid enabled link', async () => {
     mockPrisma.acquisitionLink.findUnique.mockResolvedValue({
       id: 'link1', affiliateId: 'member1', enabled: true, archivedAt: null,
+      affiliate: { status: 'approved', deletedAt: null },
     });
 
     const result = await resolveSignupAttribution('valid-slug');
@@ -179,5 +224,17 @@ describe('resolveSignupAttribution', () => {
     const result = await resolveSignupAttribution('unassigned-slug');
 
     expect(result).toEqual({ memberId: null, linkId: null });
+  });
+
+  it.each([
+    ['suspended', null],
+    ['approved', new Date('2026-07-17T00:00:00Z')],
+  ])('returns nulls when the assigned affiliate is ineligible (%s)', async (status, deletedAt) => {
+    mockPrisma.acquisitionLink.findUnique.mockResolvedValue({
+      id: 'link1', affiliateId: 'member1', enabled: true, archivedAt: null,
+      affiliate: { status, deletedAt },
+    });
+
+    await expect(resolveSignupAttribution('inactive-slug')).resolves.toEqual({ memberId: null, linkId: null });
   });
 });

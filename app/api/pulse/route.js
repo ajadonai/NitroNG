@@ -1,24 +1,48 @@
-import { timingSafeEqual } from 'crypto';
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { watBounds } from '@/lib/format';
+import { getOrderOfferDisplay } from '@/lib/order-offer-display';
+import {
+  internalDashboardAccessError,
+  requireInternalDashboardAccess,
+  withInternalDashboardNoStore,
+} from '@/lib/internal-dashboard-access';
+import {
+  rateLimit,
+  rateLimitUnavailable,
+  tooManyRequests,
+} from '@/lib/rate-limit';
 
-async function validateKey(req) {
-  const key = new URL(req.url).searchParams.get('key');
-  if (!key) return false;
-  const row = await prisma.setting.findUnique({ where: { key: 'pulse_secret_key' } });
-  if (!row?.value) return false;
-  try {
-    const a = Buffer.from(key);
-    const b = Buffer.from(row.value);
-    return a.length === b.length && timingSafeEqual(a, b);
-  } catch { return false; }
-}
+export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
-  if (!(await validateKey(req))) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  let limit;
+  try {
+    limit = await rateLimit(req, { maxAttempts: 8, windowMs: 60_000 });
+  } catch {
+    return withInternalDashboardNoStore(rateLimitUnavailable());
   }
+  if (limit.unavailable) {
+    return withInternalDashboardNoStore(rateLimitUnavailable(undefined, limit.retryAfter));
+  }
+  if (limit.limited) {
+    return withInternalDashboardNoStore(tooManyRequests(
+      'Too many Pulse requests. Please try again shortly.',
+      limit.retryAfter,
+    ));
+  }
+
+  let access;
+  try {
+    access = await requireInternalDashboardAccess();
+  } catch (err) {
+    log.error('Pulse Access', err.message);
+    return withInternalDashboardNoStore(Response.json(
+      { error: 'Internal dashboard access is temporarily unavailable' },
+      { status: 503 },
+    ));
+  }
+  if (!access.ok) return internalDashboardAccessError(access);
 
   try {
     const { now, todayStart, yesterdayStart, monthStart } = watBounds();
@@ -88,8 +112,15 @@ export async function GET(req) {
         take: 15,
         include: {
           user: { select: { name: true, email: true } },
-          service: { select: { name: true, category: true } },
-          tier: { select: { tier: true, group: { select: { name: true } } } },
+          service: { select: { name: true, category: true, enabled: true } },
+          tier: {
+            select: {
+              tier: true,
+              enabled: true,
+              serviceId: true,
+              group: { select: { name: true, platform: true, type: true, enabled: true } },
+            },
+          },
         },
       }),
       prisma.transaction.findMany({
@@ -104,8 +135,15 @@ export async function GET(req) {
         take: 15,
         include: {
           user: { select: { name: true, email: true } },
-          service: { select: { name: true, category: true } },
-          tier: { select: { tier: true, group: { select: { name: true } } } },
+          service: { select: { name: true, category: true, enabled: true } },
+          tier: {
+            select: {
+              tier: true,
+              enabled: true,
+              serviceId: true,
+              group: { select: { name: true, platform: true, type: true, enabled: true } },
+            },
+          },
         },
       }),
       prisma.order.findMany({
@@ -256,7 +294,7 @@ export async function GET(req) {
       d.setDate(d.getDate() + 1);
     }
 
-    return Response.json({
+    return withInternalDashboardNoStore(Response.json({
       totalUsers,
       newUsersToday,
       revenueToday: todayRevenue,
@@ -283,16 +321,20 @@ export async function GET(req) {
       chartData,
       topPlatforms,
       byStatus: ordersByStatus.map(s => ({ status: s.status, count: s._count })),
-      recentOrders: recentOrders.map(o => ({
-        id: o.orderId || o.id,
-        service: o.tier?.group?.name || o.service?.name || o.serviceId,
-        platform: o.service?.category || 'unknown',
-        user: o.user?.name || o.user?.email || 'Unknown',
-        charge: (o.charge || 0) / 100,
-        status: o.status,
-        cancelReason: o.status === 'Cancelled' ? (o.lastError || null) : null,
-        created: o.createdAt.toISOString(),
-      })),
+      recentOrders: recentOrders.map(o => {
+        const offer = getOrderOfferDisplay(o);
+        return {
+          id: o.orderId || o.id,
+          service: offer.serviceName,
+          tier: offer.tierLabel,
+          platform: offer.platform,
+          user: o.user?.name || o.user?.email || 'Unknown',
+          charge: (o.charge || 0) / 100,
+          status: o.status,
+          cancelReason: o.status === 'Cancelled' ? (o.lastError || null) : null,
+          created: o.createdAt.toISOString(),
+        };
+      }),
       recentRefunds: await (async () => {
         const refOrderIds = recentRefunds.map(o => o.orderId || o.id);
         const refTotals = refOrderIds.length > 0
@@ -302,10 +344,12 @@ export async function GET(req) {
         for (const r of refTotals) { const oid = r.reference.replace(/^(ADM-)?REF-/, ''); refMap[oid] = (refMap[oid] || 0) + (r._sum.amount || 0); }
         return recentRefunds.map(o => {
           const oid = o.orderId || o.id;
+          const offer = getOrderOfferDisplay(o);
           return {
             id: oid,
-            service: o.tier?.group?.name || o.service?.name || o.serviceId,
-            platform: o.service?.category || 'unknown',
+            service: offer.serviceName,
+            tier: offer.tierLabel,
+            platform: offer.platform,
             user: o.user?.name || o.user?.email || 'Unknown',
             charge: (o.charge || 0) / 100,
             refunded: (refMap[oid] || 0) / 100,
@@ -338,9 +382,9 @@ export async function GET(req) {
       welcomeBonus: { count: welcomeBonusResult[0]?.count || 0, total: (welcomeBonusResult[0]?.total || 0) / 100 },
       monthDepositors: monthDepositorsResult[0]?.count || 0,
       generatedAt: now.toISOString(),
-    });
+    }));
   } catch (err) {
     log.error('Pulse API', err.message);
-    return Response.json({ error: 'Failed to load pulse data' }, { status: 500 });
+    return withInternalDashboardNoStore(Response.json({ error: 'Failed to load pulse data' }, { status: 500 }));
   }
 }

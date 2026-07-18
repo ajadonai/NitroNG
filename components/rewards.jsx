@@ -74,6 +74,10 @@ export function fmtCompactNaira(n) {
   return `₦${n.toLocaleString()}`;
 }
 
+function fmtPoints(n) {
+  return (Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
 /* ── shared bits ── */
 
 const cardStyle = (dark) => ({
@@ -408,7 +412,7 @@ export function PointsModal({ open, onClose, rewards, dark, t, onUse }) {
                 <div className="text-[10px]" style={{ color: t.textMuted }}>{h.ref}</div>
               </div>
               <div className="m text-[12px] font-bold whitespace-nowrap" style={{ color: isPositive ? greenClr : redClr }}>
-                {isPositive ? '+' : ''}{h.pts.toLocaleString()}
+                {isPositive ? '+' : ''}{fmtPoints(h.pts)}
               </div>
             </div>
           );

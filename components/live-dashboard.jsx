@@ -298,7 +298,7 @@ function BadgeGuide() {
   );
 }
 
-export default function LiveDashboard({ secretKey }) {
+export default function LiveDashboard() {
   const [sessions, setSessions] = useState([]);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -312,7 +312,13 @@ export default function LiveDashboard({ secretKey }) {
     let alive = true;
     const poll = async () => {
       try {
-        const res = await fetch(`/api/live?key=${secretKey}`);
+        const res = await fetch('/api/live', { cache: 'no-store' });
+        if (res.status === 401 || res.status === 403) {
+          setSessions([]);
+          setCount(0);
+          window.location.replace('/live');
+          return;
+        }
         if (!res.ok) return;
         const data = await res.json();
         if (!alive) return;
@@ -334,7 +340,7 @@ export default function LiveDashboard({ secretKey }) {
     poll();
     const iv = setInterval(poll, 3000);
     return () => { alive = false; clearInterval(iv); };
-  }, [secretKey]);
+  }, []);
 
   useEffect(() => {
     if (newIds.size === 0) return;

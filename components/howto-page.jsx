@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect } from "react";
-import DOMPurify from "dompurify";
 
 export default function HowToPage({ dark, t }) {
   const [posts, setPosts] = useState([]);

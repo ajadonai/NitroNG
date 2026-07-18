@@ -8,6 +8,7 @@ const { applyWelcomeBonus } = await import('@/lib/welcome-bonus');
 function makeTx() {
   const state = {
     balance: 0,
+    account: { id: 'u1', status: 'Active', deletedAt: null, anonymizedAt: null },
     bonusCredits: [],
     creditUsages: [],
     transactions: [],
@@ -16,6 +17,19 @@ function makeTx() {
   };
 
   const tx = {
+    $queryRaw: vi.fn(async (strings, ...values) => {
+      const sql = strings.join('?');
+      if (sql.includes('FROM users') && sql.includes('FOR UPDATE')) {
+        const userId = values[0];
+        if (state.account?.id !== userId) return [];
+        return [{
+          id: state.account.id,
+          status: state.account.status,
+          anonymizedAt: state.account.anonymizedAt,
+        }];
+      }
+      return [];
+    }),
     $executeRaw: vi.fn(async (strings, ...values) => {
       const sql = strings.join('?');
       if (sql.includes('balance = balance -')) {
@@ -25,6 +39,15 @@ function makeTx() {
         return 1;
       }
       if (sql.includes('balance = balance +')) {
+        const amount = values[0];
+        const userId = values[1];
+        if (
+          state.account?.id !== userId
+          || state.account.status !== 'Active'
+          || state.account.deletedAt
+          || state.account.anonymizedAt
+        ) return 0;
+        state.balance += amount;
         return 1;
       }
       return 1;
@@ -39,6 +62,16 @@ function makeTx() {
         if (c && data.expiredAt !== undefined) c.expiredAt = data.expiredAt;
         if (c && data.amountRemaining === 0) c.amountRemaining = 0;
         return c;
+      }),
+      updateMany: vi.fn(async ({ where, data }) => {
+        const c = state.bonusCredits.find(x => (
+          x.id === where.id
+          && x.userId === where.userId
+          && (!Object.hasOwn(where, 'expiredAt') || x.expiredAt === where.expiredAt)
+        ));
+        if (!c) return { count: 0 };
+        if (data.amountRemaining?.increment) c.amountRemaining += data.amountRemaining.increment;
+        return { count: 1 };
       }),
     },
     orderCreditUsage: {
@@ -91,6 +124,21 @@ describe('deductBalance', () => {
     state.balance = 10000;
     await deductBalance(tx, 'user1', 5000);
     expect(state.balance).toBe(5000);
+    const sql = tx.$executeRaw.mock.calls[0][0].join(' ');
+    expect(sql).toContain("status = 'Active'");
+    expect(sql).toContain('"anonymizedAt" IS NULL');
+  });
+
+  it('uses the same active-account fence for a zero wallet charge', async () => {
+    const { tx, state } = makeTx();
+    state.balance = 10000;
+
+    await deductBalance(tx, 'user1', 0);
+
+    expect(state.balance).toBe(10000);
+    const sql = tx.$executeRaw.mock.calls[0][0].join(' ');
+    expect(sql).toContain("status = 'Active'");
+    expect(sql).toContain('balance >=');
   });
 
   it('throws INSUFFICIENT_BALANCE on insufficient funds', async () => {
@@ -170,6 +218,8 @@ describe('restoreBonusForRefund (user-initiated cancel)', () => {
 
     expect(state.bonusCredits[0].amountRemaining).toBe(5000);
     expect(state.creditUsages).toHaveLength(0);
+    expect(tx.$queryRaw).toHaveBeenCalledOnce();
+    expect(tx.$queryRaw.mock.calls[0][0].join(' ')).toContain('FOR UPDATE');
   });
 
   it('does not restore expired credit', async () => {
@@ -184,8 +234,43 @@ describe('restoreBonusForRefund (user-initiated cancel)', () => {
     await restoreBonusForRefund(tx, 'order1');
 
     expect(state.bonusCredits[0].amountRemaining).toBe(0);
-    expect(tx.bonusCredit.update).not.toHaveBeenCalled();
+    expect(tx.bonusCredit.updateMany).not.toHaveBeenCalled();
     expect(state.creditUsages).toHaveLength(0);
+  });
+
+  it.each([
+    ['deleted', { status: 'Deleted', anonymizedAt: null }],
+    ['anonymized', { status: 'Active', anonymizedAt: new Date() }],
+  ])('does not recreate credit after the account is %s', async (_label, accountState) => {
+    const { tx, state } = makeTx();
+    state.account = { ...state.account, ...accountState };
+    state.bonusCredits = [
+      { id: 'bc1', userId: 'u1', amountRemaining: 0, expiresAt: new Date(Date.now() + 86400000), expiredAt: null },
+    ];
+    state.creditUsages = [
+      { id: 'usage1', orderId: 'order1', bonusCreditId: 'bc1', amount: 3000 },
+    ];
+
+    await restoreBonusForRefund(tx, 'order1');
+
+    expect(state.bonusCredits[0].amountRemaining).toBe(0);
+    expect(tx.bonusCredit.updateMany).not.toHaveBeenCalled();
+    expect(state.creditUsages).toHaveLength(0);
+  });
+
+  it('allows restoration during the pre-anonymization deletion grace period', async () => {
+    const { tx, state } = makeTx();
+    state.account = { ...state.account, status: 'PendingDeletion', deletedAt: new Date(), anonymizedAt: null };
+    state.bonusCredits = [
+      { id: 'bc1', userId: 'u1', amountRemaining: 0, expiresAt: new Date(Date.now() + 86400000), expiredAt: null },
+    ];
+    state.creditUsages = [
+      { id: 'usage1', orderId: 'order1', bonusCreditId: 'bc1', amount: 3000 },
+    ];
+
+    await restoreBonusForRefund(tx, 'order1');
+
+    expect(state.bonusCredits[0].amountRemaining).toBe(3000);
   });
 
   it('handles orders with no bonus consumption', async () => {
@@ -194,7 +279,7 @@ describe('restoreBonusForRefund (user-initiated cancel)', () => {
 
     await restoreBonusForRefund(tx, 'order1');
 
-    expect(tx.bonusCredit.update).not.toHaveBeenCalled();
+    expect(tx.bonusCredit.updateMany).not.toHaveBeenCalled();
     expect(tx.orderCreditUsage.deleteMany).not.toHaveBeenCalled();
   });
 });
@@ -202,7 +287,6 @@ describe('restoreBonusForRefund (user-initiated cancel)', () => {
 describe('expireBonusCredits', () => {
   it('expires past-due credits and writes audit transaction', async () => {
     const db = makeTx().tx;
-    const pastDue = new Date(Date.now() - 86400000);
     db.bonusCredit.findMany = vi.fn(async () => [
       { id: 'bc1', userId: 'u1', source: 'winback', amountRemaining: 5000, amountGranted: 5000, grantedAt: new Date(Date.now() - 8 * 86400000) },
     ]);
@@ -246,15 +330,38 @@ describe('grantWinbackCredit', () => {
     const result = await grantWinbackCredit(db, 'u1', 50000, 7);
 
     expect(result).toBeDefined();
-    expect(db.user.update).toHaveBeenCalledWith(expect.objectContaining({
-      data: { balance: { increment: 50000 } },
-    }));
+    expect(db.$executeRaw).toHaveBeenCalledOnce();
+    const fenceSql = db.$executeRaw.mock.calls[0][0].join(' ');
+    expect(fenceSql).toContain("status = 'Active'");
+    expect(fenceSql).toContain('"deletedAt" IS NULL');
+    expect(fenceSql).toContain('"anonymizedAt" IS NULL');
+    expect(db.user.update).not.toHaveBeenCalled();
     expect(db.bonusCredit.create).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
         userId: 'u1', source: 'winback', amountGranted: 50000, amountRemaining: 50000,
       }),
     }));
     expect(db.transaction.create).toHaveBeenCalled();
+  });
+
+  it.each([
+    ['pending deletion', { status: 'PendingDeletion' }],
+    ['deleted', { status: 'Deleted' }],
+    ['suspended', { status: 'Suspended' }],
+    ['a deletion timestamp', { deletedAt: new Date() }],
+    ['anonymization', { anonymizedAt: new Date() }],
+  ])('does not grant from a stale cron read after %s', async (_label, accountState) => {
+    const { tx, state } = makeTx();
+    state.account = { ...state.account, ...accountState };
+    tx.$transaction = vi.fn(async (fn) => fn(tx));
+    tx.setting.findUnique = vi.fn(async () => null);
+
+    const result = await grantWinbackCredit(tx, 'u1', 50000, 7);
+
+    expect(result).toBeNull();
+    expect(tx.bonusCredit.create).not.toHaveBeenCalled();
+    expect(tx.transaction.create).not.toHaveBeenCalled();
+    expect(state.balance).toBe(0);
   });
 });
 

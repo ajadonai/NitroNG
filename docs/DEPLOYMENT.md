@@ -9,6 +9,7 @@
 - Node.js v20+
 - npm (comes with Node)
 - Git
+- A local PostgreSQL instance or isolated local PostgreSQL container
 
 ### Setup
 
@@ -23,8 +24,15 @@ npm install
 Create `.env` in the project root (never commit this):
 
 ```env
-# Database
-DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require
+# Local development database
+DATABASE_URL=postgresql://USER:PASSWORD@127.0.0.1:5432/nitro_dev
+TEST_DATABASE_URL=postgresql://USER:PASSWORD@127.0.0.1:5432/nitro_test
+
+# Required only for the destructive local seed
+NITRO_SEED_DATABASE_NAME=nitro_dev
+NITRO_ALLOW_DESTRUCTIVE_SEED=
+NITRO_SEED_USER_PASSWORD=
+NITRO_SEED_ADMIN_PASSWORD=
 
 # Auth
 JWT_SECRET=your-jwt-secret
@@ -55,14 +63,35 @@ NODE_ENV=development
 
 ### Database
 
-Local dev connects to the same Neon database (no separate local DB).
+Development and tests must use separate local databases. Never point either one at
+the shared Neon or production database. Create `nitro_dev` for local development
+and `nitro_test` for integration tests, then use the matching URL from `.env`.
 
 ```bash
 npx prisma generate      # Generate Prisma client
 npx prisma db push        # Push schema changes (dev only)
-node prisma/seed.js       # Run seed scripts
+NITRO_ALLOW_DESTRUCTIVE_SEED=DELETE_LOCAL_SEED_DATA npm run db:seed
+                          # Deletes and recreates data in the approved local database
 npx prisma studio         # Browser-based DB explorer
 ```
+
+The seed command fails unless all of these conditions are true:
+
+- `NODE_ENV` is `development` or `test`.
+- `DATABASE_URL` uses `localhost`, `127.0.0.1`, or `::1`.
+- The database name ends in `_local`, `_dev`, or `_test` and exactly matches
+  `NITRO_SEED_DATABASE_NAME`.
+- `NITRO_ALLOW_DESTRUCTIVE_SEED` is set to `DELETE_LOCAL_SEED_DATA`.
+- Both seed passwords are supplied and contain at least 12 characters.
+
+Keep `NITRO_ALLOW_DESTRUCTIVE_SEED` blank in `.env`. Supply the confirmation only
+on the individual command you intend to run, as shown above, so a later seed
+cannot start without a fresh explicit confirmation.
+
+The admin account is `admin@example.test`. Seeded user accounts use their listed
+`@example.test` addresses. Use the passwords you supplied in the seed variables;
+the command never prints them. Do not configure any `NITRO_SEED_*` variables in
+Vercel.
 
 Table names are **lowercase** — always quote in raw SQL: `"tickets"`, `"users"`, `"orders"`.
 

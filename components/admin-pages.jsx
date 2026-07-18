@@ -790,7 +790,7 @@ function CleanupButton({ dark, t }) {
 
   return (
     <>
-      {info && <div className="text-sm mb-2.5" style={{ color: t.text }}>{info.unverifiedTotal || 0} unverified accounts total · {info.staleCount || 0} older than 7 days</div>}
+      {info && <div className="text-sm mb-2.5" style={{ color: t.text }}>{info.unverifiedTotal || 0} unverified accounts total · {info.staleCount || 0} safe to remove after {info.cutoffDays || 30} days</div>}
       {result && <div className="py-2 px-3 rounded-lg mb-2.5 text-sm" style={{ background: result.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: result.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{result.type === "success" ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} {result.text}</div>}
       <button onClick={run} disabled={cleaning} className="adm-btn-primary" style={{ opacity: cleaning ? .5 : 1 }}>{cleaning ? "Cleaning..." : "Clean Up Stale Accounts"}</button>
     </>
@@ -1133,7 +1133,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
             <div className="set-card-desc" style={{ color: t.textMuted }}>Free up space by removing stale accounts.</div>
           </div>
           <div className="set-card-body">
-          <div className="text-sm mb-3 leading-normal" style={{ color: t.textMuted }}>Remove unverified accounts older than 7 days that have no orders or transactions.</div>
+          <div className="text-sm mb-3 leading-normal" style={{ color: t.textMuted }}>Remove abandoned, unverified signups older than 30 days only when they have no recent activity or related records.</div>
           <CleanupButton dark={dark} t={t} />
           </div>
         </div>
@@ -1406,17 +1406,21 @@ function FinanceBreakdownTab({ dark, t, admin }) {
       {/* Record Top-up */}
       <div className="rounded-[14px] py-3.5 px-4 mb-5" style={{ background: cardBg, border: `0.5px solid ${cardBorder}` }}>
         <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-3" style={{ color: subText }}>Record Provider Top-up</div>
-        <div className="flex gap-2 flex-wrap items-end">
-          <select value={topupProvider} onChange={e => setTopupProvider(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }}>
-            <option value="dao">DaoSMM</option>
-            <option value="mtp">MTP</option>
-            <option value="jap">JAP</option>
-          </select>
-          <input type="number" placeholder="Amount (₦)" value={topupAmount} onChange={e => setTopupAmount(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] w-32 outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }} />
-          <input type="text" placeholder="Note (optional)" value={topupNote} onChange={e => setTopupNote(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] flex-1 min-w-[120px] outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }} />
-          <button onClick={handleTopup} disabled={topupSaving || !topupAmount} className="h-9 px-4 rounded-lg text-[13px] font-semibold text-white" style={{ background: t.accent, opacity: topupSaving || !topupAmount ? 0.5 : 1 }}>
-            {topupSaving ? "Saving..." : "Record"}
-          </button>
+        <div className="flex gap-2 items-end flex-wrap max-sm:flex-col max-sm:items-stretch">
+          <div className="flex gap-2 items-end">
+            <select value={topupProvider} onChange={e => setTopupProvider(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }}>
+              <option value="dao">DaoSMM</option>
+              <option value="mtp">MTP</option>
+              <option value="jap">JAP</option>
+            </select>
+            <input type="number" placeholder="Amount (₦)" value={topupAmount} onChange={e => setTopupAmount(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] w-32 outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }} />
+          </div>
+          <div className="flex gap-2 items-end flex-1 min-w-0">
+            <input type="text" placeholder="Note (optional)" value={topupNote} onChange={e => setTopupNote(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] flex-1 min-w-0 outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }} />
+            <button onClick={handleTopup} disabled={topupSaving || !topupAmount} className="h-9 px-4 rounded-lg text-[13px] font-semibold text-white shrink-0" style={{ background: t.accent, opacity: topupSaving || !topupAmount ? 0.5 : 1 }}>
+              {topupSaving ? "Saving..." : "Record"}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1540,6 +1544,7 @@ function FinanceRewardsTab({ dark, t }) {
   const accrual = cost.accrualRewardCost || {};
   const movementColor = (movement.netLiabilityChangeKobo || 0) >= 0 ? t.amber : t.green;
   const fSignedKobo = (kobo) => `${(kobo || 0) < 0 ? '-' : ''}${fN(koboToNaira(kobo))}`;
+  const fPts = (points) => (Number(points) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
   return (
     <div className="p-6 max-w-[900px]">
@@ -1561,8 +1566,8 @@ function FinanceRewardsTab({ dark, t }) {
           {/* Liability card */}
           <div className="rounded-xl p-5 mb-5" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.05)', border: `1px solid ${dark ? 'rgba(196,125,142,.2)' : 'rgba(196,125,142,.12)'}` }}>
             <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>Outstanding Points Liability</div>
-            <div className="text-[28px] font-bold" style={{ color: t.accent, fontFamily: 'JetBrains Mono, monospace' }}>{(data.liability.points || 0).toLocaleString()} <span className="text-[14px] font-medium" style={{ color: t.textSoft }}>pts</span></div>
-            <div className="text-[13px] mt-1" style={{ color: t.textSoft }}>₦{(data.liability.points || 0).toLocaleString()} redeemable value</div>
+            <div className="text-[28px] font-bold" style={{ color: t.accent, fontFamily: 'JetBrains Mono, monospace' }}>{fPts(data.liability.points || 0)} <span className="text-[14px] font-medium" style={{ color: t.textSoft }}>pts</span></div>
+            <div className="text-[13px] mt-1" style={{ color: t.textSoft }}>₦{fPts(data.liability.points || 0)} redeemable value</div>
           </div>
 
           {/* Cost reporting */}

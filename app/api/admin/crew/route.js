@@ -2,7 +2,8 @@ import prisma from "@/lib/prisma";
 import { requireAdmin, logActivity, canSeeSensitive, maskEmail, maskPhone } from "@/lib/admin";
 import { kickFromGroup } from "@/lib/crew-bot";
 import { sendEmail, pitRejectionEmail, pitApprovedEmail, pitSuspendedEmail } from "@/lib/email";
-import { getTierRates, rateForRole, TIER_RATE_KEYS } from "@/lib/affiliate-settings";
+import { getTierRates, rateForRole } from "@/lib/affiliate-settings";
+import { permanentlyDeleteCrewMember } from '@/lib/crew-account-deletion';
 
 const MAX_RETRIES = 3;
 async function serializable(fn) {
@@ -45,10 +46,9 @@ export async function GET(req) {
 
     const memberIds = members.map(m => m.id);
     const MONEY_ISSUE_TYPES = ['commission_failed', 'void_failed', 'release_failed', 'payout_failed'];
-    const [pendingPayouts, heldCommissions, thirtyDaysAgo, archivedLinkRows, affiliateEnabledRow, moneyIssues] = await Promise.all([
+    const [pendingPayouts, heldCommissions, archivedLinkRows, affiliateEnabledRow, moneyIssues] = await Promise.all([
       prisma.affiliatePayout.count({ where: { status: "pending" } }),
       prisma.affiliateCommission.aggregate({ where: { status: "held" }, _sum: { marketerAmount: true, leadAmount: true } }),
-      Promise.resolve(new Date(Date.now() - 30 * 86400000)),
       prisma.acquisitionLink.findMany({ where: { affiliateId: { in: memberIds }, archivedAt: { not: null } }, select: { affiliateId: true, slug: true, name: true, archivedAt: true } }),
       prisma.setting.findUnique({ where: { key: 'affiliate_enabled' }, select: { value: true } }).catch(() => null),
       prisma.adminIssue.findMany({ where: { type: { in: MONEY_ISSUE_TYPES }, status: 'open' }, orderBy: { createdAt: 'desc' }, take: 10 }).catch(() => []),
@@ -106,23 +106,41 @@ export async function POST(req) {
     const { action, memberId, ...body } = await req.json();
 
     if (action === "approve") {
-      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true, role: true, email: true } });
-      const tierRates = await getTierRates();
-      const rate = rateForRole(tierRates, m?.role);
-      await prisma.crewMember.update({
-        where: { id: memberId },
-        data: { status: "approved", approvedAt: new Date(), commissionRate: rate },
-      });
+      let approved;
+      try {
+        approved = await serializable(async (tx) => {
+          const m = await tx.crewMember.findUnique({
+            where: { id: memberId },
+            select: { name: true, role: true, email: true, status: true, deletedAt: true },
+          });
+          if (!m) throw Object.assign(new Error('Member not found'), { _status: 404 });
+          if (m.deletedAt) throw Object.assign(new Error('Deleted members cannot be changed'), { _status: 409 });
+          if (m.status !== 'pending') throw Object.assign(new Error('Member is no longer pending'), { _status: 409 });
 
-      const hasLink = await prisma.acquisitionLink.findFirst({ where: { affiliateId: memberId, archivedAt: null } });
-      if (!hasLink) {
-        let slug = (m?.name || 'crew').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        const taken = await prisma.acquisitionLink.findUnique({ where: { slug } });
-        if (taken) slug = `${slug}-${Date.now().toString(36).slice(-4)}`;
-        await prisma.acquisitionLink.create({
-          data: { name: `${m?.name || 'Crew'}'s link`, slug, affiliateId: memberId },
+          const tierRates = await getTierRates(tx);
+          const rate = rateForRole(tierRates, m.role);
+          const { count } = await tx.crewMember.updateMany({
+            where: { id: memberId, status: 'pending', deletedAt: null },
+            data: { status: "approved", approvedAt: new Date(), commissionRate: rate },
+          });
+          if (count !== 1) throw Object.assign(new Error('Member state changed'), { _status: 409 });
+
+          const hasLink = await tx.acquisitionLink.findFirst({ where: { affiliateId: memberId, archivedAt: null } });
+          if (!hasLink) {
+            let slug = (m.name || 'crew').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+            const taken = await tx.acquisitionLink.findUnique({ where: { slug } });
+            if (taken) slug = `${slug}-${Date.now().toString(36).slice(-4)}`;
+            await tx.acquisitionLink.create({
+              data: { name: `${m.name || 'Crew'}'s link`, slug, affiliateId: memberId },
+            });
+          }
+          return { m, rate };
         });
+      } catch (e) {
+        if (e._status) return Response.json({ error: e.message }, { status: e._status });
+        throw e;
       }
+      const { m } = approved;
 
       if (m?.email) {
         sendEmail(m.email, "You're in. Welcome to the Pit", pitApprovedEmail(m.name || 'there'),
@@ -135,7 +153,7 @@ export async function POST(req) {
     if (action === "reject") {
       const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true, email: true, telegramUserId: true } });
       const { count } = await prisma.crewMember.updateMany({
-        where: { id: memberId, status: 'pending' },
+        where: { id: memberId, status: 'pending', deletedAt: null },
         data: { status: "rejected", inviteToken: null, inviteExpiresAt: null },
       });
       if (count === 0) return Response.json({ error: "Member is no longer pending" }, { status: 409 });
@@ -151,7 +169,11 @@ export async function POST(req) {
     if (action === "suspend") {
       const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true, email: true, telegramUserId: true } });
       await prisma.crewSession.deleteMany({ where: { memberId } });
-      await prisma.crewMember.update({ where: { id: memberId }, data: { status: "suspended", suspendedAt: new Date(), telegramLinkCode: null, telegramLinkCodeExpiresAt: null } });
+      const { count } = await prisma.crewMember.updateMany({
+        where: { id: memberId, deletedAt: null },
+        data: { status: "suspended", suspendedAt: new Date(), telegramLinkCode: null, telegramLinkCodeExpiresAt: null },
+      });
+      if (count !== 1) return Response.json({ error: 'Deleted members cannot be changed' }, { status: 409 });
       if (m?.telegramUserId) kickFromGroup(m.telegramUserId).catch(() => {});
       if (m?.email) {
         sendEmail(m.email, 'Your Pit account has been paused', pitSuspendedEmail(m.name || 'there'),
@@ -162,7 +184,11 @@ export async function POST(req) {
     }
 
     if (action === "reinstate") {
-      await prisma.crewMember.update({ where: { id: memberId }, data: { status: "approved", suspendedAt: null } });
+      const { count } = await prisma.crewMember.updateMany({
+        where: { id: memberId, status: 'suspended', deletedAt: null },
+        data: { status: "approved", suspendedAt: null },
+      });
+      if (count === 0) return Response.json({ error: "Only suspended members can be reinstated" }, { status: 409 });
       const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
       await logActivity(admin.name, `Reinstated crew member: ${m?.name || memberId}`, 'crew');
       return Response.json({ ok: true });
@@ -172,7 +198,11 @@ export async function POST(req) {
       const { tier, commissionRate } = body;
       const tierRates = await getTierRates();
       const rate = commissionRate || tierRates[tier] || tierRates.starter;
-      await prisma.crewMember.update({ where: { id: memberId }, data: { tier, commissionRate: rate } });
+      const { count } = await prisma.crewMember.updateMany({
+        where: { id: memberId, deletedAt: null },
+        data: { tier, commissionRate: rate },
+      });
+      if (count !== 1) return Response.json({ error: 'Deleted members cannot be changed' }, { status: 409 });
       const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
       await logActivity(admin.name, `Updated ${m?.name || memberId} to ${tier} (${rate}%)`, 'crew');
       return Response.json({ ok: true });
@@ -183,12 +213,12 @@ export async function POST(req) {
       const memberName = await serializable(async (tx) => {
         const tierRates = await getTierRates(tx);
         const proRate = tierRates.pro;
-        const updated = await tx.crewMember.update({
-          where: { id: memberId },
+        const { count } = await tx.crewMember.updateMany({
+          where: { id: memberId, deletedAt: null },
           data: { role: "chief", tier: "pro", commissionRate: proRate, teamName: teamName?.trim() || null, leadId: null },
-          select: { name: true },
         });
-        return updated.name;
+        if (count !== 1) throw Object.assign(new Error('Deleted members cannot be changed'), { _status: 409 });
+        return (await tx.crewMember.findUnique({ where: { id: memberId }, select: { name: true } }))?.name;
       });
       await logActivity(admin.name, `Promoted ${memberName || memberId} to chief`, 'crew');
       return Response.json({ ok: true });
@@ -196,9 +226,17 @@ export async function POST(req) {
 
     if (action === "demote-crew") {
       const { name: memberName, unassigned } = await serializable(async (tx) => {
-        const { count } = await tx.crewMember.updateMany({ where: { leadId: memberId }, data: { leadId: null } });
-        const updated = await tx.crewMember.update({ where: { id: memberId }, data: { role: "crew", teamName: null }, select: { name: true } });
-        return { name: updated.name, unassigned: count };
+        const { count } = await tx.crewMember.updateMany({
+          where: { leadId: memberId, deletedAt: null },
+          data: { leadId: null },
+        });
+        const target = await tx.crewMember.updateMany({
+          where: { id: memberId, deletedAt: null },
+          data: { role: "crew", teamName: null },
+        });
+        if (target.count === 0) throw Object.assign(new Error('Deleted members cannot be changed'), { _status: 409 });
+        const updated = await tx.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
+        return { name: updated?.name, unassigned: count };
       });
       await logActivity(admin.name, `Demoted ${memberName || memberId} to crew${unassigned ? ` (${unassigned} crew unassigned)` : ''}`, 'crew');
       return Response.json({ ok: true, unassignedCrew: unassigned });
@@ -206,7 +244,11 @@ export async function POST(req) {
 
     if (action === "update-team-name") {
       const { teamName } = body;
-      await prisma.crewMember.update({ where: { id: memberId }, data: { teamName: teamName?.trim() || null } });
+      const { count } = await prisma.crewMember.updateMany({
+        where: { id: memberId, deletedAt: null },
+        data: { teamName: teamName?.trim() || null },
+      });
+      if (count !== 1) return Response.json({ error: 'Deleted members cannot be changed' }, { status: 409 });
       const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
       await logActivity(admin.name, `Updated team name for ${m?.name || memberId}`, 'crew');
       return Response.json({ ok: true });
@@ -221,13 +263,18 @@ export async function POST(req) {
         result = await serializable(async (tx) => {
           const [chief, m] = await Promise.all([
             tx.crewMember.findUnique({ where: { id: chiefId }, select: { name: true, role: true, status: true, deletedAt: true } }),
-            tx.crewMember.findUnique({ where: { id: memberId }, select: { name: true, role: true } }),
+            tx.crewMember.findUnique({ where: { id: memberId }, select: { name: true, role: true, deletedAt: true } }),
           ]);
           if (!m) throw Object.assign(new Error("Member not found"), { _status: 404 });
+          if (m.deletedAt) throw Object.assign(new Error('Deleted members cannot be changed'), { _status: 409 });
           if (!chief || chief.role !== "chief") throw Object.assign(new Error("Destination must be a chief"), { _status: 400 });
           if (chief.status !== "approved" || chief.deletedAt) throw Object.assign(new Error("Destination chief is not active"), { _status: 400 });
           if (m.role === "chief") throw Object.assign(new Error("Chiefs cannot be assigned to a team"), { _status: 400 });
-          await tx.crewMember.update({ where: { id: memberId }, data: { leadId: chiefId } });
+          const target = await tx.crewMember.updateMany({
+            where: { id: memberId, deletedAt: null },
+            data: { leadId: chiefId },
+          });
+          if (target.count !== 1) throw Object.assign(new Error('Member state changed'), { _status: 409 });
           return { memberName: m.name, chiefName: chief.name };
         });
       } catch (e) {
@@ -240,22 +287,29 @@ export async function POST(req) {
 
     if (action === "unassign-team") {
       const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true } });
-      await prisma.crewMember.update({ where: { id: memberId }, data: { leadId: null } });
+      const { count } = await prisma.crewMember.updateMany({ where: { id: memberId, deletedAt: null }, data: { leadId: null } });
+      if (count !== 1) return Response.json({ error: 'Deleted members cannot be changed' }, { status: 409 });
       await logActivity(admin.name, `Removed crew member ${m?.name || memberId} from their team`, 'crew');
       return Response.json({ ok: true });
     }
 
     if (action === "delete") {
-      const m = await prisma.crewMember.findUnique({ where: { id: memberId }, select: { name: true, telegramUserId: true } });
-      await prisma.crewSession.deleteMany({ where: { memberId } });
-      await prisma.crewMember.update({ where: { id: memberId }, data: { deletedAt: new Date(), telegramLinkCode: null, telegramLinkCodeExpiresAt: null } });
+      const deletedAt = new Date();
+      let m;
+      try {
+        m = await serializable(tx => permanentlyDeleteCrewMember(tx, memberId, deletedAt));
+      } catch (e) {
+        if (e._status) return Response.json({ error: e.message }, { status: e._status });
+        throw e;
+      }
       if (m?.telegramUserId) kickFromGroup(m.telegramUserId).catch(() => {});
-      await logActivity(admin.name, `Deleted crew member: ${m?.name || memberId}`, 'crew');
+      await logActivity(admin.name, `Deleted Pit member: ${memberId}`, 'crew');
       return Response.json({ ok: true });
     }
 
     return Response.json({ error: "Unknown action" }, { status: 400 });
   } catch (e) {
+    if (e?._status) return Response.json({ error: e.message }, { status: e._status });
     console.error("Admin crew POST error:", e);
     return Response.json({ error: e?.message || "Something went wrong" }, { status: 500 });
   }

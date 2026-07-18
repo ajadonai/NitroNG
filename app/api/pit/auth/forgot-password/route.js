@@ -1,14 +1,15 @@
 import prisma from "@/lib/prisma";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "@/lib/email";
-import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
+import { rateLimit, rateLimitUnavailable, tooManyRequests } from "@/lib/rate-limit";
 
 const GENERIC = "If an account exists, a reset link has been sent.";
 
 export async function POST(req) {
   try {
-    const { limited } = await rateLimit(req, { maxAttempts: 5, windowMs: 15 * 60 * 1000 });
-    if (limited) return tooManyRequests("Too many requests. Try again in 15 minutes.");
+    const limit = await rateLimit(req, { maxAttempts: 5, windowMs: 15 * 60 * 1000 });
+    if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
+    if (limit.limited) return tooManyRequests("Too many requests. Try again in 15 minutes.", limit.retryAfter);
 
     const { email } = await req.json().catch(() => ({}));
     if (!email) return Response.json({ error: "Email is required" }, { status: 400 });
@@ -18,17 +19,18 @@ export async function POST(req) {
       select: { id: true, name: true, email: true, status: true, deletedAt: true },
     });
 
-    if (!member || member.deletedAt || member.status === "rejected") {
+    if (!member || member.deletedAt || member.status !== "approved") {
       return Response.json({ message: GENERIC });
     }
 
     const resetToken = crypto.randomBytes(32).toString("hex");
     const resetTokenHash = crypto.createHash("sha256").update(resetToken).digest("hex");
 
-    await prisma.crewMember.update({
-      where: { id: member.id },
+    const { count } = await prisma.crewMember.updateMany({
+      where: { id: member.id, status: 'approved', deletedAt: null },
       data: { resetToken: resetTokenHash, resetExpires: new Date(Date.now() + 30 * 60 * 1000) },
     });
+    if (count !== 1) return Response.json({ message: GENERIC });
 
     const origin = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const resetUrl = `${origin}/pit/reset-password?token=${resetToken}`;

@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockTx = {
   setting: { findUnique: vi.fn(), findMany: vi.fn() },
   acquisitionLink: { count: vi.fn(), create: vi.fn() },
+  $queryRaw: vi.fn(),
 };
 
 const mockPrisma = {
@@ -65,6 +66,7 @@ beforeEach(() => {
   mockPrisma.crewMember.findMany.mockResolvedValue([]);
   mockPrisma.setting.findMany.mockResolvedValue([{ key: 'affiliate_enabled', value: 'true' }]);
   mockPrisma.$transaction.mockImplementation(async (fn) => fn(mockTx));
+  mockTx.$queryRaw.mockResolvedValue([{ id: 'chief1' }]);
 });
 
 // ──────────────────────────────────────
@@ -134,6 +136,19 @@ describe('POST link limit', () => {
 
     const createCall = mockTx.acquisitionLink.create.mock.calls[0][0];
     expect(createCall.data.createdByChiefId).toBe('chief1');
+  });
+
+  it('creates nothing when deletion wins the final actor lock', async () => {
+    mockTx.$queryRaw.mockResolvedValue([]);
+
+    const res = await POST(makeReq({ name: 'Too Late' }));
+
+    expect(res.status).toBe(409);
+    expect(mockTx.acquisitionLink.create).not.toHaveBeenCalled();
+    const lockSql = [...mockTx.$queryRaw.mock.calls[0][0]].join('');
+    expect(lockSql).toContain("status = 'approved'");
+    expect(lockSql).toContain('"deletedAt" IS NULL');
+    expect(lockSql).toContain('FOR UPDATE');
   });
 });
 

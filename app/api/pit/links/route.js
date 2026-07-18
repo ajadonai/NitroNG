@@ -40,8 +40,6 @@ export async function GET(req) {
       where: { leadId: member.id, status: "approved" },
       select: { id: true, name: true },
     });
-    const crewIds = crew.map((m) => m.id);
-
     const links = await prisma.acquisitionLink.findMany({
       where: { archivedAt: null, createdByChiefId: member.id },
       orderBy: { createdAt: "desc" },
@@ -87,13 +85,11 @@ export async function POST(req) {
     const slug = customSlug?.trim() ? slugify(customSlug) : slugify(name);
     if (!slug) return Response.json({ error: "Invalid slug" }, { status: 400 });
 
-    let assigneeName = member.name;
     if (affiliateId && affiliateId !== member.id) {
       const teamIds = await getTeamIds(member.id);
       if (!teamIds.has(affiliateId)) return Response.json({ error: "Can only assign to your own team members" }, { status: 403 });
-      const affiliate = await prisma.crewMember.findUnique({ where: { id: affiliateId }, select: { name: true, status: true } });
-      if (!affiliate || affiliate.status !== "approved") return Response.json({ error: "Invalid affiliate" }, { status: 400 });
-      assigneeName = affiliate.name;
+      const affiliate = await prisma.crewMember.findUnique({ where: { id: affiliateId }, select: { status: true, deletedAt: true } });
+      if (!affiliate || affiliate.status !== "approved" || affiliate.deletedAt) return Response.json({ error: "Invalid affiliate" }, { status: 400 });
     }
 
     const assigneeId = affiliateId || member.id;
@@ -102,6 +98,24 @@ export async function POST(req) {
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
         link = await prisma.$transaction(async (tx) => {
+          // Lock the actor and final assignee before creating the link. A
+          // concurrent permanent deletion must either finish first (and reject
+          // this request) or wait, then anonymize the newly committed link.
+          const [activeActor] = await tx.$queryRaw`
+            SELECT id FROM crew_members
+            WHERE id = ${member.id} AND status = 'approved' AND "deletedAt" IS NULL
+            FOR UPDATE
+          `;
+          if (!activeActor) throw Object.assign(new Error('inactive actor'), { _inactive: true });
+          if (assigneeId !== member.id) {
+            const [activeAssignee] = await tx.$queryRaw`
+              SELECT id FROM crew_members
+              WHERE id = ${assigneeId} AND status = 'approved' AND "deletedAt" IS NULL
+              FOR UPDATE
+            `;
+            if (!activeAssignee) throw Object.assign(new Error('inactive assignee'), { _assignee: true });
+          }
+
           const [affSettings, activeCount] = await Promise.all([
             getAffiliateSettings(['affiliate_max_links'], tx),
             tx.acquisitionLink.count({ where: { createdByChiefId: member.id, archivedAt: null } }),
@@ -112,6 +126,8 @@ export async function POST(req) {
         }, { isolationLevel: 'Serializable' });
         break;
       } catch (e) {
+        if (e._inactive) return Response.json({ error: "Member is no longer active" }, { status: 409 });
+        if (e._assignee) return Response.json({ error: "Invalid affiliate" }, { status: 400 });
         if (e._limit) return Response.json({ error: `Maximum ${e._limit} active links allowed` }, { status: 400 });
         if (e.code === 'P2002') return Response.json({ error: "That slug is already taken" }, { status: 409 });
         if (e.code === 'P2034' && attempt < MAX_RETRIES - 1) continue;
@@ -119,7 +135,7 @@ export async function POST(req) {
       }
     }
 
-    logAction(link.id, member.id, "created", `Created and assigned to ${assigneeName}`).catch(() => {});
+    logAction(link.id, member.id, "created", `Created and assigned to Pit member ${assigneeId}`).catch(() => {});
 
     return Response.json({ link: { id: link.id, name: link.name, slug: link.slug, enabled: link.enabled, createdAt: link.createdAt.toISOString() } });
   } catch (e) {
@@ -145,25 +161,24 @@ export async function PATCH(req) {
       if (affiliateId) {
         const teamIds = await getTeamIds(member.id);
         if (!teamIds.has(affiliateId)) return Response.json({ error: "Can only assign to your own team members" }, { status: 403 });
-        const affiliate = await prisma.crewMember.findUnique({ where: { id: affiliateId }, select: { status: true } });
-        if (!affiliate || affiliate.status !== "approved") return Response.json({ error: "Invalid affiliate" }, { status: 400 });
+        const affiliate = await prisma.crewMember.findUnique({ where: { id: affiliateId }, select: { status: true, deletedAt: true } });
+        if (!affiliate || affiliate.status !== "approved" || affiliate.deletedAt) return Response.json({ error: "Invalid affiliate" }, { status: 400 });
       }
       data.affiliateId = affiliateId || null;
     }
 
     if (Object.keys(data).length === 0) return Response.json({ error: "Nothing to update" }, { status: 400 });
 
-    const prev = await prisma.acquisitionLink.findUnique({ where: { id }, include: { affiliate: { select: { name: true } } } });
+    const prev = await prisma.acquisitionLink.findUnique({ where: { id }, select: { affiliateId: true } });
     await prisma.acquisitionLink.update({ where: { id }, data });
 
     if (typeof enabled === "boolean") {
       logAction(id, member.id, enabled ? "resumed" : "paused", `Link ${enabled ? "resumed" : "paused"}`).catch(() => {});
     }
     if (affiliateId !== undefined) {
-      prisma.crewMember.findUnique({ where: { id: affiliateId }, select: { name: true } }).then(m => {
-        const newName = m?.name || member.name;
-        logAction(id, member.id, "reassigned", `Reassigned from ${prev?.affiliate?.name || "unknown"} to ${newName}`).catch(() => {});
-      }).catch(() => {});
+      const from = prev?.affiliateId ? `Pit member ${prev.affiliateId}` : 'unassigned';
+      const to = affiliateId ? `Pit member ${affiliateId}` : 'unassigned';
+      logAction(id, member.id, "reassigned", `Reassigned from ${from} to ${to}`).catch(() => {});
     }
 
     return Response.json({ ok: true });

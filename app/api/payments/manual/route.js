@@ -1,15 +1,16 @@
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getCurrentUser } from '@/lib/auth';
-import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { tgManualPending } from '@/lib/telegram';
 import { parseFbCookies } from '@/lib/meta-capi';
 
 // POST — create a manual transfer request (returns bank details + creates pending tx)
 export async function POST(req) {
   try {
-    const { limited } = await rateLimit(req, { maxAttempts: 5, windowMs: 60 * 1000 });
-    if (limited) return tooManyRequests('Too many transfer requests. Try again in a minute.');
+    const limit = await rateLimit(req, { maxAttempts: 5, windowMs: 60 * 1000 });
+    if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
+    if (limit.limited) return tooManyRequests('Too many transfer requests. Try again in a minute.', limit.retryAfter);
 
     const session = await getCurrentUser();
     if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });

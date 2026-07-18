@@ -2,8 +2,10 @@
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { hasConsent } from './cookie-banner';
+import { isInternalDashboardPath } from '@/lib/internal-dashboard-path';
 
 function fire(eventName, customData) {
+  if (typeof window !== 'undefined' && isInternalDashboardPath(window.location.pathname)) return;
   const eventId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
   if (typeof window !== 'undefined' && window.fbq && hasConsent()) {
     window.fbq('track', eventName, customData || {}, { eventID: eventId });
@@ -23,7 +25,9 @@ function fire(eventName, customData) {
 
 export default function CAPIPageView() {
   const pathname = usePathname();
-  useEffect(() => { fire('PageView'); }, [pathname]);
+  useEffect(() => {
+    if (!isInternalDashboardPath(pathname)) fire('PageView');
+  }, [pathname]);
   return null;
 }
 

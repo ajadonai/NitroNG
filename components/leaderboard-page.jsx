@@ -15,18 +15,16 @@ const POD = {
 
 const UserIcon = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
 
-function ShieldBadge({ color = "#6B7280", size = 20, tier = "Starter" }) {
-  const isStarter = tier === "Starter";
-  const isRegular = tier === "Regular";
-  const isPower = tier === "Power User";
-  const isElite = tier === "Elite";
+function ShieldBadge({ color = "#9ca3af", size = 20, tier = "Spark" }) {
+  const isSpark = tier === "Spark";
+  const rank = ["Spark","Pulse","Boost","Surge","Apex","Legend"].indexOf(tier);
   const isLegend = tier === "Legend";
   return (
     <svg width={size} height={size * 1.1} viewBox="0 0 40 44" fill="none">
-      <path d="M20 2L38 10V22C38 32 30 40 20 44C10 40 2 32 2 22V10L20 2Z" fill={color} fillOpacity={isStarter ? 0.15 : 0.2} stroke={color} strokeWidth={isLegend ? 2 : 1.5}/>
-      <path d="M20 14L22 18H26L23 21L24 25L20 22L16 25L17 21L14 18H18Z" fill={color} fillOpacity={isStarter ? 0.4 : 1} transform={isElite || isLegend ? "translate(0,-2) scale(1.15) translate(-2.6, -0.5)" : undefined}/>
-      {(isPower || isElite || isLegend) && <line x1="12" y1="8" x2="28" y2="8" stroke={color} strokeWidth="1" opacity="0.5"/>}
-      {(isElite || isLegend) && <line x1="14" y1="5" x2="26" y2="5" stroke={color} strokeWidth="0.8" opacity="0.3"/>}
+      <path d="M20 2L38 10V22C38 32 30 40 20 44C10 40 2 32 2 22V10L20 2Z" fill={color} fillOpacity={isSpark ? 0.15 : 0.2} stroke={color} strokeWidth={isLegend ? 2 : 1.5}/>
+      <path d="M20 14L22 18H26L23 21L24 25L20 22L16 25L17 21L14 18H18Z" fill={color} fillOpacity={isSpark ? 0.4 : 1} transform={rank >= 3 ? "translate(0,-2) scale(1.15) translate(-2.6, -0.5)" : undefined}/>
+      {rank >= 2 && <line x1="12" y1="8" x2="28" y2="8" stroke={color} strokeWidth="1" opacity="0.5"/>}
+      {rank >= 4 && <line x1="14" y1="5" x2="26" y2="5" stroke={color} strokeWidth="0.8" opacity="0.3"/>}
       {isLegend && <circle cx="20" cy="22" r="16" fill="none" stroke={color} strokeWidth="0.5" opacity="0.3"/>}
     </svg>
   );

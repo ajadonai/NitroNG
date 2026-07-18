@@ -81,70 +81,140 @@ export const PLATFORM_GROUPS = [
 export const PLATFORMS = PLATFORM_GROUPS.flatMap(g => g.platforms);
 
 const TS = {
-  Budget: { bg: "#fef7ed", border: "#e8d5b8", text: "#854F0B", bgD: "#2d2210", borderD: "#5a4020", label: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
-  Standard: { bg: "#eef4fb", border: "#b8d0e8", text: "#185FA5", bgD: "#0f1e30", borderD: "#1e4070", label: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
-  Premium: { bg: "#f5eef5", border: "#d4b8d4", text: "#534AB7", bgD: "#221535", borderD: "#3d2060", label: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></svg> },
+  Budget: { bg: "#fef7ed", border: "#e8d5b8", text: "#854F0B", bgD: "#2d2210", borderD: "#5a4020", grad: "linear-gradient(135deg,#e0a458,#b45309)", label: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
+  Standard: { bg: "#eef4fb", border: "#b8d0e8", text: "#185FA5", bgD: "#0f1e30", borderD: "#1e4070", grad: "linear-gradient(135deg,#60a5fa,#2563eb)", label: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
+  Premium: { bg: "#f5eef5", border: "#d4b8d4", text: "#534AB7", bgD: "#221535", borderD: "#3d2060", grad: "linear-gradient(135deg,#a78bfa,#7c3aed)", label: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></svg> },
 };
 
 const PROV_COLORS = { mtp: "#ef4444", jap: "#3b82f6", dao: "#22c55e" };
 
+const TIER_NAMES = ["Budget", "Standard", "Premium"];
+const TIER_COMPARE = [
+  { label: "Accounts", Budget: "Basic", Standard: "Better", Premium: "Best quality" },
+  { label: "Refill", Budget: "None", Standard: "30 days, free", Premium: "Lifetime, free" },
+  { label: "Starts", Budget: "Slower", Standard: "Fast", Premium: "Priority" },
+  { label: "Best for", Budget: "Quick tests", Standard: "Most people", Premium: "Your main page" },
+];
+const TIER_STACK = {
+  Budget: { bestFor: "quick tests", detail: "Basic accounts · no refill · slower start" },
+  Standard: { bestFor: "most people", detail: "Better accounts · free 30-day refill · fast start" },
+  Premium: { bestFor: "your main page", detail: "Best accounts · free lifetime refill · priority start" },
+};
+
 function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion }) {
-  const [tipOpen, setTipOpen] = useState(false);
   const promoOff = activePromotion?.active ? activePromotion.discountPercent / 100 : 0;
   return (
-    <div className="mt-2.5" data-tour="no-tier-select">
-      <div className="flex gap-1.5 flex-wrap items-center">
+    <div className="mt-3" data-tour="no-tier-select">
+      <div className="flex gap-2 flex-wrap">
         {svc.tiers.map(tier => {
           const s = TS[tier.tier];
           const isSel = selTier?.tier === tier.tier && selSvc?.id === svc.id;
           const displayPrice = promoOff > 0 ? Math.round(tier.price * (1 - promoOff)) : tier.price;
           return (
-            <button key={tier.tier} onClick={e => onPickTier(tier, e)} className={`no-tier-chip relative py-1 px-2.5 desktop:py-[7px] desktop:px-3.5 rounded-[20px] text-[11px] desktop:text-[13px] font-semibold cursor-pointer border-[1.5px] border-solid font-[inherit] transition-all duration-150 ease-in-out flex items-center gap-1.5 hover:brightness-110 hover:-translate-y-px${isSel ? " !border-2 shadow-[0_2px_8px_rgba(0,0,0,.28)] -translate-y-px" : ""}`} style={{ background: dark ? s.bgD : s.bg, color: s.text, borderColor: isSel ? s.text : (dark ? s.borderD : s.border) }}>
-              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PROV_COLORS[tier.provider] || PROV_COLORS.mtp }} />
-              {s.label} {tier.tier} · ₦{displayPrice.toLocaleString()}
+            <button key={tier.tier} onClick={e => onPickTier(tier, e)} aria-pressed={isSel} className="no-tier-chip relative inline-flex items-center gap-[7px] rounded-[11px] py-[5px] pr-[12px] pl-[7px] border-[1.5px] border-solid cursor-pointer font-[inherit] transition-all duration-150 ease-in-out text-left hover:-translate-y-px" style={{ background: dark ? s.bgD : s.bg, borderColor: isSel ? s.text : (dark ? s.borderD : s.border), boxShadow: isSel ? `0 4px 12px ${s.text}3d` : undefined, transform: isSel ? "translateY(-1px)" : undefined }}>
+              <span className="w-5 h-5 rounded-full flex items-center justify-center text-white shrink-0 relative" style={{ background: s.grad }}>
+                {s.label}
+                {isSel && (
+                  <span className="absolute -bottom-0.5 -right-0.5 w-[11px] h-[11px] rounded-full flex items-center justify-center" style={{ background: s.text, border: `1.5px solid ${dark ? "#1a1a2e" : "#fff"}` }}>
+                    <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </span>
+                )}
+              </span>
+              <span className="flex flex-col items-start gap-px leading-none">
+                <span className="text-[10.5px]" style={{ color: s.text, fontWeight: 800 }}>{tier.tier}</span>
+                <span className="m text-[10.5px] font-bold" style={{ color: dark ? "#f5f3f0" : "#1c1b19" }}>₦{displayPrice.toLocaleString()}</span>
+              </span>
             </button>
           );
         })}
-        <button onClick={e => { e.stopPropagation(); setTipOpen(!tipOpen); }} className="shrink-0 bg-transparent border-none cursor-pointer py-0.5 px-1.5 rounded-full flex items-center gap-1 text-[10px] desktop:text-[11px] font-medium" style={{ color: dark ? "#a09890" : "#807a74", background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)" }} aria-label="What do the tiers mean?">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-          {tipOpen ? "Close" : "Which tier?"}
-        </button>
       </div>
-      {tipOpen && (
-        <div className="mt-2.5 rounded-xl border border-solid p-3 desktop:p-3.5" style={{ background: dark ? "#141830" : "#fafaf8", borderColor: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)" }}>
-          <div className="text-[13px] font-bold mb-2.5" style={{ color: dark ? "#e8e4df" : "#1a1a1a" }}>What do the tiers mean?</div>
-          <div className="flex flex-col gap-2">
-            <div className="py-2 px-2.5 rounded-lg" style={{ background: dark ? "#2d2210" : "#fef7ed" }}>
-              <div className="text-[11.5px] font-bold mb-0.5 flex items-center gap-1.5" style={{ color: "#854F0B" }}>{TS.Budget.label} Budget</div>
-              <div className="text-[11px] leading-[1.5]" style={{ color: dark ? "#b0a9a2" : "#555250" }}>Cheapest option. No refill — if the count drops, it stays dropped. Best for quick boosts where you don't need long-term retention.</div>
-            </div>
-            <div className="py-2 px-2.5 rounded-lg" style={{ background: dark ? "#0f1e30" : "#eef4fb" }}>
-              <div className="text-[11.5px] font-bold mb-0.5 flex items-center gap-1.5" style={{ color: "#185FA5" }}>{TS.Standard.label} Standard</div>
-              <div className="text-[11px] leading-[1.5]" style={{ color: dark ? "#b0a9a2" : "#555250" }}>Mid-range. Includes a 30-day refill — if the count drops within 30 days, we top it back up for free. Great for most people.</div>
-            </div>
-            <div className="py-2 px-2.5 rounded-lg" style={{ background: dark ? "#221535" : "#f5eef5" }}>
-              <div className="text-[11.5px] font-bold mb-0.5 flex items-center gap-1.5" style={{ color: "#534AB7" }}>{TS.Premium.label} Premium</div>
-              <div className="text-[11px] leading-[1.5]" style={{ color: dark ? "#b0a9a2" : "#555250" }}>Highest quality accounts with lifetime refill. If the count ever drops, we top it back up automatically — no time limit. Best for profiles you're building long-term.</div>
-            </div>
-          </div>
-          <div className="mt-2.5 py-1.5 px-2.5 rounded-lg flex gap-2 items-start" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)" }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px" style={{ color: dark ? "#e0c0c8" : "#8a4a5a" }}><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z"/></svg>
-            <span className="text-[11px] leading-[1.5]" style={{ color: dark ? "#e0c0c8" : "#8a4a5a" }}>With platforms actively removing inactive accounts, we recommend <strong>Standard or Premium</strong> for anything you want to keep long-term.</span>
-          </div>
+    </div>
+  );
+}
+
+function TierExplainer({ dark, t, selTier, narrow }) {
+  const selName = selTier?.tier;
+  if (narrow) {
+    return (
+      <div className="mt-2 rounded-[11px] border border-solid overflow-hidden" style={{ borderColor: t.cardBorder, background: dark ? "#141830" : "#fafaf8" }}>
+        <div className="rounded-[9px] border border-solid overflow-hidden mx-2.5 mt-2.5" style={{ borderColor: t.cardBorder }}>
+          {TIER_NAMES.map((name, i) => {
+            const s = TS[name];
+            const st = TIER_STACK[name];
+            return (
+              <div key={name} className="flex items-start gap-2 py-2 px-2.5" style={{ borderBottom: i < 2 ? `1px solid ${t.cardBorder}` : undefined, background: selName === name ? (dark ? s.bgD : s.bg) : undefined }}>
+                <span className="w-[17px] h-[17px] rounded-full flex items-center justify-center text-white shrink-0 mt-px" style={{ background: s.grad }}>{s.label}</span>
+                <span>
+                  <span className="text-[10.5px] block" style={{ fontWeight: 800, color: s.text }}>{name} <span className="text-[10px] font-bold" style={{ color: dark ? "#8a8580" : "#757170" }}>· best for {st.bestFor}</span></span>
+                  <span className="block text-[10px] mt-px leading-[1.45]" style={{ color: dark ? "#c9c5c0" : "#4a4744" }}>{st.detail}</span>
+                </span>
+              </div>
+            );
+          })}
         </div>
-      )}
+        <div className="text-[10.5px] leading-[1.5] mx-2.5 mt-2 mb-2.5" style={{ color: dark ? "#8a8580" : "#757170" }}>
+          Small drops are normal — platforms clear out inactive accounts. Refill means we top yours back up for free.
+          <div className="mt-1 font-bold" style={{ color: "#c47d8e" }}>Building something long term? Go Standard or Premium.</div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-2 rounded-[11px] border border-solid" style={{ borderColor: t.cardBorder, background: dark ? "#141830" : "#fafaf8" }}>
+      <div className="mx-2.5 mt-2.5 rounded-[9px] border border-solid overflow-hidden" style={{ display: "grid", gridTemplateColumns: "minmax(52px,66px) repeat(3,1fr)", borderColor: t.cardBorder }}>
+        <div style={{ padding: "7px 5px 6px", borderBottom: `1px solid ${t.cardBorder}`, borderRight: `1px solid ${t.cardBorder}` }} />
+        {TIER_NAMES.map((name, i) => {
+          const s = TS[name];
+          return (
+            <div key={name} className="text-center" style={{ padding: "6px 4px 5px", borderBottom: `1px solid ${t.cardBorder}`, borderRight: i < 2 ? `1px solid ${t.cardBorder}` : undefined, background: selName === name ? (dark ? s.bgD : s.bg) : undefined }}>
+              <span className="w-[17px] h-[17px] rounded-full flex items-center justify-center text-white mx-auto mb-0.5" style={{ background: s.grad }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{s.label.props.children}</svg></span>
+              <span className="text-[10px] block" style={{ fontWeight: 800, color: s.text }}>{name}</span>
+            </div>
+          );
+        })}
+        {TIER_COMPARE.map((row, ri) => {
+          const isLast = ri === TIER_COMPARE.length - 1;
+          const isBold = row.label === "Best for";
+          return [
+            <div key={`lab-${ri}`} className="flex items-center" style={{ padding: "6px 5px", fontSize: 9, fontWeight: 800, letterSpacing: ".3px", textTransform: "uppercase", color: dark ? "#8a8580" : "#757170", borderBottom: isLast ? undefined : `1px solid ${t.cardBorder}`, borderRight: `1px solid ${t.cardBorder}` }}>{row.label}</div>,
+            ...TIER_NAMES.map((name, ci) => {
+              const s = TS[name];
+              return (
+                <div key={`${ri}-${ci}`} className="text-center" style={{ padding: "6px 5px", fontSize: 10.5, lineHeight: 1.35, color: isBold ? (dark ? "#f5f3f0" : "#1c1b19") : (dark ? "#c9c5c0" : "#4a4744"), fontWeight: isBold ? 800 : undefined, borderBottom: isLast ? undefined : `1px solid ${t.cardBorder}`, borderRight: ci < 2 ? `1px solid ${t.cardBorder}` : undefined, background: selName === name ? (dark ? s.bgD : s.bg) : undefined }}>{row[name]}</div>
+              );
+            }),
+          ];
+        })}
+      </div>
+      <div className="text-[10.5px] leading-[1.5] mx-2.5 mt-2 mb-2.5" style={{ color: dark ? "#8a8580" : "#757170" }}>
+        Small drops are normal — platforms clear out inactive accounts. Refill means we top yours back up for free.
+        <div className="mt-1 font-bold" style={{ color: "#c47d8e" }}>Building something long term? Go Standard or Premium.</div>
+      </div>
     </div>
   );
 }
 
 function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t, orderMode, activePromotion }) {
   const isSel = selSvc?.id === svc.id;
+  const [explOpen, setExplOpen] = useState(false);
+  const [narrow, setNarrow] = useState(false);
+  const cardRef = useRef(null);
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => setNarrow(entry.contentRect.width <= 380));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  useEffect(() => { if (!isSel) setExplOpen(false); }, [isSel]);
   const lowestPrice = Math.min(...svc.tiers.map(ti => ti.price));
   const lowestPer = svc.tiers.find(ti => ti.price === lowestPrice)?.per || "1K";
   const activeTier = isSel && selTier ? selTier : null;
   const accent = svc.isPackage ? { light: "#1d4ed8", dark: "#60a5fa", bgL: "#eff6ff", bgD: "rgba(59,130,246,.12)", selBgL: "#dbeafe", selBgD: "#111d3a", shadow: "59,130,246" } : svc.ng ? { light: "#16a34a", dark: "#4ade80", bgL: "#e8f5ee", bgD: "rgba(30,80,60,.24)", selBgL: "#d0f0db", selBgD: "#122a1c", shadow: "22,163,74" } : null;
+  const handlePickTier = (tier, e) => { setExplOpen(false); onPickTier(tier, e); };
+  const s = activeTier ? TS[activeTier.tier] : null;
   return (
-    <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => onPickService(svc)} className={`no-svc-card rounded-xl desktop:rounded-[14px] py-3 px-3.5 md:py-3.5 md:px-4 desktop:py-4 desktop:px-5 cursor-pointer border border-solid transition-all duration-150 ease-in-out hover:border-[rgba(196,125,142,.19)]${isSel ? " relative z-[1]" : ""}`} style={{ borderColor: isSel ? (accent ? (dark ? accent.dark : accent.light) : t.accent) : t.cardBorder, borderLeftWidth: isSel ? 4 : accent ? 3 : undefined, borderLeftColor: isSel ? (accent ? (dark ? accent.dark : accent.light) : "#c47d8e") : accent ? (dark ? accent.dark : accent.light) : undefined, background: isSel ? (accent ? (dark ? accent.selBgD : accent.selBgL) : (dark ? "#2a1828" : "#f5e4e8")) : accent ? (dark ? accent.bgD : accent.bgL) : t.cardBg, opacity: selSvc && !isSel ? (dark ? .3 : .45) : 1, transform: isSel ? "scale(1.01)" : "scale(1)", boxShadow: isSel ? (accent ? `0 4px 20px rgba(${accent.shadow},.31), 0 0 0 1.5px rgba(${accent.shadow},.28)` : "0 4px 20px rgba(196,125,142,.38), 0 0 0 1.5px rgba(196,125,142,.31)") : undefined }}>
+    <div ref={cardRef} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => onPickService(svc)} className={`no-svc-card rounded-xl desktop:rounded-[14px] py-3 px-3.5 md:py-3.5 md:px-4 desktop:py-4 desktop:px-5 cursor-pointer border border-solid transition-all duration-150 ease-in-out hover:border-[rgba(196,125,142,.19)]${isSel ? " relative z-[1]" : ""}`} style={{ borderColor: isSel ? (accent ? (dark ? accent.dark : accent.light) : t.accent) : t.cardBorder, borderLeftWidth: isSel ? 4 : accent ? 3 : undefined, borderLeftColor: isSel ? (accent ? (dark ? accent.dark : accent.light) : "#c47d8e") : accent ? (dark ? accent.dark : accent.light) : undefined, background: isSel ? (accent ? (dark ? accent.selBgD : accent.selBgL) : (dark ? "#2a1828" : "#f5e4e8")) : accent ? (dark ? accent.bgD : accent.bgL) : t.cardBg, opacity: selSvc && !isSel ? (dark ? .3 : .45) : 1, transform: isSel ? "scale(1.01)" : "scale(1)", boxShadow: isSel ? (accent ? `0 4px 20px rgba(${accent.shadow},.31), 0 0 0 1.5px rgba(${accent.shadow},.28)` : "0 4px 20px rgba(196,125,142,.38), 0 0 0 1.5px rgba(196,125,142,.31)") : undefined }}>
       <div className="flex items-center justify-between gap-3 max-md:flex-wrap max-md:gap-1.5">
         <div className="flex-1 min-w-0 max-md:basis-[60%]">
           <div className="text-sm md:text-[15px] desktop:text-base font-semibold mb-1" style={{ color: accent ? (dark ? accent.dark : accent.light) : t.text }}>{svc.name}</div>
@@ -158,18 +228,28 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
           </div>
         )}
       </div>
-      {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={onPickTier} dark={dark} activePromotion={activePromotion} />}
-      {isSel && !activeTier && (
-        <div className="flex items-center gap-1.5 mt-2 text-xs font-medium py-2 px-3 rounded-lg bg-[rgba(196,125,142,.06)]" style={{ color: t.textMuted }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-          Pick a tier to continue
-        </div>
-      )}
-      {isSel && activeTier && (
-        <div className="mt-2.5 py-2.5 px-3 desktop:py-3 desktop:px-3.5 rounded-[10px] flex items-center justify-between gap-3 border border-solid" style={{ background: dark ? `${TS[activeTier.tier].text}08` : `${TS[activeTier.tier].text}06`, borderColor: dark ? `${TS[activeTier.tier].text}18` : `${TS[activeTier.tier].text}12` }}>
-          <div className="text-xs" style={{ color: t.textMuted }}>{refillLabel(activeTier.tier)} · {activeTier.speed} · Min {(activeTier.min || 100).toLocaleString()}</div>
-          {orderMode === "bulk" && <div className="m text-[15px] font-bold" style={{ color: TS[activeTier.tier].text, fontFamily: "'JetBrains Mono', monospace" }}>₦{activeTier.price.toLocaleString()}</div>}
-        </div>
+      {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={handlePickTier} dark={dark} activePromotion={activePromotion} />}
+      {isSel && (
+        <>
+          <div className="mt-2.5 flex items-center gap-2 rounded-[9px] py-[7px] px-2.5 border border-solid transition-all duration-200" style={{ borderColor: s ? `${s.text}4d` : t.cardBorder, background: s ? (dark ? `${s.text}0f` : `${s.text}0a`) : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)") }}>
+            {activeTier ? (
+              <div className="flex-1 text-[11px]" style={{ color: dark ? "#8a8580" : "#757170" }}>
+                <strong style={{ color: dark ? "#c9c5c0" : "#4a4744" }}>{refillLabel(activeTier.tier)}</strong>
+                {" · "}{TIER_COMPARE[0][activeTier.tier]} accounts{" · "}{activeTier.speed}{" · Min "}{(activeTier.min || 100).toLocaleString()}
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center gap-1.5 text-[11px]" style={{ color: dark ? "#8a8580" : "#757170" }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                Pick a tier to continue
+              </div>
+            )}
+            <button onClick={e => { e.stopPropagation(); setExplOpen(!explOpen); }} aria-expanded={explOpen} aria-label="What do the tiers mean?" className="shrink-0 inline-flex items-center gap-1 text-[10.5px] font-bold rounded-full py-[3px] px-[9px] border border-solid cursor-pointer font-[inherit] transition-all duration-150 hover:-translate-y-px" style={{ color: dark ? "#8a8580" : "#757170", background: dark ? "rgba(255,255,255,.06)" : "#fff", borderColor: t.cardBorder }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              {explOpen ? "Close" : "Which tier?"}
+            </button>
+          </div>
+          {explOpen && <TierExplainer dark={dark} t={t} selTier={selTier} narrow={narrow} />}
+        </>
       )}
     </div>
   );
@@ -743,6 +823,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   // Bulk mode state — hydrate from storage after mount to avoid SSR mismatch
   const [orderMode, setOrderMode] = useState("single");
   const [cartRows, setCartRows] = useState([]);
+  const [tiktokDisclaimer, setTiktokDisclaimer] = useState(false);
+  const [duplicateConfirm, setDuplicateConfirm] = useState(null);
   const hydratedRef = useRef(false);
   useEffect(() => {
     if (hydratedRef.current) return;
@@ -882,6 +964,16 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
   useEffect(() => { setSelSvc(null); setSelTier(null); setFilterType("all"); setOrderModal(false); setOrderSuccess(null); setSearch(""); setLink(""); setComments(""); setQty(""); setRedeemPoints(false); }, [platform]);
 
+  useEffect(() => {
+    if (platform !== 'tiktok') return;
+    try {
+      const dismissed = localStorage.getItem('nitro_tiktok_disclaimer');
+      if (!dismissed || Date.now() - Number(dismissed) > 7 * 24 * 60 * 60 * 1000) {
+        setTiktokDisclaimer(true);
+      }
+    } catch { setTiktokDisclaimer(true); }
+  }, [platform]);
+
   /* Click outside any card → collapse */
   const listRef = useRef(null);
   useEffect(() => {
@@ -991,7 +1083,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       const data = await res.json();
       if (data.duplicate) {
         setOrderLoading(false);
-        if (window.confirm(data.message)) submitOrder(dripDaysArg, true);
+        setDuplicateConfirm({ message: data.message, dripDays: dripDaysArg });
         return;
       }
       if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong"); setOrderLoading(false); return; }
@@ -1364,6 +1456,51 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
             ) : (
               <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => { setOrderModal(false); setRedeemPoints(false); }} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} welcomeBonusEligible={user?.welcomeBonusEligible} pointsRedeemable={rewards?.points?.redeemable || false} pointsBalance={rewards?.points?.balance || 0} redeemPoints={redeemPoints} setRedeemPoints={setRedeemPoints} />
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ TIKTOK DISCLAIMER ═══ */}
+      {tiktokDisclaimer && (
+        <div className="no-modal-overlay flex fixed inset-0 z-50 items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { try { localStorage.setItem('nitro_tiktok_disclaimer', String(Date.now())); } catch {} setTiktokDisclaimer(false); }} style={{ background: "rgba(0,0,0,.45)" }}>
+          <div role="dialog" aria-modal="true" aria-label="TikTok service notice" className="w-full max-w-[380px] rounded-2xl border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
+            <div className="py-5 px-5">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: t.text }}><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.89 2.89 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.11V9.38a6.33 6.33 0 00-.79-.05A6.34 6.34 0 003.14 15.67 6.34 6.34 0 009.48 22a6.34 6.34 0 006.34-6.34V9.17a8.16 8.16 0 004.77 1.53V7.26a4.85 4.85 0 01-1-.57z"/></svg>
+                </div>
+                <div className="text-base font-semibold" style={{ color: t.text }}>Heads up about TikTok</div>
+              </div>
+              <div className="text-[13.5px] leading-[1.65] mb-1" style={{ color: t.textMuted }}>
+                TikTok services can be unpredictable. Orders may take longer than expected, deliver partially, or experience drops due to platform changes outside our control.
+              </div>
+              <div className="text-[13.5px] leading-[1.65] mb-4" style={{ color: t.textMuted }}>
+                We recommend starting with a small order to test before committing to larger quantities. Refills and refunds follow our standard policy.
+              </div>
+              <button onClick={() => { try { localStorage.setItem('nitro_tiktok_disclaimer', String(Date.now())); } catch {} setTiktokDisclaimer(false); }} className="w-full py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>I understand</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {duplicateConfirm && (
+        <div className="no-modal-overlay flex fixed inset-0 z-50 items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => setDuplicateConfirm(null)} style={{ background: "rgba(0,0,0,.45)" }}>
+          <div role="dialog" aria-modal="true" aria-label="Duplicate order confirmation" className="w-full max-w-[380px] rounded-2xl border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
+            <div className="py-5 px-5">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dark ? "rgba(251,191,36,.15)" : "rgba(251,191,36,.12)" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <div className="text-base font-semibold" style={{ color: t.text }}>Duplicate order</div>
+              </div>
+              <div className="text-[13.5px] leading-[1.65] mb-4" style={{ color: t.textMuted }}>
+                {duplicateConfirm.message}
+              </div>
+              <div className="flex gap-2.5">
+                <button onClick={() => setDuplicateConfirm(null)} className="flex-1 py-[11px] rounded-lg border border-solid text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.15)", color: t.text }}>Cancel</button>
+                <button onClick={() => { const d = duplicateConfirm.dripDays; setDuplicateConfirm(null); submitOrder(d, true); }} className="flex-1 py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>Place anyway</button>
+              </div>
+            </div>
           </div>
         </div>
       )}

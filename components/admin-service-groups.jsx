@@ -370,7 +370,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
               <table className="w-full border-collapse text-[13px]">
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}` }}>
-                    {["Tier", "MTP Service", "Sell ₦/1k", "Min–Max", "Speed", "Refill", ""].map(h => (
+                    {["", "Tier", "MTP Service", "Sell ₦/1k", "Min–Max", "Speed", "Refill", ""].map(h => (
                       <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold uppercase tracking-[.5px]" style={{ color: t.textMuted }}>{h}</th>
                     ))}
                   </tr>
@@ -378,6 +378,18 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                 <tbody>
                   {g.tiers.map((tier, i) => (
                     <tr key={tier.id} className="transition-[background-color] duration-100 hover:bg-[rgba(196,125,142,.04)]" style={{ borderBottom: i < g.tiers.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}` : "none" }}>
+                      <td className="py-2.5 px-2 w-8">
+                        {g.tiers.length > 1 && (
+                          <div className="flex flex-col gap-0.5">
+                            <button disabled={i === 0} onClick={() => act({ action: "swap-tier-order", tierA: tier.id, tierB: g.tiers[i - 1].id })} className="bg-transparent border-none cursor-pointer p-0 leading-none" style={{ color: i === 0 ? (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.15)") : t.textMuted, cursor: i === 0 ? "default" : "pointer" }} title="Move up">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                            </button>
+                            <button disabled={i === g.tiers.length - 1} onClick={() => act({ action: "swap-tier-order", tierA: tier.id, tierB: g.tiers[i + 1].id })} className="bg-transparent border-none cursor-pointer p-0 leading-none" style={{ color: i === g.tiers.length - 1 ? (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.15)") : t.textMuted, cursor: i === g.tiers.length - 1 ? "default" : "pointer" }} title="Move down">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                          </div>
+                        )}
+                      </td>
                       <td className="py-2.5 px-4">
                         <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: TIER_COLORS[tier.tier] || t.text }}>
                           <span className="w-2 h-2 rounded-full shrink-0" style={{ background: TIER_COLORS[tier.tier] || t.textMuted }} />

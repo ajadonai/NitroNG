@@ -1,12 +1,13 @@
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
+import { rateLimit, rateLimitUnavailable, tooManyRequests } from "@/lib/rate-limit";
 
 export async function POST(req) {
   try {
-    const { limited } = await rateLimit(req, { maxAttempts: 5, windowMs: 5 * 60 * 1000 });
-    if (limited) return tooManyRequests("Too many reset attempts. Try again in 5 minutes.");
+    const limit = await rateLimit(req, { maxAttempts: 5, windowMs: 5 * 60 * 1000 });
+    if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
+    if (limit.limited) return tooManyRequests("Too many reset attempts. Try again in 5 minutes.", limit.retryAfter);
 
     const { token, password } = await req.json().catch(() => ({}));
 
@@ -19,7 +20,12 @@ export async function POST(req) {
 
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
     const member = await prisma.crewMember.findFirst({
-      where: { resetToken: tokenHash, resetExpires: { gt: new Date() } },
+      where: {
+        resetToken: tokenHash,
+        resetExpires: { gt: new Date() },
+        status: 'approved',
+        deletedAt: null,
+      },
     });
 
     if (!member) {
@@ -28,13 +34,24 @@ export async function POST(req) {
 
     const hashed = await bcrypt.hash(password, 12);
 
-    await prisma.$transaction([
-      prisma.crewMember.update({
-        where: { id: member.id },
+    const updated = await prisma.$transaction(async tx => {
+      const { count } = await tx.crewMember.updateMany({
+        where: {
+          id: member.id,
+          resetToken: tokenHash,
+          resetExpires: { gt: new Date() },
+          status: 'approved',
+          deletedAt: null,
+        },
         data: { password: hashed, resetToken: null, resetExpires: null },
-      }),
-      prisma.crewSession.deleteMany({ where: { memberId: member.id } }),
-    ]);
+      });
+      if (count !== 1) return false;
+      await tx.crewSession.deleteMany({ where: { memberId: member.id } });
+      return true;
+    });
+    if (!updated) {
+      return Response.json({ error: "Invalid or expired reset link" }, { status: 401 });
+    }
 
     return Response.json({ message: "Password reset successfully. You can now log in." });
   } catch (e) {

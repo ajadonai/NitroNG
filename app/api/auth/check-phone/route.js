@@ -1,10 +1,11 @@
 import prisma from '@/lib/prisma';
-import { rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 
 export async function POST(req) {
   try {
-    const { limited } = await rateLimit(req, { maxAttempts: 20, windowMs: 60 * 1000 });
-    if (limited) return tooManyRequests('Too many requests.');
+    const limit = await rateLimit(req, { maxAttempts: 20, windowMs: 60 * 1000 });
+    if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
+    if (limit.limited) return tooManyRequests('Too many requests.', limit.retryAfter);
 
     const { phone } = await req.json();
     if (!phone || typeof phone !== 'string') return Response.json({ available: true });

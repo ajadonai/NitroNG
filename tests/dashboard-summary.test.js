@@ -91,6 +91,84 @@ describe('GET /api/dashboard — bounded rows with exact summaries', () => {
     expect(prisma.order.findMany.mock.calls[1][0].take).toBe(5);
   });
 
+  it('serializes immutable offer snapshots and reports a disabled current offer', async () => {
+    const order = {
+      id: 'order-db-1',
+      orderId: 'NTR-1',
+      userId: 'user-1',
+      serviceId: 'service-1',
+      tierId: 'tier-1',
+      serviceNameAtPurchase: 'X/Twitter Tweet Views',
+      tierNameAtPurchase: 'Budget',
+      platformAtPurchase: 'Twitter/X',
+      serviceTypeAtPurchase: 'views',
+      service: {
+        name: '🟢 X/Twitter Gradual Tweet Views | Max 100M | NEW |',
+        category: 'Provider category',
+        enabled: true,
+      },
+      tier: {
+        tier: 'Current tier',
+        enabled: true,
+        serviceId: 'service-1',
+        speed: '1K/hour',
+        refill: false,
+        refillDays: 0,
+        group: {
+          name: 'Current group name',
+          platform: 'Current platform',
+          type: 'current type',
+          enabled: false,
+        },
+      },
+      link: 'https://x.com/example/status/1',
+      quantity: 3000,
+      charge: 120000,
+      remains: 3000,
+      startCount: null,
+      status: 'Processing',
+      batchId: null,
+      apiOrderId: 'provider-order-1',
+      lastError: null,
+      retryCount: 0,
+      completedAt: null,
+      createdAt: new Date('2026-07-17T12:00:00.000Z'),
+      dripDays: 1,
+    };
+    prisma.order.findMany.mockResolvedValue([order]);
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(body.orders[0]).toMatchObject({
+      service: 'X/Twitter Tweet Views',
+      tier: 'Budget',
+      platform: 'Twitter/X',
+      serviceType: 'views',
+      offerDisabled: true,
+    });
+    expect(body.activeOrders[0]).toMatchObject({
+      service: 'X/Twitter Tweet Views',
+      tier: 'Budget',
+      platform: 'Twitter/X',
+      serviceType: 'views',
+      offerDisabled: true,
+    });
+
+    const include = prisma.order.findMany.mock.calls[0][0].include;
+    expect(include.service.select.enabled).toBe(true);
+    expect(include.tier.select.enabled).toBe(true);
+    expect(include.tier.select.serviceId).toBe(true);
+    expect(include.tier.select.group.select.enabled).toBe(true);
+  });
+
+  it('prefers the purchase platform snapshot in the exact-summary query', async () => {
+    await GET();
+
+    const query = prisma.$queryRaw.mock.calls[0][0].join(' ');
+    expect(query).toContain('COALESCE(o."platformAtPurchase", sg.platform, s.category, \'unknown\')');
+  });
+
   it('limits visible transaction rows to the 180-day window while preserving its count', async () => {
     const response = await GET();
     const body = await response.json();

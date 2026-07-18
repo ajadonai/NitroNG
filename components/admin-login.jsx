@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from "react";
 import InlineAlert from "./inline-alert";
+import { safeInternalDashboardDestination } from '@/lib/internal-dashboard-path';
 
 const QUOTES = [
   { text: "Move fast. Break nothing. Ship everything.", author: "The Nitro Way" },
@@ -36,7 +37,8 @@ export default function AdminLogin(){
       const res=await fetch("/api/auth/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password:pw})});
       const data=await res.json();
       if(!res.ok){setError(data.error||"Login failed");setLoading(false);return;}
-      window.location.href="/admin";
+      const requested = new URLSearchParams(window.location.search).get('next');
+      window.location.href = safeInternalDashboardDestination(requested, '/admin');
     }catch{setError("Something went wrong.");setLoading(false);}
   };
 

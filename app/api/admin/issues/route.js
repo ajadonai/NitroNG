@@ -1,9 +1,143 @@
 export const maxDuration = 60;
 
 import prisma from '@/lib/prisma';
-import { requireAdmin, logActivity } from '@/lib/admin';
+import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
 import { log } from '@/lib/logger';
 import { getBalance, getServices, isProviderConfigured } from '@/lib/smm';
+
+const CRYPTO_PAYMENT_REVIEW_TYPE = 'crypto_payment_review';
+
+class CryptoReviewRaceError extends Error {}
+
+function parseCryptoReviewMetadata(issue) {
+  try {
+    const metadata = JSON.parse(issue.metadata);
+    if (!metadata || Array.isArray(metadata) || typeof metadata !== 'object') return null;
+
+    const required = [
+      'transactionId',
+      'reference',
+      'userId',
+      'reason',
+      'reviewFingerprint',
+    ];
+    if (required.some(key => typeof metadata[key] !== 'string' || !metadata[key].trim())) {
+      return null;
+    }
+
+    return Object.fromEntries(required.map(key => [key, metadata[key].trim()]));
+  } catch {
+    return null;
+  }
+}
+
+function cryptoReviewConflict(reason) {
+  return { error: reason, status: 409 };
+}
+
+async function closeCryptoPaymentReview({ issueId, action, adminName }) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await prisma.$transaction(async db => {
+        const issue = await db.adminIssue.findUnique({ where: { id: issueId } });
+        if (!issue) return { error: 'Issue not found', status: 404 };
+        if (issue.type !== CRYPTO_PAYMENT_REVIEW_TYPE) {
+          return cryptoReviewConflict('Issue is not a crypto payment review');
+        }
+
+        if (issue.status !== 'open') return { success: true, alreadyResolved: true };
+
+        const metadata = parseCryptoReviewMetadata(issue);
+        if (!metadata) {
+          return cryptoReviewConflict('Crypto payment review metadata is missing or invalid');
+        }
+
+        const deposit = await db.transaction.findUnique({
+          where: { id: metadata.transactionId },
+        });
+        if (
+          deposit?.type === 'deposit'
+          && deposit.method === 'crypto'
+          && deposit.reference === metadata.reference
+          && deposit.userId === metadata.userId
+          && deposit.paymentReviewResolvedAt === null
+          && deposit.paymentReviewFingerprint !== metadata.reviewFingerprint
+        ) {
+          return cryptoReviewConflict(
+            'A newer payment observation is available. Reload and review the latest evidence.',
+          );
+        }
+        const validDeposit = deposit
+          && deposit.type === 'deposit'
+          && deposit.method === 'crypto'
+          && deposit.reference === metadata.reference
+          && deposit.userId === metadata.userId
+          && ['Review', 'Completed', 'Rejected'].includes(deposit.status)
+          && deposit.paymentReviewFingerprint === metadata.reviewFingerprint
+          && typeof deposit.paymentReviewReason === 'string'
+          && deposit.paymentReviewReason.length > 0
+          && deposit.paymentReviewAt instanceof Date
+          && deposit.paymentReviewResolvedAt === null;
+        if (!validDeposit) {
+          return cryptoReviewConflict('Linked crypto deposit review is missing or does not match this issue');
+        }
+
+        const resolvedAt = new Date();
+        const transactionResult = await db.transaction.updateMany({
+          where: {
+            id: deposit.id,
+            type: 'deposit',
+            method: 'crypto',
+            reference: metadata.reference,
+            userId: metadata.userId,
+            status: deposit.status,
+            paymentReviewFingerprint: metadata.reviewFingerprint,
+            paymentReviewReason: deposit.paymentReviewReason,
+            paymentReviewAt: deposit.paymentReviewAt,
+            paymentReviewResolvedAt: null,
+          },
+          data: {
+            paymentReviewResolvedAt: resolvedAt,
+            ...(deposit.status === 'Review' ? { status: 'Rejected' } : {}),
+          },
+        });
+        if (transactionResult.count !== 1) {
+          return cryptoReviewConflict('Crypto deposit review changed before it could be closed');
+        }
+
+        const targetStatus = action === 'resolve' ? 'resolved' : 'ignored';
+        const transactionNeedle = `\"transactionId\":\"${deposit.id}\"`;
+        const issueResult = await db.adminIssue.updateMany({
+          where: {
+            type: CRYPTO_PAYMENT_REVIEW_TYPE,
+            status: 'open',
+            metadata: { contains: transactionNeedle },
+          },
+          data: {
+            status: targetStatus,
+            resolvedAt,
+            resolvedBy: adminName,
+          },
+        });
+        if (issueResult.count < 1) {
+          throw new CryptoReviewRaceError('Crypto payment review changed while it was being closed');
+        }
+
+        return {
+          success: true,
+          detail: action === 'resolve' ? 'Payment review resolved' : 'Payment review ignored',
+          title: issue.title,
+        };
+      }, { isolationLevel: 'Serializable' });
+    } catch (error) {
+      const retryable = error instanceof CryptoReviewRaceError || error?.code === 'P2034';
+      if (retryable && attempt === 0) continue;
+      throw error;
+    }
+  }
+
+  throw new CryptoReviewRaceError('Crypto payment review could not be closed');
+}
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('issues');
@@ -12,24 +146,49 @@ export async function GET(req) {
   try {
     const url = new URL(req.url);
     const status = url.searchParams.get('status') || 'all';
+    const includeOpenCryptoReviews = status === 'all' || status === 'open';
 
-    const [issues, openCount, balancesRow, priceAlertsRow] = await Promise.all([
+    const [issues, openCryptoReviews, openCount, balancesRow, priceAlertsRow] = await Promise.all([
       prisma.adminIssue.findMany({
         where: status === 'all' ? {} : { status },
         orderBy: { createdAt: 'desc' },
         take: 100,
       }),
+      includeOpenCryptoReviews
+        ? prisma.adminIssue.findMany({
+          where: {
+            type: CRYPTO_PAYMENT_REVIEW_TYPE,
+            status: 'open',
+          },
+          orderBy: { createdAt: 'desc' },
+        })
+        : Promise.resolve([]),
       prisma.adminIssue.count({ where: { status: 'open' } }),
       prisma.setting.findUnique({ where: { key: 'provider_balances' } }),
       prisma.setting.findUnique({ where: { key: 'price_alerts' } }),
     ]);
+
+    // Financial review items must remain visible even when newer operational
+    // issues fill the general 100-row window. Merge by ID so reviews already
+    // present in that window are not duplicated.
+    const priorityIds = new Set(openCryptoReviews.map(issue => issue.id));
+    const visibleIssues = [
+      ...openCryptoReviews,
+      ...issues.filter(issue => !priorityIds.has(issue.id)),
+    ];
 
     let balances = null;
     try { balances = balancesRow ? JSON.parse(balancesRow.value) : null; } catch {}
     let priceAlerts = null;
     try { priceAlerts = priceAlertsRow ? JSON.parse(priceAlertsRow.value) : null; } catch {}
 
-    return Response.json({ issues, openCount, balances, priceAlerts });
+    return Response.json({
+      issues: visibleIssues,
+      openCount,
+      balances,
+      priceAlerts,
+      canResolveCryptoReviews: canPerformAction(admin, 'payments.approve'),
+    });
   } catch (err) {
     log.error('AdminIssues GET', err.message);
     return Response.json({ error: 'Failed to load issues' }, { status: 500 });
@@ -48,6 +207,19 @@ export async function POST(req) {
 
       const issue = await prisma.adminIssue.findUnique({ where: { id: issueId } });
       if (!issue) return Response.json({ error: 'Issue not found' }, { status: 404 });
+
+      if (issue.type === CRYPTO_PAYMENT_REVIEW_TYPE) {
+        if (!canPerformAction(admin, 'payments.approve')) {
+          return Response.json({ error: 'Not authorized to resolve crypto payment reviews' }, { status: 403 });
+        }
+        if (issue.status !== 'open') return Response.json({ success: true, alreadyResolved: true });
+        const result = await closeCryptoPaymentReview({ issueId, action, adminName: admin.name });
+        if (result.error) return Response.json({ error: result.error }, { status: result.status });
+        if (result.alreadyResolved) return Response.json({ success: true, alreadyResolved: true });
+        await logActivity(admin.name, `Resolved issue: ${result.title}`, 'system');
+        return Response.json({ success: true, detail: result.detail });
+      }
+
       if (issue.status === 'resolved') return Response.json({ success: true, alreadyResolved: true });
 
       let meta = {};
@@ -70,6 +242,19 @@ export async function POST(req) {
       if (!issueId) return Response.json({ error: 'Issue ID required' }, { status: 400 });
       const issue = await prisma.adminIssue.findUnique({ where: { id: issueId } });
       if (!issue) return Response.json({ error: 'Issue not found' }, { status: 404 });
+
+      if (issue.type === CRYPTO_PAYMENT_REVIEW_TYPE) {
+        if (!canPerformAction(admin, 'payments.approve')) {
+          return Response.json({ error: 'Not authorized to resolve crypto payment reviews' }, { status: 403 });
+        }
+        if (issue.status !== 'open') return Response.json({ success: true, alreadyResolved: true });
+        const result = await closeCryptoPaymentReview({ issueId, action, adminName: admin.name });
+        if (result.error) return Response.json({ error: result.error }, { status: result.status });
+        if (result.alreadyResolved) return Response.json({ success: true, alreadyResolved: true });
+        await logActivity(admin.name, `Ignored issue: ${result.title}`, 'system');
+        return Response.json({ success: true, detail: result.detail });
+      }
+
       if (issue.status !== 'open') return Response.json({ success: true, alreadyResolved: true });
       await prisma.adminIssue.update({ where: { id: issueId }, data: { status: 'ignored', resolvedAt: new Date(), resolvedBy: admin.name } });
       await logActivity(admin.name, `Ignored issue: ${issue.title}`, 'system');
