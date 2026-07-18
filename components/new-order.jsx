@@ -111,18 +111,18 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion }) 
           const isSel = selTier?.tier === tier.tier && selSvc?.id === svc.id;
           const displayPrice = promoOff > 0 ? Math.round(tier.price * (1 - promoOff)) : tier.price;
           return (
-            <button key={tier.tier} onClick={e => onPickTier(tier, e)} aria-pressed={isSel} className="no-tier-chip relative inline-flex items-center gap-[9px] rounded-[13px] py-[7px] pr-[13px] pl-[9px] border-[1.5px] border-solid cursor-pointer font-[inherit] transition-all duration-150 ease-in-out text-left hover:-translate-y-px" style={{ background: dark ? s.bgD : s.bg, borderColor: isSel ? s.text : (dark ? s.borderD : s.border), boxShadow: isSel ? `0 5px 16px ${s.text}3d` : undefined, transform: isSel ? "translateY(-1px)" : undefined }}>
-              <span className="w-[25px] h-[25px] rounded-full flex items-center justify-center text-white shrink-0 relative" style={{ background: s.grad }}>
+            <button key={tier.tier} onClick={e => onPickTier(tier, e)} aria-pressed={isSel} className="no-tier-chip relative inline-flex items-center gap-[7px] rounded-[11px] py-[5px] pr-[12px] pl-[7px] border-[1.5px] border-solid cursor-pointer font-[inherit] transition-all duration-150 ease-in-out text-left hover:-translate-y-px" style={{ background: dark ? s.bgD : s.bg, borderColor: isSel ? s.text : (dark ? s.borderD : s.border), boxShadow: isSel ? `0 4px 12px ${s.text}3d` : undefined, transform: isSel ? "translateY(-1px)" : undefined }}>
+              <span className="w-5 h-5 rounded-full flex items-center justify-center text-white shrink-0 relative" style={{ background: s.grad }}>
                 {s.label}
                 {isSel && (
-                  <span className="absolute -bottom-1 -right-1 w-[13px] h-[13px] rounded-full flex items-center justify-center" style={{ background: s.text, border: `2px solid ${dark ? "#1a1a2e" : "#fff"}` }}>
-                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span className="absolute -bottom-0.5 -right-0.5 w-[11px] h-[11px] rounded-full flex items-center justify-center" style={{ background: s.text, border: `1.5px solid ${dark ? "#1a1a2e" : "#fff"}` }}>
+                    <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                   </span>
                 )}
               </span>
-              <span className="flex flex-col items-start gap-0.5 leading-none">
-                <span className="text-[11.5px]" style={{ color: s.text, fontWeight: 800 }}>{tier.tier}</span>
-                <span className="m text-[11px] font-bold" style={{ color: dark ? "#f5f3f0" : "#1c1b19" }}>₦{displayPrice.toLocaleString()}</span>
+              <span className="flex flex-col items-start gap-px leading-none">
+                <span className="text-[10.5px]" style={{ color: s.text, fontWeight: 800 }}>{tier.tier}</span>
+                <span className="m text-[10.5px] font-bold" style={{ color: dark ? "#f5f3f0" : "#1c1b19" }}>₦{displayPrice.toLocaleString()}</span>
               </span>
             </button>
           );
@@ -136,39 +136,39 @@ function TierExplainer({ dark, t, selTier, narrow }) {
   const selName = selTier?.tier;
   if (narrow) {
     return (
-      <div className="mt-2.5 rounded-[13px] border border-solid overflow-hidden" style={{ borderColor: t.cardBorder, background: dark ? "#141830" : "#fafaf8" }}>
-        <div className="rounded-[11px] border border-solid overflow-hidden mx-3 mt-3" style={{ borderColor: t.cardBorder }}>
+      <div className="mt-2 rounded-[11px] border border-solid overflow-hidden" style={{ borderColor: t.cardBorder, background: dark ? "#141830" : "#fafaf8" }}>
+        <div className="rounded-[9px] border border-solid overflow-hidden mx-2.5 mt-2.5" style={{ borderColor: t.cardBorder }}>
           {TIER_NAMES.map((name, i) => {
             const s = TS[name];
             const st = TIER_STACK[name];
             return (
-              <div key={name} className="flex items-start gap-[9px] py-[9px] px-[11px]" style={{ borderBottom: i < 2 ? `1px solid ${t.cardBorder}` : undefined, background: selName === name ? (dark ? s.bgD : s.bg) : undefined }}>
-                <span className="w-[21px] h-[21px] rounded-full flex items-center justify-center text-white shrink-0 mt-px" style={{ background: s.grad }}>{s.label}</span>
+              <div key={name} className="flex items-start gap-2 py-2 px-2.5" style={{ borderBottom: i < 2 ? `1px solid ${t.cardBorder}` : undefined, background: selName === name ? (dark ? s.bgD : s.bg) : undefined }}>
+                <span className="w-[17px] h-[17px] rounded-full flex items-center justify-center text-white shrink-0 mt-px" style={{ background: s.grad }}>{s.label}</span>
                 <span>
-                  <span className="text-[11.5px] block" style={{ fontWeight: 800, color: s.text }}>{name} <span className="text-[10.5px] font-bold" style={{ color: dark ? "#8a8580" : "#757170" }}>· best for {st.bestFor}</span></span>
-                  <span className="block text-[10.5px] mt-0.5 leading-[1.5]" style={{ color: dark ? "#c9c5c0" : "#4a4744" }}>{st.detail}</span>
+                  <span className="text-[10.5px] block" style={{ fontWeight: 800, color: s.text }}>{name} <span className="text-[10px] font-bold" style={{ color: dark ? "#8a8580" : "#757170" }}>· best for {st.bestFor}</span></span>
+                  <span className="block text-[10px] mt-px leading-[1.45]" style={{ color: dark ? "#c9c5c0" : "#4a4744" }}>{st.detail}</span>
                 </span>
               </div>
             );
           })}
         </div>
-        <div className="text-[11.5px] leading-[1.55] mx-3 mt-[9px] mb-3" style={{ color: dark ? "#8a8580" : "#757170" }}>
-          Small drops are normal, platforms clear out inactive accounts now and then. Refill means we top yours back up for free.
-          <div className="mt-1.5 font-bold" style={{ color: "#c47d8e" }}>Building something long term? Go Standard or Premium.</div>
+        <div className="text-[10.5px] leading-[1.5] mx-2.5 mt-2 mb-2.5" style={{ color: dark ? "#8a8580" : "#757170" }}>
+          Small drops are normal — platforms clear out inactive accounts. Refill means we top yours back up for free.
+          <div className="mt-1 font-bold" style={{ color: "#c47d8e" }}>Building something long term? Go Standard or Premium.</div>
         </div>
       </div>
     );
   }
   return (
-    <div className="mt-2.5 rounded-[13px] border border-solid" style={{ borderColor: t.cardBorder, background: dark ? "#141830" : "#fafaf8" }}>
-      <div className="mx-3 mt-3 rounded-[11px] border border-solid overflow-hidden" style={{ display: "grid", gridTemplateColumns: "minmax(58px,74px) repeat(3,1fr)", borderColor: t.cardBorder }}>
-        <div style={{ padding: "9px 6px 8px", borderBottom: `1px solid ${t.cardBorder}`, borderRight: `1px solid ${t.cardBorder}` }} />
+    <div className="mt-2 rounded-[11px] border border-solid" style={{ borderColor: t.cardBorder, background: dark ? "#141830" : "#fafaf8" }}>
+      <div className="mx-2.5 mt-2.5 rounded-[9px] border border-solid overflow-hidden" style={{ display: "grid", gridTemplateColumns: "minmax(52px,66px) repeat(3,1fr)", borderColor: t.cardBorder }}>
+        <div style={{ padding: "7px 5px 6px", borderBottom: `1px solid ${t.cardBorder}`, borderRight: `1px solid ${t.cardBorder}` }} />
         {TIER_NAMES.map((name, i) => {
           const s = TS[name];
           return (
-            <div key={name} className="text-center" style={{ padding: "9px 6px 8px", borderBottom: `1px solid ${t.cardBorder}`, borderRight: i < 2 ? `1px solid ${t.cardBorder}` : undefined, background: selName === name ? (dark ? s.bgD : s.bg) : undefined }}>
-              <span className="w-[21px] h-[21px] rounded-full flex items-center justify-center text-white mx-auto mb-1" style={{ background: s.grad }}>{s.label}</span>
-              <span className="text-[11px] block" style={{ fontWeight: 800, color: s.text }}>{name}</span>
+            <div key={name} className="text-center" style={{ padding: "6px 4px 5px", borderBottom: `1px solid ${t.cardBorder}`, borderRight: i < 2 ? `1px solid ${t.cardBorder}` : undefined, background: selName === name ? (dark ? s.bgD : s.bg) : undefined }}>
+              <span className="w-[17px] h-[17px] rounded-full flex items-center justify-center text-white mx-auto mb-0.5" style={{ background: s.grad }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{s.label.props.children}</svg></span>
+              <span className="text-[10px] block" style={{ fontWeight: 800, color: s.text }}>{name}</span>
             </div>
           );
         })}
@@ -176,19 +176,19 @@ function TierExplainer({ dark, t, selTier, narrow }) {
           const isLast = ri === TIER_COMPARE.length - 1;
           const isBold = row.label === "Best for";
           return [
-            <div key={`lab-${ri}`} className="flex items-center" style={{ padding: "8px 7px", fontSize: 10, fontWeight: 800, letterSpacing: ".4px", textTransform: "uppercase", color: dark ? "#8a8580" : "#757170", borderBottom: isLast ? undefined : `1px solid ${t.cardBorder}`, borderRight: `1px solid ${t.cardBorder}` }}>{row.label}</div>,
+            <div key={`lab-${ri}`} className="flex items-center" style={{ padding: "6px 5px", fontSize: 9, fontWeight: 800, letterSpacing: ".3px", textTransform: "uppercase", color: dark ? "#8a8580" : "#757170", borderBottom: isLast ? undefined : `1px solid ${t.cardBorder}`, borderRight: `1px solid ${t.cardBorder}` }}>{row.label}</div>,
             ...TIER_NAMES.map((name, ci) => {
               const s = TS[name];
               return (
-                <div key={`${ri}-${ci}`} className="text-center" style={{ padding: "8px 7px", fontSize: 11, lineHeight: 1.4, color: isBold ? (dark ? "#f5f3f0" : "#1c1b19") : (dark ? "#c9c5c0" : "#4a4744"), fontWeight: isBold ? 800 : undefined, borderBottom: isLast ? undefined : `1px solid ${t.cardBorder}`, borderRight: ci < 2 ? `1px solid ${t.cardBorder}` : undefined, background: selName === name ? (dark ? s.bgD : s.bg) : undefined }}>{row[name]}</div>
+                <div key={`${ri}-${ci}`} className="text-center" style={{ padding: "6px 5px", fontSize: 10.5, lineHeight: 1.35, color: isBold ? (dark ? "#f5f3f0" : "#1c1b19") : (dark ? "#c9c5c0" : "#4a4744"), fontWeight: isBold ? 800 : undefined, borderBottom: isLast ? undefined : `1px solid ${t.cardBorder}`, borderRight: ci < 2 ? `1px solid ${t.cardBorder}` : undefined, background: selName === name ? (dark ? s.bgD : s.bg) : undefined }}>{row[name]}</div>
               );
             }),
           ];
         })}
       </div>
-      <div className="text-[11.5px] leading-[1.55] mx-3 mt-[9px] mb-3" style={{ color: dark ? "#8a8580" : "#757170" }}>
-        Small drops are normal, platforms clear out inactive accounts now and then. Refill means we top yours back up for free.
-        <div className="mt-1.5 font-bold" style={{ color: "#c47d8e" }}>Building something long term? Go Standard or Premium.</div>
+      <div className="text-[10.5px] leading-[1.5] mx-2.5 mt-2 mb-2.5" style={{ color: dark ? "#8a8580" : "#757170" }}>
+        Small drops are normal — platforms clear out inactive accounts. Refill means we top yours back up for free.
+        <div className="mt-1 font-bold" style={{ color: "#c47d8e" }}>Building something long term? Go Standard or Premium.</div>
       </div>
     </div>
   );
@@ -231,20 +231,20 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
       {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={handlePickTier} dark={dark} activePromotion={activePromotion} />}
       {isSel && (
         <>
-          <div className="mt-3 flex items-center gap-2.5 rounded-[11px] py-2.5 px-3 border border-solid transition-all duration-200" style={{ borderColor: s ? `${s.text}4d` : t.cardBorder, background: s ? (dark ? `${s.text}0f` : `${s.text}0a`) : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)") }}>
+          <div className="mt-2.5 flex items-center gap-2 rounded-[9px] py-[7px] px-2.5 border border-solid transition-all duration-200" style={{ borderColor: s ? `${s.text}4d` : t.cardBorder, background: s ? (dark ? `${s.text}0f` : `${s.text}0a`) : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)") }}>
             {activeTier ? (
-              <div className="flex-1 text-xs" style={{ color: dark ? "#8a8580" : "#757170" }}>
+              <div className="flex-1 text-[11px]" style={{ color: dark ? "#8a8580" : "#757170" }}>
                 <strong style={{ color: dark ? "#c9c5c0" : "#4a4744" }}>{refillLabel(activeTier.tier)}</strong>
-                {" · "}{activeTier.speed}{" · Min "}{(activeTier.min || 100).toLocaleString()}
+                {" · "}{TIER_COMPARE[0][activeTier.tier]} accounts{" · "}{activeTier.speed}{" · Min "}{(activeTier.min || 100).toLocaleString()}
               </div>
             ) : (
-              <div className="flex-1 flex items-center gap-2 text-xs" style={{ color: dark ? "#8a8580" : "#757170" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              <div className="flex-1 flex items-center gap-1.5 text-[11px]" style={{ color: dark ? "#8a8580" : "#757170" }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                 Pick a tier to continue
               </div>
             )}
-            <button onClick={e => { e.stopPropagation(); setExplOpen(!explOpen); }} aria-expanded={explOpen} aria-label="What do the tiers mean?" className="shrink-0 inline-flex items-center gap-[5px] text-[11.5px] font-bold rounded-full py-[5px] px-[11px] border border-solid cursor-pointer font-[inherit] transition-all duration-150 hover:-translate-y-px" style={{ color: dark ? "#8a8580" : "#757170", background: dark ? "rgba(255,255,255,.06)" : "#fff", borderColor: t.cardBorder }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <button onClick={e => { e.stopPropagation(); setExplOpen(!explOpen); }} aria-expanded={explOpen} aria-label="What do the tiers mean?" className="shrink-0 inline-flex items-center gap-1 text-[10.5px] font-bold rounded-full py-[3px] px-[9px] border border-solid cursor-pointer font-[inherit] transition-all duration-150 hover:-translate-y-px" style={{ color: dark ? "#8a8580" : "#757170", background: dark ? "rgba(255,255,255,.06)" : "#fff", borderColor: t.cardBorder }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
               {explOpen ? "Close" : "Which tier?"}
             </button>
           </div>
