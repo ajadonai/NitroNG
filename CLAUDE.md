@@ -141,3 +141,7 @@ Tasks to complete on or before launch day:
 
 - [x] Wire user notification preferences to order/email paths — fixed: admin refund + leaderboard reward emails now check `notifOrders`
 - [x] LCP optimisation — admin dashboard now receives `initialData` from server (skips skeleton). User dashboard already had this.
+
+## Git conventions
+
+All commits and deploys are authored as `Trip <devbyadonai@gmail.com>`. Set `git config user.name "Trip"` and `git config user.email "devbyadonai@gmail.com"` before committing.

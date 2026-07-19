@@ -94,6 +94,7 @@ beforeEach(() => {
   mocks.orderFindUnique.mockResolvedValue(null);
   mocks.orderUpdateMany.mockResolvedValue({ count: 1 });
   mocks.getTotalRefundedKobo.mockResolvedValue(0);
+  mocks.dripFindMany.mockResolvedValue([]);
 });
 
 describe('admin sync-orders — direct-order ownership', () => {
@@ -117,7 +118,7 @@ describe('admin sync-orders — direct-order ownership', () => {
         { lastError: 'provider_active_wait' },
       ]),
     });
-    expect(mocks.dripFindMany).not.toHaveBeenCalled();
+    expect(mocks.dripFindMany).toHaveBeenCalledTimes(1);
   });
 
   it('keeps an order behind the earlier same-link blocker without provider I/O', async () => {

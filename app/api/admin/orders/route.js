@@ -401,7 +401,11 @@ export async function POST(req) {
       }
       const allDispatches = await prisma.dripDispatch.findMany({ where: { orderId: order.id }, select: { status: true, remains: true, quantity: true, startCount: true }, orderBy: [{ day: 'asc' }, { batch: 'asc' }] });
       const allDone = allDispatches.length > 0 && allDispatches.every(d => ['completed', 'partial', 'cancelled'].includes(d.status));
-      const totalRemains = allDispatches.reduce((s, d) => s + (d.remains ?? d.quantity), 0);
+      const totalRemains = allDispatches.reduce((s, d) => {
+        if (d.remains != null) return s + d.remains;
+        if (d.status === 'completed') return s;
+        return s + d.quantity;
+      }, 0);
       const parentUpd = { remains: totalRemains };
       if (allDone) {
         parentUpd.status = totalRemains > 0 ? 'Partial' : 'Completed';

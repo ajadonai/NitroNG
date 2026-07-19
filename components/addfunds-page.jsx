@@ -5,6 +5,7 @@ import { fN, fD } from "../lib/format";
 import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { WalletPointsCard, PointsModal } from "./rewards";
+import NitroLoader from "./nitro-loader";
 import { PAYMENT_STATES, isCreditedPaymentResult, paymentStateFromTransactionStatus } from "../lib/payment-state";
 import {
   creditedCryptoPaymentStatus,
@@ -105,7 +106,7 @@ const ACCEPTED_TYPES = [
 const GW_META = {
   flutterwave: { desc: "Card, bank transfer", speed: "Fast" },
   crypto: { desc: "USDT via TRC-20", speed: "5–30 min" },
-  manual: { desc: "Direct bank transfer", speed: "15–60 min" },
+  manual: { desc: "Transfer from any bank", speed: "15–60 min" },
 };
 
 /* ═══════════════════════════════════════════ */
@@ -555,8 +556,9 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
     </div>
   );
 
-  const PayButton = ({ onClick, disabled, text, className: cls }) => (
-    <button onClick={onClick} disabled={disabled} className={`w-full py-4 max-desktop:py-3.5 max-md:py-[13px] rounded-xl max-md:rounded-[10px] text-base font-semibold border-none cursor-pointer transition-[transform,box-shadow] duration-200 hover:translate-y-[-1px] hover:shadow-[0_6px_20px_rgba(196,125,142,.31)] ${cls || ""}`} style={{ background: valid ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"), color: valid ? "#fff" : t.textMuted }}>
+  const PayButton = ({ onClick, disabled, text, loading: busy, className: cls }) => (
+    <button onClick={onClick} disabled={disabled} className={`w-full py-4 max-desktop:py-3.5 max-md:py-[13px] rounded-xl max-md:rounded-[10px] text-base font-semibold border-none cursor-pointer flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:translate-y-[-1px] hover:shadow-[0_6px_20px_rgba(196,125,142,.31)] ${cls || ""}`} style={{ background: valid ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"), color: valid ? "#fff" : t.textMuted }}>
+      {busy && <NitroLoader size={16} mono ariaHidden />}
       {text}
     </button>
   );
@@ -696,10 +698,16 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                   ); })}
                 </div>
               )}
+              {method === "flutterwave" && gateways.some(g => g.id === "manual") && (
+                <div className="flex items-start gap-1.5 mt-1.5 py-1.5 px-2" style={{ color: t.textMuted }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  <span className="text-[10px] leading-snug">If our bank isn't on your app, try <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold" style={{ color: t.accent, background: "none", border: "none", padding: 0, fontFamily: "inherit", fontSize: "inherit" }}>Manual Transfer</button> as a backup.</span>
+                </div>
+              )}
 
               <div className="flex-1 min-h-4" />
 
-              <PayButton onClick={handlePay} disabled={!valid || loading} text={loading ? "Processing..." : valid ? `Pay ${fN(numAmount)} Now` : "Enter an amount"} />
+              <PayButton onClick={handlePay} disabled={!valid || loading} loading={loading} text={loading ? "Processing..." : valid ? `Pay ${fN(numAmount)} Now` : "Enter an amount"} />
               <div className="flex items-center justify-center gap-1.5 mt-2.5 text-xs" style={{ color: t.textMuted }}>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                 Encrypted & secure
@@ -794,7 +802,13 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               ) : (
                 <div className="py-3 text-center text-sm" style={{ color: t.textMuted }}>No payment methods available</div>
               )}
-              <PayButton onClick={handlePay} disabled={loading} text={loading ? "Processing..." : `Pay ${fN(numAmount)} Now`} className="mt-3" />
+              {method === "flutterwave" && gateways.some(g => g.id === "manual") && (
+                <div className="flex items-start gap-1.5 mt-1.5 py-1.5 px-2" style={{ color: t.textMuted }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  <span className="text-[10px] leading-snug">If our bank isn't on your app, try <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold" style={{ color: t.accent, background: "none", border: "none", padding: 0, fontFamily: "inherit", fontSize: "inherit" }}>Manual Transfer</button> as a backup.</span>
+                </div>
+              )}
+              <PayButton onClick={handlePay} disabled={loading} loading={loading} text={loading ? "Processing..." : `Pay ${fN(numAmount)} Now`} className="mt-3" />
               <div className="flex items-center justify-center gap-1.5 mt-2.5 text-xs" style={{ color: t.textMuted }}>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                 Encrypted & secure
