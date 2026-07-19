@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import NitroLoader from './nitro-loader';
 
 function Lbl({ t, htmlFor, children }) {
   return (
@@ -641,7 +642,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
               }}
             >
               {authLoading && (
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-[spin_0.6s_linear_infinite]" />
+                <NitroLoader size={16} mono ariaHidden />
               )}
               {authLoading ? 'Logging in...' : 'Log In'}
             </button>
@@ -1084,7 +1085,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
               }}
             >
               {authLoading && (
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-[spin_0.6s_linear_infinite]" />
+                <NitroLoader size={16} mono ariaHidden />
               )}
               {authLoading ? 'Creating...' : 'Create Account'}
             </button>
@@ -1130,7 +1131,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
             </div>
 
             <button onClick={handleReset} disabled={authLoading || !pw || !pwMatch} className="w-full py-3.5 rounded-xl text-white text-base font-semibold mb-5 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: authLoading ? '#999' : t.btnPrimary, opacity: authLoading || !pw || !pwMatch ? 0.7 : 1 }}>
-              {authLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-[spin_0.6s_linear_infinite]" />}
+              {authLoading && <NitroLoader size={16} mono ariaHidden />}
               {authLoading ? 'Resetting...' : 'Reset Password'}
             </button>
           </>
@@ -1177,7 +1178,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
               }}
             >
               {authLoading && (
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-[spin_0.6s_linear_infinite]" />
+                <NitroLoader size={16} mono ariaHidden />
               )}
               {authLoading ? 'Sending...' : 'Send Reset Link'}
             </button>

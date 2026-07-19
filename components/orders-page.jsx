@@ -5,6 +5,7 @@ import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
 import { fN, fD } from "../lib/format";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
+import NitroLoader from "./nitro-loader";
 
 function CopyId({ value, dark, mono = true }) {
   const [copied, setCopied] = useState(false);
@@ -81,7 +82,7 @@ function linkHint(platform, serviceName) {
 }
 
 function Spinner({ size = 14, color = "currentColor" }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="animate-spin"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="3" strokeLinecap="round" opacity=".25" /><path d="M12 2a10 10 0 0 1 10 10" stroke={color} strokeWidth="3" strokeLinecap="round" /></svg>;
+  return <span style={{ color, display: "inline-flex" }}><NitroLoader size={size} mono ariaHidden /></span>;
 }
 
 /* ── Status helpers (unified) ── */
@@ -191,7 +192,7 @@ function DotMenu({ items, dark, t, loading }) {
   return (
     <div ref={ref} className="dot-menu-root">
       <button ref={btnRef} onPointerDown={handleOpen} className="w-9 h-9 max-md:w-10 max-md:h-10 flex items-center justify-center rounded-md border-none cursor-pointer bg-transparent" style={{ color: t.textMuted, opacity: loading ? .5 : 1, touchAction: "none" }} aria-label="Actions">
-        {loading ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ animation: "spin 1s linear infinite" }}><path d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M7.76 7.76L4.93 4.93"/></svg> : <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>}
+        {loading ? <NitroLoader size={14} mono ariaHidden /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>}
       </button>
       {open && (
         <div className="fixed min-w-[160px] rounded-lg overflow-hidden shadow-lg" style={{ top: posRef.current.top, right: posRef.current.right, zIndex: 60, background: dark ? "#1e1e1e" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)"}` }}>

@@ -337,8 +337,9 @@ export function DateRangePicker({ dark, t, value, onChange, presets, defaultPres
   );
 }
 
-export function FilterDropdown({ dark, t, value, onChange, options, icon, alert }) {
+export function FilterDropdown({ dark, t, value, onChange, options, icon, alert, searchable }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const ref = useRef(null);
   const dropRef = useRef(null);
 
@@ -360,13 +361,14 @@ export function FilterDropdown({ dark, t, value, onChange, options, icon, alert 
   }, [open]);
 
   const current = options.find(o => o.value === value);
+  const shown = searchable && query ? options.filter(o => String(o.label ?? o.value).toLowerCase().includes(query.toLowerCase())) : options;
   const dropdownBg = dark ? "#1a1d2e" : "#fff";
   const dropdownBorder = dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)";
 
   return (
     <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
       {alert && <span style={{ position: "absolute", top: -3, right: -3, width: 8, height: 8, borderRadius: "50%", background: "#f59e0b", zIndex: 2, boxShadow: "0 0 0 2px " + (dark ? "#131728" : "#fff"), animation: "progress-pulse 2.8s ease-in-out infinite" }} />}
-      <button onClick={() => setOpen(!open)} style={{
+      <button onClick={() => { setQuery(""); setOpen(!open); }} style={{
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
@@ -400,9 +402,24 @@ export function FilterDropdown({ dark, t, value, onChange, options, icon, alert 
           zIndex: 50,
           minWidth: 140,
           padding: "4px 0",
-          overflow: "hidden",
+          maxHeight: "min(320px, 60vh)",
+          overflowY: "auto",
+          overflowX: "hidden",
+          overscrollBehavior: "contain",
+          scrollbarWidth: "thin",
         }}>
-          {options.map((o) => {
+          {searchable && (
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Type to filter..."
+              autoFocus
+              onClick={(e) => e.stopPropagation()}
+              style={{ width: "100%", padding: "8px 12px", fontSize: 12.5, outline: "none", border: "none", borderBottom: `1px solid ${dropdownBorder}`, background: dropdownBg, color: dark ? "rgba(255,255,255,.85)" : "rgba(0,0,0,.8)", fontFamily: "inherit", position: "sticky", top: 0 }}
+            />
+          )}
+          {shown.length === 0 && <div style={{ padding: "10px 12px", fontSize: 12, color: dark ? "rgba(255,255,255,.45)" : "rgba(0,0,0,.4)", textAlign: "center" }}>No match</div>}
+          {shown.map((o) => {
             const active = o.value === value;
             return (
               <button

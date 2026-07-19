@@ -3,17 +3,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const revalidateTag = vi.fn();
 const logActivity = vi.fn();
 const prisma = {
-  $transaction: vi.fn(operations => Promise.all(operations)),
+  $transaction: vi.fn(arg => typeof arg === 'function' ? arg(prisma) : Promise.all(arg)),
   order: {
     count: vi.fn(),
   },
   serviceGroup: {
     findUnique: vi.fn(),
+    aggregate: vi.fn(),
+    create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
   },
   serviceTier: {
     findUnique: vi.fn(),
+    createMany: vi.fn(),
     update: vi.fn(),
     updateMany: vi.fn(),
     delete: vi.fn(),
@@ -43,9 +46,12 @@ function mutation(body) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  prisma.$transaction.mockImplementation(operations => Promise.all(operations));
+  prisma.$transaction.mockImplementation(arg => typeof arg === 'function' ? arg(prisma) : Promise.all(arg));
+  prisma.serviceGroup.aggregate.mockResolvedValue({ _max: { sortOrder: 5 } });
+  prisma.serviceGroup.create.mockResolvedValue({ id: 'new-group', name: 'Test (copy)' });
   prisma.serviceGroup.update.mockResolvedValue({});
   prisma.serviceGroup.delete.mockResolvedValue({});
+  prisma.serviceTier.createMany.mockResolvedValue({ count: 0 });
   prisma.serviceTier.update.mockResolvedValue({});
   prisma.serviceTier.updateMany.mockResolvedValue({ count: 1 });
   prisma.serviceTier.delete.mockResolvedValue({});
@@ -138,5 +144,89 @@ describe('admin service-group deletion safety', () => {
     expect(prisma.serviceGroup.delete).toHaveBeenCalledWith({ where: { id: 'group-2' } });
     expect(prisma.serviceGroup.update).not.toHaveBeenCalled();
     expect(prisma.serviceTier.updateMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('admin duplicate-group', () => {
+  it('duplicates a group with its tiers as disabled', async () => {
+    prisma.serviceGroup.findUnique.mockResolvedValue({
+      id: 'group-1',
+      name: 'Instagram Followers',
+      platform: 'instagram',
+      type: 'Standard',
+      nigerian: false,
+      description: 'Best IG followers',
+      tags: ['popular'],
+      tiers: [
+        { serviceId: 'svc-1', tier: 'Budget', sellPer1k: 500n, refill: false, refillDays: 0, speed: '0-2 hrs', sortOrder: 1, enabled: true },
+        { serviceId: 'svc-2', tier: 'Premium', sellPer1k: 1200n, refill: true, refillDays: 30, speed: '0-1 hrs', sortOrder: 2, enabled: true },
+      ],
+    });
+    prisma.serviceGroup.create.mockResolvedValue({
+      id: 'new-group',
+      name: 'Instagram Followers (copy)',
+      enabled: false,
+    });
+
+    const response = await mutation({ action: 'duplicate-group', groupId: 'group-1' });
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json).toMatchObject({ success: true, group: { id: 'new-group', enabled: false } });
+    expect(prisma.serviceGroup.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        name: 'Instagram Followers (copy)',
+        platform: 'instagram',
+        enabled: false,
+        sortOrder: 6,
+      }),
+    });
+    expect(prisma.serviceTier.createMany).toHaveBeenCalledWith({
+      data: expect.arrayContaining([
+        expect.objectContaining({ tier: 'Budget', serviceId: 'svc-1' }),
+        expect.objectContaining({ tier: 'Premium', serviceId: 'svc-2' }),
+      ]),
+    });
+    expect(logActivity).toHaveBeenCalledWith('Owner', 'Duplicated group "Instagram Followers"', 'service');
+    expect(revalidateTag).toHaveBeenCalledWith('service-catalog');
+  });
+
+  it('returns 404 for a nonexistent group', async () => {
+    prisma.serviceGroup.findUnique.mockResolvedValue(null);
+
+    const response = await mutation({ action: 'duplicate-group', groupId: 'ghost' });
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toMatchObject({ error: 'Group not found' });
+  });
+
+  it('returns 400 when groupId is missing', async () => {
+    const response = await mutation({ action: 'duplicate-group' });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({ error: 'Group ID required' });
+  });
+
+  it('duplicates a group with no tiers', async () => {
+    prisma.serviceGroup.findUnique.mockResolvedValue({
+      id: 'group-3',
+      name: 'Empty Group',
+      platform: 'tiktok',
+      type: 'Standard',
+      nigerian: true,
+      description: null,
+      tags: [],
+      tiers: [],
+    });
+    prisma.serviceGroup.create.mockResolvedValue({
+      id: 'new-empty',
+      name: 'Empty Group (copy)',
+      enabled: false,
+    });
+
+    const response = await mutation({ action: 'duplicate-group', groupId: 'group-3' });
+
+    expect(response.status).toBe(200);
+    expect(prisma.serviceTier.createMany).not.toHaveBeenCalled();
   });
 });

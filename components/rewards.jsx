@@ -69,8 +69,8 @@ export const WHATSAPP_CHANNEL_URL = 'https://whatsapp.com/channel/0029Vb8hC6rJ3j
 
 // Compact naira for tight strip lines: ₦2.43m, ₦100k. Full figures live in modals.
 export function fmtCompactNaira(n) {
-  if (n >= 1000000) return `₦${(n / 1000000).toFixed(n % 1000000 === 0 ? 0 : 2).replace(/\.?0+$/, '')}m`;
-  if (n >= 1000) return `₦${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1).replace(/\.?0+$/, '')}k`;
+  if (n >= 1000000) return `₦${parseFloat((n / 1000000).toFixed(2))}m`;
+  if (n >= 1000) return `₦${parseFloat((n / 1000).toFixed(1))}k`;
   return `₦${n.toLocaleString()}`;
 }
 

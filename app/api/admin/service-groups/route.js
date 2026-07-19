@@ -12,10 +12,11 @@ export async function GET() {
       orderBy: { sortOrder: 'asc' },
       include: {
         tiers: {
+          where: { enabled: true },
           orderBy: { sortOrder: 'asc' },
           include: {
             service: {
-              select: { id: true, apiId: true, name: true, category: true, costPer1k: true, min: true, max: true, refill: true, avgTime: true },
+              select: { id: true, apiId: true, name: true, category: true, provider: true, costPer1k: true, min: true, max: true, refill: true, avgTime: true },
             },
           },
         },
@@ -25,7 +26,7 @@ export async function GET() {
     // Also return raw MTP services for the admin picker (all, not just enabled)
     const services = await prisma.service.findMany({
       orderBy: { category: 'asc' },
-      select: { id: true, apiId: true, name: true, category: true, costPer1k: true, sellPer1k: true, min: true, max: true, refill: true, avgTime: true },
+      select: { id: true, apiId: true, name: true, category: true, provider: true, costPer1k: true, sellPer1k: true, min: true, max: true, refill: true, avgTime: true },
     });
 
     return Response.json({
@@ -55,6 +56,7 @@ export async function GET() {
         apiId: s.apiId,
         name: s.name,
         category: s.category,
+        provider: s.provider,
         costPer1k: s.costPer1k,
         sellPer1k: s.sellPer1k,
         min: s.min,
@@ -293,6 +295,56 @@ export async function POST(req) {
       await logActivity(admin.name, `Recalculated prices: ${updated} updated, ${skipped} skipped (no cost)`, 'service');
       invalidateServiceCatalogue();
       return Response.json({ success: true, updated, skipped, total: allTiers.length });
+    }
+
+    if (action === 'duplicate-group') {
+      const { groupId } = body;
+      if (!groupId) return Response.json({ error: 'Group ID required' }, { status: 400 });
+
+      const original = await prisma.serviceGroup.findUnique({
+        where: { id: groupId },
+        include: { tiers: { orderBy: { sortOrder: 'asc' } } },
+      });
+      if (!original) return Response.json({ error: 'Group not found' }, { status: 404 });
+
+      const maxSort = await prisma.serviceGroup.aggregate({ _max: { sortOrder: true } });
+
+      const group = await prisma.$transaction(async (tx) => {
+        const newGroup = await tx.serviceGroup.create({
+          data: {
+            name: `${original.name} (copy)`,
+            platform: original.platform,
+            type: original.type,
+            nigerian: original.nigerian,
+            description: original.description,
+            tags: original.tags || [],
+            enabled: false,
+            sortOrder: (maxSort._max.sortOrder || 0) + 1,
+          },
+        });
+
+        if (original.tiers.length > 0) {
+          await tx.serviceTier.createMany({
+            data: original.tiers.map(t => ({
+              groupId: newGroup.id,
+              serviceId: t.serviceId,
+              tier: t.tier,
+              sellPer1k: t.sellPer1k,
+              refill: t.refill,
+              refillDays: t.refillDays,
+              speed: t.speed,
+              sortOrder: t.sortOrder,
+              enabled: t.enabled,
+            })),
+          });
+        }
+
+        return newGroup;
+      });
+
+      await logActivity(admin.name, `Duplicated group "${original.name}"`, 'service');
+      invalidateServiceCatalogue();
+      return Response.json({ success: true, group });
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });

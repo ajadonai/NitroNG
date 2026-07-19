@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockDripDispatch = { findMany: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() };
-const mockOrder = { findMany: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() };
+const mockOrder = { findMany: vi.fn(), findFirst: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() };
 const mockAdminIssue = { create: vi.fn().mockReturnValue({ catch: () => {} }) };
 const mockExecuteRawUnsafe = vi.fn();
 
@@ -44,6 +44,7 @@ beforeEach(async () => {
   mockDripDispatch.findMany.mockResolvedValue([]);
   mockOrder.findMany.mockResolvedValue([]);
   mockOrder.findFirst.mockResolvedValue(null);
+  mockOrder.findUnique.mockResolvedValue({ queuedBehind: null });
   mockOrder.updateMany.mockResolvedValue({ count: 1 });
   mockExecuteRawUnsafe.mockResolvedValue(0);
 });
@@ -56,12 +57,14 @@ describe('drip cron — section 2 in-flight filter', () => {
       .mockResolvedValueOnce([]) // section 1: stuck dispatching
       .mockResolvedValueOnce([]) // section 2: due dispatches (none returned)
       .mockResolvedValueOnce([]); // section 3: processing
-    mockOrder.findMany.mockResolvedValue([]); // section 4: rollup
+    mockOrder.findMany
+      .mockResolvedValueOnce([]) // section 1.5: queued orders to release
+      .mockResolvedValue([]);    // section 4: rollup
 
     const { GET } = await import('@/app/api/cron/drip/route');
     await GET(makeReq());
 
-    // The second findMany call is section 2 (due dispatches)
+    // The second dripDispatch.findMany call is section 2 (due dispatches)
     const dueCall = mockDripDispatch.findMany.mock.calls[1];
     expect(dueCall).toBeDefined();
     const where = dueCall[0].where;
@@ -69,6 +72,9 @@ describe('drip cron — section 2 in-flight filter', () => {
     expect(where.status).toBe('pending');
     expect(where.scheduledAt).toEqual({ lte: expect.any(Date) });
     expect(where.order).toEqual({
+      status: { in: ['Pending', 'Processing'] },
+      deletedAt: null,
+      queuedBehind: null,
       dripDispatches: {
         none: { status: { in: ['dispatching', 'processing'] } },
       },
