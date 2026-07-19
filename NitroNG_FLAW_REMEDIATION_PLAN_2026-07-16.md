@@ -555,6 +555,75 @@ No database write, migration, production request, deployment, staging action, or
 - The documented setup cannot accidentally target production.
 - Every migration and workflow needed for deployment is tracked deliberately.
 
+### Implementation record — 19 July 2026
+
+Status: implemented, independently reviewed, and deliberately left unstaged and
+uncommitted for the Phase 8 review.
+
+1. Production now has one fail-closed environment validator for runtime and
+   build settings. It requires the canonical HTTPS application origin, direct
+   and pooled database URLs, Redis, webhook authentication, JWT/cron/IP-hash
+   secrets, email, Google, SMM provider, and Sentry configuration. It rejects
+   placeholders, secret reuse, surrounding whitespace, localhost and loopback
+   variants, insecure provider endpoints, URL credentials, and mismatched
+   runtime/migration database hosts, ports, users, database names, or schemas.
+2. Links, callbacks, redirects, CORS, internal cron forwarding, and the active
+   request proxy now share the canonical application origin. Missing production
+   configuration cannot fall back to localhost. Crypto invoice creation also
+   validates its callback origin before creating a durable Pending transaction.
+3. Cron and analytics credentials are accepted only through strict Bearer
+   headers on the affected routes. Query-string credentials were removed, and
+   internal calls no longer derive their origin from an untrusted request host.
+4. All 34 migrations now have an exact SHA-256 manifest and PostgreSQL provider
+   lock. A read-only database verifier compares successful Prisma migration
+   names and checksums with that manifest; its preflight mode permits genuinely
+   pending forward migrations while still rejecting historical drift.
+5. The incomplete legacy migration chain is no longer treated as a valid empty
+   database bootstrap. CI materialises an immutable pre-remediation schema from
+   commit `7d2bb02f03f495af04e55279bc63df7dcd7944ff`, verifies its digest, registers
+   the represented legacy history, applies the remediation migrations for real,
+   checks status and checksums, and compares the deployed schema with Prisma.
+   Synthetic historical rows and post-migration SQL assertions exercise crypto
+   backfills, order snapshots, Pulse-secret retirement, Pit deletion, payouts,
+   commissions, links, sessions, activity logs, and SQL-only privacy constraints.
+6. Legacy operational scripts are local/test-only, target-bound, dry-run by
+   default, and require an operation-and-database-specific apply confirmation.
+   The HTTP load test has no default target and permanently blocks Nitro's
+   production domains. The old production seed SQL and completed launch-weekend
+   financial backfill are non-executable. Existing production data and the
+   owner-approved homepage statistic formulas were not changed.
+7. Deployment, migration, environment, Flutterwave/NOWPayments, preview-secret,
+   backup, rollback, and branch-protection guidance now matches the application.
+   Node 22.12 or newer is required, Vercel runs the deployment gate, and the
+   production build is pinned to the verified Webpack path.
+
+Verification completed:
+
+- Whole repository: 1,329 tests passed and 3 were skipped.
+- Strict fake-production Webpack build passed, including TypeScript, page-data
+  collection, and all 158 pages.
+- Focused Phase 8 boundary after the final review corrections: 129 tests passed.
+- Prisma schema validation, the 34-migration manifest, changed-file ESLint,
+  script syntax checks, `npm ci --dry-run --offline`, and `git diff --check`
+  passed.
+- Two independent reviews found no remaining Phase 8 code blocker.
+
+No production database was accessed, no migration was applied, no external
+secret was changed, and no deployment, commit, or push was performed in Phase 8.
+
+Required before production release:
+
+- Run the read-only `migrations:verify:applied:pending` check against production
+  and investigate any historical name or checksum mismatch instead of bypassing
+  the gate.
+- Rotate `CRON_SECRET` and any configured `ANALYTICS_READ_TOKEN`, update every
+  caller, and use Bearer headers only because the former query-string values may
+  already exist in logs or intermediary metadata.
+- Confirm backup/PITR readiness, apply pending migrations from one serialized
+  operator, and require both migration status and exact applied checksums to pass.
+- Require the GitHub disposable-PostgreSQL Deployment gate on the exact release
+  commit and enable the corresponding GitHub/Vercel protection settings.
+
 ## Phase 9 — Quality and monitoring
 
 ### Scope

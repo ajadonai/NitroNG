@@ -1,11 +1,10 @@
 import { headers } from 'next/headers';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
-
-const IP_SALT = process.env.IP_HASH_SALT || 'nitro-click-default-salt';
+import { getIpHashSalt } from '@/lib/env';
 
 function hashIp(ip) {
-  return crypto.createHash('sha256').update(ip + IP_SALT).digest('hex');
+  return crypto.createHash('sha256').update(ip + getIpHashSalt()).digest('hex');
 }
 
 function parseReferrer(ref) {

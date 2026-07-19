@@ -21,7 +21,9 @@ global.fetch = vi.fn(() => Promise.resolve({ ok: true }));
 const { GET } = await import('@/app/api/cron/cohort-stats/route');
 
 function request(token = 'analytics') {
-  return new Request(`http://localhost/api/cron/cohort-stats?token=${token}`);
+  return new Request('http://localhost/api/cron/cohort-stats', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 }
 
 function snapshot(generatedAt = '2026-07-08T01:01:48.043Z') {
@@ -121,6 +123,22 @@ describe('GET /api/cron/cohort-stats', () => {
     const response = await GET(request('bad-token'));
     expect(response.status).toBe(401);
     expect(response.headers.get('Vercel-CDN-Cache-Control')).toBe('no-store');
+  });
+
+  it('rejects analytics and cron credentials supplied through the query string', async () => {
+    for (const token of ['analytics', 'cron']) {
+      const response = await GET(new Request(`http://localhost/api/cron/cohort-stats?token=${token}`));
+      expect(response.status).toBe(401);
+    }
+    expect(prisma.setting.findUnique).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('fails closed when the matching server credential is not configured', async () => {
+    delete process.env.ANALYTICS_READ_TOKEN;
+    const response = await GET(request('analytics'));
+    expect(response.status).toBe(401);
+    expect(prisma.setting.findUnique).not.toHaveBeenCalled();
   });
 
   it('serves fresh snapshot without self-heal when not stale', async () => {

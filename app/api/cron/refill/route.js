@@ -3,6 +3,7 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { checkOrder, refillOrder } from '@/lib/smm';
+import { getBearerToken } from '@/lib/bearer-token';
 
 // Auto-refill cron: checks completed orders within their refill window
 // for significant drops (>5%) and triggers provider refill.
@@ -11,7 +12,7 @@ import { checkOrder, refillOrder } from '@/lib/smm';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
-  const secret = req.headers.get('authorization')?.replace('Bearer ', '') || new URL(req.url).searchParams.get('secret');
+  const secret = getBearerToken(req);
   if (secret !== process.env.CRON_SECRET) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }

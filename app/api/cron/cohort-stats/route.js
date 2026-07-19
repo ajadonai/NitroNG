@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { log } from "@/lib/logger";
+import { getBearerToken } from "@/lib/bearer-token";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -121,12 +122,10 @@ async function alertWatchTower(snapshot, cause) {
 }
 
 export async function GET(req) {
-  const token =
-    req.headers.get("authorization")?.replace("Bearer ", "") ||
-    new URL(req.url).searchParams.get("token");
+  const token = getBearerToken(req);
 
-  const isCron = token === process.env.CRON_SECRET;
-  const isAnalytics = token === process.env.ANALYTICS_READ_TOKEN;
+  const isCron = Boolean(process.env.CRON_SECRET) && token === process.env.CRON_SECRET;
+  const isAnalytics = Boolean(process.env.ANALYTICS_READ_TOKEN) && token === process.env.ANALYTICS_READ_TOKEN;
 
   if (!isCron && !isAnalytics) {
     return Response.json({ error: "Unauthorized" }, { status: 401, headers: NO_CACHE });

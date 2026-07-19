@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from "@/lib/rate-limit";
+import { getApplicationUrl } from "@/lib/env";
 
 const GENERIC = "If an account exists, a reset link has been sent.";
 
@@ -32,7 +33,7 @@ export async function POST(req) {
     });
     if (count !== 1) return Response.json({ message: GENERIC });
 
-    const origin = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const origin = getApplicationUrl();
     const resetUrl = `${origin}/pit/reset-password?token=${resetToken}`;
 
     sendPasswordResetEmail(member.email, member.name, resetUrl).catch(() => {});

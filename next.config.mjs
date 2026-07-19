@@ -1,4 +1,14 @@
 import { withSentryConfig } from "@sentry/nextjs";
+import {
+  getApplicationUrl,
+  shouldValidateProductionBuild,
+  validateProductionBuildEnv,
+} from "./lib/env.js";
+
+validateProductionBuildEnv();
+const applicationUrl = getApplicationUrl(process.env, {
+  production: shouldValidateProductionBuild(),
+});
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -42,7 +52,7 @@ const nextConfig = {
         // CORS — API routes
         source: '/api/(.*)',
         headers: [
-          { key: 'Access-Control-Allow-Origin', value: process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === 'production' ? 'https://nitro.ng' : 'http://localhost:3000') },
+          { key: 'Access-Control-Allow-Origin', value: applicationUrl },
           { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
           { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
           { key: 'Access-Control-Allow-Credentials', value: 'true' },
@@ -57,4 +67,8 @@ export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG || undefined,
   project: process.env.SENTRY_PROJECT || undefined,
   authToken: process.env.SENTRY_AUTH_TOKEN || undefined,
+  sourcemaps: {
+    // CI verifies the complete Sentry configuration without publishing build artifacts.
+    disable: process.env.GITHUB_ACTIONS === 'true',
+  },
 });

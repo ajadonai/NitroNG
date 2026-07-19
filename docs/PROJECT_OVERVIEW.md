@@ -24,7 +24,7 @@ Not a reseller template or white-label clone. Custom-built with premium position
 | Database | PostgreSQL on Neon (eu-west-2) |
 | ORM | Prisma 6 |
 | Auth | Custom JWT — user (7-day), admin (3-day), superadmin (90-day). SHA-256 token hashing. 1 web + 1 mobile per account. |
-| Payments | Paystack (live). Flutterwave + ALATPay pending verification. |
+| Payments | Flutterwave card/bank funding, NOWPayments crypto funding, and manual bank transfer review. |
 | Email | Brevo (transactional) |
 | SMM Providers | MTP (primary, 4,405 services), JAP (gap-filler), DaoSMM (Nigerian specialist) |
 | Deployment | Vercel (frontend). Railway planned for workers/queues. |
@@ -80,7 +80,7 @@ See [SERVICES.md](./SERVICES.md) for full catalogue structure and pricing detail
 ## Features — Complete
 
 - **Auth** — JWT with email verification, password reset, device sessions, role-based access
-- **Payments** — Paystack wallet funding, wallet-based ordering
+- **Payments** — Flutterwave and crypto wallet funding, manual bank transfer review, wallet-based ordering
 - **Orders** — Full lifecycle with provider API integration and status polling
 - **Admin Panel** — Stats, user/order/service management, blog CMS, coupons, referrals
 - **Support** — WhatsApp-style ticketing with Nitro Bot + live agent handoff, multi-admin soft locking
@@ -107,7 +107,7 @@ See [SERVICES.md](./SERVICES.md) for full catalogue structure and pricing detail
 
 ## Roadmap
 
-**Phase 2:** Multi-provider routing, Flutterwave/ALATPay, mobile bottom nav  
+**Phase 2:** Multi-provider routing and mobile bottom nav
 **Phase 3:** Ticket assignment, TypeScript migration, CI/CD, automated tests  
 **Future:** Budget sub-brand, WhatsApp chatbot ordering, white-label child panels, recurring billing
 

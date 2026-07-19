@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
 import { log } from '@/lib/logger';
 import { getBalance, getServices, isProviderConfigured } from '@/lib/smm';
+import { getApplicationUrl } from '@/lib/env';
 
 const CRYPTO_PAYMENT_REVIEW_TYPE = 'crypto_payment_review';
 
@@ -275,7 +276,7 @@ export async function POST(req) {
         '/api/cron/prices',
       ];
 
-      const origin = new URL(req.url).origin;
+      const origin = getApplicationUrl();
 
       const results = await Promise.allSettled(
         crons.map(async (path) => {

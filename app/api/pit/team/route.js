@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { getCrewSession } from "@/lib/crew";
 import crypto from "crypto";
+import { getApplicationUrl } from "@/lib/env";
 
 export async function GET() {
   try {
@@ -69,7 +70,7 @@ export async function POST(req) {
       },
     });
 
-    const inviteUrl = `${process.env.NEXT_PUBLIC_URL || "https://nitro.ng"}/pit/join/${inviteToken}`;
+    const inviteUrl = `${getApplicationUrl()}/pit/join/${inviteToken}`;
 
     return Response.json({
       invited: {
@@ -110,7 +111,7 @@ export async function PATCH(req) {
     });
     if (count === 0) return Response.json({ error: "Invite is no longer pending" }, { status: 409 });
 
-    const inviteUrl = `${process.env.NEXT_PUBLIC_URL || "https://nitro.ng"}/pit/join/${inviteToken}`;
+    const inviteUrl = `${getApplicationUrl()}/pit/join/${inviteToken}`;
     return Response.json({ ok: true, inviteUrl, name: target.name });
   } catch (e) {
     console.error("Team PATCH error:", e);

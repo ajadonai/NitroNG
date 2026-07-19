@@ -7,6 +7,7 @@ import { tgDripTimeout } from '@/lib/telegram';
 import { getDripConfig } from '@/lib/drip-feed';
 import { awardPointsOnCompletion } from '@/lib/nitro-rewards';
 import { findSameLinkDispatchBlocker, isActiveOrderConflict, wouldCreateCycle } from '@/lib/order-queue';
+import { getBearerToken } from '@/lib/bearer-token';
 
 // Drip dispatch cron — runs twice per hour (:05 and :35)
 // 1. Dispatches pending drip batches that are due (scheduledAt <= now)
@@ -16,7 +17,7 @@ import { findSameLinkDispatchBlocker, isActiveOrderConflict, wouldCreateCycle } 
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
-  const secret = req.headers.get('authorization')?.replace('Bearer ', '') || new URL(req.url).searchParams.get('secret');
+  const secret = getBearerToken(req);
   if (secret !== process.env.CRON_SECRET) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const stats = { dispatched: 0, dispatchFailed: 0, synced: 0, completed: 0, rolledUp: 0 };

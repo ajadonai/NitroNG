@@ -1,3 +1,7 @@
+-- RETIRED: historical seed source retained for audit context only.
+-- This entire historical payload is inside a block comment and cannot execute.
+-- Do not restore an executable production-data path.
+/*
 -- ══════════════════════════════════════════════════
 -- NITRO SEED: 6,823 users + ~25,200 orders
 -- Run in Neon SQL Editor (paste in chunks if needed)
@@ -138,3 +142,4 @@ LEFT JOIN services svc ON svc.id = st."serviceId";
 SELECT 'users' AS t, COUNT(*) FROM users
 UNION ALL SELECT 'orders', COUNT(*) FROM orders
 UNION ALL SELECT 'referrals', COUNT(*) FROM users WHERE "referredBy" IS NOT NULL;
+*/

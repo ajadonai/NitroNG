@@ -11,11 +11,12 @@ import { tgNewUser } from '@/lib/telegram';
 import { notifyCrewSignup } from '@/lib/commissions';
 import { resolveSignupAttribution } from '@/lib/link-ownership';
 import { isAccountDeletionGraceActive } from '@/lib/account-deletion';
+import { getApplicationUrl } from '@/lib/env';
 
 export async function GET(req) {
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
   const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://nitro.ng';
+  const APP_URL = getApplicationUrl();
   const REDIRECT_URI = `${APP_URL}/api/auth/google/callback`;
 
   try {

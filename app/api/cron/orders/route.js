@@ -9,6 +9,8 @@ import { tgRefund, tgOrderCancelled, tgRefundAlert } from '@/lib/telegram';
 import { createCommission, voidCommissions } from '@/lib/commissions';
 import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo, awardPointsOnCompletion } from '@/lib/nitro-rewards';
 import { findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
+import { getApplicationUrl } from '@/lib/env';
+import { getBearerToken } from '@/lib/bearer-token';
 
 // Polls provider APIs for order status updates
 // Auto-refunds failed/cancelled orders
@@ -17,7 +19,7 @@ import { findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAI
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
-  const secret = req.headers.get('authorization')?.replace('Bearer ', '') || new URL(req.url).searchParams.get('secret');
+  const secret = getBearerToken(req);
   if (secret !== process.env.CRON_SECRET) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -560,7 +562,7 @@ export async function GET(req) {
     log.info('Cron orders', `Checked ${stats.checked}, updated ${stats.updated}, refunded ${stats.refunded}, retried ${stats.retried}, autoRefunded ${stats.autoRefunded}, recovered ${stats.recovered}`);
 
     // Fallback: also trigger drip cron (idempotent) in case its dedicated schedule missed
-    fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://nitro.ng'}/api/cron/drip`, {
+    fetch(`${getApplicationUrl()}/api/cron/drip`, {
       headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
     }).catch(() => {});
 
