@@ -49,7 +49,7 @@ describe('internal dashboard entrypoint boundaries', () => {
   it('clears sensitive state and re-enters the clean page when access is revoked', () => {
     expect(pulseClient).toContain("res.status === 401 || res.status === 403");
     expect(pulseClient).toContain('setData(null)');
-    expect(pulseClient).toContain("window.location.replace('/pulse')");
+    expect(pulseClient).toContain('setExpired(true)');
     expect(liveClient).toContain("res.status === 401 || res.status === 403");
     expect(liveClient).toContain('setSessions([])');
     expect(liveClient).toContain('setCount(0)');

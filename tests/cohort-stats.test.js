@@ -1,15 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const mockTx = { $queryRaw: vi.fn() };
 const prisma = {
-  $queryRaw: vi.fn(),
+  $transaction: vi.fn((fn) => fn(mockTx)),
   setting: {
     findUnique: vi.fn(),
     upsert: vi.fn(),
-  },
-  adminIssue: {
-    findFirst: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
   },
 };
 const log = {
@@ -20,6 +16,7 @@ const log = {
 
 vi.mock('@/lib/prisma', () => ({ default: prisma }));
 vi.mock('@/lib/logger', () => ({ log }));
+global.fetch = vi.fn(() => Promise.resolve({ ok: true }));
 
 const { GET } = await import('@/app/api/cron/cohort-stats/route');
 
@@ -53,12 +50,12 @@ beforeEach(() => {
   vi.clearAllMocks();
   process.env.CRON_SECRET = 'cron';
   process.env.ANALYTICS_READ_TOKEN = 'analytics';
+  process.env.TG_BOT_TOKEN = 'test-token';
+  process.env.TG_CHAT_ID = '-100123';
   prisma.setting.findUnique.mockResolvedValue({ value: JSON.stringify(snapshot()) });
   prisma.setting.upsert.mockResolvedValue({});
-  prisma.adminIssue.findFirst.mockResolvedValue(null);
-  prisma.adminIssue.create.mockResolvedValue({});
-  prisma.adminIssue.update.mockResolvedValue({});
-  prisma.$queryRaw.mockResolvedValue(statsRow());
+  prisma.$transaction.mockImplementation((fn) => fn(mockTx));
+  mockTx.$queryRaw.mockResolvedValue(statsRow());
 });
 
 describe('GET /api/cron/cohort-stats', () => {
@@ -81,7 +78,8 @@ describe('GET /api/cron/cohort-stats', () => {
       depositors: 1,
       depositRate: 0.3333,
     });
-    expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
+    // SET LOCAL + 2 window queries = 3 calls
+    expect(mockTx.$queryRaw).toHaveBeenCalledTimes(3);
     expect(prisma.setting.upsert).toHaveBeenCalledWith(expect.objectContaining({
       where: { key: 'cohort_stats_snapshot' },
       update: expect.objectContaining({ value: expect.any(String) }),
@@ -90,8 +88,8 @@ describe('GET /api/cron/cohort-stats', () => {
     expect(log.warn).toHaveBeenCalledWith('Cohort Stats', expect.stringContaining('Self-healed stale snapshot'));
   });
 
-  it('serves stale fallback and opens a monitoring issue when self-heal fails past 26h', async () => {
-    prisma.$queryRaw.mockRejectedValue(new Error('database timeout'));
+  it('serves stale fallback and alerts WatchTower when self-heal fails', async () => {
+    prisma.$transaction.mockRejectedValue(new Error('database timeout'));
 
     const response = await GET(request());
     const body = await response.json();
@@ -99,26 +97,42 @@ describe('GET /api/cron/cohort-stats', () => {
     expect(response.status).toBe(200);
     expect(body.generatedAt).toBe('2026-07-08T01:01:48.043Z');
     expect(log.error).toHaveBeenCalledWith('Cohort Stats', 'Live recompute failed: database timeout');
-    expect(log.warn).toHaveBeenCalledWith('Cohort Stats', expect.stringContaining('Serving stale snapshot'));
-    expect(prisma.adminIssue.create).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({
-        type: 'cohort_stats_stale',
-        title: expect.stringContaining('Cohort stats snapshot stale'),
-        message: expect.stringContaining('database timeout'),
-      }),
-    }));
+    expect(log.error).toHaveBeenCalledWith('Cohort Stats', expect.stringContaining('Serving stale snapshot'));
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('api.telegram.org'),
+      expect.objectContaining({ method: 'POST' }),
+    );
   });
 
-  it('writer uses the same optimized compute path and stores the snapshot', async () => {
+  it('writer computes with statement timeout and stores the snapshot', async () => {
     const response = await GET(request('cron'));
     const body = await response.json();
 
     expect(response.status).toBe(200);
     expect(body.ok).toBe(true);
-    expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), { timeout: 30_000 });
     expect(prisma.setting.upsert).toHaveBeenCalledWith(expect.objectContaining({
       where: { key: 'cohort_stats_snapshot' },
     }));
     expect(log.info).toHaveBeenCalledWith('Cohort Stats', expect.stringContaining('Snapshot written'));
+  });
+
+  it('returns 401 with no-cache headers for unauthorized requests', async () => {
+    const response = await GET(request('bad-token'));
+    expect(response.status).toBe(401);
+    expect(response.headers.get('Vercel-CDN-Cache-Control')).toBe('no-store');
+  });
+
+  it('serves fresh snapshot without self-heal when not stale', async () => {
+    const fresh = snapshot(new Date().toISOString());
+    prisma.setting.findUnique.mockResolvedValue({ value: JSON.stringify(fresh) });
+
+    const response = await GET(request());
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.generatedAt).toBe(fresh.generatedAt);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(log.warn).not.toHaveBeenCalled();
   });
 });
