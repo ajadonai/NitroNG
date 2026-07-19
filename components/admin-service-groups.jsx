@@ -107,14 +107,6 @@ export default function AdminServiceGroupsPage({ dark, t }) {
   };
 
   const cardsRef = useRef(null);
-  useEffect(() => {
-    const handler = (e) => {
-      if (filtersActive || openIds.size === 0) return;
-      if (cardsRef.current && !cardsRef.current.contains(e.target)) persistOpen(new Set());
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [openIds, filtersActive]);
 
   /* Inline tier editing — saves through the existing update-tier action */
   const [editTier, setEditTier] = useState(null); // { id, price, speed, refill }
@@ -153,6 +145,14 @@ export default function AdminServiceGroupsPage({ dark, t }) {
 
   const platforms = useMemo(() => [...new Set(groups.map(g => g.platform))].sort(), [groups]);
   const filtersActive = search !== "" || platFilter !== "all" || ngFilter;
+  useEffect(() => {
+    const handler = (e) => {
+      if (filtersActive || openIds.size === 0) return;
+      if (cardsRef.current && !cardsRef.current.contains(e.target)) persistOpen(new Set());
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [openIds, filtersActive]);
   const isOpen = (g) => filtersActive || openIds.has(g.id);
   const filtered = useMemo(() => {
     let g = groups;
