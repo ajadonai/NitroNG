@@ -42,6 +42,29 @@ describe('applied migration checksum validation', () => {
     expect(errors.join('\n')).not.toContain(CHECKSUM_B);
   });
 
+  it('accepts a DB checksum that matches the file hash even when an appliedOverride exists', () => {
+    expect(validateAppliedMigrationChecksums({
+      manifest: { algorithm: 'sha256', migrations: { '0_init': CHECKSUM_A }, appliedOverrides: { '0_init': CHECKSUM_B } },
+      appliedMigrations: [applied('0_init', CHECKSUM_A)],
+    })).toEqual([]);
+  });
+
+  it('accepts a DB checksum that matches the appliedOverride', () => {
+    expect(validateAppliedMigrationChecksums({
+      manifest: { algorithm: 'sha256', migrations: { '0_init': CHECKSUM_A }, appliedOverrides: { '0_init': CHECKSUM_B } },
+      appliedMigrations: [applied('0_init', CHECKSUM_B)],
+    })).toEqual([]);
+  });
+
+  it('rejects a DB checksum matching neither file hash nor appliedOverride', () => {
+    const CHECKSUM_C = 'c'.repeat(64);
+    const errors = validateAppliedMigrationChecksums({
+      manifest: { algorithm: 'sha256', migrations: { '0_init': CHECKSUM_A }, appliedOverrides: { '0_init': CHECKSUM_B } },
+      appliedMigrations: [applied('0_init', CHECKSUM_C)],
+    });
+    expect(errors).toEqual(['0_init checksum differs from the immutable manifest']);
+  });
+
   it('requires exact name equality and rejects duplicate successful rows', () => {
     expect(validateAppliedMigrationChecksums({
       manifest: manifest({
