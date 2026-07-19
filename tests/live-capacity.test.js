@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   rateLimit: vi.fn(),
   requireAccess: vi.fn(),
+  renewGrant: vi.fn(),
   liveFindMany: vi.fn(),
   userFindMany: vi.fn(),
   adminFindMany: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock('@/lib/rate-limit', () => ({
 }));
 vi.mock('@/lib/internal-dashboard-access', () => ({
   requireInternalDashboardAccess: (...args) => mocks.requireAccess(...args),
+  renewInternalDashboardGrant: (...args) => mocks.renewGrant(...args),
   internalDashboardAccessError: access => Response.json({ error: 'denied' }, {
     status: access.status,
   }),
@@ -92,6 +94,10 @@ describe('Live capacity and aggregate reads', () => {
     expect(data.count).toBe(500);
     expect(data.sessions.every(session => session.user === null)).toBe(true);
     expect(data.truncated).toBe(true);
+    expect(mocks.renewGrant).toHaveBeenCalledWith(
+      expect.objectContaining({ ok: true }),
+      response,
+    );
   });
 
   it('loads completed deposit totals with one grouped aggregate instead of transaction rows', async () => {
@@ -133,4 +139,3 @@ describe('Live capacity and aggregate reads', () => {
     expect(data.sessions[0].user.totalDeposited).toBe(9_876);
   });
 });
-

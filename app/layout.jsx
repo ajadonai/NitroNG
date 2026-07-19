@@ -19,7 +19,7 @@ export const metadata = {
     default: "The Nitro NG | Your Content Deserves a Bigger Audience",
     template: '%s | The Nitro NG',
   },
-  description: "Nitro helps Nigerian creators, artists, and businesses reach a wider audience. Premium content promotion across 35+ platforms. Naira pricing, fast results, human support.",
+  description: "Nitro helps Nigerian creators, artists, and businesses reach a wider audience. 35+ content-promotion service categories across major platforms. Naira pricing, fast results, human support.",
   authors: [{ name: 'The Nitro NG', url: 'https://nitro.ng' }],
   creator: 'The Nitro NG',
   publisher: 'The Nitro NG',
@@ -131,7 +131,7 @@ export default function RootLayout({ children }) {
       description: "Free to sign up. Flexible campaign budgets in Naira.",
     },
     featureList: [
-      "Campaign management across 35+ platforms",
+      "35+ campaign service categories across major platforms",
       "Cleanest marketing dashboard in Nigeria",
       "Naira pricing, no USD conversion",
       "Performance tracking and analytics",

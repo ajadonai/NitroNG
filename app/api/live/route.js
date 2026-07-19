@@ -4,6 +4,7 @@ import { log } from '@/lib/logger';
 import { getOrderOfferDisplay } from '@/lib/order-offer-display';
 import {
   internalDashboardAccessError,
+  renewInternalDashboardGrant,
   requireInternalDashboardAccess,
   withInternalDashboardNoStore,
 } from '@/lib/internal-dashboard-access';
@@ -165,13 +166,15 @@ export async function GET(req) {
       };
     });
 
-    return withInternalDashboardNoStore(Response.json({
+    const res = withInternalDashboardNoStore(Response.json({
       sessions: result,
       count: result.length,
       truncated: identifiedSessions.length === LIVE_SESSION_RESULT_LIMIT
         || anonymousSessions.length === LIVE_ANONYMOUS_RESULT_LIMIT,
       ts: Date.now(),
     }));
+    renewInternalDashboardGrant(access, res);
+    return res;
   } catch (err) {
     log.error('Live API', err.message);
     return withInternalDashboardNoStore(Response.json({ error: 'Failed to load live data' }, { status: 500 }));

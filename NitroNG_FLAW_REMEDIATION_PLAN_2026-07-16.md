@@ -32,7 +32,7 @@
 | 4 | Crypto payment integrity | 5, 6 | Included in Phase 4–5 consolidation; independently approved |
 | 5 | Internal dashboard protection | 9, 10, 16, 17 | Included in consolidation; user review pending |
 | 6 | Privacy and account deletion | 11, 12 | Not started |
-| 7 | Public UI correctness | 13, 14, 15, 23, 24, 25 | Not started |
+| 7 | Public UI correctness | 13, 14, 15, 23, 24, 25 | Implemented locally except flaw 13, retained by owner decision; uncommitted |
 | 8 | Deployment safety | 18, 19, 20, 21, 22 | Not started |
 | 9 | Quality and monitoring | 26, 29, 30 | Not started |
 | 10 | Maintainability | 31 | Not started |
@@ -470,11 +470,38 @@ Deployment requirements and deliberate deferrals:
 - Required financial records remain auditable without retaining unnecessary personal data.
 - Deleted users cannot receive new referral rewards.
 
+### Implementation record — 17 July 2026
+
+Status: implemented and verified; left uncommitted for review.
+
+1. `lib/account-deletion.js` is now the single permanent-deletion finaliser used by both cleanup crons. It applies an explicit retention policy: erase identity, credentials, contact/tracking/device data, support content, sessions, order targets, free-form proofs, and payment addresses; retain only internal IDs, financial/provider facts, amounts, references, ledger entries, timestamps, and Terms acceptance evidence.
+2. Customer identities are replaced with deterministic `.invalid` tombstones. Wallet and Nitro Points balances are closed with balancing `account_closure` ledger entries, unused bonus credits are expired, pending task rewards are cancelled, and retained orders, transactions, issues, activity logs, and point reasons are redacted without destroying the financial trail.
+3. Permanent deletion now locks the user row and serialises against payment finalisation, order placement, refunds, Nitro Points, bonus restoration, and winback grants. Late payment verification moves a deposit to review instead of recreating a deleted wallet balance. Database checks reject stale writes that would restore either value or identity after deletion.
+4. Referral unlinking now compares `User.referredBy` with the deleted user's actual referral code. Signup, Google signup, first-deposit referral payment, and the final balance update all require an active, verified, non-deleted referrer. Current referral notes use opaque internal markers and legacy name-bearing notes are normalised.
+5. Reinstatement is available only during the live 30-day grace period. Expired pending and permanently deleted accounts are read-only in admin, cannot be credited or adjusted, and cannot be restored. User/admin deletion notices now accurately distinguish erased personal data from retained financial records without copying customer contact details into operational alerts.
+6. Pit Crew deletion now applies the same privacy boundary: identity/auth/contact/application/bank data and sessions are erased, assigned links are anonymised and disabled, historical free text is redacted, and stale settings/auth/Telegram/link writes are fenced. Existing payout destinations survive only while a pending or processing obligation needs settlement, then are cleared. Held direct earnings are voided; a deleted chief's unreleased share is explicitly forfeited without blocking the active marketer's share.
+
+New migrations, both pending review/application:
+
+- `20260717020400_add_user_anonymized_at`
+- `20260717020500_anonymize_deleted_crew_members`
+
+Verification completed:
+
+- Focused Phase 6 boundary: 417 passed, 3 skipped.
+- Whole repository: 1,157 passed, 3 skipped.
+- Production build: passed.
+- Prisma format and schema validation: passed.
+- Scoped ESLint: 0 errors; existing unused-code warnings remain.
+- `git diff --check`: passed.
+
+No migration, production write, deployment, staging, commit, or push was performed. The Phase 5 correction pass and Phase 6 remain together as uncommitted work for review.
+
 ## Phase 7 — Public UI correctness
 
 ### Scope
 
-- Remove artificial additions and forced minimums from public statistics.
+- Retain the artificial additions and forced minimums in public statistics per the owner's explicit 19 July decision; do not change those values, formulas, floors, or fallbacks in this phase.
 - Rename every statistic to match the data it actually represents.
 - Make affiliate query handling produce the same initial server and browser render.
 - Convert authentication areas into proper forms with connected labels and keyboard submission.
@@ -483,9 +510,33 @@ Deployment requirements and deliberate deferrals:
 
 ### Completion criteria
 
-- Public claims are calculated from real, correctly labelled data.
+- Public display formulas remain unchanged by owner decision, while labels no longer claim unsupported states.
 - Affiliate links do not produce hydration warnings or visible screen switching.
 - Authentication and destructive dialogs work with keyboard and screen-reader navigation.
+
+### Implementation record — 19 July 2026
+
+Status: implemented, independently reviewed, and included in the user-approved Phase 7 consolidation on 19 July 2026.
+
+1. The homepage statistic additions, minimums, formatting, and fallback values remain exactly unchanged. Public labels now describe the existing values without claiming that all orders were delivered, every account is an active creator, the padded activity value is a real-time order count, or service-group count is platform count. Related public metadata, FAQ, About, footer, and support copy now consistently describe service categories rather than an unsupported platform total.
+2. Landing authentication query state is resolved on the server and passed through the page, client entrypoint, landing page, and modal before the first render. Affiliate, referral, direct login/signup, reset, and callback-error links now begin on the same server and browser authentication screen while preserving referral and affiliate attribution.
+3. Customer modal, homepage auth card, and admin login now use semantic forms, connected labels and inputs, appropriate autocomplete metadata, safe button types, keyboard submission, accessible password controls, and live error/success announcements.
+4. `Remember me` now controls both JWT and cookie persistence. Unchecked customer/admin logins use browser-session cookies with 24-hour/8-hour token limits. Checked logins retain Nitro's previous persistent lifetimes: seven days for customers and ordinary admins, and fourteen days for superadmins. Signup and Google authentication retain their existing seven-day default.
+5. The shared confirmation dialog now exposes `dialog`/`alertdialog` semantics, accessible names and descriptions, safe initial focus, Tab and Shift+Tab trapping, Escape cancellation, typed-confirmation labels, and focus restoration to the invoking control.
+
+Verification completed:
+
+- 51 focused Phase 7 and affected-boundary tests passed.
+- Independent review found no remaining Phase 7 blocker.
+- Post-review correction: the Nitro Rewards fractional-refund regression now asserts the intended whole-naira flooring, and the padded homepage indicator is labelled `Live activity` rather than implying a composite score.
+- Scoped ESLint completed with 0 errors; the repository's existing unused-code warnings remain.
+- Webpack production build passed, including TypeScript, page-data collection, and all 158 static pages. Expected local database-unavailable fallbacks were logged during prerendering.
+- The default local Turbopack build entered its existing near-idle build stall twice and was stopped; no compile error was emitted. A separate Phase 7 run reached successful compilation before the existing post-compile/Sentry stall.
+- `git diff --check` passed.
+
+Whole-repository note after the review correction: 1,223 tests passed and 3 were skipped. The Live-capacity mocks now include the dashboard-grant renewal dependency introduced by the concurrently changed Live route, so the full suite is clean.
+
+No database write, migration, production request, deployment, staging action, or push was performed during implementation.
 
 ## Phase 8 — Deployment safety
 

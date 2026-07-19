@@ -22,6 +22,7 @@ export async function POST(req) {
     const body = await req.json();
     const email = sanitizeEmail(body.email);
     const password = body.password;
+    const remember = body.remember === true;
 
     if (!email || !password) {
       return error('Email and password are required');
@@ -69,8 +70,8 @@ export async function POST(req) {
     }
 
     // Sign JWT and set cookie
-    const token = signUserToken(user);
-    await setUserCookie(token);
+    const token = signUserToken(user, { remember });
+    await setUserCookie(token, { remember });
 
     const hdrs = await headers();
     const ua = hdrs.get('user-agent') || '';

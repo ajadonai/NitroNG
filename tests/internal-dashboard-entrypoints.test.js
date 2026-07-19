@@ -49,11 +49,11 @@ describe('internal dashboard entrypoint boundaries', () => {
   it('clears sensitive state and re-enters the clean page when access is revoked', () => {
     expect(pulseClient).toContain("res.status === 401 || res.status === 403");
     expect(pulseClient).toContain('setData(null)');
-    expect(pulseClient).toContain('setExpired(true)');
+    expect(pulseClient).toContain("window.location.replace('/api/internal-dashboard/access?next=/pulse')");
     expect(liveClient).toContain("res.status === 401 || res.status === 403");
     expect(liveClient).toContain('setSessions([])');
     expect(liveClient).toContain('setCount(0)');
-    expect(liveClient).toContain("window.location.replace('/live')");
+    expect(liveClient).toContain("window.location.replace('/api/internal-dashboard/access?next=/live')");
   });
 
   it('leaves enough pre-auth Live budget for multiple legitimate tabs on one IP', () => {
@@ -101,7 +101,7 @@ describe('internal dashboard leakage retirement', () => {
     const team = source('app/api/admin/team/route.js');
     expect(login).toContain('clearInternalDashboardGrantCookie(cookieStore)');
     expect(login.indexOf('clearInternalDashboardGrantCookie(cookieStore)'))
-      .toBeLessThan(login.indexOf('await setAdminCookie(token, admin.role)'));
+      .toBeLessThan(login.indexOf('await setAdminCookie(token, admin.role, { remember })'));
     expect(login).toContain('FOR UPDATE');
     expect(login.indexOf('FOR UPDATE')).toBeLessThan(login.indexOf('tx.adminSession.create'));
     expect(login.indexOf('tx.adminSession.deleteMany'))

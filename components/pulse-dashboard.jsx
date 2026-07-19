@@ -506,14 +506,12 @@ export default function PulseDashboard() {
     return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
-  const [expired, setExpired] = useState(false);
-
   const fetchData = useCallback(async () => {
     try {
       const res = await fetch('/api/pulse', { cache: 'no-store' });
       if (res.status === 401 || res.status === 403) {
         setData(null);
-        setExpired(true);
+        window.location.replace('/api/internal-dashboard/access?next=/pulse');
         return;
       }
       if (!res.ok) throw new Error('fetch failed');
@@ -527,28 +525,15 @@ export default function PulseDashboard() {
   }, []);
 
   useEffect(() => {
-    if (expired) return;
     fetchData();
     const iv = setInterval(fetchData, 30000);
     return () => clearInterval(iv);
-  }, [fetchData, expired]);
+  }, [fetchData]);
 
   useEffect(() => {
     const iv = setInterval(() => setSecondsAgo(s => s + 1), 1000);
     return () => clearInterval(iv);
   }, []);
-
-  if (expired) {
-    return (
-      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#080b14', fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif" }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, textAlign: 'center', padding: '0 24px' }}>
-          <div style={{ fontSize: 32, lineHeight: 1 }}>&#128274;</div>
-          <div style={{ color: '#f5f3f0', fontSize: 15, fontWeight: 600 }}>Session expired</div>
-          <button onClick={() => window.location.reload()} style={{ background: 'rgba(196,125,142,.15)', border: '1px solid rgba(196,125,142,.25)', borderRadius: 8, color: '#c47d8e', fontSize: 13, fontWeight: 600, padding: '8px 20px', cursor: 'pointer' }}>Reload</button>
-        </div>
-      </div>
-    );
-  }
 
   if (!data) {
     return (
