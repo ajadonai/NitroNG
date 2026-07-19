@@ -84,7 +84,8 @@ export function validateAppliedMigrationChecksums({
       errors.push(`${safeName} has an invalid checksum in the database migration history`);
       continue;
     }
-    if (row.checksum !== manifest.migrations[name]) {
+    const expectedChecksum = manifest.appliedOverrides?.[name] || manifest.migrations[name];
+    if (row.checksum !== expectedChecksum) {
       errors.push(`${safeName} checksum differs from the immutable manifest`);
     }
   }

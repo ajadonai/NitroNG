@@ -31,9 +31,13 @@
     "20260717010300_add_payment_review_index": "4a8eca80e8e21651423724c14ec75ef89b878abc2c9d961c0d730dc2caea8dc2",
     "20260717020000_retire_pulse_secret_key": "11e1e03b98e6edd53f0b4e3571b1fcdd74fb7789eaf93cc9f6e377a047fbd9c3",
     "20260717020100_ensure_live_sessions": "efb02f51e468afb88e6bf5e361cf922cd432ee6be9f3e3c5659264a41857b78a",
-    "20260717020200_add_live_session_user_seen_index": "e63266406bc55d24fb18a6d07dc9f27840e2163d4034fd59a517cda34d56757a",
+    "20260717020200_add_live_session_user_seen_index": "e0ff0c1b7259a28ac8a877f88e9d4809339f84c1403452d7828aa8b2ba6b01e9",
     "20260717020300_add_order_offer_snapshots": "2995643a8216243c695ce883e4931bd913efa7396f7459a826cbb824cc3719b9",
     "20260717020400_add_user_anonymized_at": "1424c67bc36d7737ffb1e4cd7ca5ec6cf38d04e4c016a88c15fe05dc2bdd7d0b",
     "20260717020500_anonymize_deleted_crew_members": "d2003df6545c7b00acf49e698f9ff0cc5ee977e54b8d1bb9f690f1399f63fa0e"
+  },
+  "appliedOverrides": {
+    "0_init": "c864f484fce76fd7b8db286181967d98cdb91559be1081e34df0fd65cc60b7c5",
+    "20260717020200_add_live_session_user_seen_index": "e63266406bc55d24fb18a6d07dc9f27840e2163d4034fd59a517cda34d56757a"
   }
 }
