@@ -34,7 +34,8 @@
     "20260717020200_add_live_session_user_seen_index": "e0ff0c1b7259a28ac8a877f88e9d4809339f84c1403452d7828aa8b2ba6b01e9",
     "20260717020300_add_order_offer_snapshots": "2995643a8216243c695ce883e4931bd913efa7396f7459a826cbb824cc3719b9",
     "20260717020400_add_user_anonymized_at": "1424c67bc36d7737ffb1e4cd7ca5ec6cf38d04e4c016a88c15fe05dc2bdd7d0b",
-    "20260717020500_anonymize_deleted_crew_members": "d2003df6545c7b00acf49e698f9ff0cc5ee977e54b8d1bb9f690f1399f63fa0e"
+    "20260717020500_anonymize_deleted_crew_members": "d2003df6545c7b00acf49e698f9ff0cc5ee977e54b8d1bb9f690f1399f63fa0e",
+    "20260720120000_shorten_anonymized_user_digests": "031b5f969e4ad5c181414a9ed5a0b456cd721262246c599c5dfb6fa6f4276200"
   },
   "appliedOverrides": {
     "0_init": "c864f484fce76fd7b8db286181967d98cdb91559be1081e34df0fd65cc60b7c5",
