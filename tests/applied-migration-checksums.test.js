@@ -183,9 +183,9 @@ describe('applied checksum deployment wiring', () => {
     );
   });
 
-  it('runs the verifier immediately after production migration status', () => {
+  it('applies migrations then verifies checksums in the production gate', () => {
     expect(deploymentGate).toMatch(
-      /run\('db:status'\);\s*run\('migrations:verify:applied'\);/,
+      /run\('db:deploy'\);\s*run\('db:status'\);\s*run\('migrations:verify:applied'\);/,
     );
   });
 

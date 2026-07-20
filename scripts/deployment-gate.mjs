@@ -19,7 +19,7 @@ run('migrations:check');
 
 if (production) {
   run('env:validate:production');
-  // Read-only: a production build must never apply migrations implicitly.
+  run('db:deploy');
   run('db:status');
   run('migrations:verify:applied');
 } else {
