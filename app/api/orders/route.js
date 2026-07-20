@@ -545,7 +545,7 @@ export async function PATCH(req) {
         }
       }
 
-      tgNewOrder(newOrderId, reorderOffer.serviceName, order.quantity, charge, session.email, order.link, reorderOffer.platform);
+      tgNewOrder(newOrderId, reorderOffer.serviceName, order.quantity, charge, session.email, order.link, reorderSnapshot.platformAtPurchase || reorderOffer.platform);
 
       return Response.json({
         success: true,
@@ -1144,7 +1144,7 @@ export async function POST(req) {
       customData: { value: charge / 100, currency: 'NGN' },
     });
 
-    tgNewOrder(orderId, tierName, qty, charge, session.email, link, platform);
+    tgNewOrder(orderId, tierName, qty, charge, session.email, trimmedLink, offerSnapshot.platformAtPurchase || '');
 
     return Response.json({
       success: true,

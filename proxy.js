@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
+import { getApplicationUrl } from '@/lib/env';
 
 const SECRET = new TextEncoder().encode(process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? undefined : 'nitro-dev-secret-change-me'));
 const ADMIN_SECRET = new TextEncoder().encode(process.env.JWT_ADMIN_SECRET || (process.env.NODE_ENV === 'production' ? undefined : 'nitro-admin-secret-change-me'));
@@ -29,8 +30,8 @@ export async function proxy(request) {
     if (!pathname.includes('/webhook')) {
       const origin = request.headers.get('origin');
       if (origin) {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
-        const allowed = ALLOWED_ORIGINS.some(o => origin === o) || (appUrl && origin === appUrl);
+        const appUrl = getApplicationUrl();
+        const allowed = ALLOWED_ORIGINS.some(o => origin === o) || origin === appUrl;
         if (!allowed) {
           return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }

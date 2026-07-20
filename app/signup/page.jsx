@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 
 export const metadata = {
   title: 'Create Account',
-  description: 'Create your free Nitro account and start growing your social media presence in minutes. Naira pricing, fast delivery, 35+ platforms.',
+  description: 'Create your free Nitro account and start growing your social media presence in minutes. Naira pricing, fast delivery, and 35+ service categories.',
   alternates: { canonical: '/signup' },
 };
 

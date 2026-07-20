@@ -317,7 +317,7 @@ export default function LiveDashboard() {
         if (res.status === 401 || res.status === 403) {
           setSessions([]);
           setCount(0);
-          window.location.replace('/live');
+          window.location.replace('/api/internal-dashboard/access?next=/live');
           return;
         }
         if (!res.ok) return;

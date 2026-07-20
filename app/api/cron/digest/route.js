@@ -4,10 +4,11 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { watBounds } from '@/lib/format';
 import { tgDigest } from '@/lib/telegram';
+import { getBearerToken } from '@/lib/bearer-token';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
-  const secret = req.headers.get('authorization')?.replace('Bearer ', '') || new URL(req.url).searchParams.get('secret');
+  const secret = getBearerToken(req);
   if (secret !== process.env.CRON_SECRET) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {

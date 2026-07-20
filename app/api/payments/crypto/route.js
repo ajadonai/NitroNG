@@ -19,6 +19,7 @@ import {
   validateNowPaymentsCreationResponse,
 } from '@/lib/nowpayments-verification';
 import { paymentStateFromTransactionStatus } from '@/lib/payment-state';
+import { getApplicationUrl } from '@/lib/env';
 
 const NOWPAYMENTS_URL = 'https://api.nowpayments.io/v1';
 const PROVIDER_TIMEOUT_MS = 15_000;
@@ -223,18 +224,6 @@ async function getNgnPerUsdRate() {
 
 function paymentReference() {
   return `NTR-CRYPTO-${Date.now().toString(36).toUpperCase()}-${randomUUID().slice(0, 8).toUpperCase()}`;
-}
-
-function callbackOrigin(value) {
-  try {
-    const url = new URL(value || 'https://nitro.ng');
-    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
-      return 'https://nitro.ng';
-    }
-    return url.origin;
-  } catch {
-    return 'https://nitro.ng';
-  }
 }
 
 function normalizedCouponId(value) {
@@ -525,6 +514,10 @@ export async function POST(req) {
       `Crypto deposit ₦${amountNgn.toLocaleString()} ($${expectedPriceAmount} USD)`,
       couponId ? `[coupon:${couponId}]` : '',
     ].filter(Boolean).join(' ');
+    // Resolve and validate the callback origin before persisting the durable
+    // attempt. A broken deployment URL must not strand a Pending row that can
+    // never be handed to the provider.
+    const origin = getApplicationUrl();
 
     let transaction;
     try {
@@ -552,7 +545,6 @@ export async function POST(req) {
       throw error;
     }
 
-    const origin = callbackOrigin(process.env.NEXT_PUBLIC_APP_URL);
     const providerResult = await postNowPaymentsInvoice({
       apiKey,
       payload: {

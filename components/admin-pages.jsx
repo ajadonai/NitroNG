@@ -186,50 +186,67 @@ export function AdminPaymentsPage({ dark, t }) {
             <div className="text-sm" style={{ color: t.textMuted }}>{statusFilter === "Pending" ? "Manual and crypto deposits will appear here" : "Try adjusting your search or filters"}</div>
           </div>
         ) : (
-          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+          <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, borderRadius: 14, overflow: "hidden" }}>
             {deposits.map((tx, i) => {
               const sc = statusColors[tx.status] || statusColors.Pending;
+              const initials = (tx.user || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+              const isPending = tx.status === "Pending";
               return (
-                <div key={tx.id} className="adm-deposit-row" style={{ borderBottom: i < deposits.length - 1 ? `1px solid ${t.cardBorder}` : "none", padding: "12px 16px" }}>
-                  <div className="adm-deposit-main">
-                    <div className="adm-deposit-info">
-                      {statusFilter === "all" && (
-                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                          <span className="text-[11px] py-0.5 px-2 rounded font-semibold" style={{ background: sc.bg, color: sc.color }}>{tx.status}</span>
-                          <span className="text-[11px] py-0.5 px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", color: t.textMuted }}>{tx.method}</span>
-                        </div>
-                      )}
-                      <div className="text-sm" style={{ color: t.text }}>{tx.user} · <span style={{ color: t.textMuted }}>{tx.email}</span></div>
-                      {tx.senderRef && (
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span className="text-[11px] py-0.5 px-2 rounded font-semibold" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", color: t.accent }}>Sender</span>
-                          <span className="text-[13px] font-semibold" style={{ color: t.text, textTransform: "capitalize" }}>{tx.senderRef.toLowerCase()}</span>
-                        </div>
-                      )}
-                      <div className="text-xs mt-1" style={{ color: t.textMuted }}>
-                        Ref: <span className="m" style={{ color: t.text }}>{tx.reference}</span>
-                        {tx.actionBy && <> · <span style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{tx.status === "Completed" ? "Approved" : "Rejected"} by {tx.actionBy}</span></>}
-                        {" · "}{fD(tx.date)}
+                <div key={tx.id} style={{ display: "flex", gap: 13, padding: "13px 16px", borderBottom: i < deposits.length - 1 ? `1px solid ${t.cardBorder}` : "none", alignItems: "flex-start", ...(isPending ? { boxShadow: `inset 2.5px 0 0 ${sc.color}` } : {}), transition: "background .12s" }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 99, background: dark ? "rgba(196,125,142,.22)" : "rgba(196,125,142,.16)", color: t.accent, fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>{initials}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: t.text }}>{tx.user}</span>
+                      <span style={{ fontSize: 12, color: t.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.email}</span>
+                      {statusFilter === "all" && <span className="text-[11px] py-0.5 px-2 rounded font-semibold" style={{ background: sc.bg, color: sc.color }}>{tx.status}</span>}
+                    </div>
+                    {tx.senderRef && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, minHeight: 20 }}>
+                        <span style={{ width: 50, flexShrink: 0, fontSize: 9, fontWeight: 800, letterSpacing: 1, color: t.textMuted }}>SENDER</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: t.text, textTransform: "capitalize" }}>{tx.senderRef.toLowerCase()}</span>
                       </div>
+                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, minHeight: 20 }}>
+                      <span style={{ width: 50, flexShrink: 0, fontSize: 9, fontWeight: 800, letterSpacing: 1, color: t.textMuted }}>REF</span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", border: `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.08)"}`, borderRadius: 7, padding: "3px 8px", fontSize: 11, color: dark ? "#c9c5c0" : "#4a4744" }}>
+                        <span className="m">{tx.reference}</span>
+                        <button onClick={() => { navigator.clipboard?.writeText(tx.reference); toast.success("Copied", tx.reference); }} style={{ display: "flex", color: t.textMuted, transition: ".12s", cursor: "pointer", background: "none", border: "none", padding: 0 }} title="Copy reference">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        </button>
+                      </span>
                     </div>
-                    <div className="adm-deposit-actions">
-                      <span className="text-base font-bold" style={{ color: sc.color }}>{fN(tx.amount)}</span>
-                      {tx.status === "Pending" && canApprove && (
-                        <div className="flex gap-1.5 mt-1">
-                          <button onClick={() => approveManual(tx)} className="adm-btn-sm max-md:!px-2" style={{ borderColor: dark ? "rgba(110,231,183,.28)" : "rgba(5,150,105,.24)", color: dark ? "#6ee7b7" : "#059669" }}>
-                            <span className="max-md:hidden">Approve</span>
-                            <svg className="hidden max-md:block" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                          </button>
-                          <button onClick={() => rejectManual(tx)} className="adm-btn-sm max-md:!px-2" style={{ borderColor: dark ? "rgba(220,38,38,.28)" : "rgba(220,38,38,.18)", color: dark ? "#fca5a5" : "#dc2626" }}>
-                            <span className="max-md:hidden">Reject</span>
-                            <svg className="hidden max-md:block" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                          </button>
-                        </div>
-                      )}
-                      {tx.status === "Pending" && !canApprove && (
-                        <span className="text-[11px] py-[3px] px-2.5 rounded mt-1" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", color: t.textMuted }}>View only</span>
-                      )}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, minHeight: 20 }}>
+                      <span style={{ width: 50, flexShrink: 0, fontSize: 9, fontWeight: 800, letterSpacing: 1, color: t.textMuted }}>DATE</span>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: t.textMuted }}>{fD(tx.date)}</span>
                     </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0, alignSelf: "stretch", justifyContent: "space-between" }}>
+                    <span className="m" style={{ fontSize: 17, fontWeight: 700, color: isPending ? sc.color : sc.color }}>{fN(tx.amount)}</span>
+                    {isPending && canApprove && (
+                      <div style={{ display: "flex", gap: 7 }}>
+                        <button onClick={() => approveManual(tx)} style={{ background: "linear-gradient(135deg,#34d399,#059669)", color: "#fff", fontSize: 12.5, fontWeight: 800, padding: "8px 16px", borderRadius: 9, display: "flex", alignItems: "center", gap: 5, transition: ".15s", boxShadow: "0 3px 10px rgba(5,150,105,.25)", border: "none", cursor: "pointer" }}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          <span className="max-md:hidden">Approve</span>
+                        </button>
+                        <button onClick={() => rejectManual(tx)} style={{ fontSize: 12.5, fontWeight: 700, padding: "8px 14px", borderRadius: 9, border: `1px solid ${dark ? "rgba(252,165,165,.35)" : "rgba(220,38,38,.35)"}`, color: dark ? "#fca5a5" : "#dc2626", transition: ".15s", cursor: "pointer", background: "none" }}>
+                          <span className="max-md:hidden">Reject</span>
+                          <svg className="hidden max-md:block" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                      </div>
+                    )}
+                    {isPending && !canApprove && (
+                      <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", color: t.textMuted }}>View only</span>
+                    )}
+                    {!isPending && tx.actionBy && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, color: sc.color, background: sc.bg, padding: "3px 8px", borderRadius: 6 }}>
+                        {tx.status === "Completed" ? (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        ) : (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        )}
+                        {tx.status === "Completed" ? "Approved" : "Rejected"} by {tx.actionBy}
+                      </span>
+                    )}
                   </div>
                 </div>
               );

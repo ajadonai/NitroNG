@@ -12,7 +12,7 @@ function FAQInner() {
   const [open, setOpen] = useState(null);
 
   const faqs = [
-    ["What is Nitro?", "Nitro is a content promotion platform built for Nigerian creators, businesses, and marketers. We help you grow your audience with real followers, likes, views, streams, and engagement across 35+ platforms — all priced in Naira."],
+    ["What is Nitro?", "Nitro is a content promotion platform built for Nigerian creators, businesses, and marketers. We offer 35+ service categories for followers, likes, views, streams, and engagement across major platforms — all priced in Naira."],
     ["Is Nitro safe to use?", "Yes. We never ask for your password or log into your account. All we need is your public profile or post link. Payments are processed through secure gateways."],
     ["Are the followers real people?", "We deliver engagement from real, active accounts — not empty bots. The quality depends on the tier you choose: Premium uses higher-quality accounts with lifetime refill. Standard offers a solid middle ground with 30-day refill. Budget is the cheapest option but has no refill."],
     ["Will my account get banned?", "No. We never access your account — all we need is a public link. Engagement is delivered gradually from real accounts, not in sudden spikes that would look suspicious."],
@@ -25,7 +25,7 @@ function FAQInner() {
     ["What payment methods do you accept?", "Bank transfer, debit/credit card, and cryptocurrency (USDT). Card and bank transfer payments are processed instantly. Crypto deposits typically confirm within 5–30 minutes."],
     ["What happens if my order doesn't deliver?", "If an order fails or is cancelled by the provider, your wallet is refunded automatically. If it partially delivers, you're refunded for the undelivered portion. No action needed from you."],
     ["Do you offer refills?", "Yes. Many services include refill coverage. If you lose followers or engagement after delivery, you can request a refill from your dashboard at no extra cost — as long as it's within the refill window shown on your order. Note: your profile must be public for refills to work. No refunds or refills are issued for orders placed on private profiles."],
-    ["Which platforms do you support?", "Instagram, TikTok, YouTube, Twitter/X, Facebook, Telegram, Threads, Bluesky, Spotify, Audiomack, Boomplay, Apple Music, SoundCloud, Snapchat, LinkedIn, Pinterest, Reddit, Discord, Twitch, Kick, WhatsApp, OnlyFans, Google Reviews, Trustpilot, and more — 35+ platforms in total."],
+    ["Which platforms do you support?", "Instagram, TikTok, YouTube, Twitter/X, Facebook, Telegram, Threads, Bluesky, Spotify, Audiomack, Boomplay, Apple Music, SoundCloud, Snapchat, LinkedIn, Pinterest, Reddit, Discord, Twitch, Kick, WhatsApp, OnlyFans, Google Reviews, Trustpilot, and more — with 35+ service categories in total."],
     ["Can I use Nitro for my clients?", "Absolutely. Many agencies and marketers use Nitro to manage campaigns for multiple clients. Bulk ordering is available from the dashboard."],
     ["How does the referral program work?", "Share your referral code with friends. When they sign up and make their first deposit, both of you earn a bonus credited to your wallets."],
     ["Can I get a cash refund to my bank account?", "No. All refunds are credited to your Nitro wallet balance only — we do not process refunds to bank accounts, cards, or any external payment method. Your wallet balance can be used for any future order."],

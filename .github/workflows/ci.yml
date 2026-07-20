@@ -6,19 +6,132 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
-  ci:
+  deployment-gate:
+    name: Deployment gate
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: nitro_ci
+          POSTGRES_USER: nitro_ci
+          POSTGRES_PASSWORD: nitro_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nitro_ci -d nitro_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://nitro_ci:nitro_ci_password@127.0.0.1:5432/nitro_ci
+      DIRECT_URL: postgresql://nitro_ci:nitro_ci_password@127.0.0.1:5432/nitro_ci
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The clean-database test materializes an immutable historical schema
+          # snapshot by commit ID before applying the remediation migrations.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.12.0
           cache: npm
-      - run: npm ci
-      - run: npx prisma generate
-      - run: npx vitest run
-      - run: npx next build
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Verify tracked migration manifest
+        run: npm run migrations:check:tracked
+      - name: Validate Prisma schema
+        run: npx prisma validate
+      - name: Materialize immutable pre-remediation baseline
         env:
-          JWT_SECRET: ci-build-only-user-secret-not-for-runtime
-          JWT_ADMIN_SECRET: ci-build-only-admin-secret-not-for-runtime
+          PRE_REMEDIATION_BASELINE_COMMIT: 7d2bb02f03f495af04e55279bc63df7dcd7944ff
+          PRE_REMEDIATION_SCHEMA_SHA256: 44ce5a054d9c2db1d47e2647f698a3a27e7f397808843897a295a3a02e870dbb
+        run: |
+          baseline_schema="$RUNNER_TEMP/pre-remediation-schema.prisma"
+          git show "${PRE_REMEDIATION_BASELINE_COMMIT}:prisma/schema.prisma" > "$baseline_schema"
+          actual_schema_sha256="$(sha256sum "$baseline_schema" | cut -d ' ' -f 1)"
+          test "$actual_schema_sha256" = "$PRE_REMEDIATION_SCHEMA_SHA256"
+          npx prisma validate --schema "$baseline_schema"
+          npx prisma db execute --schema "$baseline_schema" --file prisma/ci/enable-pg-trgm.sql
+          npx prisma db push --schema "$baseline_schema" --skip-generate
+
+          # Seed synthetic historical shapes so remediation data transforms and
+          # SQL-only privacy constraints execute against representative rows.
+          npx prisma db execute --schema prisma/schema.prisma --file prisma/ci/pre-remediation-fixture.sql
+
+          # db push materializes structure, not the one legacy data seed.
+          npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260711160000_seed_whatsapp_channel_setting/migration.sql
+
+          legacy_migrations=(
+            0_init
+            20260413230430_add_tour_fields
+            20260423120000_add_batch_id_to_orders
+            20260604120000_add_refill_tracking
+            20260607120000_add_link_clicks
+            20260607180000_add_archived_to_acquisition_links
+            20260607200000_add_dashboard_query_indexes
+            20260625120000_add_telegram_to_crew
+            20260630120000_add_payout_bank_snapshot
+            20260702120000_freeze_referral_attribution
+            20260705120000_add_signup_ip_index
+            20260708120000_add_link_creator
+            20260708130000_link_creator_not_null
+            20260709120000_add_tx_status_method_idx
+            20260709150000_add_search_trigram_indexes
+            20260709170000_add_user_tx_created_idx
+            20260710010000_add_users_created_at_idx
+            20260710120000_add_telegram_link_code_expires_at
+            20260710130000_unique_telegram_user_id
+            20260711160000_seed_whatsapp_channel_setting
+            20260711180000_add_winback_spend_floor
+            20260712000000_add_nitro_point_ledger
+            20260712010000_add_order_nitro_snapshot
+            20260712020000_add_order_nitro_points_redeemed
+          )
+          for migration in "${legacy_migrations[@]}"; do
+            npx prisma migrate resolve --schema prisma/schema.prisma --applied "$migration"
+          done
+      - name: Apply remediation migrations to clean PostgreSQL
+        run: npm run db:deploy
+      - name: Require complete migration status
+        run: npm run db:status
+      - name: Verify applied migration checksums
+        run: npm run migrations:verify:applied
+      - name: Verify remediation results on historical data shapes
+        run: npx prisma db execute --schema prisma/schema.prisma --file prisma/ci/assert-remediation-results.sql
+      - name: Require deployed schema to match the Prisma model
+        run: npx prisma migrate diff --exit-code --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma
+      - name: Run tests
+        run: npm test
+      - name: Build application
+        run: npm run build
+        env:
+          # Build-only values exercise the fail-closed production validator.
+          # Migration steps above continue to use the reachable PostgreSQL service.
+          DATABASE_URL: postgresql://nitro_ci:nitro_ci_password@database.nitro.invalid:5432/nitro_ci?sslmode=require
+          DIRECT_URL: postgresql://nitro_ci:nitro_ci_password@database.nitro.invalid:5432/nitro_ci?sslmode=require
+          NEXT_PUBLIC_APP_URL: https://build.nitro.invalid
+          NITRO_VALIDATE_PRODUCTION_ENV: "1"
+          JWT_SECRET: 0a9e797aa6211ef3371f31b148ca2535a60f3fe8af79ab6c674f2c77f449e338
+          JWT_ADMIN_SECRET: 1bdaf23bac95d15bd0055d76589610e57c51260f052ec42354c116277c1f07ca
+          CRON_SECRET: 2c3af0e3d9cc8e2457b17d859f5f54d635e04b37a2d6f1fe14839d1fef75eef2
+          IP_HASH_SALT: 3d9520f62de33a035bc8e01e98370df8a8d6a851724972387fe2772982beb6d8
+          GOOGLE_CLIENT_ID: 654321098765-build.apps.googleusercontent.com
+          GOOGLE_CLIENT_SECRET: 4eaf675e435891233c16037786353272
+          UPSTASH_REDIS_REST_URL: https://redis.nitro.invalid
+          UPSTASH_REDIS_REST_TOKEN: 5f45f3dc81f9bc09baa91c212985f32f
+          FLUTTERWAVE_WEBHOOK_HASH: 6a4f1ed1e15f7f677935d49edbcb04fb
+          NOWPAYMENTS_IPN_SECRET: 9d6a929b84f791b7032074907f40171a
+          BREVO_API_KEY: bf16187327250d342a63b93d21471814
+          MTP_API_KEY: c04ccdaf08f6124e
+          JAP_API_KEY: d18e276d18708c99
+          DAOSMM_API_KEY: e24931ac08e382cc
+          NEXT_PUBLIC_SENTRY_DSN: https://f320862a6bdd4c83a91d8f2378553bc8@sentry.nitro.invalid/1
+          SENTRY_ORG: nitro-build
+          SENTRY_PROJECT: nitro-web
+          SENTRY_AUTH_TOKEN: f4f897649f3556747c3017149265739c

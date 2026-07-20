@@ -19,19 +19,26 @@ Your growth, simplified. The social media growth platform built for Nigerian cre
 
 ## Getting Started
 
+Requires Node.js 22.12 or newer and PostgreSQL.
+
 ```bash
-npm install
+npm ci
 ```
 
 ### Database Setup
 
-1. Create a PostgreSQL database at [neon.tech](https://neon.tech)
+1. Start an isolated local PostgreSQL database, or create a disposable
+   non-production database at [neon.tech](https://neon.tech)
 2. Copy `.env.example` to `.env` and fill in your credentials
-3. Push the schema:
+3. Initialise a disposable local development database:
 
 ```bash
 npx prisma db push
 ```
+
+`db push` is for disposable development databases only. Production, staging, and
+shared databases use the checked-in migration history; see
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ### Run
 
@@ -56,3 +63,12 @@ docs/           Internal documentation
 
 - **Production**: nitro.ng
 - **Staging**: nitrosmm.vercel.app
+
+## Deployment safety
+
+- `npm run migrations:check` validates the checked-in migration list and every
+  immutable SHA-256 SQL checksum.
+- `npm run env:validate:production` validates a complete production environment.
+- `npm run db:status` fails when migrations are pending, failed, or divergent.
+- Vercel runs `npm run deploy:check`; production builds check environment and
+  migration status before compiling and never apply migrations implicitly.

@@ -4,6 +4,7 @@ import { watBounds } from '@/lib/format';
 import { getOrderOfferDisplay } from '@/lib/order-offer-display';
 import {
   internalDashboardAccessError,
+  renewInternalDashboardGrant,
   requireInternalDashboardAccess,
   withInternalDashboardNoStore,
 } from '@/lib/internal-dashboard-access';
@@ -89,7 +90,7 @@ export async function GET(req) {
       prisma.order.groupBy({ by: ['status'], where: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null }, _count: true }),
       prisma.order.findMany({
         where: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null, status: { notIn: ['Cancelled'] } },
-        select: { charge: true, status: true, quantity: true, remains: true, service: { select: { category: true } } },
+        select: { charge: true, status: true, quantity: true, remains: true, platformAtPurchase: true, service: { select: { category: true } } },
       }),
       prisma.order.findMany({
         where: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null },
@@ -243,7 +244,7 @@ export async function GET(req) {
     const PLATFORMS = new Set(['instagram', 'youtube', 'tiktok', 'facebook', 'twitter/x', 'telegram', 'spotify', 'twitch', 'snapchat', 'linkedin', 'threads', 'whatsapp', 'discord', 'pinterest', 'reddit']);
     const platformMap = {};
     allOrdersForPlatforms.forEach(o => {
-      const cat = (o.service?.category || '').toLowerCase();
+      const cat = (o.platformAtPurchase || o.service?.category || '').toLowerCase();
       if (!PLATFORMS.has(cat)) return;
       const name = cat === 'twitter/x' ? 'Twitter/X' : cat.charAt(0).toUpperCase() + cat.slice(1);
       if (!platformMap[name]) platformMap[name] = { name, orders: 0, revenue: 0 };
@@ -294,7 +295,7 @@ export async function GET(req) {
       d.setDate(d.getDate() + 1);
     }
 
-    return withInternalDashboardNoStore(Response.json({
+    const res = withInternalDashboardNoStore(Response.json({
       totalUsers,
       newUsersToday,
       revenueToday: todayRevenue,
@@ -383,6 +384,8 @@ export async function GET(req) {
       monthDepositors: monthDepositorsResult[0]?.count || 0,
       generatedAt: now.toISOString(),
     }));
+    renewInternalDashboardGrant(access, res);
+    return res;
   } catch (err) {
     log.error('Pulse API', err.message);
     return withInternalDashboardNoStore(Response.json({ error: 'Failed to load pulse data' }, { status: 500 }));

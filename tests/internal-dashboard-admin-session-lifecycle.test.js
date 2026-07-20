@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   compare: vi.fn(),
   hash: vi.fn(),
   hashToken: vi.fn(),
+  signAdminToken: vi.fn(() => 'signed-admin-token'),
   setAdminCookie: vi.fn(),
   clearAdminCookie: vi.fn(),
   clearGrant: vi.fn(),
@@ -56,7 +57,7 @@ vi.mock('bcryptjs', () => ({
   },
 }));
 vi.mock('@/lib/auth', () => ({
-  signAdminToken: () => 'signed-admin-token',
+  signAdminToken: (...args) => mocks.signAdminToken(...args),
   setAdminCookie: (...args) => mocks.setAdminCookie(...args),
   clearAdminCookie: (...args) => mocks.clearAdminCookie(...args),
   hashToken: (...args) => mocks.hashToken(...args),
@@ -108,11 +109,11 @@ const owner = {
   status: 'Active',
 };
 
-function loginRequest() {
+function loginRequest(remember) {
   return new Request('https://nitro.test/api/auth/admin/login', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email: owner.email, password: 'correct password' }),
+    body: JSON.stringify({ email: owner.email, password: 'correct password', remember }),
   });
 }
 
@@ -130,6 +131,7 @@ beforeEach(() => {
     ? 'previous-token-hash'
     : 'signed-token-hash');
   mocks.cookieGet.mockReturnValue(undefined);
+  mocks.signAdminToken.mockReturnValue('signed-admin-token');
   mocks.hash.mockResolvedValue('$2b$12$new-password-hash');
   mocks.logActivity.mockResolvedValue(undefined);
   mocks.requireAdmin.mockResolvedValue({ admin: owner, error: null });
@@ -141,6 +143,26 @@ beforeEach(() => {
 });
 
 describe('admin login session boundary', () => {
+  it.each([
+    [true, true],
+    [false, false],
+    [undefined, false],
+    ['true', false],
+  ])('passes a strict remember=%s decision through admin token and cookie issuance', async (
+    submitted,
+    expected,
+  ) => {
+    const response = await login(loginRequest(submitted));
+
+    expect(response.status).toBe(200);
+    expect(mocks.signAdminToken).toHaveBeenCalledWith(owner, { remember: expected });
+    expect(mocks.setAdminCookie).toHaveBeenCalledWith(
+      'signed-admin-token',
+      owner.role,
+      { remember: expected },
+    );
+  });
+
   it('locks and creates the durable session before replacing browser credentials', async () => {
     const response = await login(loginRequest());
 

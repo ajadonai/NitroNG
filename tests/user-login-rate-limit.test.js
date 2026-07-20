@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   rateLimit: vi.fn(),
   userFindUnique: vi.fn(),
   compare: vi.fn(),
+  signUserToken: vi.fn(() => 'signed-user-token'),
+  setUserCookie: vi.fn(),
   logError: vi.fn(),
 }));
 
@@ -34,8 +36,8 @@ vi.mock('bcryptjs', () => ({
   default: { compare: (...args) => mocks.compare(...args) },
 }));
 vi.mock('@/lib/auth', () => ({
-  signUserToken: () => 'signed-user-token',
-  setUserCookie: vi.fn(),
+  signUserToken: (...args) => mocks.signUserToken(...args),
+  setUserCookie: (...args) => mocks.setUserCookie(...args),
   detectDevice: () => ({ type: 'web', info: 'Test browser' }),
   hashToken: () => 'signed-token-hash',
 }));
@@ -48,11 +50,11 @@ vi.mock('@/lib/logger', () => ({
 
 const { POST: login } = await import('@/app/api/auth/login/route.js');
 
-function loginRequest(email = ' Person@Example.Test ') {
+function loginRequest(email = ' Person@Example.Test ', remember) {
   return new Request('https://nitro.test/api/auth/login', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.10' },
-    body: JSON.stringify({ email, password: 'correct password' }),
+    body: JSON.stringify({ email, password: 'correct password', remember }),
   });
 }
 
@@ -66,9 +68,42 @@ beforeEach(() => {
   mocks.rateLimit.mockResolvedValue(allowed());
   mocks.userFindUnique.mockResolvedValue(null);
   mocks.compare.mockResolvedValue(false);
+  mocks.signUserToken.mockReturnValue('signed-user-token');
 });
 
 describe('user login rate limits', () => {
+  it.each([
+    [true, true],
+    [false, false],
+    [undefined, false],
+    ['true', false],
+  ])('passes a strict remember=%s decision through token and cookie issuance', async (
+    submitted,
+    expected,
+  ) => {
+    const user = {
+      id: 'user-1',
+      name: 'Test Person',
+      firstName: 'Test',
+      email: 'person@example.test',
+      password: 'stored hash',
+      status: 'Active',
+      emailVerified: true,
+      balance: 0,
+      referralCode: 'NTR-TEST',
+    };
+    mocks.userFindUnique.mockResolvedValue(user);
+    mocks.compare.mockResolvedValue(true);
+
+    const response = await login(loginRequest('person@example.test', submitted));
+
+    expect(response.status).toBe(200);
+    expect(mocks.signUserToken).toHaveBeenCalledWith(user, { remember: expected });
+    expect(mocks.setUserCookie).toHaveBeenCalledWith('signed-user-token', {
+      remember: expected,
+    });
+  });
+
   it('retains the IP budget and adds a hashed account budget after normalization', async () => {
     const response = await login(loginRequest());
 

@@ -657,7 +657,7 @@ export async function PATCH(req) {
 
       for (const o of result.createdOrders) {
         const tierName = `${o.offerSnapshot.serviceNameAtPurchase}${o.offerSnapshot.tierNameAtPurchase ? ` — ${o.offerSnapshot.tierNameAtPurchase}` : ''}`;
-        tgNewOrder(o.orderId, tierName, o.qty, o.charge || 0, session.email, o.link, o.service?.category);
+        tgNewOrder(o.orderId, tierName, o.qty, o.charge || 0, session.email, o.link, o.offerSnapshot?.platformAtPurchase || '');
       }
 
       dispatchBatch(result.createdOrders, session.id, newBatchId, result.totalCharge).catch(e => log.error('Reorder dispatch', e.message));
@@ -968,7 +968,7 @@ export async function POST(req) {
     });
 
     for (const o of result.createdOrders) {
-      tgNewOrder(o.orderId, o.tierName, o.qty, o.finalCharge || o.charge, session.email, o.link, o.service?.category);
+      tgNewOrder(o.orderId, o.tierName, o.qty, o.finalCharge || o.charge, session.email, o.link, o.offerSnapshot?.platformAtPurchase || '');
     }
 
     const responseBody = {

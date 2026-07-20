@@ -3,11 +3,10 @@ import { headers } from 'next/headers';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
-
-const IP_SALT = process.env.IP_HASH_SALT || 'nitro-click-default-salt';
+import { getIpHashSalt } from '@/lib/env';
 
 function hashIp(ip) {
-  return crypto.createHash('sha256').update(ip + IP_SALT).digest('hex');
+  return crypto.createHash('sha256').update(ip + getIpHashSalt()).digest('hex');
 }
 
 function parseReferrer(ref) {
@@ -32,7 +31,6 @@ function parseReferrer(ref) {
 
 export async function GET(req, { params }) {
   const { slug } = await params;
-  const base = new URL('/', req.url).origin;
 
   let link;
   try {

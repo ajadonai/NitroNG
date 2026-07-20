@@ -741,11 +741,13 @@ describe('computeRefundSplit', () => {
     expect(pointsRestore).toBe(500000);
   });
 
-  it('floors fractional amounts', () => {
+  it('floors fractional splits to whole naira', () => {
     // charge=333333, redeemed=100000, refund=166666 (50% ish)
     const { walletRefund, pointsRestore } = computeRefundSplit(333333, 100000, 166666);
-    expect(walletRefund).toBe(Math.floor(233333 * 166666 / 333333));
-    expect(pointsRestore).toBe(Math.floor(100000 * 166666 / 333333));
+    expect(walletRefund).toBe(Math.floor((233333 * 166666 / 333333) / 100) * 100);
+    expect(pointsRestore).toBe(Math.floor((100000 * 166666 / 333333) / 100) * 100);
+    expect(walletRefund % 100).toBe(0);
+    expect(pointsRestore % 100).toBe(0);
   });
 });
 

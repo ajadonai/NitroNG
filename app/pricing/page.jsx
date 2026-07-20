@@ -3,11 +3,11 @@ import PricingView from '@/components/pricing-page';
 
 export const metadata = {
   title: 'Pricing | Affordable Content Promotion in Nigeria',
-  description: 'Transparent Naira pricing for content promotion across Instagram, TikTok, YouTube, X, and 35+ platforms. No hidden fees, no USD conversion.',
+  description: 'Transparent Naira pricing for 35+ content-promotion service categories across Instagram, TikTok, YouTube, X, and more. No hidden fees, no USD conversion.',
   alternates: { canonical: 'https://nitro.ng/pricing' },
   openGraph: {
     title: 'Pricing | The Nitro NG',
-    description: 'Transparent Naira pricing for Instagram, TikTok, YouTube, and 35+ platforms. No hidden fees.',
+    description: 'Transparent Naira pricing for 35+ service categories across Instagram, TikTok, YouTube, and more. No hidden fees.',
     url: 'https://nitro.ng/pricing',
     type: 'website',
   },

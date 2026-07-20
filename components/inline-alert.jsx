@@ -29,10 +29,16 @@ export default function InlineAlert({ type = "error", dark, children, onDismiss,
   const t = TYPES[type] || TYPES.error;
   const col = dark ? t.colD : t.colL;
   return (
-    <div className={`flex items-start gap-3 py-3 px-3.5 rounded-xl overflow-hidden relative ${className}`} style={{
+    <div
+      role={type === "error" ? "alert" : "status"}
+      aria-live={type === "error" ? "assertive" : "polite"}
+      aria-atomic="true"
+      className={`flex items-start gap-3 py-3 px-3.5 rounded-xl overflow-hidden relative ${className}`}
+      style={{
       background: dark ? t.bgD : t.bgL,
       border: `1px solid ${dark ? t.brdD : t.brdL}`,
-    }}>
+      }}
+    >
       <div className="absolute top-0 left-0 bottom-0 w-[3px]" style={{ background: col }} />
       <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ml-1" style={{ background: `${col}18` }}>
         {t.icon(col)}
@@ -41,7 +47,7 @@ export default function InlineAlert({ type = "error", dark, children, onDismiss,
         {children}
       </div>
       {onDismiss && (
-        <button onClick={onDismiss} className="bg-transparent border-none cursor-pointer p-1 shrink-0 opacity-50 hover:opacity-80" style={{ color: dark ? "#8a8580" : "#757170" }}>
+        <button type="button" aria-label="Dismiss message" onClick={onDismiss} className="bg-transparent border-none cursor-pointer p-1 shrink-0 opacity-50 hover:opacity-80" style={{ color: dark ? "#8a8580" : "#757170" }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       )}

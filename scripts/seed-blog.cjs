@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const SCRIPT_OPERATION = 'seed-blog-content';
 
 const posts = [
   {
@@ -374,21 +373,38 @@ Still have questions? Our support team is available 24/7 through the chat widget
   },
 ];
 
-async function seed() {
-  console.log("Seeding blog posts...");
+async function main({ prisma, dryRun, logger = console }) {
+  logger.log(`${dryRun ? 'Previewing' : 'Seeding'} blog posts...`);
   
   for (const post of posts) {
     const existing = await prisma.blogPost.findUnique({ where: { slug: post.slug } });
     if (existing) {
-      console.log(`  Skipped (exists): ${post.title}`);
+      logger.log(`  Skipped (exists): ${post.title}`);
+      continue;
+    }
+    if (dryRun) {
+      logger.log(`  [dry] Would create: ${post.title}`);
       continue;
     }
     await prisma.blogPost.create({ data: post });
-    console.log(`  Created: ${post.title}`);
+    logger.log(`  Created: ${post.title}`);
   }
   
   const count = await prisma.blogPost.count();
-  console.log(`\nDone. ${count} total blog posts.`);
+  logger.log(`\n${dryRun ? 'Preview complete' : 'Done'}. ${count} current blog posts.`);
+  return { dryRun, currentCount: count, configuredPosts: posts.length };
 }
 
-seed().catch(console.error).finally(() => prisma.$disconnect());
+if (require.main === module) {
+  import('./lib/guarded-operation.mjs')
+    .then(({ runGuardedPrismaScript }) => runGuardedPrismaScript({
+      operation: SCRIPT_OPERATION,
+      main,
+    }))
+    .catch((error) => {
+      console.error(error instanceof Error ? error.message : error);
+      process.exitCode = 1;
+    });
+}
+
+module.exports = { SCRIPT_OPERATION, main, posts };

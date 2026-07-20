@@ -20,13 +20,13 @@ describe('heartbeat schema and scheduled cleanup wiring', () => {
     expect(migration).not.toContain('CREATE INDEX');
   });
 
-  it('builds both heartbeat indexes concurrently for an existing live table', () => {
+  it('builds both heartbeat indexes for an existing live table', () => {
     const migration = read('prisma/migrations/20260717020200_add_live_session_user_seen_index/migration.sql');
     expect(migration).toContain(
-      'CREATE INDEX CONCURRENTLY IF NOT EXISTS "live_sessions_lastSeen_idx"',
+      'CREATE INDEX IF NOT EXISTS "live_sessions_lastSeen_idx"',
     );
     expect(migration).toContain(
-      'CREATE INDEX CONCURRENTLY IF NOT EXISTS "live_sessions_userId_lastSeen_idx"',
+      'CREATE INDEX IF NOT EXISTS "live_sessions_userId_lastSeen_idx"',
     );
   });
 

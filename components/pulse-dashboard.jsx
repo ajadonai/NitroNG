@@ -511,7 +511,7 @@ export default function PulseDashboard() {
       const res = await fetch('/api/pulse', { cache: 'no-store' });
       if (res.status === 401 || res.status === 403) {
         setData(null);
-        window.location.replace('/pulse');
+        window.location.replace('/api/internal-dashboard/access?next=/pulse');
         return;
       }
       if (!res.ok) throw new Error('fetch failed');
