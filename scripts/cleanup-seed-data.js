@@ -1,11 +1,13 @@
-// Run with: node scripts/cleanup-seed-data.js
-// This removes all test/seed orders and transactions so analytics shows real data only.
+// Local/test cleanup only. Running without NITRO_SCRIPT_MODE=apply is read-only.
+import {
+  isMainModule,
+  runGuardedPrismaScript,
+} from './lib/guarded-operation.mjs';
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+export const SCRIPT_OPERATION = 'cleanup-seed-data';
 
-async function main() {
-  console.log('=== Nitro Seed Data Cleanup ===\n');
+export async function main({ prisma, dryRun, logger = console }) {
+  logger.log('=== Nitro Seed Data Cleanup ===\n');
 
   // Check current state
   const orderCount = await prisma.order.count();
@@ -13,9 +15,9 @@ async function main() {
   const userCount = await prisma.user.count();
   const ordersWithCharge = await prisma.order.aggregate({ _sum: { charge: true, cost: true } });
 
-  console.log(`Users: ${userCount}`);
-  console.log(`Orders: ${orderCount} (total charge: ₦${((ordersWithCharge._sum.charge || 0) / 100).toLocaleString()}, cost: ₦${((ordersWithCharge._sum.cost || 0) / 100).toLocaleString()})`);
-  console.log(`Transactions: ${txCount}\n`);
+  logger.log(`Users: ${userCount}`);
+  logger.log(`Orders: ${orderCount} (total charge: ₦${((ordersWithCharge._sum.charge || 0) / 100).toLocaleString()}, cost: ₦${((ordersWithCharge._sum.cost || 0) / 100).toLocaleString()})`);
+  logger.log(`Transactions: ${txCount}\n`);
 
   // Get the real admin/owner emails to protect
   const protectedEmails = [
@@ -30,16 +32,21 @@ async function main() {
     select: { id: true, email: true, name: true },
   });
 
-  console.log(`Test users found: ${testUsers.length}`);
-  testUsers.forEach(u => console.log(`  - ${u.email} (${u.name})`));
+  logger.log(`Test users found: ${testUsers.length}`);
+  testUsers.forEach(u => logger.log(`  - ${u.email} (${u.name})`));
+
+  if (dryRun) {
+    logger.log('\n[DRY-RUN] Would delete every order and transaction, delete the users listed above, and reset remaining balances to zero.');
+    return { orderCount, txCount, testUserCount: testUsers.length, dryRun: true };
+  }
 
   // Delete all orders (these are test/seed orders)
   const deletedOrders = await prisma.order.deleteMany({});
-  console.log(`\nDeleted ${deletedOrders.count} orders`);
+  logger.log(`\nDeleted ${deletedOrders.count} orders`);
 
   // Delete all transactions (test deposits/charges)
   const deletedTxs = await prisma.transaction.deleteMany({});
-  console.log(`Deleted ${deletedTxs.count} transactions`);
+  logger.log(`Deleted ${deletedTxs.count} transactions`);
 
   // Delete test users (keep protected emails)
   if (testUsers.length > 0) {
@@ -57,22 +64,29 @@ async function main() {
 
     // Delete the test users
     const deletedUsers = await prisma.user.deleteMany({ where: { id: { in: testIds } } });
-    console.log(`Deleted ${deletedUsers.count} test users`);
+    logger.log(`Deleted ${deletedUsers.count} test users`);
   }
 
   // Reset balances on remaining users to 0 (remove seed deposits)
   await prisma.user.updateMany({ data: { balance: 0 } });
-  console.log('Reset all user balances to ₦0');
+  logger.log('Reset all user balances to ₦0');
 
   // Verify
   const finalOrders = await prisma.order.count();
   const finalTxs = await prisma.transaction.count();
   const finalUsers = await prisma.user.count();
-  console.log(`\n=== After cleanup ===`);
-  console.log(`Users: ${finalUsers}`);
-  console.log(`Orders: ${finalOrders}`);
-  console.log(`Transactions: ${finalTxs}`);
-  console.log('\nDone! Analytics should now show ₦0 across the board.');
+  logger.log(`\n=== After cleanup ===`);
+  logger.log(`Users: ${finalUsers}`);
+  logger.log(`Orders: ${finalOrders}`);
+  logger.log(`Transactions: ${finalTxs}`);
+  logger.log('\nDone! Analytics should now show ₦0 across the board.');
+  return { finalOrders, finalTxs, finalUsers, dryRun: false };
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect());
+if (isMainModule(import.meta.url)) {
+  runGuardedPrismaScript({ operation: SCRIPT_OPERATION, main })
+    .catch((error) => {
+      console.error(error instanceof Error ? error.message : error);
+      process.exitCode = 1;
+    });
+}

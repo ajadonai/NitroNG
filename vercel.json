@@ -1,4 +1,5 @@
 {
+  "buildCommand": "npm run deploy:check",
   "crons": [
     { "path": "/api/cron/orders", "schedule": "*/5 * * * *" },
     { "path": "/api/cron/payments", "schedule": "*/5 * * * *" },

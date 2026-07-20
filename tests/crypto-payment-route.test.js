@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   warn: vi.fn(),
   error: vi.fn(),
   info: vi.fn(),
+  getApplicationUrl: vi.fn(),
 }));
 
 vi.mock('@/lib/auth', () => ({ getCurrentUser: mocks.getCurrentUser }));
@@ -56,6 +57,9 @@ vi.mock('@/lib/nowpayments-payment', () => ({
 }));
 vi.mock('@/lib/deposit-notifications', () => ({
   notifyDepositFinalized: mocks.notifyDepositFinalized,
+}));
+vi.mock('@/lib/env', () => ({
+  getApplicationUrl: mocks.getApplicationUrl,
 }));
 
 vi.stubGlobal('fetch', mocks.fetch);
@@ -130,6 +134,7 @@ beforeEach(() => {
   mocks.transactionFindFirst.mockResolvedValue(null);
   mocks.transactionUpdateMany.mockResolvedValue({ count: 1 });
   mocks.notifyDepositFinalized.mockResolvedValue({ attempted: 1, failed: [] });
+  mocks.getApplicationUrl.mockReturnValue('https://nitro.example');
 });
 
 describe('POST /api/payments/crypto', () => {
@@ -171,6 +176,21 @@ describe('POST /api/payments/crypto', () => {
 
     expect(response.status).toBe(503);
     expect(body.error).toBe('Crypto payments are not available');
+    expect(mocks.transactionCreate).not.toHaveBeenCalled();
+    expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+
+  it('validates the callback origin before creating a durable Pending attempt', async () => {
+    mocks.getApplicationUrl.mockImplementationOnce(() => {
+      throw new Error('NEXT_PUBLIC_APP_URL is invalid');
+    });
+
+    const response = await POST(request('POST', {
+      amount: 50_000,
+      idempotencyKey: IDEMPOTENCY_KEY,
+    }));
+
+    expect(response.status).toBe(503);
     expect(mocks.transactionCreate).not.toHaveBeenCalled();
     expect(mocks.fetch).not.toHaveBeenCalled();
   });

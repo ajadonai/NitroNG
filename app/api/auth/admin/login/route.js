@@ -22,6 +22,7 @@ export async function POST(req) {
     const body = await req.json();
     const email = sanitizeEmail(body.email);
     const password = body.password;
+    const remember = body.remember === true;
 
     if (!email || !password) {
       return error('Email and password are required');
@@ -65,7 +66,7 @@ export async function POST(req) {
 
     // Sign first so the durable session can be created while the admin row is
     // locked. The cookie is not exposed until that transaction succeeds.
-    const token = signAdminToken(admin);
+    const token = signAdminToken(admin, { remember });
     const hdrs = await headers();
     const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown';
     const device = detectDevice(hdrs.get('user-agent'));
@@ -117,7 +118,7 @@ export async function POST(req) {
     // A browser may switch directly from one admin account to another. Never
     // let the previous account's short-lived dashboard grant cross that boundary.
     clearInternalDashboardGrantCookie(cookieStore);
-    await setAdminCookie(token, admin.role);
+    await setAdminCookie(token, admin.role, { remember });
 
     return ok({
       admin: {

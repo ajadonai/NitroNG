@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { parseFbCookies } from '@/lib/meta-capi';
 import { isReservedDepositEffectKey } from '@/lib/deposit-finalization';
+import { getApplicationUrl } from '@/lib/env';
 
 async function getGatewayKeys(gatewayId) {
   // Try Settings DB first
@@ -65,7 +66,7 @@ export async function POST(req) {
 
     const amountKobo = Math.round(amountNum * 100);
     const reference = `NTR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
-    const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://nitro.ng';
+    const origin = getApplicationUrl();
 
     // Create pending transaction with idempotency key
     await prisma.transaction.create({

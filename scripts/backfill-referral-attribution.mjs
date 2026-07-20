@@ -4,18 +4,20 @@
  * For users with a signupSource but no referredByMemberId, resolves the
  * acquisition link and freezes the affiliate member and link IDs.
  *
- * Safe: only writes to users that haven't been backfilled yet. Idempotent.
+ * Idempotent, local/test-only, and read-only unless apply mode is confirmed.
  *
  * Usage:
- *   DRY_RUN=1 node scripts/backfill-referral-attribution.mjs   # preview
- *   node scripts/backfill-referral-attribution.mjs               # apply
+ *   node scripts/backfill-referral-attribution.mjs             # preview
+ *   NITRO_SCRIPT_MODE=apply NITRO_SCRIPT_CONFIRM=<phrase> ...  # apply
  */
-import { PrismaClient } from '@prisma/client';
+import {
+  isMainModule,
+  runGuardedPrismaScript,
+} from './lib/guarded-operation.mjs';
 
-const prisma = new PrismaClient();
-const DRY_RUN = process.env.DRY_RUN === '1';
+export const SCRIPT_OPERATION = 'backfill-referral-attribution';
 
-async function main() {
+export async function main({ prisma, dryRun, logger = console }) {
   const users = await prisma.user.findMany({
     where: {
       signupSource: { not: null },
@@ -25,7 +27,7 @@ async function main() {
     select: { id: true, signupSource: true },
   });
 
-  console.log(`Found ${users.length} users to backfill${DRY_RUN ? ' (dry run)' : ''}`);
+  logger.log(`Found ${users.length} users to backfill${dryRun ? ' (dry run)' : ''}`);
 
   const slugs = [...new Set(users.map(u => u.signupSource))];
   const links = await prisma.acquisitionLink.findMany({
@@ -44,8 +46,8 @@ async function main() {
       continue;
     }
 
-    if (DRY_RUN) {
-      console.log(`  [dry] ${user.id} → member=${link.affiliateId}, link=${link.id}`);
+    if (dryRun) {
+      logger.log(`  [dry] ${user.id} → member=${link.affiliateId}, link=${link.id}`);
     } else {
       await prisma.user.update({
         where: { id: user.id },
@@ -58,9 +60,14 @@ async function main() {
     updated++;
   }
 
-  console.log(`Done. Updated: ${updated}, Skipped (no link): ${skipped}`);
+  logger.log(`${dryRun ? 'Preview complete' : 'Done'}. ${dryRun ? 'Would update' : 'Updated'}: ${updated}, Skipped (no link): ${skipped}`);
+  return { dryRun, updated, skipped };
 }
 
-main()
-  .catch(e => { console.error(e); process.exit(1); })
-  .finally(() => prisma.$disconnect());
+if (isMainModule(import.meta.url)) {
+  runGuardedPrismaScript({ operation: SCRIPT_OPERATION, main })
+    .catch((error) => {
+      console.error(error instanceof Error ? error.message : error);
+      process.exitCode = 1;
+    });
+}

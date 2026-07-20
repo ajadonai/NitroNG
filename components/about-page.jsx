@@ -35,10 +35,10 @@ function AboutInner() {
           {/* Stats strip */}
           <section className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-14">
             {[
-              [stats?.orders || '50K+', 'Orders delivered'],
-              [stats?.users || '2.3K', 'Active creators'],
-              [(stats?.platforms || 35) + '+', 'Platforms'],
-              [stats?.deliveryRate ? stats.deliveryRate + '%' : '98%', 'Delivery rate'],
+              [stats?.orders || '50K+', 'Orders placed'],
+              [stats?.users || '2.3K', 'Accounts created'],
+              [(stats?.platforms || 35) + '+', 'Service categories'],
+              [stats?.deliveryRate ? stats.deliveryRate + '%' : '98%', 'Delivery benchmark'],
             ].map(([num, label]) => (
               <div key={label} className="rounded-2xl p-5 text-center" style={{ background: cardBg, border: `1px solid ${border}` }}>
                 <div className="text-2xl font-bold mb-1" style={{ color: accent }}>{num}</div>
@@ -55,7 +55,7 @@ function AboutInner() {
                 We make social media growth simple. Whether you're a creator trying to hit your first 10,000 followers, a business building credibility online, or a marketer managing multiple brands — Nitro handles the numbers so you can focus on your content.
               </p>
               <p className="text-[14px] leading-[1.75]" style={{ color: t.textSoft }}>
-                We support 35+ platforms including Instagram, TikTok, YouTube, X, Facebook, Telegram, and Spotify. Every service is priced in Naira with no dollar conversion, no hidden fees, and no password required — just your public profile link.
+                We offer 35+ service categories across platforms including Instagram, TikTok, YouTube, X, Facebook, Telegram, and Spotify. Every service is priced in Naira with no dollar conversion, no hidden fees, and no password required — just your public profile link.
               </p>
             </section>
 

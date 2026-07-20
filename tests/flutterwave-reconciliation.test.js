@@ -58,7 +58,7 @@ function transaction(overrides = {}) {
     amount: 500_000,
     status: 'Pending',
     note: 'Flutterwave deposit',
-    createdAt: new Date('2026-07-16T10:00:00.000Z'),
+    createdAt: new Date(),
     ...overrides,
   };
 }
@@ -395,6 +395,28 @@ describe('reconcileFlutterwaveDeposit', () => {
       expect(mocks.finalizeDeposit).not.toHaveBeenCalled();
     },
   );
+
+  it('cancels an abandoned deposit when provider confirms pending after one hour', async () => {
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    useStoredTransaction(transaction({ status: 'Pending', createdAt: twoHoursAgo }));
+    const fetchImpl = flutterwaveResponse('pending');
+
+    const result = await reconcileFlutterwaveDeposit({
+      transaction: { ...storedTransaction },
+      secretKey: 'FLWSECK_TEST',
+      fetchImpl,
+      timeoutMs: 25,
+    });
+
+    expectResult(result, {
+      paymentState: 'failed',
+      transactionStatus: 'Cancelled',
+      retryable: false,
+      newlyFinalized: false,
+    });
+    expect(statusWrites()).toContain('Cancelled');
+    expect(mocks.finalizeDeposit).not.toHaveBeenCalled();
+  });
 
   it('records an explicit Flutterwave failure as Failed and does not finalize', async () => {
     useStoredTransaction(transaction({ status: 'Processing' }));

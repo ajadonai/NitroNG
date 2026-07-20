@@ -136,8 +136,8 @@ describe('account deletion tombstones', () => {
     const other = accountDeletionTombstones('other@example.com');
 
     expect(first).toEqual(same);
-    expect(first.email).toMatch(/^deleted-[a-f0-9]{64}@accounts\.invalid$/);
-    expect(first.referralCode).toMatch(/^deleted-[a-f0-9]{64}\.invalid$/);
+    expect(first.email).toMatch(/^deleted-[a-f0-9]{10}@accounts\.invalid$/);
+    expect(first.referralCode).toMatch(/^deleted-[a-f0-9]{10}\.invalid$/);
     expect(first.email).not.toContain('person@example.com');
     expect(first.referralCode).not.toBe(other.referralCode);
     expect(first.closureReference).not.toBe(other.closureReference);

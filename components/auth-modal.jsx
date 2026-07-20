@@ -56,7 +56,7 @@ function PwStrength({ pw, t }) {
   );
 }
 
-function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: resetTokenProp }) {
+function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode, resetToken: resetTokenProp }) {
   const [method, setMethod] = useState('email');
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
@@ -74,7 +74,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
   const [phone, setPhone] = useState('');
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
-  const [refCode, setRefCode] = useState('');
+  const [refCode, setRefCode] = useState(referralCode || '');
   const [agree, setAgree] = useState(false);
   const [phoneTaken, setPhoneTaken] = useState(false);
   const [phoneChecking, setPhoneChecking] = useState(false);
@@ -163,12 +163,6 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
     };
   }, [phone, mode]);
 
-  useEffect(() => {
-    const p = new URLSearchParams(window.location.search);
-    const r = p.get('ref');
-    if (r) setRefCode(r);
-  }, []);
-
   const handleLogin = async () => {
     setError('');
     const contact = method === 'email' ? email : phone;
@@ -184,6 +178,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
         body: JSON.stringify({
           email: method === 'email' ? email : `+234${phone}`,
           password: pw,
+          remember,
         }),
       });
       const data = await res.json();
@@ -310,10 +305,43 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
   const pwMatch = pw2.length > 0 && pw === pw2;
   const pwMismatch = pw2.length > 0 && pw !== pw2;
 
+  const handleSignupDetails = () => {
+    setError('');
+    if (!firstName || !lastName) {
+      setError('Please enter your first and last name');
+      return;
+    }
+    if (method === 'email' && (!email || !validEmail)) {
+      setError('Please enter a valid email');
+      return;
+    }
+    if (!validPhone) {
+      setError('Please enter a valid Nigerian phone number');
+      return;
+    }
+    if (phoneTaken) {
+      setError('This phone number is already registered');
+      return;
+    }
+    setName(`${firstName} ${lastName}`);
+    setStep(2);
+  };
+
+  const handleAuthSubmit = (event) => {
+    event.preventDefault();
+    if (authLoading) return;
+    if (mode === 'login') return handleLogin();
+    if (mode === 'signup' && step === 1) return handleSignupDetails();
+    if (mode === 'signup') return handleSignup();
+    if (mode === 'forgot' && !forgotSent) return handleForgot();
+    if (mode === 'reset' && !resetDone) return handleReset();
+  };
+
   const EyeBtn = ({ show, toggle }) => (
     <button
       onClick={toggle}
       type="button"
+      aria-label={show ? 'Hide password' : 'Show password'}
       className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent p-0.5"
       style={{ color: t.textMuted }}
     >
@@ -358,6 +386,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
       }}
     >
       <button
+        type="button"
         onClick={() => setMethod('email')}
         className="flex-1 py-[9px] rounded-lg text-sm font-medium"
         style={{
@@ -368,6 +397,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
         Email
       </button>
       <button
+        type="button"
         onClick={() => setMethod('phone')}
         className="flex-1 py-[9px] rounded-lg text-sm font-medium"
         style={{
@@ -403,6 +433,8 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
       >
         {/* Close button */}
         <button
+          type="button"
+          aria-label="Close authentication dialog"
           onClick={onClose}
           className="auth-close absolute top-3.5 right-3.5 w-8 h-8 rounded-lg flex items-center justify-center text-base font-semibold leading-none"
           style={{
@@ -456,6 +488,9 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
         <div className="h-9 mb-0.5 flex items-center">
           {error ? (
             <div
+              role="alert"
+              aria-live="assertive"
+              aria-atomic="true"
               className="w-full px-3 py-2 rounded-lg text-[13px] leading-tight"
               style={{
                 background: dark ? 'rgba(220,38,38,0.1)' : '#fef2f2',
@@ -468,11 +503,14 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
           ) : null}
         </div>
 
+        <form onSubmit={handleAuthSubmit} noValidate>
+
         {/* ====== LOGIN MODE ====== */}
         {mode === 'login' && (
           <>
             {/* Google button */}
             <button
+              type="button"
               onClick={() => {
                 setError('');
                 setAuthLoading(true);
@@ -539,6 +577,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
             {method === 'email' ? (
               <input
                 id="login-identity"
+                name="email"
                 value={email}
                 onChange={(e) =>
                   setEmail(e.target.value.trim().toLowerCase().slice(0, 254))
@@ -567,6 +606,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
                 </div>
                 <input
                   id="login-identity"
+                  name="phone"
                   value={phone}
                   onChange={(e) =>
                     setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))
@@ -589,12 +629,13 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
             <div className="relative mb-4">
               <input
                 id="login-password"
+                name="password"
                 value={pw}
                 onChange={(e) => setPw(e.target.value.slice(0, 128))}
                 placeholder="Enter password"
                 maxLength={128}
                 type={showPw ? 'text' : 'password'}
-                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                autoComplete="current-password"
                 className="w-full pl-3.5 pr-11 py-3 rounded-xl text-[15px] outline-none"
                 style={{
                   background: t.inputBg,
@@ -607,8 +648,10 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
 
             {/* Remember me + Forgot */}
             <div className="flex justify-between items-center mb-6">
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label htmlFor="login-remember" className="flex items-center gap-2 cursor-pointer">
                 <input
+                  id="login-remember"
+                  name="remember"
                   type="checkbox"
                   checked={remember}
                   onChange={(e) => setRemember(e.target.checked)}
@@ -623,6 +666,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
                 </span>
               </label>
               <button
+                type="button"
                 onClick={() => setMode('forgot')}
                 className="bg-transparent text-[13px] font-medium"
                 style={{ color: t.accent }}
@@ -633,7 +677,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
 
             {/* Login button */}
             <button
-              onClick={handleLogin}
+              type="submit"
               disabled={authLoading}
               className="w-full py-3.5 rounded-xl text-white text-base font-semibold mb-5 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]"
               style={{
@@ -654,6 +698,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
             >
               Don&apos;t have an account?{' '}
               <button
+                type="button"
                 onClick={() => setMode('signup')}
                 className="bg-transparent font-semibold text-sm"
                 style={{ color: t.accent }}
@@ -670,6 +715,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
             <div className="text-center mb-3"><span className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-[12px] font-semibold" style={{background:dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.1)",color:t.accent}}>🎁 Get up to ₦3,000 free on your first deposit</span></div>
             {/* Google button */}
             <button
+              type="button"
               onClick={() => {
                 setError('');
                 { const gp = new URLSearchParams(); if (refCode) gp.set('ref', refCode); if (via) gp.set('via', via); window.location.href = `/api/auth/google${gp.size ? `?${gp}` : ''}`; }
@@ -734,6 +780,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
                 <Lbl t={t} htmlFor="signup-first">First Name</Lbl>
                 <input
                   id="signup-first"
+                  name="firstName"
                   value={firstName}
                   onChange={(e) =>
                     setFirstName(
@@ -745,6 +792,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
                   placeholder="First"
                   maxLength={50}
                   type="text"
+                  autoComplete="given-name"
                   className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none"
                   style={{
                     background: t.inputBg,
@@ -757,6 +805,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
                 <Lbl t={t} htmlFor="signup-last">Last Name</Lbl>
                 <input
                   id="signup-last"
+                  name="lastName"
                   value={lastName}
                   onChange={(e) =>
                     setLastName(
@@ -768,6 +817,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
                   placeholder="Last"
                   maxLength={50}
                   type="text"
+                  autoComplete="family-name"
                   className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none"
                   style={{
                     background: t.inputBg,
@@ -782,6 +832,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
             <Lbl t={t} htmlFor="signup-email">Email Address</Lbl>
             <input
               id="signup-email"
+              name="email"
               value={email}
               onChange={(e) =>
                 setEmail(e.target.value.trim().toLowerCase().slice(0, 254))
@@ -838,6 +889,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
               </div>
               <input
                 id="signup-phone"
+                name="phone"
                 value={phone}
                 onChange={(e) =>
                   setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))
@@ -875,27 +927,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
 
             {/* Continue button */}
             <button
-              onClick={() => {
-                setError('');
-                if (!firstName || !lastName) {
-                  setError('Please enter your first and last name');
-                  return;
-                }
-                if (method === 'email' && (!email || !validEmail)) {
-                  setError('Please enter a valid email');
-                  return;
-                }
-                if (!validPhone) {
-                  setError('Please enter a valid Nigerian phone number');
-                  return;
-                }
-                if (phoneTaken) {
-                  setError('This phone number is already registered');
-                  return;
-                }
-                setName(`${firstName} ${lastName}`);
-                setStep(2);
-              }}
+              type="submit"
               className="w-full py-3.5 rounded-xl text-white text-base font-semibold mb-5 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]"
               style={{ background: t.btnPrimary }}
             >
@@ -909,6 +941,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
             >
               Already have an account?{' '}
               <button
+                type="button"
                 onClick={() => setMode('login')}
                 className="bg-transparent font-semibold text-sm"
                 style={{ color: t.accent }}
@@ -939,11 +972,13 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
             <div className="relative mb-1">
               <input
                 id="signup-password"
+                name="password"
                 placeholder="Min. 6 characters"
                 value={pw}
                 onChange={(e) => setPw(e.target.value.slice(0, 128))}
                 type={showPw ? 'text' : 'password'}
                 maxLength={128}
+                autoComplete="new-password"
                 className="w-full pl-3.5 pr-11 py-3 rounded-xl text-[15px] outline-none"
                 style={{
                   background: t.inputBg,
@@ -965,11 +1000,13 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
             <div className="relative mb-1">
               <input
                 id="signup-confirm"
+                name="passwordConfirmation"
                 value={pw2}
                 onChange={(e) => setPw2(e.target.value.slice(0, 128))}
                 placeholder="Re-enter password"
                 maxLength={128}
                 type={showPw2 ? 'text' : 'password'}
+                autoComplete="new-password"
                 className="w-full pl-3.5 pr-11 py-3 rounded-xl text-[15px] outline-none"
                 style={{
                   background: t.inputBg,
@@ -1022,6 +1059,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
             </Lbl>
             <input
               id="signup-referral"
+              name="referralCode"
               value={refCode}
               onChange={(e) =>
                 setRefCode(
@@ -1045,6 +1083,8 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
             {/* Terms checkbox */}
             <label className="flex items-start gap-2.5 mb-3 cursor-pointer">
               <input
+                id="signup-terms"
+                name="termsAccepted"
                 type="checkbox"
                 checked={agree}
                 onChange={(e) => setAgree(e.target.checked)}
@@ -1076,7 +1116,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
 
             {/* Create account button */}
             <button
-              onClick={handleSignup}
+              type="submit"
               disabled={authLoading}
               className="w-full py-3.5 rounded-xl text-white text-base font-semibold mb-2 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]"
               style={{
@@ -1092,6 +1132,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
 
             {/* Back button */}
             <button
+              type="button"
               onClick={() => setStep(1)}
               className="w-full py-1.5 rounded-[10px] bg-transparent text-sm font-medium"
               style={{ color: t.textSoft }}
@@ -1118,19 +1159,19 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
           <>
             <Lbl t={t} htmlFor="reset-pw">New Password</Lbl>
             <div className="relative mb-1">
-              <input id="reset-pw" value={pw} onChange={(e) => setPw(e.target.value.slice(0, 128))} placeholder="Enter new password" type={showPw ? 'text' : 'password'} className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none pr-11" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+              <input id="reset-pw" name="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value.slice(0, 128))} placeholder="Enter new password" type={showPw ? 'text' : 'password'} className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none pr-11" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
               <EyeBtn show={showPw} toggle={() => setShowPw(!showPw)} />
             </div>
             <PwStrength pw={pw} t={t} />
 
             <Lbl t={t} htmlFor="reset-pw2">Confirm Password</Lbl>
             <div className="relative mb-5">
-              <input id="reset-pw2" value={pw2} onChange={(e) => setPw2(e.target.value.slice(0, 128))} placeholder="Confirm new password" type={showPw2 ? 'text' : 'password'} className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none pr-11" style={{ background: t.inputBg, border: `1px solid ${pwMismatch ? '#dc2626' : t.inputBorder}`, color: t.text }} />
+              <input id="reset-pw2" name="passwordConfirmation" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value.slice(0, 128))} placeholder="Confirm new password" type={showPw2 ? 'text' : 'password'} className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none pr-11" style={{ background: t.inputBg, border: `1px solid ${pwMismatch ? '#dc2626' : t.inputBorder}`, color: t.text }} />
               <EyeBtn show={showPw2} toggle={() => setShowPw2(!showPw2)} />
               {pwMismatch && <p className="text-[12px] mt-1 font-medium" style={{ color: '#dc2626' }}>Passwords do not match</p>}
             </div>
 
-            <button onClick={handleReset} disabled={authLoading || !pw || !pwMatch} className="w-full py-3.5 rounded-xl text-white text-base font-semibold mb-5 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: authLoading ? '#999' : t.btnPrimary, opacity: authLoading || !pw || !pwMatch ? 0.7 : 1 }}>
+            <button type="submit" disabled={authLoading || !pw || !pwMatch} className="w-full py-3.5 rounded-xl text-white text-base font-semibold mb-5 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: authLoading ? '#999' : t.btnPrimary, opacity: authLoading || !pw || !pwMatch ? 0.7 : 1 }}>
               {authLoading && <NitroLoader size={16} mono ariaHidden />}
               {authLoading ? 'Resetting...' : 'Reset Password'}
             </button>
@@ -1139,13 +1180,13 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
 
         {/* ====== RESET MODE — DONE ====== */}
         {mode === 'reset' && resetDone && (
-          <>
+          <div role="status" aria-live="polite" aria-atomic="true">
             <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: dark ? 'rgba(110,231,183,0.1)' : 'rgba(5,150,105,0.06)', border: `2px solid ${t.green}` }}>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
             </div>
             <p className="text-[15px] text-center mb-6" style={{ color: t.textSoft }}>Your password has been reset. You can now log in.</p>
-            <button onClick={() => { setMode('login'); window.history.replaceState({}, '', '/'); }} className="w-full py-3.5 rounded-xl text-white text-base font-semibold" style={{ background: t.btnPrimary }}>Log In</button>
-          </>
+            <button type="button" onClick={() => { setMode('login'); window.history.replaceState({}, '', '/'); }} className="w-full py-3.5 rounded-xl text-white text-base font-semibold" style={{ background: t.btnPrimary }}>Log In</button>
+          </div>
         )}
 
         {/* ====== FORGOT MODE — FORM ====== */}
@@ -1154,12 +1195,14 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
             <Lbl t={t} htmlFor="forgot-email">Email Address</Lbl>
             <input
               id="forgot-email"
+              name="email"
               value={email}
               onChange={(e) =>
                 setEmail(e.target.value.trim().toLowerCase().slice(0, 254))
               }
               placeholder="you@example.com"
               type="email"
+              autoComplete="email"
               className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none mb-5"
               style={{
                 background: t.inputBg,
@@ -1169,7 +1212,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
             />
 
             <button
-              onClick={handleForgot}
+              type="submit"
               disabled={authLoading}
               className="w-full py-3.5 rounded-xl text-white text-base font-semibold mb-5 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]"
               style={{
@@ -1189,6 +1232,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
             >
               Remember your password?{' '}
               <button
+                type="button"
                 onClick={() => setMode('login')}
                 className="bg-transparent font-semibold text-sm"
                 style={{ color: t.accent }}
@@ -1201,7 +1245,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
 
         {/* ====== FORGOT MODE — SENT ====== */}
         {mode === 'forgot' && forgotSent && (
-          <>
+          <div role="status" aria-live="polite" aria-atomic="true">
             <div
               className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
               style={{
@@ -1244,14 +1288,16 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, resetToken: 
             </p>
 
             <button
+              type="button"
               onClick={() => setMode('login')}
               className="w-full py-3.5 rounded-xl text-white text-base font-semibold"
               style={{ background: t.btnPrimary }}
             >
               Back to Login
             </button>
-          </>
+          </div>
         )}
+        </form>
       </div>
     </div>
   );

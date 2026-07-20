@@ -70,7 +70,7 @@ describe('internal dashboard grant mint route', () => {
     expect(response.headers.get('Cache-Control')).toContain('no-store');
     const cookie = response.headers.get('set-cookie');
     expect(cookie).toContain('nitro_internal_dashboard_access=');
-    expect(cookie).toContain('Max-Age=900');
+    expect(cookie).toContain('Max-Age=28800');
     expect(cookie).toContain('Path=/');
     expect(cookie).toContain('HttpOnly');
     expect(cookie).toContain('Secure');

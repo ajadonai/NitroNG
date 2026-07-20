@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { cookies } from 'next/headers';
+import { getApplicationUrl } from '@/lib/env';
 
 export async function GET(req) {
   try {
     const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-    const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://nitro.ng';
+    const APP_URL = getApplicationUrl();
     const REDIRECT_URI = `${APP_URL}/api/auth/google/callback`;
 
     if (!GOOGLE_CLIENT_ID) {

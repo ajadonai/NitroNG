@@ -1,14 +1,24 @@
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import {
+  isMainModule,
+  runGuardedPrismaScript,
+} from './lib/guarded-operation.mjs';
 
-const prisma = new PrismaClient();
+export const SCRIPT_OPERATION = 'seed-test-user';
 
-async function main() {
+export async function main({ prisma, dryRun, logger = console }) {
   const email = 'testuser@gmail.com';
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (dryRun) {
+    const serviceCount = await prisma.service.count();
+    logger.log(`[DRY-RUN] Would ${existing ? 'replace' : 'create'} ${email}, then create sample orders and transactions using ${Math.min(serviceCount, 8)} services.`);
+    return { dryRun: true, existing: Boolean(existing), serviceCount };
+  }
+
   const password = await bcrypt.hash('12345678', 12);
 
   // Delete existing user if present
-  const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     await prisma.ticketReply.deleteMany({ where: { ticket: { userId: existing.id } } });
     await prisma.ticket.deleteMany({ where: { userId: existing.id } });
@@ -16,7 +26,7 @@ async function main() {
     await prisma.transaction.deleteMany({ where: { userId: existing.id } });
     await prisma.order.deleteMany({ where: { userId: existing.id } });
     await prisma.user.delete({ where: { id: existing.id } });
-    console.log('Deleted existing testuser');
+    logger.log('Deleted existing testuser');
   }
 
   // Create user — balance in kobo (₦25,000 = 2500000)
@@ -37,14 +47,13 @@ async function main() {
       status: 'Active',
     },
   });
-  console.log(`Created user: ${user.id} (${user.email})`);
+  logger.log(`Created user: ${user.id} (${user.email})`);
 
   // Get services for orders
   const services = await prisma.service.findMany({ take: 8 });
   if (services.length === 0) {
-    console.log('No services found — skipping orders/transactions');
-    await prisma.$disconnect();
-    return;
+    logger.log('No services found — skipping orders/transactions');
+    return { dryRun: false, userId: user.id, orders: 0, transactions: 0 };
   }
 
   // Helper — date N days ago
@@ -92,7 +101,7 @@ async function main() {
       },
     });
   }
-  console.log(`Created ${orders.length} orders`);
+  logger.log(`Created ${orders.length} orders`);
 
   // ── Transactions ──
   const txs = [
@@ -126,16 +135,26 @@ async function main() {
       },
     });
   }
-  console.log(`Created ${txs.length} transactions`);
+  logger.log(`Created ${txs.length} transactions`);
 
-  console.log('\n✅ Test user seeded');
-  console.log('   Email: testuser@gmail.com');
-  console.log('   Password: 12345678');
-  console.log('   Balance: ₦25,000');
-  console.log(`   Orders: ${orders.length}`);
-  console.log(`   Transactions: ${txs.length}`);
-
-  await prisma.$disconnect();
+  logger.log('\n✅ Test user seeded');
+  logger.log('   Email: testuser@gmail.com');
+  logger.log('   Password: 12345678');
+  logger.log('   Balance: ₦25,000');
+  logger.log(`   Orders: ${orders.length}`);
+  logger.log(`   Transactions: ${txs.length}`);
+  return {
+    dryRun: false,
+    userId: user.id,
+    orders: orders.length,
+    transactions: txs.length,
+  };
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+if (isMainModule(import.meta.url)) {
+  runGuardedPrismaScript({ operation: SCRIPT_OPERATION, main })
+    .catch((error) => {
+      console.error(error instanceof Error ? error.message : error);
+      process.exitCode = 1;
+    });
+}

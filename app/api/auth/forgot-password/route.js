@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { ok, error } from '@/lib/utils';
 import { sendPasswordResetEmail } from '@/lib/email';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
+import { getApplicationUrl } from '@/lib/env';
 
 export async function POST(req) {
   try {
@@ -37,7 +38,7 @@ export async function POST(req) {
       data: { resetToken: resetTokenHash, resetExpires },
     });
 
-    const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const origin = getApplicationUrl();
     const resetUrl = `${origin}/?reset=${resetToken}`;
 
     const emailResult = await sendPasswordResetEmail(user.email, user.firstName || user.name, resetUrl);

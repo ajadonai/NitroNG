@@ -3,6 +3,7 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { tgFxUpdate } from '@/lib/telegram';
+import { getApplicationUrl } from '@/lib/env';
 
 const API_URL = 'https://open.er-api.com/v6/latest/USD';
 const DEFAULT_BUFFER = 200;
@@ -64,7 +65,7 @@ export async function GET(req) {
     // Trigger reprice now that the rate changed
     let repriceResult = null;
     try {
-      const origin = new URL(req.url).origin;
+      const origin = getApplicationUrl();
       const priceRes = await fetch(`${origin}/api/cron/prices`, {
         headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
       });

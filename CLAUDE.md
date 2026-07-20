@@ -144,4 +144,4 @@ Tasks to complete on or before launch day:
 
 ## Git conventions
 
-All commits and deploys are authored as `Trip <devbyadonai@gmail.com>`. Set `git config user.name "Trip"` and `git config user.email "devbyadonai@gmail.com"` before committing.
+All commits and deploys are authored as `Trip <devbyadonai@gmail.com>`. Set `git config user.name "Trip"` and `git config user.email "devbyadonai@gmail.com"` before committing. **Do not** add `Co-Authored-By` trailers or any other attribution — `devbyadonai@gmail.com` is the sole contributor on every commit.

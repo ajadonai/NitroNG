@@ -5,21 +5,31 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
-    "build": "next build",
+    "build": "next build --webpack",
+    "deploy:check": "node scripts/deployment-gate.mjs",
+    "env:validate:production": "node scripts/validate-production-env.mjs",
     "start": "next start",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:deploy": "prisma migrate deploy",
+    "db:status": "prisma migrate status",
     "db:seed": "node --experimental-modules prisma/seed.js",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
+    "migrations:check": "node scripts/check-migrations.mjs",
+    "migrations:check:tracked": "node scripts/check-migrations.mjs --require-tracked",
+    "migrations:verify:applied": "node scripts/verify-applied-migration-checksums.mjs",
+    "migrations:verify:applied:pending": "node scripts/verify-applied-migration-checksums.mjs --allow-pending",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.2.11",
     "@fontsource/jetbrains-mono": "^5.2.8",

@@ -1,19 +1,27 @@
-import { PrismaClient } from '@prisma/client';
+import {
+  isMainModule,
+  runGuardedPrismaScript,
+} from './lib/guarded-operation.mjs';
 
-const prisma = new PrismaClient();
+export const SCRIPT_OPERATION = 'migrate-display-ids';
 
-async function main() {
+export async function main({ prisma, dryRun, logger = console }) {
   // --- Migrate Orders ---
   const orders = await prisma.order.findMany({
     orderBy: { createdAt: 'asc' },
     select: { id: true, orderId: true },
   });
 
-  console.log(`Migrating ${orders.length} orders...`);
+  logger.log(`${dryRun ? 'Previewing' : 'Migrating'} ${orders.length} orders...`);
   for (let i = 0; i < orders.length; i++) {
     const newId = `NTR-${i + 1}`;
     const old = orders[i].orderId;
     if (old === newId) continue;
+
+    if (dryRun) {
+      logger.log(`  [dry] order ${old} → ${newId}`);
+      continue;
+    }
 
     await prisma.order.update({ where: { id: orders[i].id }, data: { orderId: newId } });
 
@@ -35,7 +43,7 @@ async function main() {
       });
     }
   }
-  console.log(`Orders done. Last ID: NTR-${orders.length}`);
+  logger.log(`Orders ${dryRun ? 'preview' : 'done'}. Last ID: NTR-${orders.length}`);
 
   // --- Migrate Tickets ---
   const tickets = await prisma.ticket.findMany({
@@ -43,13 +51,17 @@ async function main() {
     select: { id: true, ticketId: true },
   });
 
-  console.log(`Migrating ${tickets.length} tickets...`);
+  logger.log(`${dryRun ? 'Previewing' : 'Migrating'} ${tickets.length} tickets...`);
   for (let i = 0; i < tickets.length; i++) {
     const newId = `TKT-${i + 1}`;
     if (tickets[i].ticketId === newId) continue;
+    if (dryRun) {
+      logger.log(`  [dry] ticket ${tickets[i].ticketId} → ${newId}`);
+      continue;
+    }
     await prisma.ticket.update({ where: { id: tickets[i].id }, data: { ticketId: newId } });
   }
-  console.log(`Tickets done. Last ID: TKT-${tickets.length}`);
+  logger.log(`Tickets ${dryRun ? 'preview' : 'done'}. Last ID: TKT-${tickets.length}`);
 
   // --- Migrate Batch IDs ---
   const batches = await prisma.order.findMany({
@@ -67,9 +79,13 @@ async function main() {
     }
   }
 
-  console.log(`Migrating ${seen.size} batch IDs...`);
+  logger.log(`${dryRun ? 'Previewing' : 'Migrating'} ${seen.size} batch IDs...`);
   for (const [oldBatch, newBatch] of seen) {
     if (oldBatch === newBatch) continue;
+    if (dryRun) {
+      logger.log(`  [dry] batch ${oldBatch} → ${newBatch}`);
+      continue;
+    }
     await prisma.order.updateMany({ where: { batchId: oldBatch }, data: { batchId: newBatch } });
     await prisma.transaction.updateMany({ where: { reference: oldBatch }, data: { reference: newBatch } });
     const txsWithNote = await prisma.transaction.findMany({
@@ -83,9 +99,19 @@ async function main() {
       });
     }
   }
-  console.log(`Batches done. Last ID: BULK-${batchNum || 0}`);
+  logger.log(`Batches ${dryRun ? 'preview' : 'done'}. Last ID: BULK-${batchNum || 0}`);
+  return {
+    dryRun,
+    orders: orders.length,
+    tickets: tickets.length,
+    batches: seen.size,
+  };
 }
 
-main()
-  .catch(e => { console.error(e); process.exit(1); })
-  .finally(() => prisma.$disconnect());
+if (isMainModule(import.meta.url)) {
+  runGuardedPrismaScript({ operation: SCRIPT_OPERATION, main })
+    .catch((error) => {
+      console.error(error instanceof Error ? error.message : error);
+      process.exitCode = 1;
+    });
+}

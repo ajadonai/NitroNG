@@ -1,38 +1,117 @@
 'use client';
-import { useState, useEffect, createContext, useContext, useCallback } from "react";
+import { useState, useEffect, createContext, useContext, useCallback, useId, useRef } from "react";
 
 const ConfirmContext = createContext(null);
+
+export const DIALOG_FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  'summary',
+  '[contenteditable="true"]',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
+export function getDialogFocusableElements(container) {
+  if (!container?.querySelectorAll) return [];
+
+  return Array.from(container.querySelectorAll(DIALOG_FOCUSABLE_SELECTOR)).filter(element => (
+    !element.disabled
+    && !element.hidden
+    && element.tabIndex !== -1
+    && element.getAttribute?.('aria-hidden') !== 'true'
+  ));
+}
+
+export function trapDialogFocus(event, container, activeElement = globalThis.document?.activeElement) {
+  if (event.key !== 'Tab' || !container) return false;
+
+  const focusable = getDialogFocusableElements(container);
+  if (focusable.length === 0) {
+    event.preventDefault();
+    container.focus?.({ preventScroll: true });
+    return true;
+  }
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const focusIsOutside = !container.contains?.(activeElement);
+
+  if (event.shiftKey && (activeElement === first || focusIsOutside)) {
+    event.preventDefault();
+    last.focus?.({ preventScroll: true });
+    return true;
+  }
+
+  if (!event.shiftKey && (activeElement === last || focusIsOutside)) {
+    event.preventDefault();
+    first.focus?.({ preventScroll: true });
+    return true;
+  }
+
+  return false;
+}
+
+export function restoreDialogTrigger(trigger) {
+  if (!trigger?.isConnected || typeof trigger.focus !== 'function') return false;
+  trigger.focus({ preventScroll: true });
+  return true;
+}
 
 export function ConfirmProvider({ children, dark }) {
   const [dialog, setDialog] = useState(null);
   const [input, setInput] = useState("");
+  const dialogRef = useRef(null);
+  const cancelButtonRef = useRef(null);
+  const triggerRef = useRef(null);
+  const titleId = useId();
+  const descriptionId = useId();
+  const confirmationInputId = useId();
 
   const confirm = useCallback(({ title, message, body, confirmLabel = "Confirm", confirmColor, danger = false, requireType = null, compact = false }) => {
     return new Promise((resolve) => {
+      triggerRef.current = globalThis.document?.activeElement || null;
       setInput("");
       setDialog({ title, message, body, confirmLabel, confirmColor, danger, requireType, compact, resolve });
     });
   }, []);
 
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     if (dialog?.requireType && input !== dialog.requireType) return;
     dialog?.resolve(true);
     setDialog(null);
     setInput("");
-  };
+  }, [dialog, input]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     dialog?.resolve(false);
     setDialog(null);
     setInput("");
-  };
+  }, [dialog]);
 
   useEffect(() => {
     if (!dialog) return;
-    const handler = (e) => { if (e.key === "Escape") handleCancel(); };
+
+    cancelButtonRef.current?.focus({ preventScroll: true });
+
+    const handler = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        handleCancel();
+        return;
+      }
+
+      trapDialogFocus(event, dialogRef.current);
+    };
+
     document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [dialog]);
+    return () => {
+      document.removeEventListener("keydown", handler);
+      restoreDialogTrigger(triggerRef.current);
+    };
+  }, [dialog, handleCancel]);
 
   const canConfirm = !dialog?.requireType || input === dialog.requireType;
 
@@ -46,6 +125,12 @@ export function ConfirmProvider({ children, dark }) {
           onClick={handleCancel}
         >
           <div
+            ref={dialogRef}
+            role={dialog.danger ? "alertdialog" : "dialog"}
+            aria-modal="true"
+            aria-labelledby={titleId}
+            aria-describedby={descriptionId}
+            tabIndex={-1}
             className={`${dialog.compact ? "max-w-[340px]" : "w-[90%] max-w-[420px]"} rounded-2xl pt-7 px-6 pb-[22px] text-center animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]`}
             onClick={e => e.stopPropagation()}
             style={{
@@ -75,26 +160,29 @@ export function ConfirmProvider({ children, dark }) {
             </div>
 
             {/* Title + Message */}
-            <div className="text-[17px] font-semibold mb-1.5" style={{ color: dark ? "#f5f3f0" : "#1a1917" }}>{dialog.title}</div>
-            {dialog.body || <div className="text-sm leading-[1.65] mb-5" style={{ color: dark ? "#a09b95" : "#555250" }}>{dialog.message}</div>}
+            <h2 id={titleId} className="text-[17px] font-semibold mb-1.5" style={{ color: dark ? "#f5f3f0" : "#1a1917" }}>{dialog.title}</h2>
+            <div id={descriptionId}>
+              {dialog.body || <div className="text-sm leading-[1.65] mb-5" style={{ color: dark ? "#a09b95" : "#555250" }}>{dialog.message}</div>}
+            </div>
 
             {/* Type to confirm */}
             {dialog.requireType && (
               <div className="mb-[18px]">
-                <div className="text-[13px] mb-1.5" style={{ color: dark ? "#8a8580" : "#757170" }}>
+                <label htmlFor={confirmationInputId} className="block text-[13px] mb-1.5" style={{ color: dark ? "#8a8580" : "#757170" }}>
                   Type <span style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{dialog.requireType}</span> to confirm
-                </div>
+                </label>
                 <input
+                  id={confirmationInputId}
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   placeholder={dialog.requireType}
+                  autoComplete="off"
                   className="m w-full py-2.5 px-3.5 rounded-lg text-[15px] text-center outline-none tracking-[2px]"
                   style={{
                     background: dark ? "#0a0d1a" : "#f9f8f6",
                     border: `1px solid ${input === dialog.requireType ? (dark ? "#6ee7b7" : "#059669") : (dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)")}`,
                     color: dark ? "#f5f3f0" : "#1a1917",
                   }}
-                  autoFocus
                 />
               </div>
             )}
@@ -102,6 +190,8 @@ export function ConfirmProvider({ children, dark }) {
             {/* Buttons */}
             <div className="flex gap-2.5">
               <button
+                ref={cancelButtonRef}
+                type="button"
                 onClick={handleCancel}
                 className="flex-1 py-3 rounded-[10px] text-[15px] font-semibold cursor-pointer transition-[filter,transform] duration-150 hover:brightness-110 active:scale-[.97]"
                 style={dialog.danger ? {
@@ -115,6 +205,7 @@ export function ConfirmProvider({ children, dark }) {
                 }}
               >Cancel</button>
               <button
+                type="button"
                 onClick={handleConfirm}
                 disabled={!canConfirm}
                 className="flex-1 py-3 rounded-[10px] text-[15px] font-semibold cursor-pointer transition-[filter,transform] duration-150 hover:brightness-110 active:scale-[.97]"
