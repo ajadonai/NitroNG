@@ -167,14 +167,14 @@ describe('internal dashboard session binding and authorization', () => {
 });
 
 describe('internal dashboard browser boundary', () => {
-  it('uses a 15-minute HttpOnly Strict cookie with production Secure', () => {
+  it('uses an 8-hour HttpOnly Strict cookie with production Secure', () => {
     expect(INTERNAL_DASHBOARD_COOKIE).not.toMatch(/key|secret/i);
     expect(internalDashboardCookieOptions({ NODE_ENV: 'production' })).toEqual({
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
       path: '/',
-      maxAge: 900,
+      maxAge: 28800,
     });
   });
 
