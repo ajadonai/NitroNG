@@ -46,7 +46,7 @@ export async function GET(req) {
 
     const services = await prisma.service.findMany({
       where: { enabled: true },
-      select: { id: true, name: true, apiId: true, costPer1k: true, sellPer1k: true, provider: true, category: true, dripfeed: true, apiType: true, tiers: { where: { enabled: true }, select: { id: true, tier: true, sellPer1k: true, group: { select: { nigerian: true } } } } },
+      select: { id: true, name: true, apiId: true, costPer1k: true, sellPer1k: true, provider: true, category: true, dripfeed: true, apiType: true, tiers: { where: { enabled: true }, select: { id: true, tier: true, sellPer1k: true, pricePinned: true, group: { select: { nigerian: true } } } } },
     });
 
     const ops = [];
@@ -76,6 +76,7 @@ export async function GET(req) {
 
       if (s.tiers.length > 0) {
         for (const t of s.tiers) {
+          if (t.pricePinned) continue;
           const ng = t.group?.nigerian || false;
           const newSell = calculateTierPrice(cost, t.tier, ms, ng);
           if (newSell !== Number(t.sellPer1k)) {
