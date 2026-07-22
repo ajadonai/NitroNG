@@ -144,10 +144,15 @@ async function alertWatchTower(snapshot, cause) {
 }
 
 export async function GET(req) {
-  const token = getBearerToken(req);
+  const bearerToken = getBearerToken(req);
+  const analyticsQueryToken = new URL(req.url).searchParams.get("token") || null;
 
-  const isCron = Boolean(process.env.CRON_SECRET) && token === process.env.CRON_SECRET;
-  const isAnalytics = Boolean(process.env.ANALYTICS_READ_TOKEN) && token === process.env.ANALYTICS_READ_TOKEN;
+  // Write path: Bearer-only (CRON_SECRET is sensitive, never from query string)
+  const isCron = Boolean(process.env.CRON_SECRET) && bearerToken === process.env.CRON_SECRET;
+  // Read path: Bearer or query param (ANALYTICS_READ_TOKEN is read-only; the
+  // nightly automated fetcher can only pass a URL, no custom headers)
+  const isAnalytics = Boolean(process.env.ANALYTICS_READ_TOKEN) &&
+    (bearerToken === process.env.ANALYTICS_READ_TOKEN || analyticsQueryToken === process.env.ANALYTICS_READ_TOKEN);
 
   if (!isCron && !isAnalytics) {
     return Response.json({ error: "Unauthorized" }, { status: 401, headers: NO_CACHE });
