@@ -10,6 +10,16 @@ Before building or shipping ANYTHING related to the Tasks page, task rewards, or
 
 Customer support is handled entirely through WhatsApp — there is no in-app ticket system. The admin `tickets` page and `SupportPage` exist only as legacy read-only views of old data. **Do not** build, fix, improve, or redesign any ticket-related features: no ticket sidebar widgets, no ticket notifications, no ticket status flows, no new ticket creation UI. If a task mentions tickets, clarify with Trip first — the answer is almost certainly "that's handled on WhatsApp now."
 
+## ⛔ PROTECTED — never modify without flagging
+
+The nightly cohort check depends on these. If any edit, refactor, dependency change, or deploy config change touches them (directly or indirectly), **STOP** and tell Adonai explicitly before proceeding, and restate what must stay true:
+
+- `public/robots.txt` — `Allow: /api/cron/cohort-stats` must stay above `Disallow: /api/`
+- the `/api/cron/cohort-stats` route (reader + 1 AM writer + self-heal + robots smoke check) — must return fresh JSON to token-bearing requests (both `?token=` and `Authorization: Bearer`), no-store on CDN
+- `tests/robots-txt-guardrail.test.js` — the CI test that fails the build if robots.txt is wrong — never delete or skip
+
+Never "clean up", regenerate, or simplify robots.txt as a side effect of another task.
+
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
 ## 1. Think Before Coding

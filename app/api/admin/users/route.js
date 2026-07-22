@@ -4,6 +4,9 @@ import { requireAdmin, logActivity, canPerformAction, canSeeSensitive, maskEmail
 import { sendEmail, walletCreditEmail } from '@/lib/email';
 import { getRewardsPayload, getPointsTotals, getPointsHistory } from '@/lib/nitro-rewards';
 import { reinstatePendingAccountDeletion } from '@/lib/account-deletion';
+import { fetchWithRetry } from '@/lib/fetch';
+import { getApplicationUrl } from '@/lib/env';
+import { tgManualPending } from '@/lib/telegram';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('users');
@@ -280,6 +283,111 @@ export async function POST(req) {
       }
       await logActivity(admin.name, `Reinstated user ${result.user.name} (${result.user.email})`, 'user');
       return Response.json({ success: true, message: `${result.user.name} reinstated` });
+    }
+
+    if (action === 'generate_payment_link') {
+      const amountNum = Number(amount);
+      if (!amountNum || amountNum < 1000)
+        return Response.json({ error: 'Minimum deposit is ₦1,000' }, { status: 400 });
+      if (amountNum > 10_000_000)
+        return Response.json({ error: 'Maximum deposit is ₦10,000,000' }, { status: 400 });
+
+      const fwSetting = await prisma.setting.findUnique({ where: { key: 'gateway_flutterwave' } });
+      let secretKey = '';
+      if (fwSetting) {
+        try { const d = JSON.parse(fwSetting.value); if (d.fields?.secretKey) secretKey = d.fields.secretKey; } catch {}
+      }
+      if (!secretKey) secretKey = process.env.FLUTTERWAVE_SECRET_KEY || '';
+      if (!secretKey)
+        return Response.json({ error: 'Flutterwave is not configured' }, { status: 503 });
+
+      const amountKobo = Math.round(amountNum * 100);
+      const reference = `NTR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+      const origin = getApplicationUrl();
+
+      await prisma.transaction.create({
+        data: {
+          userId,
+          type: 'deposit',
+          amount: amountKobo,
+          method: 'flutterwave',
+          status: 'Pending',
+          reference,
+          note: `Admin-initiated deposit ₦${amountNum.toLocaleString()} [initiated_by:${admin.name}]`,
+        },
+      });
+
+      const res = await fetchWithRetry('https://api.flutterwave.com/v3/payments', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${secretKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tx_ref: reference,
+          amount: amountNum,
+          currency: 'NGN',
+          payment_options: 'banktransfer',
+          redirect_url: `${origin}/dashboard?verify=${reference}`,
+          customer: { email: user.email, name: user.name },
+          customizations: { title: 'Nitro Deposit', logo: `${origin}/icon-192.png` },
+          meta: { userId, adminInitiated: true },
+        }),
+      });
+      const data = await res.json();
+      if (data.status !== 'success') {
+        log.error('Admin Flutterwave Init', data.message);
+        await prisma.transaction.update({ where: { reference }, data: { status: 'Failed' } });
+        return Response.json({ error: data.message || 'Payment link generation failed' }, { status: 400 });
+      }
+
+      await prisma.transaction.update({ where: { reference }, data: { gatewayUrl: data.data.link } });
+      await logActivity(admin.name, `Generated ₦${amountNum.toLocaleString()} payment link for ${user.name}`, 'user');
+
+      return Response.json({ success: true, paymentUrl: data.data.link, reference });
+    }
+
+    if (action === 'manual_topup') {
+      const amountNum = Number(amount);
+
+      if (!body.confirm) {
+        const manualSetting = await prisma.setting.findUnique({ where: { key: 'gateway_manual' } });
+        if (!manualSetting) return Response.json({ error: 'Bank transfer not configured' }, { status: 503 });
+        let config;
+        try { config = JSON.parse(manualSetting.value); } catch { return Response.json({ error: 'Bank transfer not configured' }, { status: 503 }); }
+        if (!config.enabled) return Response.json({ error: 'Bank transfer is not available' }, { status: 503 });
+        const { bankName, accountNumber, accountName } = config.fields || {};
+        if (!bankName || !accountNumber || !accountName) return Response.json({ error: 'Bank details not configured' }, { status: 503 });
+        return Response.json({ bankName, accountNumber, accountName, canCreditDirectly: canPerformAction(admin, 'users.adjustBalance') });
+      }
+
+      if (!amountNum || amountNum < 1) return Response.json({ error: 'Invalid amount' }, { status: 400 });
+      const senderName = (body.senderName || '').replace(/<[^>]*>/g, '').replace(/[^\w\s\-\/\.#]/g, '').trim().slice(0, 100);
+      if (!senderName || senderName.length < 3) return Response.json({ error: 'Enter the sender name (min 3 characters)' }, { status: 400 });
+
+      const amountKobo = Math.round(amountNum * 100);
+
+      if (canPerformAction(admin, 'users.adjustBalance')) {
+        await prisma.$transaction([
+          prisma.user.update({ where: { id: userId }, data: { balance: { increment: amountKobo } } }),
+          prisma.transaction.create({
+            data: { userId, type: 'admin_credit', amount: amountKobo, method: 'admin', status: 'Completed',
+              note: `Credited by ${admin.name} (transfer from ${senderName})` },
+          }),
+        ]);
+        await logActivity(admin.name, `Credited ₦${amountNum.toLocaleString()} to ${user.name} (sender: ${senderName})`, 'user');
+        if (user.email && user.notifEmail !== false) {
+          const html = walletCreditEmail(user.name, amountNum, 'Balance credited');
+          sendEmail(user.email, `₦${amountNum.toLocaleString()} credited to your Nitro wallet`, html).catch(() => {});
+        }
+        return Response.json({ success: true, credited: true, message: `₦${amountNum.toLocaleString()} credited to ${user.name}` });
+      }
+
+      const reference = `NTR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+      const tx = await prisma.transaction.create({
+        data: { userId, type: 'deposit', amount: amountKobo, method: 'manual', status: 'Pending', reference,
+          note: `Manual bank transfer ₦${amountNum.toLocaleString()} [user_confirmed:${senderName}] [admin_initiated:${admin.name}]` },
+      });
+      await logActivity(admin.name, `Submitted ₦${amountNum.toLocaleString()} manual deposit for ${user.name} (sender: ${senderName})`, 'user');
+      tgManualPending(tx.id, user.name, user.email, amountKobo, senderName);
+      return Response.json({ success: true, pending: true, message: 'Deposit submitted for approval' });
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
