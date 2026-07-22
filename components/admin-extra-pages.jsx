@@ -2400,8 +2400,3 @@ export function AdminChangelogPage({ dark, t }) {
   );
 }
 
-/* ═══════════════════════════════════════════ */
-/* ═══ CREATE ORDER                        ═══ */
-/* ═══════════════════════════════════════════ */
-
-export { AdminCreateOrderPage } from "./admin-create-order-page";
