@@ -17,7 +17,7 @@ test('an authorized admin can find a user and credit their wallet', async ({ pag
 
   await page.goto('/admin/login');
   await page.getByLabel('Email Address').fill(ADMIN_EMAIL);
-  await page.getByLabel('Password').fill(PASSWORD);
+  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Access Dashboard' }).click();
 
   await page.waitForURL('**/admin');

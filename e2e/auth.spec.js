@@ -28,6 +28,7 @@ test('a customer can create an account and reach the dashboard', async ({ page }
   await dialog.getByLabel('Last Name').fill('Tester');
   await dialog.getByLabel('Email Address').fill(SIGNUP_EMAIL);
   await dialog.getByLabel(/WhatsApp Number/).fill('8012345003');
+  await expect(dialog.getByText("We'll reach you here")).toBeVisible();
   await dialog.getByRole('button', { name: 'Continue →' }).click();
 
   await expect(dialog.getByRole('heading', { name: 'Secure Your Account' })).toBeVisible();
