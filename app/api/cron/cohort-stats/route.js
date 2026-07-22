@@ -144,9 +144,7 @@ async function alertWatchTower(snapshot, cause) {
 }
 
 export async function GET(req) {
-  const bearerToken = getBearerToken(req);
-  const queryToken = new URL(req.url).searchParams.get("token") || null;
-  const token = bearerToken || queryToken;
+  const token = getBearerToken(req);
 
   const isCron = Boolean(process.env.CRON_SECRET) && token === process.env.CRON_SECRET;
   const isAnalytics = Boolean(process.env.ANALYTICS_READ_TOKEN) && token === process.env.ANALYTICS_READ_TOKEN;
