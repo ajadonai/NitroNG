@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   transactionFindUnique: vi.fn(),
   transactionCount: vi.fn(),
   transactionFindMany: vi.fn(),
+  transactionUpdate: vi.fn(),
   transactionUpdateMany: vi.fn(),
   getFlutterwaveSecretKey: vi.fn(),
   reconcileFlutterwaveDeposit: vi.fn(),
@@ -23,6 +24,7 @@ vi.mock('@/lib/prisma', () => ({
       findUnique: mocks.transactionFindUnique,
       count: mocks.transactionCount,
       findMany: mocks.transactionFindMany,
+      update: mocks.transactionUpdate,
       updateMany: mocks.transactionUpdateMany,
     },
   },
@@ -134,6 +136,7 @@ beforeEach(() => {
   mocks.transactionFindMany.mockResolvedValue([]);
   mocks.getFlutterwaveSecretKey.mockResolvedValue('flw-secret');
   mocks.getNowPaymentsApiKey.mockResolvedValue('nowpayments-key');
+  mocks.transactionUpdate.mockResolvedValue({});
   mocks.transactionUpdateMany.mockResolvedValue({ count: 0 });
   mocks.notifyDepositFinalized.mockResolvedValue({ attempted: 1, failed: [] });
 });
@@ -342,7 +345,7 @@ describe('recoverStalePendingPayments', () => {
     expect(queries).toHaveLength(6);
     expect(flutterwavePending.take).toBe(4);
     expect(flutterwaveProcessing.take).toBe(3);
-    expect(flutterwaveExpired.take).toBe(3);
+    expect(flutterwaveExpired.take).toBe(5);
     expect(cryptoUnsettled.take).toBe(3);
     expect(cryptoReviewedAudit.take).toBe(1);
     for (const query of [
@@ -363,7 +366,8 @@ describe('recoverStalePendingPayments', () => {
     expect(flutterwavePending.where.createdAt.lt).toEqual(flutterwaveExpired.where.createdAt.lt);
     expect(flutterwaveProcessing.where.createdAt.lt.getTime())
       .toBeGreaterThan(flutterwavePending.where.createdAt.lt.getTime());
-    expect(cryptoUnsettled.where.createdAt).toEqual(flutterwaveExpired.where.createdAt);
+    expect(cryptoUnsettled.where.createdAt.lt).toEqual(flutterwaveExpired.where.createdAt.lt);
+    expect(flutterwaveExpired.where.createdAt).not.toHaveProperty('gt');
     expect(cryptoUnsettled.where.status).toEqual({
       in: expect.arrayContaining(['Pending', 'Review', 'Rejected']),
       notIn: ['Review', 'Rejected'],
@@ -406,8 +410,27 @@ describe('recoverStalePendingPayments', () => {
         ],
       },
     ]);
-    expect(flutterwaveExpired.where.createdAt.gt.getTime())
-      .toBeLessThan(flutterwavePending.where.createdAt.gt.getTime());
+    expect(flutterwaveExpired.where.createdAt).not.toHaveProperty('gt');
+    expect(flutterwaveExpired.where.AND).toEqual([{
+      OR: [
+        { createdAt: { gt: expect.any(Date) } },
+        {
+          createdAt: { gt: expect.any(Date), lte: expect.any(Date) },
+          OR: [
+            { paymentReconciliationAttemptAt: null },
+            { paymentReconciliationAttemptAt: { lt: expect.any(Date) } },
+          ],
+        },
+        {
+          createdAt: { lte: expect.any(Date) },
+          OR: [
+            { paymentReconciliationAttemptAt: null },
+            { paymentReconciliationAttemptAt: { lt: expect.any(Date) } },
+          ],
+        },
+      ],
+    }]);
+    expect(flutterwavePending.where.createdAt.gt).toBeInstanceOf(Date);
     expect(mocks.reconcileFlutterwaveDeposit).toHaveBeenCalledTimes(3);
     for (const transaction of flutterwaveRows) {
       expect(mocks.reconcileFlutterwaveDeposit).toHaveBeenCalledWith({

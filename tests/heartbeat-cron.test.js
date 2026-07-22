@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   deleteMany: vi.fn(),
   logInfo: vi.fn(),
   logError: vi.fn(),
+  reportOperationalFailure: vi.fn(),
 }));
 
 vi.mock('@/lib/prisma', () => ({
@@ -22,6 +23,9 @@ vi.mock('@/lib/logger', () => ({
     info: (...args) => mocks.logInfo(...args),
     error: (...args) => mocks.logError(...args),
   },
+}));
+vi.mock('@/lib/monitoring', () => ({
+  reportOperationalFailure: (...args) => mocks.reportOperationalFailure(...args),
 }));
 
 const { GET } = await import('@/app/api/cron/heartbeat/route.js');
@@ -113,5 +117,10 @@ describe('scheduled heartbeat cleanup', () => {
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({ error: 'Heartbeat cleanup failed' });
     expect(mocks.logError).toHaveBeenCalledWith('Heartbeat Cleanup', 'database unavailable');
+    expect(mocks.reportOperationalFailure).toHaveBeenCalledWith('cleanup_failed', {
+      error: expect.objectContaining({ message: 'database unavailable' }),
+      data: { job: 'heartbeat_cleanup' },
+      dedupeKey: 'cleanup_failed:heartbeat_cleanup',
+    });
   });
 });

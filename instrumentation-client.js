@@ -1,9 +1,11 @@
 import * as Sentry from "@sentry/nextjs";
+import { scrubSentryBreadcrumb, scrubSentryEvent } from './lib/monitoring-redaction.js';
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
   tracesSampleRate: 0.1,
   debug: false,
+  sendDefaultPii: false,
   ignoreErrors: [
     /Java object is gone/,
     /Object Not Found Matching Id/,
@@ -18,8 +20,9 @@ Sentry.init({
     if (frames?.some(f => /^app:\/\//.test(f.filename) && !/^\/?_next\//.test(f.filename))) return null;
     const msg = event.exception?.values?.map(v => v.value).join(" ") || "";
     if (/Java object is gone|Object Not Found Matching Id|webkit\.messageHandlers|Can't find variable: FileReader/.test(msg)) return null;
-    return event;
+    return scrubSentryEvent(event);
   },
+  beforeBreadcrumb: scrubSentryBreadcrumb,
 });
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

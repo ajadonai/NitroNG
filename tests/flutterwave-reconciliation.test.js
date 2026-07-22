@@ -396,7 +396,7 @@ describe('reconcileFlutterwaveDeposit', () => {
     },
   );
 
-  it('cancels an abandoned deposit when provider confirms pending after one hour', async () => {
+  it('expires an abandoned deposit when provider confirms pending after one hour', async () => {
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
     useStoredTransaction(transaction({ status: 'Pending', createdAt: twoHoursAgo }));
     const fetchImpl = flutterwaveResponse('pending');
@@ -409,13 +409,44 @@ describe('reconcileFlutterwaveDeposit', () => {
     });
 
     expectResult(result, {
-      paymentState: 'failed',
-      transactionStatus: 'Cancelled',
-      retryable: false,
+      paymentState: 'retryable',
+      transactionStatus: 'Expired',
+      retryable: true,
       newlyFinalized: false,
     });
-    expect(statusWrites()).toContain('Cancelled');
+    expect(result.reason).toBe('abandoned');
+    expect(statusWrites()).toContain('Expired');
+    expect(statusWrites()).not.toContain('Cancelled');
     expect(mocks.finalizeDeposit).not.toHaveBeenCalled();
+  });
+
+  it('credits a deposit that was expired-as-abandoned but later completed at Flutterwave', async () => {
+    const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
+    const completed = transaction({ status: 'Completed' });
+    mocks.finalizeDeposit.mockResolvedValue({
+      finalized: true,
+      reason: 'completed',
+      transaction: completed,
+      depositAmount: completed.amount,
+    });
+    useStoredTransaction(transaction({ status: 'Expired', createdAt: threeHoursAgo }));
+    const fetchImpl = flutterwaveResponse('successful');
+
+    const result = await reconcileFlutterwaveDeposit({
+      transaction: { ...storedTransaction },
+      secretKey: 'FLWSECK_TEST',
+      fetchImpl,
+      timeoutMs: 25,
+      recoveredBy: 'cron',
+    });
+
+    expectResult(result, {
+      paymentState: 'credited',
+      transactionStatus: 'Completed',
+      retryable: false,
+      newlyFinalized: true,
+    });
+    expect(mocks.finalizeDeposit).toHaveBeenCalledTimes(1);
   });
 
   it('records an explicit Flutterwave failure as Failed and does not finalize', async () => {

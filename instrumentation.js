@@ -1,5 +1,7 @@
 import { validateEnv } from '@/lib/env';
 import { log } from '@/lib/logger';
+import { forwardServerRequestError } from '@/lib/monitoring';
+import { redactSensitiveText, requestPathOnly } from '@/lib/monitoring-redaction';
 
 export async function register() {
   validateEnv();
@@ -50,6 +52,7 @@ export async function register() {
 
 // Separate Node.js-only hook — Next.js 16 calls this only in Node runtime
 export async function onRequestError(err, request, context) {
-  const url = request?.url?.replace(/[?#].*/, '');
-  log.error('Request', err?.message, { url });
+  const path = requestPathOnly(context?.routePath || request?.path || request?.url);
+  log.error('Request', redactSensitiveText(err?.message || 'Server request failed'), { path });
+  forwardServerRequestError(err, request, context);
 }

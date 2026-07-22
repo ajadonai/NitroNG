@@ -3,6 +3,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { validateMigrationChecksumManifest } from './lib/migration-checksums.mjs';
+import { reportCliOperationalFailure } from './lib/operational-monitoring.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const migrationsRoot = join(root, 'prisma', 'migrations');
@@ -88,6 +89,11 @@ if (requireTracked && existsSync(join(root, '.git'))) {
 }
 
 if (errors.length > 0) {
+  reportCliOperationalFailure({
+    signal: 'migration_manifest_failed',
+    reason: 'manifest_validation',
+    data: { errorCount: errors.length },
+  });
   console.error(`Migration manifest check failed:\n${errors.map((error) => `  - ${error}`).join('\n')}`);
   process.exit(1);
 }

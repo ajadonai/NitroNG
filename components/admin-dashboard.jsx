@@ -21,8 +21,8 @@ const AdminServiceGroupsPage = dynamic(() => import("./admin-service-groups"), {
 const AdminPricingPage = dynamic(() => import("./admin-pricing"), { ssr: false });
 const AdminPaymentsPage = dynamic(() => import("./admin-pages").then(m => m.AdminPaymentsPage), { ssr: false });
 const AdminFinancePage = dynamic(() => import("./admin-pages").then(m => m.AdminFinancePage), { ssr: false });
-const AdminAlertsPage = dynamic(() => import("./admin-pages").then(m => m.AdminAlertsPage), { ssr: false });
-const AdminSettingsPage = dynamic(() => import("./admin-pages").then(m => m.AdminSettingsPage), { ssr: false });
+const AdminAlertsPage = dynamic(() => import("./admin-alerts-page").then(m => m.AdminAlertsPage), { ssr: false });
+const AdminSettingsPage = dynamic(() => import("./admin-settings-page").then(m => m.AdminSettingsPage), { ssr: false });
 const AdminActivityPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminActivityPage), { ssr: false });
 const AdminTeamPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminTeamPage), { ssr: false });
 const AdminCouponsPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminCouponsPage), { ssr: false });
@@ -32,7 +32,7 @@ const AdminAPIPage = dynamic(() => import("./admin-extra-pages").then(m => m.Adm
 const AdminAcquisitionPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminAcquisitionPage), { ssr: false });
 const AdminIssuesPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminIssuesPage), { ssr: false });
 const AdminChangelogPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminChangelogPage), { ssr: false });
-const AdminCreateOrderPage = dynamic(() => import("./admin-extra-pages").then(m => m.AdminCreateOrderPage), { ssr: false });
+const AdminCreateOrderPage = dynamic(() => import("./admin-create-order-page").then(m => m.AdminCreateOrderPage), { ssr: false });
 const AdminCrewPage = dynamic(() => import("./admin-crew").then(m => m.AdminCrewPage), { ssr: false });
 const AdminBlogPage = dynamic(() => import("./admin-blog"), { ssr: false });
 const AdminPromotionsPage = dynamic(() => import("./admin-promotions"), { ssr: false });

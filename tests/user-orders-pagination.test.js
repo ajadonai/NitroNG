@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockOrder = { findMany: vi.fn() };
-const mockPrisma = { order: mockOrder };
+const mockSetting = { findUnique: vi.fn() };
+const mockPrisma = { order: mockOrder, setting: mockSetting };
 
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
 vi.mock('@/lib/logger', () => ({ log: { error: vi.fn() } }));
@@ -21,7 +22,8 @@ vi.mock('@/lib/telegram', () => ({ tgNewOrder: vi.fn(), tgRefundAlert: vi.fn() }
 vi.mock('@/lib/commissions', () => ({ voidCommissions: vi.fn() }));
 vi.mock('@/lib/bonus-credit', () => ({ deductBalance: vi.fn(), trackBonusConsumption: vi.fn(), restoreBonusForRefund: vi.fn() }));
 
-const { GET } = await import('@/app/api/orders/route');
+const { GET, POST } = await import('@/app/api/orders/route');
+const { rateLimit } = await import('@/lib/rate-limit');
 
 function request(params = {}) {
   const url = new URL('http://localhost/api/orders');
@@ -39,6 +41,7 @@ function singleRefs(count) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  rateLimit.mockResolvedValue({ unavailable: false, limited: false });
   mockOrder.findMany.mockResolvedValueOnce([]); // narrow matching-ref query
 });
 
@@ -126,5 +129,31 @@ describe('GET /api/orders — logical pagination and search', () => {
       deletedAt: null,
       OR: expect.arrayContaining([{ batchId: { in: ['BULK-30'] } }]),
     });
+  });
+});
+
+describe('POST /api/orders — request boundary', () => {
+  it('rejects malformed JSON before querying order configuration', async () => {
+    const response = await POST(new Request('http://localhost/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{',
+    }));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'Invalid request body' });
+    expect(mockSetting.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('rejects a typed-invalid JSON body before querying order configuration', async () => {
+    const response = await POST(new Request('http://localhost/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([]),
+    }));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'Invalid request body' });
+    expect(mockSetting.findUnique).not.toHaveBeenCalled();
   });
 });

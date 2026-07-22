@@ -6,7 +6,7 @@ import { getRewardsPayload, getPointsTotals, getPointsHistory } from '@/lib/nitr
 import { reinstatePendingAccountDeletion } from '@/lib/account-deletion';
 import { fetchWithRetry } from '@/lib/fetch';
 import { getApplicationUrl } from '@/lib/env';
-import { tgManualPending } from '@/lib/telegram';
+import { tgManualPending, tgAdminCredit } from '@/lib/telegram';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('users');
@@ -244,8 +244,8 @@ export async function POST(req) {
       ]);
 
       await logActivity(admin.name, `${label} ₦${Number(amount).toLocaleString()} to ${user.name}`, 'user');
+      tgAdminCredit(admin.name, user.name, user.email, amountKobo, isGift ? 'gift' : 'credit');
 
-      // Email notification
       if (user.email && user.notifEmail !== false) {
         const reason = isGift ? 'You received a gift!' : 'Balance credited';
         const html = walletCreditEmail(user.name, Number(amount), reason);
@@ -373,6 +373,7 @@ export async function POST(req) {
           }),
         ]);
         await logActivity(admin.name, `Credited ₦${amountNum.toLocaleString()} to ${user.name} (sender: ${senderName})`, 'user');
+        tgAdminCredit(admin.name, user.name, user.email, amountKobo, 'credit');
         if (user.email && user.notifEmail !== false) {
           const html = walletCreditEmail(user.name, amountNum, 'Balance credited');
           sendEmail(user.email, `₦${amountNum.toLocaleString()} credited to your Nitro wallet`, html).catch(() => {});

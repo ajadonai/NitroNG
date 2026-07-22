@@ -12,7 +12,6 @@ export async function GET() {
       orderBy: { sortOrder: 'asc' },
       include: {
         tiers: {
-          where: { enabled: true },
           orderBy: { sortOrder: 'asc' },
           include: {
             service: {

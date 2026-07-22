@@ -450,7 +450,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                     const m = cKobo != null ? marginPct(tier.sellPer1k, cKobo) : null;
                     const low = cKobo != null && lowMargin(tier.sellPer1k, cKobo);
                     return (
-                    <tr key={tier.id} className="transition-[background-color] duration-100 hover:bg-[rgba(196,125,142,.04)]" style={{ borderBottom: i < g.tiers.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}` : "none", background: isEditing ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)") : undefined }}>
+                    <tr key={tier.id} className="transition-[background-color] duration-100 hover:bg-[rgba(196,125,142,.04)]" style={{ borderBottom: i < g.tiers.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}` : "none", background: isEditing ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)") : undefined, opacity: tier.enabled ? 1 : .45 }}>
                       <td className="py-2.5 px-2 w-8">
                         {g.tiers.length > 1 && (
                           <div className="flex flex-col gap-0.5">
@@ -503,7 +503,10 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                             <button onClick={() => setEditTier(null)} disabled={savingTier} className="adm-btn-sm text-[12px]" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Cancel</button>
                           </span>
                         ) : (
-                          <span className="flex gap-1.5">
+                          <span className="flex gap-1.5 items-center">
+                            <button onClick={() => act({ action: "update-tier", tierIdToUpdate: tier.id, enabled: !tier.enabled })} title={tier.enabled ? "Disable tier" : "Enable tier"} className="relative w-[30px] h-[17px] rounded-full border border-solid cursor-pointer transition-colors duration-200 shrink-0" style={{ background: tier.enabled ? (dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.1)") : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"), borderColor: tier.enabled ? (dark ? "rgba(110,231,183,.4)" : "rgba(5,150,105,.35)") : t.cardBorder }}>
+                              <span className="absolute top-[2px] w-[11px] h-[11px] rounded-full transition-all duration-200" style={{ left: tier.enabled ? 15 : 2, background: tier.enabled ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }} />
+                            </button>
                             <button onClick={() => setEditTier({ id: tier.id, price: (tier.sellPer1k / 100).toFixed(2), speed: tier.speed || "", refill: !!tier.refill })} title="Edit tier" className="adm-btn-sm text-[12px]" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Edit</button>
                             <button onClick={async () => { if (await confirm({ title: "Delete Tier", message: "Delete this tier?", confirmLabel: "Delete", danger: true })) act({ action: "delete-tier", tierIdToDelete: tier.id }); }} title="Delete tier" className="adm-btn-sm text-[12px]" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>

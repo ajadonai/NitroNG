@@ -13,7 +13,7 @@ jobs:
   deployment-gate:
     name: Deployment gate
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     services:
       postgres:
         image: postgres:16
@@ -43,6 +43,8 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
+      - name: Lint application
+        run: npm run lint:ci
       - name: Verify tracked migration manifest
         run: npm run migrations:check:tracked
       - name: Validate Prisma schema
@@ -135,3 +137,17 @@ jobs:
           SENTRY_ORG: nitro-build
           SENTRY_PROJECT: nitro-web
           SENTRY_AUTH_TOKEN: f4f897649f3556747c3017149265739c
+      - name: Install Chromium for browser journeys
+        run: npx playwright install --with-deps chromium
+      - name: Run critical browser journeys
+        run: npm run test:e2e
+      - name: Upload browser-test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

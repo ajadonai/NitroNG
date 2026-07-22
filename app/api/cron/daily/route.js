@@ -2,6 +2,7 @@ export const maxDuration = 60;
 
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
+import { reportOperationalFailure } from '@/lib/monitoring';
 import { getBalance } from '@/lib/smm';
 import { sendEmail, emailWrap, emailRow, emailDataBox, sendNudgeIdleFunds, sendNudgeIdleBalance, sendAdActivationDay1, sendAdActivationDay3, sendAdActivationDay6, sendWinback30Email, sendWinback60Email } from '@/lib/email';
 import { tgProviderBalance, tgDailySummary } from '@/lib/telegram';
@@ -18,7 +19,6 @@ export async function GET(req) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const isScheduled = req.headers.get('x-vercel-cron') === '1';
   const results = { cleanup: {}, balance: {} };
 
   // ═══ CLEANUP: unverified signups + permanent deletions ═══
@@ -37,8 +37,19 @@ export async function GET(req) {
     if (deletionFinalization.finalized > 0 || deletionFinalization.failed > 0) {
       log.info('Cleanup', `Finalized ${deletionFinalization.finalized} account deletions; ${deletionFinalization.failed} failed`);
     }
+    if (deletionFinalization.failed > 0) {
+      reportOperationalFailure('cleanup_failed', {
+        data: { job: 'daily_account_cleanup', failed: deletionFinalization.failed },
+        dedupeKey: 'cleanup_failed:daily_account_cleanup',
+      });
+    }
   } catch (err) {
     log.error('Cleanup', err.message);
+    reportOperationalFailure('cleanup_failed', {
+      error: err,
+      data: { job: 'daily_account_cleanup' },
+      dedupeKey: 'cleanup_failed:daily_account_cleanup',
+    });
     results.cleanup.error = err.message;
   }
 

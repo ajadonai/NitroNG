@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   warn: vi.fn(),
   error: vi.fn(),
   info: vi.fn(),
+  reportOperationalFailure: vi.fn(),
 }));
 
 vi.mock('@/lib/nowpayments-payment', () => ({
@@ -17,6 +18,9 @@ vi.mock('@/lib/deposit-notifications', () => ({
 }));
 vi.mock('@/lib/logger', () => ({
   log: { warn: mocks.warn, error: mocks.error, info: mocks.info },
+}));
+vi.mock('@/lib/monitoring', () => ({
+  reportOperationalFailure: mocks.reportOperationalFailure,
 }));
 
 const { POST } = await import('@/app/api/payments/crypto/webhook/route');
@@ -120,6 +124,14 @@ describe('POST /api/payments/crypto/webhook', () => {
     expect(response.status).toBe(503);
     expect(response.headers.get('retry-after')).toBe('15');
     expect(await response.json()).toMatchObject({ ok: false, retryable: true });
+    expect(mocks.reportOperationalFailure).toHaveBeenCalledWith(
+      'webhook_processing_failed',
+      {
+        level: 'warning',
+        data: { provider: 'nowpayments', reason: 'timeout' },
+        dedupeKey: 'webhook_processing_failed:nowpayments',
+      },
+    );
   });
 
   it('notifies only when reconciliation newly finalizes the deposit', async () => {
@@ -156,5 +168,22 @@ describe('POST /api/payments/crypto/webhook', () => {
 
     expect(response.status).toBe(403);
     expect(mocks.reconcileNowPaymentsDeposit).not.toHaveBeenCalled();
+  });
+
+  it('reports unexpected webhook processing failures', async () => {
+    const failure = new Error('provider request failed');
+    mocks.reconcileNowPaymentsDeposit.mockRejectedValue(failure);
+
+    const response = await POST(signedRequest(callbackBody(), 'webhook-secret-one'));
+
+    expect(response.status).toBe(500);
+    expect(mocks.reportOperationalFailure).toHaveBeenCalledWith(
+      'webhook_processing_failed',
+      {
+        error: failure,
+        data: { provider: 'nowpayments' },
+        dedupeKey: 'webhook_processing_failed:nowpayments',
+      },
+    );
   });
 });
