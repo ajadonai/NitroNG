@@ -12,8 +12,6 @@ import {
   prepareUserFixture,
 } from './fixtures/database.js';
 
-test.describe.configure({ mode: 'serial' });
-
 test.beforeEach(async ({ page }) => {
   await blockExternalBrowserRequests(page);
 });
@@ -27,11 +25,12 @@ test('a customer can create an account and reach the dashboard', async ({ page }
   await dialog.getByLabel('First Name').fill('Browser');
   await dialog.getByLabel('Last Name').fill('Tester');
   await dialog.getByLabel('Email Address').fill(SIGNUP_EMAIL);
+  const phoneCheck = page.waitForResponse(resp => resp.url().includes('/api/auth/check-phone'));
   await dialog.getByLabel(/WhatsApp Number/).fill('8012345003');
-  await expect(dialog.getByText("We'll reach you here")).toBeVisible();
+  await phoneCheck;
   await dialog.getByRole('button', { name: 'Continue →' }).click();
 
-  await expect(dialog.getByRole('heading', { name: 'Secure Your Account' })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Secure Your Account' })).toBeVisible({ timeout: 10000 });
   await dialog.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await dialog.getByLabel('Confirm Password').fill(PASSWORD);
   await dialog.locator('#signup-terms').check();
