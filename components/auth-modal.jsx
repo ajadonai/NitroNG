@@ -420,7 +420,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={mode === 'login' ? 'Log in' : 'Create account'}
+        aria-label={mode === 'signup' ? 'Create account' : 'Log in'}
         onClick={(e) => e.stopPropagation()}
         className="auth-card w-full max-w-[440px] max-h-[90dvh] overflow-y-auto overflow-x-hidden rounded-2xl px-8 py-9 max-md:py-6 relative backdrop-blur-[20px] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]"
         style={{

@@ -42,13 +42,23 @@ test('a customer can create an account and reach the dashboard', async ({ page }
 
 test('a customer can log in with a persistent session', async ({ page }) => {
   await prepareUserFixture();
-  await page.goto('/login');
+  await page.goto('/?login=1');
 
   const dialog = page.getByRole('dialog', { name: 'Log in' });
-  await dialog.getByLabel('Email Address').fill(USER_EMAIL);
-  await dialog.getByLabel('Password', { exact: true }).fill(PASSWORD);
-  await dialog.getByLabel('Remember me').check();
+  await expect(dialog.getByText('Log in and start boosting')).toBeVisible();
+
+  const emailInput = dialog.locator('#login-identity');
+  const passwordInput = dialog.locator('#login-password');
+
+  await emailInput.fill(USER_EMAIL);
+  await expect(emailInput).toHaveValue(USER_EMAIL);
+  await passwordInput.fill(PASSWORD);
+  await expect(passwordInput).toHaveValue(PASSWORD);
+  await dialog.locator('#login-remember').check();
+
+  const loginResponse = page.waitForResponse(resp => resp.url().includes('/api/auth/login'));
   await dialog.getByRole('button', { name: 'Log In', exact: true }).click();
+  await loginResponse;
 
   await page.waitForURL('**/dashboard');
   await expect(page.getByText('New Order', { exact: true }).first()).toBeVisible();
@@ -58,9 +68,10 @@ test('a customer can log in with a persistent session', async ({ page }) => {
 
 test('forgot-password and reset-password screens complete the recovery journey', async ({ page }) => {
   await prepareResetFixture();
-  await page.goto('/login');
+  await page.goto('/?login=1');
 
   const loginDialog = page.getByRole('dialog', { name: 'Log in' });
+  await expect(loginDialog.getByText('Log in and start boosting')).toBeVisible();
   await loginDialog.getByRole('button', { name: 'Forgot password?' }).click();
   await loginDialog.getByLabel('Email Address').fill(RESET_EMAIL);
   await loginDialog.getByRole('button', { name: 'Send Reset Link' }).click();

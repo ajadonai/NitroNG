@@ -334,6 +334,7 @@ describe('fail-closed production behavior', () => {
 
   it('uses memory after a Redis failure outside production', async () => {
     const memoryStore = new Map();
+    const monitor = vi.fn();
     const redis = { eval: vi.fn().mockRejectedValue(new Error('redis down')) };
     const limit = createRateLimiter({
       redis,
@@ -341,6 +342,7 @@ describe('fail-closed production behavior', () => {
       memoryStore,
       now: () => 1_000,
       logger: silentLogger(),
+      monitor,
     });
 
     const result = await limit(mockReq(), { maxAttempts: 2, windowMs: 5_000 });
@@ -353,6 +355,7 @@ describe('fail-closed production behavior', () => {
       retryAfter: 5,
     });
     expect(memoryStore.size).toBe(1);
+    expect(monitor).not.toHaveBeenCalled();
   });
 });
 
