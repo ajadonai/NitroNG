@@ -22,11 +22,20 @@ test('a customer can create an account and reach the dashboard', async ({ page }
 
   const dialog = page.getByRole('dialog', { name: 'Create account' });
   await expect(dialog.getByRole('heading', { name: 'Create Account' })).toBeVisible();
-  await dialog.getByLabel('First Name').fill('Browser');
-  await dialog.getByLabel('Last Name').fill('Tester');
-  await dialog.getByLabel('Email Address').fill(SIGNUP_EMAIL);
+  const firstNameInput = dialog.locator('#signup-first');
+  const lastNameInput = dialog.locator('#signup-last');
+  const emailInput = dialog.locator('#signup-email');
+  const phoneInput = dialog.locator('#signup-phone');
+
+  await firstNameInput.fill('Browser');
+  await expect(firstNameInput).toHaveValue('Browser');
+  await lastNameInput.fill('Tester');
+  await expect(lastNameInput).toHaveValue('Tester');
+  await emailInput.fill(SIGNUP_EMAIL);
+  await expect(emailInput).toHaveValue(SIGNUP_EMAIL);
   const phoneCheck = page.waitForResponse(resp => resp.url().includes('/api/auth/check-phone'));
-  await dialog.getByLabel(/WhatsApp Number/).fill('8012345003');
+  await phoneInput.fill('8012345003');
+  await expect(phoneInput).toHaveValue('8012345003');
   await phoneCheck;
   await dialog.getByRole('button', { name: 'Continue →' }).click();
 
