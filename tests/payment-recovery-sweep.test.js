@@ -5,6 +5,9 @@ const mocks = vi.hoisted(() => ({
   transactionFindMany: vi.fn().mockResolvedValue([]),
   transactionUpdate: vi.fn().mockResolvedValue({}),
   transactionUpdateMany: vi.fn().mockResolvedValue({ count: 0 }),
+  idempotencyKeyCreateMany: vi.fn().mockResolvedValue({ count: 0 }),
+  idempotencyKeyFindMany: vi.fn().mockResolvedValue([]),
+  idempotencyKeyDeleteMany: vi.fn().mockResolvedValue({ count: 0 }),
   reconcileFlutterwaveDeposit: vi.fn(),
   reconcileNowPaymentsDeposit: vi.fn(),
   getFlutterwaveSecretKey: vi.fn().mockResolvedValue('FLWSECK_TEST'),
@@ -23,6 +26,11 @@ vi.mock('@/lib/prisma', () => ({
       findMany: mocks.transactionFindMany,
       update: mocks.transactionUpdate,
       updateMany: mocks.transactionUpdateMany,
+    },
+    idempotencyKey: {
+      createMany: mocks.idempotencyKeyCreateMany,
+      findMany: mocks.idempotencyKeyFindMany,
+      deleteMany: mocks.idempotencyKeyDeleteMany,
     },
   },
 }));
@@ -340,8 +348,8 @@ describe('reconciliation attempt stamping', () => {
     const stats = await recoverStalePendingPayments({ now });
 
     expect(stats.errors).toEqual([]);
-    expect(mocks.transactionUpdate).toHaveBeenCalledWith({
-      where: { id: d.id },
+    expect(mocks.transactionUpdateMany).toHaveBeenCalledWith({
+      where: { id: { in: [d.id] } },
       data: { paymentReconciliationAttemptAt: now },
     });
   });

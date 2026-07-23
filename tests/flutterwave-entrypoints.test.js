@@ -6,6 +6,9 @@ const mocks = vi.hoisted(() => ({
   transactionFindMany: vi.fn(),
   transactionUpdate: vi.fn(),
   transactionUpdateMany: vi.fn(),
+  idempotencyKeyCreateMany: vi.fn().mockResolvedValue({ count: 0 }),
+  idempotencyKeyFindMany: vi.fn().mockResolvedValue([]),
+  idempotencyKeyDeleteMany: vi.fn().mockResolvedValue({ count: 0 }),
   getFlutterwaveSecretKey: vi.fn(),
   reconcileFlutterwaveDeposit: vi.fn(),
   getNowPaymentsApiKey: vi.fn(),
@@ -26,6 +29,11 @@ vi.mock('@/lib/prisma', () => ({
       findMany: mocks.transactionFindMany,
       update: mocks.transactionUpdate,
       updateMany: mocks.transactionUpdateMany,
+    },
+    idempotencyKey: {
+      createMany: mocks.idempotencyKeyCreateMany,
+      findMany: mocks.idempotencyKeyFindMany,
+      deleteMany: mocks.idempotencyKeyDeleteMany,
     },
   },
 }));
@@ -264,6 +272,8 @@ describe('recoverStalePendingPayments', () => {
       secretKey: '',
       recoveredBy: 'cron',
       timeoutMs: 8_000,
+      deferLeaseRelease: true,
+      preAcquiredLease: undefined,
     });
     expect(stats).toMatchObject({ checked: 1, retryable: 1, recovered: 0 });
   });
@@ -438,6 +448,8 @@ describe('recoverStalePendingPayments', () => {
         secretKey: 'flw-secret',
         recoveredBy: 'cron',
         timeoutMs: 8_000,
+        deferLeaseRelease: true,
+        preAcquiredLease: undefined,
       });
     }
     expect(mocks.notifyDepositFinalized).toHaveBeenCalledTimes(1);
@@ -448,6 +460,8 @@ describe('recoverStalePendingPayments', () => {
       timeoutMs: 8_000,
       auditCompleted: false,
       now: expect.any(Date),
+      deferLeaseRelease: true,
+      preAcquiredLease: undefined,
     });
     expect(stats).toMatchObject({
       checked: 4,
@@ -549,6 +563,8 @@ describe('recoverStalePendingPayments', () => {
       timeoutMs: 8_000,
       auditCompleted: true,
       now,
+      deferLeaseRelease: true,
+      preAcquiredLease: undefined,
     });
     expect(mocks.notifyDepositFinalized).not.toHaveBeenCalled();
     expect(stats).toMatchObject({ checked: 1, audited: 1, review: 1, recovered: 0 });
@@ -589,6 +605,8 @@ describe('recoverStalePendingPayments', () => {
       auditCompleted: false,
       auditRejected: true,
       now,
+      deferLeaseRelease: true,
+      preAcquiredLease: undefined,
     });
     expect(stats).toMatchObject({ checked: 1, reviewAudited: 1, review: 1 });
     expect(mocks.notifyDepositFinalized).not.toHaveBeenCalled();
