@@ -2012,12 +2012,16 @@ export function AdminIssuesPage({ dark, t }) {
   const rowBorder = dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)";
   const skBone = `skel-bone ${dark ? "skel-dark" : "skel-light"}`;
 
+  const KNOWN_TYPES = new Set(["dead_service", "revived_service", "order_failure", "low_balance", "price_alert", "crypto_payment_review", "ghost_dispatch", "dangling_tier"]);
   const deadServices = issues.filter(i => i.type === "dead_service" && i.status === "open");
   const revivedServices = issues.filter(i => i.type === "revived_service" && i.status === "open");
   const orderFailures = issues.filter(i => i.type === "order_failure" && i.status === "open");
   const lowBalanceIssues = issues.filter(i => i.type === "low_balance" && i.status === "open");
   const priceIssues = issues.filter(i => i.type === "price_alert" && i.status === "open");
   const cryptoPaymentReviews = issues.filter(i => i.type === "crypto_payment_review" && i.status === "open");
+  const ghostDispatches = issues.filter(i => i.type === "ghost_dispatch" && i.status === "open");
+  const danglingTiers = issues.filter(i => i.type === "dangling_tier" && i.status === "open");
+  const otherIssues = issues.filter(i => i.status === "open" && !KNOWN_TYPES.has(i.type));
   const resolvedIssues = issues.filter(i => i.status === "resolved" || i.status === "ignored");
 
   const balanceEntries = balances ? Object.entries(balances).filter(([k]) => k !== "checkedAt") : [];
@@ -2205,6 +2209,48 @@ export function AdminIssuesPage({ dark, t }) {
           <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>No order failures</div>
         )}
       </IssueSection>
+
+      {/* ═══ GHOST DISPATCHES ═══ */}
+      {ghostDispatches.length > 0 && (
+        <IssueSection title="Ghost Dispatches" dark={dark} t={t}
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 00-6.88 17.23l.9.67V22l2.82-1.45A9.93 9.93 0 0012 21a10 10 0 000-19z"/><line x1="8" y1="10" x2="8" y2="10.01"/><line x1="12" y1="10" x2="12" y2="10.01"/><line x1="16" y1="10" x2="16" y2="10.01"/></svg>}
+          count={ghostDispatches.length}
+          countColor={amberBadge}
+          defaultOpen
+        >
+          {ghostDispatches.map((issue, i) => (
+            <IssueRow key={issue.id} issue={issue} i={i} total={ghostDispatches.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
+          ))}
+        </IssueSection>
+      )}
+
+      {/* ═══ DANGLING TIERS ═══ */}
+      {danglingTiers.length > 0 && (
+        <IssueSection title="Dangling Tiers" dark={dark} t={t}
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
+          count={danglingTiers.length}
+          countColor={amberBadge}
+          defaultOpen
+        >
+          {danglingTiers.map((issue, i) => (
+            <IssueRow key={issue.id} issue={issue} i={i} total={danglingTiers.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
+          ))}
+        </IssueSection>
+      )}
+
+      {/* ═══ OTHER ISSUES (catch-all) ═══ */}
+      {otherIssues.length > 0 && (
+        <IssueSection title="Other Issues" dark={dark} t={t}
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>}
+          count={otherIssues.length}
+          countColor={amberBadge}
+          defaultOpen
+        >
+          {otherIssues.map((issue, i) => (
+            <IssueRow key={issue.id} issue={issue} i={i} total={otherIssues.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
+          ))}
+        </IssueSection>
+      )}
 
       {/* ═══ RESOLVED ═══ */}
       {resolvedIssues.length > 0 && (() => {
@@ -2399,4 +2445,10 @@ export function AdminChangelogPage({ dark, t }) {
     </>
   );
 }
+
+/* ═══════════════════════════════════════════ */
+/* ═══ CREATE ORDER                        ═══ */
+/* ═══════════════════════════════════════════ */
+
+export { AdminCreateOrderPage } from "./admin-create-order-page";
 

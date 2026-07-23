@@ -2,6 +2,19 @@
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
 
+## ⛔ DRIP PUSH CHECKLIST
+
+When pushing the drip changes, **restore these items that were removed in commit `0ec7316`** to avoid breaking the build:
+
+1. **`components/admin-dashboard.jsx`** — re-add:
+   - Dynamic import: `const AdminCreateOrderPage = dynamic(() => import("./admin-create-order-page").then(m => m.AdminCreateOrderPage), { ssr: false });`
+   - Nav entry: `{ id: "create-order", label: "Create Order", icon: ... }` in the Operations section
+   - Route case: `case "create-order": return <AdminCreateOrderPage dark={dark} t={t} />;`
+   - Sidebar branch: `active === "create-order" ? <div id="create-order-sidebar" ... /> :` before the leaderboard ternary
+2. **`components/admin-extra-pages.jsx`** — re-add at the end: `export { AdminCreateOrderPage } from "./admin-create-order-page";`
+3. **`tests/user-orders-pagination.test.js`** — re-add the 2 `POST /api/orders — request boundary` tests (malformed JSON + typed-invalid body)
+4. **Push `components/admin-create-order-page.jsx`** and **`tests/admin-create-order-module.test.js`** alongside the above
+
 ## ⛔ HARD GATE: Tasks page
 
 Before building or shipping ANYTHING related to the Tasks page, task rewards, or the tasks launch email: **read `docs/TASKS_LAUNCH_GATE.md` and ask Trip the questions in it first.** The launch email already promises users specific numbers; do not ship task amounts Trip has not confirmed in that conversation.

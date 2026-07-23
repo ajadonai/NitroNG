@@ -77,7 +77,7 @@ function CopyAllIds({ ids, dark }) {
   );
 }
 
-function DripSection({ dispatches, dark, t }) {
+function DripSection({ dispatches, dripConfig, dark, t }) {
   const [openDays, setOpenDays] = useState({});
   const allIds = dispatches.filter(d => d.apiOrderId).map(d => d.apiOrderId);
   const doneCount = dispatches.filter(d => d.status === "completed" || d.status === "partial").length;
@@ -90,11 +90,18 @@ function DripSection({ dispatches, dark, t }) {
   const dayKeys = Object.keys(days).sort((a, b) => a - b);
   const toggleDay = (day) => setOpenDays(prev => ({ ...prev, [day]: !prev[day] }));
   const statusLabel = (s) => s === "completed" ? "Completed" : s === "processing" ? "Processing" : s === "failed" ? "Failed" : s === "partial" ? "Partial" : "Pending";
+  const cfgParts = [];
+  if (dripConfig) {
+    if (dripConfig.curve && dripConfig.curve !== "even") cfgParts.push(dripConfig.curve);
+    if (dripConfig.window) cfgParts.push(`${dripConfig.window.startHour}:00–${dripConfig.window.endHour}:00`);
+    if (dripConfig.pauseDay) cfgParts.push(`pause d${dripConfig.pauseDay}`);
+    if (dripConfig.timezone) cfgParts.push(dripConfig.timezone.split("/").pop());
+  }
 
   return (
     <div className="mt-2 mb-2 rounded-lg overflow-hidden" style={{ border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.14)"}` }}>
       <div className="flex items-center justify-between py-1.5 px-2.5" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>
-        <span className="text-[11px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.accent }}>Drip · {doneCount}/{dispatches.length} batches · {dayKeys.length} days</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.accent }}>Drip · {doneCount}/{dispatches.length} batches · {dayKeys.length} days{cfgParts.length > 0 ? ` · ${cfgParts.join(" · ")}` : ""}</span>
         <CopyAllIds ids={allIds} dark={dark} />
       </div>
       {dayKeys.map(day => {
@@ -102,7 +109,7 @@ function DripSection({ dispatches, dark, t }) {
         const dayIds = batches.filter(d => d.apiOrderId).map(d => d.apiOrderId);
         const dayDone = batches.filter(d => d.status === "completed" || d.status === "partial").length;
         const isOpen = openDays[day];
-        const dayDate = batches[0]?.scheduled ? new Date(batches[0].scheduled).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+        const dayDate = batches[0]?.scheduled ? new Date(batches[0].scheduled).toLocaleDateString("en-GB", { day: "numeric", month: "short", ...(dripConfig?.timezone ? { timeZone: dripConfig.timezone } : {}) }) : "";
         return (
           <div key={day}>
             <div onClick={() => toggleDay(day)} className="w-full flex items-center gap-2 py-1.5 px-2.5 text-[11px] cursor-pointer" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}`, color: t.text }}>
@@ -130,7 +137,7 @@ function DripSection({ dispatches, dark, t }) {
                       <span className="shrink-0 w-12 font-semibold" style={{ color: t.text }}>{d.qty?.toLocaleString()}</span>
                       <span className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold" style={{ background: sBg(statusLabel(d.status), dark), color: sClr(statusLabel(d.status), dark) }}>{d.status}</span>
                       {d.apiOrderId ? <CopyId value={d.apiOrderId} dark={dark} size="sm" /> : <span style={{ color: t.textMuted }}>—</span>}
-                      <span className="ml-auto shrink-0" style={{ color: t.textMuted }}>{d.scheduled ? new Date(d.scheduled).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}</span>
+                      <span className="ml-auto shrink-0" style={{ color: t.textMuted }}>{d.scheduled ? new Date(d.scheduled).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", ...(dripConfig?.timezone ? { timeZone: dripConfig.timezone } : {}) }) : ""}</span>
                     </div>
                     {!bPending && (
                       <div className="mt-1.5 ml-7 h-1 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)" }}>
@@ -626,7 +633,7 @@ export default function AdminOrdersPage({ dark, t }) {
                             </div>); })()}
 
                             {/* Drip dispatches */}
-                            {o.dripDispatches && <DripSection dispatches={o.dripDispatches} dark={dark} t={t} />}
+                            {o.dripDispatches && <DripSection dispatches={o.dripDispatches} dripConfig={o.dripConfig} dark={dark} t={t} />}
 
                             {/* Actions */}
                             <div className="flex items-center gap-2 flex-wrap py-1.5 px-1">
@@ -793,7 +800,7 @@ export default function AdminOrdersPage({ dark, t }) {
                   </div>); })()}
 
                   {/* Drip dispatches */}
-                  {o.dripDispatches && <DripSection dispatches={o.dripDispatches} dark={dark} t={t} />}
+                  {o.dripDispatches && <DripSection dispatches={o.dripDispatches} dripConfig={o.dripConfig} dark={dark} t={t} />}
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 flex-wrap py-1.5 px-1">

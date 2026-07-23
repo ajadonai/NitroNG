@@ -2,7 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { requireAdmin, logActivity } from '@/lib/admin';
 import { cleanLink } from '@/lib/clean-link';
-import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig } from '@/lib/drip-feed';
+import { validateDripConfig, calculateIntradayDrip, calculateMultiDayDrip, getDripConfig, checkDripFeasibility } from '@/lib/drip-feed';
 import { buildOrderOfferSnapshot } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder } from '@/lib/order-queue';
 import { tgNewOrder } from '@/lib/telegram';
@@ -152,7 +152,7 @@ export async function POST(req) {
     }
 
     // single or drip
-    const { tierId, quantity, link: rawLink, dripDays } = body;
+    const { tierId, quantity, link: rawLink, dripDays, dripConfig: rawDripConfig } = body;
     if (!tierId) return Response.json({ error: 'Tier is required' }, { status: 400 });
     if (!rawLink) return Response.json({ error: 'Link is required' }, { status: 400 });
 
@@ -181,7 +181,9 @@ export async function POST(req) {
     }
 
     const dripNum = mode === 'drip' ? (Number(dripDays) || 0) : 0;
-    if (mode === 'drip' && dripNum < 2) return Response.json({ error: 'Drip requires at least 2 days' }, { status: 400 });
+    if (mode === 'drip' && (!Number.isInteger(dripNum) || dripNum < 2 || dripNum > 60)) {
+      return Response.json({ error: 'Drip days must be a whole number between 2 and 60' }, { status: 400 });
+    }
 
     const providerMin = tier.service.min || 50;
     const groupType = tier.group?.type || '';
@@ -189,12 +191,35 @@ export async function POST(req) {
     const dripEligible = tier.group?.tags?.includes('drip');
     const dripCfg = getDripConfig(groupType, platform);
 
+    let dripConfigObj = null;
+    if (dripNum >= 2) {
+      if (rawDripConfig != null) {
+        const v = validateDripConfig(rawDripConfig, dripNum);
+        if (!v.ok) return Response.json({ error: v.error }, { status: 400 });
+        dripConfigObj = v.config;
+      }
+      if (!dripConfigObj) dripConfigObj = { version: 1 };
+    }
+
     let dripSchedule = null;
     if (dripNum >= 2) {
-      dripSchedule = calculateMultiDayDrip(qty, dripNum, providerMin, new Date(), groupType, platform);
+      const feas = checkDripFeasibility(qty, dripNum, dripConfigObj, groupType, platform, providerMin);
+      if (!feas.feasible) return Response.json({ error: feas.error }, { status: 400 });
+      dripSchedule = calculateMultiDayDrip(qty, dripNum, providerMin, new Date(), groupType, platform, dripConfigObj);
     } else if (mode === 'single' && dripEligible && dripCfg && qty >= dripCfg.threshold) {
       const intraday = calculateIntradayDrip(qty, providerMin, new Date(), groupType, platform);
       if (intraday) dripSchedule = { dispatches: intraday.dispatches.map(d => ({ ...d, day: 1 })) };
+    }
+
+    if (dripSchedule) {
+      const totalDispatched = dripSchedule.dispatches.reduce((s, d) => s + d.quantity, 0);
+      if (totalDispatched !== qty) {
+        return Response.json({ error: `Drip schedule quantity mismatch: dispatches total ${totalDispatched}, order is ${qty}` }, { status: 500 });
+      }
+      const invalidRow = dripSchedule.dispatches.find(d => d.quantity <= 0 || (providerMin > 0 && d.quantity < providerMin));
+      if (invalidRow) {
+        return Response.json({ error: `Schedule produces an invalid batch of ${invalidRow.quantity} units (minimum is ${providerMin})` }, { status: 400 });
+      }
     }
 
     const snapshot = buildOrderOfferSnapshot({ tier, service: tier.service });
@@ -215,7 +240,7 @@ export async function POST(req) {
           status: 'Pending',
           ...snapshot,
           ...(blocker ? { queuedBehind: blocker.orderId } : {}),
-          ...(dripSchedule ? { dripDays: dripNum || 1 } : {}),
+          ...(dripSchedule ? { dripDays: dripNum || 1, ...(dripConfigObj ? { dripConfig: dripConfigObj } : {}) } : {}),
         },
       });
 

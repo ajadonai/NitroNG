@@ -282,6 +282,7 @@ model Order {
   lastError               String?
   queuedBehind            String?
   dripDays                Int?
+  dripConfig              Json?
   dripDelivered           Int       @default(0)
   dispatchedAt            DateTime?
   completedAt             DateTime?

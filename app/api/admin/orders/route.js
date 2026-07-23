@@ -164,6 +164,7 @@ export async function GET(req) {
         status: o.status,
         apiOrderId: o.apiOrderId,
         dripDays: o.dripDays || null,
+        dripConfig: o.dripConfig || null,
         dripEndAt: o.dripDispatches?.filter(d => !['completed', 'partial', 'failed'].includes(d.status)).sort((a, b) => b.scheduledAt - a.scheduledAt)[0]?.scheduledAt?.toISOString() || null,
         dripDispatches: o.dripDispatches?.length > 0 ? o.dripDispatches.map(d => ({ id: d.id, day: d.day, batch: d.batch, qty: d.quantity, status: d.status, apiOrderId: d.apiOrderId, scheduled: d.scheduledAt?.toISOString(), dispatched: d.dispatchedAt?.toISOString(), completed: d.completedAt?.toISOString(), error: d.lastError })) : null,
         batchId: o.batchId || null,
@@ -399,6 +400,11 @@ export async function POST(req) {
           if (Object.keys(upd).length > 0) await prisma.dripDispatch.update({ where: { id: d.id }, data: upd });
         } catch {}
       }
+      // Reschedule overdue pending batches
+      try {
+        const { rescheduleAfterDripCompletion } = await import('@/lib/drip-completion');
+        await rescheduleAfterDripCompletion(prisma, order.id);
+      } catch {}
       const allDispatches = await prisma.dripDispatch.findMany({ where: { orderId: order.id }, select: { status: true, remains: true, quantity: true, startCount: true }, orderBy: [{ day: 'asc' }, { batch: 'asc' }] });
       const allDone = allDispatches.length > 0 && allDispatches.every(d => ['completed', 'partial', 'cancelled'].includes(d.status));
       const totalRemains = allDispatches.reduce((s, d) => {
@@ -587,6 +593,20 @@ export async function POST(req) {
         if (claimed.count === 0) return Response.json({ error: 'Batch is queued, the order is no longer active, or another batch is in flight' }, { status: 409 });
 
         try {
+          // Window enforcement: defer dispatch if outside delivery window
+          const orderCfg = fullOrder.dripConfig;
+          if (orderCfg?.window) {
+            const { isInWindow, snapToWindow } = await import('@/lib/drip-feed');
+            const cfgTz = orderCfg.timezone || null;
+            if (!isInWindow(new Date(), orderCfg.window, cfgTz)) {
+              const nextSlot = snapToWindow(new Date(), orderCfg.window, cfgTz);
+              await prisma.dripDispatch.updateMany({
+                where: { id: candidate.id, status: 'dispatching' },
+                data: { status: 'pending', dispatchedAt: null, scheduledAt: nextSlot },
+              });
+              return Response.json({ success: true, delayed: true, message: `Outside delivery window. Next slot: ${nextSlot.toISOString()}` });
+            }
+          }
           const { placeOrder } = await import('@/lib/smm');
           const service = fullOrder.service;
           const prov = service.provider || 'mtp';
@@ -653,7 +673,13 @@ export async function POST(req) {
                 status: 'dispatching',
                 order: { status: { in: ['Pending', 'Processing'] }, queuedBehind: null, deletedAt: null },
               },
-              data: { status: 'pending', lastError: null, dispatchedAt: null, scheduledAt: new Date(Date.now() + 30 * 60 * 1000) },
+              data: { status: 'pending', lastError: null, dispatchedAt: null, scheduledAt: await (async () => {
+                const raw = new Date(Date.now() + 30 * 60 * 1000);
+                const oCfg = fullOrder.dripConfig;
+                if (!oCfg?.window) return raw;
+                const { snapToWindow: sw } = await import('@/lib/drip-feed');
+                return sw(raw, oCfg.window, oCfg.timezone || null);
+              })() },
             });
             if (reset.count === 0) return Response.json({ error: 'Order state changed while dispatching' }, { status: 409 });
             await prisma.order.updateMany({
@@ -790,14 +816,25 @@ export async function POST(req) {
       const newCost = Math.round((Number(service.costPer1k) * usdRate / 1000) * remainingQty / 100) * 100;
 
       let dripSchedule = null;
+      let redispatchDripConfig = null;
+      let redispatchDripDays = null;
       if (hasDrip) {
         const providerMin = service.min || 50;
         const groupType = fullOrder.tier?.group?.type || '';
         const platform = (fullOrder.service?.category || '').toLowerCase();
         if (fullOrder.dripDays && fullOrder.dripDays > 1) {
-          const proportionalDays = Math.max(1, Math.round(fullOrder.dripDays * remainingQty / fullOrder.quantity));
+          const proportionalDays = Math.max(2, Math.round(fullOrder.dripDays * remainingQty / fullOrder.quantity));
           const { calculateMultiDayDrip } = await import('@/lib/drip-feed');
-          dripSchedule = calculateMultiDayDrip(remainingQty, proportionalDays, providerMin, new Date(), groupType, platform);
+          const parentConfig = fullOrder.dripConfig || null;
+          const childConfig = parentConfig ? { ...parentConfig, startAt: undefined, pauseDay: undefined } : null;
+          if (remainingQty < providerMin) {
+            // Sub-minimum remainder: don't dispatch to provider — leave for admin disposition
+            dripSchedule = null;
+          } else {
+            dripSchedule = calculateMultiDayDrip(remainingQty, proportionalDays, providerMin, new Date(), groupType, platform, childConfig);
+          }
+          redispatchDripConfig = childConfig;
+          redispatchDripDays = dripSchedule ? Math.max(...dripSchedule.dispatches.map(d => d.day)) : 1;
         } else {
           const { calculateIntradayDrip } = await import('@/lib/drip-feed');
           const intraday = calculateIntradayDrip(remainingQty, providerMin, new Date(), groupType, platform);
@@ -838,7 +875,7 @@ export async function POST(req) {
               parentOrderId: fullOrder.orderId, comments: fullOrder.comments,
               ...childOfferSnapshot,
               ...(initialBlocker ? { queuedBehind: initialBlocker.orderId } : {}),
-              ...(dripSchedule ? { dripDays: fullOrder.dripDays || 1 } : {}),
+              ...(dripSchedule ? { dripDays: redispatchDripDays || 1, ...(redispatchDripConfig ? { dripConfig: redispatchDripConfig } : {}) } : {}),
             },
           });
           if (newCharge > 0) {
@@ -907,6 +944,10 @@ export async function POST(req) {
           where: { orderId: newOrder.id, status: 'pending' },
           orderBy: [{ day: 'asc' }, { batch: 'asc' }],
         });
+        if (first && first.scheduledAt > new Date()) {
+          await logActivity(admin.name, `Redispatched ${orderId} → ${newId} (${remainingQty} qty)${swapNote} — first batch scheduled for ${first.scheduledAt.toISOString()}`, 'order');
+          return Response.json({ success: true, newOrderId: newId, message: `Created ${newId} for ${remainingQty} remaining — first batch scheduled for later` });
+        }
         if (first) {
           try {
             const batchExtra = { ...extra };
@@ -959,7 +1000,14 @@ export async function POST(req) {
                   status: 'dispatching',
                   order: { status: 'Pending', deletedAt: null },
                 },
-                data: { status: 'pending', lastError: null, dispatchedAt: null, scheduledAt: new Date(Date.now() + 30 * 60 * 1000) },
+                data: { status: 'pending', lastError: null, dispatchedAt: null, scheduledAt: await (async () => {
+                  const raw = new Date(Date.now() + 30 * 60 * 1000);
+                  if (redispatchDripConfig?.window) {
+                    const { snapToWindow: snap } = await import('@/lib/drip-feed');
+                    return snap(raw, redispatchDripConfig.window, redispatchDripConfig.timezone || null);
+                  }
+                  return raw;
+                })() },
               });
               if (reset.count === 0) return Response.json({ error: `${newId} changed state while dispatching` }, { status: 409 });
               await prisma.order.updateMany({

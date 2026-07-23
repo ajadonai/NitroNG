@@ -132,3 +132,29 @@ describe('GET /api/orders — logical pagination and search', () => {
   });
 });
 
+describe('POST /api/orders — request boundary', () => {
+  it('rejects malformed JSON before querying order configuration', async () => {
+    const response = await POST(new Request('http://localhost/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{',
+    }));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'Invalid request body' });
+    expect(mockSetting.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('rejects a typed-invalid JSON body before querying order configuration', async () => {
+    const response = await POST(new Request('http://localhost/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([]),
+    }));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'Invalid request body' });
+    expect(mockSetting.findUnique).not.toHaveBeenCalled();
+  });
+});
+
