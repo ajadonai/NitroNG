@@ -2,11 +2,10 @@ import prisma from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const row = await prisma.setting.findUnique({ where: { key: 'maintEnabled' } });
-    if (row?.value === 'true') {
-      const msgRow = await prisma.setting.findUnique({ where: { key: 'maintMessage' } });
-      const etaRow = await prisma.setting.findUnique({ where: { key: 'maintETA' } });
-      return Response.json({ maintenance: true, message: msgRow?.value || '', eta: etaRow?.value || '' });
+    const rows = await prisma.setting.findMany({ where: { key: { in: ['maintEnabled', 'maintMessage', 'maintETA'] } } });
+    const s = Object.fromEntries(rows.map(r => [r.key, r.value]));
+    if (s.maintEnabled === 'true') {
+      return Response.json({ maintenance: true, message: s.maintMessage || '', eta: s.maintETA || '' });
     }
     return Response.json({ maintenance: false });
   } catch {

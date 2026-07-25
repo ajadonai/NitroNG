@@ -10,6 +10,12 @@ const QUOTES = [
   { text: "Numbers don't lie. Neither does your uptime.", author: "Operator's Code" },
 ];
 
+function fmtStat(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M+';
+  if (n >= 1000) return (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, '') + 'K+';
+  return n.toLocaleString() + '+';
+}
+
 export default function AdminLogin(){
   const getAuto=()=>{const h=new Date().getHours(),m=new Date().getMinutes();if(h>=7&&h<18)return false;if(h>=19||h<6)return true;if(h===6)return m<30;if(h===18)return m>=30;return true;};
   const [dark,setDark]=useState(false);
@@ -22,11 +28,13 @@ export default function AdminLogin(){
   const [error,setError]=useState("");
   const [quoteIdx,setQuoteIdx]=useState(0);
   const [logoutMsg,setLogoutMsg]=useState(false);
+  const [stats,setStats]=useState(null);
 
   useEffect(()=>{const saved=(typeof window!=="undefined"?localStorage.getItem("nitro-theme"):null)||"auto";setThemeMode(saved);if(saved==="day")setDark(false);else if(saved==="night")setDark(true);else setDark(getAuto());},[]);
   useEffect(()=>{if(themeMode!=="auto")return;const iv=setInterval(()=>setDark(getAuto()),60000);return()=>clearInterval(iv);},[themeMode]);
   useEffect(()=>{const iv=setInterval(()=>setQuoteIdx(q=>(q+1)%QUOTES.length),6000);return()=>clearInterval(iv);},[]);
   useEffect(()=>{const p=new URLSearchParams(window.location.search);if(p.get("logout")){setLogoutMsg(true);window.history.replaceState({},"","/admin/login");setTimeout(()=>setLogoutMsg(false),4000);}},[]);
+  useEffect(()=>{fetch("/api/public/stats").then(r=>r.ok?r.json():null).then(d=>{if(d)setStats(d)}).catch(()=>{})},[]);
   const toggleTheme=()=>{const next=!dark;setDark(next);const mode=next?"night":"day";setThemeMode(mode);try{localStorage.setItem("nitro-theme",mode)}catch{};};
 
   const handleLogin=async()=>{
@@ -105,8 +113,8 @@ export default function AdminLogin(){
             {QUOTES.map((_,i)=><div key={i} className="transition-all duration-500 ease" style={{width:quoteIdx===i?20:6,height:6,borderRadius:3,background:quoteIdx===i?t.accent:(dark?"rgba(255,255,255,.15)":"rgba(255,255,255,.2)")}}/>)}
           </div>
           <div className="flex gap-8 max-lg:gap-6">
-            <div><div className="m text-lg max-lg:text-base font-semibold" style={{color:"#fff"}}>2,400+</div><div className="text-[13px] mt-0.5" style={{color:dark?"rgba(255,255,255,.35)":"rgba(255,255,255,.45)"}}>Users</div></div>
-            <div><div className="m text-lg max-lg:text-base font-semibold" style={{color:"#fff"}}>18K+</div><div className="text-[13px] mt-0.5" style={{color:dark?"rgba(255,255,255,.35)":"rgba(255,255,255,.45)"}}>Orders</div></div>
+            <div><div className="m text-lg max-lg:text-base font-semibold" style={{color:"#fff"}}>{stats?fmtStat(stats.users):"—"}</div><div className="text-[13px] mt-0.5" style={{color:dark?"rgba(255,255,255,.35)":"rgba(255,255,255,.45)"}}>Users</div></div>
+            <div><div className="m text-lg max-lg:text-base font-semibold" style={{color:"#fff"}}>{stats?fmtStat(stats.orders):"—"}</div><div className="text-[13px] mt-0.5" style={{color:dark?"rgba(255,255,255,.35)":"rgba(255,255,255,.45)"}}>Orders</div></div>
             <div><div className="m text-lg max-lg:text-base font-semibold" style={{color:"#fff"}}>99.9%</div><div className="text-[13px] mt-0.5" style={{color:dark?"rgba(255,255,255,.35)":"rgba(255,255,255,.45)"}}>Uptime</div></div>
           </div>
         </div>

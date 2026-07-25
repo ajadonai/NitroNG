@@ -154,19 +154,10 @@ export async function POST(req) {
       if (tierCount > 0) {
         return Response.json({ error: `Cannot delete — ${tierCount} tier(s) still reference this service. Remove them from Menu Builder first.` }, { status: 400 });
       }
-      // Check if any orders reference this service
-      const orderCount = await prisma.order.count({ where: { serviceId } });
-      if (orderCount > 0) {
-        // Don't delete, just disable
-        await prisma.service.update({ where: { id: serviceId }, data: { enabled: false } });
-        await logActivity(admin.name, `Disabled service (has ${orderCount} orders): ${service.name}`, 'service');
-        invalidateServiceCatalogue();
-        return Response.json({ success: true, disabled: true, message: `Service has ${orderCount} order(s) — disabled instead of deleted to preserve history.` });
-      }
-      await prisma.service.delete({ where: { id: serviceId } });
-      await logActivity(admin.name, `Deleted service: ${service.name}`, 'service');
+      await prisma.service.update({ where: { id: serviceId }, data: { enabled: false } });
+      await logActivity(admin.name, `Disabled service: ${service.name}`, 'service');
       invalidateServiceCatalogue();
-      return Response.json({ success: true, deleted: true });
+      return Response.json({ success: true, disabled: true });
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });

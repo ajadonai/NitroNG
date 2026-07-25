@@ -1,4 +1,5 @@
 import { log } from '@/lib/logger';
+import { reportOperationalFailure } from '@/lib/monitoring';
 import { notifyDepositFinalized } from '@/lib/deposit-notifications';
 import { reconcileNowPaymentsDeposit } from '@/lib/nowpayments-payment';
 import {
@@ -33,6 +34,10 @@ export async function POST(req) {
     const secret = nowPaymentsIpnSecret();
     if (!secret) {
       log.error('NOWPayments Webhook', 'NOWPAYMENTS_IPN_SECRET is not configured');
+      reportOperationalFailure('webhook_configuration_missing', {
+        data: { provider: 'nowpayments' },
+        dedupeKey: 'webhook_configuration_missing:nowpayments',
+      });
       return retryableWebhookResponse('Webhook not configured');
     }
 
@@ -90,6 +95,13 @@ export async function POST(req) {
     }
     if (outcome.paymentState === 'retryable' || outcome.paymentState === 'verifying') {
       log.warn('NOWPayments Webhook', `${reference}: ${outcome.reason || outcome.paymentState}`);
+      if (outcome.paymentState === 'retryable') {
+        reportOperationalFailure('webhook_processing_failed', {
+          level: 'warning',
+          data: { provider: 'nowpayments', reason: outcome.reason || 'verification_retryable' },
+          dedupeKey: 'webhook_processing_failed:nowpayments',
+        });
+      }
       return retryableWebhookResponse(
         outcome.message || 'Provider verification is temporarily unavailable',
       );
@@ -108,6 +120,11 @@ export async function POST(req) {
     });
   } catch (error) {
     log.error('NOWPayments Webhook', error.message);
+    reportOperationalFailure('webhook_processing_failed', {
+      error,
+      data: { provider: 'nowpayments' },
+      dedupeKey: 'webhook_processing_failed:nowpayments',
+    });
     return retryableWebhookResponse('Webhook processing failed', 500);
   }
 }

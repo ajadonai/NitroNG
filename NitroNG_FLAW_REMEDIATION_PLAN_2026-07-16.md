@@ -34,7 +34,7 @@
 | 6 | Privacy and account deletion | 11, 12 | Not started |
 | 7 | Public UI correctness | 13, 14, 15, 23, 24, 25 | Implemented locally except flaw 13, retained by owner decision; uncommitted |
 | 8 | Deployment safety | 18, 19, 20, 21, 22 | Not started |
-| 9 | Quality and monitoring | 26, 29, 30 | Not started |
+| 9 | Quality and monitoring | 26, 29, 30 | Implemented locally; review and monitoring configuration pending |
 | 10 | Maintainability | 31 | Not started |
 
 Payment work stays split across Phases 2–4. Each payment phase needs a focused review because mistakes directly affect customer balances.
@@ -640,6 +640,59 @@ Required before production release:
 - Critical customer journeys run in CI.
 - Operational failures reach monitoring without exposing secrets or unnecessary personal data.
 
+### Implementation record — 22 July 2026
+
+Status: implemented and verified locally; deliberately left unstaged and
+uncommitted for review.
+
+1. ESLint now ignores generated build, browser-test, coverage, deployment, and
+   local-agent output. JSX component uses and intentional underscore-prefixed
+   placeholders no longer produce false noise. CI runs the zero-error lint gate
+   while the normal lint command retains genuine unused-code warnings for later
+   cleanup.
+2. Playwright now covers six critical journeys: signup, persistent login,
+   password reset, order placement, manual deposit submission, and an admin
+   wallet credit. The runner refuses remote databases, non-test database names,
+   remote base URLs, and existing web servers before starting. Authentication,
+   orders, manual deposits, and the admin credit use real application routes
+   against CI's disposable PostgreSQL service; external browser traffic and
+   service workers are blocked, and order dispatch stops at Nitro's existing
+   development provider boundary.
+3. CI installs Chromium, runs the browser journeys after the migration and
+   build gates, and retains traces, screenshots, and reports on failure. Vitest
+   explicitly excludes the Playwright suite, and the npm 10 lockfile remains
+   suitable for `npm ci`.
+4. Next server request failures now reach Sentry after framework control-flow
+   filtering. Server, Edge, and browser events and breadcrumbs remove headers,
+   credentials, query strings, reset/invitation tokens, IP addresses, customer
+   identifiers, and payment details before dispatch.
+5. Grouped operational signals now cover stuck or retryable payments, webhook
+   failures and missing configuration, Redis outages, cleanup failures, payment
+   recovery failures, and migration manifest/checksum/deployment failures.
+   Runtime throttling is best-effort per serverless instance; stable Sentry
+   fingerprints provide cross-instance grouping.
+
+Verification completed:
+
+- Whole repository: 1,396 tests passed and 3 were skipped.
+- Strict fake-production Webpack build passed, including TypeScript, page-data
+  collection, and all 160 pages. Expected database-unavailable fallbacks used an
+  intentionally unreachable `.invalid` PostgreSQL host.
+- Required CI lint passed with zero errors; the application-only non-quiet pass
+  retains 177 actionable unused-code warnings.
+- The 36-migration manifest, npm clean-install dry run, browser safety tests,
+  six-test Playwright discovery, syntax checks, and `git diff --check` passed.
+- Full browser execution remains delegated to CI because the local environment
+  has no disposable PostgreSQL service and the safety guard correctly refuses
+  the configured remote database.
+
+Required before closing Phase 9 operationally:
+
+- Configure Sentry issue-alert rules for the `operational.signal` tag and route
+  them to the desired notification destinations.
+- Let the first CI run execute all six browser journeys against its disposable
+  PostgreSQL service and review any retained diagnostics before consolidation.
+
 ## Phase 10 — Maintainability
 
 ### Scope
@@ -662,6 +715,56 @@ Required before production release:
 - Large files have clear feature boundaries and smaller reviewable units.
 - Financial and permission rules are not duplicated in UI components or route handlers.
 - Existing behaviour remains protected by regression and browser tests.
+
+### Implementation record — 22 July 2026
+
+Status: implemented and verified locally; deliberately left unstaged and
+uncommitted for review.
+
+1. Every initial hotspot now has a concrete feature boundary. The admin create-
+   order experience moved from `admin-extra-pages.jsx` into its own 737-line
+   client module, while the original named export remains available and the
+   admin dashboard loads the dedicated chunk directly. The source file fell
+   from 3,137 to 2,407 lines without dropping the existing drip-order work.
+2. The customer order form moved into a focused 350-line component. Pricing
+   previews, link rules, quantity formatting, and drip-schedule calculations
+   now live in a 220-line pure helper shared by the single-order and bulk-cart
+   interfaces. `new-order.jsx` fell from 2,028 to 1,579 lines while retaining
+   its existing public `OrderForm` export.
+3. Admin announcements and settings/cleanup moved into independent client
+   modules and direct lazy-loaded chunks. `admin-pages.jsx` retains compatibility
+   re-exports and fell from 1,660 to 1,051 lines. The dashboard home experience
+   and right rail moved into a 323-line feature module; payment persistence,
+   payment-notice projection, and Nitro Status projection moved into a pure
+   state module. `dashboard.jsx` fell from 1,658 to 1,236 lines.
+4. Public order creation now has a typed server boundary before database or
+   provider work. It rejects malformed JSON, non-object bodies, invalid IDs,
+   wrong field types, non-finite quantities or drip durations, and non-boolean
+   confirmation/redemption flags with safe 400 responses. Link/profile/post
+   rules, provider text requirements, Nitro quantity floors, whole-naira kobo
+   pricing, and offer snapshots moved into a tested `.server.js` service;
+   `orders/route.js` fell from 1,171 to 1,049 lines. ESLint prevents client
+   components from importing `.server` modules.
+5. Compatibility and module-load tests protect every extracted public surface.
+   Direct tests cover payment-state notices, the welcome-bonus shortfall render,
+   request rejection before configuration queries, and the order-form helpers.
+   Fast-check properties verify social-link normalization idempotence, malformed
+   top-level input rejection, monotonic order pricing, and whole-naira kobo
+   invariants. A review correction fixed one mechanical identifier rename in
+   the extracted welcome-bonus branch and added the render regression that
+   exercises it.
+
+Verification completed:
+
+- Whole repository: 1,463 tests passed and 3 were skipped.
+- Required CI lint passed with zero errors.
+- Webpack production build passed, including TypeScript, page-data collection,
+  and all 160 pages.
+- 94 focused Phase 10 and affected-boundary tests passed.
+- `git diff --check` passed.
+
+No database write, migration, production request, deployment, staging action,
+commit, or push was performed in Phase 10.
 
 ## Progress log
 

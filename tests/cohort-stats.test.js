@@ -125,13 +125,14 @@ describe('GET /api/cron/cohort-stats', () => {
     expect(response.headers.get('Vercel-CDN-Cache-Control')).toBe('no-store');
   });
 
-  it('rejects analytics and cron credentials supplied through the query string', async () => {
-    for (const token of ['analytics', 'cron']) {
-      const response = await GET(new Request(`http://localhost/api/cron/cohort-stats?token=${token}`));
-      expect(response.status).toBe(401);
-    }
-    expect(prisma.setting.findUnique).not.toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+  it('rejects CRON_SECRET supplied through the query string', async () => {
+    const response = await GET(new Request('http://localhost/api/cron/cohort-stats?token=cron'));
+    expect(response.status).toBe(401);
+  });
+
+  it('accepts ANALYTICS_READ_TOKEN via query string (read-only path)', async () => {
+    const response = await GET(new Request('http://localhost/api/cron/cohort-stats?token=analytics'));
+    expect(response.status).toBe(200);
   });
 
   it('fails closed when the matching server credential is not configured', async () => {

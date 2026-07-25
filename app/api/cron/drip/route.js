@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { placeOrder, checkOrder } from '@/lib/smm';
 import { tgDripTimeout } from '@/lib/telegram';
-import { getDripConfig } from '@/lib/drip-feed';
+import { getDripConfig, rescheduleRemaining, isInWindow, snapToWindow } from '@/lib/drip-feed';
 import { awardPointsOnCompletion } from '@/lib/nitro-rewards';
 import { findSameLinkDispatchBlocker, isActiveOrderConflict, wouldCreateCycle } from '@/lib/order-queue';
 import { getBearerToken } from '@/lib/bearer-token';
@@ -163,6 +163,20 @@ export async function GET(req) {
       if (claimed.count === 0) continue;
 
       try {
+        // Window enforcement: if outside delivery window, push to next slot
+        const orderCfg = order.dripConfig;
+        if (orderCfg?.window) {
+          const cfgTz = orderCfg.timezone || null;
+          if (!isInWindow(new Date(), orderCfg.window, cfgTz)) {
+            const nextSlot = snapToWindow(new Date(), orderCfg.window, cfgTz);
+            await prisma.dripDispatch.updateMany({
+              where: { id: dispatch.id, status: 'dispatching' },
+              data: { status: 'pending', dispatchedAt: null, scheduledAt: nextSlot },
+            });
+            continue;
+          }
+        }
+
         const service = order.service;
         const provider = service.provider || 'mtp';
         const apiType = (service.apiType || '').toLowerCase();
@@ -234,7 +248,11 @@ export async function GET(req) {
             order: { status: { in: ['Pending', 'Processing'] }, deletedAt: null },
           },
           data: retryable
-            ? { status: 'pending', lastError: null, dispatchedAt: null, scheduledAt: new Date(Date.now() + 30 * 60 * 1000) }
+            ? { status: 'pending', lastError: null, dispatchedAt: null, scheduledAt: (() => {
+                const raw = new Date(Date.now() + 30 * 60 * 1000);
+                const oCfg = order.dripConfig;
+                return oCfg?.window ? snapToWindow(raw, oCfg.window, oCfg.timezone || null) : raw;
+              })() }
             : { status: 'failed', lastError: msg.slice(0, 450) },
         });
 
@@ -268,7 +286,7 @@ export async function GET(req) {
         apiOrderId: { not: null },
       },
       include: {
-        order: { include: { service: true } },
+        order: { include: { service: true, tier: { select: { group: { select: { type: true, platform: true } } } } } },
       },
       take: 50,
       orderBy: { dispatchedAt: 'asc' },
@@ -320,24 +338,22 @@ export async function GET(req) {
         if (['completed', 'partial'].includes(newStatus)) {
           const pending = await prisma.dripDispatch.findMany({
             where: { orderId: dispatch.orderId, status: 'pending' },
-            orderBy: { batch: 'asc' },
+            orderBy: [{ day: 'asc' }, { batch: 'asc' }],
           });
           const nextBatch = pending[0];
           if (nextBatch && nextBatch.scheduledAt <= new Date()) {
-            const svcName = (dispatch.order.service?.name || '').toLowerCase();
-            const svcType = ['follower', 'view', 'like', 'comment', 'play', 'engagement', 'review']
-              .find(t => svcName.includes(t));
-            const svcPlatform = (dispatch.order.service?.category || '').toLowerCase();
-            const config = getDripConfig(svcType ? svcType + 's' : '', svcPlatform);
-            const intervalMs = (config?.intervalHours || 2) * 60 * 60 * 1000;
-            const now = Date.now();
+            const order = dispatch.order;
+            const dripCfg = order.dripConfig || null;
+            const groupType = order.tier?.group?.type || '';
+            const groupPlatform = (order.tier?.group?.platform || '').toLowerCase();
+            const rescheduled = rescheduleRemaining(pending, dripCfg, groupType, groupPlatform);
 
-            if (pending.length > 0) {
+            if (rescheduled.length > 0) {
               const vals = [], prms = [];
-              for (let i = 0; i < pending.length; i++) {
+              for (let i = 0; i < rescheduled.length; i++) {
                 const b = i * 2;
                 vals.push(`($${b+1}, $${b+2}::timestamptz)`);
-                prms.push(pending[i].id, new Date(now + (i + 1) * intervalMs));
+                prms.push(rescheduled[i].id, rescheduled[i].scheduledAt);
               }
               await prisma.$executeRawUnsafe(`UPDATE "drip_dispatches" SET "scheduledAt" = v.t, "updatedAt" = NOW() FROM (VALUES ${vals.join(',')}) AS v(id,t) WHERE "drip_dispatches"."id" = v.id`, ...prms);
             }

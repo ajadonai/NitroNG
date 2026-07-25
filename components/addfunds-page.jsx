@@ -112,6 +112,17 @@ const GW_META = {
 /* ═══════════════════════════════════════════ */
 /* ═══ ADD FUNDS PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
+export function visiblePendingDeposits(txs, now = Date.now()) {
+  const staleExpiredCutoff = now - 4 * 60 * 60 * 1000;
+  return (txs || []).filter(tx => tx.type === 'deposit' && (
+    tx.status === 'Pending'
+    || ((tx.method === 'flutterwave' || tx.method == null) && (
+      tx.status === 'Processing'
+      || (tx.status === 'Expired' && new Date(tx.date || tx.createdAt).getTime() > staleExpiredCutoff)
+    ))
+  ));
+}
+
 export function recoverableFlutterwaveDeposits(txs, excludedReference = null) {
   return (txs || []).filter(tx => (
     isFlutterwaveDeposit(tx)
@@ -248,10 +259,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   const balance = user?.balance || 0;
 
   const lastFunded = txs?.find(tx => tx.type === 'deposit' && tx.status === 'Completed');
-  const pendingDeposits = txs?.filter(tx => tx.type === 'deposit' && (
-    tx.status === 'Pending'
-    || ((tx.method === 'flutterwave' || tx.method == null) && (tx.status === 'Processing' || tx.status === 'Expired'))
-  )) || [];
+  const pendingDeposits = visiblePendingDeposits(txs);
   const pendingTotal = pendingDeposits.reduce((s, tx) => s + (tx.amount || 0), 0);
   const hasNonManualProgress = pendingDeposits.some(tx => tx.method !== 'manual');
   const pendingSummaryText = hasNonManualProgress

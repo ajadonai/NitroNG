@@ -7,6 +7,9 @@ __pnpm-store__
 # next.js
 /.next/
 /out/
+/playwright-report/
+/test-results/
+/blob-report/
 
 # production
 /build

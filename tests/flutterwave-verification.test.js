@@ -256,8 +256,19 @@ describe('verifyFlutterwaveTransaction', () => {
     });
   });
 
-  it('keeps every non-successful HTTP response retryable', async () => {
-    for (const status of [400, 401, 429, 500, 503]) {
+  it('treats 400/404 as terminal provider_not_found', async () => {
+    for (const status of [400, 404]) {
+      const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(successfulPayload(), { status }));
+
+      await expect(
+        verifyFlutterwaveTransaction({ ...options, fetchImpl }),
+        String(status),
+      ).resolves.toMatchObject({ state: 'failed', reason: 'provider_not_found', httpStatus: status });
+    }
+  });
+
+  it('keeps other non-successful HTTP responses retryable', async () => {
+    for (const status of [401, 429, 500, 503]) {
       const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(successfulPayload(), { status }));
 
       await expect(

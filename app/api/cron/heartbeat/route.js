@@ -7,6 +7,7 @@ import {
   HEARTBEAT_RETENTION_DAYS,
 } from '@/lib/heartbeat';
 import { log } from '@/lib/logger';
+import { reportOperationalFailure } from '@/lib/monitoring';
 
 export async function GET(req) {
   const secret = process.env.CRON_SECRET;
@@ -33,6 +34,11 @@ export async function GET(req) {
     });
   } catch (err) {
     log.error('Heartbeat Cleanup', err.message);
+    reportOperationalFailure('cleanup_failed', {
+      error: err,
+      data: { job: 'heartbeat_cleanup' },
+      dedupeKey: 'cleanup_failed:heartbeat_cleanup',
+    });
     return Response.json({ error: 'Heartbeat cleanup failed' }, { status: 500 });
   }
 }

@@ -51,15 +51,6 @@ export async function POST(req) {
         return Response.json({ error: `Invalid response from ${getProviderName(providerId)}` }, { status: 400 });
       }
 
-      const markupSetting = await prisma.setting.findUnique({ where: { key: 'defaultMarkup' } });
-      const defaultMarkup = Number(markupSetting?.value) || 54;
-
-      // Pre-load markup settings for price calculation
-      const { calculateTierPrice } = await import('@/lib/markup');
-      const markupRows = await prisma.setting.findMany({ where: { key: { startsWith: 'markup_' } } });
-      const ms = {};
-      markupRows.forEach(s => { ms[s.key] = s.value; });
-
       const existing = await prisma.service.findMany({
         where: { provider: providerId },
         select: { id: true, apiId: true, markup: true, name: true, category: true, costPer1k: true, min: true, max: true, refill: true, dripfeed: true, avgTime: true },
@@ -67,13 +58,15 @@ export async function POST(req) {
       const existingMap = {};
       existing.forEach(s => { existingMap[s.apiId] = s; });
 
-      let created = 0, updated = 0, unchanged = 0, skipped = 0;
-      const toCreate = [];
+      let updated = 0, unchanged = 0, skipped = 0;
       const toUpdate = [];
 
       for (const svc of providerServices) {
         const apiId = Number(svc.service);
         if (!apiId) { skipped++; continue; }
+
+        const ex = existingMap[apiId];
+        if (!ex) { skipped++; continue; }
 
         const rawCost = Math.round(parseFloat(svc.rate) * 100);
         if (rawCost > 2000000000 || rawCost < 0 || isNaN(rawCost)) { skipped++; continue; }
@@ -85,25 +78,12 @@ export async function POST(req) {
         const dripfeed = svc.dripfeed === true || svc.dripfeed === 'true';
         const avgTime = svc.average_time || '0-2 hrs';
 
-        const ex = existingMap[apiId];
-        if (ex) {
-          if (ex.name === svc.name && ex.category === category && Number(ex.costPer1k) === costPer1k && ex.min === min && ex.max === max && ex.refill === refill && ex.dripfeed === dripfeed && ex.avgTime === avgTime) {
-            unchanged++;
-            continue;
-          }
-          toUpdate.push(prisma.service.update({ where: { id: ex.id }, data: { name: svc.name, category, costPer1k, min, max, refill, dripfeed, avgTime } }));
-          updated++;
-        } else {
-          const initialSell = calculateTierPrice(costPer1k, 'Standard', ms, false) || Math.round(costPer1k * 2);
-          toCreate.push({
-            apiId, name: svc.name, category, costPer1k, min, max, refill, dripfeed, avgTime, provider: providerId, sellPer1k: initialSell, markup: defaultMarkup, enabled: false,
-          });
-          created++;
+        if (ex.name === svc.name && ex.category === category && Number(ex.costPer1k) === costPer1k && ex.min === min && ex.max === max && ex.refill === refill && ex.dripfeed === dripfeed && ex.avgTime === avgTime) {
+          unchanged++;
+          continue;
         }
-      }
-
-      if (toCreate.length > 0) {
-        await prisma.service.createMany({ data: toCreate, skipDuplicates: true });
+        toUpdate.push(prisma.service.update({ where: { id: ex.id }, data: { name: svc.name, category, costPer1k, min, max, refill, dripfeed, avgTime } }));
+        updated++;
       }
 
       for (let i = 0; i < toUpdate.length; i += 200) {
@@ -122,10 +102,10 @@ export async function POST(req) {
         disabled = result.count;
       }
 
-      await logActivity(admin.name, `Synced from ${getProviderName(providerId)}: ${created} new, ${updated} updated, ${skipped} skipped, ${disabled} disabled (removed by provider)`, 'service');
+      await logActivity(admin.name, `Synced from ${getProviderName(providerId)}: ${updated} updated, ${skipped} skipped, ${disabled} disabled (removed by provider)`, 'service');
 
-      if (created > 0 || updated > 0 || disabled > 0) invalidateServiceCatalogue();
-      return Response.json({ success: true, provider: providerId, total: providerServices.length, created, updated, skipped, disabled });
+      if (updated > 0 || disabled > 0) invalidateServiceCatalogue();
+      return Response.json({ success: true, provider: providerId, total: providerServices.length, updated, skipped, disabled });
     }
 
     if (action === 'sync-orders') {
@@ -286,6 +266,13 @@ export async function POST(req) {
             },
           });
           stats.updated++;
+          // Reschedule overdue pending batches for this order
+          if (['completed', 'partial'].includes(newStatus)) {
+            try {
+              const { rescheduleAfterDripCompletion } = await import('@/lib/drip-completion');
+              await rescheduleAfterDripCompletion(prisma, dispatch.orderId);
+            } catch {}
+          }
         } catch (err) {
           stats.errors++;
           log.warn(`Sync drip dispatch ${dispatch.id}`, err.message);

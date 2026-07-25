@@ -3,7 +3,6 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getServices, isProviderConfigured, getProviderName, PROVIDER_IDS } from '@/lib/smm';
-import { calculateTierPrice } from '@/lib/markup';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 
 function categorize(cat) {
@@ -67,12 +66,6 @@ export async function GET(req) {
       return Response.json({ error: `Invalid response from ${getProviderName(next)}` }, { status: 500 });
     }
 
-    const markupRows = await prisma.setting.findMany({ where: { key: { startsWith: 'markup_' } } });
-    const ms = {};
-    markupRows.forEach(s => { ms[s.key] = s.value; });
-    const markupSetting = await prisma.setting.findUnique({ where: { key: 'defaultMarkup' } });
-    const defaultMarkup = Number(markupSetting?.value) || 54;
-
     const existing = await prisma.service.findMany({
       where: { provider: next },
       select: { id: true, apiId: true, name: true, category: true, costPer1k: true, min: true, max: true, refill: true, dripfeed: true, avgTime: true },
@@ -80,13 +73,15 @@ export async function GET(req) {
     const existingMap = {};
     existing.forEach(s => { existingMap[s.apiId] = s; });
 
-    let created = 0, updated = 0, unchanged = 0, skipped = 0;
-    const toCreate = [];
+    let updated = 0, unchanged = 0, skipped = 0;
     const toUpdate = [];
 
     for (const svc of providerServices) {
       const apiId = Number(svc.service);
       if (!apiId) { skipped++; continue; }
+
+      const ex = existingMap[apiId];
+      if (!ex) { skipped++; continue; }
 
       const rawCost = Math.round(parseFloat(svc.rate) * 100);
       if (rawCost > 2000000000 || rawCost < 0 || isNaN(rawCost)) { skipped++; continue; }
@@ -98,26 +93,14 @@ export async function GET(req) {
       const dripfeed = svc.dripfeed === true || svc.dripfeed === 'true';
       const avgTime = svc.average_time || '0-2 hrs';
 
-      const ex = existingMap[apiId];
-      if (ex) {
-        if (ex.name === svc.name && ex.category === category && Number(ex.costPer1k) === costPer1k && ex.min === min && ex.max === max && ex.refill === refill && ex.dripfeed === dripfeed && ex.avgTime === avgTime) {
-          unchanged++;
-          continue;
-        }
-        toUpdate.push(prisma.service.update({ where: { id: ex.id }, data: { name: svc.name, category, costPer1k, min, max, refill, dripfeed, avgTime } }));
-        updated++;
-      } else {
-        const initialSell = calculateTierPrice(costPer1k, 'Standard', ms, false) || Math.round(costPer1k * 2);
-        toCreate.push({
-          apiId, name: svc.name, category, costPer1k, min, max, refill, dripfeed, avgTime, provider: next, sellPer1k: initialSell, markup: defaultMarkup, enabled: false,
-        });
-        created++;
+      if (ex.name === svc.name && ex.category === category && Number(ex.costPer1k) === costPer1k && ex.min === min && ex.max === max && ex.refill === refill && ex.dripfeed === dripfeed && ex.avgTime === avgTime) {
+        unchanged++;
+        continue;
       }
+      toUpdate.push(prisma.service.update({ where: { id: ex.id }, data: { name: svc.name, category, costPer1k, min, max, refill, dripfeed, avgTime } }));
+      updated++;
     }
 
-    if (toCreate.length > 0) {
-      await prisma.service.createMany({ data: toCreate, skipDuplicates: true });
-    }
     for (let i = 0; i < toUpdate.length; i += 200) {
       await Promise.all(toUpdate.slice(i, i + 200));
     }
@@ -140,15 +123,15 @@ export async function GET(req) {
       create: { key: SETTING_KEY, value: JSON.stringify(state) },
     });
 
-    if (created > 0 || updated > 0 || disabled > 0) invalidateServiceCatalogue();
+    if (updated > 0 || disabled > 0) invalidateServiceCatalogue();
 
-    log.info('CronSync', `${getProviderName(next)}: ${created} new, ${updated} updated, ${disabled} disabled (${state.done.length}/${configured.length} done for ${weekKey})`);
+    log.info('CronSync', `${getProviderName(next)}: ${updated} updated, ${disabled} disabled (${state.done.length}/${configured.length} done for ${weekKey})`);
 
     return Response.json({
       provider: next,
       providerName: getProviderName(next),
       total: providerServices.length,
-      created, updated, unchanged, skipped, disabled,
+      updated, unchanged, skipped, disabled,
       week: weekKey,
       done: state.done,
       remaining: configured.filter(p => !state.done.includes(p)),

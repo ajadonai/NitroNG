@@ -4,7 +4,6 @@ import { getCurrentUser } from '@/lib/auth';
 import { placeOrder, checkOrder } from '@/lib/smm';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
-import { cleanLink } from '@/lib/clean-link';
 import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig } from '@/lib/drip-feed';
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
@@ -15,6 +14,7 @@ import { buildOrderDisplayGroups } from '@/lib/order-history';
 import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints, reverseOrderPoints, getPointsBalanceKoboTx, computeRefundSplit, MIN_REDEEM_POINTS } from '@/lib/nitro-rewards';
 import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder, findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
+import { calculateCreateOrderPricing, parseCreateOrderInput, validateCreateOrderOfferInput } from '@/lib/order-create-input.server';
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -202,6 +202,11 @@ export async function PATCH(req) {
           if (Object.keys(upd).length > 0) await prisma.dripDispatch.update({ where: { id: d.id }, data: upd });
         } catch {}
       }
+      // Reschedule overdue pending batches
+      try {
+        const { rescheduleAfterDripCompletion } = await import('@/lib/drip-completion');
+        await rescheduleAfterDripCompletion(prisma, order.id);
+      } catch {}
       // Rollup parent
       const allDispatches = await prisma.dripDispatch.findMany({ where: { orderId: order.id }, select: { status: true, remains: true, quantity: true, startCount: true, day: true, batch: true }, orderBy: [{ day: 'asc' }, { batch: 'asc' }] });
       const allDone = allDispatches.length > 0 && allDispatches.every(d => ['completed', 'partial', 'cancelled'].includes(d.status));
@@ -578,31 +583,31 @@ export async function POST(req) {
     const session = await getCurrentUser();
     if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
 
-    const { tierId, serviceId, link, quantity, comments, serviceType, dripDays: rawDripDays, confirmDuplicate, redeemPoints } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return Response.json({ error: 'Invalid request body' }, { status: 400 });
+    }
 
-    // Get USD→NGN rate for cost calculation
+    const parsedInput = parseCreateOrderInput(body);
+    if (!parsedInput.ok) return Response.json({ error: parsedInput.error }, { status: 400 });
+    const {
+      tierId,
+      serviceId,
+      link: trimmedLink,
+      quantity,
+      comments,
+      rawDripDays,
+      confirmDuplicate,
+      redeemPoints,
+      isUrl,
+    } = parsedInput.value;
+
+    // Get USD→NGN rate for cost calculation only after the request boundary
+    // has accepted the payload.
     const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
     const usdRate = Number(usdRateSetting?.value || 1600);
-
-    if (!link || !quantity) {
-      return Response.json({ error: 'Link and quantity required' }, { status: 400 });
-    }
-    if (!tierId && !serviceId) {
-      return Response.json({ error: 'Service or tier required' }, { status: 400 });
-    }
-
-    // Validate link — strip tracking params from social media URLs
-    const trimmedLink = cleanLink(link);
-    if (trimmedLink.length < 5 || trimmedLink.length > 500) {
-      return Response.json({ error: 'Invalid link' }, { status: 400 });
-    }
-
-    // Must be a URL (http/https) or a username handle (@user)
-    const isUrl = /^https?:\/\/.+\..+/.test(trimmedLink);
-    const isUsername = /^@?[a-zA-Z0-9._]{1,100}$/.test(trimmedLink);
-    if (!isUrl && !isUsername) {
-      return Response.json({ error: 'Please enter a valid URL (https://...) or username' }, { status: 400 });
-    }
 
     // Duplicate order check — warn if same service tier + link in last 24h
     if (!confirmDuplicate) {
@@ -626,7 +631,7 @@ export async function POST(req) {
       }
     }
 
-    let service, tier, charge, cost, tierName, qty, offerSnapshot;
+    let service, tier;
 
     if (tierId) {
       // New flow: resolve service from tier
@@ -641,141 +646,27 @@ export async function POST(req) {
       if (!service || !service.enabled) {
         return Response.json({ error: 'Backing service not available' }, { status: 400 });
       }
-      // Nitro minimum order floors
-      const NITRO_MINS = { followers: 100, likes: 100, views: 500, comments: 10, engagement: 50, plays: 500, reviews: 10 };
-      const nitroMin = NITRO_MINS[tier.group.type?.toLowerCase()] || 50;
-      const effectiveMin = Math.max(service.min, nitroMin);
-      qty = Math.floor(Number(quantity));
-      if (!qty || isNaN(qty) || qty <= 0 || !Number.isFinite(qty)) {
-        return Response.json({ error: 'Invalid quantity' }, { status: 400 });
-      }
-      if (qty < effectiveMin || qty > service.max) {
-        return Response.json({ error: `Quantity must be between ${effectiveMin.toLocaleString()} and ${service.max.toLocaleString()}` }, { status: 400 });
-      }
-      charge = Math.ceil((Number(tier.sellPer1k) / 1000) * qty / 100) * 100;
-      cost = Math.ceil((Number(service.costPer1k) * usdRate / 1000) * qty / 100) * 100;
     } else {
       // Legacy flow: direct serviceId
       service = await prisma.service.findUnique({ where: { id: serviceId } });
       if (!service || !service.enabled) {
         return Response.json({ error: 'Service not available' }, { status: 400 });
       }
-      qty = Math.floor(Number(quantity));
-      if (!qty || isNaN(qty) || qty <= 0 || !Number.isFinite(qty)) {
-        return Response.json({ error: 'Invalid quantity' }, { status: 400 });
-      }
-      if (qty < service.min || qty > service.max) {
-        return Response.json({ error: `Quantity must be between ${service.min.toLocaleString()} and ${service.max.toLocaleString()}` }, { status: 400 });
-      }
-      charge = Math.ceil((Number(service.sellPer1k) / 1000) * qty / 100) * 100;
-      cost = Math.ceil((Number(service.costPer1k) * usdRate / 1000) * qty / 100) * 100;
     }
 
-    offerSnapshot = buildOrderOfferSnapshot({ tier, service });
-    tierName = `${offerSnapshot.serviceNameAtPurchase}${offerSnapshot.tierNameAtPurchase ? ` (${offerSnapshot.tierNameAtPurchase})` : ''}`;
+    const pricing = calculateCreateOrderPricing({ tier, service, quantity, usdRate });
+    if (!pricing.ok) return Response.json({ error: pricing.error }, { status: 400 });
+    let {
+      qty,
+      chargeKobo: charge,
+      costKobo: cost,
+      offerSnapshot,
+      tierName,
+    } = pricing.value;
 
-    // Reject zero/negative charges (misconfigured service)
-    if (!charge || charge <= 0) {
-      return Response.json({ error: 'Service pricing not configured' }, { status: 400 });
-    }
-
-    // Validate link type matches service type (profile vs post)
-    if (tier?.group?.type) {
-      const groupType = tier.group.type.toLowerCase();
-      const groupName = (tier.group.name || '').toLowerCase();
-      const isMultiPost = /last\s+\d+\s*(tweet|post|video|reel|photo)/i.test(groupName);
-      const needsProfile = groupType === 'followers' || isMultiPost;
-      const needsPost = ['likes', 'views', 'comments', 'engagement', 'plays'].includes(groupType) && !isMultiPost;
-      const platform = (service.category || '').toLowerCase();
-      const guide = ' Learn more: https://nitro.ng/blog/how-to-find-the-right-link';
-
-      if (!isUrl && needsPost) {
-        return Response.json({ error: `This service needs a link to your post or video, not a username.${guide}` }, { status: 400 });
-      }
-
-      if (isUrl) {
-        const postPatterns = {
-          instagram: /\/(p|reel|reels|tv|stories|share)\//i,
-          tiktok: /\/(video|photo|v|t)\//i,
-          'twitter/x': /\/(status|i\/status)\//i,
-          youtube: /\/(watch|shorts|live)\b|youtu\.be\//i,
-          facebook: /\/(posts|videos|watch|photos|photo|reel|share\/[rpv]|story\.php|permalink\.php)\b/i,
-          threads: /\/post\//i,
-          telegram: /\/\d+\s*$/,
-          linkedin: /\/(posts|pulse|feed\/update)\//i,
-          snapchat: /\/spotlight\//i,
-          pinterest: /\/pin\//i,
-          reddit: /\/comments\//i,
-          twitch: /\/videos\//i,
-          kick: /\/clips\//i,
-          spotify: /\/(track|album|playlist|episode)\//i,
-          bluesky: /\/post\//i,
-          tumblr: /\/post\/\d/i,
-          vimeo: /\/\d{5,}/,
-          quora: /\/(answer|unanswered)\//i,
-          deezer: /\/(track|album|playlist)\//i,
-          tidal: /\/(track|album|playlist)\//i,
-          audiomack: /\/(song|album|playlist)\//i,
-          boomplay: /\/(songs|albums|playlists)\//i,
-          applemusic: /\/(album|song|music-video)\//i,
-          shazam: /\/(track|song)\//i,
-        };
-
-        // Shortened/redirect URLs are always post/content links
-        const shortPostDomains = {
-          tiktok: /^(vt|vm)\.tiktok\.com$/i,
-          'twitter/x': /^t\.co$/i,
-          facebook: /^(fb\.watch|fb\.me)$/i,
-          instagram: /^ig\.me$/i,
-        };
-        let linkHost;
-        try { linkHost = new URL(trimmedLink).hostname; } catch { linkHost = ''; }
-        const isShortPostLink = Object.entries(shortPostDomains).some(
-          ([p, re]) => platform.includes(p) && re.test(linkHost)
-        );
-
-        const isPostLink = isShortPostLink || Object.entries(postPatterns).some(
-          ([p, re]) => platform.includes(p) && re.test(trimmedLink)
-        );
-        const isProfileLink = !isPostLink;
-
-        if (needsProfile && isPostLink) {
-          const example = platform.includes('instagram') ? 'https://instagram.com/yourpage'
-            : platform.includes('tiktok') ? 'https://tiktok.com/@yourpage'
-            : platform.includes('twitter') ? 'https://x.com/yourhandle'
-            : platform.includes('youtube') ? 'https://youtube.com/@yourchannel'
-            : 'your profile link';
-          return Response.json({ error: `This service needs a profile link, not a post link. Example: ${example}.${guide}` }, { status: 400 });
-        }
-
-        if (needsPost && isProfileLink && Object.keys(postPatterns).some(p => platform.includes(p))) {
-          const example = platform.includes('instagram') ? 'https://instagram.com/p/ABC123'
-            : platform.includes('tiktok') ? 'https://tiktok.com/@user/video/123456'
-            : platform.includes('twitter') ? 'https://x.com/user/status/123456'
-            : platform.includes('youtube') ? 'https://youtube.com/watch?v=ABC123'
-            : 'a link to your post or video';
-          return Response.json({ error: `This service needs a post/content link, not a profile link. Example: ${example}.${guide}` }, { status: 400 });
-        }
-      }
-    }
-
-    // Validate extra params based on provider service type
-    const apiType = (service.apiType || '').toLowerCase();
-    const needsCommentText = apiType.includes('custom comment') || apiType.includes('comment replies');
-    const needsUsernames = apiType.includes('mention');
-    const needsAnswer = apiType === 'poll';
-    const needsKeywords = apiType === 'seo';
-    if ((needsCommentText || needsUsernames || needsAnswer || needsKeywords) && !comments?.trim()) {
-      const label = needsKeywords ? 'Keywords are' : needsUsernames ? 'Usernames are' : needsAnswer ? 'An answer selection is' : 'Comments are';
-      return Response.json({ error: `${label} required for this service` }, { status: 400 });
-    }
-    if (needsCommentText && comments) {
-      const lineCount = comments.split('\n').filter(l => l.trim()).length;
-      const minLines = Math.max(service.min, 10);
-      if (lineCount < minLines) {
-        return Response.json({ error: `Please provide at least ${minLines} unique comments (one per line). You entered ${lineCount}.` }, { status: 400 });
-      }
-    }
+    const offerInput = validateCreateOrderOfferInput({ tier, service, link: trimmedLink, isUrl, comments });
+    if (!offerInput.ok) return Response.json({ error: offerInput.error }, { status: 400 });
+    const { apiType, needsUsernames, needsAnswer, needsKeywords } = offerInput.value;
 
     // Apply Nitro Status discount based on eligible lifetime spend
     let loyaltyDiscount = 0;
@@ -809,8 +700,6 @@ export async function POST(req) {
         }
       }
     } catch (err) { log.warn('Promotion discount', err.message); }
-
-    qty = Math.floor(Number(quantity));
 
     // Check for active order on same service + link (providers reject duplicates)
     const activeForLink = await findOpenSameLinkOrder(prisma, {

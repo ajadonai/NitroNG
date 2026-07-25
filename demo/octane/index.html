@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en" data-theme="night">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Octane — Nitro Support Agent (Demo)</title>
+<style>
+  /* Nitro design tokens (mirrored from app/globals.css) */
+  :root{
+    --accent:#c47d8e; --accent-dark:#a3586b;
+    --grad:linear-gradient(135deg,#c47d8e,#8b5e6b);
+    --font:'Outfit','Plus Jakarta Sans',system-ui,-apple-system,Segoe UI,sans-serif;
+    --serif:'Cormorant Garamond',Georgia,serif;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  html[data-theme="night"]{
+    --bg:#080b14; --bg-alt:#0f1322; --surface:#0d1020;
+    --text:#f5f3f0; --soft:#a09b95; --muted:#706c68;
+    --border:rgba(255,255,255,0.08); --bubble-bot:#11152a; --bubble-user:var(--grad);
+    --green:#6ee7b7; --chip:#141a30;
+  }
+  html[data-theme="day"]{
+    --bg:#f4f1ed; --bg-alt:#e6e3dc; --surface:#fff;
+    --text:#1c1b19; --soft:#555250; --muted:#757170;
+    --border:rgba(0,0,0,0.1); --bubble-bot:#fff; --bubble-user:var(--grad);
+    --green:#059669; --chip:#fff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font);background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(196,125,142,.10), transparent 60%),
+      var(--bg);
+    color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .app{width:100%;max-width:760px;height:min(88vh,860px);display:flex;flex-direction:column;
+    background:var(--bg-alt);border:1px solid var(--border);border-radius:20px;overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.35)}
+
+  /* Header */
+  header{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border);
+    background:var(--surface)}
+  .logo{width:40px;height:40px;border-radius:12px;background:var(--grad);display:flex;align-items:center;
+    justify-content:center;box-shadow:0 4px 14px rgba(196,125,142,.35);flex-shrink:0}
+  .logo svg{width:22px;height:22px}
+  .htxt{display:flex;flex-direction:column;line-height:1.15}
+  .htxt b{font-size:16px;letter-spacing:.2px}
+  .htxt .sub{font-size:12px;color:var(--soft);display:flex;align-items:center;gap:6px;margin-top:2px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 22%,transparent)}
+  .grow{flex:1}
+  .ghost{background:transparent;border:1px solid var(--border);color:var(--soft);border-radius:10px;
+    padding:7px 10px;font-size:12px;cursor:pointer;font-family:var(--font)}
+  .ghost:hover{color:var(--text);border-color:var(--accent)}
+  .tag{font-family:var(--mono);font-size:10px;color:var(--muted);border:1px solid var(--border);
+    border-radius:6px;padding:3px 7px}
+
+  /* Stream */
+  .stream{flex:1;overflow-y:auto;padding:22px 18px 8px;display:flex;flex-direction:column;gap:14px}
+  .row{display:flex;gap:10px;max-width:88%}
+  .row.user{align-self:flex-end;flex-direction:row-reverse}
+  .av{width:30px;height:30px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .av.bot{background:var(--grad)} .av.bot svg{width:17px;height:17px}
+  .av.user{background:var(--chip);border:1px solid var(--border);color:var(--soft);font-size:12px;font-weight:600}
+  .bubble{padding:11px 14px;border-radius:14px;font-size:14.5px;line-height:1.55;
+    background:var(--bubble-bot);border:1px solid var(--border)}
+  .row.user .bubble{background:var(--bubble-user);border:none;color:#fff;border-bottom-right-radius:5px}
+  .row.bot .bubble{border-bottom-left-radius:5px}
+  .bubble strong{font-weight:700} .bubble code{font-family:var(--mono);font-size:12.5px;
+    background:color-mix(in srgb,var(--accent) 16%,transparent);padding:1px 5px;border-radius:5px}
+  .bubble .ln{display:block} .bubble .bullet{display:block;padding-left:2px}
+
+  .typing{display:inline-flex;gap:4px;align-items:center;padding:4px 2px}
+  .typing i{width:7px;height:7px;border-radius:50%;background:var(--soft);opacity:.5;
+    animation:bo 1s infinite ease-in-out}
+  .typing i:nth-child(2){animation-delay:.15s} .typing i:nth-child(3){animation-delay:.3s}
+  @keyframes bo{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-4px);opacity:.9}}
+
+  /* Suggestions / quick chips */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;padding:4px 18px 2px}
+  .chip{background:var(--chip);border:1px solid var(--border);color:var(--text);border-radius:999px;
+    padding:8px 13px;font-size:12.5px;cursor:pointer;font-family:var(--font);transition:.15s}
+  .chip:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+  .chip .i{color:var(--accent);margin-right:5px}
+
+  /* Composer */
+  .composer{padding:12px 16px 16px;border-top:1px solid var(--border);background:var(--surface)}
+  .inwrap{display:flex;gap:10px;align-items:flex-end;background:var(--bg-alt);border:1px solid var(--border);
+    border-radius:14px;padding:8px 8px 8px 14px}
+  .inwrap:focus-within{border-color:var(--accent)}
+  textarea{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--font);
+    font-size:14.5px;resize:none;max-height:120px;line-height:1.45;padding:5px 0}
+  .send{width:38px;height:38px;border-radius:11px;background:var(--grad);border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .send:disabled{opacity:.45;cursor:default}
+  .send svg{width:18px;height:18px;color:#fff}
+  .foot{text-align:center;font-size:10.5px;color:var(--muted);margin-top:9px;font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo" title="Octane">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="#fff" opacity=".95"/></svg>
+    </div>
+    <div class="htxt">
+      <b>Octane</b>
+      <span class="sub"><span class="dot"></span> Nitro Support Agent · online</span>
+    </div>
+    <span class="grow"></span>
+    <span class="tag" id="mode">demo</span>
+    <button class="ghost" id="theme">☾ / ☀</button>
+  </header>
+
+  <div class="stream" id="stream"></div>
+  <div class="chips" id="chips"></div>
+
+  <div class="composer">
+    <div class="inwrap">
+      <textarea id="input" rows="1" placeholder="Ask Octane anything about Nitro…" autofocus></textarea>
+      <button class="send" id="send" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+    <div class="foot">Octane is a demo model · grounded answers (order/wallet/refund lookups) come in Phase 1 · escalates to a human when unsure</div>
+  </div>
+</div>
+
+<script>
+/* ────────────────────────────────────────────────────────────────────────
+   Octane — Nitro's support agent (demo brain)
+   Offline intent engine seeded from the real knowledge in support-page.jsx.
+   No backend, no API key. Phase 1 swaps this engine for a grounded LLM route.
+   ──────────────────────────────────────────────────────────────────────── */
+
+const BOT = "bot", USER = "user";
+
+// Persona answers — sourced from the live Nitro support knowledge base.
+const KB = {
+  greeting: {
+    text: "Hey, I'm **Octane** — Nitro's support agent. ⚡ I can help with orders, deposits, refills, refunds, pricing and more. What's up?",
+    next: ["Where's my order?", "How do I deposit?", "Refund policy"]
+  },
+  check_order: {
+    keys: ["where","order status","my order","track","pending","check order","stuck","not started","didn't start"],
+    text: "To check an order: open **History** in your dashboard — every order shows its live status. Tap **Check** on any order to refresh it straight from the provider.\n\n_Once I'm wired to live data (Phase 1) I'll just pull the status for you here._",
+    next: ["What do the statuses mean?", "It's been hours — is that normal?", "Talk to a human"]
+  },
+  status_explain: {
+    keys: ["status mean","statuses","what does pending","partial mean","cancelled mean","processing mean"],
+    text: "Here's what each status means:\n• **Pending** — received, waiting to start\n• **Processing** — actively being delivered\n• **Completed** — fully delivered\n• **Partial** — only some delivered (the rest is auto-refunded)\n• **Cancelled** — cancelled, funds returned to your wallet",
+    next: ["Delivery & refills", "Refund policy"]
+  },
+  single_order: {
+    keys: ["place an order","place order","how to order","new order","buy followers","buy likes","single order"],
+    text: "To place a single order:\n1. Go to **New Order** in your dashboard\n2. Pick a platform and service\n3. Choose a tier — **Budget**, **Standard** or **Premium**\n4. Paste your link, set the quantity, confirm\n\nPayment comes from your Nitro wallet. Most orders start within seconds.",
+    next: ["Bulk orders", "Pricing & tiers", "How do I deposit?"]
+  },
+  bulk_order: {
+    keys: ["bulk","multiple orders","cart","queue orders","campaign","agency"],
+    text: "Bulk mode lets you queue many orders at once:\n1. In **New Order**, switch to **Bulk** mode (top of the page)\n2. Add services to your cart — different platforms, links, quantities\n3. Review the cart and submit it all in one go\n\nGreat for agencies and multi-platform campaigns.",
+    next: ["How to place an order", "Pricing & tiers"]
+  },
+  deposit: {
+    keys: ["deposit","fund","add money","add funds","top up","topup","wallet","pay","payment method"],
+    text: "To fund your wallet:\n1. Go to **Wallet** in your dashboard\n2. Enter an amount (minimum **₦500**)\n3. Choose a method — **bank transfer**, **card** or **crypto**\n\nDeposits are credited instantly and your balance covers all orders.",
+    next: ["Minimum deposit?", "Is my payment safe?", "How to place an order"]
+  },
+  refund: {
+    keys: ["refund","money back","refunded","didn't deliver","not delivered","wrong service","chargeback"],
+    text: "Nitro refunds in three cases:\n• **Undelivered orders** — auto-refunded after 72 hours\n• **Partial delivery** — refunded for the undelivered portion\n• **Wrong service** — full refund to your wallet\n\nRefunds land in your Nitro wallet within ~5 minutes.",
+    next: ["Where's my order?", "Talk to a human"]
+  },
+  delivery: {
+    keys: ["delivery","how long","how fast","speed","refill","drop","dropped","when will","eta","take to"],
+    text: "Most orders start within **seconds**. Full delivery depends on the service:\n• **Followers / likes** — minutes for small orders; larger ones spread over hours for natural growth\n• **Views / streams** — gradual, up to 24 hours\n• **Comments** — usually 1–4 hours\n\nMany services include **automatic refills** — if you lose any, we top them back up free within the refill period.",
+    next: ["What do the statuses mean?", "Is this safe for my account?"]
+  },
+  pricing: {
+    keys: ["price","pricing","cost","how much","tier","tiers","budget","standard","premium","cheap"],
+    text: "Every service has 3 tiers:\n• **Budget** — cheapest, may drop slightly over time\n• **Standard** — best value, stable with refill\n• **Premium** — top quality, auto-refill if the count drops\n\nPrices start from **₦3 per 1,000**. See live rates per platform in **New Order**.",
+    next: ["How to place an order", "Delivery & refills"]
+  },
+  platforms: {
+    keys: ["platform","instagram","tiktok","youtube","twitter","facebook","spotify","telegram","support which","which apps","snapchat"],
+    text: "Nitro supports **35+ platforms**, including:\n• **Instagram** — followers, likes, views, comments, reels\n• **TikTok** — followers, likes, views, shares\n• **YouTube** — subscribers, views, watch hours, likes\n• **Twitter/X, Facebook, Telegram, Spotify, Snapchat, LinkedIn, Pinterest, Twitch, Discord** and more\n\nFull list is in **New Order**.",
+    next: ["How to place an order", "Pricing & tiers"]
+  },
+  referrals: {
+    keys: ["referral","refer","invite","affiliate","bonus link"],
+    text: "Share your referral link from the **Referrals** section. When a friend signs up and makes their first deposit, **you both earn a bonus** credited to your wallets — no limits.",
+    next: ["Leaderboard & perks", "How do I deposit?"]
+  },
+  leaderboard: {
+    keys: ["leaderboard","rank","perks","top user","points"],
+    text: "The **Leaderboard** ranks Nitro's top users by total spend. Higher ranks unlock perks like priority support and bonus credits — check where you stand in the **Leaderboard** section.",
+    next: ["Referral program", "Pricing & tiers"]
+  },
+  safety: {
+    keys: ["safe","ban","banned","account safe","risk","secure","real"],
+    text: "Yes — Nitro spreads larger orders gradually to keep your account safe, and we never ask for your password (we only need your **public profile link**). Stick to **Standard** or **Premium** tiers for the most stable, refill-backed delivery.",
+    next: ["Delivery & refills", "Pricing & tiers"]
+  },
+  minimum: {
+    keys: ["minimum","min deposit","smallest","least"],
+    text: "The **minimum deposit is ₦500**, and many services start as low as **₦3 per 1,000**. So you can test the waters with a very small budget.",
+    next: ["How do I deposit?", "How to place an order"]
+  },
+  human: {
+    keys: ["human","agent","real person","talk to support","representative","speak to someone","escalate","ticket"],
+    text: "No problem — I'll hand you to the team. 🙋\nIn the live app this opens a **support ticket** (or our **WhatsApp** line) and a human picks it up, usually within ~5 minutes. Your conversation history goes with you so you won't repeat yourself.",
+    next: ["Actually, I have another question"]
+  },
+  thanks: {
+    keys: ["thanks","thank you","thx","appreciate","cheers","nice","great"],
+    text: "Anytime ⚡ — that's what I'm here for. Anything else I can help with?",
+    next: ["Where's my order?", "Pricing & tiers", "How do I deposit?"]
+  }
+};
+
+const QUICK = [
+  ["check_order","Where's my order?"],
+  ["single_order","Place an order"],
+  ["deposit","Deposit"],
+  ["delivery","Delivery & refills"],
+  ["refund","Refunds"],
+  ["pricing","Pricing"],
+  ["platforms","Platforms"],
+  ["human","Talk to a human"],
+];
+
+const FALLBACK = {
+  text: "I'm not totally sure I caught that — I'm a demo model, so my knowledge is focused on Nitro's core support topics. Try one of these, or I can hand you to a human:",
+  next: ["Where's my order?", "How do I deposit?", "Refund policy", "Talk to a human"]
+};
+
+/* ---- tiny intent matcher (keyword scoring) ---- */
+function match(raw){
+  const q = " " + raw.toLowerCase().replace(/[^\w\s]/g," ") + " ";
+  if(/^\s*(hi|hey|hello|yo|sup|good (morning|afternoon|evening))\s*$/i.test(raw.trim()))
+    return KB.greeting;
+  let best=null, score=0;
+  for(const id in KB){
+    const e=KB[id]; if(!e.keys) continue;
+    let s=0;
+    for(const k of e.keys){ if(q.includes(" "+k+" ")||q.includes(k)) s += k.split(" ").length*2 + 1; }
+    if(s>score){score=s;best=e;}
+  }
+  return score>0 ? best : FALLBACK;
+}
+
+/* ---- rendering ---- */
+const stream=document.getElementById("stream"),
+      chipsEl=document.getElementById("chips"),
+      input=document.getElementById("input"),
+      send=document.getElementById("send");
+
+function fmt(t){
+  return t.split("\n").map(line=>{
+    let h=line
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
+      .replace(/_(.+?)_/g,"<em>$1</em>")
+      .replace(/`(.+?)`/g,"<code>$1</code>");
+    const cls = /^\s*[•\d]/.test(line) ? "bullet" : "ln";
+    return `<span class="${cls}">${h||"&nbsp;"}</span>`;
+  }).join("");
+}
+function avatar(who){
+  if(who===BOT) return `<div class="av bot"><svg viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="#fff"/></svg></div>`;
+  return `<div class="av user">You</div>`;
+}
+function add(who,html){
+  const row=document.createElement("div");
+  row.className="row "+who;
+  row.innerHTML=avatar(who)+`<div class="bubble">${html}</div>`;
+  stream.appendChild(row); stream.scrollTop=stream.scrollHeight;
+  return row;
+}
+function setChips(list){
+  chipsEl.innerHTML="";
+  (list||[]).forEach(label=>{
+    const c=document.createElement("button");
+    c.className="chip"; c.innerHTML=`<span class="i">✦</span>${label}`;
+    c.onclick=()=>{ submit(label); };
+    chipsEl.appendChild(c);
+  });
+}
+
+function botReply(userText){
+  const typing=add(BOT,`<span class="typing"><i></i><i></i><i></i></span>`);
+  const ans=match(userText);
+  const delay=480+Math.min(ans.text.length*7,900);
+  setChips([]);
+  setTimeout(()=>{
+    typing.querySelector(".bubble").innerHTML=fmt(ans.text);
+    stream.scrollTop=stream.scrollHeight;
+    setChips(ans.next);
+  },delay);
+}
+
+let busy=false;
+function submit(text){
+  text=(text||"").trim(); if(!text||busy) return;
+  busy=true;
+  add(USER,fmt(text));
+  input.value=""; resize(); send.disabled=true;
+  setTimeout(()=>{ botReply(text); busy=false; },120);
+}
+
+/* ---- composer wiring ---- */
+function resize(){ input.style.height="auto"; input.style.height=Math.min(input.scrollHeight,120)+"px"; }
+input.addEventListener("input",()=>{ resize(); send.disabled=!input.value.trim(); });
+input.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();submit(input.value);} });
+send.addEventListener("click",()=>submit(input.value));
+
+document.getElementById("theme").addEventListener("click",()=>{
+  const h=document.documentElement;
+  h.dataset.theme = h.dataset.theme==="night" ? "day" : "night";
+});
+
+/* ---- boot ---- */
+QUICK.forEach(()=>{}); // (quick actions surface as suggestion chips below the greeting)
+add(BOT,fmt(KB.greeting.text));
+setChips(["Where's my order?","How do I deposit?","Delivery & refills","Refund policy","Pricing & tiers","Talk to a human"]);
+</script>
+</body>
+</html>

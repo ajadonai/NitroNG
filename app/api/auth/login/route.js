@@ -48,7 +48,7 @@ export async function POST(req) {
     });
 
     if (!user) {
-      return error('Invalid email or password', 401);
+      return error('No account found with this email', 401);
     }
 
     if (user.status === 'Suspended') {
@@ -60,7 +60,7 @@ export async function POST(req) {
     if (user.status === 'PendingDeletion') {
       const error = isAccountDeletionGraceActive(user)
         ? 'Account pending deletion. Contact support@nitro.ng before the deletion deadline to cancel.'
-        : 'This account’s deletion deadline has passed and it cannot be restored.';
+        : "This account's deletion deadline has passed and it cannot be restored.";
       return Response.json({ error, banned: false }, { status: 403 });
     }
 

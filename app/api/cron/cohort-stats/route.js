@@ -106,6 +106,28 @@ async function computeStats() {
   );
 }
 
+async function smokeCheckRobotsTxt() {
+  try {
+    const res = await fetch("https://nitro.ng/robots.txt", { cache: "no-store" });
+    if (!res.ok) {
+      await alertWatchTower({ generatedAt: new Date().toISOString() }, `robots.txt returned HTTP ${res.status}`);
+      return;
+    }
+    const text = await res.text();
+    const lines = text.split("\n").map((l) => l.trim());
+    const allowIdx = lines.indexOf("Allow: /api/cron/cohort-stats");
+    const disallowIdx = lines.indexOf("Disallow: /api/");
+    if (allowIdx < 0 || disallowIdx < 0 || allowIdx >= disallowIdx) {
+      await alertWatchTower(
+        { generatedAt: new Date().toISOString() },
+        `robots.txt missing or mis-ordered Allow line for /api/cron/cohort-stats — automated fetcher will get blocked`
+      );
+    }
+  } catch (err) {
+    log.warn("Cohort Stats", `robots.txt smoke check failed: ${err.message}`);
+  }
+}
+
 async function alertWatchTower(snapshot, cause) {
   const ageHours = +(snapshotAgeMs(snapshot) / 36e5).toFixed(1);
   const text = `🔴 <b>Cohort stats stale (${ageHours}h)</b>\nSnapshot: ${snapshot.generatedAt}\nCause: ${cause}`;
@@ -122,10 +144,15 @@ async function alertWatchTower(snapshot, cause) {
 }
 
 export async function GET(req) {
-  const token = getBearerToken(req);
+  const bearerToken = getBearerToken(req);
+  const analyticsQueryToken = new URL(req.url).searchParams.get("token") || null;
 
-  const isCron = Boolean(process.env.CRON_SECRET) && token === process.env.CRON_SECRET;
-  const isAnalytics = Boolean(process.env.ANALYTICS_READ_TOKEN) && token === process.env.ANALYTICS_READ_TOKEN;
+  // Write path: Bearer-only (CRON_SECRET is sensitive, never from query string)
+  const isCron = Boolean(process.env.CRON_SECRET) && bearerToken === process.env.CRON_SECRET;
+  // Read path: Bearer or query param (ANALYTICS_READ_TOKEN is read-only; the
+  // nightly automated fetcher can only pass a URL, no custom headers)
+  const isAnalytics = Boolean(process.env.ANALYTICS_READ_TOKEN) &&
+    (bearerToken === process.env.ANALYTICS_READ_TOKEN || analyticsQueryToken === process.env.ANALYTICS_READ_TOKEN);
 
   if (!isCron && !isAnalytics) {
     return Response.json({ error: "Unauthorized" }, { status: 401, headers: NO_CACHE });
@@ -141,6 +168,7 @@ export async function GET(req) {
         create: { key: SNAPSHOT_KEY, value: JSON.stringify(stats) },
       });
       log.info("Cohort Stats", `Snapshot written — generatedAt ${stats.generatedAt}, 7d: ${stats.windows["7d"].signups} signups / ${stats.windows["7d"].depositors} depositors`);
+      smokeCheckRobotsTxt().catch(() => {});
       return Response.json({ ok: true, generatedAt: stats.generatedAt }, { headers: NO_CACHE });
     } catch (err) {
       log.error("Cohort Stats", `Writer failed: ${err.message}`);

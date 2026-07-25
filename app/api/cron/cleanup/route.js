@@ -2,6 +2,7 @@ export const maxDuration = 60;
 
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
+import { reportOperationalFailure } from '@/lib/monitoring';
 import { finalizeDueAccountDeletions } from '@/lib/account-deletion';
 
 // Cleanup cron: expires stale deposits, processes scheduled user deletions
@@ -40,6 +41,12 @@ export async function GET(req) {
     if (deletionFinalization.finalized > 0 || deletionFinalization.failed > 0) {
       log.info('Cleanup', `Finalized ${deletionFinalization.finalized} account deletions; ${deletionFinalization.failed} failed`);
     }
+    if (deletionFinalization.failed > 0) {
+      reportOperationalFailure('cleanup_failed', {
+        data: { job: 'account_cleanup', failed: deletionFinalization.failed },
+        dedupeKey: 'cleanup_failed:account_cleanup',
+      });
+    }
 
     return Response.json({
       permanentlyDeleted: deletionFinalization.finalized,
@@ -49,6 +56,11 @@ export async function GET(req) {
     });
   } catch (err) {
     log.error('Cleanup', err.message);
+    reportOperationalFailure('cleanup_failed', {
+      error: err,
+      data: { job: 'account_cleanup' },
+      dedupeKey: 'cleanup_failed:account_cleanup',
+    });
     return Response.json({ error: 'Cleanup failed' }, { status: 500 });
   }
 }

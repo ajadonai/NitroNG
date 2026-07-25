@@ -207,10 +207,6 @@ function LandingInner({ initialAuthQuery }){
             {/* LEFT */}
             <div className="flex-1 max-w-[540px] text-left relative z-[1] max-desktop:flex-none max-desktop:text-center max-desktop:max-w-full max-desktop:flex max-desktop:flex-col max-desktop:items-center">
               <h1 className="text-[52px] max-desktop:text-[48px] max-md:text-[28px] font-semibold leading-[1.05] -tracking-[1.5px] mb-2 max-md:mb-1.5" style={{color:t.heroText}}>Your content deserves <br/><span className="serif italic font-medium text-[58px] max-desktop:text-[54px] max-md:text-[28px] hero-shimmer" style={{color:dark?t.accent:"#fff",textShadow:dark?"none":"0 2px 20px rgba(0,0,0,.15)"}}>a bigger audience.</span></h1>
-              <div className="fu fd2 max-md:!hidden max-desktop:justify-center text-sm font-medium mb-4 flex items-center gap-2 flex-wrap" style={{color:dark?"rgba(244,241,237,.5)":"rgba(255,255,255,.75)"}}>
-                <span className="m py-1 px-3 rounded-lg font-semibold text-[13px]" style={{background:dark?"rgba(52,211,153,.14)":"rgba(255,255,255,.24)",color:dark?"#34d399":"#fff",border:`1px solid ${dark?"rgba(52,211,153,.19)":"rgba(255,255,255,.28)"}`}}>Campaigns</span>
-                <span>from ₦850</span>
-              </div>
               <p className="text-base max-md:text-[13px] font-normal max-w-[460px] max-desktop:max-w-[480px] max-md:max-w-[300px] mb-6 max-desktop:mb-5 max-md:mb-4 leading-[1.65] max-md:leading-[1.55] max-desktop:text-center" style={{color:t.heroSoft}}>Nigeria's fastest content promotion platform with the cleanest dashboard.<br/>Fast results across {siteStats.platforms?`${siteStats.platforms}+`:"35+"} service categories.<br/>Naira pricing. Human support.</p>
 
               {/* Stats — desktop/tablet only (inside mobile card below) */}

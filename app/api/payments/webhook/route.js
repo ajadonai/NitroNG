@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
+import { reportOperationalFailure } from '@/lib/monitoring';
 import { notifyDepositFinalized } from '@/lib/deposit-notifications';
 import {
   getFlutterwaveSecretKey,
@@ -19,6 +20,10 @@ export async function POST(req) {
 
     if (!hash) {
       log.error('Webhook', 'FLUTTERWAVE_WEBHOOK_HASH not set — refusing unsigned webhook');
+      reportOperationalFailure('webhook_configuration_missing', {
+        data: { provider: 'flutterwave' },
+        dedupeKey: 'webhook_configuration_missing:flutterwave',
+      });
       return Response.json({ error: 'Webhook not configured' }, { status: 503 });
     }
 
@@ -46,6 +51,10 @@ export async function POST(req) {
     const secretKey = await getFlutterwaveSecretKey();
     if (!secretKey) {
       log.error('Webhook', 'Flutterwave verification key is not configured');
+      reportOperationalFailure('webhook_configuration_missing', {
+        data: { provider: 'flutterwave_verification' },
+        dedupeKey: 'webhook_configuration_missing:flutterwave_verification',
+      });
     }
 
     // The signed callback is a prompt to reconcile, not proof of payment. Always
@@ -65,9 +74,22 @@ export async function POST(req) {
       }
     }
 
+    if (result.paymentState === 'retryable') {
+      reportOperationalFailure('webhook_processing_failed', {
+        level: 'warning',
+        data: { provider: 'flutterwave', reason: result.reason || 'verification_retryable' },
+        dedupeKey: 'webhook_processing_failed:flutterwave',
+      });
+    }
+
     return acknowledge();
   } catch (err) {
     log.error('Webhook', err.message);
+    reportOperationalFailure('webhook_processing_failed', {
+      error: err,
+      data: { provider: 'flutterwave' },
+      dedupeKey: 'webhook_processing_failed:flutterwave',
+    });
     return acknowledge();
   }
 }

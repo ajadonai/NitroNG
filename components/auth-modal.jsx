@@ -320,7 +320,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
       return;
     }
     if (phoneTaken) {
-      setError('This phone number is already registered');
+      setError('This WhatsApp number is already in use');
       return;
     }
     setName(`${firstName} ${lastName}`);
@@ -420,7 +420,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={mode === 'login' ? 'Log in' : 'Create account'}
+        aria-label={mode === 'signup' ? 'Create account' : 'Log in'}
         onClick={(e) => e.stopPropagation()}
         className="auth-card w-full max-w-[440px] max-h-[90dvh] overflow-y-auto overflow-x-hidden rounded-2xl px-8 py-9 max-md:py-6 relative backdrop-blur-[20px] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]"
         style={{
@@ -860,7 +860,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                   className="text-xs"
                   style={{ color: dark ? '#fca5a5' : '#dc2626' }}
                 >
-                  This email is already registered
+                  This email is already in use
                 </span>
               ) : email && validEmail && emailChecking ? (
                 <span
@@ -912,7 +912,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 </span>
               ) : phone && validPhone && phoneTaken ? (
                 <span className="text-[11px]" style={{ color: dark ? '#fca5a5' : '#dc2626' }}>
-                  This number is already registered
+                  This number is already in use
                 </span>
               ) : phone && validPhone && phoneChecking ? (
                 <span className="text-[11px]" style={{ color: t.textMuted }}>
