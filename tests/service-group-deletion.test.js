@@ -58,45 +58,25 @@ beforeEach(() => {
 });
 
 describe('admin service-group deletion safety', () => {
-  it('archives a tier that is referenced by an order', async () => {
+  it('hard-deletes a tier even if referenced by orders', async () => {
     prisma.serviceTier.findUnique.mockResolvedValue({
       id: 'tier-1',
       tier: 'Budget',
       group: { name: 'Instagram Followers' },
     });
-    prisma.order.count.mockResolvedValue(3);
 
     const response = await mutation({ action: 'delete-tier', tierIdToDelete: 'tier-1' });
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({ success: true, archived: true });
-    expect(prisma.order.count).toHaveBeenCalledWith({ where: { tierId: 'tier-1' } });
-    expect(prisma.serviceTier.update).toHaveBeenCalledWith({
-      where: { id: 'tier-1' },
-      data: { enabled: false },
-    });
-    expect(prisma.serviceTier.delete).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toMatchObject({ success: true });
+    expect(prisma.serviceTier.delete).toHaveBeenCalledWith({ where: { id: 'tier-1' } });
+    expect(prisma.serviceTier.update).not.toHaveBeenCalled();
     expect(logActivity).toHaveBeenCalledWith(
       'Owner',
-      'Archived Budget tier from "Instagram Followers"',
+      'Deleted Budget tier from "Instagram Followers"',
       'service',
     );
     expect(revalidateTag).toHaveBeenCalledWith('service-catalog');
-  });
-
-  it('hard-deletes a tier that has never been used', async () => {
-    prisma.serviceTier.findUnique.mockResolvedValue({
-      id: 'tier-2',
-      tier: 'Premium',
-      group: { name: 'Instagram Followers' },
-    });
-    prisma.order.count.mockResolvedValue(0);
-
-    const response = await mutation({ action: 'delete-tier', tierIdToDelete: 'tier-2' });
-
-    await expect(response.json()).resolves.toMatchObject({ success: true, archived: false });
-    expect(prisma.serviceTier.delete).toHaveBeenCalledWith({ where: { id: 'tier-2' } });
-    expect(prisma.serviceTier.update).not.toHaveBeenCalled();
   });
 
   it('archives a group and all its tiers when any tier is referenced', async () => {

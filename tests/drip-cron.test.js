@@ -16,7 +16,10 @@ vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
 vi.mock('@/lib/logger', () => ({ log: { error: vi.fn(), warn: vi.fn() } }));
 vi.mock('@/lib/smm', () => ({ placeOrder: vi.fn(), checkOrder: vi.fn() }));
 vi.mock('@/lib/telegram', () => ({ tgDripTimeout: vi.fn() }));
-vi.mock('@/lib/drip-feed', () => ({ getDripConfig: () => ({ intervalHours: 2 }) }));
+vi.mock('@/lib/drip-feed', async () => {
+  const actual = await vi.importActual('@/lib/drip-feed');
+  return { ...actual, getDripConfig: () => ({ intervalHours: 2 }) };
+});
 vi.mock('@/lib/nitro-rewards', () => ({ awardPointsOnCompletion: vi.fn().mockResolvedValue(0) }));
 
 function makeReq(secret = 'test-secret') {

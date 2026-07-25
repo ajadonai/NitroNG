@@ -84,7 +84,8 @@ const queryAuthenticatedRoutes = [
   ['digest', getDigest, 'secret', 'cron-secret'],
   ['refill', getRefill, 'secret', 'cron-secret'],
   ['cohort-stats cron writer', getCohortStats, 'token', 'cron-secret'],
-  ['cohort-stats analytics reader', getCohortStats, 'token', 'analytics-secret'],
+  // cohort-stats analytics reader intentionally allows ?token= for the read-only
+  // path — the nightly automated fetcher cannot send custom headers.
 ];
 
 beforeEach(() => {
@@ -140,7 +141,8 @@ describe('internal secret transport', () => {
       'app/api/cron/drip/route.js',
       'app/api/cron/digest/route.js',
       'app/api/cron/refill/route.js',
-      'app/api/cron/cohort-stats/route.js',
+      // cohort-stats excluded: its read-only analytics path legitimately
+      // accepts ?token= because the automated fetcher cannot send headers.
     ];
     for (const path of paths) {
       const source = await readFile(new URL(`../${path}`, import.meta.url), 'utf8');

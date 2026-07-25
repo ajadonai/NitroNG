@@ -110,7 +110,7 @@ function makeWelcomeBonusDb() {
       update: vi.fn(),
       count: vi.fn(),
     },
-    transaction: { create: vi.fn() },
+    transaction: { create: vi.fn(), count: vi.fn().mockResolvedValue(1) },
     alert: { create: vi.fn() },
     setting: { findMany: vi.fn() },
   };

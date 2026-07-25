@@ -259,6 +259,7 @@ describe('fail-closed production behavior', () => {
   it('never falls back to memory when Redis throws in production', async () => {
     const memoryStore = new Map();
     const logger = silentLogger();
+    const monitor = vi.fn();
     const redis = { eval: vi.fn().mockRejectedValue(new Error('redis down')) };
     const limit = createRateLimiter({
       redis,
@@ -266,6 +267,7 @@ describe('fail-closed production behavior', () => {
       memoryStore,
       now: () => 0,
       logger,
+      monitor,
     });
 
     const result = await limit(mockReq(), { maxAttempts: 3 });
@@ -276,6 +278,11 @@ describe('fail-closed production behavior', () => {
       '[RateLimit] Distributed rate limiting unavailable',
       { reason: 'redis_request_failed' },
     );
+    expect(monitor).toHaveBeenCalledWith('redis_unavailable', {
+      data: { reason: 'redis_request_failed' },
+      dedupeKey: 'redis_unavailable:redis_request_failed',
+      throttleMs: 5 * 60 * 1000,
+    });
   });
 
   it('never logs raw Redis errors, keys, credentials, or account identifiers', async () => {
@@ -327,6 +334,7 @@ describe('fail-closed production behavior', () => {
 
   it('uses memory after a Redis failure outside production', async () => {
     const memoryStore = new Map();
+    const monitor = vi.fn();
     const redis = { eval: vi.fn().mockRejectedValue(new Error('redis down')) };
     const limit = createRateLimiter({
       redis,
@@ -334,6 +342,7 @@ describe('fail-closed production behavior', () => {
       memoryStore,
       now: () => 1_000,
       logger: silentLogger(),
+      monitor,
     });
 
     const result = await limit(mockReq(), { maxAttempts: 2, windowMs: 5_000 });
@@ -346,6 +355,7 @@ describe('fail-closed production behavior', () => {
       retryAfter: 5,
     });
     expect(memoryStore.size).toBe(1);
+    expect(monitor).not.toHaveBeenCalled();
   });
 });
 

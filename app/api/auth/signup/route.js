@@ -69,10 +69,15 @@ export async function POST(req) {
       if (existing.status === 'PendingDeletion') {
         return error(isAccountDeletionGraceActive(existing)
           ? 'Account pending deletion. Contact support@nitro.ng before the deletion deadline to cancel.'
-          : 'This account’s deletion deadline has passed and it cannot be restored.');
+          : "This account's deletion deadline has passed and it cannot be restored.");
       }
-      return error('An account with this email already exists');
+      return error('This email is already in use');
     }
+
+    // Check if phone is already used
+    const normalizedPhone = `+234${cleanedPhone}`;
+    const existingPhone = await prisma.user.findUnique({ where: { phone: normalizedPhone }, select: { id: true } });
+    if (existingPhone) return error('This WhatsApp number is already in use');
 
     // Hash password
     const hashed = await bcrypt.hash(password, 12);
@@ -140,6 +145,8 @@ export async function POST(req) {
           refCode = generateReferralCode();
           continue;
         }
+        if (err.code === 'P2002' && err.meta?.target?.includes('email')) return error('This email is already in use');
+        if (err.code === 'P2002' && err.meta?.target?.includes('phone')) return error('This WhatsApp number is already in use');
         throw err;
       }
     }

@@ -46,7 +46,7 @@ export async function GET(req) {
 
     const services = await prisma.service.findMany({
       where: { enabled: true },
-      select: { id: true, name: true, apiId: true, costPer1k: true, sellPer1k: true, provider: true, category: true, dripfeed: true, apiType: true, tiers: { where: { enabled: true }, select: { id: true, tier: true, sellPer1k: true, group: { select: { nigerian: true } } } } },
+      select: { id: true, name: true, apiId: true, costPer1k: true, sellPer1k: true, provider: true, category: true, dripfeed: true, apiType: true, tiers: { where: { enabled: true }, select: { id: true, tier: true, sellPer1k: true, pricePinned: true, group: { select: { nigerian: true } } } } },
     });
 
     const ops = [];
@@ -76,6 +76,7 @@ export async function GET(req) {
 
       if (s.tiers.length > 0) {
         for (const t of s.tiers) {
+          if (t.pricePinned) continue;
           const ng = t.group?.nigerian || false;
           const newSell = calculateTierPrice(cost, t.tier, ms, ng);
           if (newSell !== Number(t.sellPer1k)) {
@@ -118,18 +119,23 @@ export async function GET(req) {
         const existingIssue = await prisma.adminIssue.findFirst({
           where: { type: 'revived_service', status: 'open' },
         });
-        const title = `${revivedServices.length} disabled service${revivedServices.length > 1 ? 's' : ''} back in provider catalogue`;
-        const message = revivedServices.map(d => `${d.name} (${d.provider.toUpperCase()} #${d.apiId})`).join('\n');
-        const metadata = JSON.stringify({ count: revivedServices.length, services: revivedServices });
-        if (existingIssue) {
-          await prisma.adminIssue.update({
-            where: { id: existingIssue.id },
-            data: { title, message, metadata, createdAt: new Date() },
-          });
-        } else {
-          await prisma.adminIssue.create({
-            data: { type: 'revived_service', title, message, metadata },
-          });
+        const recentlyResolved = !existingIssue && await prisma.adminIssue.findFirst({
+          where: { type: 'revived_service', status: 'resolved', resolvedAt: { gte: new Date(Date.now() - 86400000) } },
+        });
+        if (!recentlyResolved) {
+          const title = `${revivedServices.length} disabled service${revivedServices.length > 1 ? 's' : ''} back in provider catalogue`;
+          const message = revivedServices.map(d => `${d.name} (${d.provider.toUpperCase()} #${d.apiId})`).join('\n');
+          const metadata = JSON.stringify({ count: revivedServices.length, services: revivedServices });
+          if (existingIssue) {
+            await prisma.adminIssue.update({
+              where: { id: existingIssue.id },
+              data: { title, message, metadata, createdAt: new Date() },
+            });
+          } else {
+            await prisma.adminIssue.create({
+              data: { type: 'revived_service', title, message, metadata },
+            });
+          }
         }
       } catch (err) {
         log.warn('PriceSync', `Failed to create revived service issue: ${err.message}`);
@@ -151,18 +157,23 @@ export async function GET(req) {
         const existingIssue = await prisma.adminIssue.findFirst({
           where: { type: 'dead_service', status: 'open' },
         });
-        const title = `${deadServices.length} service${deadServices.length > 1 ? 's' : ''} removed by provider`;
-        const message = deadServices.map(d => `${d.name} (${d.provider.toUpperCase()} #${d.apiId})`).join('\n');
-        const metadata = JSON.stringify({ count: deadServices.length, services: deadServices });
-        if (existingIssue) {
-          await prisma.adminIssue.update({
-            where: { id: existingIssue.id },
-            data: { title, message, metadata, createdAt: new Date() },
-          });
-        } else {
-          await prisma.adminIssue.create({
-            data: { type: 'dead_service', title, message, metadata },
-          });
+        const recentlyResolved = !existingIssue && await prisma.adminIssue.findFirst({
+          where: { type: 'dead_service', status: 'resolved', resolvedAt: { gte: new Date(Date.now() - 86400000) } },
+        });
+        if (!recentlyResolved) {
+          const title = `${deadServices.length} service${deadServices.length > 1 ? 's' : ''} removed by provider`;
+          const message = deadServices.map(d => `${d.name} (${d.provider.toUpperCase()} #${d.apiId})`).join('\n');
+          const metadata = JSON.stringify({ count: deadServices.length, services: deadServices });
+          if (existingIssue) {
+            await prisma.adminIssue.update({
+              where: { id: existingIssue.id },
+              data: { title, message, metadata, createdAt: new Date() },
+            });
+          } else {
+            await prisma.adminIssue.create({
+              data: { type: 'dead_service', title, message, metadata },
+            });
+          }
         }
       } catch (err) {
         log.warn('PriceSync', `Failed to create dead service issues: ${err.message}`);

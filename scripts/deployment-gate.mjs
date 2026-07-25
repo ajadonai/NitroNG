@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { reportCliOperationalFailure } from './lib/operational-monitoring.mjs';
 
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const production = process.env.VERCEL_ENV === 'production'
@@ -11,8 +12,24 @@ function run(script) {
     stdio: 'inherit',
   });
 
-  if (result.error) throw result.error;
-  if (result.status !== 0) process.exit(result.status ?? 1);
+  if (result.error) {
+    if (script === 'migrations:check' || script === 'db:deploy' || script === 'db:status' || script === 'migrations:verify:applied') {
+      reportCliOperationalFailure({
+        signal: 'migration_command_failed',
+        reason: `${script.replaceAll(':', '_')}_spawn`,
+      });
+    }
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    if (script === 'migrations:check' || script === 'db:deploy' || script === 'db:status' || script === 'migrations:verify:applied') {
+      reportCliOperationalFailure({
+        signal: 'migration_command_failed',
+        reason: script.replaceAll(':', '_'),
+      });
+    }
+    process.exit(result.status ?? 1);
+  }
 }
 
 run('migrations:check');

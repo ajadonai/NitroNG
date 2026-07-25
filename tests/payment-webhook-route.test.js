@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   info: vi.fn(),
   warn: vi.fn(),
   error: vi.fn(),
+  reportOperationalFailure: vi.fn(),
 }));
 
 vi.mock('@/lib/flutterwave-payment', () => ({
@@ -41,6 +42,9 @@ vi.mock('@/lib/logger', () => ({
     warn: mocks.warn,
     error: mocks.error,
   },
+}));
+vi.mock('@/lib/monitoring', () => ({
+  reportOperationalFailure: mocks.reportOperationalFailure,
 }));
 
 const { POST } = await import('@/app/api/payments/webhook/route');
@@ -146,6 +150,13 @@ describe('POST /api/payments/webhook — Flutterwave reliability', () => {
     expect(await responseBody(response)).toEqual({ error: 'Webhook not configured' });
     expect(mocks.reconcileFlutterwaveDeposit).not.toHaveBeenCalled();
     expect(mocks.notifyDepositFinalized).not.toHaveBeenCalled();
+    expect(mocks.reportOperationalFailure).toHaveBeenCalledWith(
+      'webhook_configuration_missing',
+      {
+        data: { provider: 'flutterwave' },
+        dedupeKey: 'webhook_configuration_missing:flutterwave',
+      },
+    );
   });
 
   it('rejects an invalid verif-hash before looking up or reconciling a deposit', async () => {
@@ -241,5 +252,31 @@ describe('POST /api/payments/webhook — Flutterwave reliability', () => {
     expect(body.paymentState).not.toBe('credited');
     expect(mocks.reconcileFlutterwaveDeposit).toHaveBeenCalledTimes(1);
     expect(mocks.notifyDepositFinalized).not.toHaveBeenCalled();
+    expect(mocks.reportOperationalFailure).toHaveBeenCalledWith(
+      'webhook_processing_failed',
+      {
+        level: 'warning',
+        data: { provider: 'flutterwave', reason: 'verification_retryable' },
+        dedupeKey: 'webhook_processing_failed:flutterwave',
+      },
+    );
+  });
+
+  it('reports an unexpected webhook processing failure without changing the acknowledgement contract', async () => {
+    const failure = new Error('provider request failed');
+    mocks.reconcileFlutterwaveDeposit.mockRejectedValue(failure);
+
+    const response = await POST(webhookRequest());
+
+    expect(response.status).toBe(200);
+    expect(await responseBody(response)).toEqual({ received: true });
+    expect(mocks.reportOperationalFailure).toHaveBeenCalledWith(
+      'webhook_processing_failed',
+      {
+        error: failure,
+        data: { provider: 'flutterwave' },
+        dedupeKey: 'webhook_processing_failed:flutterwave',
+      },
+    );
   });
 });

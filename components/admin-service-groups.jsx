@@ -450,7 +450,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                     const m = cKobo != null ? marginPct(tier.sellPer1k, cKobo) : null;
                     const low = cKobo != null && lowMargin(tier.sellPer1k, cKobo);
                     return (
-                    <tr key={tier.id} className="transition-[background-color] duration-100 hover:bg-[rgba(196,125,142,.04)]" style={{ borderBottom: i < g.tiers.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}` : "none", background: isEditing ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)") : undefined }}>
+                    <tr key={tier.id} className="transition-[background-color] duration-100 hover:bg-[rgba(196,125,142,.04)]" style={{ borderBottom: i < g.tiers.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}` : "none", background: isEditing ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)") : undefined, opacity: tier.enabled ? 1 : .45 }}>
                       <td className="py-2.5 px-2 w-8">
                         {g.tiers.length > 1 && (
                           <div className="flex flex-col gap-0.5">
@@ -476,7 +476,14 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                       {isEditing ? (
                         <td className="py-2.5 px-3.5"><input aria-label="Sell price" value={editTier.price} onChange={e => setEditTier({ ...editTier, price: e.target.value.replace(/[^0-9.]/g, "") })} className="w-[90px] py-1.5 px-2 rounded-md text-[12.5px] outline-none font-[inherit]" style={{ ...inputStyle, borderColor: dark ? "rgba(196,125,142,.4)" : "rgba(196,125,142,.35)", fontFamily: "'JetBrains Mono',monospace" }} /></td>
                       ) : (
-                        <td className="py-2.5 px-3.5 font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono',monospace" }}>₦{(tier.sellPer1k / 100).toFixed(2)}</td>
+                        <td className="py-2.5 px-3.5 font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono',monospace" }}>
+                          <span className="inline-flex items-center gap-1.5">
+                            ₦{(tier.sellPer1k / 100).toFixed(2)}
+                            <button onClick={() => act({ action: "update-tier", tierIdToUpdate: tier.id, pricePinned: !tier.pricePinned })} title={tier.pricePinned ? "Price pinned — sync skips this tier. Click to unpin." : "Price not pinned — sync can change it. Click to pin."} className="bg-transparent border-none cursor-pointer p-0 leading-none shrink-0" style={{ color: tier.pricePinned ? t.accent : (dark ? "rgba(255,255,255,.2)" : "rgba(0,0,0,.15)") }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill={tier.pricePinned ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 00-1.11-1.79l-1.78-.9A2 2 0 0115 10.76V6h1a2 2 0 000-4H8a2 2 0 000 4h1v4.76a2 2 0 01-1.11 1.79l-1.78.9A2 2 0 005 15.24Z"/></svg>
+                            </button>
+                          </span>
+                        </td>
                       )}
                       <td className="py-2.5 px-3.5" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono',monospace" }}>{cKobo != null ? formatNaira(cKobo) : "—"}</td>
                       <td className="py-2.5 px-3.5">
@@ -503,7 +510,10 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                             <button onClick={() => setEditTier(null)} disabled={savingTier} className="adm-btn-sm text-[12px]" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Cancel</button>
                           </span>
                         ) : (
-                          <span className="flex gap-1.5">
+                          <span className="flex gap-1.5 items-center">
+                            <button onClick={() => act({ action: "update-tier", tierIdToUpdate: tier.id, enabled: !tier.enabled })} title={tier.enabled ? "Disable tier" : "Enable tier"} className="relative w-[30px] h-[17px] rounded-full border border-solid cursor-pointer transition-colors duration-200 shrink-0" style={{ background: tier.enabled ? (dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.1)") : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"), borderColor: tier.enabled ? (dark ? "rgba(110,231,183,.4)" : "rgba(5,150,105,.35)") : t.cardBorder }}>
+                              <span className="absolute top-[2px] w-[11px] h-[11px] rounded-full transition-all duration-200" style={{ left: tier.enabled ? 15 : 2, background: tier.enabled ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }} />
+                            </button>
                             <button onClick={() => setEditTier({ id: tier.id, price: (tier.sellPer1k / 100).toFixed(2), speed: tier.speed || "", refill: !!tier.refill })} title="Edit tier" className="adm-btn-sm text-[12px]" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Edit</button>
                             <button onClick={async () => { if (await confirm({ title: "Delete Tier", message: "Delete this tier?", confirmLabel: "Delete", danger: true })) act({ action: "delete-tier", tierIdToDelete: tier.id }); }} title="Delete tier" className="adm-btn-sm text-[12px]" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>

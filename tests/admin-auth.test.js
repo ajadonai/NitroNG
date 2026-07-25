@@ -123,4 +123,17 @@ describe('requireAdmin — no password leak', () => {
     expect(admin).not.toHaveProperty('password');
     expect(admin.name).toBe('Admin');
   });
+
+  it('returns 503 when the database is unreachable', async () => {
+    mockAdminSession.findUnique.mockRejectedValue(new Error("Can't reach database server"));
+
+    const { requireAdmin } = await import('@/lib/admin');
+    const { admin, error } = await requireAdmin('overview');
+
+    expect(admin).toBeNull();
+    expect(error).toBeInstanceOf(Response);
+    expect(error.status).toBe(503);
+    const body = await error.json();
+    expect(body.error).toBe('Service temporarily unavailable');
+  });
 });

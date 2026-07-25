@@ -2,12 +2,13 @@
 import { useState, useEffect, useRef, useMemo, useCallback, forwardRef } from "react";
 import { trackViewContent } from "./capi-tracker";
 import { fN } from "../lib/format";
-import { BONUS_PRESETS, bonusForNaira } from "../lib/welcome-bonus";
+import { formatOrderQuantity as fQty, isValidLink, LINK_HINTS } from "../lib/order-form-core";
 import { useToast } from "./toast";
 import { SegPill } from "./seg-pill";
 import InlineAlert from "./inline-alert";
 import NitroLoader from "./nitro-loader";
 import { cleanLink } from "../lib/clean-link";
+import { OrderForm as ExtractedOrderForm } from "./order-form";
 
 /* ═══════════════════════════════════════════ */
 /* ═══ PLATFORM DATA — 35 platforms        ═══ */
@@ -263,8 +264,6 @@ function compactPrice(n) {
   return `₦${n.toLocaleString()}`;
 }
 
-function fQty(n) { return n >= 1000000 ? `${n / 1000000}M` : n >= 1000 ? `${n / 1000}K` : n; }
-
 function getPresets(min, max) {
   const nice = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
   const pool = nice.filter(v => v >= min && v <= max);
@@ -273,78 +272,6 @@ function getPresets(min, max) {
   if (pool.length <= 5) return pool;
   const step = (pool.length - 1) / 4;
   return [0, 1, 2, 3, 4].map(i => pool[Math.round(i * step)]);
-}
-
-const LINK_HINTS = {
-  instagram: "instagram.com/username",
-  tiktok: "tiktok.com/@username",
-  youtube: "youtube.com/@username",
-  facebook: "facebook.com/username",
-  twitter: "x.com/username",
-  telegram: "t.me/username",
-  threads: "threads.net/@username",
-  snapchat: "snapchat.com/username",
-  linkedin: "linkedin.com/in/username",
-  pinterest: "pinterest.com/username",
-  reddit: "reddit.com/r/community",
-  discord: "discord.gg/invite",
-  whatsapp: "chat.whatsapp.com/invite",
-  twitch: "twitch.tv/username",
-  kick: "kick.com/username",
-  spotify: "open.spotify.com/track/...",
-  audiomack: "audiomack.com/username",
-  boomplay: "boomplay.com/songs/...",
-  applemusic: "music.apple.com/album/...",
-  soundcloud: "soundcloud.com/username",
-  deezer: "deezer.com/track/...",
-  tidal: "tidal.com/track/...",
-  google: "google.com/maps/place/...",
-  trustpilot: "trustpilot.com/review/...",
-  webtraffic: "yourwebsite.com",
-  appstore: "apps.apple.com/app/...",
-  playstore: "play.google.com/store/apps/...",
-};
-
-const LINK_EXAMPLES = {
-  instagram: { profile: ["instagram.com/username"], channel: ["instagram.com/channel/ABC123"], post: ["instagram.com/p/ABC123", "instagram.com/reel/ABC123", "ig.me/abc123"] },
-  tiktok: { profile: ["tiktok.com/@username", "@username"], post: ["tiktok.com/@user/video/123...", "vm.tiktok.com/ABC123"] },
-  twitter: { profile: ["x.com/username", "twitter.com/username"], post: ["x.com/username/status/123...", "t.co/abc123"] },
-  youtube: { profile: ["youtube.com/@channel", "youtube.com/c/name"], post: ["youtube.com/watch?v=ABC123", "youtu.be/ABC123", "youtube.com/shorts/ABC123"], commentLike: ["youtube.com/watch?v=VIDEO_ID&lc=COMMENT_ID"] },
-  facebook: { profile: ["facebook.com/pagename", "fb.com/pagename"], channel: ["facebook.com/groups/groupname"], post: ["facebook.com/share/r/ABC123", "facebook.com/user/posts/123...", "fb.watch/abc123"], commentLike: ["facebook.com/comment/permalink/COMMENT_ID"] },
-  threads: { profile: ["threads.net/@username"], post: ["threads.net/@username/post/ABC123"] },
-  telegram: { profile: ["t.me/channelname"], post: ["t.me/channelname/123"] },
-  linkedin: { profile: ["linkedin.com/in/username", "linkedin.com/company/name"], post: ["linkedin.com/posts/user_title-123..."] },
-  snapchat: { profile: ["snapchat.com/add/username"], post: ["snapchat.com/spotlight/ABC123"] },
-  pinterest: { profile: ["pinterest.com/username"], post: ["pinterest.com/pin/123..."] },
-  reddit: { profile: ["reddit.com/r/community"], post: ["reddit.com/r/community/comments/..."] },
-  twitch: { profile: ["twitch.tv/username"], post: ["twitch.tv/videos/123..."] },
-  kick: { profile: ["kick.com/username"], post: ["kick.com/username/clips/..."] },
-  spotify: { profile: ["open.spotify.com/artist/..."], post: ["open.spotify.com/track/...", "open.spotify.com/album/...", "open.spotify.com/playlist/..."] },
-  soundcloud: { profile: ["soundcloud.com/artist"], post: ["soundcloud.com/artist/track-name"] },
-  applemusic: { profile: ["music.apple.com/artist/..."], post: ["music.apple.com/album/.../song"] },
-  audiomack: { profile: ["audiomack.com/artist"], post: ["audiomack.com/artist/song/track"] },
-  boomplay: { profile: ["boomplay.com/artists/..."], post: ["boomplay.com/songs/..."] },
-  deezer: { profile: ["deezer.com/artist/..."], post: ["deezer.com/track/..."] },
-  shazam: { profile: ["shazam.com/artist/..."], post: ["shazam.com/track/..."] },
-  mixcloud: { profile: ["mixcloud.com/username"], post: ["mixcloud.com/username/mix-name"] },
-  discord: { profile: ["discord.gg/invite-code"], post: ["discord.com/channels/..."] },
-  whatsapp: { profile: ["chat.whatsapp.com/invite-code"], post: ["wa.me/phonenumber"] },
-  tumblr: { profile: ["tumblr.com/username"], post: ["tumblr.com/username/post/123..."] },
-  quora: { profile: ["quora.com/profile/username"], post: ["quora.com/.../answer/username"] },
-  vimeo: { profile: ["vimeo.com/username"], post: ["vimeo.com/123456789"] },
-  google: { profile: ["maps.google.com/place/..."], post: ["g.co/kgs/..."] },
-  trustpilot: { profile: ["trustpilot.com/review/domain.com"], post: ["trustpilot.com/review/domain.com"] },
-  onlyfans: { profile: ["onlyfans.com/username"], post: ["onlyfans.com/username"] },
-  clubhouse: { profile: ["clubhouse.com/@username"], post: ["clubhouse.com/room/..."] },
-  kwai: { profile: ["kwai.com/@username"], post: ["kwai.com/video/..."] },
-};
-
-function isValidLink(link) {
-  const v = link.trim();
-  if (v.length < 3 || v.length > 500) return false;
-  if (v.includes("://")) return /^https?:\/\/[^\s/]+\.[^\s/]+/.test(v);
-  if (v.includes(".")) return /^[^\s/]+\.[^\s/]+/.test(v);
-  return /^@?[a-zA-Z0-9._]{1,100}$/.test(v);
 }
 
 function getRowPricePer1k(row, menu) {
@@ -419,384 +346,8 @@ function saveCart(rows) {
 /* ═══════════════════════════════════════════ */
 /* ═══ ORDER FORM                          ═══ */
 /* ═══════════════════════════════════════════ */
-function shortPrice(n) { return n >= 1e6 ? (n / 1e6).toFixed(n % 1e6 === 0 ? 0 : 1).replace(/\.0$/, "") + "M" : n >= 1e3 ? (n / 1e3).toFixed(n % 1e3 === 0 ? 0 : 1).replace(/\.0$/, "") + "k" : String(n); }
-const MULTIDAY_THRESHOLD = 3000;
-const DAILY_CAP = { followers: 5000, likes: 10000, views: 75000, plays: 75000, comments: 1000, reviews: 100, engagement: 15000 };
-const DEFAULT_DAILY_CAP = 15000;
-function safeDailyCap(type) { return DAILY_CAP[(type || "").toLowerCase()] || DEFAULT_DAILY_CAP; }
-function maxDripDays(qty) { return qty <= 5000 ? 5 : qty <= 10000 ? 7 : qty <= 25000 ? 12 : qty <= 50000 ? 18 : qty <= 100000 ? 25 : 30; }
-const MIN_DAYS_FLOOR = { followers: 3, views: 1, plays: 1, likes: 2, comments: 3, reviews: 3, engagement: 2 };
-function minDripDays(qty, type) { const floor = MIN_DAYS_FLOOR[(type || "").toLowerCase()] || 3; return Math.max(floor, Math.ceil(qty / safeDailyCap(type))); }
-
-export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible, pointsRedeemable = false, pointsBalance = 0, redeemPoints = false, setRedeemPoints }) {
-  const minQty = selTier?.min || 100;
-  const maxQty = selTier?.max || 50000;
-  const isPackage = minQty === maxQty;
-  useEffect(() => { if (isPackage && String(qty) !== String(minQty)) setQty(String(minQty)); }, [isPackage, minQty]);
-  const qtyNum = Number(qty) || 0;
-  const qtyOutOfRange = qty !== "" && qtyNum > 0 && (qtyNum < minQty || qtyNum > maxQty);
-  const basePrice = selTier ? Math.round((qtyNum / 1000) * (selTier.pricePer1k || selTier.price)) : 0;
-  const discountAmount = loyaltyDiscount > 0 ? Math.round(basePrice * (loyaltyDiscount / 100)) : 0;
-  const afterLoyalty = Math.max(0, basePrice - discountAmount);
-  const promoDiscountAmt = activePromotion ? Math.round(afterLoyalty * (activePromotion.discountPercent / 100)) : 0;
-  const cappedPromoDiscount = activePromotion?.maxDiscountPerOrder ? Math.min(promoDiscountAmt, activePromotion.maxDiscountPerOrder / 100) : promoDiscountAmt;
-  const priceBeforePoints = Math.max(0, afterLoyalty - cappedPromoDiscount);
-  const pointsDiscount = redeemPoints && pointsRedeemable ? Math.min(pointsBalance, priceBeforePoints) : 0;
-  const price = Math.max(0, priceBeforePoints - pointsDiscount);
-  const s = selTier ? TS[selTier.tier] : null;
-  const [linkError, setLinkError] = useState("");
-  const [linkHelpOpen, setLinkHelpOpen] = useState(false);
-  const [dripOn, setDripOn] = useState(false);
-  const [dripStep, setDripStep] = useState(1);
-  const [dripDays, setDripDays] = useState(3);
-  const showMultiDay = selTier?.tags?.includes('drip') && qtyNum >= MULTIDAY_THRESHOLD;
-  const daysMax = maxDripDays(qtyNum);
-  const daysMin = Math.min(minDripDays(qtyNum, selSvc?.type), daysMax);
-  const clampedDays = Math.max(daysMin, Math.min(dripDays, daysMax));
-  const perDay = clampedDays > 0 ? Math.floor(qtyNum / clampedDays) : qtyNum;
-  const dripRemainder = clampedDays > 0 ? qtyNum % clampedDays : 0;
-  const dripCap = safeDailyCap(selSvc?.type);
-  const dripZone = perDay <= dripCap * 0.5 ? "safe" : perDay <= dripCap ? "moderate" : "hot";
-
-  useEffect(() => { if (!linkHelpOpen) return; const onKey = (e) => { if (e.key === "Escape") setLinkHelpOpen(false); }; document.addEventListener("keydown", onKey); return () => document.removeEventListener("keydown", onKey); }, [linkHelpOpen]);
-
-  /* Link validation */
-  const POST_LINK_PATTERNS = {
-    twitter: /\/(status|i\/status)\//i,
-    instagram: /\/(p|reel|reels|stories|tv|share)\//i,
-    tiktok: /\/(video|photo|v|t)\//i,
-    youtube: /\/(watch|shorts|live)\b|youtu\.be\//i,
-    facebook: /\/(posts|videos|watch|photos|photo|reel|share\/[rpv]|story\.php|permalink\.php)\b/i,
-    threads: /\/post\//i,
-    linkedin: /\/(posts|pulse|feed\/update)\//i,
-    snapchat: /\/spotlight\//i,
-    pinterest: /\/pin\//i,
-    reddit: /\/comments\//i,
-    twitch: /\/videos\//i,
-    kick: /\/clips\//i,
-    telegram: /\/\d+\s*$/,
-    spotify: /\/(track|album|playlist|episode)\//i,
-    bluesky: /\/post\//i,
-    tumblr: /\/post\/\d/i,
-    vimeo: /\/\d{5,}/,
-    quora: /\/(answer|unanswered)\//i,
-    deezer: /\/(track|album|playlist)\//i,
-    tidal: /\/(track|album|playlist)\//i,
-    audiomack: /\/(song|album|playlist)\//i,
-    boomplay: /\/(songs|albums|playlists)\//i,
-    applemusic: /\/(album|song|music-video)\//i,
-    shazam: /\/(track|song)\//i,
-  };
-  const SHORT_POST_DOMAINS = /^(vt|vm)\.tiktok\.com$|^t\.co$|^(fb\.watch|fb\.me)$|^ig\.me$|^youtu\.be$/i;
-  const validateLink = (val) => {
-    const cleaned = val.replace(/^https?:\/\//i, "");
-    setLink(cleaned);
-    if (cleaned.trim()) setLinkHelpOpen(false);
-    if (!cleaned.trim()) { setLinkError(""); return; }
-    if (!isValidLink(cleaned)) { setLinkError("Enter a valid link"); return; }
-    const pat = POST_LINK_PATTERNS[platform];
-    if (pat && cleaned.includes(".")) {
-      let host = ""; try { host = new URL("https://" + cleaned).hostname; } catch {}
-      const isShortPost = SHORT_POST_DOMAINS.test(host);
-      const looksLikePost = isShortPost || pat.test(cleaned);
-      if (isProfileSvc && looksLikePost) { setLinkError("This service needs your profile link, not a post link"); return; }
-      if (isPostSvc && !looksLikePost) { setLinkError("This service needs a link to a specific post, not your profile"); return; }
-    }
-    setLinkError("");
-  };
-  const linkValid = link.trim() && !linkError;
-
-  /* Detect service type from provider apiType (reliable) with name fallback */
-  const svcName = (selSvc?.name || "").toLowerCase();
-  const apiType = (selTier?.apiType || "").toLowerCase();
-  const isComment = apiType.includes("comment") || ((svcName.includes("comment")) && !svcName.includes("comment like") || svcName.includes("likes (comments)") && !svcName.includes("likes (comments)"));
-  const isCustomComment = apiType.includes("custom comment") || apiType.includes("comment replies");
-  const isMention = apiType.includes("mention");
-  const isPoll = apiType === "poll";
-  const isSeo = apiType === "seo";
-  const isReview = svcName.includes("review") && !svcName.includes("review like");
-  const needsComments = isCustomComment || isReview;
-  const showComments = isComment || isReview;
-  const needsUsernames = isMention;
-  const needsAnswer = isPoll;
-  const needsKeywords = isSeo;
-
-  const commentLines = (comments || "").split("\n").filter(l => l.trim()).length;
-  const minCommentLines = isCustomComment ? Math.max(selTier?.min || 10, 10) : 0;
-  const commentShort = needsComments && commentLines > 0 && commentLines < minCommentLines;
-
-  const isMultiPostSvc = /last\s+\d+\s*(tweet|post|video|reel|photo)/i.test(svcName);
-  const isChannelSvc = /(channel|group)\s*(member|join|subscriber)/i.test(svcName);
-  const isAutoSvc = /\bauto\b/i.test(svcName);
-  const isProfileSvc = (/follow|subscri|member|profile visit/i.test(svcName) || isMultiPostSvc || isAutoSvc) && !isChannelSvc;
-  const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays/i.test(svcName) && !isProfileSvc && !isChannelSvc;
-
-  const isCommentLikeSvc = svcName.includes("comment like") || svcName.includes("likes (comments)");
-  const linkPlaceholder = (LINK_EXAMPLES[platform] ? (isCommentLikeSvc ? LINK_EXAMPLES[platform].commentLike?.[0] : isPostSvc ? LINK_EXAMPLES[platform].post?.[0] : isChannelSvc ? (LINK_EXAMPLES[platform].channel?.[0] || LINK_EXAMPLES[platform].profile?.[0]) : isProfileSvc ? LINK_EXAMPLES[platform].profile?.[0] : null) : null) || LINK_HINTS[platform] || `${platform}.com/...`;
-  const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
-
-  const plat = PLATFORMS.find(pl => pl.id === platform);
-
-  return (
-    <div>
-      {/* ── Service header card ── */}
-      <div className="p-5 pb-4 max-md:p-3.5 max-md:pb-3 rounded-t-[14px] desktop:rounded-t-2xl" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderBottom: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.12)"}` }}>
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <div className="text-[17px] font-semibold max-md:text-base" style={{ color: t.text }}>{selSvc?.name}</div>
-          {onClose && <button onClick={onClose} className="bg-transparent border border-solid rounded-lg w-7 h-7 flex items-center justify-center cursor-pointer shrink-0" style={{ borderColor: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)", color: t.textSoft }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
-        </div>
-        {s && <div className="flex items-center gap-1.5 flex-wrap">
-          <div className="inline-flex items-center gap-0 rounded-lg overflow-hidden" style={{ border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
-            <span className="inline-flex items-center gap-1 font-semibold py-1 px-2.5 text-[12px]" style={{ background: dark ? s.bgD : s.bg, color: s.text }}>{s.label} {selTier.tier}</span>
-            <span className="py-1 px-2.5 text-[12px] font-semibold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace", background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }}>₦{selTier.price.toLocaleString()}</span>
-          </div>
-          {selTier.tier === "Budget" ? (
-            <span className="inline-flex items-center gap-1 text-[11px] py-[3px] px-2 rounded-md" style={{ background: dark ? "rgba(239,68,68,.08)" : "rgba(239,68,68,.06)", color: dark ? "#fca5a5" : "#dc2626" }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              No refill
-            </span>
-          ) : selTier.tier === "Standard" ? (
-            <span className="inline-flex items-center gap-1 text-[11px] py-[3px] px-2 rounded-md" style={{ background: dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.06)", color: dark ? "#6ee7b7" : "#059669" }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              30-day refill
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-[11px] py-[3px] px-2 rounded-md" style={{ background: dark ? "rgba(167,139,250,.08)" : "rgba(167,139,250,.06)", color: dark ? "#c4b5fd" : "#7c3aed" }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
-              Lifetime refill
-            </span>
-          )}
-        </div>}
-      </div>
-
-      {/* ── Package note (verified comments etc.) ── */}
-      {selTier && isPackage && selSvc?.type === "verified-comments" && (
-        <div className="mx-5 max-md:mx-3.5 mt-3 rounded-lg py-2 px-3 flex items-start gap-2" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)", border: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={dark ? "#d4949f" : "#a0616e"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-          <div className="text-[11px] leading-[1.5]" style={{ color: dark ? "#a09890" : "#6e6a65" }}>
-            {selTier.tier === "Budget" && "Delivers 1 comment from smaller verified profiles."}
-            {selTier.tier === "Standard" && "Delivers 3 comments from mid-tier verified accounts."}
-            {selTier.tier === "Premium" && "Delivers 5 comments from top-tier, high-follower verified accounts."}
-          </div>
-        </div>
-      )}
-
-      {/* ── Growth Package bundle breakdown ── */}
-      {selTier && isPackage && svcName.includes("growth package") && (
-        <div className="mx-5 max-md:mx-3.5 mt-3 rounded-lg py-2.5 px-3" style={{ background: dark ? "rgba(59,130,246,.06)" : "rgba(59,130,246,.04)", border: `1px solid ${dark ? "rgba(59,130,246,.15)" : "rgba(59,130,246,.1)"}` }}>
-          <div className="flex items-start gap-2 mb-2">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={dark ? "#60a5fa" : "#2563eb"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><path d="M20 12V8H6a2 2 0 01-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 000 4h4v-4h-4z"/></svg>
-            <div className="text-[11.5px] leading-[1.6] font-semibold" style={{ color: dark ? "#60a5fa" : "#2563eb" }}>
-              {selTier.tier === "Budget" && "1,000 Followers + 200 Likes + 200 Shares"}
-              {selTier.tier === "Standard" && "5,000 Followers + 1,000 Likes + 1,000 Shares"}
-              {selTier.tier === "Premium" && "10,000 Followers + 2,000 Likes + 2,000 Shares"}
-            </div>
-          </div>
-          <div className="flex items-start gap-2">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            <div className="text-[10.5px] leading-[1.5]" style={{ color: dark ? "#fbbf24" : "#92400e" }}>Likes and shares will be delivered to your most recent post.</div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Form fields ── */}
-      <div className="p-5 max-md:p-3.5">
-      {selTier && <>
-        {dripStep === 1 ? (<>
-        <div className="mb-3" data-tour="no-link-input">
-          <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{linkLabel}</label>
-          <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${linkError ? (dark ? "#f87171" : "#dc2626") : !link.trim() ? t.accent : dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)"}`, background: !link.trim() ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)") : (dark ? "#131728" : "#fff") }}>
-            <span className="inline-flex items-center px-3 text-sm font-semibold shrink-0 select-none" style={{ borderRight: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>https://</span>
-            <input type="url" inputMode="url" aria-label={linkLabel} disabled={orderLoading} placeholder={linkPlaceholder} value={link} onChange={e => validateLink(e.target.value)} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
-          </div>
-          {linkError && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626" }}>{linkError}</div>}
-          {!linkError && LINK_EXAMPLES[platform] && (isProfileSvc || isPostSvc || isChannelSvc) && (() => {
-              const isCommentLike = svcName.includes("comment like") || svcName.includes("likes (comments)");
-              const type = isCommentLike ? "commentLike" : isChannelSvc ? "channel" : isProfileSvc ? "profile" : "post";
-              const examples = LINK_EXAMPLES[platform][type] || LINK_EXAMPLES[platform].profile;
-              if (!examples || !examples.length) return null;
-              return <div className="mt-1.5">
-                <button type="button" onClick={() => setLinkHelpOpen(o => !o)} className="flex items-center gap-1.5 border-0 cursor-pointer p-0 mb-0" style={{ background: "transparent", color: dark ? "#d4949f" : "#a0616e" }}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                  <span className="text-[11px] font-medium">We accept these formats</span>
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ transform: linkHelpOpen ? "rotate(180deg)" : "none", transition: "transform .15s" }}><polyline points="6 9 12 15 18 9"/></svg>
-                </button>
-                {linkHelpOpen && <div className="flex flex-wrap gap-1.5 mt-1.5">
-                  {examples.map((ex, i) => <span key={i} className="text-[11px] py-[3px] px-2 rounded-md" style={{ fontFamily: "'JetBrains Mono', monospace", background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textSoft }}>{ex}</span>)}
-                </div>}
-              </div>;
-            })()}
-        </div>
-        {showComments && (
-          <div className="mb-3.5">
-            <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{isReview ? "Reviews" : "Comments"} <span className="font-normal normal-case tracking-normal text-[11px]">({needsComments ? "required, one per line" : "optional, one per line"})</span></label>
-            <textarea disabled={orderLoading} placeholder={isReview ? "Great service, highly recommend!\nFast delivery and excellent quality\nBest experience I've had, 5 stars" : "Great content!\nLove this post!\nAmazing work, keep it up\nThis is fire"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={4} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
-            <div className="text-[11px] mt-1" style={{ color: commentShort ? (dark ? "#fca5a5" : "#dc2626") : t.textMuted }}>{commentShort ? `Need at least ${minCommentLines} unique ${isReview ? "reviews" : "comments"} — you have ${commentLines}` : commentLines > 0 ? `${commentLines} ${isReview ? "reviews" : "comments"} entered · we'll cycle through them` : needsComments ? `Enter at least ${minCommentLines} unique comments, one per line` : `Leave empty to use provider's comments`}</div>
-          </div>
-        )}
-        {needsUsernames && (
-          <div className="mb-3.5">
-            <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>Usernames to mention <span className="font-normal normal-case tracking-normal text-[11px]">(one per line, without @)</span></label>
-            <textarea disabled={orderLoading} placeholder={"username1\nusername2\nusername3"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={4} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
-            <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>{(comments || "").split("\n").filter(l => l.trim()).length} usernames entered</div>
-          </div>
-        )}
-        {needsAnswer && (
-          <div className="mb-3.5">
-            <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>Answer option</label>
-            <div className="flex gap-1.5">
-              {[1, 2, 3, 4].map(n => (
-                <button key={n} type="button" disabled={orderLoading} onClick={() => setComments(String(n))} className="flex-1 py-2.5 px-0 rounded-lg text-sm font-semibold cursor-pointer border border-solid disabled:opacity-40 transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: (comments || "") === String(n) ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)"), background: (comments || "") === String(n) ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: (comments || "") === String(n) ? t.accent : t.textMuted }}>Option {n}</button>
-              ))}
-            </div>
-            <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>Select which poll answer to vote for</div>
-          </div>
-        )}
-        {needsKeywords && (
-          <div className="mb-3.5">
-            <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>Search Keywords <span className="font-normal normal-case tracking-normal text-[11px]">(required, one per line)</span></label>
-            <textarea disabled={orderLoading} placeholder={"best nigerian services\nnigeria social media growth\nbuy instagram followers nigeria"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={3} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
-            <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>{(comments || "").split("\n").filter(l => l.trim()).length || 0} keywords entered</div>
-          </div>
-        )}
-        <div className="mb-3">
-          <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>Quantity</label>
-          <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${qtyOutOfRange ? (dark ? "rgba(220,38,38,.4)" : "rgba(220,38,38,.38)") : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)")}`, background: dark ? "#131728" : "#fff" }}>
-            <input type="number" aria-label="Quantity" disabled={orderLoading || isPackage} value={qty} onChange={e => setQty(e.target.value === "" ? "" : e.target.value)} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
-            {!isPackage && <span className="inline-flex items-center px-3 text-[11px] font-semibold shrink-0 select-none whitespace-nowrap" style={{ borderLeft: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>max<br/>{fQty(maxQty)}</span>}
-            {isPackage && <span className="inline-flex items-center px-3 text-[11px] font-semibold shrink-0 select-none whitespace-nowrap" style={{ borderLeft: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>fixed</span>}
-          </div>
-          {qtyOutOfRange && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{qtyNum < minQty ? `Minimum: ${minQty.toLocaleString()}` : `Maximum: ${maxQty.toLocaleString()}`}</div>}
-        </div>
-          {showMultiDay && (<>
-          <div className="rounded-xl mb-3 flex items-center gap-[10px] py-2.5 px-3 cursor-pointer select-none" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.12)"}`, WebkitTapHighlightColor: "transparent" }} onClick={() => setDripOn(v => !v)}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dripOn ? (dark ? "#4ade80" : "#16a34a") : (dark ? "#6e6a65" : "#918b85")} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            </svg>
-            <div className="flex-1">
-              <div className="text-[13px] font-semibold" style={{ color: dark ? "#a09b95" : "#555250" }}>Gradual delivery</div>
-              <div className="text-[11px]" style={{ color: dark ? "#6e6a65" : "#918b85", marginTop: 1 }}>Spread across multiple days for safety</div>
-            </div>
-            <div className="relative w-10 h-[22px] shrink-0" aria-hidden="true">
-              <div className="absolute inset-0 rounded-[11px] transition-colors duration-200" style={{ background: dripOn ? "#c47d8e" : (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.15)") }} />
-              <div className="absolute top-[2px] w-[18px] h-[18px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.2)] transition-[left] duration-200" style={{ left: dripOn ? 20 : 2 }} />
-            </div>
-          </div>
-          {!dripOn && <div className="flex items-center justify-center gap-1.5 -mt-1.5 mb-3 text-[11px]" style={{ color: dark ? "#fcd34d" : "#b45309" }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            Large delivery may flag the target account
-          </div>}
-          </>)}
-        {pointsRedeemable && priceBeforePoints > 0 && (
-          <div className="flex items-center justify-between gap-3 rounded-[10px] p-2.5 mb-2 border border-solid cursor-pointer select-none" onClick={() => setRedeemPoints(!redeemPoints)} style={{ background: redeemPoints ? (dark ? "rgba(251,191,36,.08)" : "rgba(251,191,36,.07)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)"), borderColor: redeemPoints ? (dark ? "rgba(251,191,36,.25)" : "rgba(251,191,36,.35)") : t.cardBorder }}>
-            <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-semibold" style={{ color: redeemPoints ? (dark ? "#fbbf24" : "#92400e") : t.text }}>Use Nitro Points</div>
-              <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{pointsBalance.toLocaleString()} pts available · saves ₦{Math.min(pointsBalance, priceBeforePoints).toLocaleString()}</div>
-            </div>
-            <div className="relative w-10 h-[22px] shrink-0" aria-hidden="true">
-              <div className="absolute inset-0 rounded-[11px] transition-colors duration-200" style={{ background: redeemPoints ? "#fbbf24" : (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.15)") }} />
-              <div className="absolute top-[2px] w-[18px] h-[18px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.2)] transition-[left] duration-200" style={{ left: redeemPoints ? 20 : 2 }} />
-            </div>
-          </div>
-        )}
-        <div className="rounded-[10px] p-2.5 mb-3 border border-solid" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", borderColor: t.cardBorder }}>
-          {discountAmount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}><span>Nitro Status discount ({loyaltyDiscount}%)</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{discountAmount.toLocaleString()}</span></div>}
-          {cappedPromoDiscount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#f9a8d4" : "#be185d" }}><span>Discount ({activePromotion.discountPercent}%){cappedPromoDiscount < promoDiscountAmt ? ` · capped at ₦${cappedPromoDiscount.toLocaleString()}` : ''}</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{cappedPromoDiscount.toLocaleString()}</span></div>}
-          {pointsDiscount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#fbbf24" : "#92400e" }}><span>Nitro Points</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>-₦{pointsDiscount.toLocaleString()}</span></div>}
-          <div className={`flex justify-between items-baseline${(discountAmount > 0 || cappedPromoDiscount > 0 || pointsDiscount > 0) ? " border-t border-solid pt-2 mt-1" : ""}`} style={(discountAmount > 0 || cappedPromoDiscount > 0 || pointsDiscount > 0) ? { borderColor: t.cardBorder } : undefined}>
-            <span className="text-[13px] font-semibold" style={{ color: t.textMuted }}>Total</span>
-            <span className="font-bold text-[20px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>{(discountAmount > 0 || cappedPromoDiscount > 0 || pointsDiscount > 0) && <span className="text-[14px] font-normal line-through mr-1.5" style={{ color: t.textMuted }}>₦{basePrice.toLocaleString()}</span>}₦{price.toLocaleString()}</span>
-          </div>
-        </div>
-          {balance != null && qtyNum > 0 && price > balance ? (
-            welcomeBonusEligible ? (
-            <div className="rounded-xl p-3.5" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.18)" : "rgba(5,150,105,.12)"}` }}>
-              <div className="text-[13px] font-semibold mb-1" style={{ color: t.text }}>Almost there — add funds to place this order</div>
-              <div className="text-[11.5px] mb-2.5" style={{ color: t.textMuted }}>Your first deposit gets up to ₦3,000 free to spend.</div>
-              {(() => {
-                const needed = price - balance;
-                const tier = BONUS_PRESETS.find(p => p.amount >= needed) || BONUS_PRESETS[BONUS_PRESETS.length - 1];
-                const bonus = bonusForNaira(tier.amount);
-                return (
-                  <div className="inline-flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg mb-3 text-[12px] font-semibold" style={{ background: dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.07)", color: dark ? "#6ee7b7" : "#059669" }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-                    Deposit ₦{tier.amount.toLocaleString()} → ₦{(tier.amount + bonus).toLocaleString()} to spend
-                  </div>
-                );
-              })()}
-              <button onClick={onTopUp} className="w-full py-2.5 rounded-[10px] border-none text-[14px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(5,150,105,.3)]" style={{ background: dark ? "#059669" : "#059669", color: "#fff" }}>Add funds & claim bonus</button>
-            </div>
-            ) : (
-            <button onClick={onTopUp} data-tour="no-submit-btn" className="w-full py-2.5 rounded-lg border border-solid text-[15px] font-semibold cursor-pointer flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(250,204,21,.08)" : "rgba(250,204,21,.1)", borderColor: dark ? "rgba(250,204,21,.25)" : "rgba(250,204,21,.35)", color: dark ? "#fcd34d" : "#b45309" }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              Insufficient balance · Top up
-            </button>
-            )
-          ) : (<>
-            <div className="text-[10.5px] mb-2 px-0.5" style={{ color: t.textMuted }}>Profile must be <b style={{ color: t.text }}>public</b>. No refunds for orders on private profiles.</div>
-            <button onClick={() => { if (dripOn && showMultiDay) { setDripStep(2); } else { onSubmit(dripOn && showMultiDay ? clampedDays : undefined); } }} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames || needsKeywords) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer || needsKeywords) || (comments || "").trim()) && !commentShort && !orderLoading ? 1 : .5 }}>{orderLoading ? <span className="inline-flex items-center justify-center gap-2"><NitroLoader size={16} mono ariaHidden />Placing...</span> : dripOn && showMultiDay ? "Next" : "Place Order"}</button>
-          </>)}
-        </>) : (<>
-          {/* Step 2: Drip config — replaces entire form body */}
-          <div className="flex items-center gap-2 mb-3 cursor-pointer select-none" onClick={() => setDripStep(1)} style={{ WebkitTapHighlightColor: "transparent" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#a09b95" : "#555250"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            <span className="text-[13px] font-semibold" style={{ color: dark ? "#a09b95" : "#555250" }}>Delivery schedule</span>
-          </div>
-          <div className="flex items-start gap-2.5 rounded-xl py-2.5 px-3 mb-3" style={{ background: dark ? "rgba(74,222,128,.06)" : "rgba(22,163,74,.04)", border: `1px solid ${dark ? "rgba(74,222,128,.12)" : "rgba(22,163,74,.1)"}` }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark ? "#4ade80" : "#16a34a"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <div className="text-[11.5px] leading-[1.6]" style={{ color: dark ? "#8a8580" : "#6e6a65" }}>
-              Delivered in safe batches to protect the target account.
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.12)"}` }}>
-              <div className="text-[10px] mb-0.5" style={{ color: t.textMuted }}>Total</div>
-              <div className="text-[13px] font-semibold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{qtyNum.toLocaleString()}</div>
-            </div>
-            <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dripZone === "safe" ? (dark ? "rgba(74,222,128,.08)" : "rgba(22,163,74,.05)") : dripZone === "moderate" ? (dark ? "rgba(250,204,21,.08)" : "rgba(202,138,4,.05)") : (dark ? "rgba(239,68,68,.08)" : "rgba(220,38,38,.05)"), border: `1px solid ${dripZone === "safe" ? (dark ? "rgba(74,222,128,.18)" : "rgba(22,163,74,.15)") : dripZone === "moderate" ? (dark ? "rgba(250,204,21,.18)" : "rgba(202,138,4,.15)") : (dark ? "rgba(239,68,68,.18)" : "rgba(220,38,38,.15)")}` }}>
-              <div className="text-[10px] mb-0.5" style={{ color: t.textMuted }}>Per day</div>
-              <div className="text-[13px] font-semibold" style={{ color: dripZone === "safe" ? (dark ? "#4ade80" : "#16a34a") : dripZone === "moderate" ? (dark ? "#fcd34d" : "#b45309") : (dark ? "#fca5a5" : "#dc2626"), fontFamily: "'JetBrains Mono', monospace" }}>~{perDay.toLocaleString()}</div>
-            </div>
-            <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.12)"}` }}>
-              <div className="text-[10px] mb-0.5" style={{ color: t.textMuted }}>Duration</div>
-              <div className="text-[13px] font-semibold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{clampedDays} days</div>
-            </div>
-            <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.12)"}` }}>
-              <div className="text-[10px] mb-0.5" style={{ color: t.textMuted }}>Completes by</div>
-              <div className="text-[13px] font-semibold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{new Date(Date.now() + clampedDays * 86400000).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</div>
-            </div>
-          </div>
-          {daysMin < daysMax ? (<>
-          <style>{`
-            .nitro-drip-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px; outline: none; }
-            .nitro-drip-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25); background: var(--thumb-color, #c47d8e); }
-            .nitro-drip-slider::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25); background: var(--thumb-color, #c47d8e); }
-          `}</style>
-          <div className="mb-3 px-1">
-            <input type="range" min={daysMin} max={daysMax} value={clampedDays} onChange={e => setDripDays(Number(e.target.value))} className="nitro-drip-slider" style={{ background: `linear-gradient(to right, ${dripZone === "safe" ? "#4ade80" : dripZone === "moderate" ? "#fbbf24" : "#ef4444"} ${((clampedDays - daysMin) / (daysMax - daysMin)) * 100}%, ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)"} ${((clampedDays - daysMin) / (daysMax - daysMin)) * 100}%)`, "--thumb-color": dripZone === "safe" ? "#4ade80" : dripZone === "moderate" ? "#fbbf24" : "#ef4444" }} />
-            <div className="flex justify-between text-[10px] mt-1.5" style={{ color: t.textMuted }}>
-              <span>{daysMin} days</span>
-              <span>{daysMax} days</span>
-            </div>
-          </div>
-          </>) : (
-          <div className="flex items-center justify-center gap-1.5 mb-3 py-2 rounded-lg text-[11px]" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)", color: t.textMuted }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-            Fixed at {clampedDays} days for this order size
-          </div>
-          )}
-          <div className="rounded-[10px] p-2.5 mb-3 border border-solid" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", borderColor: t.cardBorder }}>
-            <div className="flex justify-between items-baseline">
-              <span className="text-[13px] font-semibold" style={{ color: t.textMuted }}>Total</span>
-              <span className="font-bold text-[20px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{price.toLocaleString()}</span>
-            </div>
-          </div>
-          <button onClick={() => onSubmit(clampedDays)} data-tour="no-submit-btn" disabled={orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: !orderLoading ? 1 : .5 }}>{orderLoading ? <span className="inline-flex items-center justify-center gap-2"><NitroLoader size={16} mono ariaHidden />Placing...</span> : "Place Order"}</button>
-        </>)}
-      </>}
-      </div>
-    </div>
-  );
+export function OrderForm(props) {
+  return <ExtractedOrderForm {...props} tierStyles={TS} />;
 }
 
 /* ═══════════════════════════════════════════ */
@@ -834,6 +385,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   const [orderMode, setOrderMode] = useState("single");
   const [cartRows, setCartRows] = useState([]);
   const [tiktokDisclaimer, setTiktokDisclaimer] = useState(false);
+  const [youtubeDisclaimer, setYoutubeDisclaimer] = useState(false);
   const [duplicateConfirm, setDuplicateConfirm] = useState(null);
   const hydratedRef = useRef(false);
   useEffect(() => {
@@ -941,12 +493,14 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       .filter(g => !search || g.name.toLowerCase().includes(search.toLowerCase()))
       .map(g => {
         const pkg = (g.type || "").toLowerCase() === "verified-comments";
+        const lName = g.name.toLowerCase();
+        const isReelViews = normPlatform(g.platform) === 'instagram' && (lName.includes('reel') || lName.includes('video')) && lName.includes('view');
         return {
           id: g.id,
           name: g.name,
           type: g.type?.toLowerCase() || "standard",
           ng: g.nigerian,
-          description: g.description || null,
+          description: g.description || (isReelViews ? 'For video/reel posts only — does not work on photo posts.' : null),
           isPackage: pkg,
           tiers: g.tiers.map(tier => ({
             id: tier.id,
@@ -978,10 +532,20 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     if (platform !== 'tiktok') return;
     try {
       const dismissed = localStorage.getItem('nitro_tiktok_disclaimer');
-      if (!dismissed || Date.now() - Number(dismissed) > 7 * 24 * 60 * 60 * 1000) {
+      if (!dismissed || Date.now() - Number(dismissed) > 3 * 24 * 60 * 60 * 1000) {
         setTiktokDisclaimer(true);
       }
     } catch { setTiktokDisclaimer(true); }
+  }, [platform]);
+
+  useEffect(() => {
+    if (platform !== 'youtube') return;
+    try {
+      const dismissed = localStorage.getItem('nitro_youtube_disclaimer');
+      if (!dismissed || Date.now() - Number(dismissed) > 3 * 24 * 60 * 60 * 1000) {
+        setYoutubeDisclaimer(true);
+      }
+    } catch { setYoutubeDisclaimer(true); }
   }, [platform]);
 
   /* Click outside any card → collapse */
@@ -1504,12 +1068,38 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 <div className="text-base font-semibold" style={{ color: t.text }}>Heads up about TikTok</div>
               </div>
               <div className="text-[13.5px] leading-[1.65] mb-1" style={{ color: t.textMuted }}>
-                TikTok services can be unpredictable. Orders may take longer than expected, deliver partially, or experience drops due to platform changes outside our control.
+                TikTok services are unstable due to frequent platform changes. Orders may deliver slowly, partially, or experience drops after delivery.
+              </div>
+              <div className="text-[13.5px] leading-[1.65] mb-1 font-semibold" style={{ color: t.text }}>
+                Drops are not covered by refill.
               </div>
               <div className="text-[13.5px] leading-[1.65] mb-4" style={{ color: t.textMuted }}>
-                We recommend starting with a small order to test before committing to larger quantities. Refills and refunds follow our standard policy.
+                We recommend starting with a small order to test. By placing a TikTok order, you accept this risk.
               </div>
               <button onClick={() => { try { localStorage.setItem('nitro_tiktok_disclaimer', String(Date.now())); } catch {} setTiktokDisclaimer(false); }} className="w-full py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>I understand</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ YOUTUBE DISCLAIMER ═══ */}
+      {youtubeDisclaimer && (
+        <div className="no-modal-overlay flex fixed inset-0 z-50 items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { try { localStorage.setItem('nitro_youtube_disclaimer', String(Date.now())); } catch {} setYoutubeDisclaimer(false); }} style={{ background: "rgba(0,0,0,.45)" }}>
+          <div role="dialog" aria-modal="true" aria-label="YouTube subscriber notice" className="w-full max-w-[380px] rounded-2xl border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
+            <div className="py-5 px-5">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: t.text }}><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                </div>
+                <div className="text-base font-semibold" style={{ color: t.text }}>About YouTube subscribers</div>
+              </div>
+              <div className="text-[13.5px] leading-[1.65] mb-1" style={{ color: t.textMuted }}>
+                YouTube subscriber orders are fulfilled by real people completing tasks, not bots. This means delivery is slower than other services and may take several days to complete.
+              </div>
+              <div className="text-[13.5px] leading-[1.65] mb-4" style={{ color: t.textMuted }}>
+                Please allow extra time for subscriber orders to process.
+              </div>
+              <button onClick={() => { try { localStorage.setItem('nitro_youtube_disclaimer', String(Date.now())); } catch {} setYoutubeDisclaimer(false); }} className="w-full py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>Got it</button>
             </div>
           </div>
         </div>

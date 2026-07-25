@@ -12,7 +12,6 @@ export async function GET() {
       orderBy: { sortOrder: 'asc' },
       include: {
         tiers: {
-          where: { enabled: true },
           orderBy: { sortOrder: 'asc' },
           include: {
             service: {
@@ -206,6 +205,7 @@ export async function POST(req) {
       if (updates.enabled !== undefined) data.enabled = !!updates.enabled;
       if (updates.sortOrder !== undefined) data.sortOrder = Number(updates.sortOrder);
       if (updates.serviceId !== undefined) data.serviceId = updates.serviceId || null;
+      if (updates.pricePinned !== undefined) data.pricePinned = !!updates.pricePinned;
 
       const updated = await prisma.serviceTier.update({ where: { id: tierIdToUpdate }, data });
       await logActivity(admin.name, `Updated tier ${updated.tier}`, 'service');
@@ -237,21 +237,11 @@ export async function POST(req) {
       const existing = await prisma.serviceTier.findUnique({ where: { id: tierIdToDelete }, include: { group: true } });
       if (!existing) return Response.json({ error: 'Tier not found' }, { status: 404 });
 
-      const referencedOrders = await prisma.order.count({ where: { tierId: tierIdToDelete } });
-      const archived = referencedOrders > 0;
+      await prisma.serviceTier.delete({ where: { id: tierIdToDelete } });
 
-      if (archived) {
-        await prisma.serviceTier.update({
-          where: { id: tierIdToDelete },
-          data: { enabled: false },
-        });
-      } else {
-        await prisma.serviceTier.delete({ where: { id: tierIdToDelete } });
-      }
-
-      await logActivity(admin.name, `${archived ? 'Archived' : 'Deleted'} ${existing.tier} tier from "${existing.group.name}"`, 'service');
+      await logActivity(admin.name, `Deleted ${existing.tier} tier from "${existing.group.name}"`, 'service');
       invalidateServiceCatalogue();
-      return Response.json({ success: true, archived });
+      return Response.json({ success: true });
     }
 
     if (action === 'recalculate-prices') {

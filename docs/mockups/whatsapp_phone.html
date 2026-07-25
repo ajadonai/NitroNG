@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nitro — WhatsApp Phone Field Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* ─── Design tokens ─── */
+  :root {
+    --bg-page: #faf9f7;
+    --bg-alt: #f0eeea;
+    --bg-surface: #ffffff;
+    --bg-muted: #f4f2ef;
+    --bg-hover: #ede9e3;
+    --bg-input: #ffffff;
+    --border-soft: rgba(0, 0, 0, 0.08);
+    --border-strong: rgba(0, 0, 0, 0.14);
+    --border-focus: #c47d8e;
+    --text-primary: #1a1a1a;
+    --text-secondary: #5a5a5a;
+    --text-tertiary: #8a8a8a;
+    --text-placeholder: #b0ada7;
+    --accent: #c47d8e;
+    --accent-soft: #f5e6ea;
+    --accent-softer: rgba(196, 125, 142, 0.08);
+    --accent-hover: #b16d7e;
+    --tag-good-bg: #e4f3d9;
+    --tag-good-fg: #27500A;
+    --tag-warn-bg: #fff4dc;
+    --tag-warn-fg: #8a5d0b;
+    --tag-bad-bg: #fbe7e7;
+    --tag-bad-fg: #c23a3a;
+    --tag-info-bg: #e4efff;
+    --tag-info-fg: #0e4a8a;
+    --danger: #c23a3a;
+    --success: #27500A;
+    --whatsapp: #25D366;
+    --whatsapp-hover: #1ebe57;
+    --whatsapp-soft: rgba(37, 211, 102, 0.10);
+    --overlay: rgba(0, 0, 0, 0.5);
+    --font-ui: 'Outfit', system-ui, -apple-system, sans-serif;
+    --font-serif: 'Cormorant Garamond', Georgia, serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --shadow-soft: 0 1px 2px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02);
+    --shadow-lift: 0 4px 14px rgba(196, 125, 142, 0.14);
+    --shadow-pop: 0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.04);
+    --shadow-modal: 0 24px 64px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-pill: 999px;
+  }
+
+  [data-theme="dark"] {
+    --bg-page: #0e0e0e;
+    --bg-alt: #0a0a0a;
+    --bg-surface: #1a1a1a;
+    --bg-muted: #141414;
+    --bg-hover: #222222;
+    --bg-input: #1a1a1a;
+    --border-soft: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --border-focus: #c47d8e;
+    --text-primary: #e5e0db;
+    --text-secondary: #a8a59e;
+    --text-tertiary: #6b6862;
+    --text-placeholder: #4a4844;
+    --accent: #c47d8e;
+    --accent-soft: rgba(196, 125, 142, 0.18);
+    --accent-softer: rgba(196, 125, 142, 0.06);
+    --accent-hover: #d18e9e;
+    --tag-good-bg: rgba(127, 184, 74, 0.18);
+    --tag-good-fg: #b4db7a;
+    --tag-warn-bg: rgba(239, 159, 39, 0.15);
+    --tag-warn-fg: #f0b966;
+    --tag-bad-bg: rgba(226, 75, 74, 0.15);
+    --tag-bad-fg: #e47373;
+    --tag-info-bg: rgba(55, 138, 221, 0.18);
+    --tag-info-fg: #7fb0e4;
+    --danger: #e47373;
+    --success: #b4db7a;
+    --whatsapp-soft: rgba(37, 211, 102, 0.12);
+    --overlay: rgba(0, 0, 0, 0.7);
+    --shadow-soft: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-lift: 0 4px 14px rgba(196, 125, 142, 0.25);
+    --shadow-pop: 0 8px 24px rgba(0,0,0,0.4);
+    --shadow-modal: 0 24px 64px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3);
+  }
+
+  /* ─── Reset ─── */
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--font-ui);
+    background: var(--bg-alt);
+    color: var(--text-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  /* ─── Shell ─── */
+  .shell { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+  /* ─── Doc header ─── */
+  .doc-header { margin-bottom: 20px; }
+  .doc-header h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .doc-header p { font-size: 13px; color: var(--text-secondary); margin: 0; line-height: 1.5; }
+
+  /* ─── Controls bar ─── */
+  .controls {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+    box-shadow: var(--shadow-soft);
+  }
+  .control-group { display: flex; align-items: center; gap: 8px; }
+  .control-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-tertiary);
+    font-weight: 500;
+  }
+  .seg {
+    display: inline-flex;
+    background: var(--bg-muted);
+    border-radius: var(--radius-pill);
+    padding: 3px;
+    border: 1px solid var(--border-soft);
+  }
+  .seg-btn {
+    background: transparent;
+    border: none;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: var(--radius-pill);
+    font-family: inherit;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+  .seg-btn:hover { color: var(--text-primary); }
+  .seg-btn.active { background: var(--accent); color: #fff; }
+  .controls-spacer { flex: 1; }
+  .theme-toggle {
+    width: 34px; height: 34px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-muted);
+    border: 1px solid var(--border-soft);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ─── Preview frame ─── */
+  .preview-frame {
+    background: var(--bg-page);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 32px;
+    min-height: 600px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  /* ─── View containers ─── */
+  .view { display: none; width: 100%; }
+  .view.active { display: block; }
+
+  /* ════════════════════════════════════════════
+     VIEW 1: Signup Form
+     ════════════════════════════════════════════ */
+  .signup-card {
+    max-width: 420px;
+    margin: 0 auto;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    padding: 40px 36px;
+    box-shadow: var(--shadow-pop);
+  }
+  .signup-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .signup-brand-dot {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--accent);
+  }
+  .signup-brand span {
+    font-family: var(--font-serif);
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .signup-title {
+    font-family: var(--font-serif);
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0 0 4px;
+    letter-spacing: -0.02em;
+  }
+  .signup-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0 0 28px;
+  }
+  .form-group { margin-bottom: 20px; }
+  .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: var(--text-primary);
+  }
+  .form-label .required {
+    color: var(--danger);
+    margin-left: 2px;
+  }
+  .form-input {
+    width: 100%;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-family: var(--font-ui);
+    background: var(--bg-input);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .form-input::placeholder { color: var(--text-placeholder); }
+  .form-input:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px var(--accent-softer);
+  }
+
+  /* Phone input with +234 prefix */
+  .phone-input-wrap {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .phone-input-wrap:focus-within {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px var(--accent-softer);
+  }
+  .phone-prefix {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    background: var(--bg-muted);
+    border-right: 1px solid var(--border-soft);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    user-select: none;
+  }
+  .phone-prefix .flag {
+    font-size: 18px;
+    line-height: 1;
+  }
+  .phone-input-wrap .form-input {
+    border: none;
+    border-radius: 0;
+    flex: 1;
+  }
+  .phone-input-wrap .form-input:focus {
+    box-shadow: none;
+  }
+  .form-helper {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .form-helper svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+  .btn-primary {
+    width: 100%;
+    padding: 13px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: var(--font-ui);
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+    letter-spacing: -0.01em;
+  }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-primary:active { transform: scale(0.98); }
+
+  .signup-footer {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--text-tertiary);
+  }
+  .signup-footer a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .signup-footer a:hover { text-decoration: underline; }
+
+  .form-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 4px 0 20px;
+    color: var(--text-tertiary);
+    font-size: 12px;
+  }
+  .form-divider::before,
+  .form-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-soft);
+  }
+
+  /* ════════════════════════════════════════════
+     VIEW 2: Existing User Modal
+     ════════════════════════════════════════════ */
+  .modal-backdrop {
+    position: relative;
+    width: 100%;
+    min-height: 500px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .modal-bg {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-surface);
+    filter: blur(4px);
+    opacity: 0.6;
+  }
+  .modal-bg-content {
+    padding: 24px;
+    opacity: 0.5;
+  }
+  .modal-bg-content .fake-nav {
+    height: 48px;
+    background: var(--bg-muted);
+    border-radius: var(--radius-sm);
+    margin-bottom: 16px;
+  }
+  .modal-bg-content .fake-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .modal-bg-content .fake-card {
+    height: 100px;
+    background: var(--bg-muted);
+    border-radius: var(--radius-sm);
+  }
+  .modal-bg-content .fake-table {
+    height: 200px;
+    background: var(--bg-muted);
+    border-radius: var(--radius-sm);
+    margin-top: 16px;
+  }
+
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--overlay);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+  }
+  .modal-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    padding: 36px 32px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: var(--shadow-modal);
+    animation: modalIn 0.3s ease;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .modal-icon {
+    width: 52px; height: 52px;
+    background: var(--whatsapp-soft);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  .modal-icon svg { width: 28px; height: 28px; }
+  .modal-title {
+    font-family: var(--font-serif);
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+  }
+  .modal-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0 0 24px;
+    line-height: 1.5;
+  }
+  .modal-form .form-group { margin-bottom: 24px; }
+
+  /* ════════════════════════════════════════════
+     VIEW 3: Admin Order Detail
+     ════════════════════════════════════════════ */
+  .admin-order-view { max-width: 680px; margin: 0 auto; width: 100%; }
+  .order-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
+  }
+  .order-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-soft);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .order-id {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--accent);
+  }
+  .order-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .order-status.completed {
+    background: var(--tag-good-bg);
+    color: var(--tag-good-fg);
+  }
+  .order-status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .order-body { padding: 24px; }
+  .order-meta {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .order-meta-item {}
+  .order-meta-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-tertiary);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .order-meta-value {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .order-meta-value.mono {
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  .order-service-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--bg-muted);
+    border-radius: var(--radius-sm);
+    margin-bottom: 24px;
+  }
+  .order-service-icon {
+    width: 36px; height: 36px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, #833AB4, #E1306C, #F77737);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .order-service-icon svg { width: 18px; height: 18px; color: #fff; }
+  .order-service-name { font-size: 14px; font-weight: 500; }
+  .order-service-qty {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-left: auto;
+    font-family: var(--font-mono);
+  }
+
+  /* Action buttons */
+  .order-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-soft);
+  }
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font-ui);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+  }
+  .action-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-softer);
+  }
+  .action-btn svg { width: 15px; height: 15px; }
+  .action-btn.danger:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+    background: var(--tag-bad-bg);
+  }
+  .action-btn.whatsapp {
+    background: var(--whatsapp);
+    color: #fff;
+    border-color: var(--whatsapp);
+  }
+  .action-btn.whatsapp:hover {
+    background: var(--whatsapp-hover);
+    border-color: var(--whatsapp-hover);
+    color: #fff;
+  }
+
+  /* Chat bubble preview */
+  .chat-preview {
+    margin-top: 16px;
+    display: none;
+    animation: fadeSlideIn 0.25s ease;
+  }
+  .chat-preview.visible { display: block; }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .chat-preview-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-tertiary);
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .chat-bubble-wrap {
+    background: var(--bg-muted);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    border: 1px solid var(--border-soft);
+  }
+  .chat-bubble-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .chat-bubble-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .chat-bubble-sender { font-size: 13px; font-weight: 500; }
+  .chat-bubble-via {
+    font-size: 11px;
+    color: var(--whatsapp);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .chat-bubble-via svg { width: 12px; height: 12px; }
+  .chat-bubble {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px 12px 12px 4px;
+    padding: 12px 14px;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text-primary);
+    max-width: 400px;
+    position: relative;
+  }
+  .chat-bubble-time {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 6px;
+    text-align: right;
+  }
+  .chat-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+    word-break: break-all;
+  }
+  .chat-link svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+  /* ════════════════════════════════════════════
+     VIEW 4: Admin User Detail
+     ════════════════════════════════════════════ */
+  .user-detail-view { max-width: 600px; margin: 0 auto; width: 100%; }
+  .user-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
+  }
+  .user-card-header {
+    padding: 28px 28px 24px;
+    border-bottom: 1px solid var(--border-soft);
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .user-avatar {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 600;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .user-info { flex: 1; min-width: 0; }
+  .user-name {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .user-email {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+  .user-joined {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+  }
+
+  .user-card-body { padding: 24px 28px; }
+  .user-fields { display: flex; flex-direction: column; gap: 16px; }
+  .user-field {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .user-field-icon {
+    width: 36px; height: 36px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--text-tertiary);
+  }
+  .user-field-icon svg { width: 16px; height: 16px; }
+  .user-field-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-tertiary);
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+  .user-field-value {
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .user-field-value a {
+    color: var(--text-primary);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.15s;
+  }
+  .user-field-value a:hover { color: var(--whatsapp); }
+  .wa-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: var(--whatsapp-soft);
+    color: var(--whatsapp);
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .wa-badge:hover { background: rgba(37, 211, 102, 0.2); }
+  .wa-badge svg { width: 12px; height: 12px; }
+
+  .user-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-soft);
+  }
+  .user-stat {
+    text-align: center;
+    padding: 16px 8px;
+    background: var(--bg-muted);
+    border-radius: var(--radius-sm);
+  }
+  .user-stat-value {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+  }
+  .user-stat-value.mono {
+    font-family: var(--font-mono);
+    font-size: 18px;
+  }
+  .user-stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-tertiary);
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <!-- Doc header -->
+  <div class="doc-header">
+    <h1>WhatsApp Phone Field</h1>
+    <p>Mockups for adding WhatsApp number capture to signup, existing-user prompt, admin order actions, and user detail.</p>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="control-group">
+      <span class="control-label">View</span>
+      <div class="seg" id="viewSeg">
+        <button class="seg-btn active" data-view="signup">Signup Form</button>
+        <button class="seg-btn" data-view="modal">User Prompt</button>
+        <button class="seg-btn" data-view="order">Order Detail</button>
+        <button class="seg-btn" data-view="user">User Detail</button>
+      </div>
+    </div>
+    <div class="controls-spacer"></div>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+      <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Preview frame -->
+  <div class="preview-frame">
+
+    <!-- ═══ VIEW 1: Signup Form ═══ -->
+    <div class="view active" id="view-signup">
+      <div class="signup-card">
+        <div class="signup-brand">
+          <div class="signup-brand-dot"></div>
+          <span>Nitro</span>
+        </div>
+        <h2 class="signup-title">Create your account</h2>
+        <p class="signup-subtitle">Start growing your social media today</p>
+
+        <div class="form-group">
+          <label class="form-label">Full Name <span class="required">*</span></label>
+          <input type="text" class="form-input" placeholder="Sandra Francis" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email <span class="required">*</span></label>
+          <input type="email" class="form-input" placeholder="sandra@example.com" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password <span class="required">*</span></label>
+          <input type="password" class="form-input" placeholder="Min. 8 characters" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">WhatsApp Number <span class="required">*</span></label>
+          <div class="phone-input-wrap">
+            <div class="phone-prefix">
+              <span class="flag">&#x1F1F3;&#x1F1EC;</span>
+              <span>+234</span>
+            </div>
+            <input type="tel" class="form-input" placeholder="8012345678" maxlength="11" />
+          </div>
+          <div class="form-helper">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            We'll reach you here for order updates
+          </div>
+        </div>
+
+        <button class="btn-primary" style="margin-top: 8px;">Create Account</button>
+
+        <p class="signup-footer">Already have an account? <a href="#">Sign in</a></p>
+      </div>
+    </div>
+
+    <!-- ═══ VIEW 2: Existing User Modal ═══ -->
+    <div class="view" id="view-modal">
+      <div class="modal-backdrop">
+        <!-- Blurred background -->
+        <div class="modal-bg">
+          <div class="modal-bg-content">
+            <div class="fake-nav"></div>
+            <div class="fake-grid">
+              <div class="fake-card"></div>
+              <div class="fake-card"></div>
+              <div class="fake-card"></div>
+            </div>
+            <div class="fake-table"></div>
+          </div>
+        </div>
+
+        <!-- Modal overlay -->
+        <div class="modal-overlay">
+          <div class="modal-card">
+            <div class="modal-icon">
+              <!-- WhatsApp icon -->
+              <svg viewBox="0 0 24 24" fill="#25D366">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+            </div>
+            <h2 class="modal-title">Add your WhatsApp number</h2>
+            <p class="modal-subtitle">We need your WhatsApp number to send you order updates and support messages.</p>
+
+            <div class="modal-form">
+              <div class="form-group">
+                <label class="form-label">WhatsApp Number <span class="required">*</span></label>
+                <div class="phone-input-wrap">
+                  <div class="phone-prefix">
+                    <span class="flag">&#x1F1F3;&#x1F1EC;</span>
+                    <span>+234</span>
+                  </div>
+                  <input type="tel" class="form-input" placeholder="8012345678" maxlength="11" />
+                </div>
+                <div class="form-helper">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  We'll reach you here for order updates
+                </div>
+              </div>
+              <button class="btn-primary">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ VIEW 3: Admin Order Detail ═══ -->
+    <div class="view" id="view-order">
+      <div class="admin-order-view">
+        <div class="order-card">
+          <div class="order-header">
+            <span class="order-id">NTR-870</span>
+            <span class="order-status completed">
+              <span class="order-status-dot"></span>
+              Completed
+            </span>
+          </div>
+          <div class="order-body">
+            <div class="order-meta">
+              <div class="order-meta-item">
+                <div class="order-meta-label">Customer</div>
+                <div class="order-meta-value">Sandra Francis</div>
+              </div>
+              <div class="order-meta-item">
+                <div class="order-meta-label">Amount</div>
+                <div class="order-meta-value mono">&#8358;95</div>
+              </div>
+              <div class="order-meta-item">
+                <div class="order-meta-label">Date</div>
+                <div class="order-meta-value">Jun 18, 2026</div>
+              </div>
+              <div class="order-meta-item">
+                <div class="order-meta-label">Quantity</div>
+                <div class="order-meta-value mono">25</div>
+              </div>
+            </div>
+
+            <div class="order-service-bar">
+              <div class="order-service-icon">
+                <!-- Instagram icon -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+              </div>
+              <span class="order-service-name">Instagram Custom Comments</span>
+              <span class="order-service-qty">&times; 25</span>
+            </div>
+
+            <div class="order-actions">
+              <button class="action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Check
+              </button>
+              <button class="action-btn danger">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                Cancel
+              </button>
+              <button class="action-btn danger">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                Refund
+              </button>
+              <button class="action-btn whatsapp" id="waBtn" onclick="toggleChatPreview()">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                WhatsApp
+              </button>
+            </div>
+
+            <!-- Chat preview (hidden by default) -->
+            <div class="chat-preview" id="chatPreview">
+              <div class="chat-preview-label">Message Preview</div>
+              <div class="chat-bubble-wrap">
+                <div class="chat-bubble-header">
+                  <div class="chat-bubble-avatar">N</div>
+                  <div>
+                    <div class="chat-bubble-sender">Nitro Support</div>
+                    <div class="chat-bubble-via">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                      via WhatsApp
+                    </div>
+                  </div>
+                </div>
+                <div class="chat-bubble">
+                  Hi Sandra &#x1F44B;, this is Nitro Support regarding your order NTR-870 (Instagram Custom Comments &times; 25).
+                  <div class="chat-bubble-time">Just now</div>
+                </div>
+                <div class="chat-link">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  wa.me/2348012345678?text=Hi%20Sandra%20...
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ VIEW 4: Admin User Detail ═══ -->
+    <div class="view" id="view-user">
+      <div class="user-detail-view">
+        <div class="user-card">
+          <div class="user-card-header">
+            <div class="user-avatar">SF</div>
+            <div class="user-info">
+              <h2 class="user-name">Sandra Francis</h2>
+              <p class="user-email">sandraogbodo4@gmail.com</p>
+              <p class="user-joined">Joined Mar 12, 2026</p>
+            </div>
+          </div>
+          <div class="user-card-body">
+            <div class="user-fields">
+              <!-- Email -->
+              <div class="user-field">
+                <div class="user-field-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div>
+                  <div class="user-field-label">Email</div>
+                  <div class="user-field-value">sandraogbodo4@gmail.com</div>
+                </div>
+              </div>
+
+              <!-- Phone -->
+              <div class="user-field">
+                <div class="user-field-icon" style="background: var(--whatsapp-soft); color: var(--whatsapp);">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                </div>
+                <div>
+                  <div class="user-field-label">WhatsApp</div>
+                  <div class="user-field-value">
+                    <a href="https://wa.me/2348012345678" target="_blank" rel="noopener">
+                      +234 801 234 5678
+                      <span class="wa-badge">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        Chat
+                      </span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Referral code -->
+              <div class="user-field">
+                <div class="user-field-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                </div>
+                <div>
+                  <div class="user-field-label">Referral Code</div>
+                  <div class="user-field-value" style="font-family: var(--font-mono); font-size: 13px;">SANDRA-NTR</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="user-stats">
+              <div class="user-stat">
+                <div class="user-stat-value">14</div>
+                <div class="user-stat-label">Orders</div>
+              </div>
+              <div class="user-stat">
+                <div class="user-stat-value mono">&#8358;4,280</div>
+                <div class="user-stat-label">Total Spend</div>
+              </div>
+              <div class="user-stat">
+                <div class="user-stat-value">3</div>
+                <div class="user-stat-label">Referrals</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /preview-frame -->
+</div><!-- /shell -->
+
+<script>
+  /* ─── View switching ─── */
+  const viewBtns = document.querySelectorAll('#viewSeg .seg-btn');
+  const views = document.querySelectorAll('.view');
+
+  viewBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      viewBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const target = btn.getAttribute('data-view');
+      views.forEach(v => {
+        v.classList.toggle('active', v.id === 'view-' + target);
+      });
+    });
+  });
+
+  /* ─── Theme toggle ─── */
+  const themeToggle = document.getElementById('themeToggle');
+  const themeIcon = document.getElementById('themeIcon');
+  let dark = false;
+
+  themeToggle.addEventListener('click', () => {
+    dark = !dark;
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : '');
+    themeIcon.innerHTML = dark
+      ? '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'
+      : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  });
+
+  /* ─── Chat preview toggle ─── */
+  function toggleChatPreview() {
+    const preview = document.getElementById('chatPreview');
+    preview.classList.toggle('visible');
+  }
+</script>
+</body>
+</html>

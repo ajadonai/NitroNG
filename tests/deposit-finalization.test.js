@@ -77,6 +77,9 @@ function createPaymentDb({
         state.transactions.push(row);
         return { ...row };
       }),
+      count: vi.fn(async ({ where }) => {
+        return state.transactions.filter(item => matches(item, where)).length;
+      }),
     },
     user: {
       findFirst: vi.fn(async ({ where }) => {

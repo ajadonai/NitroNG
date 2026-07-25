@@ -2,6 +2,19 @@
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
 
+## ⛔ DRIP PUSH CHECKLIST
+
+When pushing the drip changes, **restore these items that were removed in commit `0ec7316`** to avoid breaking the build:
+
+1. **`components/admin-dashboard.jsx`** — re-add:
+   - Dynamic import: `const AdminCreateOrderPage = dynamic(() => import("./admin-create-order-page").then(m => m.AdminCreateOrderPage), { ssr: false });`
+   - Nav entry: `{ id: "create-order", label: "Create Order", icon: ... }` in the Operations section
+   - Route case: `case "create-order": return <AdminCreateOrderPage dark={dark} t={t} />;`
+   - Sidebar branch: `active === "create-order" ? <div id="create-order-sidebar" ... /> :` before the leaderboard ternary
+2. **`components/admin-extra-pages.jsx`** — re-add at the end: `export { AdminCreateOrderPage } from "./admin-create-order-page";`
+3. **`tests/user-orders-pagination.test.js`** — re-add the 2 `POST /api/orders — request boundary` tests (malformed JSON + typed-invalid body)
+4. **Push `components/admin-create-order-page.jsx`** and **`tests/admin-create-order-module.test.js`** alongside the above
+
 ## ⛔ HARD GATE: Tasks page
 
 Before building or shipping ANYTHING related to the Tasks page, task rewards, or the tasks launch email: **read `docs/TASKS_LAUNCH_GATE.md` and ask Trip the questions in it first.** The launch email already promises users specific numbers; do not ship task amounts Trip has not confirmed in that conversation.
@@ -9,6 +22,16 @@ Before building or shipping ANYTHING related to the Tasks page, task rewards, or
 ## ⛔ Support tickets moved to WhatsApp
 
 Customer support is handled entirely through WhatsApp — there is no in-app ticket system. The admin `tickets` page and `SupportPage` exist only as legacy read-only views of old data. **Do not** build, fix, improve, or redesign any ticket-related features: no ticket sidebar widgets, no ticket notifications, no ticket status flows, no new ticket creation UI. If a task mentions tickets, clarify with Trip first — the answer is almost certainly "that's handled on WhatsApp now."
+
+## ⛔ PROTECTED — never modify without flagging
+
+The nightly cohort check depends on these. If any edit, refactor, dependency change, or deploy config change touches them (directly or indirectly), **STOP** and tell Adonai explicitly before proceeding, and restate what must stay true:
+
+- `public/robots.txt` — `Allow: /api/cron/cohort-stats` must stay above `Disallow: /api/`
+- the `/api/cron/cohort-stats` route (reader + 1 AM writer + self-heal + robots smoke check) — must return fresh JSON to token-bearing requests (both `?token=` and `Authorization: Bearer`), no-store on CDN
+- `tests/robots-txt-guardrail.test.js` — the CI test that fails the build if robots.txt is wrong — never delete or skip
+
+Never "clean up", regenerate, or simplify robots.txt as a side effect of another task.
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 

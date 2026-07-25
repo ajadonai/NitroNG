@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateAppliedMigrationChecksums } from './lib/applied-migration-checksums.mjs';
 import { isMainModule } from './lib/guarded-operation.mjs';
+import { reportCliOperationalFailure } from './lib/operational-monitoring.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const defaultManifestPath = resolve(root, 'prisma', 'migrations', 'checksums.json');
@@ -24,11 +25,18 @@ export async function verifyAppliedMigrationChecksums({
   logger = console,
   allowPending = false,
 } = {}) {
+  const reportFailure = (reason, data) => reportCliOperationalFailure({
+    signal: 'migration_checksum_failed',
+    reason,
+    data,
+    logger,
+  });
   let manifest;
   try {
     manifest = JSON.parse(await readFileImpl(manifestPath, 'utf8'));
   } catch {
     logger.error('Applied migration checksum verification failed: unable to read the checksum manifest.');
+    reportFailure('manifest_unreadable');
     return false;
   }
 
@@ -51,6 +59,7 @@ export async function verifyAppliedMigrationChecksums({
       logger.error(
         `Applied migration checksum verification failed:\n${errors.map((error) => `  - ${error}`).join('\n')}`,
       );
+      reportFailure('checksum_mismatch', { errorCount: errors.length });
       return false;
     }
 
@@ -58,12 +67,14 @@ export async function verifyAppliedMigrationChecksums({
     passed = true;
   } catch {
     logger.error('Applied migration checksum verification failed: unable to read migration history.');
+    reportFailure('history_unavailable');
   } finally {
     if (prisma) {
       try {
         await prisma.$disconnect();
       } catch {
         logger.error('Applied migration checksum verification failed: unable to close the database connection.');
+        reportFailure('disconnect_failed');
         passed = false;
       }
     }
