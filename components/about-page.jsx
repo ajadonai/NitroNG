@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
+import { ProductScreenshot } from './product-screenshot';
 
 export default function AboutView() {
   return <ThemeProvider><AboutInner /></ThemeProvider>;
@@ -55,7 +56,7 @@ function AboutInner() {
                 We make social media growth simple. Whether you're a creator trying to hit your first 10,000 followers, a business building credibility online, or a marketer managing multiple brands — Nitro handles the numbers so you can focus on your content.
               </p>
               <p className="text-[14px] leading-[1.75]" style={{ color: t.textSoft }}>
-                We offer 35+ service categories across platforms including Instagram, TikTok, YouTube, X, Facebook, Telegram, and Spotify. Every service is priced in Naira with no dollar conversion, no hidden fees, and no password required — just your public profile link.
+                We offer 140+ service types across 28 platforms including Instagram, TikTok, YouTube, X, Facebook, Telegram, and Spotify. Every service is priced in Naira with no dollar conversion, no hidden fees, and no password required — just your public profile link.
               </p>
             </section>
 
@@ -68,6 +69,11 @@ function AboutInner() {
                 That means Naira pricing from day one. Bank transfers, Flutterwave, and crypto for payments. Support that responds in minutes, not days. And a clean, modern dashboard that doesn't feel like it was built in 2015.
               </p>
             </section>
+          </div>
+
+          {/* Product screenshot */}
+          <div className="mb-14 max-w-[600px] mx-auto">
+            <ProductScreenshot src="/images/nitro-dashboard-nigeria-smm-panel.webp" alt="The Nitro NG dashboard showing wallet balance, active orders and recent activity" dark={dark} />
           </div>
 
           {/* How we're different */}

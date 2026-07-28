@@ -229,50 +229,51 @@ export async function POST(req) {
         orderBy: { dispatchedAt: 'asc' },
       });
 
+      const { normalizeProviderStatus } = await import('@/lib/drip-completion');
       for (const dispatch of processingDispatches) {
         try {
           stats.checked++;
           const provider = dispatch.order.service?.provider || 'mtp';
           if (!isProviderConfigured(provider)) { stats.errors++; continue; }
           const result = await checkOrder(provider, dispatch.apiOrderId);
-          const providerStatus = (result.status || '').toLowerCase();
           const liveRemains = result.remains != null ? Number(result.remains) : null;
           const liveStartCount = result.start_count != null ? Number(result.start_count) : null;
 
-          let newStatus = null;
-          if (['completed', 'complete'].includes(providerStatus)) newStatus = 'completed';
-          else if (['partial', 'partially completed'].includes(providerStatus)) newStatus = 'partial';
-          else if (['cancelled', 'canceled', 'refunded', 'fail', 'failed'].includes(providerStatus)) newStatus = 'failed';
+          const newStatus = normalizeProviderStatus(result.status);
 
-          if (!newStatus) {
+          if (!newStatus || newStatus === 'processing') {
             if (liveRemains != null && liveRemains !== dispatch.remains) {
-              await prisma.dripDispatch.update({
-                where: { id: dispatch.id },
+              const progUpd = await prisma.dripDispatch.updateMany({
+                where: {
+                  id: dispatch.id,
+                  status: 'processing',
+                  apiOrderId: dispatch.apiOrderId,
+                  order: { status: { in: ['Pending', 'Processing'] }, deletedAt: null },
+                },
                 data: { remains: liveRemains, ...(liveStartCount != null && dispatch.startCount == null ? { startCount: liveStartCount } : {}) },
               });
-              stats.updated++;
+              if (progUpd.count > 0) stats.updated++;
             }
             continue;
           }
 
-          await prisma.dripDispatch.update({
-            where: { id: dispatch.id },
-            data: {
-              status: newStatus,
-              remains: liveRemains ?? undefined,
-              startCount: liveStartCount ?? undefined,
-              completedAt: ['completed', 'partial'].includes(newStatus) ? new Date() : undefined,
-              lastError: null,
-            },
-          });
-          stats.updated++;
-          // Reschedule overdue pending batches for this order
+          const completionAt = ['completed', 'partial'].includes(newStatus) ? new Date() : undefined;
           if (['completed', 'partial'].includes(newStatus)) {
-            try {
-              const { rescheduleAfterDripCompletion } = await import('@/lib/drip-completion');
-              await rescheduleAfterDripCompletion(prisma, dispatch.orderId);
-            } catch {}
+            const { rescheduleAfterDripCompletion } = await import('@/lib/drip-completion');
+            await prisma.$transaction(async (tx) => {
+              const r = await tx.dripDispatch.updateMany({
+                where: { id: dispatch.id, status: dispatch.status, apiOrderId: dispatch.apiOrderId, order: { status: { in: ['Pending', 'Processing'] }, deletedAt: null } },
+                data: { status: newStatus, remains: liveRemains ?? undefined, startCount: liveStartCount ?? undefined, completedAt: completionAt, lastError: null },
+              });
+              if (r.count === 1) await rescheduleAfterDripCompletion(tx, dispatch.orderId, completionAt);
+            });
+          } else {
+            await prisma.dripDispatch.updateMany({
+              where: { id: dispatch.id, status: dispatch.status, apiOrderId: dispatch.apiOrderId, order: { status: { in: ['Pending', 'Processing'] }, deletedAt: null } },
+              data: { status: newStatus, remains: liveRemains ?? undefined, startCount: liveStartCount ?? undefined, lastError: null },
+            });
           }
+          stats.updated++;
         } catch (err) {
           stats.errors++;
           log.warn(`Sync drip dispatch ${dispatch.id}`, err.message);
@@ -280,24 +281,16 @@ export async function POST(req) {
         await new Promise(r => setTimeout(r, 200));
       }
 
-      // Roll up drip parent order progress
+      // Roll up drip parent order progress via shared helper
       if (processingDispatches.length > 0) {
+        const { applyDripRollup } = await import('@/lib/drip-completion');
         const parentIds = [...new Set(processingDispatches.map(d => d.orderId))];
         for (const parentId of parentIds) {
           try {
-            const allDisp = await prisma.dripDispatch.findMany({ where: { orderId: parentId }, select: { status: true, quantity: true, remains: true } });
-            const totalRemains = allDisp.reduce((s, d) => {
-              if (d.remains != null) return s + d.remains;
-              if (d.status === 'completed') return s;
-              return s + d.quantity;
-            }, 0);
-            const allDone = allDisp.every(d => ['completed', 'partial', 'failed'].includes(d.status));
-            const anyPartial = allDisp.some(d => d.status === 'partial' || d.status === 'failed');
-            const parentStatus = allDone ? (anyPartial ? 'Partial' : 'Completed') : undefined;
-            await prisma.order.update({
-              where: { id: parentId },
-              data: { remains: totalRemains, ...(parentStatus ? { status: parentStatus } : {}) },
-            });
+            const parent = await prisma.order.findUnique({ where: { id: parentId }, select: { status: true } });
+            if (!parent) continue;
+            const allDisp = await prisma.dripDispatch.findMany({ where: { orderId: parentId }, select: { status: true, quantity: true, remains: true, startCount: true, day: true, batch: true } });
+            await applyDripRollup(prisma, parentId, allDisp, parent.status);
           } catch {}
         }
       }

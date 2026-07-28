@@ -1,9 +1,11 @@
 import HomeClient from '@/components/home-client';
 import { resolveLandingAuthQuery } from '@/lib/landing-auth-query';
 
+export const revalidate = 60;
+
 export const metadata = {
-  title: 'The Nitro NG | Your Content Deserves a Bigger Audience',
-  description: 'Nitro helps Nigerian creators, artists, and businesses reach a wider audience. 35+ content-promotion service categories across major platforms. Naira pricing, fast results, human support.',
+  title: { absolute: 'The Nitro NG | Your Content Deserves a Bigger Audience' },
+  description: 'Promotion for Nigerian creators and businesses across 28 platforms. Naira pricing, no dollar conversion, fast delivery and human support on WhatsApp.',
   alternates: { canonical: 'https://nitro.ng' },
 };
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateMultiDayDrip, buildDripConfig, validateDripConfig, rescheduleRemaining, distributeByCurve, checkDripFeasibility } from '@/lib/drip-feed';
+import { calculateMultiDayDrip, calculateIntradayDrip, buildDripConfig, validateDripConfig, rescheduleRemaining, distributeByCurve, checkDripFeasibility, validateIntradayDuration } from '@/lib/drip-feed';
 
 const BASE = new Date('2026-07-23T09:00:00.000Z');
 const MIN = 50;
@@ -396,8 +396,8 @@ describe('rescheduleRemaining', () => {
     expect(rescheduleRemaining([], null)).toEqual([]);
   });
 
-  it('preserves future in-window times', () => {
-    const future = new Date(Date.now() + 3600000);
+  it('preserves future in-window times when beyond cadence', () => {
+    const future = new Date(Date.now() + 4 * 3600000);
     const dispatches = [
       { id: '1', day: 1, scheduledAt: future },
       { id: '2', day: 1, scheduledAt: new Date(future.getTime() + 7200000) },
@@ -621,11 +621,11 @@ describe('recovery scheduling', () => {
 // ── Feasibility check (Fix #6) ─────────────────────────────
 
 describe('checkDripFeasibility', () => {
-  it('rejects impossible narrow window config', () => {
-    const config = { window: { startHour: 9, endHour: 10 }, pauseDay: 1 };
-    const result = checkDripFeasibility(10000, 4, config, 'followers', 'instagram', 50);
+  it('rejects sub-minimum batch in generated schedule', () => {
+    const config = { version: 1 };
+    const result = checkDripFeasibility(500, 2, config, 'followers', 'instagram', 1000);
     expect(result.feasible).toBe(false);
-    expect(result.error).toContain('Cannot deliver');
+    expect(result.error).toContain('below provider minimum');
   });
 
   it('accepts feasible config', () => {
@@ -637,6 +637,70 @@ describe('checkDripFeasibility', () => {
   it('accepts when no service config (plays)', () => {
     const result = checkDripFeasibility(1000, 5, null, 'plays', 'instagram', 50);
     expect(result.feasible).toBe(true);
+  });
+
+  it('rejects plays when provider minimum shortens duration', () => {
+    const result = checkDripFeasibility(3000, 5, { version: 1 }, 'plays', 'instagram', 1000);
+    expect(result.feasible).toBe(false);
+    expect(result.error).toContain('active days');
+  });
+
+  it('rejects late-start schedule delivering on paused local calendar date', () => {
+    // Frontload concentrates batches on day 1; late start forces batch 2 onto the pause date (Aug 2).
+    // Per-row validation catches the spill (day 1 batches land on Aug 2) before the pause check.
+    const result = checkDripFeasibility(
+      800, 3,
+      { version: 1, curve: 'frontload', pauseDay: 1, startAt: '2026-08-01T16:00:00Z', window: { startHour: 9, endHour: 17 }, timezone: 'UTC' },
+      'followers', 'instagram', 50,
+    );
+    expect(result.feasible).toBe(false);
+    expect(result.error).toContain('spill');
+  });
+
+  it('rejects schedule that spills beyond requested calendar dates', () => {
+    // 2000/2 days = 1000/day = 5 batches at 2h; 3h window only fits 2 batches → day 1 spills to day 2
+    const result = checkDripFeasibility(
+      2000, 2,
+      { version: 1, startAt: '2026-08-01T09:00:00Z', window: { startHour: 9, endHour: 12 }, timezone: 'UTC' },
+      'followers', 'instagram', 50,
+    );
+    expect(result.feasible).toBe(false);
+    expect(result.error).toContain('spill');
+  });
+
+  it('rejects when provider minimum shortens effective duration', () => {
+    const config = { version: 1 };
+    const result = checkDripFeasibility(3000, 5, config, 'followers', 'instagram', 1000);
+    expect(result.feasible).toBe(false);
+    expect(result.error).toContain('active days');
+  });
+});
+
+// ── One-day intraday deadline ─────────────────────────────
+
+describe('one-day intraday deadline', () => {
+  it('75,000 views generates a schedule exceeding 24 hours', () => {
+    const intraday = calculateIntradayDrip(75000, 50, new Date('2026-08-01T09:00:00Z'), 'views', 'instagram');
+    expect(intraday).not.toBeNull();
+    const first = intraday.dispatches[0].scheduledAt;
+    const last = intraday.dispatches[intraday.dispatches.length - 1].scheduledAt;
+    expect(last.getTime() - first.getTime()).toBeGreaterThan(24 * 60 * 60 * 1000);
+  });
+
+  it('50,000 views fits within 24 hours but is rejected at exact boundary', () => {
+    const intraday = calculateIntradayDrip(50000, 50, new Date('2026-08-01T09:00:00Z'), 'views', 'instagram');
+    expect(intraday).not.toBeNull();
+    const first = intraday.dispatches[0].scheduledAt;
+    const last = intraday.dispatches[intraday.dispatches.length - 1].scheduledAt;
+    expect(last.getTime() - first.getTime()).toBeLessThanOrEqual(24 * 60 * 60 * 1000);
+    const err = validateIntradayDuration(intraday.dispatches);
+    expect(err).not.toBeNull();
+  });
+
+  it('validateIntradayDuration accepts schedules under 24h', () => {
+    const intraday = calculateIntradayDrip(10000, 50, new Date('2026-08-01T09:00:00Z'), 'views', 'instagram');
+    expect(intraday).not.toBeNull();
+    expect(validateIntradayDuration(intraday.dispatches)).toBeNull();
   });
 });
 

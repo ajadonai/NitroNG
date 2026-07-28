@@ -19,7 +19,7 @@ export const metadata = {
     default: "The Nitro NG | Your Content Deserves a Bigger Audience",
     template: '%s | The Nitro NG',
   },
-  description: "Nitro helps Nigerian creators, artists, and businesses reach a wider audience. 35+ content-promotion service categories across major platforms. Naira pricing, fast results, human support.",
+  description: "Nitro helps Nigerian creators, artists, and businesses reach a wider audience. Content-promotion services across major platforms. Naira pricing, fast results, human support.",
   authors: [{ name: 'The Nitro NG', url: 'https://nitro.ng' }],
   creator: 'The Nitro NG',
   publisher: 'The Nitro NG',
@@ -109,11 +109,6 @@ export default function RootLayout({ children }) {
     url: "https://nitro.ng",
     description: "Content promotion and digital marketing platform for Nigerian creators and businesses. Manage campaigns, track results, Naira pricing.",
     inLanguage: "en",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: "https://nitro.ng/services/{search_term_string}",
-      "query-input": "required name=search_term_string",
-    },
   };
 
   const appSchema = {
@@ -131,7 +126,7 @@ export default function RootLayout({ children }) {
       description: "Free to sign up. Flexible campaign budgets in Naira.",
     },
     featureList: [
-      "35+ campaign service categories across major platforms",
+      "Campaign service categories across major social platforms",
       "Cleanest marketing dashboard in Nigeria",
       "Naira pricing, no USD conversion",
       "Performance tracking and analytics",
@@ -146,61 +141,13 @@ export default function RootLayout({ children }) {
     creator: { "@type": "Organization", name: "The Nitro NG" },
   };
 
-  const ratingSchema = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: "The Nitro NG",
-    description: "Digital marketing platform helping Nigerian creators and businesses promote their content and reach wider audiences.",
-    brand: { "@type": "Brand", name: "The Nitro NG" },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      bestRating: "5",
-      ratingCount: "850",
-    },
-    review: [
-      { "@type": "Review", reviewRating: { "@type": "Rating", ratingValue: "5" }, author: { "@type": "Person", name: "Nigerian Creator" }, reviewBody: "Best marketing dashboard I've used in Nigeria. Campaigns launch in minutes and everything is in Naira." },
-      { "@type": "Review", reviewRating: { "@type": "Rating", ratingValue: "5" }, author: { "@type": "Person", name: "Lagos Business Owner" }, reviewBody: "Cleanest dashboard I've seen. No clutter, no confusion. I manage all my clients' promotions from one place." },
-    ],
-  };
-
-  const navSchema = {
-    "@context": "https://schema.org",
-    "@graph": [
-      { "@type": "SiteNavigationElement", name: "Create Account", url: "https://nitro.ng/signup" },
-      { "@type": "SiteNavigationElement", name: "Log In", url: "https://nitro.ng/login" },
-      { "@type": "SiteNavigationElement", name: "Sign Up", url: "https://nitro.ng/signup" },
-      { "@type": "SiteNavigationElement", name: "Pricing", url: "https://nitro.ng/pricing" },
-      { "@type": "SiteNavigationElement", name: "Services", url: "https://nitro.ng/services" },
-      { "@type": "SiteNavigationElement", name: "About", url: "https://nitro.ng/about" },
-      { "@type": "SiteNavigationElement", name: "Blog", url: "https://nitro.ng/blog" },
-      { "@type": "SiteNavigationElement", name: "FAQ", url: "https://nitro.ng/faq" },
-    ],
-  };
-
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://nitro.ng" },
-      { "@type": "ListItem", position: 2, name: "Services", item: "https://nitro.ng/services" },
-      { "@type": "ListItem", position: 3, name: "Pricing", item: "https://nitro.ng/pricing" },
-      { "@type": "ListItem", position: 4, name: "About", item: "https://nitro.ng/about" },
-      { "@type": "ListItem", position: 5, name: "Blog", item: "https://nitro.ng/blog" },
-      { "@type": "ListItem", position: 6, name: "FAQ", item: "https://nitro.ng/faq" },
-    ],
-  };
-
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en-NG" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://sentry.io" crossOrigin="anonymous" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(appSchema) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ratingSchema) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(navSchema) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       </head>
       <body>
         <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:py-2 focus:px-4 focus:rounded-lg focus:bg-[#c47d8e] focus:text-white focus:text-sm focus:font-semibold focus:no-underline">Skip to main content</a>

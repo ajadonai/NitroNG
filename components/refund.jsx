@@ -1,6 +1,7 @@
 'use client';
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
+import { ProductScreenshot } from './product-screenshot';
 
 
 export default function Refund(){
@@ -8,7 +9,7 @@ export default function Refund(){
 }
 
 function RefundInner(){
-  const {t}=useTheme();
+  const {dark,t}=useTheme();
   const sections=[
     ["Overview","All refunds on Nitro are credited to your Nitro wallet balance. We do not process refunds to bank accounts, cards, or any external payment method. Your wallet balance can be used for any future order on the platform."],
     ["Automatic Refunds","You are refunded automatically in the following cases: you cancel a pending order before processing begins (full refund), our provider cancels or fails to place your order (full refund), or your order is only partially delivered (you are refunded for the undelivered portion). These refunds are automatic and require no action from you."],
@@ -19,10 +20,14 @@ function RefundInner(){
     ["Failed Deposits","If a deposit fails or is debited from your bank but not credited to your Nitro wallet, contact us on WhatsApp with your payment reference. We will investigate and resolve the issue with the payment processor."],
     ["Contact","For refund-related questions, message us on WhatsApp — we typically respond within minutes."],
   ];
-  return <LegalLayout label="Policy" title="Refund" titleAccent="Policy" date="June 14, 2026" sections={sections} relatedLinks={[["Terms of Service","/terms"],["Privacy Policy","/privacy"],["Cookie Policy","/cookie"]]}/>;
+  return <LegalLayout label="Policy" title="Refund" titleAccent="Policy" date="June 14, 2026" sections={sections} relatedLinks={[["Terms of Service","/terms"],["Privacy Policy","/privacy"],["Cookie Policy","/cookie"]]}>
+    <div className="mb-10 max-w-[600px] mx-auto">
+      <ProductScreenshot src="/images/nitro-order-refund-wallet-credit-nigeria.webp" alt="What happens when a Nitro order does not deliver, with value returned to your wallet as credit" dark={dark} />
+    </div>
+  </LegalLayout>;
 }
 
-function LegalLayout({label,title,titleAccent,date,sections,relatedLinks}){
+function LegalLayout({label,title,titleAccent,date,sections,relatedLinks,children}){
   const {t}=useTheme();
   return(
     <div className="min-h-dvh flex flex-col font-[Plus Jakarta Sans,system-ui,sans-serif] transition-[background] duration-500" style={{background:t.bg}}>
@@ -33,6 +38,7 @@ function LegalLayout({label,title,titleAccent,date,sections,relatedLinks}){
           <h1 className="text-[clamp(32px,5vw,44px)] font-bold tracking-tight leading-tight mb-2" style={{color:t.text}}>{title} <span className="serif font-normal italic text-[clamp(36px,5.5vw,50px)]" style={{color:t.accent}}>{titleAccent}</span></h1>
           <p className="text-[13px] font-medium" style={{color:t.muted}}>Last updated: {date}</p>
         </div>
+        {children}
         <div className="flex flex-col gap-4">
           {sections.map(([sTitle,content],i)=>(
             <div key={i} className="p-6 rounded-[18px] backdrop-blur-[16px] relative overflow-hidden" style={{background:t.surface,border:`1px solid ${t.surfaceBrd}`}}>

@@ -34,6 +34,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const [dripOn, setDripOn] = useState(false);
   const [dripStep, setDripStep] = useState(1);
   const [dripDays, setDripDays] = useState(3);
+  const [discordOpen, setDiscordOpen] = useState(true);
   const showMultiDay = selTier?.tags?.includes('drip') && qtyNum >= MULTIDAY_THRESHOLD;
   const {
     daysMax,
@@ -62,13 +63,13 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const svcName = (selSvc?.name || "").toLowerCase();
   const apiType = (selTier?.apiType || "").toLowerCase();
   const isComment = apiType.includes("comment") || ((svcName.includes("comment")) && !svcName.includes("comment like") || svcName.includes("likes (comments)") && !svcName.includes("likes (comments)"));
-  const isCustomComment = apiType.includes("custom comment") || apiType.includes("comment replies");
+  const isCustomComment = selTier?.customComments || apiType.includes("custom comment") || apiType.includes("comment replies");
   const isMention = apiType.includes("mention");
   const isPoll = apiType === "poll";
   const isSeo = apiType === "seo";
   const isReview = svcName.includes("review") && !svcName.includes("review like");
   const needsComments = isCustomComment || isReview;
-  const showComments = isComment || isReview;
+  const showComments = isCustomComment || isComment || isReview;
   const needsUsernames = isMention;
   const needsAnswer = isPoll;
   const needsKeywords = isSeo;
@@ -148,6 +149,34 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           </div>
         </div>
       )}
+
+      {/* ── Discord setup instructions ── */}
+      {selTier && platform === "discord" && (selSvc?.type === "followers" || selSvc?.type === "engagement") && (() => {
+        const isBoost = selSvc.type === "engagement";
+        const botUrl = isBoost || selTier.provider === "dao" ? "https://nowon.tools" : "https://ysecret.com.br/apple";
+        return (
+          <div className="mx-5 max-md:mx-3.5 mt-3 rounded-lg overflow-hidden" style={{ border: `1px solid ${dark ? "rgba(88,101,242,.25)" : "rgba(88,101,242,.18)"}`, background: dark ? "rgba(88,101,242,.06)" : "rgba(88,101,242,.04)" }}>
+            <button type="button" onClick={() => setDiscordOpen(o => !o)} className="w-full flex items-center justify-between gap-2 py-2.5 px-3 border-0 cursor-pointer" style={{ background: "transparent", color: dark ? "#818cf8" : "#5865F2" }}>
+              <div className="flex items-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span className="text-[12px] font-semibold">Required setup before ordering</span>
+              </div>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ transform: discordOpen ? "rotate(180deg)" : "none", transition: "transform .15s" }}><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            {discordOpen && (
+              <div className="px-3 pb-3">
+                <ol className="m-0 pl-5 text-[11.5px] leading-[1.7] flex flex-col gap-1" style={{ color: dark ? "#a5b4fc" : "#4338ca" }}>
+                  <li>Add the <a href={botUrl} target="_blank" rel="noopener noreferrer" style={{ color: dark ? "#c7d2fe" : "#4338ca", fontWeight: 600, textDecoration: "underline" }}>bot</a> to your server</li>
+                  <li>Set verification level to <strong>None</strong> or <strong>Low</strong> <span style={{ color: dark ? "rgba(165,180,252,.6)" : "rgba(67,56,202,.55)" }}>(Server Settings → Safety Setup)</span></li>
+                  <li>Disable any anti-raid bots</li>
+                  <li style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Don't ban or kick members while the order is running</li>
+                  <li>Use a <strong>permanent</strong> invite link (set to never expire)</li>
+                </ol>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── Form fields ── */}
       <div className="p-5 max-md:p-3.5">

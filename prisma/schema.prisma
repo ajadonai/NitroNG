@@ -83,6 +83,10 @@ model User {
   adActivationDay1SentAt DateTime?
   adActivationDay3SentAt DateTime?
   adActivationDay6SentAt DateTime?
+  outreachDay1SentAt     DateTime?
+  outreachDay3SentAt     DateTime?
+  outreachDay7SentAt     DateTime?
+  outreachWinbackSentAt  DateTime?
   status                 String    @default("Active")
   deletedAt              DateTime?
   deletedName            String?
@@ -243,8 +247,9 @@ model ServiceTier {
   refillDays Int      @default(0)
   speed      String   @default("0-2 hrs")
   enabled     Boolean  @default(true)
-  pricePinned Boolean  @default(false)
-  sortOrder   Int      @default(0)
+  pricePinned    Boolean  @default(false)
+  customComments Boolean  @default(false)
+  sortOrder      Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -307,7 +312,7 @@ model Order {
 
   user                 User                  @relation(fields: [userId], references: [id])
   service              Service               @relation(fields: [serviceId], references: [id])
-  tier                 ServiceTier?          @relation(fields: [tierId], references: [id])
+  tier                 ServiceTier?          @relation(fields: [tierId], references: [id], onDelete: SetNull)
   platformCampaign     PlatformCampaign?     @relation(fields: [platformCampaignId], references: [id])
   recurringCampaign    RecurringCampaign?    @relation(fields: [recurringCampaignId], references: [id])
   dripDispatches       DripDispatch[]
@@ -1065,4 +1070,60 @@ model NitroPointLedger {
   @@index([userId, type])
   @@index([createdAt])
   @@map("nitro_point_ledger")
+}
+
+// ──────────────────────────────────────
+// IFY (WhatsApp support bot)
+// ──────────────────────────────────────
+
+model IfyMessage {
+  id        String   @id @default(cuid())
+  phone     String
+  name      String?
+  userId    String?
+  inbound   String   @db.Text
+  reply     String?  @db.Text
+  action    String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+  @@index([action])
+  @@index([createdAt])
+  @@map("ify_messages")
+}
+
+model IfyPromise {
+  id             String             @id @default(cuid())
+  createdAt      DateTime           @default(now())
+  customerNumber String
+  customerName   String?
+  orderNumber    String?
+  promiseText    String             @db.Text
+  category       String
+  owner          String?
+  dueAt          DateTime
+  state          String             @default("open")
+  lastUpdateAt   DateTime?
+  lastUpdateText String?            @db.Text
+  resolvedAt     DateTime?
+  resolutionNote String?            @db.Text
+  updates        IfyPromiseUpdate[]
+
+  @@index([state, dueAt])
+  @@index([customerNumber])
+  @@map("ify_promises")
+}
+
+model IfyPromiseUpdate {
+  id          String     @id @default(cuid())
+  promiseId   String
+  promise     IfyPromise @relation(fields: [promiseId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  author      String
+  messageSent String?    @db.Text
+  note        String?    @db.Text
+
+  @@index([promiseId])
+  @@map("ify_promise_updates")
 }

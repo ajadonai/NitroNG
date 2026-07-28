@@ -25,8 +25,11 @@ export async function GET(req) {
   }
 
   const stats = { checked: 0, updated: 0, refunded: 0, errors: 0 };
+  const t0 = Date.now();
 
   try {
+    await prisma.$executeRaw`SET statement_timeout = '50s'`;
+
     // Get all active orders (Processing or Pending with apiOrderId)
     const activeOrders = await prisma.order.findMany({
       where: {
@@ -559,7 +562,9 @@ export async function GET(req) {
       if (count > 0) stats.expiredKeys = count;
     } catch (e) { log.warn('Idempotency cleanup', e.message); }
 
-    log.info('Cron orders', `Checked ${stats.checked}, updated ${stats.updated}, refunded ${stats.refunded}, retried ${stats.retried}, autoRefunded ${stats.autoRefunded}, recovered ${stats.recovered}`);
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+    if (elapsed > 50) log.warn('Cron orders', `Approaching maxDuration: ${elapsed}s`);
+    log.info('Cron orders', `${elapsed}s — checked ${stats.checked}, updated ${stats.updated}, refunded ${stats.refunded}, retried ${stats.retried}, autoRefunded ${stats.autoRefunded}, recovered ${stats.recovered}`);
 
     // Fallback: also trigger drip cron (idempotent) in case its dedicated schedule missed
     fetch(`${getApplicationUrl()}/api/cron/drip`, {

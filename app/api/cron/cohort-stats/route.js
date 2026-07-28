@@ -32,78 +32,98 @@ const NO_CACHE = {
   "Vercel-CDN-Cache-Control": "no-store",
 };
 
-async function computeStats() {
+function processRow(row) {
+  const signups = toNumber(row.signups);
+  const depositors = toNumber(row.depositors);
+  const totalDepositedKobo = toNumber(row.totalDepositedKobo);
+  const totalDepositedNGN = totalDepositedKobo / 100;
+  const depositRate = signups > 0 ? +(depositors / signups).toFixed(4) : 0;
+  const avgFirstDepositNGN = depositors > 0 ? +(totalDepositedNGN / depositors).toFixed(2) : 0;
+  const bySource = parseJsonArray(row.bySource).map((src) => {
+    const srcSignups = toNumber(src.signups);
+    const srcDepositors = toNumber(src.depositors);
+    return {
+      source: src.source || "organic/direct",
+      signups: srcSignups,
+      depositors: srcDepositors,
+      depositRate: srcSignups > 0 ? +(srcDepositors / srcSignups).toFixed(4) : 0,
+    };
+  });
+  return { signups, depositors, depositRate, totalDepositedNGN, avgFirstDepositNGN, bySource };
+}
+
+async function computeWindow(since) {
   return prisma.$transaction(
     async (tx) => {
       await tx.$queryRaw`SET LOCAL statement_timeout = '25s'`;
-      const now = new Date();
-      const windows = {};
-      for (const days of [7, 30]) {
-        const since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-        const [row = {}] = await tx.$queryRaw`
-          WITH cohort AS (
-            SELECT id, COALESCE("signupSource", 'organic/direct') AS source
-            FROM "users"
-            WHERE "createdAt" >= ${since}
-              AND "deletedAt" IS NULL
-          ),
-          deposits_by_user AS (
-            SELECT t."userId", SUM(t.amount)::bigint AS "totalDepositedKobo"
-            FROM "transactions" t
-            JOIN cohort c ON c.id = t."userId"
-            WHERE t.type = 'deposit'
-              AND t.status = 'Completed'
-            GROUP BY t."userId"
-          ),
-          source_stats AS (
-            SELECT
-              c.source,
-              COUNT(*)::int AS signups,
-              COUNT(d."userId")::int AS depositors
-            FROM cohort c
-            LEFT JOIN deposits_by_user d ON d."userId" = c.id
-            GROUP BY c.source
-          )
+      const [row = {}] = await tx.$queryRaw`
+        WITH cohort AS (
+          SELECT id, COALESCE("signupSource", 'organic/direct') AS source
+          FROM "users"
+          WHERE "createdAt" >= ${since}
+            AND "deletedAt" IS NULL
+        ),
+        deposits_by_user AS (
+          SELECT t."userId", SUM(t.amount)::bigint AS "totalDepositedKobo"
+          FROM "transactions" t
+          JOIN cohort c ON c.id = t."userId"
+          WHERE t.type = 'deposit'
+            AND t.status = 'Completed'
+          GROUP BY t."userId"
+        ),
+        source_stats AS (
           SELECT
-            (SELECT COUNT(*)::int FROM cohort) AS signups,
-            (SELECT COUNT(*)::int FROM deposits_by_user) AS depositors,
-            COALESCE((SELECT SUM("totalDepositedKobo") FROM deposits_by_user), 0)::bigint AS "totalDepositedKobo",
-            COALESCE((
-              SELECT json_agg(
-                json_build_object(
-                  'source', source,
-                  'signups', signups,
-                  'depositors', depositors
-                )
-                ORDER BY signups DESC, source ASC
+            c.source,
+            COUNT(*)::int AS signups,
+            COUNT(d."userId")::int AS depositors
+          FROM cohort c
+          LEFT JOIN deposits_by_user d ON d."userId" = c.id
+          GROUP BY c.source
+        )
+        SELECT
+          (SELECT COUNT(*)::int FROM cohort) AS signups,
+          (SELECT COUNT(*)::int FROM deposits_by_user) AS depositors,
+          COALESCE((SELECT SUM("totalDepositedKobo") FROM deposits_by_user), 0)::bigint AS "totalDepositedKobo",
+          COALESCE((
+            SELECT json_agg(
+              json_build_object(
+                'source', source,
+                'signups', signups,
+                'depositors', depositors
               )
-              FROM source_stats
-            ), '[]'::json) AS "bySource"
-        `;
-
-        const signups = toNumber(row.signups);
-        const depositors = toNumber(row.depositors);
-        const totalDepositedKobo = toNumber(row.totalDepositedKobo);
-        const totalDepositedNGN = totalDepositedKobo / 100;
-        const depositRate = signups > 0 ? +(depositors / signups).toFixed(4) : 0;
-        const avgFirstDepositNGN = depositors > 0 ? +(totalDepositedNGN / depositors).toFixed(2) : 0;
-        const bySource = parseJsonArray(row.bySource).map((src) => {
-          const srcSignups = toNumber(src.signups);
-          const srcDepositors = toNumber(src.depositors);
-          return {
-            source: src.source || "organic/direct",
-            signups: srcSignups,
-            depositors: srcDepositors,
-            depositRate: srcSignups > 0 ? +(srcDepositors / srcSignups).toFixed(4) : 0,
-          };
-        });
-
-        windows[`${days}d`] = { signups, depositors, depositRate, totalDepositedNGN, avgFirstDepositNGN, bySource };
-      }
-      return { generatedAt: now.toISOString(), windows };
+              ORDER BY signups DESC, source ASC
+            )
+            FROM source_stats
+          ), '[]'::json) AS "bySource"
+      `;
+      return processRow(row);
     },
     { timeout: QUERY_TIMEOUT_MS },
   );
+}
+
+async function computeStats() {
+  const t0 = Date.now();
+  const now = new Date();
+  const dur = {};
+
+  try {
+    let mark = Date.now();
+    const w7d = await computeWindow(new Date(now.getTime() - 7 * 86400000));
+    dur['7d'] = Date.now() - mark;
+
+    mark = Date.now();
+    const w30d = await computeWindow(new Date(now.getTime() - 30 * 86400000));
+    dur['30d'] = Date.now() - mark;
+    dur.total = Date.now() - t0;
+
+    log.info("Cohort Stats", `Query durations: 7d=${dur['7d']}ms 30d=${dur['30d']}ms total=${dur.total}ms`);
+    return { generatedAt: now.toISOString(), windows: { '7d': w7d, '30d': w30d } };
+  } catch (err) {
+    dur.total = Date.now() - t0;
+    log.warn("Cohort Stats", `Query durations (failed): 7d=${dur['7d'] ?? '—'}ms 30d=${dur['30d'] ?? '—'}ms total=${dur.total}ms`);
+    throw err;
+  }
 }
 
 async function smokeCheckRobotsTxt() {
@@ -172,6 +192,7 @@ export async function GET(req) {
       return Response.json({ ok: true, generatedAt: stats.generatedAt }, { headers: NO_CACHE });
     } catch (err) {
       log.error("Cohort Stats", `Writer failed: ${err.message}`);
+      await alertWatchTower({ generatedAt: new Date().toISOString() }, `Writer failed: ${err.message}`);
       return Response.json({ error: "Writer failed", detail: err.message }, { status: 500, headers: NO_CACHE });
     }
   }
@@ -179,6 +200,7 @@ export async function GET(req) {
   // ── Analytics reader path: serve stored snapshot, recompute if stale ──
   let snapshot = null;
   let stale = false;
+  let servingStale = false;
 
   try {
     const row = await prisma.setting.findUnique({ where: { key: SNAPSHOT_KEY } });
@@ -212,6 +234,7 @@ export async function GET(req) {
         const ageH = +(snapshotAgeMs(snapshot) / 36e5).toFixed(1);
         log.error("Cohort Stats", `Serving stale snapshot (${ageH}h old) from ${snapshot.generatedAt} — self-heal failed`);
         await alertWatchTower(snapshot, err.message);
+        servingStale = true;
       } else {
         return Response.json({ error: "No data available" }, { status: 503, headers: NO_CACHE });
       }
@@ -219,7 +242,10 @@ export async function GET(req) {
   }
 
   const pretty = new URL(req.url).searchParams.has("pretty");
-  const body = pretty ? JSON.stringify(snapshot, null, 2) : JSON.stringify(snapshot);
+  const payload = servingStale
+    ? { ...snapshot, stale: true, ageHours: +(snapshotAgeMs(snapshot) / 36e5).toFixed(1) }
+    : snapshot;
+  const body = pretty ? JSON.stringify(payload, null, 2) : JSON.stringify(payload);
   return new Response(body, {
     headers: { "Content-Type": "application/json", ...NO_CACHE },
   });

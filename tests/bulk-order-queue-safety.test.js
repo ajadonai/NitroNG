@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   serviceTierFindUnique: vi.fn(),
   settingFindUnique: vi.fn(),
   prismaTransaction: vi.fn(),
+  queryRaw: vi.fn(),
   placeOrder: vi.fn(),
   getCurrentUser: vi.fn(),
   rateLimit: vi.fn(),
@@ -50,6 +51,7 @@ const prisma = {
     update: vi.fn(),
   },
   $transaction: (...args) => mocks.prismaTransaction(...args),
+  $queryRaw: (...args) => mocks.queryRaw(...args),
 };
 
 vi.mock('@/lib/prisma', () => ({ default: prisma }));
@@ -74,6 +76,7 @@ vi.mock('@/lib/clean-link', () => ({ cleanLink: link => link.trim() }));
 vi.mock('@/lib/drip-feed', () => ({
   calculateIntradayDrip: (...args) => mocks.calculateIntradayDrip(...args),
   getDripConfig: (...args) => mocks.getDripConfig(...args),
+  validateIntradayDuration: () => null,
 }));
 vi.mock('@/lib/meta-capi', () => ({
   sendEvent: (...args) => mocks.sendEvent(...args),
@@ -185,6 +188,7 @@ beforeEach(() => {
   mocks.trackBonusConsumption.mockResolvedValue(0);
   mocks.awardOrderPoints.mockResolvedValue(0);
   mocks.prismaTransaction.mockImplementation(async callback => callback(prisma));
+  mocks.queryRaw.mockResolvedValue([{ id: 'order-new', status: 'Pending', deletedAt: null, queuedBehind: null, apiOrderId: null }]);
   configureSingleOrder();
 });
 

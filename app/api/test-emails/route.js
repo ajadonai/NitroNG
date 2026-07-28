@@ -4,7 +4,7 @@ import {
   batchPlacementEmail, batchCompletionEmail,
   sendNudgeIdleFunds, sendNudgeIdleBalance,
   sendWinback30Email, sendWinback60Email,
-  sendTasksLaunchEmail,
+  sendTasksLaunchEmail, sendBrandWelcomeEmail,
   pitApprovedEmail, pitSuspendedEmail, pitRejectionEmail,
   payoutCompletedEmail, payoutRejectedEmail,
   sendAdActivationDay1, sendAdActivationDay3, sendAdActivationDay6,
@@ -43,6 +43,7 @@ export async function GET(req) {
     'nudge-funds':   () => sendNudgeIdleFunds(NAME, EMAIL, 3000),                                          // 17
     'nudge-idle':    () => sendNudgeIdleBalance(NAME, EMAIL, 7450),                                        // 18
     'launch-tasks':  () => sendTasksLaunchEmail(NAME, EMAIL),                                              // 25 (manual broadcast)
+    'brand-welcome': () => sendBrandWelcomeEmail(NAME, EMAIL),                                             // 26 (manual broadcast)
     'pit-approved':  () => sendEmail(EMAIL, "You're in. Welcome to the Pit", pitApprovedEmail(NAME)),      // 20
     'pit-suspended': () => sendEmail(EMAIL, 'Your Pit account has been paused', pitSuspendedEmail(NAME)),  // 21
     'payout-done':   () => sendEmail(EMAIL, 'Your payout of ₦18,500 has been sent', payoutCompletedEmail(NAME, 18500, 'PIT-8841-XK', 'GTBank ····2841', '11 Jul · 9:40 AM')), // 22

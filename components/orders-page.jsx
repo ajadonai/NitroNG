@@ -227,7 +227,7 @@ function groupOrders(orders) {
 
 
 /* ── Shared expanded order details ── */
-function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, compact, toast, onNavigate, waNum }) {
+function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, compact, toast, onNavigate, waNum, onViewComments }) {
   const qty = o.quantity || 0;
   const isCancelled = o.status === "Cancelled";
   const hasData = o.remains != null;
@@ -258,6 +258,14 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
           </div>
           <a href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="m min-w-0 flex-1 text-[12px] desktop:text-[13px] leading-[1.45] overflow-hidden text-ellipsis whitespace-nowrap no-underline" style={{ color: t.textSoft }}>{o.link}</a>
         </div>
+      )}
+
+      {/* View comments button */}
+      {o.comments && (
+        <button onClick={(e) => { e.stopPropagation(); onViewComments?.(o.comments); }} className="mb-3 flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", color: t.textSoft }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          View comments
+        </button>
       )}
 
       {/* Delivery progress */}
@@ -433,7 +441,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
 
 
 /* ── Batch row ── */
-function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpandedOrder, doAction, actionLoading, doBatchAction, batchActionLoading, confirm, toast, onNavigate, waNum }) {
+function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpandedOrder, doAction, actionLoading, doBatchAction, batchActionLoading, confirm, toast, onNavigate, waNum, onViewComments }) {
   const hasAttentionOrders = batch.orders.some(isAttention);
   const totalCharge = batch.orders.reduce((s, o) => s + (o.charge || 0), 0);
   const isLoading = batchActionLoading === batch.batchId;
@@ -505,7 +513,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                 </div>
                 <svg className="shrink-0 ml-0.5" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expandedOrder === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s", }}><polyline points="6 9 12 15 18 9"/></svg>
               </div>
-              {expandedOrder === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} compact />}
+              {expandedOrder === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={onViewComments} compact />}
             </div>
           ))}
         </div>
@@ -570,6 +578,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
   const [batchActionLoading, setBatchActionLoading] = useState(null);
   const [dateRange, setDateRange] = useState(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [viewComments, setViewComments] = useState(null);
   const toast = useToast();
   const fetchAbortRef = useRef(null);
 
@@ -750,7 +759,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
         {pagedGroups.length > 0 ? pagedGroups.map((item, i) => {
           if (item.type === "batch") {
-            return <BatchRow key={item.batchId} batch={item} dark={dark} t={t} expanded={expandedBatch === item.batchId} onToggle={(id) => { setExpandedBatch(expandedBatch === id ? null : id); setExpandedBatchOrder(null); setExpanded(null); }} expandedOrder={expandedBatchOrder} setExpandedOrder={setExpandedBatchOrder} doAction={doAction} actionLoading={actionLoading} doBatchAction={doBatchAction} batchActionLoading={batchActionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} />;
+            return <BatchRow key={item.batchId} batch={item} dark={dark} t={t} expanded={expandedBatch === item.batchId} onToggle={(id) => { setExpandedBatch(expandedBatch === id ? null : id); setExpandedBatchOrder(null); setExpanded(null); }} expandedOrder={expandedBatchOrder} setExpandedOrder={setExpandedBatchOrder} doAction={doAction} actionLoading={actionLoading} doBatchAction={doBatchAction} batchActionLoading={batchActionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={setViewComments} />;
           }
           const o = item.order;
           const attn = isAttention(o);
@@ -774,7 +783,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
               </div>
 
               {/* Expanded details */}
-              {expanded === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} />}
+              {expanded === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={setViewComments} />}
             </div>
           );
         }) : (
@@ -795,6 +804,24 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
         )}
       </div>
       <Pagination total={total} page={oPage} setPage={setOPage} perPage={perPage} setPerPage={setPerPage} t={t} />
+
+      {viewComments && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={() => setViewComments(null)}>
+          <div className="absolute inset-0" style={{ background: "rgba(0,0,0,.55)" }} />
+          <div className="relative w-full max-w-md rounded-xl shadow-xl overflow-hidden" style={{ background: dark ? "#252320" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>
+              <div className="flex items-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                <span className="text-[13px] font-semibold" style={{ color: t.text }}>Submitted comments</span>
+              </div>
+              <button onClick={() => setViewComments(null)} className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div className="px-4 py-3 max-h-[60vh] overflow-y-auto">
+              <pre className="m-0 text-[13px] leading-[1.65] whitespace-pre-wrap break-words" style={{ color: t.textSoft, fontFamily: "inherit" }}>{viewComments}</pre>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

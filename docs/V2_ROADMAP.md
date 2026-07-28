@@ -457,12 +457,19 @@ AI chatbot integrated into the support ticket system. Handles common questions (
 
 Support volume will grow with users. Most questions are repetitive (where's my order, how do I add funds, why is my order pending). AI can resolve 60-70% of tickets instantly, reducing response time and support load.
 
-### Key decisions (to be made at build time)
+### Current state (July 2026)
 
-- Which LLM provider (Claude API, OpenAI, or other)
-- Knowledge base: FAQ content + order data + service catalog
-- Escalation triggers: user frustration detection, account-specific issues, refund requests above threshold
-- Whether to surface AI responses inline in the existing chat widget or as a separate "Ask Nitro" interface
+Ify v1 is built and deployed — FAQ-only WhatsApp bot using OpenAI, with outreach triggers (day 1/3/7, winback, first deposit, first order). She answers general questions from `lib/ify/knowledge.js` and escalates everything account-specific to a human. Lives in `lib/ify/`.
+
+The next phase (account actions — check balance, check order, check payment, request refill, place order) is specced at [`docs/IFY_ACTIONS_SPEC.md`](./IFY_ACTIONS_SPEC.md). Do not build until Ify v1 is stable in production and Trip gives go-ahead.
+
+### Key decisions (already made or settled)
+
+- **LLM provider:** OpenAI (via Ify brain in `lib/ify/brain.js`)
+- **Knowledge base:** `lib/ify/knowledge.js` — single string, no vector DB needed at current scale
+- **Channel:** WhatsApp Business API (Meta Cloud API), not in-app chat
+- **Escalation:** AI → human handoff via Redis mode keys (`ify:mode:<phone>`)
+- **Identity:** Primary phone (permanent) + one secondary phone (7-day TTL, verified via email OTP)
 
 ---
 
