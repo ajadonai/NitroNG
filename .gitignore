@@ -39,3 +39,5 @@ yarn-error.log*
 # claude code
 .claude/
 .env*
+!.env.example
+!.env.ify.example

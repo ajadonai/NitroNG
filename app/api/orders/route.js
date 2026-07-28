@@ -4,10 +4,11 @@ import { getCurrentUser } from '@/lib/auth';
 import { placeOrder, checkOrder } from '@/lib/smm';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
-import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig } from '@/lib/drip-feed';
+import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig, checkDripFeasibility, validateIntradayDuration } from '@/lib/drip-feed';
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { headers as getHeaders } from 'next/headers';
-import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
+import { tgNewOrder, tgOutreachAlert, tgRefundAlert } from '@/lib/telegram';
+import { sendOutreach as ifySendOutreach } from '@/lib/ify/outreach';
 import { voidCommissions } from '@/lib/commissions';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
 import { buildOrderDisplayGroups } from '@/lib/order-history';
@@ -15,6 +16,22 @@ import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrde
 import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder, findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
 import { calculateCreateOrderPricing, parseCreateOrderInput, validateCreateOrderOfferInput } from '@/lib/order-create-input.server';
+
+export const maxDuration = 60;
+
+async function checkFirstOrder(userId, serviceName) {
+  if (new Date() < new Date('2026-08-01T00:00:00Z')) return;
+  try {
+    const count = await prisma.order.count({ where: { userId, deletedAt: null } });
+    if (count === 1) {
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true, phone: true, createdAt: true } });
+      if (user) {
+        tgOutreachAlert(user, 'firstOrder', { serviceName }).catch(() => {});
+        ifySendOutreach({ user: { id: userId, ...user }, trigger: 'firstOrder', extra: { serviceName } }).catch(() => {});
+      }
+    }
+  } catch {}
+}
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -137,6 +154,7 @@ export async function GET(req) {
         dripDays: o.dripDays || null,
         dripEndAt: o.dripDispatches?.[0]?.scheduledAt?.toISOString() || null,
         queuedBehind: o.queuedBehind || null,
+        comments: o.comments || null,
         };
       }),
     });
@@ -185,44 +203,66 @@ export async function PATCH(req) {
       }
       // Drip order — sync each dispatch with provider, then rollup parent
       const dispatches = await prisma.dripDispatch.findMany({
-        where: { orderId: order.id, apiOrderId: { not: null }, status: { notIn: ['completed', 'partial', 'cancelled'] } },
+        where: { orderId: order.id, apiOrderId: { not: null }, status: { notIn: ['completed', 'partial', 'cancelled', 'superseded', 'verifying', 'cancelling'] } },
         select: { id: true, apiOrderId: true, quantity: true, status: true, startCount: true },
       });
       const provider = order.service?.provider || 'mtp';
+      const { normalizeProviderStatus } = await import('@/lib/drip-completion');
+      const { randomUUID } = await import('node:crypto');
       for (const d of dispatches) {
+        let verifyToken = null;
         try {
+          let casStatus = d.status;
+          if (d.status === 'failed') {
+            verifyToken = `[VERIFY] ${randomUUID()}`;
+            const claimed = await prisma.$transaction(async (tx) => {
+              const pRows = await tx.$queryRaw`SELECT "id", "status", "deletedAt" FROM "orders" WHERE "id" = ${order.id} FOR UPDATE`;
+              const p = pRows[0];
+              if (!p || !['Pending', 'Processing'].includes(p.status) || p.deletedAt) return false;
+              const r = await tx.dripDispatch.updateMany({ where: { id: d.id, status: 'failed', apiOrderId: d.apiOrderId }, data: { status: 'verifying', lastError: verifyToken } });
+              return r.count > 0;
+            });
+            if (!claimed) continue;
+            casStatus = 'verifying';
+          }
+
           const s = await checkOrder(provider, d.apiOrderId);
-          const sMap = { 'Completed': 'completed', 'In progress': 'processing', 'Processing': 'processing', 'Pending': 'pending', 'Partial': 'partial', 'Canceled': 'cancelled', 'Refunded': 'cancelled' };
-          const newSt = sMap[s.status] || d.status;
+          const newSt = normalizeProviderStatus(s.status) || d.status;
           const upd = {};
-          if (newSt !== d.status) upd.status = newSt;
+          if (newSt !== casStatus) upd.status = newSt;
           if (s.remains != null) upd.remains = Number(s.remains);
           if (s.start_count != null && !d.startCount) upd.startCount = Number(s.start_count);
-          if (['completed', 'partial', 'cancelled'].includes(newSt) && !d.completedAt) upd.completedAt = new Date();
-          if (Object.keys(upd).length > 0) await prisma.dripDispatch.update({ where: { id: d.id }, data: upd });
-        } catch {}
+          if (['completed', 'partial', 'cancelled', 'failed'].includes(newSt) && newSt !== d.status) upd.completedAt = new Date();
+          if (Object.keys(upd).length === 0) continue;
+          if (upd.status === 'failed') upd.lastError = null;
+          const qualifies = ['completed', 'partial'].includes(newSt) && !['completed', 'partial'].includes(d.status);
+          const whereClause = verifyToken
+            ? { id: d.id, status: 'verifying', lastError: verifyToken, apiOrderId: d.apiOrderId }
+            : { id: d.id, status: casStatus, apiOrderId: d.apiOrderId };
+          await prisma.$transaction(async (tx) => {
+            const pRows = await tx.$queryRaw`SELECT "id", "status", "deletedAt" FROM "orders" WHERE "id" = ${order.id} FOR UPDATE`;
+            const p = pRows[0];
+            if (!p || !['Pending', 'Processing'].includes(p.status) || p.deletedAt) return;
+            const r = await tx.dripDispatch.updateMany({ where: whereClause, data: upd });
+            if (qualifies && r.count === 1) {
+              const { rescheduleAfterDripCompletion } = await import('@/lib/drip-completion');
+              await rescheduleAfterDripCompletion(tx, order.id, upd.completedAt);
+            }
+          });
+        } catch {
+          // Leave as verifying — cron stale handler will reconcile
+        }
       }
-      // Reschedule overdue pending batches
-      try {
-        const { rescheduleAfterDripCompletion } = await import('@/lib/drip-completion');
-        await rescheduleAfterDripCompletion(prisma, order.id);
-      } catch {}
-      // Rollup parent
-      const allDispatches = await prisma.dripDispatch.findMany({ where: { orderId: order.id }, select: { status: true, remains: true, quantity: true, startCount: true, day: true, batch: true }, orderBy: [{ day: 'asc' }, { batch: 'asc' }] });
-      const allDone = allDispatches.length > 0 && allDispatches.every(d => ['completed', 'partial', 'cancelled'].includes(d.status));
-      const totalRemains = allDispatches.reduce((s, d) => s + (d.remains ?? d.quantity), 0);
-      const parentUpd = { remains: totalRemains };
-      if (allDone) {
-        parentUpd.status = totalRemains > 0 ? 'Partial' : 'Completed';
-        parentUpd.completedAt = new Date();
-      }
-      const first = allDispatches[0];
-      if (first?.startCount != null && order.startCount == null) parentUpd.startCount = first.startCount;
-      await prisma.order.update({ where: { id: order.id }, data: parentUpd });
+      // Rollup parent — guard terminal states
+      const { applyDripRollup } = await import('@/lib/drip-completion');
+      const allDispatches = await prisma.dripDispatch.findMany({ where: { orderId: order.id }, select: { status: true, remains: true, quantity: true, startCount: true, day: true, batch: true, lastError: true }, orderBy: [{ day: 'asc' }, { batch: 'asc' }] });
+      const rollupResult = await applyDripRollup(prisma, order.id, allDispatches, order.status);
+      const effectiveStatus = rollupResult?.status || order.status;
+      const first = allDispatches.find(d => d.day === 1 && d.batch === 1) || allDispatches[0];
       return Response.json({
         success: true,
-        status: parentUpd.status || order.status,
-        remains: totalRemains,
+        status: effectiveStatus,
+        remains: rollupResult?.remains ?? order.remains,
         startCount: first?.startCount ?? order.startCount,
       });
     }
@@ -345,6 +385,8 @@ export async function PATCH(req) {
       if (process.env.NODE_ENV !== 'development' && order.tier?.group?.tags?.includes('drip') && reorderDripCfg && order.quantity >= reorderDripCfg.threshold) {
         const intraday = calculateIntradayDrip(order.quantity, reorderProviderMin, new Date(), reorderGroupType, reorderPlatform);
         if (intraday) {
+          const durationErr = validateIntradayDuration(intraday.dispatches);
+          if (durationErr) return Response.json({ error: durationErr }, { status: 400 });
           reorderDripSchedule = { dispatches: intraday.dispatches.map(d => ({ ...d, day: 1 })) };
         }
       }
@@ -551,6 +593,7 @@ export async function PATCH(req) {
       }
 
       tgNewOrder(newOrderId, reorderOffer.serviceName, order.quantity, charge, session.email, order.link, reorderSnapshot.platformAtPurchase || reorderOffer.platform);
+      checkFirstOrder(session.id, reorderOffer.serviceName);
 
       return Response.json({
         success: true,
@@ -725,11 +768,26 @@ export async function POST(req) {
     let dripSchedule = null;
     const dripEligible = tier?.group?.tags?.includes('drip');
     const dripCfg = getDripConfig(groupType, platform);
-    if (dripEligible && validDripDays) {
-      dripSchedule = calculateMultiDayDrip(qty, validDripDays, providerMin, new Date(), groupType, platform);
+    if (dripEligible && validDripDays && validDripDays >= 2) {
+      const safeConfig = { version: 1 };
+      const feasibility = checkDripFeasibility(qty, validDripDays, safeConfig, groupType, platform, providerMin);
+      if (!feasibility.feasible) {
+        return Response.json({ error: feasibility.error }, { status: 400 });
+      }
+      dripSchedule = calculateMultiDayDrip(qty, validDripDays, providerMin, new Date(), groupType, platform, safeConfig);
+      if (dripSchedule?.dispatches) {
+        const invalid = dripSchedule.dispatches.find(d => d.quantity < providerMin || d.quantity <= 0);
+        if (invalid) {
+          return Response.json({ error: `Cannot split ${qty.toLocaleString()} across ${validDripDays} days — some batches would be below the service minimum (${providerMin}). Try fewer days or a larger quantity.` }, { status: 400 });
+        }
+      }
     } else if (dripEligible && !skipDrip && dripCfg && qty >= dripCfg.threshold) {
       const intraday = calculateIntradayDrip(qty, providerMin, new Date(), groupType, platform);
       if (intraday) {
+        const durationErr = validateIntradayDuration(intraday.dispatches);
+        if (durationErr) {
+          return Response.json({ error: `${qty.toLocaleString()} ${groupType} requires more than one day of delivery. Please select at least 2 days.` }, { status: 400 });
+        }
         dripSchedule = { dispatches: intraday.dispatches.map(d => ({ ...d, day: 1 })) };
       }
     }
@@ -1034,6 +1092,7 @@ export async function POST(req) {
     });
 
     tgNewOrder(orderId, tierName, qty, charge, session.email, trimmedLink, offerSnapshot.platformAtPurchase || '');
+    checkFirstOrder(session.id, tierName);
 
     return Response.json({
       success: true,

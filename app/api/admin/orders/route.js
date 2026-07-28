@@ -183,6 +183,7 @@ export async function GET(req) {
         })(),
         tierServiceApiId: o.tier?.service?.apiId || null,
         tierCurrentPrice: o.tier?.sellPer1k ? Math.round(Number(o.tier.sellPer1k) * o.quantity / 1000) / 100 : null,
+        comments: o.comments || null,
         };
       }),
     });
@@ -204,7 +205,7 @@ export async function POST(req) {
 
     const order = await prisma.order.findFirst({
       where: { OR: [{ orderId }, { id: orderId }], deletedAt: null },
-      include: { service: { select: { provider: true } } },
+      include: { service: { select: { provider: true, min: true } } },
     });
     if (!order) return Response.json({ error: 'Order not found' }, { status: 404 });
 
@@ -218,50 +219,171 @@ export async function POST(req) {
         } catch (e) { log.warn(`Admin Cancel ${providerLabel}`, e.message); }
       }
 
-      const delivered = order.remains != null && order.quantity > 0 ? Math.max(0, order.quantity - order.remains) : 0;
-      const isPartial = delivered > 0 && delivered < order.quantity;
-      const maxRefund = isPartial ? Math.floor((order.remains / order.quantity) * order.charge / 100) * 100 : order.charge;
+      // Phase 1: claim cancellation — blocks dispatch/reset/sync on children
+      const phase1 = await prisma.$transaction(async (tx) => {
+        const freshRows = await tx.$queryRaw`
+          SELECT "id", "orderId", "userId", "status", "quantity", "remains", "charge", "nitroPointsRedeemedKobo", "deletedAt"
+          FROM "orders"
+          WHERE "id" = ${order.id}
+          FOR UPDATE
+        `;
+        const fresh = freshRows[0];
+        if (!fresh || ['Cancelled', 'Completed', 'Partial'].includes(fresh.status) || fresh.deletedAt) {
+          return { ok: false };
+        }
 
+        const children = await tx.$queryRaw`
+          SELECT "id", "status", "quantity", "remains", "apiOrderId"
+          FROM "drip_dispatches"
+          WHERE "orderId" = ${order.id}
+          FOR UPDATE
+        `;
+
+        if (children.some(c => c.status === 'verifying')) {
+          return { ok: false, reason: 'A batch is being verified with the provider — try again shortly' };
+        }
+
+        const childProviderIds = [];
+        for (const c of children) {
+          if (c.apiOrderId && !['completed', 'partial', 'cancelled', 'superseded'].includes(c.status)) {
+            childProviderIds.push(String(c.apiOrderId));
+          }
+        }
+
+        if (children.length > 0 && childProviderIds.length > 0) {
+          if (fresh.status !== 'Cancelling') {
+            await tx.order.updateMany({
+              where: { id: order.id, status: fresh.status },
+              data: { status: 'Cancelling' },
+            });
+          }
+          await tx.dripDispatch.updateMany({
+            where: { orderId: order.id, status: { notIn: ['completed', 'partial', 'cancelled', 'superseded'] } },
+            data: { status: 'cancelling' },
+          });
+        }
+
+        return { ok: true, fresh, childProviderIds, hasDrip: children.length > 0 };
+      });
+
+      if (!phase1.ok) return Response.json({ error: phase1.reason || 'Order is already terminal or deleted' }, { status: 409 });
+
+      // Cancel child provider orders and re-query remains (awaited, before refund)
+      const confirmedRemains = new Map();
+      if (phase1.childProviderIds.length > 0 && isProviderConfigured(provider)) {
+        for (const provId of phase1.childProviderIds) {
+          try { await cancelOrder(provider, provId); } catch (e) { log.warn(`Admin drip cancel ${providerLabel} ${provId}`, e.message); }
+          try {
+            const s = await checkOrder(provider, provId);
+            if (s.remains != null) confirmedRemains.set(provId, Number(s.remains));
+          } catch {}
+        }
+      }
+
+      // Phase 2: compute delivery from confirmed state, commit terminal + refund
       const result = await prisma.$transaction(async (tx) => {
-        const claimed = await tx.order.updateMany({
-          where: { id: order.id, status: { not: 'Cancelled' } },
-          data: { status: isPartial ? 'Partial' : 'Cancelled', queuedBehind: null, lastError: body.note ? `admin_cancelled: ${body.note}` : 'admin_cancelled', refundedAt: new Date() },
+        const freshRows = await tx.$queryRaw`
+          SELECT "id", "orderId", "userId", "status", "quantity", "remains", "charge", "nitroPointsRedeemedKobo", "deletedAt"
+          FROM "orders"
+          WHERE "id" = ${order.id}
+          FOR UPDATE
+        `;
+        const fresh = freshRows[0];
+        if (!fresh || ['Cancelled', 'Completed', 'Partial'].includes(fresh.status) || fresh.deletedAt) {
+          return { ok: false };
+        }
+
+        const children = await tx.$queryRaw`
+          SELECT "id", "status", "quantity", "remains", "apiOrderId"
+          FROM "drip_dispatches"
+          WHERE "orderId" = ${order.id}
+          FOR UPDATE
+        `;
+
+        for (const c of children) {
+          const provId = c.apiOrderId ? String(c.apiOrderId) : null;
+          if (provId && confirmedRemains.has(provId) && confirmedRemains.get(provId) !== Number(c.remains ?? -1)) {
+            await tx.$executeRaw`UPDATE "drip_dispatches" SET "remains" = ${confirmedRemains.get(provId)} WHERE "id" = ${c.id}`;
+            c.remains = BigInt(confirmedRemains.get(provId));
+          }
+        }
+
+        const { computeChildDelivery } = await import('@/lib/drip-completion');
+        let delivered;
+        if (children.length > 0) {
+          delivered = computeChildDelivery(children, Number(fresh.quantity));
+        } else {
+          delivered = fresh.remains != null && fresh.quantity > 0 ? Math.max(0, Number(fresh.quantity) - Number(fresh.remains)) : 0;
+        }
+
+        if (delivered >= Number(fresh.quantity)) {
+          await tx.order.updateMany({
+            where: { id: order.id, status: { notIn: ['Cancelled', 'Completed', 'Partial'] }, deletedAt: null },
+            data: { status: 'Completed', remains: 0, completedAt: new Date(), queuedBehind: null },
+          });
+          if (children.length > 0) {
+            await tx.dripDispatch.updateMany({
+              where: { orderId: order.id, status: { notIn: ['completed', 'partial', 'superseded'] } },
+              data: { status: 'completed', completedAt: new Date() },
+            });
+          }
+          const { awardPointsOnCompletion } = await import('@/lib/nitro-rewards');
+          await awardPointsOnCompletion(order.id, tx);
+          return { ok: true, fullyDelivered: true, delivered, quantity: Number(fresh.quantity) };
+        }
+
+        const isPartial = delivered > 0;
+        const actualRemains = Number(fresh.quantity) - delivered;
+        const maxRefund = isPartial ? Math.floor((actualRemains / Number(fresh.quantity)) * Number(fresh.charge) / 100) * 100 : Number(fresh.charge);
+
+        await tx.order.updateMany({
+          where: { id: order.id, status: { notIn: ['Cancelled', 'Completed', 'Partial'] }, deletedAt: null },
+          data: { status: isPartial ? 'Partial' : 'Cancelled', remains: actualRemains, queuedBehind: null, lastError: body.note ? `admin_cancelled: ${body.note}` : 'admin_cancelled', refundedAt: new Date() },
         });
-        if (claimed.count === 0) return { ok: false };
 
         await tx.dripDispatch.updateMany({
-          where: { orderId: order.id, status: { notIn: ['completed', 'partial'] } },
+          where: { orderId: order.id, status: { notIn: ['completed', 'partial', 'superseded'] } },
           data: { status: 'cancelled', completedAt: new Date() },
         });
 
         let refundAmount = 0;
         if (maxRefund > 0) {
-          const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
+          const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: fresh.orderId, orderDbId: order.id, userId: fresh.userId });
           refundAmount = Math.max(0, maxRefund - alreadyRefunded);
 
           if (refundAmount > 0) {
-            const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, refundAmount);
+            const { walletRefund } = computeRefundSplit(Number(fresh.charge), Number(fresh.nitroPointsRedeemedKobo || 0), refundAmount);
             if (walletRefund > 0) {
-              await tx.user.update({ where: { id: order.userId }, data: { balance: { increment: walletRefund } } });
+              await tx.user.update({ where: { id: fresh.userId }, data: { balance: { increment: walletRefund } } });
               await tx.transaction.create({
                 data: {
-                  userId: order.userId, type: 'refund', amount: walletRefund,
+                  userId: fresh.userId, type: 'refund', amount: walletRefund,
                   method: 'wallet', status: 'Completed',
-                  reference: `ADM-REF-${order.orderId || order.id}`,
-                  note: `Refund — order cancelled by admin${isPartial ? ` (${delivered}/${order.quantity} delivered)` : ''}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} already refunded)` : ''}`,
+                  reference: `ADM-REF-${fresh.orderId || order.id}`,
+                  note: `Refund — order cancelled by admin${isPartial ? ` (${delivered}/${fresh.quantity} delivered)` : ''}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} already refunded)` : ''}`,
                 },
               });
             }
             await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
           }
         }
-        const split = refundAmount > 0 ? computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, refundAmount) : { walletRefund: 0, pointsRestore: 0 };
-        return { ok: true, refundAmount, walletRefund: split.walletRefund, pointsRestore: split.pointsRestore };
+        const split = refundAmount > 0 ? computeRefundSplit(Number(fresh.charge), Number(fresh.nitroPointsRedeemedKobo || 0), refundAmount) : { walletRefund: 0, pointsRestore: 0 };
+        return { ok: true, isPartial, delivered, quantity: Number(fresh.quantity), remains: actualRemains, refundAmount, walletRefund: split.walletRefund, pointsRestore: split.pointsRestore };
       });
-      if (!result.ok) return Response.json({ error: 'Order already cancelled' }, { status: 409 });
+
+      if (!result.ok) return Response.json({ error: 'Order is already terminal or deleted' }, { status: 409 });
+
+      if (result.fullyDelivered) {
+        await logActivity(admin.name, `Cancel rejected for ${orderId}: fully delivered (${result.delivered}/${result.quantity}), finalized as Completed`, 'order');
+        return Response.json({
+          success: true,
+          status: 'Completed',
+          message: `Order already fully delivered (${result.delivered}/${result.quantity}) — finalized as Completed, no refund`,
+        });
+      }
 
       if (result.refundAmount > 0) {
-        tgRefundAlert({ orderId: order.orderId, amount: result.refundAmount, charge: order.charge, qty: order.quantity, remains: order.remains, status: isPartial ? 'Partial' : 'Cancelled', reason: 'admin_cancelled', source: admin.name });
+        tgRefundAlert({ orderId: order.orderId, amount: result.refundAmount, charge: order.charge, qty: result.quantity, remains: result.remains, status: result.isPartial ? 'Partial' : 'Cancelled', reason: 'admin_cancelled', source: admin.name });
       }
       voidCommissions(order.id, 'admin_cancelled').catch(() => {});
 
@@ -288,7 +410,7 @@ export async function POST(req) {
       }
       const noteMsg = body.note ? ` — ${body.note}` : '';
       await logActivity(admin.name, `Cancelled order ${orderId} (${providerLabel})${refundMsg}${noteMsg}`, 'order');
-      return Response.json({ success: true, status: isPartial ? 'Partial' : 'Cancelled', message: result.refundAmount > 0 ? `Order cancelled${refundMsg}` : 'Order cancelled' });
+      return Response.json({ success: true, status: result.isPartial ? 'Partial' : 'Cancelled', message: result.refundAmount > 0 ? `Order cancelled${refundMsg}` : 'Order cancelled' });
     }
 
     if (action === 'refill') {
@@ -383,45 +505,62 @@ export async function POST(req) {
       }
       // Drip order — sync each dispatch with provider, then rollup parent
       const dispatches = await prisma.dripDispatch.findMany({
-        where: { orderId: order.id, apiOrderId: { not: null }, status: { notIn: ['completed', 'partial', 'cancelled'] } },
+        where: { orderId: order.id, apiOrderId: { not: null }, status: { notIn: ['completed', 'partial', 'cancelled', 'superseded', 'verifying', 'cancelling'] } },
         select: { id: true, apiOrderId: true, quantity: true, status: true, startCount: true },
       });
       if (dispatches.length === 0) return Response.json({ success: true, status: order.status, message: `No ${providerLabel} tracking` });
+      const { normalizeProviderStatus } = await import('@/lib/drip-completion');
+      const { randomUUID } = await import('node:crypto');
       for (const d of dispatches) {
+        let verifyToken = null;
         try {
+          let casStatus = d.status;
+          if (d.status === 'failed') {
+            verifyToken = `[VERIFY] ${randomUUID()}`;
+            const claimed = await prisma.$transaction(async (tx) => {
+              const pRows = await tx.$queryRaw`SELECT "id", "status", "deletedAt" FROM "orders" WHERE "id" = ${order.id} FOR UPDATE`;
+              const p = pRows[0];
+              if (!p || !['Pending', 'Processing'].includes(p.status) || p.deletedAt) return false;
+              const r = await tx.dripDispatch.updateMany({ where: { id: d.id, status: 'failed', apiOrderId: d.apiOrderId }, data: { status: 'verifying', lastError: verifyToken } });
+              return r.count > 0;
+            });
+            if (!claimed) continue;
+            casStatus = 'verifying';
+          }
+
           const s = await checkOrder(provider, d.apiOrderId);
-          const sMap = { 'Completed': 'completed', 'In progress': 'processing', 'Processing': 'processing', 'Pending': 'pending', 'Partial': 'partial', 'Canceled': 'cancelled', 'Refunded': 'cancelled' };
-          const newSt = sMap[s.status] || d.status;
+          const newSt = normalizeProviderStatus(s.status) || d.status;
           const upd = {};
-          if (newSt !== d.status) upd.status = newSt;
+          if (newSt !== casStatus) upd.status = newSt;
           if (s.remains != null) upd.remains = Number(s.remains);
           if (s.start_count != null && !d.startCount) upd.startCount = Number(s.start_count);
-          if (['completed', 'partial', 'cancelled'].includes(newSt)) upd.completedAt = new Date();
-          if (Object.keys(upd).length > 0) await prisma.dripDispatch.update({ where: { id: d.id }, data: upd });
-        } catch {}
+          if (['completed', 'partial', 'cancelled', 'failed'].includes(newSt) && newSt !== d.status) upd.completedAt = new Date();
+          if (Object.keys(upd).length === 0) continue;
+          if (upd.status === 'failed') upd.lastError = null;
+          const qualifies = ['completed', 'partial'].includes(newSt) && !['completed', 'partial'].includes(d.status);
+          const whereClause = verifyToken
+            ? { id: d.id, status: 'verifying', lastError: verifyToken, apiOrderId: d.apiOrderId }
+            : { id: d.id, status: casStatus, apiOrderId: d.apiOrderId };
+          await prisma.$transaction(async (tx) => {
+            const pRows = await tx.$queryRaw`SELECT "id", "status", "deletedAt" FROM "orders" WHERE "id" = ${order.id} FOR UPDATE`;
+            const p = pRows[0];
+            if (!p || !['Pending', 'Processing'].includes(p.status) || p.deletedAt) return;
+            const r = await tx.dripDispatch.updateMany({ where: whereClause, data: upd });
+            if (qualifies && r.count === 1) {
+              const { rescheduleAfterDripCompletion } = await import('@/lib/drip-completion');
+              await rescheduleAfterDripCompletion(tx, order.id, upd.completedAt);
+            }
+          });
+        } catch {
+          // Leave as verifying — cron stale handler will reconcile
+        }
       }
-      // Reschedule overdue pending batches
-      try {
-        const { rescheduleAfterDripCompletion } = await import('@/lib/drip-completion');
-        await rescheduleAfterDripCompletion(prisma, order.id);
-      } catch {}
-      const allDispatches = await prisma.dripDispatch.findMany({ where: { orderId: order.id }, select: { status: true, remains: true, quantity: true, startCount: true }, orderBy: [{ day: 'asc' }, { batch: 'asc' }] });
-      const allDone = allDispatches.length > 0 && allDispatches.every(d => ['completed', 'partial', 'cancelled'].includes(d.status));
-      const totalRemains = allDispatches.reduce((s, d) => {
-        if (d.remains != null) return s + d.remains;
-        if (d.status === 'completed') return s;
-        return s + d.quantity;
-      }, 0);
-      const parentUpd = { remains: totalRemains };
-      if (allDone) {
-        parentUpd.status = totalRemains > 0 ? 'Partial' : 'Completed';
-        parentUpd.completedAt = new Date();
-      }
-      const first = allDispatches[0];
-      if (first?.startCount != null && !order.startCount) parentUpd.startCount = first.startCount;
-      await prisma.order.update({ where: { id: order.id }, data: parentUpd });
-      await logActivity(admin.name, `Synced drip order ${orderId}: ${parentUpd.status || order.status}`, 'order');
-      return Response.json({ success: true, status: parentUpd.status || order.status, remains: totalRemains });
+      const { applyDripRollup } = await import('@/lib/drip-completion');
+      const allDispatches = await prisma.dripDispatch.findMany({ where: { orderId: order.id }, select: { status: true, remains: true, quantity: true, startCount: true, day: true, batch: true, lastError: true }, orderBy: [{ day: 'asc' }, { batch: 'asc' }] });
+      const rollupResult = await applyDripRollup(prisma, order.id, allDispatches, order.status);
+      const effectiveStatus = rollupResult?.status || order.status;
+      await logActivity(admin.name, `Synced drip order ${orderId}: ${effectiveStatus}`, 'order');
+      return Response.json({ success: true, status: effectiveStatus, remains: rollupResult?.remains ?? order.remains });
     }
 
     if (action === 'refund') {
@@ -571,26 +710,27 @@ export async function POST(req) {
         });
         if (!candidate) return Response.json({ error: 'No pending or failed batch to dispatch' }, { status: 400 });
 
-        // Atomic claim — prevent race with cron or another admin
-        const claimed = await prisma.dripDispatch.updateMany({
-          where: {
-            id: candidate.id,
-            status: candidate.status,
-            order: {
-              status: { in: ['Pending', 'Processing'] },
-              queuedBehind: null,
-              deletedAt: null,
-              dripDispatches: {
-                none: {
-                  id: { not: candidate.id },
-                  status: { in: ['dispatching', 'processing'] },
-                },
-              },
-            },
-          },
-          data: { status: 'dispatching', dispatchedAt: new Date() },
+        // Lock parent then claim child — serializes with finalizer and reset
+        const claimOk = await prisma.$transaction(async (tx) => {
+          const parentRows = await tx.$queryRaw`
+            SELECT "id", "status", "deletedAt", "queuedBehind"
+            FROM "orders"
+            WHERE "id" = ${fullOrder.id}
+            FOR UPDATE
+          `;
+          const p = parentRows[0];
+          if (!p || !['Pending', 'Processing'].includes(p.status) || p.deletedAt || p.queuedBehind) return false;
+          const inFlight = await tx.dripDispatch.count({
+            where: { orderId: fullOrder.id, id: { not: candidate.id }, status: { in: ['dispatching', 'processing', 'verifying', 'cancelling'] } },
+          });
+          if (inFlight > 0) return false;
+          const r = await tx.dripDispatch.updateMany({
+            where: { id: candidate.id, status: candidate.status },
+            data: { status: 'dispatching', dispatchedAt: new Date() },
+          });
+          return r.count > 0;
         });
-        if (claimed.count === 0) return Response.json({ error: 'Batch is queued, the order is no longer active, or another batch is in flight' }, { status: 409 });
+        if (!claimOk) return Response.json({ error: 'Batch is queued, the order is no longer active, or another batch is in flight' }, { status: 409 });
 
         try {
           // Window enforcement: defer dispatch if outside delivery window
@@ -797,6 +937,11 @@ export async function POST(req) {
       const remainingQty = fullOrder.quantity - delivered;
       if (remainingQty <= 0) return Response.json({ error: 'No remaining quantity to redispatch' }, { status: 400 });
 
+      const providerMin = service.min || 50;
+      if (remainingQty < providerMin) {
+        return Response.json({ error: `Remaining quantity (${remainingQty}) is below the provider minimum (${providerMin}). Cannot redispatch.` }, { status: 400 });
+      }
+
       const initialBlocker = await findOpenSameLinkOrder(prisma, {
         serviceId: service.id,
         link,
@@ -828,17 +973,27 @@ export async function POST(req) {
           const parentConfig = fullOrder.dripConfig || null;
           const childConfig = parentConfig ? { ...parentConfig, startAt: undefined, pauseDay: undefined } : null;
           if (remainingQty < providerMin) {
-            // Sub-minimum remainder: don't dispatch to provider — leave for admin disposition
-            dripSchedule = null;
-          } else {
-            dripSchedule = calculateMultiDayDrip(remainingQty, proportionalDays, providerMin, new Date(), groupType, platform, childConfig);
+            await logActivity(admin.name, `Redispatch blocked: ${orderId} remainder (${remainingQty}) is below provider minimum (${providerMin})`, 'order');
+            return Response.json({ error: `Remaining quantity (${remainingQty}) is below the provider minimum (${providerMin}). Cannot redispatch.` }, { status: 400 });
           }
-          redispatchDripConfig = childConfig;
+          const safeChildConfig = childConfig || { version: 1 };
+          dripSchedule = calculateMultiDayDrip(remainingQty, proportionalDays, providerMin, new Date(), groupType, platform, safeChildConfig);
+          if (dripSchedule?.dispatches) {
+            const invalid = dripSchedule.dispatches.find(d => d.quantity < providerMin || d.quantity <= 0);
+            if (invalid) {
+              return Response.json({ error: `Redispatch would create a sub-minimum batch (${invalid.quantity} < ${providerMin}). Adjust quantity or days.` }, { status: 400 });
+            }
+          }
+          redispatchDripConfig = safeChildConfig;
           redispatchDripDays = dripSchedule ? Math.max(...dripSchedule.dispatches.map(d => d.day)) : 1;
         } else {
-          const { calculateIntradayDrip } = await import('@/lib/drip-feed');
+          const { calculateIntradayDrip, validateIntradayDuration } = await import('@/lib/drip-feed');
           const intraday = calculateIntradayDrip(remainingQty, providerMin, new Date(), groupType, platform);
-          if (intraday) dripSchedule = { dispatches: intraday.dispatches.map(d => ({ ...d, day: 1 })) };
+          if (intraday) {
+            const durationErr = validateIntradayDuration(intraday.dispatches);
+            if (durationErr) return Response.json({ error: durationErr }, { status: 400 });
+            dripSchedule = { dispatches: intraday.dispatches.map(d => ({ ...d, day: 1 })) };
+          }
         }
       }
 
@@ -1032,6 +1187,12 @@ export async function POST(req) {
         }
       }
 
+      const directProviderMin = service.min || 50;
+      if (remainingQty < directProviderMin) {
+        await logActivity(admin.name, `Redispatched ${orderId} → ${newId} (${remainingQty} qty)${swapNote} — held: below provider minimum (${directProviderMin})`, 'order');
+        return Response.json({ success: true, newOrderId: newId, message: `Created ${newId} for ${remainingQty} remaining — held (below provider minimum ${directProviderMin})` });
+      }
+
       const directClaim = await prisma.order.updateMany({
         where: { id: newOrder.id, status: 'Pending', apiOrderId: null, queuedBehind: null },
         data: { status: 'Dispatching', dispatchedAt: new Date() },
@@ -1085,38 +1246,85 @@ export async function POST(req) {
       const dispatch = await prisma.dripDispatch.findUnique({ where: { id: dispatchId } });
       if (!dispatch) return Response.json({ error: 'Dispatch not found' }, { status: 404 });
       if (!['failed', 'partial'].includes(dispatch.status)) return Response.json({ error: 'Only failed or partial batches can be reset' }, { status: 400 });
-      if (qty > dispatch.quantity) return Response.json({ error: `Quantity cannot exceed original batch size (${dispatch.quantity})` }, { status: 400 });
 
-      const parentOrder = await prisma.order.findUnique({
-        where: { id: dispatch.orderId },
-        select: { id: true, orderId: true, dripConfig: true, dripDays: true },
+      const providerMin = order.service?.min || 50;
+
+      const resetResult = await prisma.$transaction(async (tx) => {
+        const parentRows = await tx.$queryRaw`
+          SELECT "id", "orderId", "status", "deletedAt"
+          FROM "orders"
+          WHERE "id" = ${dispatch.orderId}
+          FOR UPDATE
+        `;
+        const parentOrder = parentRows[0];
+        if (!parentOrder) return { error: 'Parent order not found', code: 404 };
+        if (['Cancelled', 'Completed', 'Partial', 'Cancelling'].includes(parentOrder.status) || parentOrder.deletedAt) {
+          return { error: 'Parent order is no longer active', code: 400 };
+        }
+
+        const sourceRows = await tx.$queryRaw`
+          SELECT "id", "status", "quantity", "remains", "batch", "lastError"
+          FROM "drip_dispatches"
+          WHERE "id" = ${dispatch.id}
+          FOR UPDATE
+        `;
+        const source = sourceRows[0];
+        if (!source || !['failed', 'partial'].includes(source.status)) {
+          return { error: 'Source batch is no longer eligible for reset', code: 400 };
+        }
+
+        if (source.status === 'partial' && source.remains == null) {
+          return { error: 'Source batch has unknown delivery — sync with provider first', code: 400 };
+        }
+
+        const srcError = source.lastError ? String(source.lastError) : '';
+        if (srcError.startsWith('[TIMEOUT]') || srcError.startsWith('[VERIFY_STALE]')) {
+          return { error: 'Source batch has ambiguous provider status — reconcile before resetting', code: 400 };
+        }
+
+        const undelivered = source.remains != null ? Number(source.remains) : Number(source.quantity);
+        if (qty !== undelivered) {
+          return { error: `Reset quantity must equal the undelivered amount (${undelivered}). Partial resets are not supported.`, code: 400 };
+        }
+        if (undelivered < providerMin) {
+          return { error: `Undelivered quantity (${undelivered}) is below provider minimum (${providerMin})`, code: 400 };
+        }
+
+        const lastBatch = await tx.dripDispatch.findFirst({
+          where: { orderId: dispatch.orderId },
+          orderBy: [{ day: 'desc' }, { batch: 'desc' }],
+          select: { day: true, batch: true, scheduledAt: true },
+        });
+
+        const newDay = lastBatch ? lastBatch.day : 1;
+        const newBatch = lastBatch ? lastBatch.batch + 1 : 1;
+        const scheduleAfter = lastBatch?.scheduledAt || new Date();
+        const scheduledAt = new Date(Math.max(scheduleAfter.getTime() + 60000, Date.now() + 60000));
+
+        // Supersede source BEFORE creating replacement — if CAS fails, no orphan
+        const claimed = await tx.dripDispatch.updateMany({
+          where: { id: source.id, status: source.status },
+          data: { status: 'superseded', lastError: `replaced:#${newBatch}` },
+        });
+        if (claimed.count === 0) return { error: 'Source batch changed during reset', code: 409 };
+
+        await tx.dripDispatch.create({
+          data: {
+            orderId: dispatch.orderId,
+            day: newDay,
+            batch: newBatch,
+            quantity: undelivered,
+            scheduledAt,
+          },
+        });
+
+        return { success: true, displayId: parentOrder.orderId, newBatch, safeQty: undelivered };
       });
-      if (!parentOrder) return Response.json({ error: 'Parent order not found' }, { status: 404 });
 
-      const lastBatch = await prisma.dripDispatch.findFirst({
-        where: { orderId: dispatch.orderId },
-        orderBy: [{ day: 'desc' }, { batch: 'desc' }],
-        select: { day: true, batch: true, scheduledAt: true },
-      });
+      if (resetResult.error) return Response.json({ error: resetResult.error }, { status: resetResult.code });
 
-      const newDay = lastBatch ? lastBatch.day : 1;
-      const newBatch = lastBatch ? lastBatch.batch + 1 : 1;
-      const scheduleAfter = lastBatch?.scheduledAt || new Date();
-      const scheduledAt = new Date(Math.max(scheduleAfter.getTime() + 60000, Date.now() + 60000));
-
-      await prisma.dripDispatch.create({
-        data: {
-          orderId: dispatch.orderId,
-          day: newDay,
-          batch: newBatch,
-          quantity: qty,
-          scheduledAt,
-          lastError: `reset:#${dispatch.batch}`,
-        },
-      });
-
-      await logActivity(admin.name, `Reset drip batch #${dispatch.batch} on ${parentOrder.orderId}: created new batch #${newBatch} (${qty} qty)`, 'order');
-      return Response.json({ success: true, message: `New batch #${newBatch} created with ${qty} qty, scheduled after existing batches` });
+      await logActivity(admin.name, `Reset drip batch #${dispatch.batch} on ${resetResult.displayId}: created new batch #${resetResult.newBatch} (${resetResult.safeQty} qty)`, 'order');
+      return Response.json({ success: true, message: `New batch #${resetResult.newBatch} created with ${resetResult.safeQty} qty, scheduled after existing batches` });
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });

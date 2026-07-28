@@ -1,0 +1,26 @@
+// ── Ify (WhatsApp support bot) ──────────────────────────────────────────
+// PASTE this model into prisma/schema.prisma, then run:
+//     npx prisma migrate dev --name ify_messages
+// (or `npx prisma db push` for a quick non-migration sync)
+//
+// No relation to User is declared on purpose — userId is stored as a plain
+// (nullable) string so you don't have to touch the existing User model.
+// Every inbound message + Ify's response/decision is logged here so you can
+// see exactly how people use it during the test.
+
+model IfyMessage {
+  id        String   @id @default(cuid())
+  phone     String   // sender WhatsApp number (digits)
+  name      String?  // WhatsApp profile name, if provided
+  userId    String?  // matched Nitro user id, if the number is linked to an account
+  inbound   String   @db.Text // what the customer said
+  reply     String?  @db.Text // what Ify sent back (null if ignored)
+  action    String   // 'answer' | 'escalate' | 'ignored'
+  reason    String?  // short internal note (why it escalated / was ignored)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+  @@index([action])
+  @@index([createdAt])
+  @@map("ify_messages")
+}

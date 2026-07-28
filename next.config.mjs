@@ -13,7 +13,32 @@ const applicationUrl = getApplicationUrl(process.env, {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  outputFileTracingIncludes: {
+    '/services/\\[platform\\]/opengraph-image': ['./assets/og-fonts/**/*'],
+    '/services/\\[platform\\]/\\[type\\]/opengraph-image': ['./assets/og-fonts/**/*'],
+    '/blog/\\[slug\\]/opengraph-image': ['./assets/og-fonts/**/*'],
+  },
   allowedDevOrigins: ['192.168.1.11', '192.168.1.12', '192.168.1.15', '192.168.1.16'],
+  async redirects() {
+    return [
+      // Merged blog posts — 301 losers into winners
+      { source: '/blog/why-instagram-followers-drop-after-buying', destination: '/blog/why-smm-followers-drop-how-to-avoid-it', permanent: true },
+      { source: '/blog/best-smm-panel-nigeria-2026-comparison', destination: '/blog/best-smm-panel-nigeria', permanent: true },
+      { source: '/blog/grow-instagram-nigeria-2026', destination: '/blog/how-to-grow-instagram-account-nigeria', permanent: true },
+      { source: '/blog/is-buying-social-media-followers-safe', destination: '/blog/will-instagram-ban-me-for-buying-followers', permanent: true },
+      { source: '/blog/is-smm-safe', destination: '/blog/will-instagram-ban-me-for-buying-followers', permanent: true },
+      // Help docs moved from /blog to /help
+      { source: '/blog/order-status-guide', destination: '/help/order-status-guide', permanent: true },
+      { source: '/blog/how-to-add-funds', destination: '/help/how-to-add-funds', permanent: true },
+      { source: '/blog/how-to-use-bulk-orders', destination: '/help/how-to-use-bulk-orders', permanent: true },
+      { source: '/blog/how-to-place-your-first-order', destination: '/help/how-to-place-your-first-order', permanent: true },
+      { source: '/blog/getting-started-first-order', destination: '/help/getting-started-first-order', permanent: true },
+      { source: '/blog/how-to-find-the-right-link', destination: '/help/how-to-find-the-right-link', permanent: true },
+      { source: '/blog/referral-program', destination: '/help/referral-program', permanent: true },
+      { source: '/blog/leaderboard', destination: '/help/leaderboard', permanent: true },
+      { source: '/blog/5-tips-to-master-nitro', destination: '/help/5-tips-to-master-nitro', permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

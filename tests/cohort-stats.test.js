@@ -67,6 +67,7 @@ describe('GET /api/cron/cohort-stats', () => {
 
     expect(response.status).toBe(200);
     expect(body.generatedAt).not.toBe('2026-07-08T01:01:48.043Z');
+    expect(body.stale).toBeUndefined();
     expect(body.windows['7d']).toMatchObject({
       signups: 4,
       depositors: 2,
@@ -80,17 +81,18 @@ describe('GET /api/cron/cohort-stats', () => {
       depositors: 1,
       depositRate: 0.3333,
     });
-    // SET LOCAL + 2 window queries = 3 calls
-    expect(mockTx.$queryRaw).toHaveBeenCalledTimes(3);
+    // Two separate transactions (7d + 30d), each with SET LOCAL + query = 4 calls
+    expect(mockTx.$queryRaw).toHaveBeenCalledTimes(4);
     expect(prisma.setting.upsert).toHaveBeenCalledWith(expect.objectContaining({
       where: { key: 'cohort_stats_snapshot' },
       update: expect.objectContaining({ value: expect.any(String) }),
     }));
     expect(log.warn).toHaveBeenCalledWith('Cohort Stats', expect.stringContaining('Stale snapshot detected'));
     expect(log.warn).toHaveBeenCalledWith('Cohort Stats', expect.stringContaining('Self-healed stale snapshot'));
+    expect(log.info).toHaveBeenCalledWith('Cohort Stats', expect.stringContaining('Query durations:'));
   });
 
-  it('serves stale fallback and alerts WatchTower when self-heal fails', async () => {
+  it('serves stale fallback with stale metadata and alerts WatchTower when self-heal fails', async () => {
     prisma.$transaction.mockRejectedValue(new Error('database timeout'));
 
     const response = await GET(request());
@@ -98,25 +100,47 @@ describe('GET /api/cron/cohort-stats', () => {
 
     expect(response.status).toBe(200);
     expect(body.generatedAt).toBe('2026-07-08T01:01:48.043Z');
+    expect(body.stale).toBe(true);
+    expect(body.ageHours).toBeGreaterThan(0);
     expect(log.error).toHaveBeenCalledWith('Cohort Stats', 'Live recompute failed: database timeout');
     expect(log.error).toHaveBeenCalledWith('Cohort Stats', expect.stringContaining('Serving stale snapshot'));
+    expect(log.warn).toHaveBeenCalledWith('Cohort Stats', expect.stringContaining('Query durations (failed)'));
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('api.telegram.org'),
       expect.objectContaining({ method: 'POST' }),
     );
   });
 
-  it('writer computes with statement timeout and stores the snapshot', async () => {
+  it('writer computes with separate transactions and stores the snapshot', async () => {
     const response = await GET(request('cron'));
     const body = await response.json();
 
     expect(response.status).toBe(200);
     expect(body.ok).toBe(true);
+    // Two separate transactions (7d + 30d)
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
     expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), { timeout: 30_000 });
     expect(prisma.setting.upsert).toHaveBeenCalledWith(expect.objectContaining({
       where: { key: 'cohort_stats_snapshot' },
     }));
     expect(log.info).toHaveBeenCalledWith('Cohort Stats', expect.stringContaining('Snapshot written'));
+    expect(log.info).toHaveBeenCalledWith('Cohort Stats', expect.stringContaining('Query durations:'));
+  });
+
+  it('writer alerts WatchTower on failure', async () => {
+    prisma.$transaction.mockRejectedValue(new Error('statement timeout'));
+
+    const response = await GET(request('cron'));
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body.error).toBe('Writer failed');
+    expect(log.error).toHaveBeenCalledWith('Cohort Stats', 'Writer failed: statement timeout');
+    expect(log.warn).toHaveBeenCalledWith('Cohort Stats', expect.stringContaining('Query durations (failed)'));
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('api.telegram.org'),
+      expect.objectContaining({ method: 'POST' }),
+    );
   });
 
   it('returns 401 with no-cache headers for unauthorized requests', async () => {

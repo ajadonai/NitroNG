@@ -5,19 +5,21 @@ export const revalidate = 300;
 
 export async function GET() {
   try {
-    let userCount = 0, orderCount = 0, platformCount = 0, serviceCount = 0;
+    let userCount = 0, orderCount = 0, platformCount = 0, serviceCount = 0, uniquePlatforms = 0;
     try { userCount = await prisma.user.count(); } catch {}
     try { orderCount = await prisma.order.count(); } catch {}
     try {
-      const [platforms, services] = await Promise.all([
+      const [groups, tiers, distinctPlatforms] = await Promise.all([
         prisma.serviceGroup.count({ where: { enabled: true, tiers: { some: { enabled: true } } } }),
         prisma.serviceTier.count({ where: { enabled: true, group: { enabled: true } } }),
+        prisma.serviceGroup.findMany({ where: { enabled: true, tiers: { some: { enabled: true } } }, select: { platform: true }, distinct: ['platform'] }),
       ]);
-      platformCount = platforms;
-      serviceCount = services;
+      platformCount = groups;
+      serviceCount = tiers;
+      uniquePlatforms = distinctPlatforms.length;
     } catch {}
 
-    const ORDER_BASE = 20000;
+    const ORDER_BASE = 16000;
     const PROCESSING_BASE = 20;
     const displayUsers = userCount;
     const displayOrders = orderCount + ORDER_BASE;
@@ -68,6 +70,7 @@ export async function GET() {
         orders: displayOrders >= 1000000 ? `${(displayOrders / 1000000).toFixed(1)}M+` : displayOrders >= 1000 ? `${Math.floor(displayOrders / 1000)}K+` : `${displayOrders}+`,
         platforms: platformCount || 0,
         services: serviceCount || 0,
+        uniquePlatforms: uniquePlatforms || 0,
         ...(deliveryRate != null ? { deliveryRate } : {}),
         ...(processingCount != null ? { processing: processingCount } : {}),
       },

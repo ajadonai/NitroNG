@@ -11,9 +11,11 @@ const mocks = vi.hoisted(() => ({
   dripFindFirst: vi.fn(),
   dripUpdate: vi.fn(),
   dripUpdateMany: vi.fn(),
+  dripCount: vi.fn(),
   dripCreateMany: vi.fn(),
   ledgerCreate: vi.fn(),
   executeRaw: vi.fn(),
+  queryRaw: vi.fn(),
   placeOrder: vi.fn(),
 }));
 
@@ -22,9 +24,14 @@ const tx = {
     updateMany: (...args) => mocks.orderUpdateMany(...args),
     create: (...args) => mocks.orderCreate(...args),
   },
-  dripDispatch: { createMany: (...args) => mocks.dripCreateMany(...args) },
+  dripDispatch: {
+    createMany: (...args) => mocks.dripCreateMany(...args),
+    updateMany: (...args) => mocks.dripUpdateMany(...args),
+    count: (...args) => mocks.dripCount(...args),
+  },
   transaction: { create: (...args) => mocks.ledgerCreate(...args) },
   $executeRaw: (...args) => mocks.executeRaw(...args),
+  $queryRaw: (...args) => mocks.queryRaw(...args),
 };
 
 vi.mock('@/lib/prisma', () => ({
@@ -84,6 +91,7 @@ vi.mock('@/lib/drip-feed', () => ({
       { batch: 2, quantity: 205, scheduledAt: new Date('2026-07-17T19:05:00Z') },
     ],
   }),
+  validateIntradayDuration: () => null,
 }));
 
 const { POST } = await import('@/app/api/admin/orders/route');
@@ -133,6 +141,8 @@ beforeEach(() => {
   mocks.ledgerCreate.mockResolvedValue({});
   mocks.dripCreateMany.mockResolvedValue({ count: 2 });
   mocks.orderUpdate.mockResolvedValue({});
+  mocks.queryRaw.mockResolvedValue([{ id: 'child-db-id', status: 'Processing', deletedAt: null, queuedBehind: null }]);
+  mocks.dripCount.mockResolvedValue(0);
   mocks.orderCreate.mockImplementation(({ data }) => ({
     id: 'child-db-id', createdAt: new Date('2026-07-17T17:05:07Z'), ...data,
   }));
@@ -212,21 +222,7 @@ describe('admin redispatch — same-link queue safety', () => {
 
     expect(response.status).toBe(409);
     expect(mocks.dripUpdateMany).toHaveBeenCalledWith({
-      where: {
-        id: 'dispatch-2',
-        status: 'pending',
-        order: {
-          status: { in: ['Pending', 'Processing'] },
-          queuedBehind: null,
-          deletedAt: null,
-          dripDispatches: {
-            none: {
-              id: { not: 'dispatch-2' },
-              status: { in: ['dispatching', 'processing'] },
-            },
-          },
-        },
-      },
+      where: { id: 'dispatch-2', status: 'pending' },
       data: { status: 'dispatching', dispatchedAt: expect.any(Date) },
     });
     expect(mocks.placeOrder).not.toHaveBeenCalled();

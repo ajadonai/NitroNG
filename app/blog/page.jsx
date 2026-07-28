@@ -2,12 +2,12 @@ import prisma from '@/lib/prisma';
 import BlogListing from '@/components/blog-listing';
 import { getLiveValues, injectLiveValues } from '@/lib/blog-values';
 
-export const revalidate = 300;
+export const revalidate = 3600;
 
-const PER_PAGE = 9;
+const PER_PAGE = 100;
 
 export const metadata = {
-  title: 'Blog | Social Media Tips & Strategies from The Nitro NG',
+  title: 'Blog | Social Media Tips & Strategies',
   description: 'Tips, guides, and strategies to build your audience and promote your content in Nigeria. From the team at The Nitro NG.',
   alternates: { canonical: 'https://nitro.ng/blog' },
   openGraph: {
@@ -24,9 +24,10 @@ export default async function BlogPage() {
   let totalPages = 0;
 
   try {
+    const blogFilter = { published: true, NOT: { category: 'Help' } };
     const [posts, categories, total] = await Promise.all([
       prisma.blogPost.findMany({
-        where: { published: true },
+        where: blogFilter,
         orderBy: { createdAt: 'desc' },
         select: {
           id: true, title: true, slug: true, excerpt: true, category: true,
@@ -37,11 +38,11 @@ export default async function BlogPage() {
         take: PER_PAGE,
       }),
       prisma.blogPost.findMany({
-        where: { published: true },
+        where: blogFilter,
         select: { category: true },
         distinct: ['category'],
       }),
-      prisma.blogPost.count({ where: { published: true } }),
+      prisma.blogPost.count({ where: blogFilter }),
     ]);
 
     const liveValues = await getLiveValues();

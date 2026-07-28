@@ -1,4 +1,7 @@
+import prisma from '@/lib/prisma';
 import FAQ from '@/components/faq';
+
+export const revalidate = 300;
 
 export const metadata = {
   title: 'FAQ | Frequently Asked Questions',
@@ -6,11 +9,22 @@ export const metadata = {
   alternates: { canonical: 'https://nitro.ng/faq' },
 };
 
-const faqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    { "@type": "Question", name: "What is Nitro?", acceptedAnswer: { "@type": "Answer", text: "Nitro is a digital marketing platform built for Nigerian creators, businesses, and agencies. We offer 35+ content-promotion service categories across major social media platforms. Everything is in Naira." }},
+export default async function FAQPage() {
+  let serviceCount = 0, platformCount = 0;
+  try {
+    const [groups, platforms] = await Promise.all([
+      prisma.serviceGroup.count({ where: { enabled: true, tiers: { some: { enabled: true } } } }),
+      prisma.serviceGroup.findMany({ where: { enabled: true, tiers: { some: { enabled: true } } }, select: { platform: true }, distinct: ['platform'] }),
+    ]);
+    serviceCount = groups;
+    platformCount = platforms.length;
+  } catch {}
+
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      { "@type": "Question", name: "What is Nitro?", acceptedAnswer: { "@type": "Answer", text: `Nitro is a digital marketing platform built for Nigerian creators, businesses, and agencies. We offer ${serviceCount || '35'}+ content-promotion service categories across ${platformCount || '10'}+ social media platforms. Everything is in Naira.` }},
     { "@type": "Question", name: "Why choose Nitro?", acceptedAnswer: { "@type": "Answer", text: "Nitro was built specifically for the Nigerian market. Our dashboard is designed for speed and clarity — manage your campaigns from one clean interface. Naira pricing with no USD conversion, 3 quality tiers, and 24/7 support." }},
     { "@type": "Question", name: "Is Nitro safe to use?", acceptedAnswer: { "@type": "Answer", text: "Yes. We use secure payment gateways and industry-standard practices. Your social media accounts are never at risk. We only need your public profile link, never your password." }},
     { "@type": "Question", name: "How does it work?", acceptedAnswer: { "@type": "Answer", text: "Sign up, fund your wallet, choose a promotion service, and enter your profile or post link. Results start appearing within minutes. Track everything from your dashboard." }},
@@ -24,7 +38,7 @@ const faqSchema = {
     { "@type": "Question", name: "What payment methods do you accept?", acceptedAnswer: { "@type": "Answer", text: "We accept bank transfers, debit/credit cards, and cryptocurrency. All payments are processed instantly so you can start ordering right away." }},
     { "@type": "Question", name: "What happens if my order doesn't deliver?", acceptedAnswer: { "@type": "Answer", text: "If an order fails or partially delivers, we'll either refund your wallet or automatically refill the difference at no extra cost. Our support team is available 24/7." }},
     { "@type": "Question", name: "Do you offer refills?", acceptedAnswer: { "@type": "Answer", text: "Yes. Standard tier includes a 30-day refill and Premium tier includes lifetime refill. If you lose followers or engagement within the refill window, we top them back up for free. Budget tier has no refill." }},
-    { "@type": "Question", name: "Which platforms do you support?", acceptedAnswer: { "@type": "Answer", text: "We support Instagram, TikTok, YouTube, Twitter/X, Facebook, Telegram, Spotify, Snapchat, LinkedIn, Pinterest, Twitch, Discord, and more, with 35+ service categories in total." }},
+    { "@type": "Question", name: "Which platforms do you support?", acceptedAnswer: { "@type": "Answer", text: `We support Instagram, TikTok, YouTube, Twitter/X, Facebook, Telegram, Spotify, Snapchat, LinkedIn, Twitch, Discord, and more, with ${serviceCount || '35'}+ service categories across ${platformCount || '10'}+ platforms.` }},
     { "@type": "Question", name: "Can I use Nitro for my clients?", acceptedAnswer: { "@type": "Answer", text: "Absolutely. Many digital marketers and agencies use Nitro to manage growth for multiple clients. Our API and bulk pricing make it easy to scale." }},
     { "@type": "Question", name: "How does the referral program work?", acceptedAnswer: { "@type": "Answer", text: "Share your unique referral code with friends. When they sign up and make their first deposit, both of you earn a bonus credited to your wallets." }},
     { "@type": "Question", name: "Is there an API?", acceptedAnswer: { "@type": "Answer", text: "Yes. Once you create an account, you can generate an API key from your settings page and integrate Nitro into your own tools or workflows." }},
@@ -33,9 +47,8 @@ const faqSchema = {
     { "@type": "Question", name: "How can I get the most out of Nitro?", acceptedAnswer: { "@type": "Answer", text: "Start with followers to build your base, then use likes and views on each new post to boost it in the algorithm. Post 3–4 times a week, use trending sounds and hashtags, engage with others in your niche, and post when your audience is most active. The combination of our services and your content strategy is what drives real, lasting growth." }},
     { "@type": "Question", name: "How do I contact support?", acceptedAnswer: { "@type": "Answer", text: "You can reach us anytime on WhatsApp. We typically respond within minutes." }},
   ],
-};
+  };
 
-export default function FAQPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />

@@ -2,7 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { requireAdmin, logActivity } from '@/lib/admin';
 import { cleanLink } from '@/lib/clean-link';
-import { validateDripConfig, calculateIntradayDrip, calculateMultiDayDrip, getDripConfig, checkDripFeasibility } from '@/lib/drip-feed';
+import { validateDripConfig, calculateIntradayDrip, calculateMultiDayDrip, getDripConfig, checkDripFeasibility, validateIntradayDuration } from '@/lib/drip-feed';
 import { buildOrderOfferSnapshot } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder } from '@/lib/order-queue';
 import { tgNewOrder } from '@/lib/telegram';
@@ -208,7 +208,11 @@ export async function POST(req) {
       dripSchedule = calculateMultiDayDrip(qty, dripNum, providerMin, new Date(), groupType, platform, dripConfigObj);
     } else if (mode === 'single' && dripEligible && dripCfg && qty >= dripCfg.threshold) {
       const intraday = calculateIntradayDrip(qty, providerMin, new Date(), groupType, platform);
-      if (intraday) dripSchedule = { dispatches: intraday.dispatches.map(d => ({ ...d, day: 1 })) };
+      if (intraday) {
+        const durationErr = validateIntradayDuration(intraday.dispatches);
+        if (durationErr) return Response.json({ error: durationErr }, { status: 400 });
+        dripSchedule = { dispatches: intraday.dispatches.map(d => ({ ...d, day: 1 })) };
+      }
     }
 
     if (dripSchedule) {

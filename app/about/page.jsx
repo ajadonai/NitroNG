@@ -1,8 +1,8 @@
 import AboutView from '@/components/about-page';
 
 export const metadata = {
-  title: 'About The Nitro NG | Nigerian Digital Marketing Company',
-  description: 'The Nitro NG is a registered Nigerian company (RC 9514845) helping creators and businesses promote their content and reach wider audiences. Lagos based, Naira native.',
+  title: 'About | Nigerian Digital Marketing Company',
+  description: 'The Nitro NG is a registered Nigerian company, RC 9514845, Lagos based and Naira native. Here is who we are and how we operate.',
   alternates: { canonical: 'https://nitro.ng/about' },
   openGraph: {
     title: 'About | The Nitro NG',

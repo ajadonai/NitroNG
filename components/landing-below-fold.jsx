@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { SITE } from '@/lib/site';
 import Waves from '@/components/wave-background';
+import { ProductScreenshot } from './product-screenshot';
 
 const PLATFORM_ICONS = {
   Instagram: (dark) => ({ icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>, bg: "rgba(225,48,108,.08)" }),
@@ -52,6 +53,12 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Product screenshots */}
+          <div data-reveal="3" className="grid grid-cols-2 max-md:!grid-cols-1 gap-5 px-12 max-desktop:!px-10 max-md:!px-5 pb-10">
+            <ProductScreenshot src="/images/nitro-dashboard-nigeria-smm-panel.webp" alt="The Nitro NG dashboard showing wallet balance, active orders and recent activity" dark={dark} />
+            <ProductScreenshot src="/images/nitro-place-order-instagram-naira.webp" alt="Placing an Instagram order on Nitro showing Naira prices and Nigerian targeted services" dark={dark} />
           </div>
 
           {/* HOW IT WORKS — horizontal timeline */}
@@ -109,12 +116,16 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
                     </div>
                     <div className="py-3.5 px-5 flex justify-between items-center mt-auto" style={{borderTop:`1px solid ${dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.14)"}`,background:dark?"rgba(255,255,255,.07)":"rgba(0,0,0,.03)"}}>
                       <span className="text-[13px]" style={{color:dark?"rgba(244,241,237,.3)":"rgba(28,27,25,.35)"}}>From <strong className="text-base font-semibold" style={{color:t.text}}>{fromPrice}</strong>/1K</span>
-                      <button onClick={()=>setModal("signup")} className="py-2 px-[22px] rounded-lg text-[13px] font-semibold cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{border:`1.5px solid ${t.accent}`,background:dark?"rgba(196,125,142,.24)":"rgba(196,125,142,.18)",color:t.accent,transition:"all .2s"}}>Order now</button>
+                      <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="py-2 px-[22px] rounded-lg text-[13px] font-semibold cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px no-underline" style={{border:`1.5px solid ${t.accent}`,background:dark?"rgba(196,125,142,.24)":"rgba(196,125,142,.18)",color:t.accent,transition:"all .2s"}}>Order now</a>
                     </div>
                   </div>
                   );
                 })}
               </div>}
+
+              <div data-reveal="4" className="mb-10 max-w-[600px]">
+                <ProductScreenshot src="/images/nitro-28-platforms-naira-pricing-nigeria.webp" alt="Nitro platform catalogue showing 28 platforms with Naira starting prices per 1,000" dark={dark} />
+              </div>
 
               <div data-reveal="4" className="s3-deposit flex items-center gap-4 py-5 px-6 rounded-[14px]" style={{background:dark?"rgba(52,211,153,.08)":"rgba(5,150,105,.06)",border:`1px solid ${dark?"rgba(52,211,153,.24)":"rgba(5,150,105,.19)"}`}}>
                 <div className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0" style={{background:dark?"rgba(52,211,153,.08)":"rgba(5,150,105,.06)"}}>
@@ -124,7 +135,7 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
                   <div className="text-[15px] font-semibold" style={{color:t.text}}>Fund your wallet from <span style={{color:dark?"#34d399":"#059669"}}>{"₦"}1,000</span></div>
                   <div className="text-[13px] mt-0.5" style={{color:t.textSoft}}>Cards, bank transfer, and crypto accepted. Funds arrive instantly.</div>
                 </div>
-                <button onClick={()=>setModal("signup")} className="s3-deposit-btn py-2.5 px-6 rounded-[10px] text-sm font-semibold border-none cursor-pointer whitespace-nowrap shrink-0 transition-transform duration-200 hover:-translate-y-px" style={{background:"#fff",color:"#1a1a1a"}}>Add funds {"→"}</button>
+                <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="s3-deposit-btn py-2.5 px-6 rounded-[10px] text-sm font-semibold border-none cursor-pointer whitespace-nowrap shrink-0 transition-transform duration-200 hover:-translate-y-px no-underline" style={{background:"#fff",color:"#1a1a1a"}}>Add funds {"→"}</a>
               </div>
             </div>
           </div>
@@ -141,13 +152,13 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
               <h2 data-reveal="1" className="text-4xl max-desktop:text-[32px] max-md:text-[26px] font-semibold mb-1.5 max-md:mb-1" style={{color:t.text}}>Creators who <span className="serif italic font-normal text-[40px] max-desktop:text-4xl max-md:text-[30px]" style={{color:t.accent}}>trust us.</span></h2>
               <p data-reveal="2" className="text-[15px] max-md:text-sm max-w-[440px] max-desktop:max-w-[400px] max-md:max-w-[300px] leading-[1.6]" style={{color:t.textSoft}}>Real reviews from Nigerian creators and businesses growing with Nitro.</p>
             </div>
-            <div data-reveal="3" className="flex items-center gap-3 py-4 px-6 rounded-[14px] shrink-0 max-md:hidden" style={{background:dark?"rgba(255,255,255,.09)":"rgba(255,255,255,.7)",border:`1px solid ${dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.14)"}`}}>
-              <span className="m text-[32px] max-md:text-2xl font-semibold leading-none" style={{color:t.text}}>4.9</span>
+            {siteStats.deliveryRate!=null&&<div data-reveal="3" className="flex items-center gap-3 py-4 px-6 rounded-[14px] shrink-0 max-md:hidden" style={{background:dark?"rgba(255,255,255,.09)":"rgba(255,255,255,.7)",border:`1px solid ${dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.14)"}`}}>
+              <span className="m text-[32px] max-md:text-2xl font-semibold leading-none" style={{color:t.accent}}>{siteStats.deliveryRate}%</span>
               <div>
-                <div className="flex gap-0.5 mb-0.5">{Array(5).fill(0).map((_,j)=><svg key={j} width="14" height="14" viewBox="0 0 24 24" fill="#fbbf24" stroke="#fbbf24" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>)}</div>
-                <span className="text-xs" style={{color:t.textMuted}}>from 850+ reviews</span>
+                <div className="text-sm font-semibold" style={{color:t.text}}>Delivery rate</div>
+                <span className="text-xs" style={{color:t.textMuted}}>{siteStats.orders||"0"} orders placed</span>
               </div>
-            </div>
+            </div>}
           </div>
 
           {/* Desktop/Tablet grid */}
@@ -205,8 +216,8 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
               <p data-reveal="2" className="text-[17px] leading-[1.7] max-w-[440px] mx-auto mb-9 max-md:!mb-7" style={{color:dark?"rgba(255,255,255,.5)":"rgba(255,255,255,.8)"}}>Every minute you wait, your competitors are getting ahead. Join a community with {siteStats.users||"0"} Nitro accounts created.</p>
 
               <div data-reveal="3" className="s6-buttons flex gap-3.5 justify-center flex-wrap mb-8 max-md:!mb-6">
-                <button className="s6-btn-primary py-[18px] px-14 rounded-[14px] text-base font-semibold border-none cursor-pointer relative overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg" onClick={()=>setModal("signup")} style={{background:"#fff",color:"#1a1a1a",boxShadow:"0 8px 32px rgba(255,255,255,.2), 0 2px 8px rgba(255,255,255,.14)"}}>Start Growing Now {"→"}</button>
-                <button className="s6-btn-ghost py-[18px] px-11 rounded-[14px] text-base font-medium cursor-pointer bg-transparent transition-all duration-200 hover:-translate-y-0.5" onClick={()=>document.getElementById("pricing")?.scrollIntoView({behavior:"smooth",block:"start"})} style={{color:"#fff",border:`1px solid ${dark?"rgba(255,255,255,.2)":"rgba(255,255,255,.5)"}`,backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)"}}><span style={{opacity:.9}}>View Pricing</span></button>
+                <a href="/signup" className="s6-btn-primary py-[18px] px-14 rounded-[14px] text-base font-semibold border-none cursor-pointer relative overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg no-underline text-center" onClick={e=>{e.preventDefault();setModal("signup")}} style={{background:"#fff",color:"#1a1a1a",boxShadow:"0 8px 32px rgba(255,255,255,.2), 0 2px 8px rgba(255,255,255,.14)"}}>Start Growing Now {"→"}</a>
+                <a href="/pricing" className="s6-btn-ghost py-[18px] px-11 rounded-[14px] text-base font-medium cursor-pointer bg-transparent transition-all duration-200 hover:-translate-y-0.5 no-underline text-center" onClick={e=>{e.preventDefault();document.getElementById("pricing")?.scrollIntoView({behavior:"smooth",block:"start"})}} style={{color:"#fff",border:`1px solid ${dark?"rgba(255,255,255,.2)":"rgba(255,255,255,.5)"}`,backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)"}}><span style={{opacity:.9}}>View Pricing</span></a>
               </div>
 
               {/* Trust strip */}
@@ -231,7 +242,7 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
                   <div className="w-7 h-7 rounded-[7px] flex items-center justify-center" style={{background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",boxShadow:"0 2px 8px rgba(196,125,142,.25)"}}><svg width="11" height="12" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></div>
                   <span className="text-base font-bold tracking-[2px]" style={{color:t.text}}>NITRO</span>
                 </div>
-                <p className="text-[13px] leading-[1.7] max-w-[260px] mb-5" style={{color:dark?"rgba(244,241,237,.45)":"rgba(28,27,25,.5)"}}>We handle the promotion so you can focus on content. {siteStats.platforms?`${siteStats.platforms}+`:"35+"} service categories, Naira pricing, fast delivery.</p>
+                <p className="text-[13px] leading-[1.7] max-w-[260px] mb-5" style={{color:dark?"rgba(244,241,237,.45)":"rgba(28,27,25,.5)"}}>We handle the promotion so you can focus on content. {siteStats.platforms?`${siteStats.platforms}+`:"140+"} service types, Naira pricing, fast delivery.</p>
                 <div className="flex gap-2.5">
                   <a href={`https://x.com/${(socialLinks.social_twitter||"TheNitroNG").replace(/^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className="s6-sico w-10 h-10 rounded-[10px] flex items-center justify-center no-underline transition-transform duration-200 hover:-translate-y-px" style={{background:dark?"rgba(255,255,255,.10)":"rgba(0,0,0,.06)",border:`0.5px solid ${dark?"rgba(255,255,255,.14)":"rgba(0,0,0,.1)"}`,color:dark?"rgba(244,241,237,.5)":"rgba(28,27,25,.45)"}}><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
                   <a href={`https://instagram.com/${(socialLinks.social_instagram||"Nitro.ng").replace(/^(https?:\/\/)?(www\.)?(instagram\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="s6-sico w-10 h-10 rounded-[10px] flex items-center justify-center no-underline transition-transform duration-200 hover:-translate-y-px" style={{background:dark?"rgba(225,48,108,.08)":"rgba(225,48,108,.06)",border:`0.5px solid ${dark?"rgba(225,48,108,.18)":"rgba(225,48,108,.14)"}`}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
@@ -242,7 +253,7 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
               {/* Product */}
               <div>
                 <div className="text-[11px] font-semibold tracking-[1.5px] uppercase mb-4" style={{color:dark?"rgba(244,241,237,.4)":"rgba(28,27,25,.45)"}}>Product</div>
-                {[["Services","#services"],["Pricing","#pricing"],["Testimonials","#testimonials"],["Blog","/blog"]].map(([l,h])=>h.startsWith("#")?<div key={l} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} className="s6-footer-link block text-[13px] font-medium py-[5px] cursor-pointer transition-all duration-200 hover:-translate-y-px hover:opacity-80" style={{color:dark?"rgba(244,241,237,.6)":"rgba(28,27,25,.6)"}} onClick={()=>document.getElementById(h.slice(1))?.scrollIntoView({behavior:"smooth",block:"start"})}>{l}</div>:<a key={l} href={h} className="s6-footer-link block text-[13px] font-medium py-[5px] no-underline transition-all duration-200 hover:-translate-y-px hover:opacity-80" style={{color:dark?"rgba(244,241,237,.6)":"rgba(28,27,25,.6)"}}>{l}</a>)}
+                {[["Pricing","/pricing","pricing"],["Services","/services","services"],["About","/about"],["Blog","/blog"],["What's New","/changelog"]].map(([l,h,scrollId])=><a key={l} href={h} className="s6-footer-link block text-[13px] font-medium py-[5px] no-underline transition-all duration-200 hover:-translate-y-px hover:opacity-80" style={{color:dark?"rgba(244,241,237,.6)":"rgba(28,27,25,.6)"}} {...(scrollId?{onClick:e=>{e.preventDefault();document.getElementById(scrollId)?.scrollIntoView({behavior:"smooth",block:"start"})}}:{})}>{l}</a>)}
               </div>
               {/* Company */}
               <div>
@@ -254,7 +265,7 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
               <div>
                 <div className="text-[11px] font-semibold tracking-[1.5px] uppercase mb-4" style={{color:dark?"rgba(244,241,237,.4)":"rgba(28,27,25,.45)"}}>Get in touch</div>
                 <a href={`mailto:${SITE.email.general}`} className="s6-footer-link block text-[13px] font-medium py-[5px] no-underline transition-all duration-200 hover:-translate-y-px hover:opacity-80" style={{color:dark?"rgba(244,241,237,.6)":"rgba(28,27,25,.6)"}}>{SITE.email.general}</a>
-                <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} className="s6-footer-link block text-[13px] font-medium py-[5px] cursor-pointer transition-all duration-200 hover:-translate-y-px hover:opacity-80" style={{color:dark?"rgba(244,241,237,.6)":"rgba(28,27,25,.6)"}} onClick={()=>window.open(socialLinks.social_whatsapp_support?`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g,"")}`:"#","_blank")}>WhatsApp Support</div>
+                <a href={socialLinks.social_whatsapp_support?`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g,"")}`:"#"} target="_blank" rel="noopener noreferrer" className="s6-footer-link block text-[13px] font-medium py-[5px] no-underline transition-all duration-200 hover:-translate-y-px hover:opacity-80" style={{color:dark?"rgba(244,241,237,.6)":"rgba(28,27,25,.6)"}}>WhatsApp Support</a>
                 <a href={SITE.status} target="_blank" rel="noopener noreferrer" className="s6-footer-link flex items-center gap-1.5 text-[13px] font-medium py-[5px] no-underline transition-all duration-200 hover:-translate-y-px hover:opacity-80" style={{color:dark?"rgba(244,241,237,.6)":"rgba(28,27,25,.6)"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Status Page</a>
               </div>
             </div>

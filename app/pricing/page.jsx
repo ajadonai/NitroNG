@@ -2,12 +2,12 @@ import prisma from '@/lib/prisma';
 import PricingView from '@/components/pricing-page';
 
 export const metadata = {
-  title: 'Pricing | Affordable Content Promotion in Nigeria',
-  description: 'Transparent Naira pricing for 35+ content-promotion service categories across Instagram, TikTok, YouTube, X, and more. No hidden fees, no USD conversion.',
+  title: 'Pricing | Content Promotion in Nigeria',
+  description: 'Transparent Naira pricing for 140+ content-promotion service types across Instagram, TikTok, YouTube, X, and more. No hidden fees, no USD conversion.',
   alternates: { canonical: 'https://nitro.ng/pricing' },
   openGraph: {
     title: 'Pricing | The Nitro NG',
-    description: 'Transparent Naira pricing for 35+ service categories across Instagram, TikTok, YouTube, and more. No hidden fees.',
+    description: 'Transparent Naira pricing for 140+ service types across Instagram, TikTok, YouTube, and more. No hidden fees.',
     url: 'https://nitro.ng/pricing',
     type: 'website',
   },
@@ -27,17 +27,18 @@ async function getPricingData() {
     orderBy: { sortOrder: 'asc' },
   });
 
+  const PLATFORM_NAMES = { tiktok: 'TikTok' };
   const platformMap = {};
   for (const g of groups) {
     if (!g.tiers.length) continue;
-    const p = g.platform;
+    const p = PLATFORM_NAMES[g.platform] || g.platform;
     if (!platformMap[p]) platformMap[p] = { platform: p, services: [] };
     const type = g.name.replace(new RegExp(`^(${p}|X/Twitter|Twitter/X)\\s*`, 'i'), '').trim() || g.type || g.name;
     if (!platformMap[p].services.find(s => s.type === type)) {
       platformMap[p].services.push({
         type,
-        minPrice: Number(g.tiers[0].sellPer1k) / 100,
-        maxPrice: Number(g.tiers[g.tiers.length - 1].sellPer1k) / 100,
+        minPrice: Math.round(Number(g.tiers[0].sellPer1k) / 100),
+        maxPrice: Math.round(Number(g.tiers[g.tiers.length - 1].sellPer1k) / 100),
         tiers: g.tiers.length,
         refill: g.tiers.some(t => t.refill),
       });

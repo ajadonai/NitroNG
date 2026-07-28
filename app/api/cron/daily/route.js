@@ -5,7 +5,8 @@ import { log } from '@/lib/logger';
 import { reportOperationalFailure } from '@/lib/monitoring';
 import { getBalance } from '@/lib/smm';
 import { sendEmail, emailWrap, emailRow, emailDataBox, sendNudgeIdleFunds, sendNudgeIdleBalance, sendAdActivationDay1, sendAdActivationDay3, sendAdActivationDay6, sendWinback30Email, sendWinback60Email } from '@/lib/email';
-import { tgProviderBalance, tgDailySummary } from '@/lib/telegram';
+import { tgProviderBalance, tgDailySummary, tgOutreach } from '@/lib/telegram';
+import { sendOutreach as ifySendOutreach } from '@/lib/ify/outreach';
 import { releaseHeldCommissions } from '@/lib/commissions';
 import { expireBonusCredits, grantWinbackCredit } from '@/lib/bonus-credit';
 import { getTierConfig } from '@/lib/affiliate-settings';
@@ -564,6 +565,88 @@ export async function GET(req) {
     results.balance.error = err.message;
   }
 
+  // ═══ OUTREACH: multi-touch WhatsApp activation + winback ═══
+  // Paused until 1 Aug 2026 — remove this gate once live
+  const outreachLive = new Date() >= new Date('2026-08-01T00:00:00Z');
+  const noDeposit = { transactions: { none: { type: 'deposit', status: 'Completed' } }, orders: { none: {} } };
+  const outreachTouches = [
+    { key: 'day1', field: 'outreachDay1SentAt', daysAgo: 1, label: 'Day 1 — new signups' },
+    { key: 'day3', field: 'outreachDay3SentAt', daysAgo: 3, label: 'Day 3 — follow up' },
+    { key: 'day7', field: 'outreachDay7SentAt', daysAgo: 7, label: 'Day 7 — last nudge' },
+  ];
+  if (outreachLive) {
+    for (const touch of outreachTouches) {
+      try {
+        const windowStart = new Date(Date.now() - (touch.daysAgo + 1) * 86400000);
+        const windowEnd = new Date(Date.now() - touch.daysAgo * 86400000);
+        const batch = await prisma.user.findMany({
+          where: {
+            status: 'Active',
+            [touch.field]: null,
+            createdAt: { gte: windowStart, lt: windowEnd },
+            ...noDeposit,
+          },
+          select: { id: true, name: true, phone: true },
+          take: 200,
+        });
+        if (batch.length > 0) {
+          await tgOutreach(batch, touch.key, { label: touch.label });
+          for (const u of batch) {
+            ifySendOutreach({ user: u, trigger: touch.key }).catch(() => {});
+          }
+          log.info('Outreach', `${touch.key}: sent ${batch.length}`);
+        }
+        results[`outreach_${touch.key}`] = { sent: batch.length };
+      } catch (err) {
+        log.error('Outreach', `${touch.key}: ${err.message}`);
+        results[`outreach_${touch.key}`] = { error: err.message };
+      }
+    }
+
+    // Winback: 30 days after last order, no recent orders
+    try {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+      const winbackBatch = await prisma.user.findMany({
+        where: {
+          status: 'Active',
+          outreachWinbackSentAt: null,
+          orders: {
+            some: { status: 'Completed', deletedAt: null },
+            none: { status: 'Completed', deletedAt: null, createdAt: { gt: thirtyDaysAgo } },
+          },
+          bonusCredits: { some: { source: 'winback', amountRemaining: { gt: 0 }, expiredAt: null, expiresAt: { gt: new Date() } } },
+        },
+        select: {
+          id: true, name: true, phone: true,
+          bonusCredits: {
+            where: { source: 'winback', amountRemaining: { gt: 0 }, expiredAt: null },
+            orderBy: { grantedAt: 'desc' },
+            take: 1,
+            select: { amountGranted: true },
+          },
+        },
+        take: 200,
+      });
+      if (winbackBatch.length > 0) {
+        const creditMap = new Map();
+        winbackBatch.forEach(u => {
+          const credit = u.bonusCredits?.[0]?.amountGranted;
+          if (credit) creditMap.set(u.id, credit / 100);
+        });
+        await tgOutreach(winbackBatch, 'winback', { label: 'Winback — 30 days inactive', creditMap });
+        for (const u of winbackBatch) {
+          const creditNaira = creditMap.get(u.id) || 0;
+          ifySendOutreach({ user: u, trigger: 'winback', extra: { creditNaira } }).catch(() => {});
+        }
+        log.info('Outreach', `winback: sent ${winbackBatch.length}`);
+      }
+      results.outreach_winback = { sent: winbackBatch.length };
+    } catch (err) {
+      log.error('Outreach', `winback: ${err.message}`);
+      results.outreach_winback = { error: err.message };
+    }
+  }
+
   const summary = {};
   if (results.cleanup?.deleted) summary['Stale users cleaned'] = results.cleanup.deleted;
   if (results.cleanup?.permanentlyDeleted) summary['Permanently deleted'] = results.cleanup.permanentlyDeleted;
@@ -579,6 +662,8 @@ export async function GET(req) {
   if (results.commissions?.released) summary['Commissions released'] = results.commissions.released;
   if (results.tierRecalc?.changed) summary['Tier changes'] = results.tierRecalc.changed;
   if (results.bonusExpiry?.expired) summary['Bonus credits expired'] = results.bonusExpiry.expired;
+  const totalOutreach = (results.outreach_day1?.sent || 0) + (results.outreach_day3?.sent || 0) + (results.outreach_day7?.sent || 0) + (results.outreach_winback?.sent || 0);
+  if (totalOutreach) summary['Outreach leads'] = totalOutreach;
   if (results.balance?.alerts) summary['Low balance alerts'] = results.balance.alerts;
   const bals = results.balance?.balances || {};
   Object.entries(bals).forEach(([k, v]) => { if (v.balance != null) summary[`${k.toUpperCase()} bal`] = `$${v.balance.toFixed(2)}`; });

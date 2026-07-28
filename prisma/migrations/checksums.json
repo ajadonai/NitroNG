@@ -37,7 +37,11 @@
     "20260717020500_anonymize_deleted_crew_members": "d2003df6545c7b00acf49e698f9ff0cc5ee977e54b8d1bb9f690f1399f63fa0e",
     "20260720120000_shorten_anonymized_user_digests": "031b5f969e4ad5c181414a9ed5a0b456cd721262246c599c5dfb6fa6f4276200",
     "20260721120000_add_service_tier_price_pinned": "6f31725b07d1b33e0884a96e3d2c8c3b3f239de7777b7d6d5e749b309f26b792",
-    "20260722120000_add_order_drip_config": "e77991cadf306e79fed99f2d138bda7b26b6a48cb90ee8b12d1229bb268bf76b"
+    "20260722120000_add_order_drip_config": "e77991cadf306e79fed99f2d138bda7b26b6a48cb90ee8b12d1229bb268bf76b",
+    "20260725030000_add_outreach_tracking_fields": "6189187ee3064759bdda79673bd6daa2967909ae8ec1b37e7c58b3b2c70ab3f9",
+    "20260725180000_ify_messages": "99cd5fd2ed8473bf10fdbb4892f820c1e0a63986581b2c183d2b89661156c301",
+    "20260726000000_add_ify_promises": "1f76c5842731a4a6c99a6d7f7dde1722bb5bb02dc3baf237e7cea4e74cce48f4",
+    "20260727120000_add_custom_comments_to_service_tier": "2007a3ae9d2e69380027558eda2e144e9ff950816becad5ce7a574003f45de06"
   },
   "appliedOverrides": {
     "0_init": "c864f484fce76fd7b8db286181967d98cdb91559be1081e34df0fd65cc60b7c5",

@@ -15,7 +15,7 @@ vi.mock('@/lib/rate-limit', () => ({
 }));
 vi.mock('@/lib/promotions', () => ({ getActivePromotion: vi.fn(), applyPromotionDiscount: vi.fn() }));
 vi.mock('@/lib/clean-link', () => ({ cleanLink: value => value }));
-vi.mock('@/lib/drip-feed', () => ({ calculateIntradayDrip: vi.fn(), calculateMultiDayDrip: vi.fn(), getDripConfig: vi.fn() }));
+vi.mock('@/lib/drip-feed', () => ({ calculateIntradayDrip: vi.fn(), calculateMultiDayDrip: vi.fn(), getDripConfig: vi.fn(), validateIntradayDuration: () => null }));
 vi.mock('@/lib/meta-capi', () => ({ sendEvent: vi.fn(), parseFbCookies: vi.fn(() => ({})) }));
 vi.mock('next/headers', () => ({ headers: vi.fn() }));
 vi.mock('@/lib/telegram', () => ({ tgNewOrder: vi.fn(), tgRefundAlert: vi.fn() }));

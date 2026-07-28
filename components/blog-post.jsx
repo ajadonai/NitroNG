@@ -1,12 +1,21 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter } from './shared-nav';
 import { fD, readTime } from '@/lib/markdown';
 import { Avatar } from "./avatar";
 
-export default function BlogPost({ post }) {
-  return <ThemeProvider><BlogPostInner post={post} /></ThemeProvider>;
+function useTrackView(slug) {
+  const sent = useRef(false);
+  useEffect(() => {
+    if (sent.current || !slug) return;
+    sent.current = true;
+    fetch('/api/blog/view', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug }) }).catch(() => {});
+  }, [slug]);
+}
+
+export default function BlogPost({ post, backHref, backLabel, related }) {
+  return <ThemeProvider><BlogPostInner post={post} backHref={backHref || '/blog'} backLabel={backLabel || 'All posts'} related={related} /></ThemeProvider>;
 }
 
 function ShareBar({ post, dark, t }) {
@@ -66,7 +75,8 @@ function MobileShare({ post, dark }) {
   );
 }
 
-function BlogPostInner({ post }) {
+function BlogPostInner({ post, backHref, backLabel, related }) {
+  useTrackView(post.slug);
   const { dark, t } = useTheme();
   const rt = readTime(post.content);
   const catBg = dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.08)";
@@ -80,7 +90,7 @@ function BlogPostInner({ post }) {
       <ShareBar post={post} dark={dark} t={t} />
       <article className="max-w-[680px] mx-auto" style={{ padding: "clamp(24px,4vw,40px) clamp(16px,3vw,24px) 48px" }}>
         <div className="flex items-center gap-3 mb-5">
-          <a href="/blog" className="text-[13px] no-underline" style={{ color: t.accent }}>{"\u2190"} All posts</a>
+          <a href={backHref} className="text-[13px] no-underline" style={{ color: t.accent }}>{"\u2190"} {backLabel}</a>
           <div className="py-[3px] px-2.5 rounded text-[11px] font-semibold uppercase tracking-[1px]" style={{ background: catBg, color: t.accent }}>{post.category}</div>
         </div>
         <h1 className="font-semibold leading-[1.2] mb-4" style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(24px,5vw,34px)", color: t.text }}>{post.title}</h1>
@@ -95,7 +105,29 @@ function BlogPostInner({ post }) {
         {post.thumbnail && <div className="rounded-xl bg-cover bg-center mb-8" style={{ height: "clamp(180px,25vw,300px)", backgroundImage: "url(" + post.thumbnail + ")", backgroundColor: thumbBg }} />}
         <div className="blog-article-body" data-theme={dark ? 'dark' : 'light'} style={{ color: bodyColor }} dangerouslySetInnerHTML={{ __html: post.content }} />
         <div className="h-px my-8" style={{ background: t.surfaceBrd }} />
-        <a href="/blog" className="inline-block py-2.5 px-5 rounded-lg text-sm no-underline" style={{ border: "1px solid " + t.surfaceBrd, color: t.muted }}>{"\u2190"} Back to all posts</a>
+        {related?.length > 0 && (
+          <div className="mb-10">
+            <h2 className="text-lg font-semibold mb-4" style={{ color: t.text }}>Related articles</h2>
+            <div className="grid grid-cols-2 max-[599px]:grid-cols-1 gap-4">
+              {related.map(r => (
+                <a key={r.slug} href={`/blog/${r.slug}`} className="no-underline group">
+                  <div className="rounded-xl overflow-hidden flex flex-col h-full transition-[box-shadow,transform] duration-200 group-hover:shadow-[0_6px_20px_rgba(0,0,0,.1)] group-hover:-translate-y-0.5" style={{ background: dark ? 'rgba(255,255,255,.04)' : '#fff', border: `1px solid ${t.surfaceBrd}` }}>
+                    {r.thumbnail ? (
+                      <div className="h-28 shrink-0" style={{ background: `url(${r.thumbnail}) center/cover no-repeat ${thumbBg}` }} />
+                    ) : (
+                      <div className="h-28 shrink-0" style={{ background: dark ? 'linear-gradient(135deg, #2a1a22, #1a1225)' : 'linear-gradient(135deg, #e8d5db, #d4a8b5)' }} />
+                    )}
+                    <div className="p-3.5 flex flex-col flex-1">
+                      <div className="text-[10px] font-semibold uppercase tracking-[0.8px] mb-1" style={{ color: t.accent }}>{r.category}</div>
+                      <div className="text-[13px] font-semibold leading-[1.35] line-clamp-2" style={{ color: t.text }}>{r.title}</div>
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+        <a href={backHref} className="inline-block py-2.5 px-5 rounded-lg text-sm no-underline" style={{ border: "1px solid " + t.surfaceBrd, color: t.muted }}>{"\u2190"} Back to {backLabel.toLowerCase()}</a>
       </article>
       <SharedFooter />
     </div>

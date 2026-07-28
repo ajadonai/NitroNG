@@ -4,12 +4,15 @@ const mockDripDispatch = { findMany: vi.fn(), findFirst: vi.fn(), update: vi.fn(
 const mockOrder = { findMany: vi.fn(), findFirst: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() };
 const mockAdminIssue = { create: vi.fn().mockReturnValue({ catch: () => {} }) };
 const mockExecuteRawUnsafe = vi.fn();
+const mockQueryRaw = vi.fn();
 
 const mockPrisma = {
   dripDispatch: mockDripDispatch,
   order: mockOrder,
   adminIssue: mockAdminIssue,
   $executeRawUnsafe: mockExecuteRawUnsafe,
+  $queryRaw: mockQueryRaw,
+  $transaction: vi.fn(async (cb) => cb(mockPrisma)),
 };
 
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
@@ -35,6 +38,7 @@ beforeEach(async () => {
   for (const mock of Object.values(mockOrder)) mock.mockReset();
   mockAdminIssue.create.mockReset().mockReturnValue({ catch: () => {} });
   mockExecuteRawUnsafe.mockReset();
+  mockQueryRaw.mockReset().mockResolvedValue([]);
   const { placeOrder, checkOrder } = await import('@/lib/smm');
   placeOrder.mockReset();
   checkOrder.mockReset();
@@ -54,10 +58,9 @@ beforeEach(async () => {
 
 describe('drip cron — section 2 in-flight filter', () => {
   it('excludes dispatches whose order has an in-flight batch from the due query', async () => {
-    // Section 0: no expired
-    // Section 1: no stuck dispatching
     mockDripDispatch.findMany
       .mockResolvedValueOnce([]) // section 1: stuck dispatching
+      .mockResolvedValueOnce([]) // section 1.3: stale cancelling
       .mockResolvedValueOnce([]) // section 2: due dispatches (none returned)
       .mockResolvedValueOnce([]); // section 3: processing
     mockOrder.findMany
@@ -67,19 +70,19 @@ describe('drip cron — section 2 in-flight filter', () => {
     const { GET } = await import('@/app/api/cron/drip/route');
     await GET(makeReq());
 
-    // The second dripDispatch.findMany call is section 2 (due dispatches)
-    const dueCall = mockDripDispatch.findMany.mock.calls[1];
+    const dueCall = mockDripDispatch.findMany.mock.calls[2];
     expect(dueCall).toBeDefined();
     const where = dueCall[0].where;
 
     expect(where.status).toBe('pending');
+    expect(where.apiOrderId).toBeNull();
     expect(where.scheduledAt).toEqual({ lte: expect.any(Date) });
     expect(where.order).toEqual({
       status: { in: ['Pending', 'Processing'] },
       deletedAt: null,
       queuedBehind: null,
       dripDispatches: {
-        none: { status: { in: ['dispatching', 'processing'] } },
+        none: { status: { in: ['dispatching', 'processing', 'verifying', 'cancelling'] } },
       },
     });
   });
@@ -95,6 +98,7 @@ describe('drip cron — section 2 in-flight filter', () => {
 
     mockDripDispatch.findMany
       .mockResolvedValueOnce([])            // section 1
+      .mockResolvedValueOnce([])            // section 1.3: stale cancelling
       .mockResolvedValueOnce([fakeDispatch]) // section 2: dispatch passed DB filter
       .mockResolvedValueOnce([]);            // section 3
     mockOrder.findFirst.mockResolvedValueOnce(null);
@@ -110,7 +114,7 @@ describe('drip cron — section 2 in-flight filter', () => {
     expect(body.stats.dispatched).toBe(0);
     expect(placeOrder).not.toHaveBeenCalled();
     expect(mockDripDispatch.findFirst).toHaveBeenLastCalledWith({
-      where: { orderId: 'ord-race', status: { in: ['dispatching', 'processing'] } },
+      where: { orderId: 'ord-race', status: { in: ['dispatching', 'processing', 'verifying', 'cancelling'] } },
     });
   });
 });
@@ -133,9 +137,10 @@ describe('drip cron — same-link queue safety', () => {
 
   function setupDue(dispatch) {
     mockDripDispatch.findMany
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([dispatch])
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce([])           // section 1: stuck dispatching
+      .mockResolvedValueOnce([])           // section 1.3: stale cancelling
+      .mockResolvedValueOnce([dispatch])   // section 2: due dispatches
+      .mockResolvedValueOnce([]);          // section 3: processing
     mockOrder.findMany.mockResolvedValue([]);
   }
 
@@ -151,7 +156,7 @@ describe('drip cron — same-link queue safety', () => {
     expect(placeOrder).not.toHaveBeenCalled();
     expect(mockOrder.update).not.toHaveBeenCalled();
     expect(mockOrder.updateMany).not.toHaveBeenCalled();
-    expect(mockDripDispatch.updateMany).toHaveBeenCalledTimes(1); // stale-expiry sweep only
+    expect(mockDripDispatch.updateMany).toHaveBeenCalledTimes(2); // stale-expiry + stale-verifying sweeps
   });
 
   it('turns a provider active-order response back into a pending queued batch', async () => {
@@ -165,7 +170,8 @@ describe('drip cron — same-link queue safety', () => {
       .mockResolvedValueOnce({ id: 'disp-queued' })
       .mockResolvedValueOnce(null);
     mockDripDispatch.updateMany
-      .mockResolvedValueOnce({ count: 0 })
+      .mockResolvedValueOnce({ count: 0 })  // section 0 stale-expiry
+      .mockResolvedValueOnce({ count: 0 })  // section 1.25 stale-verifying
       .mockResolvedValueOnce({ count: 1 })
       .mockResolvedValueOnce({ count: 1 });
     placeOrder.mockRejectedValueOnce(new Error('You have active order with this link. Please wait until order being completed.'));
@@ -205,7 +211,8 @@ describe('drip cron — same-link queue safety', () => {
       .mockResolvedValueOnce({ id: 'disp-queued' })
       .mockResolvedValueOnce(null);
     mockDripDispatch.updateMany
-      .mockResolvedValueOnce({ count: 0 })
+      .mockResolvedValueOnce({ count: 0 })  // section 0 stale-expiry
+      .mockResolvedValueOnce({ count: 0 })  // section 1.25 stale-verifying
       .mockResolvedValueOnce({ count: 1 })
       .mockResolvedValueOnce({ count: 1 });
     placeOrder.mockResolvedValueOnce({ order: 4199999 });
@@ -237,7 +244,8 @@ describe('drip cron — same-link queue safety', () => {
       .mockResolvedValueOnce({ id: 'disp-queued' })
       .mockResolvedValueOnce(null);
     mockDripDispatch.updateMany
-      .mockResolvedValueOnce({ count: 0 })
+      .mockResolvedValueOnce({ count: 0 })  // section 0 stale-expiry
+      .mockResolvedValueOnce({ count: 0 })  // section 1.25 stale-verifying
       .mockResolvedValueOnce({ count: 1 })
       .mockResolvedValueOnce({ count: 0 });
     placeOrder.mockResolvedValueOnce({ order: 4200000 });
@@ -262,9 +270,9 @@ describe('drip cron — section 3 reschedule (set-based UPDATE)', () => {
   it('reschedules pending dispatches with a single UPDATE FROM VALUES', async () => {
     const { checkOrder } = await import('@/lib/smm');
 
-    // Section 0-2: nothing
     mockDripDispatch.findMany
       .mockResolvedValueOnce([]) // stuck dispatching (section 1)
+      .mockResolvedValueOnce([]) // section 1.3: stale cancelling
       .mockResolvedValueOnce([]) // due dispatches (section 2)
       .mockResolvedValueOnce([ // processing dispatches (section 3)
         {
@@ -276,7 +284,10 @@ describe('drip cron — section 3 reschedule (set-based UPDATE)', () => {
 
     checkOrder.mockResolvedValue({ status: 'Completed', remains: 0, start_count: 500 });
 
-    mockDripDispatch.update.mockResolvedValue({});
+    mockDripDispatch.updateMany
+      .mockResolvedValueOnce({ count: 0 })  // section 0 stale-expiry
+      .mockResolvedValueOnce({ count: 0 })  // section 1.25 stale-verifying
+      .mockResolvedValueOnce({ count: 1 }); // section 3 CAS transition
 
     // After sync completes, pending dispatches to reschedule
     mockDripDispatch.findMany
@@ -310,24 +321,22 @@ describe('drip cron — section 3 reschedule (set-based UPDATE)', () => {
   });
 });
 
-describe('drip cron — section 4 rollup (set-based UPDATE)', () => {
+describe('drip cron — section 4 rollup', () => {
   function setupEmpty() {
     // Sections 0-3 produce nothing
     mockDripDispatch.findMany.mockResolvedValue([]);
   }
 
-  it('rolls up all-done orders with a single UPDATE FROM VALUES', async () => {
+  it('rolls up all-done orders via transactional applyDripRollup', async () => {
     setupEmpty();
-
-    mockOrder.findMany.mockResolvedValue([
-      {
-        id: 'ord-1', startCount: null,
-        dripDispatches: [
-          { status: 'completed', quantity: 100, remains: 0, startCount: 500, day: 1, batch: 1 },
-          { status: 'completed', quantity: 100, remains: 0, startCount: null, day: 1, batch: 2 },
-        ],
-      },
-    ]);
+    const dispatches = [
+      { status: 'completed', quantity: 100, remains: 0, startCount: 500, day: 1, batch: 1 },
+      { status: 'completed', quantity: 100, remains: 0, startCount: null, day: 1, batch: 2 },
+    ];
+    mockOrder.findMany.mockResolvedValue([{ id: 'ord-1', startCount: null, dripDispatches: dispatches }]);
+    mockQueryRaw
+      .mockResolvedValueOnce([{ id: 'ord-1', status: 'Processing', deletedAt: null }])
+      .mockResolvedValueOnce(dispatches);
 
     const { GET } = await import('@/app/api/cron/drip/route');
     const res = await GET(makeReq());
@@ -335,17 +344,11 @@ describe('drip cron — section 4 rollup (set-based UPDATE)', () => {
 
     expect(body.ok).toBe(true);
     expect(body.stats.rolledUp).toBe(1);
-    expect(mockExecuteRawUnsafe).toHaveBeenCalledTimes(1);
-
-    const [sql, ...params] = mockExecuteRawUnsafe.mock.calls[0];
-    expect(sql).toContain('UPDATE "orders"');
-    expect(sql).toContain('COALESCE(v.s, "orders"."status")');
-    expect(sql).toContain('COALESCE(v.sc, "orders"."startCount")');
-    // params: id, status, remains, startCount
-    expect(params[0]).toBe('ord-1');
-    expect(params[1]).toBe('Completed');
-    expect(params[2]).toBe(0); // totalRemains
-    expect(params[3]).toBe(500); // first dispatch's startCount
+    expect(mockExecuteRawUnsafe).not.toHaveBeenCalled();
+    expect(mockOrder.updateMany).toHaveBeenCalledWith({
+      where: { id: 'ord-1', status: { notIn: ['Cancelled', 'Completed', 'Partial'] }, deletedAt: null },
+      data: { remains: 0, status: 'Completed', completedAt: expect.any(Date), startCount: 500 },
+    });
   });
 
   it('uses null status for in-progress orders (preserves existing via COALESCE)', async () => {
@@ -366,70 +369,64 @@ describe('drip cron — section 4 rollup (set-based UPDATE)', () => {
     const body = await res.json();
 
     expect(body.stats.rolledUp).toBe(0);
+    expect(mockExecuteRawUnsafe).toHaveBeenCalledTimes(1);
     const [, ...params] = mockExecuteRawUnsafe.mock.calls[0];
     expect(params[0]).toBe('ord-2');
-    expect(params[1]).toBeNull(); // no status change
-    expect(params[2]).toBe(60); // remains from processing dispatch
-    expect(params[3]).toBe(500); // startCount still flows
+    expect(params[1]).toBe(60); // remains
+    expect(params[2]).toBe(500); // startCount
   });
 
   it('sets Partial status when mix of completed and failed', async () => {
     setupEmpty();
-
-    mockOrder.findMany.mockResolvedValue([
-      {
-        id: 'ord-3', startCount: 100,
-        dripDispatches: [
-          { status: 'completed', quantity: 100, remains: 0, startCount: 200, day: 1, batch: 1 },
-          { status: 'failed', quantity: 100, remains: 100, startCount: null, day: 1, batch: 2 },
-        ],
-      },
-    ]);
+    const dispatches = [
+      { status: 'completed', quantity: 100, remains: 0, startCount: 200, day: 1, batch: 1 },
+      { status: 'failed', quantity: 100, remains: 100, startCount: null, day: 1, batch: 2 },
+    ];
+    mockOrder.findMany.mockResolvedValue([{ id: 'ord-3', startCount: 100, dripDispatches: dispatches }]);
+    mockQueryRaw
+      .mockResolvedValueOnce([{ id: 'ord-3', status: 'Processing', deletedAt: null }])
+      .mockResolvedValueOnce(dispatches);
 
     const { GET } = await import('@/app/api/cron/drip/route');
     const res = await GET(makeReq());
     const body = await res.json();
 
     expect(body.stats.rolledUp).toBe(1);
-    const [, ...params] = mockExecuteRawUnsafe.mock.calls[0];
-    expect(params[1]).toBe('Partial');
-    expect(params[2]).toBe(100); // 0 + 100
-    expect(params[3]).toBeNull(); // order already has startCount, so null
+    expect(mockExecuteRawUnsafe).not.toHaveBeenCalled();
+    expect(mockOrder.updateMany).toHaveBeenCalledWith({
+      where: { id: 'ord-3', status: { notIn: ['Cancelled', 'Completed', 'Partial'] }, deletedAt: null },
+      data: { remains: 100, status: 'Partial', completedAt: expect.any(Date), startCount: 200 },
+    });
   });
 
   it('sets Cancelled when all dispatches failed', async () => {
     setupEmpty();
-
-    mockOrder.findMany.mockResolvedValue([
-      {
-        id: 'ord-4', startCount: null,
-        dripDispatches: [
-          { status: 'failed', quantity: 100, remains: 100, startCount: null, day: 1, batch: 1 },
-          { status: 'failed', quantity: 100, remains: 100, startCount: null, day: 1, batch: 2 },
-        ],
-      },
-    ]);
+    const dispatches = [
+      { status: 'failed', quantity: 100, remains: 100, startCount: null, day: 1, batch: 1 },
+      { status: 'failed', quantity: 100, remains: 100, startCount: null, day: 1, batch: 2 },
+    ];
+    mockOrder.findMany.mockResolvedValue([{ id: 'ord-4', startCount: null, dripDispatches: dispatches }]);
+    mockQueryRaw
+      .mockResolvedValueOnce([{ id: 'ord-4', status: 'Processing', deletedAt: null }])
+      .mockResolvedValueOnce(dispatches);
 
     const { GET } = await import('@/app/api/cron/drip/route');
     const res = await GET(makeReq());
     const body = await res.json();
 
     expect(body.stats.rolledUp).toBe(1);
-    const [, ...params] = mockExecuteRawUnsafe.mock.calls[0];
-    expect(params[1]).toBe('Cancelled');
-    expect(params[2]).toBe(200);
+    expect(mockExecuteRawUnsafe).not.toHaveBeenCalled();
+    expect(mockOrder.updateMany).toHaveBeenCalledWith({
+      where: { id: 'ord-4', status: { notIn: ['Cancelled', 'Completed', 'Partial'] }, deletedAt: null },
+      data: { remains: 200, status: 'Cancelled', completedAt: expect.any(Date) },
+    });
   });
 
   it('batches multiple orders into one UPDATE', async () => {
     setupEmpty();
-
+    const ordADispatches = [{ status: 'completed', quantity: 50, remains: 0, startCount: 10, day: 1, batch: 1 }];
     mockOrder.findMany.mockResolvedValue([
-      {
-        id: 'ord-a', startCount: null,
-        dripDispatches: [
-          { status: 'completed', quantity: 50, remains: 0, startCount: 10, day: 1, batch: 1 },
-        ],
-      },
+      { id: 'ord-a', startCount: null, dripDispatches: ordADispatches },
       {
         id: 'ord-b', startCount: null,
         dripDispatches: [
@@ -438,20 +435,19 @@ describe('drip cron — section 4 rollup (set-based UPDATE)', () => {
         ],
       },
     ]);
+    mockQueryRaw
+      .mockResolvedValueOnce([{ id: 'ord-a', status: 'Processing', deletedAt: null }])
+      .mockResolvedValueOnce(ordADispatches);
 
     const { GET } = await import('@/app/api/cron/drip/route');
     const res = await GET(makeReq());
     const body = await res.json();
 
     expect(mockExecuteRawUnsafe).toHaveBeenCalledTimes(1);
-    const [sql, ...params] = mockExecuteRawUnsafe.mock.calls[0];
-    expect(params).toHaveLength(8); // 2 orders × 4 params
-    // ord-a: done
-    expect(params[0]).toBe('ord-a');
-    expect(params[1]).toBe('Completed');
-    // ord-b: in-progress
-    expect(params[4]).toBe('ord-b');
-    expect(params[5]).toBeNull();
+    const [, ...params] = mockExecuteRawUnsafe.mock.calls[0];
+    expect(params).toHaveLength(3); // 1 progress order × 3 params
+    expect(params[0]).toBe('ord-b');
+    expect(params[1]).toBe(150); // remains
     expect(body.stats.rolledUp).toBe(1); // only ord-a
   });
 
@@ -467,24 +463,20 @@ describe('drip cron — section 4 rollup (set-based UPDATE)', () => {
     expect(mockExecuteRawUnsafe).not.toHaveBeenCalled();
   });
 
-  it('does not count rolledUp if the raw query throws', async () => {
+  it('does not count rolledUp if the transaction throws', async () => {
     setupEmpty();
-
-    mockOrder.findMany.mockResolvedValue([
-      {
-        id: 'ord-x', startCount: null,
-        dripDispatches: [
-          { status: 'completed', quantity: 100, remains: 0, startCount: null, day: 1, batch: 1 },
-        ],
-      },
-    ]);
-    mockExecuteRawUnsafe.mockRejectedValue(new Error('db gone'));
+    const dispatches = [{ status: 'completed', quantity: 100, remains: 0, startCount: null, day: 1, batch: 1 }];
+    mockOrder.findMany.mockResolvedValue([{ id: 'ord-x', startCount: null, dripDispatches: dispatches }]);
+    mockQueryRaw
+      .mockResolvedValueOnce([{ id: 'ord-x', status: 'Processing', deletedAt: null }])
+      .mockResolvedValueOnce(dispatches);
+    mockOrder.updateMany.mockRejectedValueOnce(new Error('db gone'));
 
     const { GET } = await import('@/app/api/cron/drip/route');
     const res = await GET(makeReq());
     const body = await res.json();
 
-    expect(res.status).toBe(500);
+    expect(body.ok).toBe(true);
     expect(body.stats.rolledUp).toBe(0);
   });
 });
@@ -497,62 +489,54 @@ describe('drip cron — section 4 rollup awards points', () => {
   it('calls awardPointsOnCompletion for Partial parent orders', async () => {
     setupEmpty();
     const { awardPointsOnCompletion } = await import('@/lib/nitro-rewards');
-
-    mockOrder.findMany.mockResolvedValue([
-      {
-        id: 'ord-partial', startCount: null,
-        dripDispatches: [
-          { status: 'completed', quantity: 500, remains: 0, startCount: 100, day: 1, batch: 1 },
-          { status: 'failed', quantity: 500, remains: 500, startCount: null, day: 1, batch: 2 },
-        ],
-      },
-    ]);
+    const dispatches = [
+      { status: 'completed', quantity: 500, remains: 0, startCount: 100, day: 1, batch: 1 },
+      { status: 'failed', quantity: 500, remains: 500, startCount: null, day: 1, batch: 2 },
+    ];
+    mockOrder.findMany.mockResolvedValue([{ id: 'ord-partial', startCount: null, dripDispatches: dispatches }]);
+    mockQueryRaw
+      .mockResolvedValueOnce([{ id: 'ord-partial', status: 'Processing', deletedAt: null }])
+      .mockResolvedValueOnce(dispatches);
 
     const { GET } = await import('@/app/api/cron/drip/route');
     const res = await GET(makeReq());
     const body = await res.json();
 
     expect(body.stats.rolledUp).toBe(1);
-    const [, status] = mockExecuteRawUnsafe.mock.calls[0].slice(1);
-    expect(status).toBe('Partial');
-    expect(awardPointsOnCompletion).toHaveBeenCalledWith('ord-partial');
+    expect(awardPointsOnCompletion).toHaveBeenCalledWith('ord-partial', mockPrisma);
   });
 
   it('calls awardPointsOnCompletion for Completed parent orders', async () => {
     setupEmpty();
     const { awardPointsOnCompletion } = await import('@/lib/nitro-rewards');
-
-    mockOrder.findMany.mockResolvedValue([
-      {
-        id: 'ord-done', startCount: null,
-        dripDispatches: [
-          { status: 'completed', quantity: 500, remains: 0, startCount: 100, day: 1, batch: 1 },
-          { status: 'completed', quantity: 500, remains: 0, startCount: null, day: 1, batch: 2 },
-        ],
-      },
-    ]);
+    const dispatches = [
+      { status: 'completed', quantity: 500, remains: 0, startCount: 100, day: 1, batch: 1 },
+      { status: 'completed', quantity: 500, remains: 0, startCount: null, day: 1, batch: 2 },
+    ];
+    mockOrder.findMany.mockResolvedValue([{ id: 'ord-done', startCount: null, dripDispatches: dispatches }]);
+    mockQueryRaw
+      .mockResolvedValueOnce([{ id: 'ord-done', status: 'Processing', deletedAt: null }])
+      .mockResolvedValueOnce(dispatches);
 
     const { GET } = await import('@/app/api/cron/drip/route');
     const res = await GET(makeReq());
     const body = await res.json();
 
     expect(body.stats.rolledUp).toBe(1);
-    expect(awardPointsOnCompletion).toHaveBeenCalledWith('ord-done');
+    expect(awardPointsOnCompletion).toHaveBeenCalledWith('ord-done', mockPrisma);
   });
 
   it('does not call awardPointsOnCompletion for Cancelled parent orders', async () => {
     setupEmpty();
     const { awardPointsOnCompletion } = await import('@/lib/nitro-rewards');
-
-    mockOrder.findMany.mockResolvedValue([
-      {
-        id: 'ord-cancel', startCount: null,
-        dripDispatches: [
-          { status: 'failed', quantity: 500, remains: 500, startCount: null, day: 1, batch: 1 },
-          { status: 'failed', quantity: 500, remains: 500, startCount: null, day: 1, batch: 2 },
-        ],
-      },
-    ]);
+    const dispatches = [
+      { status: 'failed', quantity: 500, remains: 500, startCount: null, day: 1, batch: 1 },
+      { status: 'failed', quantity: 500, remains: 500, startCount: null, day: 1, batch: 2 },
+    ];
+    mockOrder.findMany.mockResolvedValue([{ id: 'ord-cancel', startCount: null, dripDispatches: dispatches }]);
+    mockQueryRaw
+      .mockResolvedValueOnce([{ id: 'ord-cancel', status: 'Processing', deletedAt: null }])
+      .mockResolvedValueOnce(dispatches);
 
     const { GET } = await import('@/app/api/cron/drip/route');
     const res = await GET(makeReq());
@@ -560,5 +544,78 @@ describe('drip cron — section 4 rollup awards points', () => {
 
     expect(body.stats.rolledUp).toBe(1);
     expect(awardPointsOnCompletion).not.toHaveBeenCalled();
+  });
+});
+
+describe('drip cron — CAS fencing', () => {
+  it('skips reschedule when CAS fails (lost race)', async () => {
+    const { checkOrder } = await import('@/lib/smm');
+
+    mockDripDispatch.findMany
+      .mockResolvedValueOnce([]) // stuck dispatching
+      .mockResolvedValueOnce([]) // due dispatches
+      .mockResolvedValueOnce([ // processing dispatches
+        {
+          id: 'disp-cas', apiOrderId: 'api-cas', status: 'processing', quantity: 100, remains: 100,
+          dispatchedAt: new Date(), orderId: 'ord-cas', startCount: null, lastError: null,
+          order: { id: 'ord-cas', orderId: 'ORD-CAS', service: { provider: 'mtp', name: 'IG Followers', category: 'instagram' } },
+        },
+      ]);
+
+    checkOrder.mockResolvedValue({ status: 'Completed', remains: 0, start_count: 500 });
+
+    // CAS fails — another worker already transitioned this dispatch
+    mockDripDispatch.updateMany
+      .mockResolvedValueOnce({ count: 0 })  // section 0 stale-expiry
+      .mockResolvedValueOnce({ count: 0 }); // section 3 CAS — lost race
+
+    mockOrder.findMany.mockResolvedValue([]);
+
+    const { GET } = await import('@/app/api/cron/drip/route');
+    const res = await GET(makeReq());
+    const body = await res.json();
+
+    expect(body.ok).toBe(true);
+    // No reschedule SQL should have been emitted since CAS returned count: 0
+    expect(mockExecuteRawUnsafe).not.toHaveBeenCalled();
+  });
+
+  it('uses observed status in CAS predicate', async () => {
+    const { checkOrder } = await import('@/lib/smm');
+
+    mockDripDispatch.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]) // section 1.3: stale cancelling
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id: 'disp-obs', apiOrderId: 'api-obs', status: 'processing', quantity: 100, remains: 100,
+          dispatchedAt: new Date(), orderId: 'ord-obs', startCount: null, lastError: null,
+          order: { id: 'ord-obs', orderId: 'ORD-OBS', service: { provider: 'mtp', name: 'IG Followers', category: 'instagram' } },
+        },
+      ]);
+
+    checkOrder.mockResolvedValue({ status: 'Partial', remains: 30, start_count: 100 });
+
+    mockDripDispatch.updateMany
+      .mockResolvedValueOnce({ count: 0 })  // section 0
+      .mockResolvedValueOnce({ count: 0 })  // section 1.25 stale-verifying
+      .mockResolvedValueOnce({ count: 1 }); // section 3 CAS
+
+    mockDripDispatch.findMany
+      .mockResolvedValueOnce([]); // no pending dispatches to reschedule
+
+    mockOrder.findMany.mockResolvedValue([]);
+
+    const { GET } = await import('@/app/api/cron/drip/route');
+    await GET(makeReq());
+
+    // Verify CAS used the observed 'processing' status
+    const casCall = mockDripDispatch.updateMany.mock.calls.find(
+      c => c[0]?.where?.id === 'disp-obs'
+    );
+    expect(casCall).toBeDefined();
+    expect(casCall[0].where.status).toBe('processing');
+    expect(casCall[0].data.status).toBe('partial');
   });
 });

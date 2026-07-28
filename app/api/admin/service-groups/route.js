@@ -45,6 +45,8 @@ export async function GET() {
           refill: t.refill,
           speed: t.speed,
           enabled: t.enabled,
+          pricePinned: t.pricePinned,
+          customComments: t.customComments,
           sortOrder: t.sortOrder,
           serviceId: t.serviceId,
           service: t.service,
@@ -206,6 +208,7 @@ export async function POST(req) {
       if (updates.sortOrder !== undefined) data.sortOrder = Number(updates.sortOrder);
       if (updates.serviceId !== undefined) data.serviceId = updates.serviceId || null;
       if (updates.pricePinned !== undefined) data.pricePinned = !!updates.pricePinned;
+      if (updates.customComments !== undefined) data.customComments = !!updates.customComments;
 
       const updated = await prisma.serviceTier.update({ where: { id: tierIdToUpdate }, data });
       await logActivity(admin.name, `Updated tier ${updated.tier}`, 'service');

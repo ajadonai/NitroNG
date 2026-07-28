@@ -52,7 +52,7 @@ describe('order queue primitives', () => {
       { createdAt: { lt: createdAt } },
       { apiOrderId: { not: null } },
       { status: 'Dispatching' },
-      { dripDispatches: { some: { status: { in: ['dispatching', 'processing'] } } } },
+      { dripDispatches: { some: { status: { in: ['dispatching', 'processing', 'verifying', 'cancelling'] } } } },
     ]));
     expect(query.orderBy).toEqual([{ createdAt: 'asc' }, { id: 'asc' }]);
   });

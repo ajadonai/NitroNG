@@ -425,6 +425,7 @@ export default function AdminOrdersPage({ dark, t }) {
   };
 
   const [refundPrompt, setRefundPrompt] = useState(null);
+  const [viewComments, setViewComments] = useState(null);
   const [refundPercent, setRefundPercent] = useState(25);
   const [refundSending, setRefundSending] = useState(false);
   const openRefund = (o) => { setRefundPrompt(o); setRefundPercent(25); };
@@ -571,6 +572,14 @@ export default function AdminOrdersPage({ dark, t }) {
                                 <a href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="m min-w-0 flex-1 text-[12px] leading-[1.45] overflow-hidden text-ellipsis whitespace-nowrap no-underline" style={{ color: t.textSoft }}>{o.link}</a>
                                 {!o.apiOrderId && o.status !== "Cancelled" && <button onClick={() => openEditLink(o)} className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }} title="Edit link"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>}
                               </div>
+                            )}
+
+                            {/* View comments button */}
+                            {o.comments && (
+                              <button onClick={(e) => { e.stopPropagation(); setViewComments(o.comments); }} className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1 px-2" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", color: t.textSoft }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                                View comments
+                              </button>
                             )}
 
                             {/* Delivery progress */}
@@ -738,6 +747,14 @@ export default function AdminOrdersPage({ dark, t }) {
                       <a href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="m min-w-0 flex-1 text-[12px] desktop:text-[13px] leading-[1.45] overflow-hidden text-ellipsis whitespace-nowrap no-underline" style={{ color: t.textSoft }}>{o.link}</a>
                       {!o.apiOrderId && o.status !== "Cancelled" && <button onClick={() => openEditLink(o)} className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }} title="Edit link"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>}
                     </div>
+                  )}
+
+                  {/* View comments button */}
+                  {o.comments && (
+                    <button onClick={(e) => { e.stopPropagation(); setViewComments(o.comments); }} className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1 px-2" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", color: t.textSoft }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                      View comments
+                    </button>
                   )}
 
                   {/* Delivery progress */}
@@ -1006,6 +1023,24 @@ export default function AdminOrdersPage({ dark, t }) {
             <div className="flex justify-end gap-2">
               <button onClick={() => setEditLinkPrompt(null)} className="py-2 px-4 rounded-lg text-sm font-medium cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textSoft }}>Cancel</button>
               <button onClick={doEditLink} disabled={editLinkSending || !editLinkValue.trim()} className="py-2 px-4 rounded-lg text-sm font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)", color: dark ? "#e8a0b2" : "#c47d8e", opacity: editLinkSending || !editLinkValue.trim() ? .5 : 1 }}>{editLinkSending ? "Saving..." : "Save Link"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewComments && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={() => setViewComments(null)}>
+          <div className="absolute inset-0" style={{ background: "rgba(0,0,0,.55)" }} />
+          <div className="relative w-full max-w-md rounded-xl shadow-xl overflow-hidden" style={{ background: dark ? "#252320" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>
+              <div className="flex items-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                <span className="text-[13px] font-semibold" style={{ color: t.text }}>Submitted comments</span>
+              </div>
+              <button onClick={() => setViewComments(null)} className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div className="px-4 py-3 max-h-[60vh] overflow-y-auto">
+              <pre className="m-0 text-[13px] leading-[1.65] whitespace-pre-wrap break-words" style={{ color: t.textSoft, fontFamily: "inherit" }}>{viewComments}</pre>
             </div>
           </div>
         </div>
