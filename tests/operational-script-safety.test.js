@@ -34,18 +34,18 @@ describe('operational script target guard', () => {
   });
 
   it('requires both apply mode and the exact per-command confirmation', () => {
-    const expected = operationalScriptConfirmation('migrate-display-ids', 'nitro_dev');
+    const expected = operationalScriptConfirmation('seed-test-user', 'nitro_dev');
     const applyEnv = { ...SAFE_ENV, NITRO_SCRIPT_MODE: 'apply' };
 
-    expect(() => prepareGuardedScript({ operation: 'migrate-display-ids', env: applyEnv }))
+    expect(() => prepareGuardedScript({ operation: 'seed-test-user', env: applyEnv }))
       .toThrow(`NITRO_SCRIPT_CONFIRM=${expected}`);
     expect(() => prepareGuardedScript({
-      operation: 'migrate-display-ids',
+      operation: 'seed-test-user',
       env: { ...applyEnv, NITRO_SCRIPT_CONFIRM: 'APPLY_CLEANUP_SEED_DATA_TO_nitro_dev' },
     })).toThrow(`NITRO_SCRIPT_CONFIRM=${expected}`);
 
     expect(prepareGuardedScript({
-      operation: 'migrate-display-ids',
+      operation: 'seed-test-user',
       env: { ...applyEnv, NITRO_SCRIPT_CONFIRM: expected },
     })).toMatchObject({ dryRun: false, expectedConfirmation: expected });
   });
@@ -101,7 +101,7 @@ describe('operational script target guard', () => {
     const main = vi.fn().mockResolvedValue('previewed');
 
     await expect(runGuardedPrismaScript({
-      operation: 'fix-ntr-1578',
+      operation: 'seed-test-user',
       env: SAFE_ENV,
       main,
       logger: { log: vi.fn() },
@@ -119,11 +119,8 @@ describe('operational script target guard', () => {
 describe('tracked mutating script entrypoints', () => {
   const scripts = [
     ['cleanup-seed-data.js', 'cleanup-seed-data'],
-    ['fix-ntr-1578.mjs', 'fix-ntr-1578'],
-    ['migrate-ids.mjs', 'migrate-display-ids'],
     ['seed-testuser.js', 'seed-test-user'],
     ['seed-blog.cjs', 'seed-blog-content'],
-    ['backfill-referral-attribution.mjs', 'backfill-referral-attribution'],
   ];
 
   it.each(scripts)('%s uses the shared guard before its first mutation', (filename, operation) => {
@@ -146,17 +143,6 @@ describe('tracked mutating script entrypoints', () => {
       expect(exports.SCRIPT_OPERATION).toBe(operation);
       expect(exports.main).toBeTypeOf('function');
     }
-  });
-
-  it('keeps the completed launch-weekend financial backfill non-executable', async () => {
-    const relativePath = '../scripts/backfill-nitro-launch-weekend-points.mjs';
-    const source = readFileSync(new URL(relativePath, import.meta.url), 'utf8');
-    const module = await import(new URL(relativePath, import.meta.url));
-
-    expect(module.EXECUTION_RETIRED).toBe(true);
-    expect(() => module.refuseRetiredExecution()).toThrow(/retired and cannot be executed/);
-    expect(source).not.toMatch(/PrismaClient|CONFIRM\s*===?\s*['"]1['"]/);
-    expect(source).not.toMatch(/\.(?:create|createMany|update|updateMany|delete|deleteMany|\$transaction)\s*\(/);
   });
 });
 

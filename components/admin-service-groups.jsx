@@ -50,7 +50,7 @@ function LinkServiceInline({ tierId, services, dark, t, inputStyle, markupSettin
             <ProvTag provider={s.provider} />
             <span className="text-[10px] mr-1" style={{ fontFamily: "'JetBrains Mono',monospace", color: t.textMuted }}>#{s.apiId}</span>
             {s.name?.slice(0, 50)}
-            <span className="text-[10px] ml-1" style={{ color: t.textMuted }}>— {formatNaira(Math.round(s.costPer1k * Number(markupSettings.markup_usd_rate || 1600)))}/1k</span>
+            <span className="text-[10px] ml-1" style={{ color: t.textMuted }}>— {formatNaira(Math.round(s.costPer1k * Number(markupSettings.markup_usd_rate || 1600) / 100))}/1k</span>
           </div>
         ))}
         {filtered.length === 0 && <div className="p-2 text-xs text-center" style={{ color: t.textMuted }}>No matches</div>}
@@ -85,7 +85,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
   const [tierSvcId, setTierSvcId] = useState("");
   const [tierLevel, setTierLevel] = useState("Standard");
   const [tierPrice, setTierPrice] = useState("");
-  const [tierRefill, setTierRefill] = useState(false);
+  const [tierCustomComments, setTierCustomComments] = useState(false);
 
   /* Accordion state — persisted so open groups survive reloads */
   const [openIds, setOpenIds] = useState(() => {
@@ -108,7 +108,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
   const cardsRef = useRef(null);
 
   /* Inline tier editing — saves through the existing update-tier action */
-  const [editTier, setEditTier] = useState(null); // { id, price, refill, pricePinned, customComments }
+  const [editTier, setEditTier] = useState(null); // { id, price, pricePinned, customComments }
   const [savingTier, setSavingTier] = useState(false);
 
   const load = async () => {
@@ -177,14 +177,14 @@ export default function AdminServiceGroupsPage({ dark, t }) {
 
   const addTier = async () => {
     if (!addTierGroup || !tierSvcId || !tierPrice) { setError("Service and price required"); return; }
-    const ok = await act({ action: "add-tier", groupId: addTierGroup, serviceId: tierSvcId, tier: tierLevel, sellPer1k: Math.round(Number(tierPrice) * 100), refill: tierRefill });
-    if (ok) { setAddTierGroup(null); setTierSvcId(""); setTierSvcSearch(""); setTierLevel("Standard"); setTierPrice(""); setTierRefill(false); }
+    const ok = await act({ action: "add-tier", groupId: addTierGroup, serviceId: tierSvcId, tier: tierLevel, sellPer1k: Math.round(Number(tierPrice) * 100), customComments: tierCustomComments });
+    if (ok) { setAddTierGroup(null); setTierSvcId(""); setTierSvcSearch(""); setTierLevel("Standard"); setTierPrice(""); setTierCustomComments(false); }
   };
 
   const saveTierEdit = async () => {
     if (!editTier) return;
     setSavingTier(true);
-    const ok = await act({ action: "update-tier", tierIdToUpdate: editTier.id, sellPer1k: Math.round(Number(editTier.price) * 100), refill: editTier.refill, pricePinned: editTier.pricePinned, customComments: editTier.customComments });
+    const ok = await act({ action: "update-tier", tierIdToUpdate: editTier.id, sellPer1k: Math.round(Number(editTier.price) * 100), pricePinned: editTier.pricePinned, customComments: editTier.customComments });
     setSavingTier(false);
     if (ok) setEditTier(null);
   };
@@ -392,7 +392,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                       <div key={s.id} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => { setTierSvcId(s.id); setTierSvcSearch(s.name); const suggested = calculateTierPrice(s.costPer1k, tierLevel, markupSettings); setTierPrice((suggested / 100).toFixed(2)); }} className="py-1.5 px-3 text-[13px] cursor-pointer transition-[background-color] duration-100" style={{ color: tierSvcId === s.id ? "#c47d8e" : t.text, background: tierSvcId === s.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : "transparent", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}` }}>
                         <ProvTag provider={s.provider} />
                         <span className="text-[11px] mr-1.5" style={{ fontFamily: "'JetBrains Mono',monospace", color: t.textMuted }}>#{s.apiId}</span>
-                        {s.name} <span className="text-[10px]" style={{ color: t.textMuted }}>— {formatNaira(Math.round(s.costPer1k * usdRate))}/1k</span>
+                        {s.name} <span className="text-[10px]" style={{ color: t.textMuted }}>— {formatNaira(Math.round(s.costPer1k * usdRate / 100))}/1k</span>
                       </div>
                     ))}
                   </div>
@@ -404,7 +404,10 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                 </select>
                 <input placeholder="Sell price ₦/1k" value={tierPrice} onChange={e => setTierPrice(e.target.value.replace(/[^0-9.]/g, ""))} className={`${inputCls} w-[130px]`} style={inputStyle} />
                 <label className="flex items-center gap-1.5 text-[13px] cursor-pointer" style={{ color: t.textSoft }}>
-                  <input type="checkbox" checked={tierRefill} onChange={e => setTierRefill(e.target.checked)} className="w-4 h-4" style={{ accentColor: "#c47d8e" }} /> Refill
+                  <button type="button" onClick={() => setTierCustomComments(v => !v)} className="relative w-[28px] h-[16px] rounded-full border-none cursor-pointer shrink-0 transition-colors duration-150" style={{ background: tierCustomComments ? (dark ? "rgba(110,231,183,.18)" : "rgba(5,150,105,.15)") : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)") }}>
+                    <span className="absolute top-[2px] w-[12px] h-[12px] rounded-full transition-all duration-150" style={{ left: tierCustomComments ? 14 : 2, background: tierCustomComments ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#666" : "#999") }} />
+                  </button>
+                  Custom Comments
                 </label>
               </div>
               {tierSvcId && (() => {
@@ -419,8 +422,8 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                 const markupPct = markupSettings[`markup_${tierLevel.toLowerCase()}`] || "?";
                 return (
                   <div className="flex gap-3 flex-wrap items-center mb-3 py-2.5 px-3 rounded-lg text-xs" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", color: t.textMuted }}>
-                    <span>Cost: <b className="m" style={{ color: t.text }}>{formatNaira(costKobo)}</b>/1k</span>
-                    <span>Suggested: <b className="m" style={{ color: "#c47d8e" }}>{formatNaira(suggested)}</b> ({markupPct}%)</span>
+                    <span>Cost: <b className="m" style={{ color: t.text }}>{formatNaira(Math.round(costKobo / 100))}</b>/1k</span>
+                    <span>Suggested: <b className="m" style={{ color: "#c47d8e" }}>{formatNaira(Math.round(suggested / 100))}</b> ({markupPct}%)</span>
                     {sell > 0 && <span>Margin: <b className="m" style={{ color: isLow ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{margin}%</b>{isLow && " (low)"}</span>}
                     {sell > 0 && sell !== suggested && <button onClick={() => setTierPrice((suggested / 100).toFixed(2))} className="bg-transparent text-xs font-semibold cursor-pointer border-none p-0 font-[inherit] transition-transform duration-150 hover:-translate-y-px" style={{ color: "#c47d8e" }}>Use suggested</button>}
                   </div>
@@ -477,7 +480,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                       ) : (
                         <td className="py-2.5 px-3.5">
                           <div className="font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono',monospace", fontSize: "13px" }}>₦{(tier.sellPer1k / 100).toFixed(2)}</div>
-                          {cKobo != null && <div className="text-[10.5px]" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono',monospace" }}>cost {formatNaira(cKobo)}</div>}
+                          {cKobo != null && <div className="text-[10.5px]" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono',monospace" }}>cost {formatNaira(Math.round(cKobo / 100))}</div>}
                         </td>
                       )}
                       <td className="py-2.5 px-3.5">
@@ -488,7 +491,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                       <td className="py-2.5 px-3.5">
                         {isEditing ? (
                           <div className="flex flex-col gap-1.5">
-                            {[["refill", "Refill"], ["pricePinned", "Pinned"], ["customComments", "Custom"]].map(([key, label]) => (
+                            {[["pricePinned", "Pinned"], ["customComments", "Custom"]].map(([key, label]) => (
                               <label key={key} className="flex items-center gap-1.5 text-[11px] cursor-pointer" style={{ color: t.textSoft }}>
                                 <button type="button" onClick={() => setEditTier({ ...editTier, [key]: !editTier[key] })} className="relative w-[28px] h-[16px] rounded-full border-none cursor-pointer shrink-0 transition-colors duration-150" style={{ background: editTier[key] ? (dark ? "rgba(110,231,183,.18)" : "rgba(5,150,105,.15)") : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)") }}>
                                   <span className="absolute top-[2px] w-[12px] h-[12px] rounded-full transition-all duration-150" style={{ left: editTier[key] ? 14 : 2, background: editTier[key] ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#666" : "#999") }} />
@@ -519,7 +522,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                             <button onClick={() => act({ action: "update-tier", tierIdToUpdate: tier.id, enabled: !tier.enabled })} title={tier.enabled ? "Disable tier" : "Enable tier"} className="relative w-[30px] h-[17px] rounded-full border border-solid cursor-pointer transition-colors duration-200 shrink-0" style={{ background: tier.enabled ? (dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.1)") : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"), borderColor: tier.enabled ? (dark ? "rgba(110,231,183,.4)" : "rgba(5,150,105,.35)") : t.cardBorder }}>
                               <span className="absolute top-[2px] w-[11px] h-[11px] rounded-full transition-all duration-200" style={{ left: tier.enabled ? 15 : 2, background: tier.enabled ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }} />
                             </button>
-                            <button onClick={() => setEditTier({ id: tier.id, price: (tier.sellPer1k / 100).toFixed(2), refill: !!tier.refill, pricePinned: !!tier.pricePinned, customComments: !!tier.customComments })} title="Edit tier" className="adm-btn-sm text-[12px]" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Edit</button>
+                            <button onClick={() => setEditTier({ id: tier.id, price: (tier.sellPer1k / 100).toFixed(2), pricePinned: !!tier.pricePinned, customComments: !!tier.customComments })} title="Edit tier" className="adm-btn-sm text-[12px]" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Edit</button>
                             <button onClick={async () => { if (await confirm({ title: "Delete Tier", message: "Delete this tier?", confirmLabel: "Delete", danger: true })) act({ action: "delete-tier", tierIdToDelete: tier.id }); }} title="Delete tier" className="adm-btn-sm text-[12px]" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                             </button>
@@ -552,14 +555,14 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                       </button>
                       <div style={{ display: "none", gridTemplateColumns: "1fr 1fr", gap: "8px", padding: "0 14px 12px" }}>
                         <div><div className="text-[9px] font-semibold uppercase tracking-[.5px]" style={{ color: t.textMuted }}>Service</div><div className="text-[12px]" style={{ color: t.text }}><ProvTag provider={tier.service?.provider} /><span className="text-[10px]" style={{ fontFamily: "'JetBrains Mono',monospace", color: t.textMuted }}>#{tier.service?.apiId}</span></div></div>
-                        <div><div className="text-[9px] font-semibold uppercase tracking-[.5px]" style={{ color: t.textMuted }}>Sell / Cost</div><div className="text-[12px]" style={{ fontFamily: "'JetBrains Mono',monospace", color: t.text }}>₦{(tier.sellPer1k / 100).toFixed(2)} <span style={{ color: t.textMuted, fontSize: "10px" }}>/ {cKobo != null ? formatNaira(cKobo) : "—"}</span></div></div>
+                        <div><div className="text-[9px] font-semibold uppercase tracking-[.5px]" style={{ color: t.textMuted }}>Sell / Cost</div><div className="text-[12px]" style={{ fontFamily: "'JetBrains Mono',monospace", color: t.text }}>₦{(tier.sellPer1k / 100).toFixed(2)} <span style={{ color: t.textMuted, fontSize: "10px" }}>/ {cKobo != null ? formatNaira(Math.round(cKobo / 100)) : "—"}</span></div></div>
                         {(tier.refill || tier.pricePinned || tier.customComments) && <div style={{ gridColumn: "1 / -1" }}><div className="text-[9px] font-semibold uppercase tracking-[.5px] mb-1" style={{ color: t.textMuted }}>Flags</div><div className="flex flex-wrap gap-1">
                           {tier.refill && <span className="inline-flex items-center gap-1 text-[9.5px] font-semibold py-[2px] px-[6px] rounded-[4px]" style={{ color: dark ? "#6ee7b7" : "#059669", background: dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)" }}>Refill</span>}
                           {tier.pricePinned && <span className="inline-flex items-center gap-1 text-[9.5px] font-semibold py-[2px] px-[6px] rounded-[4px]" style={{ color: dark ? "#fbbf24" : "#d97706", background: dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.07)" }}>Pinned</span>}
                           {tier.customComments && <span className="inline-flex items-center gap-1 text-[9.5px] font-semibold py-[2px] px-[6px] rounded-[4px]" style={{ color: dark ? "#c4b5fd" : "#7c3aed", background: dark ? "rgba(196,181,253,.1)" : "rgba(124,58,237,.07)" }}>Custom</span>}
                         </div></div>}
                         <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end", gap: "6px", paddingTop: "4px", borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
-                          <button onClick={() => setEditTier({ id: tier.id, price: (tier.sellPer1k / 100).toFixed(2), refill: !!tier.refill, pricePinned: !!tier.pricePinned, customComments: !!tier.customComments })} className="adm-btn-sm text-[11px]" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Edit</button>
+                          <button onClick={() => setEditTier({ id: tier.id, price: (tier.sellPer1k / 100).toFixed(2), pricePinned: !!tier.pricePinned, customComments: !!tier.customComments })} className="adm-btn-sm text-[11px]" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Edit</button>
                         </div>
                       </div>
                     </div>

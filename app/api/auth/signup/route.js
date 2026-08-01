@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import bcrypt from 'bcryptjs';
-import { signUserToken, setUserCookie, detectDevice, hashToken } from '@/lib/auth';
+import { signUserToken, setUserCookie, detectDevice, hashToken, createSessionId } from '@/lib/auth';
 import { generateReferralCode, ok, error } from '@/lib/utils';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { validateEmail, validatePassword, validateName, sanitizeEmail, sanitizeString, isDisposableEmail } from '@/lib/validate';
@@ -158,13 +158,12 @@ export async function POST(req) {
     tgNewUser(derivedName, email, referredBy || via || null);
     if (referredByMemberId) notifyCrewSignup(via).catch(() => {});
 
-    // Sign JWT and set cookie
-    const token = signUserToken(user);
-    await setUserCookie(token);
-
-    // Create session
     const device = detectDevice(ua);
-    await prisma.session.create({ data: { userId: user.id, tokenHash: hashToken(token), deviceType: device.type, deviceInfo: device.info, ip } });
+    const remember = true;
+    const sid = createSessionId();
+    const token = signUserToken(user, { remember, sid });
+    await prisma.session.create({ data: { id: sid, userId: user.id, tokenHash: hashToken(token), remember, deviceType: device.type, deviceInfo: device.info, ip } });
+    await setUserCookie(token, { remember });
 
     const eventId = `reg_${user.id}`;
     const { fbp, fbc } = parseFbCookies(hdrs.get('cookie'));

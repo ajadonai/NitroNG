@@ -11,7 +11,9 @@ const mocks = vi.hoisted(() => ({
   compare: vi.fn(),
   hash: vi.fn(),
   hashToken: vi.fn(),
+  createSessionId: vi.fn(() => 'session-new'),
   signAdminToken: vi.fn(() => 'signed-admin-token'),
+  verifyAdminToken: vi.fn(() => null),
   setAdminCookie: vi.fn(),
   clearAdminCookie: vi.fn(),
   clearGrant: vi.fn(),
@@ -57,7 +59,10 @@ vi.mock('bcryptjs', () => ({
   },
 }));
 vi.mock('@/lib/auth', () => ({
+  ADMIN_ABSOLUTE_LIFETIME_SECONDS: 14 * 24 * 60 * 60,
+  createSessionId: (...args) => mocks.createSessionId(...args),
   signAdminToken: (...args) => mocks.signAdminToken(...args),
+  verifyAdminToken: (...args) => mocks.verifyAdminToken(...args),
   setAdminCookie: (...args) => mocks.setAdminCookie(...args),
   clearAdminCookie: (...args) => mocks.clearAdminCookie(...args),
   hashToken: (...args) => mocks.hashToken(...args),
@@ -95,6 +100,7 @@ vi.mock('@/lib/logger', () => ({
 
 const { POST: login } = await import('@/app/api/auth/admin/login/route.js');
 const { POST: logout } = await import('@/app/api/auth/admin/logout/route.js');
+const { POST: profileAction } = await import('@/app/api/auth/admin/profile/route.js');
 const { POST: teamAction } = await import('@/app/api/admin/team/route.js');
 const actualAuth = await vi.importActual('@/lib/auth');
 const actualInternalDashboardAccess = await vi.importActual('@/lib/internal-dashboard-access');
@@ -107,6 +113,12 @@ const owner = {
   password: storedHash,
   role: 'owner',
   status: 'Active',
+};
+const ownerIdentity = {
+  id: owner.id,
+  name: owner.name,
+  email: owner.email,
+  role: owner.role,
 };
 
 function loginRequest(remember) {
@@ -122,7 +134,11 @@ beforeEach(() => {
   mocks.rateLimit.mockResolvedValue({ limited: false, unavailable: false, retryAfter: 60 });
   mocks.adminFindUnique.mockResolvedValue(owner);
   mocks.compare.mockResolvedValue(true);
-  mocks.queryRaw.mockResolvedValue([{ password: storedHash, status: 'Active' }]);
+  mocks.queryRaw.mockResolvedValue([{
+    ...ownerIdentity,
+    password: storedHash,
+    status: 'Active',
+  }]);
   mocks.adminSessionCreate.mockResolvedValue({ id: 'session-new' });
   mocks.adminUpdate.mockResolvedValue(owner);
   mocks.adminSessionDeleteMany.mockResolvedValue({ count: 2 });
@@ -132,6 +148,7 @@ beforeEach(() => {
     : 'signed-token-hash');
   mocks.cookieGet.mockReturnValue(undefined);
   mocks.signAdminToken.mockReturnValue('signed-admin-token');
+  mocks.verifyAdminToken.mockReturnValue(null);
   mocks.hash.mockResolvedValue('$2b$12$new-password-hash');
   mocks.logActivity.mockResolvedValue(undefined);
   mocks.requireAdmin.mockResolvedValue({ admin: owner, error: null });
@@ -155,7 +172,10 @@ describe('admin login session boundary', () => {
     const response = await login(loginRequest(submitted));
 
     expect(response.status).toBe(200);
-    expect(mocks.signAdminToken).toHaveBeenCalledWith(owner, { remember: expected });
+    expect(mocks.signAdminToken).toHaveBeenCalledWith(
+      ownerIdentity,
+      { remember: expected, sid: 'session-new' },
+    );
     expect(mocks.setAdminCookie).toHaveBeenCalledWith(
       'signed-admin-token',
       owner.role,
@@ -178,17 +198,49 @@ describe('admin login session boundary', () => {
     });
     const rawCall = mocks.queryRaw.mock.calls[0];
     expect(rawCall[0].join(' ')).toContain('FOR UPDATE');
+    expect(rawCall[0].join(' ')).toContain('"email"');
+    expect(rawCall[0].join(' ')).toContain('"role"');
     expect(rawCall[1]).toBe(owner.id);
     expect(mocks.adminSessionCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
+        id: 'session-new',
         adminId: owner.id,
         tokenHash: 'signed-token-hash',
+        remember: false,
       }),
     });
     expect(mocks.adminSessionCreate.mock.invocationCallOrder[0])
       .toBeLessThan(mocks.clearGrant.mock.invocationCallOrder[0]);
     expect(mocks.clearGrant.mock.invocationCallOrder[0])
       .toBeLessThan(mocks.setAdminCookie.mock.invocationCallOrder[0]);
+  });
+
+  it('signs and returns the claims read under the row lock', async () => {
+    const lockedIdentity = {
+      id: owner.id,
+      name: 'Current Owner Name',
+      email: 'current-owner@example.test',
+      role: 'superadmin',
+    };
+    mocks.queryRaw.mockResolvedValue([{
+      ...lockedIdentity,
+      password: storedHash,
+      status: 'Active',
+    }]);
+
+    const response = await login(loginRequest(true));
+
+    expect(response.status).toBe(200);
+    expect(mocks.signAdminToken).toHaveBeenCalledWith(
+      lockedIdentity,
+      { remember: true, sid: 'session-new' },
+    );
+    expect(mocks.setAdminCookie).toHaveBeenCalledWith(
+      'signed-admin-token',
+      lockedIdentity.role,
+      { remember: true },
+    );
+    await expect(response.json()).resolves.toEqual({ admin: lockedIdentity });
   });
 
   it('rejects an old-password login if reset or deactivation wins the row lock', async () => {
@@ -252,7 +304,11 @@ describe('admin login session boundary', () => {
       customPages: null,
       customActions: null,
     };
-    const previousToken = actualAuth.signAdminToken(previousAdmin);
+    const issuedAt = new Date();
+    const previousToken = actualAuth.signAdminToken(previousAdmin, {
+      remember: false,
+      sid: 'session-previous',
+    });
     let previousSessionActive = true;
     mocks.cookieGet.mockImplementation(name => name === 'nitro_admin_token'
       ? { value: previousToken }
@@ -260,19 +316,28 @@ describe('admin login session boundary', () => {
     mocks.hashToken.mockImplementation(token => token === previousToken
       ? 'previous-token-hash'
       : 'signed-token-hash');
+    mocks.verifyAdminToken.mockReturnValue({
+      id: previousAdmin.id,
+      sid: 'session-previous',
+      type: 'admin',
+    });
     mocks.adminSessionDeleteMany.mockImplementation(async ({ where }) => {
-      if (where.tokenHash === 'previous-token-hash') previousSessionActive = false;
+      if (where.id === 'session-previous' && where.adminId === previousAdmin.id) {
+        previousSessionActive = false;
+      }
       return { count: 1 };
     });
     mocks.adminSessionFindUnique.mockImplementation(async () => previousSessionActive
       ? {
           id: 'session-previous',
+          adminId: previousAdmin.id,
           lastActive: new Date(),
+          remember: false,
+          createdAt: issuedAt,
           admin: previousAdmin,
         }
       : null);
 
-    const issuedAt = new Date('2026-07-17T10:00:00.000Z');
     const childGrant = actualInternalDashboardAccess.createInternalDashboardGrant({
       adminId: previousAdmin.id,
       sessionId: 'session-previous',
@@ -293,6 +358,8 @@ describe('admin login session boundary', () => {
             ? {
                 id: 'session-previous',
                 adminId: previousAdmin.id,
+                remember: false,
+                createdAt: issuedAt,
                 admin: previousAdmin,
               }
             : null),
@@ -301,6 +368,12 @@ describe('admin login session boundary', () => {
     })).toMatchObject({ ok: true });
 
     expect((await login(loginRequest())).status).toBe(200);
+    expect(mocks.adminSessionDeleteMany).toHaveBeenCalledWith({
+      where: {
+        id: 'session-previous',
+        adminId: previousAdmin.id,
+      },
+    });
     await expect(actualAuth.getCurrentAdmin({ clearInvalidCookie: false })).resolves.toBeNull();
     await expect(actualInternalDashboardAccess.requireInternalDashboardAccess({
       token: childGrant,
@@ -312,12 +385,48 @@ describe('admin login session boundary', () => {
             ? {
                 id: 'session-previous',
                 adminId: previousAdmin.id,
+                remember: false,
+                createdAt: issuedAt,
                 admin: previousAdmin,
               }
             : null),
         },
       },
     })).resolves.toMatchObject({ ok: false, status: 401, reason: 'revoked' });
+  });
+});
+
+describe('admin self-password session preservation', () => {
+  it('preserves the current session by sid while revoking every other session', async () => {
+    mocks.cookieGet.mockImplementation(name => name === 'nitro_admin_token'
+      ? { value: 'renewed-admin-token' }
+      : undefined);
+    mocks.verifyAdminToken.mockReturnValue({
+      id: owner.id,
+      sid: 'session-current',
+      type: 'admin',
+    });
+
+    const response = await profileAction(new Request(
+      'https://nitro.test/api/auth/admin/profile',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          action: 'change-password',
+          currentPassword: 'correct password',
+          newPassword: 'new secure password',
+        }),
+      },
+    ));
+
+    expect(response.status).toBe(200);
+    expect(mocks.adminSessionDeleteMany).toHaveBeenCalledWith({
+      where: {
+        adminId: owner.id,
+        id: { not: 'session-current' },
+      },
+    });
   });
 });
 
@@ -339,6 +448,17 @@ describe('admin logout revocation', () => {
       .toBeLessThan(mocks.clearGrant.mock.invocationCallOrder[0]);
     expect(mocks.clearGrant).toHaveBeenCalledOnce();
     expect(mocks.clearAdminCookie).toHaveBeenCalledOnce();
+  });
+
+  it('uses sid-based revocation when JWT contains a session ID', async () => {
+    mocks.verifyAdminToken.mockReturnValue({ id: 'admin-owner', sid: 'session-abc', type: 'admin' });
+
+    const response = await logout();
+
+    expect(response.status).toBe(200);
+    expect(mocks.adminSessionDeleteMany).toHaveBeenCalledWith({
+      where: { id: 'session-abc' },
+    });
   });
 
   it('returns a retryable error and preserves credentials when session deletion fails', async () => {

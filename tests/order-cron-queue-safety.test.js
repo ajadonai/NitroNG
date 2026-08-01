@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   orderUpdate: vi.fn(),
   orderCount: vi.fn(),
   transaction: vi.fn(),
+  queryRawUnsafe: vi.fn(),
   idempotencyDeleteMany: vi.fn(),
   tgRefund: vi.fn(),
   tgRefundAlert: vi.fn(),
@@ -26,6 +27,7 @@ vi.mock('@/lib/prisma', () => ({
     },
     idempotencyKey: { deleteMany: (...args) => mocks.idempotencyDeleteMany(...args) },
     $transaction: (...args) => mocks.transaction(...args),
+    $queryRawUnsafe: (...args) => mocks.queryRawUnsafe(...args),
   },
 }));
 vi.mock('@/lib/logger', () => ({ log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
@@ -72,6 +74,7 @@ beforeEach(() => {
   mocks.orderUpdateMany.mockResolvedValue({ count: 0 });
   mocks.orderCount.mockResolvedValue(0);
   mocks.idempotencyDeleteMany.mockResolvedValue({ count: 0 });
+  mocks.queryRawUnsafe.mockResolvedValue([]);
   mocks.transaction.mockImplementation(async callback => callback({
     order: { updateMany: mocks.orderUpdateMany },
   }));
@@ -171,7 +174,9 @@ describe('orders cron — queued and drip safety', () => {
       id: 'order-child', orderId: 'NTR-3080', serviceId: 'service-8871',
       link: 'https://youtube.com/@thewargenerals', status: 'Pending', apiOrderId: null,
       queuedBehind: null, dripDays: null, retryCount: 0, dispatchedAt: null,
-      createdAt: new Date('2026-07-17T17:05:07Z'), comments: null,
+      createdAt: new Date('2026-07-17T17:05:07Z'),
+      updatedAt: new Date('2026-07-28T08:00:00Z'),
+      comments: null,
       service: { id: 'service-8871', provider: 'mtp', apiId: 8871 },
       tier: null,
     };
@@ -182,12 +187,10 @@ describe('orders cron — queued and drip safety', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
-    mocks.orderFindFirst
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ orderId: 'NTR-2890' });
-    mocks.orderUpdateMany
-      .mockResolvedValueOnce({ count: 1 })
-      .mockResolvedValue({ count: 0 });
+    mocks.queryRawUnsafe
+      .mockResolvedValueOnce([]) // preloaded same-link blockers
+      .mockResolvedValueOnce([{ id: 'order-child' }]); // atomic retry claim
+    mocks.orderFindFirst.mockResolvedValueOnce({ orderId: 'NTR-2890' });
     mocks.placeWithProvider.mockRejectedValueOnce(new Error('You have active order with this link.'));
 
     const response = await GET(request());
@@ -202,6 +205,80 @@ describe('orders cron — queued and drip safety', () => {
         lastError: 'provider_active_wait',
         retryCount: 0,
       },
+    });
+  });
+
+  it('preloads FIFO blockers once for the retry batch instead of querying per order', async () => {
+    const createdAt = new Date('2026-07-28T08:00:00Z');
+    const first = {
+      id: 'order-first', orderId: 'NTR-FIRST', serviceId: 'service-1',
+      link: 'https://x.com/nitro/status/1', status: 'Pending', apiOrderId: null,
+      queuedBehind: null, dripDays: null, retryCount: 0, dispatchedAt: null,
+      createdAt, updatedAt: createdAt, comments: null,
+      service: { id: 'service-1', provider: 'mtp', apiId: 101 },
+      tier: null,
+    };
+    const second = {
+      ...first,
+      id: 'order-second',
+      orderId: 'NTR-SECOND',
+      createdAt: new Date(createdAt.getTime() + 1000),
+    };
+    mocks.orderFindMany
+      .mockResolvedValueOnce([]) // active provider orders
+      .mockResolvedValueOnce([first, second]) // recent direct retries
+      .mockResolvedValueOnce([]) // queued direct retries
+      .mockResolvedValueOnce([]) // provider-active waits
+      .mockResolvedValueOnce([]) // stale refund candidates
+      .mockResolvedValueOnce([]); // unrefunded terminal orders
+    mocks.queryRawUnsafe
+      .mockResolvedValueOnce([
+        { candidateId: 'order-second', blockerOrderId: 'NTR-FIRST' },
+      ]) // one blocker preload
+      .mockResolvedValueOnce([]); // first order loses its live atomic claim
+
+    const response = await GET(request());
+
+    expect(response.status).toBe(200);
+    const blockerQueries = mocks.queryRawUnsafe.mock.calls
+      .filter(([sql]) => sql.includes('WITH candidates'));
+    expect(blockerQueries).toHaveLength(1);
+    expect(blockerQueries[0][0]).toContain('JOIN LATERAL');
+    expect(blockerQueries[0].slice(1)).toEqual([
+      'order-first', 'service-1', 'https://x.com/nitro/status/1', first.createdAt,
+      'order-second', 'service-1', 'https://x.com/nitro/status/1', second.createdAt,
+    ]);
+    const claimQueries = mocks.queryRawUnsafe.mock.calls
+      .filter(([sql]) => sql.startsWith('UPDATE orders AS candidate'));
+    expect(claimQueries).toHaveLength(1);
+    expect(claimQueries[0][0]).toContain('AND NOT EXISTS (');
+    expect(mocks.orderFindFirst).not.toHaveBeenCalled();
+    expect(mocks.placeWithProvider).not.toHaveBeenCalled();
+    expect(mocks.orderUpdateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'order-first',
+        status: 'Pending',
+        apiOrderId: null,
+        deletedAt: null,
+        dripDays: null,
+        dripDispatches: { none: {} },
+        queuedBehind: null,
+        updatedAt: first.updatedAt,
+      },
+      data: { lastError: 'provider_active_wait' },
+    });
+    expect(mocks.orderUpdateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'order-second',
+        status: 'Pending',
+        apiOrderId: null,
+        deletedAt: null,
+        dripDays: null,
+        dripDispatches: { none: {} },
+        queuedBehind: null,
+        updatedAt: second.updatedAt,
+      },
+      data: { queuedBehind: 'NTR-FIRST' },
     });
   });
 });

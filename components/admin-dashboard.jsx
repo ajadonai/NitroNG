@@ -12,6 +12,7 @@ import { PlatformIcon } from "./platform-icon";
 import { Avatar } from "./avatar";
 import { useToast } from "./toast";
 import NitroLoader from "./nitro-loader";
+import { useSessionHeartbeat } from "../lib/use-session-heartbeat";
 
 const AdminOrdersPage = dynamic(() => import("./admin-orders"), { ssr: false });
 const AdminUsersPage = dynamic(() => import("./admin-users"), { ssr: false });
@@ -93,9 +94,9 @@ function AdminOverview({ data, dark, t, setActive }) {
   return (
     <>
       <div className="adm-header">
-        <div className="adm-title" style={{ color: t.text }}>Dashboard Overview</div>
-        <div className="adm-subtitle" style={{ color: t.textMuted }}>Platform at a glance</div>
-        <div className="page-divider" style={{ background: t.cardBorder }} />
+        <div className="adm-title text-t-text">Dashboard Overview</div>
+        <div className="adm-subtitle text-t-text-muted">Platform at a glance</div>
+        <div className="page-divider bg-t-card-border" />
       </div>
 
       {/* Stat cards */}
@@ -109,9 +110,9 @@ function AdminOverview({ data, dark, t, setActive }) {
         ].map(([label, val, color, sub]) => (
           <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
             <div className="dash-stat-dot" style={{ background: color }} />
-            <div className="dash-stat-label" style={{ color: t.textMuted }}>{label}</div>
+            <div className="dash-stat-label text-t-text-muted">{label}</div>
             <div className="m dash-stat-value" style={{ color }}>{val}</div>
-            <div className="dash-stat-sub" style={{ color: t.textMuted }}>{sub}</div>
+            <div className="dash-stat-sub text-t-text-muted">{sub}</div>
           </div>
         ))}
       </div>
@@ -121,8 +122,8 @@ function AdminOverview({ data, dark, t, setActive }) {
         <div>
           <div className="rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
             <div className="py-3 px-[18px] flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-              <span className="text-sm font-semibold tracking-wide uppercase" style={{ color: t.textMuted }}>Recent orders</span>
-              <button onClick={() => setActive("orders")} className="text-xs font-medium bg-transparent border-none cursor-pointer font-[inherit]" style={{ color: t.accent }}>View all →</button>
+              <span className="text-sm font-semibold tracking-wide uppercase text-t-text-muted">Recent orders</span>
+              <button onClick={() => setActive("orders")} className="text-xs font-medium bg-transparent border-none cursor-pointer font-[inherit] text-accent">View all →</button>
             </div>
             {(() => {
               const items = [];
@@ -144,11 +145,11 @@ function AdminOverview({ data, dark, t, setActive }) {
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="text-[14px] font-medium mb-[2px]" style={{ color: t.text }}>{item.batchId} · {item.orders.length} orders</div>
+                        <div className="text-[14px] font-medium mb-[2px] text-t-text">{item.batchId} · {item.orders.length} orders</div>
                         <div className="flex items-center gap-1.5 text-[12px]">
-                          <span style={{ color: t.textMuted }}>{item.orders[0]?.user || "user"}</span>
+                          <span className="text-t-text-muted">{item.orders[0]?.user || "user"}</span>
                           <span className="w-[3px] h-[3px] rounded-full bg-current opacity-35 shrink-0" />
-                          <span style={{ color: t.textMuted }}>{item.created ? fD(item.created) : ""}</span>
+                          <span className="text-t-text-muted">{item.created ? fD(item.created) : ""}</span>
                         </div>
                       </div>
                       <span className="text-[14px] font-semibold shrink-0" style={{ color: item.orders.every(o => o.status === "Cancelled") ? (dark ? "#fca5a5" : "#dc2626") : item.orders.some(o => o.status === "Partial") ? (dark ? "#fbbf24" : "#d97706") : t.green }}>{fN(totalCharge)}</span>
@@ -160,11 +161,11 @@ function AdminOverview({ data, dark, t, setActive }) {
                   <div key={o.id} className="flex items-center py-3 px-[18px] gap-3" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                     <PlatformIcon platform={o.platform} dark={dark} />
                     <div className="min-w-0 flex-1">
-                      <div className="text-[14px] font-medium overflow-hidden text-ellipsis whitespace-nowrap mb-[2px]" style={{ color: t.text }}>{o.service}{o.tier ? ` · ${o.tier}` : ""}</div>
+                      <div className="text-[14px] font-medium overflow-hidden text-ellipsis whitespace-nowrap mb-[2px] text-t-text">{o.service}{o.tier ? ` · ${o.tier}` : ""}</div>
                       <div className="flex items-center gap-1.5 text-[12px]">
-                        <span style={{ color: t.textMuted }}>{o.user || "user"}</span>
+                        <span className="text-t-text-muted">{o.user || "user"}</span>
                         <span className="w-[3px] h-[3px] rounded-full bg-current opacity-35 shrink-0" />
-                        <span style={{ color: t.textMuted }}>{o.created ? fD(o.created) : ""}</span>
+                        <span className="text-t-text-muted">{o.created ? fD(o.created) : ""}</span>
                       </div>
                     </div>
                     <span className="text-[14px] font-semibold shrink-0" style={{ color: o.status === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : o.status === "Partial" ? (dark ? "#fbbf24" : "#d97706") : t.green }}>{fN(o.charge || 0)}</span>
@@ -173,12 +174,12 @@ function AdminOverview({ data, dark, t, setActive }) {
               }) : null;
             })() || (
               <div className="py-8 px-5 text-center">
-                <svg width="36" height="36" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 10px", opacity: .7 }}>
+                <svg width="36" height="36" viewBox="0 0 64 64" fill="none" className="block mx-auto mb-2.5 opacity-70">
                   <rect x="12" y="8" width="40" height="48" rx="6" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
                   <line x1="20" y1="22" x2="44" y2="22" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
                   <line x1="20" y1="30" x2="38" y2="30" stroke={t.accent} strokeWidth="1.5" opacity=".15" strokeLinecap="round" />
                 </svg>
-                <div className="text-sm font-semibold" style={{ color: t.textSoft }}>No orders yet</div>
+                <div className="text-sm font-semibold text-t-text-soft">No orders yet</div>
               </div>
             )}
           </div>
@@ -187,28 +188,28 @@ function AdminOverview({ data, dark, t, setActive }) {
         <div>
           <div className="rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
             <div className="py-3 px-[18px] flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-              <span className="text-sm font-semibold tracking-wide uppercase" style={{ color: t.textMuted }}>New users</span>
-              <button onClick={() => setActive("users")} className="text-xs font-medium bg-transparent border-none cursor-pointer font-[inherit]" style={{ color: t.accent }}>View all →</button>
+              <span className="text-sm font-semibold tracking-wide uppercase text-t-text-muted">New users</span>
+              <button onClick={() => setActive("users")} className="text-xs font-medium bg-transparent border-none cursor-pointer font-[inherit] text-accent">View all →</button>
             </div>
             {(recentUsers || []).length > 0 ? (recentUsers || []).slice(0, 5).map((u, i, arr) => (
               <div key={u.id} className="flex items-center py-3 px-[18px] gap-3" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                 <Avatar size={32} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[14px] font-medium" style={{ color: t.text }}>{u.name}</div>
-                  <div className="text-[12px]" style={{ color: t.textMuted }}>{u.email}</div>
+                  <div className="text-[14px] font-medium text-t-text">{u.name}</div>
+                  <div className="text-[12px] text-t-text-muted">{u.email}</div>
                 </div>
                 <div className="text-right shrink-0">
-                  <div className="text-[13px] font-semibold" style={{ color: t.text }}>{u.orders || 0} orders</div>
-                  <div className="text-[12px]" style={{ color: t.textMuted }}>{u.created ? fD(u.created, true) : ""}</div>
+                  <div className="text-[13px] font-semibold text-t-text">{u.orders || 0} orders</div>
+                  <div className="text-[12px] text-t-text-muted">{u.created ? fD(u.created, true) : ""}</div>
                 </div>
               </div>
             )) : (
               <div className="py-8 px-5 text-center">
-                <svg width="36" height="36" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 10px", opacity: .7 }}>
+                <svg width="36" height="36" viewBox="0 0 64 64" fill="none" className="block mx-auto mb-2.5 opacity-70">
                   <circle cx="32" cy="22" r="10" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
                   <path d="M14 52c0-10 8-16 18-16s18 6 18 16" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
                 </svg>
-                <div className="text-sm font-semibold" style={{ color: t.textSoft }}>No users yet</div>
+                <div className="text-sm font-semibold text-t-text-soft">No users yet</div>
               </div>
             )}
           </div>
@@ -225,14 +226,14 @@ function PlaceholderPage({ title, subtitle, dark, t }) {
   return (
     <>
       <div className="adm-header">
-        <div className="adm-title" style={{ color: t.text }}>{title}</div>
-        <div className="adm-subtitle" style={{ color: t.textMuted }}>{subtitle}</div>
-        <div className="page-divider" style={{ background: t.cardBorder }} />
+        <div className="adm-title text-t-text">{title}</div>
+        <div className="adm-subtitle text-t-text-muted">{subtitle}</div>
+        <div className="page-divider bg-t-card-border" />
       </div>
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-base font-medium" style={{ color: t.textMuted }}>Building {title}...</div>
-          <div className="text-sm mt-1" style={{ color: t.textMuted }}>This page will be built next</div>
+          <div className="text-base font-medium text-t-text-muted">Building {title}...</div>
+          <div className="text-sm mt-1 text-t-text-muted">This page will be built next</div>
         </div>
       </div>
     </>
@@ -287,12 +288,12 @@ function AdminRightSidebar({ data, dark, t, active }) {
     <>
       {showProviderColors && (
         <div className="shrink-0">
-          <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Providers</div>
-          <div className="rounded-[14px] py-2.5 px-3.5 flex gap-4" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
+          <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Providers</div>
+          <div className="rounded-[14px] py-2.5 px-3.5 flex gap-4 bg-t-card-bg" style={{ border: `1px solid ${t.cardBorder}` }}>
             {[["MTP", "#ef4444"], ["JAP", "#3b82f6"], ["DAO", "#22c55e"]].map(([name, color]) => (
               <div key={name} className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full" style={{ background: color }} />
-                <span className="text-xs font-semibold" style={{ color: t.textSoft }}>{name}</span>
+                <span className="text-xs font-semibold text-t-text-soft">{name}</span>
               </div>
             ))}
           </div>
@@ -301,20 +302,20 @@ function AdminRightSidebar({ data, dark, t, active }) {
 
       {showActivity && (
         <div className="flex-1 overflow-auto min-h-0">
-          <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>{activityLabel}</div>
-          <div className="rounded-[14px] p-1.5" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
+          <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>{activityLabel}</div>
+          <div className="rounded-[14px] p-1.5 bg-t-card-bg" style={{ border: `1px solid ${t.cardBorder}` }}>
             {filteredActivity.slice(0, 6).map((a, i) => (
               <div key={i} className="flex gap-2.5 py-2.5 px-2.5 rounded-[10px]" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` : "none" }}>
                 <div className="w-[6px] h-[6px] rounded-full mt-[7px] shrink-0" style={{ background: activityDotColor(a.type) }} />
                 <div className="min-w-0">
-                  <div className="text-sm font-medium" style={{ color: t.text }}>{(a.action || "").split("\n")[0]}</div>
-                  {(a.action || "").includes("\n") && <div className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{a.action.split("\n")[1]}</div>}
-                  <div className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{a.detail}</div>
-                  <div className="text-[11px] mt-0.5" style={{ color: t.textMuted, opacity: 0.7 }}>{a.time ? fD(a.time) : ""}</div>
+                  <div className="text-sm font-medium text-t-text">{(a.action || "").split("\n")[0]}</div>
+                  {(a.action || "").includes("\n") && <div className="text-[12px] mt-0.5 text-t-text-muted">{a.action.split("\n")[1]}</div>}
+                  <div className="text-[12px] mt-0.5 text-t-text-muted">{a.detail}</div>
+                  <div className="text-[11px] mt-0.5 text-t-text-muted opacity-70">{a.time ? fD(a.time) : ""}</div>
                 </div>
               </div>
             ))}
-            {filteredActivity.length === 0 && <div className="text-sm py-3 px-3" style={{ color: t.textMuted }}>No recent activity</div>}
+            {filteredActivity.length === 0 && <div className="text-sm py-3 px-3 text-t-text-muted">No recent activity</div>}
           </div>
         </div>
       )}
@@ -330,6 +331,7 @@ export default function AdminDashboard({ initialData }) {
 }
 
 function AdminDashboardInner({ initialData }) {
+  useSessionHeartbeat('admin');
   const { dark, setDark, toggleTheme, t: baseT, themeMode, setThemeMode } = useTheme();
   const [active, setActiveRaw] = useState("overview");
   const setActive = (page) => { setActiveRaw(page); try { localStorage.setItem("nitro-admin-page", page); } catch {} };
@@ -363,6 +365,16 @@ function AdminDashboardInner({ initialData }) {
     if (redirecting) return;
     // Fetch admin-targeted alerts
     fetch("/api/admin/alerts/active").then(r => r.ok ? r.json() : { alerts: [] }).then(d => setAdminAlerts(d.alerts || [])).catch(() => {});
+    const applyThemePreference = (d) => {
+      if (d.admin?.themePreference && d.admin.themePreference !== "auto") {
+        const saved = localStorage.getItem("nitro-admin-theme");
+        if (!saved || saved === "auto") {
+          setThemeMode(d.admin.themePreference);
+          setDark(d.admin.themePreference === "night");
+          try { localStorage.setItem("nitro-admin-theme", d.admin.themePreference); } catch {}
+        }
+      }
+    };
     async function load() {
       try {
         const res = await fetch("/api/admin/overview");
@@ -383,20 +395,16 @@ function AdminDashboardInner({ initialData }) {
           pendingOrderCount: d.pendingOrderCount || 0,
           openIssueCount: d.openIssueCount || 0,
         });
-        if (d.admin?.themePreference && d.admin.themePreference !== "auto") {
-          const saved = localStorage.getItem("nitro-admin-theme");
-          if (!saved || saved === "auto") {
-            setThemeMode(d.admin.themePreference);
-            setDark(d.admin.themePreference === "night");
-            try { localStorage.setItem("nitro-admin-theme", d.admin.themePreference); } catch {}
-          }
-        }
+        applyThemePreference(d);
       } catch {
         setAdmin({ name: "Admin", role: "superadmin", email: "" });
       }
     }
-    load();
-  }, [redirecting]);
+    // The server has just loaded the same endpoint for initialData. Avoid an
+    // immediate duplicate burst during hydration; retry only when SSR failed.
+    if (initialData) applyThemePreference(initialData);
+    else load();
+  }, [redirecting, initialData]);
 
   /* ── Admin notification system ── */
   const notifLastPollRef = useRef(null);
@@ -549,30 +557,36 @@ function AdminDashboardInner({ initialData }) {
   useEffect(() => {
     if (redirecting) return;
     let interval = null;
+    let inFlight = false;
     const poll = async () => {
+      if (document.visibilityState !== 'visible' || inFlight) return;
+      inFlight = true;
       try {
-        const res = await fetch("/api/admin/overview");
-        if (res.status === 401) { window.location.replace("/admin/login"); return; }
-        if (res.ok) {
-          const d = await res.json();
-          setAdmin(prev => ({ ...prev, name: d.admin?.name || prev.name, role: d.admin?.role || prev.role, pages: d.admin?.pages || prev.pages, customActions: d.admin?.customActions || prev.customActions }));
-          setData({
-            stats: d || {},
-            recentOrders: d.recentOrders || [],
-            recentUsers: d.recentUsers || [],
-            openTickets: d.openTickets || [],
-            activity: d.activity || [],
-            unreadTicketCount: d.unreadTicketCount || 0,
-            pendingManualCount: d.pendingManualCount || 0,
-            pendingOrderCount: d.pendingOrderCount || 0,
-          openIssueCount: d.openIssueCount || 0,
-          });
+        // Overview is intentionally expensive. Refresh it only while that page
+        // is visible; other admin pages fetch their own data.
+        if (active === 'overview') {
+          const res = await fetch("/api/admin/overview");
+          if (res.status === 401) { window.location.replace("/admin/login"); return; }
+          if (res.ok) {
+            const d = await res.json();
+            setAdmin(prev => ({ ...prev, name: d.admin?.name || prev.name, role: d.admin?.role || prev.role, pages: d.admin?.pages || prev.pages, customActions: d.admin?.customActions || prev.customActions }));
+            setData({
+              stats: d || {},
+              recentOrders: d.recentOrders || [],
+              recentUsers: d.recentUsers || [],
+              openTickets: d.openTickets || [],
+              activity: d.activity || [],
+              unreadTicketCount: d.unreadTicketCount || 0,
+              pendingManualCount: d.pendingManualCount || 0,
+              pendingOrderCount: d.pendingOrderCount || 0,
+              openIssueCount: d.openIssueCount || 0,
+            });
+          }
         }
-      } catch {}
 
-      if (notifLastPollRef.current) {
-        try {
+        if (notifLastPollRef.current) {
           const nr = await fetch(`/api/admin/notifications/poll?since=${encodeURIComponent(notifLastPollRef.current)}`);
+          if (nr.status === 401) { window.location.replace("/admin/login"); return; }
           if (nr.ok) {
             const { events } = await nr.json();
             const grouped = {};
@@ -600,15 +614,24 @@ function AdminDashboardInner({ initialData }) {
               if (d) fireNotifRef.current?.(d, toastRef.current);
             }
           }
-        } catch {}
+        }
+        notifLastPollRef.current = new Date().toISOString();
+      } catch {
+        // A later visible poll retries without replacing currently rendered data.
+      } finally {
+        inFlight = false;
       }
-      notifLastPollRef.current = new Date().toISOString();
     };
     const start = () => { if (!interval) interval = setInterval(poll, 20000); };
     const stop = () => { clearInterval(interval); interval = null; };
+    const onVisibility = () => { if (document.visibilityState === 'visible') poll(); };
     start();
-    return () => { stop(); };
-  }, [redirecting]);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [redirecting, active]);
 
   const handleLogout = async () => {
     try {
@@ -648,26 +671,26 @@ function AdminDashboardInner({ initialData }) {
   if (!admin) {
     const skBone = `skel-bone ${dark ? "skel-dark" : "skel-light"}`;
     return (
-      <div className="dash-root" style={{ background: t.bg }}>
-        <nav className="dash-nav" style={{ background: t.sidebarBg, borderBottom: `0.5px solid ${t.sidebarBorder}` }}>
+      <div className="dash-root bg-t-bg">
+        <nav className="dash-nav bg-t-sidebar-bg" style={{ borderBottom: `0.5px solid ${t.sidebarBorder}` }}>
           <div className="dash-nav-left"><div className="dash-logo-static"><div className="h-7 px-3 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></div></div></div>
           <div className="dash-nav-right"><div className={`${skBone} w-[30px] h-[30px] rounded-[10px]`} /></div>
         </nav>
         <div className="dash-body">
-          <aside className="dash-left" style={{ background: t.sidebarBg, borderRight: `0.5px solid ${t.sidebarBorder}` }}>
+          <aside className="dash-left bg-t-sidebar-bg" style={{ borderRight: `0.5px solid ${t.sidebarBorder}` }}>
             {[1,2,3,4,5,6,7,8,9].map(i => <div key={i} className={`${skBone} h-9 rounded-xl mb-1`} />)}
           </aside>
-          <main className="dash-main" style={{ background: t.bg }}>
+          <main className="dash-main bg-t-bg">
             <div className={`${skBone} w-60 h-6 mb-2`} />
             <div className={`${skBone} w-[180px] h-3.5 mb-6`} />
             <div className="grid grid-cols-5 gap-3">
-              {[1,2,3,4,5].map(i => <div key={i} className="p-[18px] rounded-[14px] border border-solid" style={{ background: t.cardBg, borderColor: t.cardBorder }}><div className={`${skBone} w-[60%] h-2.5 mb-2.5`} /><div className={`${skBone} w-[45%] h-[22px]`} /></div>)}
+              {[1,2,3,4,5].map(i => <div key={i} className="p-[18px] rounded-[14px] border border-solid bg-t-card-bg border-t-card-border"><div className={`${skBone} w-[60%] h-2.5 mb-2.5`} /><div className={`${skBone} w-[45%] h-[22px]`} /></div>)}
             </div>
           </main>
-          <div className="dash-right" style={{ background: t.sidebarBg, borderLeft: `0.5px solid ${t.sidebarBorder}` }}>
+          <div className="dash-right bg-t-sidebar-bg" style={{ borderLeft: `0.5px solid ${t.sidebarBorder}` }}>
             <div className={`${skBone} w-[100px] h-2 mb-3.5`} />
             {[1,2,3].map(i => <div key={i} className={`${skBone} h-[50px] rounded-[10px] mb-1.5`} />)}
-            <div className="h-0.5 my-3" style={{ background: t.sidebarBorder }} />
+            <div className="h-0.5 my-3 bg-t-sidebar-border" />
             <div className={`${skBone} w-20 h-2 mb-3.5`} />
             <div className={`${skBone} h-20 rounded-xl`} />
           </div>
@@ -725,24 +748,24 @@ function AdminDashboardInner({ initialData }) {
     <ToastProvider dark={dark}>
     <ToastBridge toastRef={toastRef} />
     <ConfirmProvider dark={dark}>
-    <div className="dash-root" style={{ background: t.bg }}>
+    <div className="dash-root bg-t-bg">
 
       {/* ═══ TOP NAV ═══ */}
       <nav className="dash-nav" style={{ background: dark ? "rgba(9,12,21,.9)" : "rgba(248,245,241,.92)", borderBottom: `0.5px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
         <div className="dash-nav-left">
           <button className="dash-menu-btn" onClick={() => setLeftOpen(!leftOpen)}>
             <div className="dash-hamburger-bars" style={{ opacity: leftOpen ? 0 : 1, position: leftOpen ? "absolute" : "relative" }}>
-              <div className="h-0.5 rounded-[1px] w-4" style={{ background: t.accent }} />
-              <div className="h-0.5 rounded-[1px] w-[11px]" style={{ background: t.accent }} />
-              <div className="h-0.5 rounded-[1px] w-4" style={{ background: t.accent }} />
+              <div className="h-0.5 rounded-[1px] w-4 bg-accent" />
+              <div className="h-0.5 rounded-[1px] w-[11px] bg-accent" />
+              <div className="h-0.5 rounded-[1px] w-4 bg-accent" />
             </div>
             {leftOpen && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>}
             <span className="dash-logo-n"><span className="w-[24px] h-[24px] rounded-[6px] flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><svg width="10" height="11" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></span></span>
             <span className="dash-logo-wordmark"><span className="h-7 px-3 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span></span>
           </button>
-          <div className="dash-logo-static" style={{ gap: 8 }}>
+          <div className="dash-logo-static gap-2">
             <div className="h-7 px-3 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></div>
-            <span className="text-xs py-0.5 px-1.5 rounded font-semibold" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)", color: t.accent }}>ADMIN</span>
+            <span className="text-xs py-0.5 px-1.5 rounded font-semibold text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)" }}>ADMIN</span>
           </div>
         </div>
         <div className="dash-nav-right">
@@ -758,11 +781,11 @@ function AdminDashboardInner({ initialData }) {
               : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>}
           </button>
           {/* Open tickets */}
-          <button onClick={() => { setActive("tickets"); setLeftOpen(false); }} className="dash-bell relative" aria-label="Open tickets" style={{ color: t.textSoft }}>
+          <button onClick={() => { setActive("tickets"); setLeftOpen(false); }} className="dash-bell relative text-t-text-soft" aria-label="Open tickets">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
             {ticketCount > 0 && <div className="dash-bell-badge">{ticketCount > 10 ? "10+" : ticketCount}</div>}
           </button>
-          <button onClick={() => { setActive("payments"); setLeftOpen(false); }} className="dash-bell relative" aria-label="Pending payments" style={{ color: t.textSoft }}>
+          <button onClick={() => { setActive("payments"); setLeftOpen(false); }} className="dash-bell relative text-t-text-soft" aria-label="Pending payments">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
             {paymentCount > 0 && <div className="dash-bell-badge">{paymentCount > 10 ? "10+" : paymentCount}</div>}
           </button>
@@ -774,15 +797,15 @@ function AdminDashboardInner({ initialData }) {
 
       {/* ═══ BODY ═══ */}
       <div className="dash-body">
-        <aside className="dash-left admin-sidebar" style={{ background: t.sidebarBg, borderRight: `0.5px solid ${t.sidebarBorder}`, left: leftOpen ? 0 : undefined }}>
+        <aside className="dash-left admin-sidebar bg-t-sidebar-bg" style={{ borderRight: `0.5px solid ${t.sidebarBorder}`, left: leftOpen ? 0 : undefined }}>
           {ADMIN_NAV.map((section, si) => {
             const ap = admin?.pages;
             const visibleItems = ap === "*" ? section.items : section.items.filter(item => ap?.includes(item.id));
             if (visibleItems.length === 0) return null;
             return (
             <div key={section.section}>
-              {si > 0 && <div className="h-px my-1 mx-3" style={{ background: t.sidebarBorder }} />}
-              <div className="adm-nav-section" style={{ color: t.textMuted }}>{section.section}</div>
+              {si > 0 && <div className="h-px my-1 mx-3 bg-t-sidebar-border" />}
+              <div className="adm-nav-section text-t-text-muted">{section.section}</div>
               {visibleItems.map(item => (
                 <button key={item.id} onClick={() => { setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: active === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", color: active === item.id ? t.accent : t.textSoft, fontWeight: active === item.id ? 600 : 450 }}>
                   <span className="shrink-0" style={{ opacity: active === item.id ? 1 : .55, color: active === item.id ? t.accent : t.textMuted }}>{item.icon}</span>
@@ -794,19 +817,19 @@ function AdminDashboardInner({ initialData }) {
             );
           })}
           <div className="flex-1" />
-          <div className="dash-sidebar-divider" style={{ background: t.sidebarBorder }} />
+          <div className="dash-sidebar-divider bg-t-sidebar-border" />
           <div className="pt-1 px-3.5 pb-2">
             <a href={SITE.status} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 no-underline">
-              <div className="w-1.5 h-1.5 rounded-full" style={{ background: t.green }} />
-              <span className="text-[13px] font-medium" style={{ color: t.green }}>All systems operational</span>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ marginLeft: "auto" }}><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              <div className="w-1.5 h-1.5 rounded-full bg-t-green" />
+              <span className="text-[13px] font-medium text-t-green">All systems operational</span>
+              <svg className="ml-auto" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             </a>
           </div>
         </aside>
 
         {leftOpen && <div className="dash-overlay" onClick={() => setLeftOpen(false)} />}
 
-        <main className="dash-main" style={{ background: t.bg, ...(active === "tickets" ? { overflow: "hidden" } : {}) }}>
+        <main className="dash-main bg-t-bg" style={{ ...(active === "tickets" ? { overflow: "hidden" } : {}) }}>
           <AnnouncementBanner alerts={adminAlerts} dark={dark} mode="dashboard" />
           <div key={active} className={`dash-page-enter ${active === "tickets" ? "flex-1 flex flex-col min-h-0 overflow-hidden" : ""}`}>
             {renderPage()}
@@ -814,7 +837,7 @@ function AdminDashboardInner({ initialData }) {
 
         </main>
 
-        <div className="dash-right" style={{ background: t.sidebarBg, borderLeft: `0.5px solid ${t.sidebarBorder}` }}>
+        <div className="dash-right bg-t-sidebar-bg" style={{ borderLeft: `0.5px solid ${t.sidebarBorder}` }}>
           {active === "create-order" ? <div id="create-order-sidebar" className="flex flex-col gap-4 flex-1 overflow-auto min-h-0" /> : active === "leaderboard" ? <AdminLeaderboardSidebar dark={dark} t={t} /> : <AdminRightSidebar data={data} dark={dark} t={t} active={active} />}
         </div>
       </div>

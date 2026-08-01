@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
-import { signUserToken, setUserCookie, detectDevice, hashToken } from '@/lib/auth';
+import { signUserToken, setUserCookie, detectDevice, hashToken, createSessionId } from '@/lib/auth';
 import { generateReferralCode } from '@/lib/utils';
 import { sendWelcomeEmail } from '@/lib/email';
 import { isDisposableEmail } from '@/lib/validate';
@@ -181,19 +181,18 @@ export async function GET(req) {
       if (referredByMemberId) notifyCrewSignup(viaSlug).catch(() => {});
     }
 
-    // Sign JWT and set cookie
-    const token = signUserToken(user);
-    await setUserCookie(token);
-
-    // Create session
     const hdrs = await headers();
     const ua = hdrs.get('user-agent') || '';
     const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown';
     const device = detectDevice(ua);
+    const remember = true;
+    const sid = createSessionId();
+    const token = signUserToken(user, { remember, sid });
 
     await prisma.session.create({
-      data: { userId: user.id, tokenHash: hashToken(token), deviceType: device.type, deviceInfo: device.info, ip },
+      data: { id: sid, userId: user.id, tokenHash: hashToken(token), remember, deviceType: device.type, deviceInfo: device.info, ip },
     });
+    await setUserCookie(token, { remember });
 
     // Cap at 5 sessions — prune oldest beyond limit
     const sessions = await prisma.session.findMany({ where: { userId: user.id }, orderBy: { lastActive: 'desc' }, select: { id: true } });

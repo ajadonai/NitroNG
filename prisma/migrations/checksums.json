@@ -41,7 +41,8 @@
     "20260725030000_add_outreach_tracking_fields": "6189187ee3064759bdda79673bd6daa2967909ae8ec1b37e7c58b3b2c70ab3f9",
     "20260725180000_ify_messages": "99cd5fd2ed8473bf10fdbb4892f820c1e0a63986581b2c183d2b89661156c301",
     "20260726000000_add_ify_promises": "1f76c5842731a4a6c99a6d7f7dde1722bb5bb02dc3baf237e7cea4e74cce48f4",
-    "20260727120000_add_custom_comments_to_service_tier": "2007a3ae9d2e69380027558eda2e144e9ff950816becad5ce7a574003f45de06"
+    "20260727120000_add_custom_comments_to_service_tier": "2007a3ae9d2e69380027558eda2e144e9ff950816becad5ce7a574003f45de06",
+    "20260730120000_add_session_remember": "e50684f1a060b87c1ccc93a595576bdf95bfab639b2cd52bef058f118107df49"
   },
   "appliedOverrides": {
     "0_init": "c864f484fce76fd7b8db286181967d98cdb91559be1081e34df0fd65cc60b7c5",

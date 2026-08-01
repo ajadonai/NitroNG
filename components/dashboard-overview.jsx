@@ -45,19 +45,19 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold" style={{ color: t.text }}>Add Nitro to Home Screen</div>
+            <div className="text-sm font-semibold text-t-text">Add Nitro to Home Screen</div>
             {a2hs.isIos ? (
-              <div className="text-[13px] mt-0.5" style={{ color: t.textMuted }}>
+              <div className="text-[13px] mt-0.5 text-t-text-muted">
                 Tap <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline -mt-px mx-0.5"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> then <strong>"Add to Home Screen"</strong>
               </div>
             ) : (
-              <div className="text-[13px] mt-0.5" style={{ color: t.textMuted }}>Get quick access like a native app</div>
+              <div className="text-[13px] mt-0.5 text-t-text-muted">Get quick access like a native app</div>
             )}
           </div>
           {a2hs.ready && !a2hs.isIos && (
-            <button onClick={a2hs.onInstall} className="shrink-0 py-2 px-4 rounded-lg text-[13px] font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>Add</button>
+            <button onClick={a2hs.onInstall} className="shrink-0 py-2 px-4 rounded-lg text-[13px] font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px bg-accent text-white">Add</button>
           )}
-          <button onClick={a2hs.onDismiss} className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.08)", color: t.textMuted }}>
+          <button onClick={a2hs.onDismiss} className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.08)" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
@@ -69,10 +69,10 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2 0-2.8-.8-.7-2-.7-3-.2z"/><path d="M15 9l-3 3-2-2 3-3c2-2 5-3 8-3 0 3-1 6-3 8z"/><path d="M9 12l-3-1 2-3M12 15l1 3 3-2"/></svg>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-bold" style={{ color: t.text }}>{primaryAction.label}</div>
-          <div className="text-[11.5px] mt-0.5 truncate" style={{ color: t.textMuted }}>{primaryAction.sub}</div>
+          <div className="text-[13px] font-bold text-t-text">{primaryAction.label}</div>
+          <div className="text-[11.5px] mt-0.5 truncate text-t-text-muted">{primaryAction.sub}</div>
         </div>
-        <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.13)", color: t.accent }}>
+        <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 text-accent" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.13)" }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M9 6l6 6-6 6"/></svg>
         </div>
       </button>
@@ -86,7 +86,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
         ].map(q => (
           <button key={q.label} onClick={q.onClick} className="flex max-md:flex-col items-center gap-2.5 max-md:gap-[7px] py-[11px] px-3 max-md:py-3 max-md:px-1.5 rounded-xl border border-solid cursor-pointer text-left max-md:text-center font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", borderColor: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)" }}>
             <div className="w-7 h-7 rounded-[9px] flex items-center justify-center shrink-0" style={{ background: q.gradient, boxShadow: "0 3px 8px rgba(0,0,0,.16)" }}>{q.icon}</div>
-            <div className="text-[12px] max-md:text-[11px] font-semibold truncate max-md:whitespace-normal max-md:leading-tight" style={{ color: t.text }}>{q.label}</div>
+            <div className="text-[12px] max-md:text-[11px] font-semibold truncate max-md:whitespace-normal max-md:leading-tight text-t-text">{q.label}</div>
           </button>
         ))}
       </div>
@@ -103,8 +103,8 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => setTutorialOpen(false)} style={{ background: "rgba(0,0,0,.45)" }}>
           <div role="dialog" aria-modal="true" className="w-full max-w-[420px] rounded-2xl overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             <div className="py-4 px-5 flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderBottom: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
-              <div className="text-[15px] font-semibold" style={{ color: t.text }}>How it works</div>
-              <button onClick={() => setTutorialOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent" style={{ borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", color: t.textSoft }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <div className="text-[15px] font-semibold text-t-text">How it works</div>
+              <button onClick={() => setTutorialOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent text-t-text-soft" style={{ borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div className="py-5 px-5 flex flex-col gap-3.5 max-h-[70vh] overflow-y-auto">
               {[
@@ -117,10 +117,10 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
                 { step: "7", title: "Track delivery", desc: "Watch your order progress in real time from your dashboard." },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[12px] font-bold" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)", color: t.accent }}>{item.step}</div>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[12px] font-bold text-accent" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)" }}>{item.step}</div>
                   <div className="pt-0.5">
-                    <div className="text-[13px] font-semibold mb-0.5" style={{ color: t.text }}>{item.title}</div>
-                    <div className="text-[12px] leading-[1.55]" style={{ color: t.textMuted }}>{item.desc}</div>
+                    <div className="text-[13px] font-semibold mb-0.5 text-t-text">{item.title}</div>
+                    <div className="text-[12px] leading-[1.55] text-t-text-muted">{item.desc}</div>
                   </div>
                 </div>
               ))}
@@ -134,8 +134,8 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => setTipsOpen(false)} style={{ background: "rgba(0,0,0,.45)" }}>
           <div role="dialog" aria-modal="true" className="w-full max-w-[420px] rounded-2xl overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             <div className="py-4 px-5 flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderBottom: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
-              <div className="text-[15px] font-semibold" style={{ color: t.text }}>What to Expect</div>
-              <button onClick={() => setTipsOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent" style={{ borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", color: t.textSoft }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <div className="text-[15px] font-semibold text-t-text">What to Expect</div>
+              <button onClick={() => setTipsOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent text-t-text-soft" style={{ borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div className="py-5 px-5 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
               {[
@@ -147,8 +147,8 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
                 <div key={i} className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: `${item.color}14`, color: item.color }}>{item.icon}</div>
                   <div>
-                    <div className="text-[13px] font-semibold mb-0.5" style={{ color: t.text }}>{item.title}</div>
-                    <div className="text-[12px] leading-[1.55]" style={{ color: t.textMuted }}>{item.desc}</div>
+                    <div className="text-[13px] font-semibold mb-0.5 text-t-text">{item.title}</div>
+                    <div className="text-[12px] leading-[1.55] text-t-text-muted">{item.desc}</div>
                   </div>
                 </div>
               ))}
@@ -160,8 +160,8 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       {/* ── Recent orders ── */}
       <div className="rounded-[14px] max-md:rounded-xl overflow-hidden mb-5 max-md:mb-4" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
         <div className="py-3 px-[18px] flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-          <div className="text-sm font-semibold tracking-wide uppercase" style={{ color: t.textMuted }}>Recent orders</div>
-          {orders.length > 0 && <button onClick={() => setActive("orders")} className="text-xs font-medium bg-transparent border-none cursor-pointer font-[inherit]" style={{ color: t.accent }}>View all →</button>}
+          <div className="text-sm font-semibold tracking-wide uppercase text-t-text-muted">Recent orders</div>
+          {orders.length > 0 && <button onClick={() => setActive("orders")} className="text-xs font-medium bg-transparent border-none cursor-pointer font-[inherit] text-accent">View all →</button>}
         </div>
         {(() => {
           const items = [];
@@ -182,8 +182,8 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium" style={{ color: t.text }}>Bulk order</div>
-                    <div className="text-xs mt-px" style={{ color: t.textMuted }}>{item.created ? fD(item.created, true) : ""}</div>
+                    <div className="text-sm font-medium text-t-text">Bulk order</div>
+                    <div className="text-xs mt-px text-t-text-muted">{item.created ? fD(item.created, true) : ""}</div>
                   </div>
                 </div>
               );
@@ -193,8 +193,8 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
               <div key={o.id} onClick={() => setActive("orders")} className="flex items-center py-3 px-[18px] max-md:py-2.5 max-md:px-3.5 gap-3 cursor-pointer transition-colors duration-150 hover:bg-[rgba(196,125,142,.08)]" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
                 <PlatformIcon platform={o.platform} dark={dark} size={32} />
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{o.service}</div>
-                  <div className="text-xs mt-px" style={{ color: t.textMuted }}>{o.created ? fD(o.created, true) : ""}</div>
+                  <div className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap text-t-text">{o.service}</div>
+                  <div className="text-xs mt-px text-t-text-muted">{o.created ? fD(o.created, true) : ""}</div>
                 </div>
               </div>
             );
@@ -208,10 +208,10 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
               <circle cx="32" cy="38" r="8" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
               <path d="M29 38l2 2 4-4" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity=".4" />
             </svg>
-            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No orders yet</div>
-            <div className="text-sm mb-4 leading-[1.5] max-w-[320px]" style={{ color: t.textMuted }}>Choose a platform, pick a service, and place your first order.</div>
-            <button onClick={() => setActive("services")} className="cursor-pointer py-2.5 px-6 rounded-[10px] text-sm font-semibold border-none transition-transform duration-200 hover:-translate-y-px mb-2" style={{ background: t.accent, color: "#fff" }}>Place first order</button>
-            <button onClick={() => setActive("guide")} className="cursor-pointer py-2 px-4 rounded-[10px] text-[13px] font-medium border-none transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", color: t.textMuted }}>View blog</button>
+            <div className="text-base font-semibold mb-1 text-t-text-soft">No orders yet</div>
+            <div className="text-sm mb-4 leading-[1.5] max-w-[320px] text-t-text-muted">Choose a platform, pick a service, and place your first order.</div>
+            <button onClick={() => setActive("services")} className="cursor-pointer py-2.5 px-6 rounded-[10px] text-sm font-semibold border-none transition-transform duration-200 hover:-translate-y-px mb-2 bg-accent text-white">Place first order</button>
+            <button onClick={() => setActive("guide")} className="cursor-pointer py-2 px-4 rounded-[10px] text-[13px] font-medium border-none transition-transform duration-200 hover:-translate-y-px bg-transparent text-t-text-muted">View blog</button>
           </div>
         )}
       </div>
@@ -219,19 +219,19 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       {/* ── Referral card — tablet/mobile only ── */}
       <div className="hidden max-desktop:block mb-4 rounded-[14px] max-md:rounded-xl overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
         <div className="flex items-center gap-3 p-4 max-md:p-3.5">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", color: t.accent }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}>
             {ReferralIcon}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold" style={{ color: t.text }}>Invite friends</div>
-            <div className="text-[13px] mt-0.5" style={{ color: t.textMuted }}>{user?.refs || 0} referrals · {fN(user?.earnings || 0)} earned</div>
+            <div className="text-sm font-semibold text-t-text">Invite friends</div>
+            <div className="text-[13px] mt-0.5 text-t-text-muted">{user?.refs || 0} referrals · {fN(user?.earnings || 0)} earned</div>
           </div>
           <div className="text-right shrink-0">
-            <div className="m text-base font-semibold tracking-[1.5px]" style={{ color: t.accent }}>{user?.refCode || "—"}</div>
+            <div className="m text-base font-semibold tracking-[1.5px] text-accent">{user?.refCode || "—"}</div>
           </div>
         </div>
         <div className="px-4 max-md:px-3.5 pb-3.5">
-          <button onClick={() => setActive("referrals")} className="w-full py-2 rounded-lg text-[13px] font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>Open referrals</button>
+          <button onClick={() => setActive("referrals")} className="w-full py-2 rounded-lg text-[13px] font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>Open referrals</button>
         </div>
       </div>
 
@@ -257,15 +257,15 @@ export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setAct
     <>
       {/* ── Your Stats ── */}
       <div className="shrink-0">
-        <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Your Stats</div>
-        <div className="rounded-[14px] p-3" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
+        <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Your Stats</div>
+        <div className="rounded-[14px] p-3 bg-t-card-bg border border-t-card-border">
           <div className="grid grid-cols-2 gap-2.5">
             {statTiles.map(({ label, value, iconBg, icon }) => (
               <div key={label} className="flex items-center gap-2.5 py-2.5 px-2.5 rounded-[10px]" style={{ background: dark ? "rgba(14,17,34,.6)" : "rgba(236,234,229,.5)" }}>
                 <div className="w-8 h-8 rounded-[9px] flex items-center justify-center shrink-0" style={{ background: iconBg }}>{icon}</div>
                 <div className="min-w-0">
-                  <div className="text-[10.5px] font-medium mb-0.5" style={{ color: t.textMuted, letterSpacing: "0.3px" }}>{label}</div>
-                  <div className="text-[13px] font-semibold" style={{ fontVariantNumeric: "tabular-nums", color: t.text }}>{value}</div>
+                  <div className="text-[10.5px] font-medium mb-0.5 text-t-text-muted tracking-[0.3px]">{label}</div>
+                  <div className="text-[13px] font-semibold text-t-text tabular-nums">{value}</div>
                 </div>
               </div>
             ))}
@@ -275,15 +275,15 @@ export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setAct
 
       {/* ── Active Orders ── */}
       <div className="flex-1 overflow-auto">
-        <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Active Orders</div>
-        <div className="rounded-[14px] p-1.5" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
-          {activeCount === 0 && <div className="text-sm py-3 px-2.5" style={{ color: t.textMuted }}>No active orders</div>}
+        <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Active Orders</div>
+        <div className="rounded-[14px] p-1.5 bg-t-card-bg border border-t-card-border">
+          {activeCount === 0 && <div className="text-sm py-3 px-2.5 text-t-text-muted">No active orders</div>}
           {activeOrders.slice(0, 5).map((o, i) => (
             <div key={o.id} className="flex items-center gap-2.5 py-2.5 px-2.5 rounded-[10px] transition-colors duration-150" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` : "none" }}>
               <PlatformIcon platform={o.platform} dark={dark} size={36} />
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-medium overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{o.service}</div>
-                <div className="text-[11.5px] mt-0.5" style={{ color: t.textMuted }}>{o.tier ? `${o.tier} · ` : ""}{o.quantity?.toLocaleString() || 0} qty</div>
+                <div className="text-[13px] font-medium overflow-hidden text-ellipsis whitespace-nowrap text-t-text">{o.service}</div>
+                <div className="text-[11.5px] mt-0.5 text-t-text-muted">{o.tier ? `${o.tier} · ` : ""}{o.quantity?.toLocaleString() || 0} qty</div>
               </div>
               <div className="flex items-center gap-1 text-[10.5px] font-semibold shrink-0 py-0.5 px-2 rounded-md" style={{ background: o.status === "Pending" ? (dark ? "rgba(165,180,252,.1)" : "rgba(79,70,229,.07)") : (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.07)"), color: o.status === "Pending" ? (dark ? "#a5b4fc" : "#4f46e5") : (dark ? "#fcd34d" : "#d97706"), letterSpacing: "0.3px" }}>
                 <span className="w-[5px] h-[5px] rounded-full" style={{ background: "currentColor", animation: o.status !== "Pending" ? "sidebarPulse 2s ease-in-out infinite" : "none" }} />
@@ -292,26 +292,26 @@ export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setAct
             </div>
           ))}
           {activeCount > 5 && (
-            <button onClick={() => setActive("orders")} className="w-full py-2 text-[12.5px] font-semibold text-center bg-none border-none cursor-pointer mt-0.5 transition-opacity duration-150 hover:opacity-70" style={{ color: t.accent, borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` }}>View all {activeCount} active →</button>
+            <button onClick={() => setActive("orders")} className="w-full py-2 text-[12.5px] font-semibold text-center bg-none border-none cursor-pointer mt-0.5 transition-opacity duration-150 hover:opacity-70 text-accent" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` }}>View all {activeCount} active →</button>
           )}
         </div>
       </div>
 
       {/* ── Referral Card ── */}
       <div className="shrink-0">
-        <div className="rounded-[14px] p-4 text-center relative overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(196,125,142,.22)" : "rgba(196,125,142,.15)"}` }}>
+        <div className="rounded-[14px] p-4 text-center relative overflow-hidden bg-t-card-bg" style={{ border: `1px solid ${dark ? "rgba(196,125,142,.22)" : "rgba(196,125,142,.15)"}` }}>
           <div className="absolute inset-0 pointer-events-none" style={{ background: `linear-gradient(135deg, ${dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)"} 0%, transparent 60%)` }} />
           <div className="relative">
-            <div className="text-[10px] font-semibold uppercase tracking-[2px] mb-1.5" style={{ color: t.textMuted }}>Referral Code</div>
-            <div className="text-xl font-bold tracking-[3px] mb-2.5" style={{ color: t.accent }}>{user?.refCode || "—"}</div>
+            <div className="text-[10px] font-semibold uppercase tracking-[2px] mb-1.5 text-t-text-muted">Referral Code</div>
+            <div className="text-xl font-bold tracking-[3px] mb-2.5 text-accent">{user?.refCode || "—"}</div>
             <div className="flex justify-center gap-5">
               <div className="text-center">
-                <div className="text-base font-bold" style={{ fontVariantNumeric: "tabular-nums", color: t.text }}>{user?.refs || 0}</div>
-                <div className="text-[10.5px]" style={{ color: t.textMuted }}>Referrals</div>
+                <div className="text-base font-bold text-t-text tabular-nums">{user?.refs || 0}</div>
+                <div className="text-[10.5px] text-t-text-muted">Referrals</div>
               </div>
               <div className="text-center">
-                <div className="text-base font-bold" style={{ fontVariantNumeric: "tabular-nums", color: t.text }}>{fN(user?.earnings || 0)}</div>
-                <div className="text-[10.5px]" style={{ color: t.textMuted }}>Earned</div>
+                <div className="text-base font-bold text-t-text tabular-nums">{fN(user?.earnings || 0)}</div>
+                <div className="text-[10.5px] text-t-text-muted">Earned</div>
               </div>
             </div>
           </div>

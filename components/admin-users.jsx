@@ -149,6 +149,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
 
   const [creditAmt, setCreditAmt] = useState('');
   const [creditType, setCreditType] = useState('credit');
+  const [creditReason, setCreditReason] = useState('');
   const [rewards, setRewards] = useState(null);
   const [rewardsLoading, setRewardsLoading] = useState(false);
   const [ptsAdjOpen, setPtsAdjOpen] = useState(false);
@@ -239,21 +240,28 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
 
   /* ── Actions ──────────────────────────────────── */
 
-  const doAction = async (userId, action, amount, subtype) => {
+  const doAction = async (userId, action, amount, subtype, reason) => {
     setActionLoading(true);
     try {
       const res = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, userId, amount: Number(amount) || 0, subtype }),
+        body: JSON.stringify({ action, userId, amount: Number(amount) || 0, subtype, reason: reason || undefined }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Request failed'); }
       if (action === 'credit') {
         const amt = Number(amount) || 0;
         setUsers(prev => prev.map(u => u.id === userId ? { ...u, balance: (u.balance || 0) + amt } : u));
         if (drawerUser?.id === userId) setDrawerUser(prev => ({ ...prev, balance: (prev.balance || 0) + amt }));
-        setCreditAmt(''); setCreditType('credit');
+        setCreditAmt(''); setCreditType('credit'); setCreditReason('');
         toast.success(`Credited ${fN(amt)} to wallet`);
+      }
+      if (action === 'debit') {
+        const amt = Number(amount) || 0;
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, balance: (u.balance || 0) - amt } : u));
+        if (drawerUser?.id === userId) setDrawerUser(prev => ({ ...prev, balance: (prev.balance || 0) - amt }));
+        setCreditAmt(''); setCreditType('credit'); setCreditReason('');
+        toast.success(`Debited ${fN(amt)} from wallet`);
       }
       if (action === 'suspend') {
         setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: 'Suspended' } : u));
@@ -279,13 +287,15 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
   const handleCredit = async (user) => {
     const amt = Number(creditAmt);
     if (amt <= 0) return;
-    const label = creditType === 'gift' ? 'Gift' : 'Credit';
+    const isDebit = creditType === 'debit';
+    const label = isDebit ? 'Debit' : creditType === 'gift' ? 'Gift' : 'Credit';
+    const reasonPreview = creditReason.trim() ? `\n\nCustomer sees: "${creditReason.trim()}"` : '';
     const ok = await confirm({
       title: `${label} Wallet`,
-      message: `${label} ${fN(amt)} to ${user.name}'s wallet?${creditType === 'gift' ? '\n\nThis will be recorded as a gift.' : ''}`,
+      message: `${label} ${fN(amt)} ${isDebit ? 'from' : 'to'} ${user.name}'s wallet?${creditType === 'gift' ? '\n\nThis will be recorded as a gift.' : ''}${reasonPreview}`,
       confirmLabel: `${label} ${fN(amt)}`,
     });
-    if (ok) doAction(user.id, 'credit', creditAmt, creditType);
+    if (ok) doAction(user.id, isDebit ? 'debit' : 'credit', creditAmt, isDebit ? undefined : creditType, creditReason.trim());
   };
 
   const handleStatusAction = async (user) => {
@@ -362,7 +372,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
   const openDrawer = (user, creditOpen = false) => {
     setDrawerUser(user);
     setDrawerCreditOpen(creditOpen);
-    setCreditAmt(''); setCreditType('credit');
+    setCreditAmt(''); setCreditType('credit'); setCreditReason('');
     setMenuUser(null);
     loadTransactions(user);
     loadRewards(user);
@@ -520,12 +530,13 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
 
   const txSign = (tx) => {
     if (tx.status !== 'Completed') return '';
-    return tx.type === 'order' ? '-' : '+';
+    return (tx.type === 'order' || tx.type === 'admin_debit') ? '-' : '+';
   };
 
   const txLabel = (type) => {
     if (type === 'admin_credit') return 'credit';
     if (type === 'admin_gift') return 'gift';
+    if (type === 'admin_debit') return 'debit';
     return type;
   };
 
@@ -927,8 +938,8 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
             {drawerCreditOpen && !isMutationLocked(drawerUser) && (
               <div className="mx-6 mb-4 p-4 rounded-xl" style={cardStyle}>
                 <div className="flex rounded-lg overflow-hidden mb-3" style={{ border: `1px solid ${t.cardBorder}` }}>
-                  {[['credit', 'Payment'], ['gift', 'Gift']].map(([val, label]) => (
-                    <button key={val} onClick={() => setCreditType(val)} className="flex-1 py-2 text-[12px] font-semibold border-none cursor-pointer font-[inherit] transition-colors duration-200" style={{ background: creditType === val ? (val === 'gift' ? (dark ? 'rgba(251,191,36,.15)' : 'rgba(217,119,6,.08)') : (dark ? 'rgba(110,231,183,.15)' : 'rgba(5,150,105,.08)')) : 'transparent', color: creditType === val ? (val === 'gift' ? t.amber : t.green) : t.textMuted }}>{label}</button>
+                  {[['credit', 'Payment'], ['gift', 'Gift'], ['debit', 'Debit']].map(([val, label]) => (
+                    <button key={val} onClick={() => setCreditType(val)} className="flex-1 py-2 text-[12px] font-semibold border-none cursor-pointer font-[inherit] transition-colors duration-200" style={{ background: creditType === val ? (val === 'debit' ? (dark ? 'rgba(252,165,165,.15)' : 'rgba(220,38,38,.06)') : val === 'gift' ? (dark ? 'rgba(251,191,36,.15)' : 'rgba(217,119,6,.08)') : (dark ? 'rgba(110,231,183,.15)' : 'rgba(5,150,105,.08)')) : 'transparent', color: creditType === val ? (val === 'debit' ? t.red : val === 'gift' ? t.amber : t.green) : t.textMuted }}>{label}</button>
                   ))}
                 </div>
                 <input type="number" placeholder="Amount (₦)" value={creditAmt} onChange={e => setCreditAmt(e.target.value)} className="w-full py-2.5 px-3 rounded-lg text-[13px] outline-none font-[inherit] mb-2" style={{ border: `1px solid ${t.cardBorder}`, background: inputBg, color: t.text }} />
@@ -937,8 +948,9 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
                     <button key={p} onClick={() => setCreditAmt(String(p))} className="py-1.5 px-2.5 rounded-lg text-[11px] font-medium cursor-pointer font-[inherit]" style={{ border: `1px solid ${Number(creditAmt) === p ? t.accent : t.cardBorder}`, background: Number(creditAmt) === p ? (dark ? 'rgba(196,125,142,.14)' : 'rgba(196,125,142,.06)') : 'transparent', color: Number(creditAmt) === p ? t.accent : t.textMuted }}>{fN(p)}</button>
                   ))}
                 </div>
-                <button onClick={() => handleCredit(drawerUser)} disabled={actionLoading || Number(creditAmt) <= 0} className="w-full py-2.5 rounded-lg text-[13px] font-semibold cursor-pointer font-[inherit] border-none transition-opacity duration-200" style={{ background: accentGrad, color: '#fff', opacity: Number(creditAmt) > 0 && !actionLoading ? 1 : .4 }}>
-                  {creditType === 'gift' ? 'Gift' : 'Credit'} {creditAmt ? fN(Number(creditAmt)) : ''}
+                <input type="text" placeholder={creditType === 'debit' ? "Reason (visible to customer)" : "Reason (optional, visible to customer)"} value={creditReason} onChange={e => setCreditReason(e.target.value)} className="w-full py-2.5 px-3 rounded-lg text-[13px] outline-none font-[inherit] mb-3" style={{ border: `1px solid ${t.cardBorder}`, background: inputBg, color: t.text }} />
+                <button onClick={() => handleCredit(drawerUser)} disabled={actionLoading || Number(creditAmt) <= 0 || (creditType === 'debit' && !creditReason.trim())} className="w-full py-2.5 rounded-lg text-[13px] font-semibold cursor-pointer font-[inherit] border-none transition-opacity duration-200" style={{ background: creditType === 'debit' ? 'linear-gradient(135deg,#dc2626,#991b1b)' : accentGrad, color: '#fff', opacity: Number(creditAmt) > 0 && !actionLoading && (creditType !== 'debit' || creditReason.trim()) ? 1 : .4 }}>
+                  {creditType === 'debit' ? 'Debit' : creditType === 'gift' ? 'Gift' : 'Credit'} {creditAmt ? fN(Number(creditAmt)) : ''}
                 </button>
               </div>
             )}

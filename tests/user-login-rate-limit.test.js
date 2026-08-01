@@ -7,6 +7,11 @@ const mocks = vi.hoisted(() => ({
   compare: vi.fn(),
   signUserToken: vi.fn(() => 'signed-user-token'),
   setUserCookie: vi.fn(),
+  createSessionId: vi.fn(() => 'session-new'),
+  hashToken: vi.fn(() => 'signed-token-hash'),
+  sessionCreate: vi.fn(),
+  sessionFindMany: vi.fn(),
+  sessionDeleteMany: vi.fn(),
   logError: vi.fn(),
 }));
 
@@ -26,9 +31,9 @@ vi.mock('@/lib/prisma', () => ({
   default: {
     user: { findUnique: (...args) => mocks.userFindUnique(...args) },
     session: {
-      create: vi.fn(),
-      findMany: vi.fn(async () => []),
-      deleteMany: vi.fn(),
+      create: (...args) => mocks.sessionCreate(...args),
+      findMany: (...args) => mocks.sessionFindMany(...args),
+      deleteMany: (...args) => mocks.sessionDeleteMany(...args),
     },
   },
 }));
@@ -38,8 +43,9 @@ vi.mock('bcryptjs', () => ({
 vi.mock('@/lib/auth', () => ({
   signUserToken: (...args) => mocks.signUserToken(...args),
   setUserCookie: (...args) => mocks.setUserCookie(...args),
+  createSessionId: (...args) => mocks.createSessionId(...args),
   detectDevice: () => ({ type: 'web', info: 'Test browser' }),
-  hashToken: () => 'signed-token-hash',
+  hashToken: (...args) => mocks.hashToken(...args),
 }));
 vi.mock('next/headers', () => ({
   headers: vi.fn(async () => new Headers()),
@@ -69,6 +75,11 @@ beforeEach(() => {
   mocks.userFindUnique.mockResolvedValue(null);
   mocks.compare.mockResolvedValue(false);
   mocks.signUserToken.mockReturnValue('signed-user-token');
+  mocks.createSessionId.mockReturnValue('session-new');
+  mocks.hashToken.mockReturnValue('signed-token-hash');
+  mocks.sessionCreate.mockResolvedValue({ id: 'session-new' });
+  mocks.sessionFindMany.mockResolvedValue([]);
+  mocks.sessionDeleteMany.mockResolvedValue({ count: 0 });
 });
 
 describe('user login rate limits', () => {
@@ -98,7 +109,20 @@ describe('user login rate limits', () => {
     const response = await login(loginRequest('person@example.test', submitted));
 
     expect(response.status).toBe(200);
-    expect(mocks.signUserToken).toHaveBeenCalledWith(user, { remember: expected });
+    expect(mocks.signUserToken).toHaveBeenCalledWith(user, { remember: expected, sid: 'session-new' });
+    expect(mocks.sessionCreate).toHaveBeenCalledWith({
+      data: {
+        id: 'session-new',
+        userId: user.id,
+        tokenHash: 'signed-token-hash',
+        remember: expected,
+        deviceType: 'web',
+        deviceInfo: 'Test browser',
+        ip: 'unknown',
+      },
+    });
+    expect(mocks.sessionCreate.mock.invocationCallOrder[0])
+      .toBeLessThan(mocks.setUserCookie.mock.invocationCallOrder[0]);
     expect(mocks.setUserCookie).toHaveBeenCalledWith('signed-user-token', {
       remember: expected,
     });

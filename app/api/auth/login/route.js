@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import bcrypt from 'bcryptjs';
-import { signUserToken, setUserCookie, detectDevice, hashToken } from '@/lib/auth';
+import { signUserToken, setUserCookie, detectDevice, hashToken, createSessionId } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
 import {
   accountRateLimitKey,
@@ -69,19 +69,19 @@ export async function POST(req) {
       return error('Invalid email or password', 401);
     }
 
-    // Sign JWT and set cookie
-    const token = signUserToken(user, { remember });
-    await setUserCookie(token, { remember });
-
     const hdrs = await headers();
     const ua = hdrs.get('user-agent') || '';
     const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown';
     const device = detectDevice(ua);
-    const tHash = hashToken(token);
+
+    const sid = createSessionId();
+    const token = signUserToken(user, { remember, sid });
 
     await prisma.session.create({
-      data: { userId: user.id, tokenHash: tHash, deviceType: device.type, deviceInfo: device.info, ip },
+      data: { id: sid, userId: user.id, tokenHash: hashToken(token), remember, deviceType: device.type, deviceInfo: device.info, ip },
     });
+
+    await setUserCookie(token, { remember });
 
     // Cap at 5 sessions — prune oldest beyond limit
     const sessions = await prisma.session.findMany({ where: { userId: user.id }, orderBy: { lastActive: 'desc' }, select: { id: true } });

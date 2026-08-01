@@ -59,9 +59,9 @@ export default function ReferralsPage({ user, dark, t }) {
     <>
       {/* Header */}
       <div className="pb-2 desktop:pb-3.5">
-        <div className="text-lg desktop:text-[22px] font-semibold mb-0.5" style={{ color: t.text }}>Referrals</div>
-        <div className="text-sm desktop:text-[15px]" style={{ color: t.textMuted }}>Earn rewards by inviting friends to Nitro</div>
-        <div className="page-divider" style={{ background: t.cardBorder }} />
+        <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">Referrals</div>
+        <div className="text-sm desktop:text-[15px] text-t-text-muted">Earn rewards by inviting friends to Nitro</div>
+        <div className="page-divider bg-t-card-border" />
       </div>
 
       {/* Pending referral bonus banner */}
@@ -69,17 +69,17 @@ export default function ReferralsPage({ user, dark, t }) {
         <div className="py-3 px-4 rounded-xl mb-4 flex items-center gap-2.5" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.06)", border: `1px solid ${dark ? "rgba(196,125,142,.19)" : "rgba(196,125,142,.14)"}` }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round"><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6"/><path d="M2 8h20v4H2z"/><path d="M12 20V8"/></svg>
           <div>
-            <div className="text-sm font-medium" style={{ color: t.text }}>Your referral bonus is waiting</div>
-            <div className="text-[13px] mt-0.5" style={{ color: t.textMuted }}>Deposit {fN(user.refMinDeposit)} or more to unlock your {fK(ref.invitee)} welcome bonus</div>
+            <div className="text-sm font-medium text-t-text">Your referral bonus is waiting</div>
+            <div className="text-[13px] mt-0.5 text-t-text-muted">Deposit {fN(user.refMinDeposit)} or more to unlock your {fK(ref.invitee)} welcome bonus</div>
           </div>
         </div>
       )}
 
       {/* Share card */}
       <div className="rounded-xl desktop:rounded-2xl p-3.5 desktop:p-5 mb-3 desktop:mb-4" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-        <div className="text-sm mb-1.5" style={{ color: t.textMuted }}>Your Referral Link</div>
+        <div className="text-sm mb-1.5 text-t-text-muted">Your Referral Link</div>
         <div className="flex items-center gap-2">
-          <div className="m flex-1 py-2 px-3 rounded-lg border text-sm overflow-hidden text-ellipsis whitespace-nowrap" style={{ background: dark ? "#131728" : "#fff", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", color: t.textSoft }}>{refLink}</div>
+          <div className="m flex-1 py-2 px-3 rounded-lg border text-sm overflow-hidden text-ellipsis whitespace-nowrap text-t-text-soft" style={{ background: dark ? "#131728" : "#fff", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)" }}>{refLink}</div>
           <button onClick={() => copyText(refLink, "link")} className="py-2 px-3 desktop:px-3.5 rounded-lg text-[13px] desktop:text-sm font-semibold cursor-pointer whitespace-nowrap shrink-0 border-none text-white transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }}>
             {copied === "link" ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> Copied</> : "Copy Link"}
           </button>
@@ -91,9 +91,9 @@ export default function ReferralsPage({ user, dark, t }) {
         <div className="grid grid-cols-3 gap-2">
           {steps.map(([num, title, desc]) => (
             <div key={num} className="p-2.5 rounded-[10px] text-center" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", border: `0.5px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
-              <div className="m w-6 h-6 rounded-md flex items-center justify-center text-xs font-semibold mx-auto mb-1.5" style={{ background: t.navActive, color: t.accent }}>{num}</div>
-              <div className="text-[12px] font-semibold leading-tight mb-0.5" style={{ color: t.text }}>{title}</div>
-              <div className="text-[11px] leading-tight" style={{ color: t.textMuted }}>{desc}</div>
+              <div className="m w-6 h-6 rounded-md flex items-center justify-center text-xs font-semibold mx-auto mb-1.5 bg-t-nav-active text-accent">{num}</div>
+              <div className="text-[12px] font-semibold leading-tight mb-0.5 text-t-text">{title}</div>
+              <div className="text-[11px] leading-tight text-t-text-muted">{desc}</div>
             </div>
           ))}
         </div>
@@ -109,7 +109,7 @@ export default function ReferralsPage({ user, dark, t }) {
           ["Available", fN(totalEarnings), t.green],
         ].map(([label, val, color]) => (
           <div key={label} className="p-3 desktop:p-3.5 rounded-[10px] desktop:rounded-xl" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-            <div className="text-xs desktop:text-[13px] uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>{label}</div>
+            <div className="text-xs desktop:text-[13px] uppercase tracking-[0.5px] mb-1 text-t-text-muted">{label}</div>
             <div className="m text-base desktop:text-lg font-semibold" style={{ color }}>{val}</div>
           </div>
         ))}
@@ -118,26 +118,26 @@ export default function ReferralsPage({ user, dark, t }) {
       {/* Referral list */}
       <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
         <div className="py-3 px-[13px] desktop:px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-          <div className="text-sm font-semibold tracking-[0.3px] uppercase" style={{ color: t.textMuted }}>Your referrals</div>
+          <div className="text-sm font-semibold tracking-[0.3px] uppercase text-t-text-muted">Your referrals</div>
         </div>
         {paged.length > 0 ? paged.map((r, i) => (
           <div key={r.id || i} className="flex items-center gap-2.5 desktop:gap-3.5 py-3 px-[13px] desktop:py-3.5 desktop:px-4" style={{ borderBottom: i < paged.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
             <Avatar size={32} rounded={10} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="text-sm desktop:text-[15px] font-medium" style={{ color: t.text }}>{r.name || "User"}</span>
+                <span className="text-sm desktop:text-[15px] font-medium text-t-text">{r.name || "User"}</span>
                 <span className="text-xs py-px px-1.5 rounded font-semibold border-[0.5px]" style={{
                   background: r.status === "Active" ? (dark ? "#0a2416" : "#ecfdf5") : (dark ? "#1a1a1a" : "#f5f5f5"),
                   color: r.status === "Active" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#888" : "#666"),
                   borderColor: r.status === "Active" ? (dark ? "#166534" : "#a7f3d0") : (dark ? "#404040" : "#d4d4d4"),
                 }}>{r.status || "—"}</span>
               </div>
-              <div className="flex gap-1.5 desktop:gap-2.5 text-[13px] desktop:text-sm" style={{ color: t.textMuted }}>
+              <div className="flex gap-1.5 desktop:gap-2.5 text-[13px] desktop:text-sm text-t-text-muted">
                 <span>{r.email || ""}</span>
                 <span>{r.joined ? fD(r.joined) : ""}</span>
               </div>
             </div>
-            <div className="m text-[15px] desktop:text-base font-semibold shrink-0" style={{ color: t.green }}>+{fN(r.bonus || 0)}</div>
+            <div className="m text-[15px] desktop:text-base font-semibold shrink-0 text-t-green">+{fN(r.bonus || 0)}</div>
           </div>
         )) : (
           <div className="p-10 text-center">
@@ -147,8 +147,8 @@ export default function ReferralsPage({ user, dark, t }) {
               <path d="M24 36c-8 0-14 4-14 10v2h28v-2c0-6-6-10-14-10z" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
               <path d="M26 16l6-4 6 4" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No referrals yet</div>
-            <div className="text-[15px] leading-normal" style={{ color: t.textMuted }}>Invite friends and you both earn when they deposit</div>
+            <div className="text-base font-semibold mb-1 text-t-text-soft">No referrals yet</div>
+            <div className="text-[15px] leading-normal text-t-text-muted">Invite friends and you both earn when they deposit</div>
           </div>
         )}
       </div>
@@ -156,9 +156,9 @@ export default function ReferralsPage({ user, dark, t }) {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center mt-3.5">
-          <span className="text-sm" style={{ color: t.textMuted }}>{referrals.length} referrals</span>
+          <span className="text-sm text-t-text-muted">{referrals.length} referrals</span>
           <div className="flex gap-1">
-            <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} className="w-[30px] h-[30px] rounded-md flex items-center justify-center border cursor-pointer bg-transparent transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: t.cardBorder, color: t.textSoft, opacity: page <= 1 ? .3 : 1 }}>
+            <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} className="w-[30px] h-[30px] rounded-md flex items-center justify-center border cursor-pointer bg-transparent transition-transform duration-200 hover:-translate-y-px border-t-card-border text-t-text-soft" style={{ opacity: page <= 1 ? .3 : 1 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -171,7 +171,7 @@ export default function ReferralsPage({ user, dark, t }) {
                 <button key={p} onClick={() => setPage(p)} className="m py-1 px-2.5 rounded-md text-sm border cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: page === p ? t.navActive : "transparent", color: page === p ? t.accent : t.textMuted, borderColor: page === p ? t.accent + "40" : t.cardBorder }}>{p}</button>
               );
             })}
-            <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages} className="w-[30px] h-[30px] rounded-md flex items-center justify-center border cursor-pointer bg-transparent transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: t.cardBorder, color: t.textSoft, opacity: page >= totalPages ? .3 : 1 }}>
+            <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages} className="w-[30px] h-[30px] rounded-md flex items-center justify-center border cursor-pointer bg-transparent transition-transform duration-200 hover:-translate-y-px border-t-card-border text-t-text-soft" style={{ opacity: page >= totalPages ? .3 : 1 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
           </div>
@@ -185,13 +185,13 @@ export default function ReferralsPage({ user, dark, t }) {
 function HowItWorks({ steps, dark, t }) {
   return (
     <>
-      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>How It Works</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>How It Works</div>
       {steps.map(([num, title, desc]) => (
         <div key={num} className="flex gap-3 mb-2 px-1">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-semibold shrink-0" style={{ background: t.navActive, color: t.accent }}>{num}</div>
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-semibold shrink-0 bg-t-nav-active text-accent">{num}</div>
           <div>
-            <div className="text-sm font-semibold mb-px" style={{ color: t.text }}>{title}</div>
-            <div className="text-[12.5px]" style={{ color: t.textMuted }}>{desc}</div>
+            <div className="text-sm font-semibold mb-px text-t-text">{title}</div>
+            <div className="text-[12.5px] text-t-text-muted">{desc}</div>
           </div>
         </div>
       ))}
@@ -201,19 +201,19 @@ function HowItWorks({ steps, dark, t }) {
 
 function RewardBreakdown({ rs, dark, t }) {
   return (
-    <div className="p-3.5 rounded-[10px]" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
+    <div className="p-3.5 rounded-[10px] bg-t-card-bg" style={{ border: `1px solid ${t.cardBorder}` }}>
       <div className="flex justify-between py-2" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-        <span className="text-sm" style={{ color: t.textMuted }}>You earn</span>
-        <span className="text-sm font-semibold" style={{ color: t.accent }}>{fK(rs.referrer)}</span>
+        <span className="text-sm text-t-text-muted">You earn</span>
+        <span className="text-sm font-semibold text-accent">{fK(rs.referrer)}</span>
       </div>
       <div className="flex justify-between py-2" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-        <span className="text-sm" style={{ color: t.textMuted }}>They earn</span>
-        <span className="text-sm font-semibold" style={{ color: t.green }}>{fK(rs.invitee)}</span>
+        <span className="text-sm text-t-text-muted">They earn</span>
+        <span className="text-sm font-semibold text-t-green">{fK(rs.invitee)}</span>
       </div>
       {rs.minDeposit > 0 && (
         <div className="flex justify-between py-2">
-          <span className="text-sm" style={{ color: t.textMuted }}>Min. deposit to activate</span>
-          <span className="text-sm font-semibold" style={{ color: t.text }}>{fK(rs.minDeposit)}</span>
+          <span className="text-sm text-t-text-muted">Min. deposit to activate</span>
+          <span className="text-sm font-semibold text-t-text">{fK(rs.minDeposit)}</span>
         </div>
       )}
     </div>
@@ -243,20 +243,20 @@ export function ReferralsSidebar({ user, dark, t }) {
 
       <div className="h-px my-3" style={{ background: t.sidebarBorder }} />
 
-      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Rewards</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Rewards</div>
       <RewardBreakdown rs={ref} dark={dark} t={t} />
 
       <div className="h-px my-3" style={{ background: t.sidebarBorder }} />
 
-      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Your Performance</div>
-      <div className="p-3.5 rounded-[10px]" style={{ background: t.cardBg }}>
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Your Performance</div>
+      <div className="p-3.5 rounded-[10px] bg-t-card-bg">
         {[
           ["This month", `${Math.min(totalRefs, 3)} referrals`, t.green],
           ["Total earned", fN(totalEarnings), t.accent],
           ["Sign-up rate", totalRefs > 0 ? `${Math.round(activeRefs / totalRefs * 100)}%` : "0%", dark ? "#a5b4fc" : "#4f46e5"],
         ].map(([label, val, color], i, arr) => (
           <div key={label} className="flex justify-between py-2" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-            <span className="text-sm" style={{ color: t.textMuted }}>{label}</span>
+            <span className="text-sm text-t-text-muted">{label}</span>
             <span className="text-sm font-semibold" style={{ color }}>{val}</span>
           </div>
         ))}

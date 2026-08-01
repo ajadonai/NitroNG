@@ -435,18 +435,18 @@ export function AdminCreateOrderPage({ dark, t }) {
   return (
     <>
       <div className={mobileReview ? "max-md:hidden" : ""}>
-        <div className="adm-page-title" style={{ fontSize: 23, fontWeight: 800, letterSpacing: -.2 }}>Create Order</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div className="adm-page-title" style={{ fontSize: 23, fontWeight: 800, letterSpacing: -.2 }}>Create Order</div>
+          <div style={{ display: "inline-flex", gap: 4, padding: 4, borderRadius: 12, background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.1)"}` }}>
+            {["single", "bulk"].map(m => (
+              <button key={m} onClick={() => { setMode(m); setBatchItems([]); }} style={{ padding: "8px 22px", borderRadius: 9, fontSize: 13.5, fontWeight: mode === m ? 700 : 600, color: mode === m ? "#fff" : t.textMuted, background: mode === m ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : "none", display: "flex", alignItems: "center", gap: 7, transition: ".15s", border: "none", cursor: "pointer" }}>
+                {MODE_ICONS[m]}{m.charAt(0).toUpperCase() + m.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
         <div style={{ fontSize: 13, color: t.textMuted, marginTop: 3 }}>Place orders on behalf of users</div>
         <div style={{ height: 1.5, background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)", margin: "18px 0 20px" }} />
-      </div>
-
-      {/* mode seg */}
-      <div className={mobileReview ? "max-md:hidden" : ""} style={{ display: "inline-flex", gap: 4, padding: 4, borderRadius: 12, background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.1)"}`, marginBottom: 20 }}>
-        {["single", "bulk"].map(m => (
-          <button key={m} onClick={() => { setMode(m); setBatchItems([]); }} style={{ padding: "8px 22px", borderRadius: 9, fontSize: 13.5, fontWeight: mode === m ? 700 : 600, color: mode === m ? "#fff" : t.textMuted, background: mode === m ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : "none", display: "flex", alignItems: "center", gap: 7, transition: ".15s", border: "none", cursor: "pointer" }}>
-            {MODE_ICONS[m]}{m.charAt(0).toUpperCase() + m.slice(1)}
-          </button>
-        ))}
       </div>
 
       <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }} className="max-md:flex-col">

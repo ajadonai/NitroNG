@@ -2,12 +2,106 @@ export const maxDuration = 60;
 
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
-import { placeOrder, checkOrder } from '@/lib/smm';
+import { placeOrder, checkOrder, checkOrders } from '@/lib/smm';
 import { tgDripTimeout } from '@/lib/telegram';
 import { isInWindow, snapToWindow } from '@/lib/drip-feed';
 import { computeDripRollup, normalizeProviderStatus, applyDripRollup } from '@/lib/drip-completion';
 import { findSameLinkDispatchBlocker, isActiveOrderConflict, wouldCreateCycle } from '@/lib/order-queue';
 import { getBearerToken } from '@/lib/bearer-token';
+
+const POSTGRES_INT_MAX = 2_147_483_647;
+
+function parseProviderCount(value) {
+  if (value == null) return null;
+  if (!['number', 'string'].includes(typeof value)) return null;
+  if (typeof value === 'string' && value.trim() === '') return null;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= 0 && parsed <= POSTGRES_INT_MAX
+    ? parsed
+    : null;
+}
+
+async function loadProcessingStatuses(dispatches) {
+  const byProvider = new Map();
+  for (const dispatch of dispatches) {
+    const provider = dispatch.order.service?.provider || 'mtp';
+    if (!byProvider.has(provider)) byProvider.set(provider, []);
+    byProvider.get(provider).push(dispatch);
+  }
+
+  const byDispatchId = new Map();
+  await Promise.all([...byProvider.entries()].map(async ([provider, providerDispatches]) => {
+    const providerOrderIds = providerDispatches.map(dispatch => String(dispatch.apiOrderId));
+    let statuses;
+    try {
+      statuses = providerDispatches.length === 1
+        ? { [providerOrderIds[0]]: await checkOrder(provider, providerOrderIds[0]) }
+        : await checkOrders(provider, providerOrderIds);
+    } catch (error) {
+      statuses = Object.fromEntries(
+        providerOrderIds.map(id => [id, { error: error?.message || 'Provider status check failed' }]),
+      );
+    }
+    for (const dispatch of providerDispatches) {
+      byDispatchId.set(dispatch.id, statuses?.[String(dispatch.apiOrderId)] || null);
+    }
+  }));
+  return byDispatchId;
+}
+
+async function applyProgressUpdates(updates) {
+  if (updates.length === 0) return 0;
+
+  const values = [];
+  const params = [];
+  for (let index = 0; index < updates.length; index++) {
+    const base = index * 5;
+    const update = updates[index];
+    values.push(`($${base + 1}::text, $${base + 2}::text, $${base + 3}::int, $${base + 4}::int, $${base + 5}::int)`);
+    params.push(
+      update.id,
+      update.apiOrderId,
+      update.observedRemains,
+      update.nextRemains,
+      update.startCount,
+    );
+  }
+
+  return prisma.$executeRawUnsafe(
+    `UPDATE "drip_dispatches" AS d
+     SET "remains" = CASE
+           WHEN v.next_remains IS NOT NULL
+             AND d."remains" IS NOT DISTINCT FROM v.observed_remains
+             THEN v.next_remains
+           ELSE d."remains"
+         END,
+         "startCount" = CASE
+           WHEN d."startCount" IS NULL AND v.start_count IS NOT NULL THEN v.start_count
+           ELSE d."startCount"
+         END,
+         "updatedAt" = NOW()
+     FROM (VALUES ${values.join(',')}) AS v(id, api_order_id, observed_remains, next_remains, start_count)
+     WHERE d.id = v.id
+       AND d.status = 'processing'
+       AND d."apiOrderId" = v.api_order_id
+       AND (
+         (
+           v.next_remains IS NOT NULL
+           AND d."remains" IS NOT DISTINCT FROM v.observed_remains
+           AND d."remains" IS DISTINCT FROM v.next_remains
+         )
+         OR (v.start_count IS NOT NULL AND d."startCount" IS NULL)
+       )
+       AND EXISTS (
+         SELECT 1
+         FROM orders o
+         WHERE o.id = d."orderId"
+           AND o.status IN ('Pending', 'Processing')
+           AND o."deletedAt" IS NULL
+       )`,
+    ...params,
+  );
+}
 
 // Drip dispatch cron — runs twice per hour (:05 and :35)
 // 1. Dispatches pending drip batches that are due (scheduledAt <= now)
@@ -24,8 +118,6 @@ export async function GET(req) {
   const t0 = Date.now();
 
   try {
-    await prisma.$executeRaw`SET statement_timeout = '50s'`;
-
     // ═══ 0. EXPIRE STALE DISPATCHES (pending 24h+ past schedule with errors) ═══
     const expired = await prisma.dripDispatch.updateMany({
       where: {
@@ -314,6 +406,7 @@ export async function GET(req) {
       where: {
         status: 'processing',
         apiOrderId: { not: null },
+        order: { status: { in: ['Pending', 'Processing'] }, deletedAt: null },
       },
       include: {
         order: { include: { service: true, tier: { select: { group: { select: { type: true, platform: true } } } } } },
@@ -322,61 +415,95 @@ export async function GET(req) {
       orderBy: { dispatchedAt: 'asc' },
     });
 
+    const providerStatuses = await loadProcessingStatuses(processing);
+    const progressUpdates = [];
     for (const dispatch of processing) {
       try {
-        const provider = dispatch.order.service?.provider || 'mtp';
-        const providerStatus = await checkOrder(provider, dispatch.apiOrderId);
+        const providerStatus = providerStatuses.get(dispatch.id);
+        if (!providerStatus || providerStatus.error) {
+          log.warn('Drip sync', `dispatch ${dispatch.id}: ${providerStatus?.error || 'provider returned no status'}`);
+          continue;
+        }
 
         const newStatus = normalizeProviderStatus(providerStatus.status);
-        const liveRemains = providerStatus.remains != null ? Number(providerStatus.remains) : null;
-        const liveStartCount = providerStatus.start_count != null ? Number(providerStatus.start_count) : null;
+        const liveRemains = parseProviderCount(providerStatus.remains);
+        const liveStartCount = parseProviderCount(providerStatus.start_count);
+        const invalidRemains = providerStatus.remains != null && liveRemains == null;
+        const invalidStartCount = providerStatus.start_count != null && liveStartCount == null;
+        if (invalidRemains || invalidStartCount) {
+          const invalidFields = [
+            invalidRemains ? 'remains' : null,
+            invalidStartCount ? 'start_count' : null,
+          ].filter(Boolean).join(', ');
+          log.warn('Drip sync', `dispatch ${dispatch.id}: ignored invalid provider ${invalidFields}`);
+        }
 
         if (!newStatus || newStatus === 'processing') {
-          if (liveRemains != null && liveRemains !== dispatch.remains) {
-            const progUpd = await prisma.dripDispatch.updateMany({
-              where: {
-                id: dispatch.id,
-                status: 'processing',
-                apiOrderId: dispatch.apiOrderId,
-                order: { status: { in: ['Pending', 'Processing'] }, deletedAt: null },
-              },
-              data: { remains: liveRemains, ...(liveStartCount != null && dispatch.startCount == null ? { startCount: liveStartCount } : {}) },
+          const remainsChanged = liveRemains != null && liveRemains !== dispatch.remains;
+          const startCountChanged = liveStartCount != null && dispatch.startCount == null;
+          if (remainsChanged || startCountChanged) {
+            progressUpdates.push({
+              id: dispatch.id,
+              apiOrderId: String(dispatch.apiOrderId),
+              observedRemains: dispatch.remains,
+              nextRemains: remainsChanged ? liveRemains : null,
+              startCount: startCountChanged ? liveStartCount : null,
             });
-            if (progUpd.count > 0) stats.synced++;
           }
           // Alert if batch has been processing 6+ hours with no delivery
           const ageHours = dispatch.dispatchedAt ? (Date.now() - dispatch.dispatchedAt.getTime()) / 3600000 : 0;
-          if (ageHours >= 6 && (liveRemains == null || liveRemains === dispatch.quantity)) {
+          if (!invalidRemains && ageHours >= 6 && (liveRemains == null || liveRemains === dispatch.quantity)) {
             const order = dispatch.order;
             const already = dispatch.lastError === '[STALE]';
             if (!already) {
-              await prisma.dripDispatch.update({ where: { id: dispatch.id }, data: { lastError: '[STALE]' } });
-              tgDripTimeout(order.orderId, dispatch.batch, `Stalled ${Math.round(ageHours)}h on provider — no delivery. Check provider dashboard.`, dispatch.apiOrderId, order.service?.provider);
-              stats.staleAlerted = (stats.staleAlerted || 0) + 1;
+              const marked = await prisma.dripDispatch.updateMany({
+                where: {
+                  id: dispatch.id,
+                  status: 'processing',
+                  apiOrderId: dispatch.apiOrderId,
+                  lastError: dispatch.lastError,
+                  order: { status: { in: ['Pending', 'Processing'] }, deletedAt: null },
+                },
+                data: { lastError: '[STALE]' },
+              });
+              if (marked.count === 1) {
+                tgDripTimeout(order.orderId, dispatch.batch, `Stalled ${Math.round(ageHours)}h on provider — no delivery. Check provider dashboard.`, dispatch.apiOrderId, order.service?.provider);
+                stats.staleAlerted = (stats.staleAlerted || 0) + 1;
+              }
             }
           }
           continue;
         }
 
         const completionAt = ['completed', 'partial'].includes(newStatus) ? new Date() : undefined;
+        let transitioned = 0;
         if (['completed', 'partial'].includes(newStatus)) {
           const { rescheduleAfterDripCompletion } = await import('@/lib/drip-completion');
-          await prisma.$transaction(async (tx) => {
+          transitioned = await prisma.$transaction(async (tx) => {
             const r = await tx.dripDispatch.updateMany({
               where: { id: dispatch.id, status: dispatch.status, apiOrderId: dispatch.apiOrderId, order: { status: { in: ['Pending', 'Processing'] }, deletedAt: null } },
               data: { status: newStatus, remains: liveRemains ?? undefined, startCount: liveStartCount ?? undefined, completedAt: completionAt, lastError: null },
             });
             if (r.count === 1) await rescheduleAfterDripCompletion(tx, dispatch.orderId, completionAt);
+            return r.count;
           });
         } else {
-          await prisma.dripDispatch.updateMany({
+          const result = await prisma.dripDispatch.updateMany({
             where: { id: dispatch.id, status: dispatch.status, apiOrderId: dispatch.apiOrderId, order: { status: { in: ['Pending', 'Processing'] }, deletedAt: null } },
             data: { status: newStatus, remains: liveRemains ?? undefined, startCount: liveStartCount ?? undefined, completedAt: completionAt, lastError: null },
           });
+          transitioned = result.count;
         }
-        stats.synced++;
+        stats.synced += transitioned;
       } catch (err) {
         log.warn('Drip sync', `dispatch ${dispatch.id}: ${err.message}`);
+      }
+    }
+    if (progressUpdates.length > 0) {
+      try {
+        stats.synced += await applyProgressUpdates(progressUpdates);
+      } catch (error) {
+        log.warn('Drip sync', `progress batch update failed: ${error.message}`);
       }
     }
 
@@ -406,19 +533,46 @@ export async function GET(req) {
         }
       } else {
         const sc = (rollup.startCount != null && order.startCount == null) ? rollup.startCount : null;
-        progressRows.push({ id: order.id, remains: rollup.totalRemains, sc });
+        if (rollup.totalRemains !== order.remains || sc != null) {
+          progressRows.push({
+            id: order.id,
+            observedRemains: order.remains,
+            nextRemains: rollup.totalRemains,
+            sc,
+          });
+        }
       }
     }
     if (progressRows.length) {
       const vals = [], prms = [];
       for (let i = 0; i < progressRows.length; i++) {
-        const b = i * 3;
+        const b = i * 4;
         const r = progressRows[i];
-        vals.push(`($${b+1}, $${b+2}::int, $${b+3}::int)`);
-        prms.push(r.id, r.remains, r.sc);
+        vals.push(`($${b+1}, $${b+2}::int, $${b+3}::int, $${b+4}::int)`);
+        prms.push(r.id, r.observedRemains, r.nextRemains, r.sc);
       }
       await prisma.$executeRawUnsafe(
-        `UPDATE "orders" SET "remains" = v.r, "startCount" = COALESCE(v.sc, "orders"."startCount"), "updatedAt" = NOW() FROM (VALUES ${vals.join(',')}) AS v(id, r, sc) WHERE "orders"."id" = v.id AND "orders"."status" NOT IN ('Cancelled', 'Completed', 'Partial') AND "orders"."deletedAt" IS NULL`,
+        `UPDATE "orders"
+         SET "remains" = CASE
+               WHEN "orders"."remains" IS NOT DISTINCT FROM v.observed_r THEN v.next_r
+               ELSE "orders"."remains"
+             END,
+             "startCount" = CASE
+               WHEN "orders"."startCount" IS NULL AND v.sc IS NOT NULL THEN v.sc
+               ELSE "orders"."startCount"
+             END,
+             "updatedAt" = NOW()
+         FROM (VALUES ${vals.join(',')}) AS v(id, observed_r, next_r, sc)
+         WHERE "orders"."id" = v.id
+           AND "orders"."status" IN ('Pending', 'Processing')
+           AND "orders"."deletedAt" IS NULL
+           AND (
+             (
+               "orders"."remains" IS NOT DISTINCT FROM v.observed_r
+               AND "orders"."remains" IS DISTINCT FROM v.next_r
+             )
+             OR (v.sc IS NOT NULL AND "orders"."startCount" IS NULL)
+           )`,
         ...prms,
       );
     }

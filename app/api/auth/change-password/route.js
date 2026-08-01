@@ -36,11 +36,15 @@ export async function POST(req) {
     await prisma.user.update({ where: { id: user.id }, data: { password: hash } });
 
     // Kill all other sessions (keep current)
-    const cookieStore = await cookies();
-    const currentToken = cookieStore.get('nitro_token')?.value;
-    const currentHash = currentToken ? hashToken(currentToken) : null;
-    if (currentHash) {
-      await prisma.session.deleteMany({ where: { userId: user.id, tokenHash: { not: currentHash } } });
+    if (session._sessionId) {
+      await prisma.session.deleteMany({ where: { userId: user.id, id: { not: session._sessionId } } });
+    } else {
+      const cookieStore = await cookies();
+      const currentToken = cookieStore.get('nitro_token')?.value;
+      const currentHash = currentToken ? hashToken(currentToken) : null;
+      if (currentHash) {
+        await prisma.session.deleteMany({ where: { userId: user.id, tokenHash: { not: currentHash } } });
+      }
     }
 
     return Response.json({ success: true, message: 'Password updated' });

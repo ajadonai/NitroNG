@@ -16,8 +16,8 @@ const mockPrisma = {
 };
 
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
-vi.mock('@/lib/logger', () => ({ log: { error: vi.fn(), warn: vi.fn() } }));
-vi.mock('@/lib/smm', () => ({ placeOrder: vi.fn(), checkOrder: vi.fn() }));
+vi.mock('@/lib/logger', () => ({ log: { error: vi.fn(), warn: vi.fn(), info: vi.fn() } }));
+vi.mock('@/lib/smm', () => ({ placeOrder: vi.fn(), checkOrder: vi.fn(), checkOrders: vi.fn() }));
 vi.mock('@/lib/telegram', () => ({ tgDripTimeout: vi.fn() }));
 vi.mock('@/lib/drip-feed', async () => {
   const actual = await vi.importActual('@/lib/drip-feed');
@@ -39,9 +39,10 @@ beforeEach(async () => {
   mockAdminIssue.create.mockReset().mockReturnValue({ catch: () => {} });
   mockExecuteRawUnsafe.mockReset();
   mockQueryRaw.mockReset().mockResolvedValue([]);
-  const { placeOrder, checkOrder } = await import('@/lib/smm');
+  const { placeOrder, checkOrder, checkOrders } = await import('@/lib/smm');
   placeOrder.mockReset();
   checkOrder.mockReset();
+  checkOrders.mockReset();
   const { awardPointsOnCompletion } = await import('@/lib/nitro-rewards');
   awardPointsOnCompletion.mockReset().mockResolvedValue(0);
   process.env.CRON_SECRET = 'test-secret';
@@ -321,6 +322,174 @@ describe('drip cron — section 3 reschedule (set-based UPDATE)', () => {
   });
 });
 
+describe('drip cron — batched processing sync', () => {
+  it('uses one provider request and one fenced progress update for multiple dispatches', async () => {
+    const { checkOrder, checkOrders } = await import('@/lib/smm');
+    const processing = [
+      {
+        id: 'disp-batch-1', apiOrderId: 'api-batch-1', status: 'processing',
+        quantity: 100, remains: 100, startCount: null, dispatchedAt: new Date(),
+        orderId: 'ord-batch-1', lastError: null,
+        order: { id: 'ord-batch-1', orderId: 'NTR-B1', service: { provider: 'mtp' } },
+      },
+      {
+        id: 'disp-batch-2', apiOrderId: 'api-batch-2', status: 'processing',
+        quantity: 200, remains: 200, startCount: null, dispatchedAt: new Date(),
+        orderId: 'ord-batch-2', lastError: null,
+        order: { id: 'ord-batch-2', orderId: 'NTR-B2', service: { provider: 'mtp' } },
+      },
+    ];
+    mockDripDispatch.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce(processing);
+    mockOrder.findMany.mockResolvedValue([]);
+    checkOrders.mockResolvedValueOnce({
+      'api-batch-1': { status: 'Processing', remains: 80, start_count: 1000 },
+      'api-batch-2': { status: 'Processing', remains: 150, start_count: 2000 },
+    });
+    mockExecuteRawUnsafe.mockResolvedValueOnce(2);
+
+    const { GET } = await import('@/app/api/cron/drip/route');
+    const response = await GET(makeReq());
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(checkOrders).toHaveBeenCalledTimes(1);
+    expect(checkOrders).toHaveBeenCalledWith('mtp', ['api-batch-1', 'api-batch-2']);
+    expect(checkOrder).not.toHaveBeenCalled();
+    expect(body.stats.synced).toBe(2);
+
+    const processingQuery = mockDripDispatch.findMany.mock.calls[3][0];
+    expect(processingQuery.where.order).toEqual({
+      status: { in: ['Pending', 'Processing'] },
+      deletedAt: null,
+    });
+
+    const [sql, ...params] = mockExecuteRawUnsafe.mock.calls[0];
+    expect(sql).toContain('UPDATE "drip_dispatches" AS d');
+    expect(sql).toContain("d.status = 'processing'");
+    expect(sql).toContain('d."apiOrderId" = v.api_order_id');
+    expect(sql).toContain("o.status IN ('Pending', 'Processing')");
+    expect(sql).toContain('o."deletedAt" IS NULL');
+    expect(params).toEqual([
+      'disp-batch-1', 'api-batch-1', 100, 80, 1000,
+      'disp-batch-2', 'api-batch-2', 200, 150, 2000,
+    ]);
+  });
+
+  it('persists a new start count even when provider remains is unchanged', async () => {
+    const { checkOrder } = await import('@/lib/smm');
+    mockDripDispatch.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id: 'disp-start', apiOrderId: 'api-start', status: 'processing',
+          quantity: 100, remains: 75, startCount: null, dispatchedAt: new Date(),
+          orderId: 'ord-start', lastError: null,
+          order: { id: 'ord-start', orderId: 'NTR-START', service: { provider: 'mtp' } },
+        },
+      ]);
+    mockOrder.findMany.mockResolvedValue([]);
+    checkOrder.mockResolvedValueOnce({
+      status: 'Processing',
+      remains: 75,
+      start_count: 987,
+    });
+    mockExecuteRawUnsafe.mockResolvedValueOnce(1);
+
+    const { GET } = await import('@/app/api/cron/drip/route');
+    const response = await GET(makeReq());
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.stats.synced).toBe(1);
+    const [, ...params] = mockExecuteRawUnsafe.mock.calls[0];
+    expect(params).toEqual(['disp-start', 'api-start', 75, null, 987]);
+    expect(mockExecuteRawUnsafe.mock.calls[0][0]).toContain(
+      'd."remains" IS NOT DISTINCT FROM v.observed_remains',
+    );
+  });
+
+  it('isolates malformed provider counts instead of rejecting valid rows in the batch', async () => {
+    const { checkOrders } = await import('@/lib/smm');
+    mockDripDispatch.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id: 'disp-valid', apiOrderId: 'api-valid', status: 'processing',
+          quantity: 100, remains: 100, startCount: null, dispatchedAt: new Date(),
+          orderId: 'ord-valid', lastError: null,
+          order: { id: 'ord-valid', orderId: 'NTR-VALID', service: { provider: 'mtp' } },
+        },
+        {
+          id: 'disp-invalid', apiOrderId: 'api-invalid', status: 'processing',
+          quantity: 100, remains: 100, startCount: null, dispatchedAt: new Date(),
+          orderId: 'ord-invalid', lastError: null,
+          order: { id: 'ord-invalid', orderId: 'NTR-INVALID', service: { provider: 'mtp' } },
+        },
+      ]);
+    mockOrder.findMany.mockResolvedValue([]);
+    checkOrders.mockResolvedValueOnce({
+      'api-valid': { status: 'Processing', remains: 80, start_count: 500 },
+      'api-invalid': { status: 'Processing', remains: 'N/A', start_count: 1.5 },
+    });
+    mockExecuteRawUnsafe.mockResolvedValueOnce(1);
+
+    const { GET } = await import('@/app/api/cron/drip/route');
+    const response = await GET(makeReq());
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.stats.synced).toBe(1);
+    expect(mockExecuteRawUnsafe).toHaveBeenCalledTimes(1);
+    const [, ...params] = mockExecuteRawUnsafe.mock.calls[0];
+    expect(params).toEqual(['disp-valid', 'api-valid', 100, 80, 500]);
+  });
+
+  it('isolates a failed provider group while applying another provider response', async () => {
+    const { checkOrder } = await import('@/lib/smm');
+    mockDripDispatch.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id: 'disp-mtp', apiOrderId: 'api-mtp', status: 'processing',
+          quantity: 100, remains: 100, startCount: null, dispatchedAt: new Date(),
+          orderId: 'ord-mtp', lastError: null,
+          order: { id: 'ord-mtp', orderId: 'NTR-MTP', service: { provider: 'mtp' } },
+        },
+        {
+          id: 'disp-jap', apiOrderId: 'api-jap', status: 'processing',
+          quantity: 100, remains: 100, startCount: null, dispatchedAt: new Date(),
+          orderId: 'ord-jap', lastError: null,
+          order: { id: 'ord-jap', orderId: 'NTR-JAP', service: { provider: 'jap' } },
+        },
+      ]);
+    mockOrder.findMany.mockResolvedValue([]);
+    checkOrder.mockImplementation((provider) => provider === 'mtp'
+      ? Promise.reject(new Error('MTP unavailable'))
+      : Promise.resolve({ status: 'Processing', remains: 70 }));
+    mockExecuteRawUnsafe.mockResolvedValueOnce(1);
+
+    const { GET } = await import('@/app/api/cron/drip/route');
+    const response = await GET(makeReq());
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.stats.synced).toBe(1);
+    expect(checkOrder).toHaveBeenCalledTimes(2);
+    const [, ...params] = mockExecuteRawUnsafe.mock.calls[0];
+    expect(params).toEqual(['disp-jap', 'api-jap', 100, 70, null]);
+  });
+});
+
 describe('drip cron — section 4 rollup', () => {
   function setupEmpty() {
     // Sections 0-3 produce nothing
@@ -356,7 +525,7 @@ describe('drip cron — section 4 rollup', () => {
 
     mockOrder.findMany.mockResolvedValue([
       {
-        id: 'ord-2', startCount: null,
+        id: 'ord-2', remains: 100, startCount: null,
         dripDispatches: [
           { status: 'completed', quantity: 100, remains: 0, startCount: 500, day: 1, batch: 1 },
           { status: 'processing', quantity: 100, remains: 60, startCount: null, day: 1, batch: 2 },
@@ -370,10 +539,13 @@ describe('drip cron — section 4 rollup', () => {
 
     expect(body.stats.rolledUp).toBe(0);
     expect(mockExecuteRawUnsafe).toHaveBeenCalledTimes(1);
-    const [, ...params] = mockExecuteRawUnsafe.mock.calls[0];
+    const [sql, ...params] = mockExecuteRawUnsafe.mock.calls[0];
+    expect(sql).toContain('"orders"."remains" IS NOT DISTINCT FROM v.observed_r');
+    expect(sql).toContain('"orders"."startCount" IS NULL');
     expect(params[0]).toBe('ord-2');
-    expect(params[1]).toBe(60); // remains
-    expect(params[2]).toBe(500); // startCount
+    expect(params[1]).toBe(100); // observed remains
+    expect(params[2]).toBe(60); // next remains
+    expect(params[3]).toBe(500); // startCount
   });
 
   it('sets Partial status when mix of completed and failed', async () => {
@@ -428,7 +600,7 @@ describe('drip cron — section 4 rollup', () => {
     mockOrder.findMany.mockResolvedValue([
       { id: 'ord-a', startCount: null, dripDispatches: ordADispatches },
       {
-        id: 'ord-b', startCount: null,
+        id: 'ord-b', remains: 200, startCount: null,
         dripDispatches: [
           { status: 'completed', quantity: 200, remains: 0, startCount: null, day: 1, batch: 1 },
           { status: 'processing', quantity: 200, remains: 150, startCount: null, day: 1, batch: 2 },
@@ -445,9 +617,10 @@ describe('drip cron — section 4 rollup', () => {
 
     expect(mockExecuteRawUnsafe).toHaveBeenCalledTimes(1);
     const [, ...params] = mockExecuteRawUnsafe.mock.calls[0];
-    expect(params).toHaveLength(3); // 1 progress order × 3 params
+    expect(params).toHaveLength(4); // 1 progress order × 4 params
     expect(params[0]).toBe('ord-b');
-    expect(params[1]).toBe(150); // remains
+    expect(params[1]).toBe(200); // observed remains
+    expect(params[2]).toBe(150); // next remains
     expect(body.stats.rolledUp).toBe(1); // only ord-a
   });
 
@@ -576,6 +749,7 @@ describe('drip cron — CAS fencing', () => {
     const body = await res.json();
 
     expect(body.ok).toBe(true);
+    expect(body.stats.synced).toBe(0);
     // No reschedule SQL should have been emitted since CAS returned count: 0
     expect(mockExecuteRawUnsafe).not.toHaveBeenCalled();
   });

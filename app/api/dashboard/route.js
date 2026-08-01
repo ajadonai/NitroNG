@@ -127,6 +127,21 @@ export async function GET() {
     });
     if (!user) return error('User not found', 404);
 
+    // These values are needed near the end of the response, but they do not
+    // depend on any of the dashboard aggregates. Start one narrow lookup now
+    // so remote database latency overlaps the rest of the dashboard work.
+    const dashboardSettingsPromise = (async () => {
+      try {
+        return await prisma.setting.findMany({
+          where: { key: { in: ['ref_min_deposit', 'tos_version'] } },
+          select: { key: true, value: true },
+        });
+      } catch (e) {
+        log.error('Dashboard', 'Settings query failed', { error: e.message });
+        return [];
+      }
+    })();
+
     let orders = [];
     let activeOrders = [];
     let orderSummary = {
@@ -164,29 +179,68 @@ export async function GET() {
         data: { status: 'Expired' },
       });
     } catch {}
+    // Expire unconfirmed manual transfers older than 30 minutes
+    try {
+      const staleManual = await prisma.transaction.findMany({
+        where: { userId: user.id, status: 'Pending', type: 'deposit', method: 'manual', createdAt: { lt: new Date(Date.now() - 30 * 60 * 1000) } },
+      });
+      const unconfirmedIds = staleManual.filter(tx => tx.note?.includes('[awaiting_confirmation]')).map(tx => tx.id);
+      if (unconfirmedIds.length) {
+        await prisma.transaction.deleteMany({ where: { id: { in: unconfirmedIds } } });
+      }
+    } catch {}
 
     let transactions = [];
     let walletSummary = { funded: 0, spent: 0 };
+    let referralEarnings = 0;
     try {
-      const [recentTransactions, totalsByType] = await Promise.all([
+      const [recentTransactions, totalsByTypeAndStatus] = await Promise.all([
         prisma.transaction.findMany({
           where: { userId: user.id, createdAt: { gte: historyCutoff } },
           orderBy: { createdAt: 'desc' },
           take: 100,
         }),
         prisma.transaction.groupBy({
-          by: ['type'],
-          where: { userId: user.id, status: 'Completed' },
+          by: ['type', 'status'],
+          where: {
+            userId: user.id,
+            OR: [
+              { status: 'Completed' },
+              { type: 'referral' },
+            ],
+          },
           _sum: { amount: true },
         }),
       ]);
       transactions = recentTransactions;
-      const totals = Object.fromEntries(totalsByType.map(row => [row.type, Math.abs(row._sum.amount || 0)]));
+      const totals = Object.fromEntries(
+        totalsByTypeAndStatus
+          .filter(row => row.status === 'Completed')
+          .map(row => [row.type, Math.abs(row._sum.amount || 0)]),
+      );
       const funded = ['deposit', 'admin_credit', 'admin_gift', 'referral', 'bonus'].reduce((sum, type) => sum + (totals[type] || 0), 0);
       const orderDebits = totals.order || 0;
       const refunds = totals.refund || 0;
       walletSummary = { funded: funded / 100, spent: (orderDebits - refunds) / 100 };
-    } catch (e) { log.error('Dashboard', 'Transactions query failed', { error: e.message }); }
+      // Preserve the prior earnings definition: a raw signed sum across every
+      // referral row, while wallet funding continues to count Completed only.
+      referralEarnings = totalsByTypeAndStatus
+        .filter(row => row.type === 'referral')
+        .reduce((sum, row) => sum + (row._sum.amount || 0), 0);
+    } catch (e) {
+      log.error('Dashboard', 'Transactions query failed', { error: e.message });
+      // Keep earnings independently available if the wider wallet summary
+      // fails. This is a fallback only; the normal path uses no extra query.
+      try {
+        const aggregate = await prisma.transaction.aggregate({
+          where: { userId: user.id, type: 'referral' },
+          _sum: { amount: true },
+        });
+        referralEarnings = aggregate._sum.amount || 0;
+      } catch (earningsError) {
+        log.error('Dashboard', 'Referral earnings fallback failed', { error: earningsError.message });
+      }
+    }
 
     let referralCount = 0;
     let referralList = [];
@@ -205,15 +259,6 @@ export async function GET() {
         joined: r.createdAt.toISOString(),
       }));
     } catch (e) { log.error('Dashboard', 'Referral count failed', { error: e.message }); }
-
-    let referralEarnings = 0;
-    try {
-      const agg = await prisma.transaction.aggregate({
-        where: { userId: user.id, type: 'referral' },
-        _sum: { amount: true },
-      });
-      referralEarnings = agg._sum.amount || 0;
-    } catch (e) { log.error('Dashboard', 'Referral earnings failed', { error: e.message }); }
 
     let alerts = [];
     try {
@@ -234,12 +279,14 @@ export async function GET() {
     // Check if user has a pending referral bonus (referred but bonus not yet paid)
     let pendingRefBonus = false;
     let refMinDepositDisplay = 0;
+    const dashboardSettings = Object.fromEntries(
+      (await dashboardSettingsPromise).map(row => [row.key, row.value]),
+    );
     if (user.referredBy) {
       try {
         const hasBonusTx = await prisma.transaction.findFirst({ where: { userId: user.id, type: 'referral' } });
         if (!hasBonusTx) {
-          const minDepRow = await prisma.setting.findUnique({ where: { key: 'ref_min_deposit' } });
-          const minDep = Number(minDepRow?.value) || 0;
+          const minDep = Number(dashboardSettings.ref_min_deposit) || 0;
           if (minDep > 0) {
             pendingRefBonus = true;
             refMinDepositDisplay = minDep / 100;
@@ -258,11 +305,7 @@ export async function GET() {
       });
     } catch {}
 
-    let currentTosVersion = null;
-    try {
-      const tosSetting = await prisma.setting.findUnique({ where: { key: 'tos_version' } });
-      if (tosSetting) currentTosVersion = tosSetting.value;
-    } catch {}
+    const currentTosVersion = dashboardSettings.tos_version || null;
 
     const totalOrders = orderSummary.nonCancelled;
 

@@ -475,16 +475,23 @@ describe('applyWelcomeBonus', () => {
     }));
   });
 
-  it('returns 0 for referred users', async () => {
+  it('pays the tiered welcome bonus to referred users', async () => {
     const db = makeWelcomeBonusDb();
     db.user.findUnique.mockResolvedValue({ firstDepositBonusPaid: false, referredBy: 'someReferrer', signupIp: '5.6.7.8' });
     db.user.updateMany.mockResolvedValue({ count: 1 });
+    db.setting.findMany.mockResolvedValue([]);
+    db.user.count.mockResolvedValue(0);
+    db.user.update.mockResolvedValue({});
+    db.transaction.create.mockResolvedValue({});
 
     const result = await applyWelcomeBonus(db, 'user7', 1000000);
 
-    expect(result).toBe(0);
-    expect(db.user.update).not.toHaveBeenCalled();
-    expect(db.user.count).not.toHaveBeenCalled();
+    expect(result).toBe(300000);
+    expect(db.user.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'user7' },
+      data: { balance: { increment: 300000 } },
+    }));
+    expect(db.transaction.create).toHaveBeenCalled();
   });
 
   it('returns 0 for sub-₦2,500 deposits but burns the flag', async () => {

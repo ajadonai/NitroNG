@@ -101,7 +101,9 @@ describe('internal dashboard leakage retirement', () => {
     const team = source('app/api/admin/team/route.js');
     expect(login).toContain('clearInternalDashboardGrantCookie(cookieStore)');
     expect(login.indexOf('clearInternalDashboardGrantCookie(cookieStore)'))
-      .toBeLessThan(login.indexOf('await setAdminCookie(token, admin.role, { remember })'));
+      .toBeLessThan(login.indexOf(
+        'await setAdminCookie(sessionResult.token, sessionResult.admin.role, { remember })',
+      ));
     expect(login).toContain('FOR UPDATE');
     expect(login.indexOf('FOR UPDATE')).toBeLessThan(login.indexOf('tx.adminSession.create'));
     expect(login.indexOf('tx.adminSession.deleteMany'))

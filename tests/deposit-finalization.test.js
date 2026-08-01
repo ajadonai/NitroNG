@@ -276,7 +276,7 @@ describe('finalizeDeposit', () => {
     expect(state.transactions.filter(row => row.type === 'bonus').every(row => row.idempotencyKey)).toBe(true);
   });
 
-  it('pays a qualifying referral once and suppresses the welcome bonus for referred users', async () => {
+  it('pays a referred user the tiered welcome bonus and the referrer their configured bonus', async () => {
     const { db, state } = createPaymentDb({
       deposits: [deposit('referred')],
       users: [
@@ -287,7 +287,6 @@ describe('finalizeDeposit', () => {
         ref_enabled: 'true',
         ref_min_deposit: '250000',
         ref_referrer_bonus: '70000',
-        ref_invitee_bonus: '30000',
       },
     });
 
@@ -299,20 +298,68 @@ describe('finalizeDeposit', () => {
 
     expect(result).toMatchObject({
       finalized: true,
-      welcomeBonus: 0,
+      welcomeBonus: 120_000,
       referrerBonus: 70_000,
-      inviteeBonus: 30_000,
-      totalUserCredit: 530_000,
+      inviteeBonus: 0,
+      totalUserCredit: 620_000,
     });
-    expect(state.users.find(row => row.id === 'user-1').balance).toBe(530_000);
+    expect(state.users.find(row => row.id === 'user-1').balance).toBe(620_000);
     expect(state.users.find(row => row.id === 'referrer').balance).toBe(70_000);
     const referralRows = state.transactions.filter(row => row.type === 'referral');
     expect(referralRows).toHaveLength(2);
     expect(new Set(referralRows.map(row => row.idempotencyKey)).size).toBe(2);
     const referrerRow = referralRows.find(row => row.userId === 'referrer');
+    const inviteeRow = referralRows.find(row => row.userId === 'user-1');
     expect(referrerRow.note).toBe('Referral bonus [ref-marker:user-1]');
     expect(referrerRow.note).not.toContain('user-1@example.test');
     expect(referrerRow.note).not.toContain('user-1 deposited');
+    expect(inviteeRow).toMatchObject({
+      amount: 0,
+      note: 'Referral tracked (welcome bonus applied) [ref-marker:user-1]',
+    });
+  });
+
+  it('uses the configured invitee bonus only when no welcome bonus was paid', async () => {
+    const { db, state } = createPaymentDb({
+      deposits: [deposit('invitee-fallback')],
+      users: [
+        user('user-1', {
+          firstDepositBonusPaid: true,
+          referredBy: 'REF-referrer',
+          signupIp: '1.1.1.1',
+        }),
+        user('referrer', { referralCode: 'REF-referrer', signupIp: '2.2.2.2' }),
+      ],
+      settings: {
+        ref_enabled: 'true',
+        ref_min_deposit: '250000',
+        ref_referrer_bonus: '70000',
+        // Deliberately non-default so the assertion proves this setting is used.
+        ref_invitee_bonus: '75000',
+      },
+    });
+
+    const result = await finalizeDeposit({
+      prismaClient: db,
+      transactionId: 'invitee-fallback',
+      paidAmountKobo: 500_000,
+    });
+
+    expect(result).toMatchObject({
+      finalized: true,
+      welcomeBonus: 0,
+      referrerBonus: 70_000,
+      inviteeBonus: 75_000,
+      totalUserCredit: 575_000,
+    });
+    expect(state.users.find(row => row.id === 'user-1').balance).toBe(575_000);
+    expect(state.users.find(row => row.id === 'referrer').balance).toBe(70_000);
+    expect(state.transactions.find(row =>
+      row.userId === 'user-1' && row.type === 'referral'
+    )).toMatchObject({
+      amount: 75_000,
+      note: 'Referral welcome bonus [ref-marker:user-1]',
+    });
   });
 
   it.each([
@@ -348,9 +395,10 @@ describe('finalizeDeposit', () => {
       referralWithheldReason: 'referrer_ineligible',
       referrerBonus: 0,
       inviteeBonus: 0,
-      totalUserCredit: 500_000,
+      welcomeBonus: 120_000,
+      totalUserCredit: 620_000,
     });
-    expect(state.users.find(row => row.id === 'user-1').balance).toBe(500_000);
+    expect(state.users.find(row => row.id === 'user-1').balance).toBe(620_000);
     expect(state.users.find(row => row.id === 'ineligible').balance).toBe(0);
     expect(state.transactions.filter(row => row.type === 'referral')).toHaveLength(0);
   });
@@ -380,9 +428,10 @@ describe('finalizeDeposit', () => {
       referralWithheldReason: 'referrer_eligibility_changed',
       referrerBonus: 0,
       inviteeBonus: 0,
-      totalUserCredit: 500_000,
+      welcomeBonus: 120_000,
+      totalUserCredit: 620_000,
     });
-    expect(state.users.find(row => row.id === 'user-1').balance).toBe(500_000);
+    expect(state.users.find(row => row.id === 'user-1').balance).toBe(620_000);
     expect(state.users.find(row => row.id === 'racing').balance).toBe(0);
     expect(state.transactions.filter(row => row.type === 'referral')).toHaveLength(0);
   });
@@ -511,7 +560,7 @@ describe('finalizeDeposit', () => {
     expect(state.coupons[0].used).toBe(0);
   });
 
-  it('withholds same-IP referral rewards without affecting the deposit principal', async () => {
+  it('withholds same-IP referral rewards without affecting the welcome bonus', async () => {
     const { db, state } = createPaymentDb({
       deposits: [deposit('same-ip')],
       users: [
@@ -531,9 +580,10 @@ describe('finalizeDeposit', () => {
       finalized: true,
       referralPaid: false,
       referralWithheldReason: 'same_ip',
-      totalUserCredit: 500_000,
+      welcomeBonus: 120_000,
+      totalUserCredit: 620_000,
     });
-    expect(state.users.find(row => row.id === 'user-1').balance).toBe(500_000);
+    expect(state.users.find(row => row.id === 'user-1').balance).toBe(620_000);
     expect(state.users.find(row => row.id === 'same-ip-referrer').balance).toBe(0);
     expect(state.transactions.filter(row => row.type === 'referral')).toHaveLength(0);
   });

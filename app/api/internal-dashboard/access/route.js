@@ -3,6 +3,7 @@ import { getCurrentAdmin } from '@/lib/auth';
 import {
   canAccessInternalDashboard,
   createInternalDashboardGrant,
+  getInternalDashboardGrantTtl,
   INTERNAL_DASHBOARD_COOKIE,
   internalDashboardCookieOptions,
   InternalDashboardAccessUnavailableError,
@@ -61,15 +62,29 @@ export async function GET(req) {
   }
 
   try {
+    const now = Date.now();
+    const ttlSeconds = getInternalDashboardGrantTtl(
+      session._absoluteExpiresAt,
+      now,
+    );
+    if (ttlSeconds <= 0) {
+      return withInternalDashboardNoStore(Response.json(
+        { error: 'Authentication required' },
+        { status: 401 },
+      ));
+    }
     const token = createInternalDashboardGrant({
       adminId: session.id,
       sessionId: session._sessionId,
-    });
+    }, { now, ttlSeconds });
     const response = redirectNoStore(new URL(destination, req.url));
     response.cookies.set(
       INTERNAL_DASHBOARD_COOKIE,
       token,
-      internalDashboardCookieOptions(),
+      internalDashboardCookieOptions({
+        remember: session._remember,
+        ttlSeconds,
+      }),
     );
     return response;
   } catch (error) {

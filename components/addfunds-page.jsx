@@ -23,6 +23,7 @@ const TX_META = {
   refund:       { label: "Refund",        icon: "↩", clr: dk => dk ? "#fcd34d" : "#d97706" },
   admin_credit: { label: "Admin credit",  icon: "＋", clr: dk => dk ? "#a5b4fc" : "#4f46e5" },
   admin_gift:   { label: "Gift",          icon: "✦", clr: dk => dk ? "#f0abfc" : "#a855f7" },
+  admin_debit:  { label: "Adjustment",    icon: "↑", clr: dk => dk ? "#fca5a5" : "#dc2626" },
 };
 function txClr(type, dk) { return (TX_META[type] || TX_META.order).clr(dk); }
 function isFlutterwaveDeposit(tx) {
@@ -91,6 +92,7 @@ function txDesc(tx) {
   if (tx.type === "deposit") return tx.reference || "Wallet top-up";
   if (tx.type === "referral") return "Referral commission";
   if (tx.type === "admin_credit" || tx.type === "admin_gift") return tx.description || "Credited by Nitro Team";
+  if (tx.type === "admin_debit") return tx.description || "Balance adjustment";
   return tx.reference || "";
 }
 
@@ -431,8 +433,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
           </div>
           <div>
-            <div className="text-[13px] font-semibold" style={{ color: t.accent }}>Welcome bonus</div>
-            <div className="text-[12.5px] mt-0.5" style={{ color: t.textSoft, lineHeight: 1.45 }}>Your first deposit earns up to ₦3,000 free. The more you add, the bigger the bonus.</div>
+            <div className="text-[13px] font-semibold text-accent">Welcome bonus</div>
+            <div className="text-[12.5px] mt-0.5 text-t-text-soft leading-[1.45]">Your first deposit earns up to ₦3,000 free. The more you add, the bigger the bonus.</div>
           </div>
         </div>
       )}
@@ -447,22 +449,22 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                   {p.tag && <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-bold py-0.5 px-2.5 rounded-full text-white whitespace-nowrap" style={{ background: 'linear-gradient(135deg,#c47d8e,#a3586b)', boxShadow: '0 2px 8px rgba(196,125,142,.3)', letterSpacing: .3 }}>{p.tag}</span>}
                   <div className="text-lg max-md:text-base font-extrabold" style={{ color: sel ? t.accent : t.text, letterSpacing: -.3 }}>₦{p.amount.toLocaleString()}</div>
                   <div className="inline-flex items-center gap-1 mt-1 py-0.5 px-2 rounded-md text-[11px] max-md:text-[10px] font-bold" style={{ background: sel ? (dark ? 'rgba(110,231,183,.15)' : 'rgba(5,150,105,.1)') : (dark ? 'rgba(110,231,183,.07)' : 'rgba(5,150,105,.05)'), color: sel ? (dark ? '#6ee7b7' : '#059669') : (dark ? 'rgba(110,231,183,.6)' : 'rgba(5,150,105,.5)') }}>+₦{p.bonus.toLocaleString()} free</div>
-                  <div className="text-[10px] max-md:text-[9px] mt-1" style={{ color: t.textMuted }}>₦{total.toLocaleString()} to spend</div>
+                  <div className="text-[10px] max-md:text-[9px] mt-1 text-t-text-muted">₦{total.toLocaleString()} to spend</div>
                 </button>
               );
             })}
           </div>
           <div className="flex items-center gap-3 mb-3 max-md:mb-2.5">
-            <div className="flex-1 h-px" style={{ background: t.cardBorder }} />
-            <span className="text-[10px] font-semibold uppercase tracking-[1.2px]" style={{ color: t.textMuted }}>or enter amount</span>
-            <div className="flex-1 h-px" style={{ background: t.cardBorder }} />
+            <div className="flex-1 h-px bg-t-card-border" />
+            <span className="text-[10px] font-semibold uppercase tracking-[1.2px] text-t-text-muted">or enter amount</span>
+            <div className="flex-1 h-px bg-t-card-border" />
           </div>
         </>
       )}
-      {!welcomeEligible && <div className="text-sm font-semibold uppercase tracking-[1px] mb-2.5" style={{ color: t.textSoft }}>Amount to deposit</div>}
+      {!welcomeEligible && <div className="text-sm font-semibold uppercase tracking-[1px] mb-2.5 text-t-text-soft">Amount to deposit</div>}
       <div className="flex items-center gap-1 py-3.5 px-[18px] max-desktop:py-3 max-desktop:px-4 max-md:py-3 max-md:px-3.5 rounded-xl mb-4 max-md:mb-3" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${amount ? t.accent : t.cardBorder}` }}>
         <span className="m text-[26px] max-desktop:text-[22px] max-md:text-xl font-semibold" style={{ color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.4)" }}>₦</span>
-        <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" className="m border-none text-[30px] max-desktop:text-[26px] max-md:text-2xl font-semibold w-full outline-none bg-transparent placeholder:opacity-[.12]" style={{ color: t.text }} />
+        <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" className="m border-none text-[30px] max-desktop:text-[26px] max-md:text-2xl font-semibold w-full outline-none bg-transparent placeholder:opacity-[.12] text-t-text" />
       </div>
       {!welcomeEligible && (
         <div className="grid grid-cols-3 gap-2 max-md:gap-1.5 mb-3">
@@ -494,10 +496,10 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(196,125,142,.14)' : 'rgba(196,125,142,.08)' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
             </div>
-            <span className="text-[12.5px] font-medium" style={{ color: t.textSoft }}>
+            <span className="text-[12.5px] font-medium text-t-text-soft">
               {cur > 0
-                ? <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer" style={{ color: t.accent, borderBottom: `1.5px dashed ${t.accent}`, paddingBottom: 1, font: 'inherit', fontSize: 'inherit' }}>Add ₦{diff.toLocaleString()} more</button> and get <strong style={{ color: t.accent }}>₦{nt.bonus.toLocaleString()} free</strong> instead of ₦{cur.toLocaleString()}.</>
-                : <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer" style={{ color: t.accent, borderBottom: `1.5px dashed ${t.accent}`, paddingBottom: 1, font: 'inherit', fontSize: 'inherit' }}>Add ₦{diff.toLocaleString()} more</button> to unlock your <strong style={{ color: t.accent }}>₦{nt.bonus.toLocaleString()} welcome bonus</strong>.</>
+                ? <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>Add ₦{diff.toLocaleString()} more</button> and get <strong className="text-accent">₦{nt.bonus.toLocaleString()} free</strong> instead of ₦{cur.toLocaleString()}.</>
+                : <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>Add ₦{diff.toLocaleString()} more</button> to unlock your <strong className="text-accent">₦{nt.bonus.toLocaleString()} welcome bonus</strong>.</>
               }
             </span>
           </div>
@@ -510,7 +512,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             Minimum deposit is ₦1,000
           </div>
         ) : !valid && (
-          <div className="text-[12px]" style={{ color: t.textMuted }}>Minimum deposit is ₦1,000</div>
+          <div className="text-[12px] text-t-text-muted">Minimum deposit is ₦1,000</div>
         )}
       </div>
     </>
@@ -520,7 +522,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
     !couponApplied ? (
       <div className="mt-2">
         {!showCoupon ? (
-          <button onClick={() => setShowCoupon(true)} className="py-2 px-3 rounded-lg border-none text-[13px] font-semibold cursor-pointer flex items-center gap-2 transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.07)", color: t.accent }}>
+          <button onClick={() => setShowCoupon(true)} className="py-2 px-3 rounded-lg border-none text-[13px] font-semibold cursor-pointer flex items-center gap-2 transition-all duration-200 hover:-translate-y-px text-accent" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.07)" }}>
             <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.14)" }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
             </div>
@@ -528,12 +530,12 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           </button>
         ) : (
           <div className="py-2.5 px-3 rounded-lg" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)"}` }}>
-            <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-[1px]" style={{ color: t.accent }}>
+            <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-[1px] text-accent">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
               Coupon Code
             </div>
             <div className="flex gap-2">
-              <input value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} placeholder="e.g. NITRO20" className="m flex-1 py-[9px] px-3 rounded-lg text-[13px] tracking-[1.5px] outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "#fff", border: `1.5px solid ${couponCode.trim() ? t.accent : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)")}`, color: t.text, fontFamily: "'JetBrains Mono',monospace", transition: "border-color .2s" }} />
+              <input value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} placeholder="e.g. NITRO20" className="m flex-1 py-[9px] px-3 rounded-lg text-[13px] tracking-[1.5px] outline-none text-t-text font-[JetBrains_Mono,monospace] transition-[border-color] duration-200" style={{ background: dark ? "rgba(255,255,255,.08)" : "#fff", border: `1.5px solid ${couponCode.trim() ? t.accent : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)")}` }} />
               <button onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()} className="py-[9px] px-4 rounded-lg text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: couponCode.trim() ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"), color: couponCode.trim() ? "#fff" : t.textMuted, opacity: couponLoading ? .5 : 1 }}>{couponLoading ? "..." : "Apply"}</button>
             </div>
             {couponError && <div className="text-xs mt-1.5 flex items-center gap-1" style={{ color: dark ? "#fca5a5" : "#dc2626" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {couponError}</div>}
@@ -555,7 +557,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 
   const AcceptedRow = ({ centered }) => (
     <div className={`flex items-center gap-1.5 flex-wrap ${centered ? "justify-center mt-4" : ""}`}>
-      <span className={`text-[13px] ${centered ? "hidden" : "hidden desktop:inline"}`} style={{ color: t.textMuted }}>We accept:</span>
+      <span className={`text-[13px] text-t-text-muted ${centered ? "hidden" : "hidden desktop:inline"}`}>We accept:</span>
       {ACCEPTED_TYPES.map(({ label, short, icon }) => (
         <span key={label} className="text-xs py-[3px] px-2 rounded-md font-medium whitespace-nowrap inline-flex items-center gap-1" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.8)", border: `1px solid ${t.cardBorder}`, color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.45)" }}>
           {icon}<span className="max-md:hidden">{label}</span><span className="hidden max-md:inline">{short}</span>
@@ -619,9 +621,9 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       )}
 
       <div className="pb-3.5 max-md:pb-2">
-        <div className="text-[22px] max-desktop:text-lg font-semibold mb-0.5" style={{ color: t.text }}>Wallet</div>
-        <div className="text-[15px] max-md:text-sm" style={{ color: t.textMuted }}>Top up your balance to place orders</div>
-        <div className="page-divider" style={{ background: t.cardBorder }} />
+        <div className="text-[22px] max-desktop:text-lg font-semibold mb-0.5 text-t-text">Wallet</div>
+        <div className="text-[15px] max-md:text-sm text-t-text-muted">Top up your balance to place orders</div>
+        <div className="page-divider bg-t-card-border" />
       </div>
 
       {/* ═══ DESKTOP + TABLET: side by side ═══ */}
@@ -634,17 +636,20 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
             </div>
             <div className="flex items-baseline justify-between">
-              <div className="text-[11px] uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>Current Balance</div>
-              <div className="text-[28px] font-bold" style={{ color: t.green }}>{fN(balance)}</div>
+              <div className="text-[11px] uppercase tracking-[1.5px] text-t-text-muted">Current Balance</div>
+              <div className="text-[28px] font-bold text-t-green">{fN(balance)}</div>
             </div>
-            {lastFunded && <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>Last funded {fD(lastFunded.date, true)}</div>}
+            {lastFunded && <div className="text-[11px] mt-1 text-t-text-muted">Last funded {fD(lastFunded.date, true)}</div>}
             {pendingDeposits.length > 0 && (() => {
               const awaitingTx = pendingDeposits.find(tx => tx.awaitingConfirmation);
               return (
                 <div className="flex items-center gap-1.5 mt-2 py-2.5 px-2.5 rounded-lg text-[12px]" style={{ background: dark ? "rgba(252,211,77,.06)" : "rgba(217,119,6,.04)", border: `1px solid ${dark ? "rgba(252,211,77,.14)" : "rgba(217,119,6,.1)"}`, color: dark ? "#fcd34d" : "#d97706" }}>
                   <div className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ background: dark ? "#fcd34d" : "#d97706" }} />
                   <span className="flex-1">{pendingSummaryText}</span>
-                  {awaitingTx && <button onClick={() => { setConfirmModal(awaitingTx); setSenderName(""); }} className="py-0.5 px-2 rounded-md text-[11px] font-semibold cursor-pointer shrink-0 border-none transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,211,77,.15)" : "rgba(217,119,6,.12)", color: dark ? "#fcd34d" : "#d97706" }}>I've paid</button>}
+                  {awaitingTx && <>
+                    <button onClick={async () => { try { await fetch("/api/payments/manual", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: awaitingTx.reference }) }); } catch {} onRefresh?.(); }} className="py-0.5 px-2 rounded-md text-[11px] font-semibold cursor-pointer shrink-0 border-none transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>
+                    <button onClick={() => { setConfirmModal(awaitingTx); setSenderName(""); }} className="py-0.5 px-2 rounded-md text-[11px] font-semibold cursor-pointer shrink-0 border-none transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,211,77,.15)" : "rgba(217,119,6,.12)", color: dark ? "#fcd34d" : "#d97706" }}>I've paid</button>
+                  </>}
                 </div>
               );
             })()}
@@ -672,22 +677,22 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           <div className="w-[280px] shrink-0 flex">
             <div className="flex-1 flex flex-col rounded-[14px] p-[22px]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
               {(() => { const wb = welcomeEligible && valid ? bonusForNaira(numAmount) : 0; return (<>
-              <div className="flex justify-between mb-3.5 text-[15px]"><span style={{ color: t.textMuted }}>Deposit</span><span style={{ color: valid ? t.text : t.textMuted, fontWeight: 600 }}>{valid ? fN(numAmount) : "₦0"}</span></div>
-              <div className="flex justify-between mb-3.5 text-[15px]"><span style={{ color: t.textMuted }}>Fee</span><span style={{ color: t.green, fontWeight: 600 }}>Free</span></div>
+              <div className="flex justify-between mb-3.5 text-[15px]"><span className="text-t-text-muted">Deposit</span><span style={{ color: valid ? t.text : t.textMuted, fontWeight: 600 }}>{valid ? fN(numAmount) : "₦0"}</span></div>
+              <div className="flex justify-between mb-3.5 text-[15px]"><span className="text-t-text-muted">Fee</span><span className="text-t-green font-semibold">Free</span></div>
               {couponApplied && discount > 0 && (
-                <div className="flex justify-between mb-3.5 text-[15px]"><span style={{ color: t.textMuted }}>Coupon bonus</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+{fN(discount / 100)}</span></div>
+                <div className="flex justify-between mb-3.5 text-[15px]"><span className="text-t-text-muted">Coupon bonus</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+{fN(discount / 100)}</span></div>
               )}
               {wb > 0 && (
-                <div className="flex justify-between mb-3.5 text-[15px]"><span style={{ color: t.textMuted }}>Welcome bonus</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+₦{wb.toLocaleString()}</span></div>
+                <div className="flex justify-between mb-3.5 text-[15px]"><span className="text-t-text-muted">Welcome bonus</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+₦{wb.toLocaleString()}</span></div>
               )}
-              <div className="h-px my-1 mb-3.5" style={{ background: t.cardBorder }} />
+              <div className="h-px my-1 mb-3.5 bg-t-card-border" />
               <div className="flex justify-between items-baseline mb-7">
-                <span className="text-[11px] font-semibold uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>{(couponApplied && discount > 0) || wb > 0 ? "Wallet credit" : "Total"}</span>
+                <span className="text-[11px] font-semibold uppercase tracking-[1.5px] text-t-text-muted">{(couponApplied && discount > 0) || wb > 0 ? "Wallet credit" : "Total"}</span>
                 <span className="text-[28px] font-bold" style={{ color: valid ? t.accent : t.textMuted }}>{valid ? fN(numAmount + (discount > 0 ? discount / 100 : 0) + wb) : "—"}</span>
               </div>
               </>); })()}
 
-              <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1.5" style={{ color: t.textMuted }}>Payment method</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1.5 text-t-text-muted">Payment method</div>
               {gatewaysLoading ? (
                 <div className={`skel-bone h-[42px] rounded-[10px] ${dark ? "skel-dark" : "skel-light"}`} />
               ) : (
@@ -699,24 +704,24 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[12px] font-semibold leading-tight" style={{ color: sel ? t.accent : t.text }}>{g.name}</div>
-                        {meta.desc && <div className="text-[10px] leading-tight" style={{ color: t.textMuted }}>{meta.desc}</div>}
+                        {meta.desc && <div className="text-[10px] leading-tight text-t-text-muted">{meta.desc}</div>}
                       </div>
-                      {sel ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> : meta.speed ? <span className="text-[9px] font-medium py-px px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>{meta.speed}</span> : null}
+                      {sel ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> : meta.speed ? <span className="text-[9px] font-medium py-px px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)" }}>{meta.speed}</span> : null}
                     </button>
                   ); })}
                 </div>
               )}
               {method === "flutterwave" && gateways.some(g => g.id === "manual") && (
-                <div className="flex items-start gap-1.5 mt-1.5 py-1.5 px-2" style={{ color: t.textMuted }}>
+                <div className="flex items-start gap-1.5 mt-1.5 py-1.5 px-2 text-t-text-muted">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                  <span className="text-[10px] leading-snug">If our bank isn't on your app, try <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold" style={{ color: t.accent, background: "none", border: "none", padding: 0, fontFamily: "inherit", fontSize: "inherit" }}>Manual Transfer</button> as a backup.</span>
+                  <span className="text-[10px] leading-snug">If our bank isn't on your app, try <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold text-accent bg-transparent border-none p-0 font-[inherit] text-[inherit]">Manual Transfer</button> as a backup.</span>
                 </div>
               )}
 
               <div className="flex-1 min-h-4" />
 
               <PayButton onClick={handlePay} disabled={!valid || loading} loading={loading} text={loading ? "Processing..." : valid ? `Pay ${fN(numAmount)} Now` : "Enter an amount"} />
-              <div className="flex items-center justify-center gap-1.5 mt-2.5 text-xs" style={{ color: t.textMuted }}>
+              <div className="flex items-center justify-center gap-1.5 mt-2.5 text-xs text-t-text-muted">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                 Encrypted & secure
               </div>
@@ -737,8 +742,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                 </div>
                 <div className="flex items-baseline justify-between">
-                  <div className="text-[11px] uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>Current Balance</div>
-                  <div className="text-[22px] font-semibold" style={{ color: t.green }}>{fN(balance)}</div>
+                  <div className="text-[11px] uppercase tracking-[1.5px] text-t-text-muted">Current Balance</div>
+                  <div className="text-[22px] font-semibold text-t-green">{fN(balance)}</div>
                 </div>
                 {pendingDeposits.length > 0 && (() => {
                   const awaitingTx = pendingDeposits.find(tx => tx.awaitingConfirmation);
@@ -746,7 +751,10 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                     <div className="flex items-center gap-1.5 mt-1.5 py-2 px-2 rounded-lg text-[11px]" style={{ background: dark ? "rgba(252,211,77,.06)" : "rgba(217,119,6,.04)", border: `1px solid ${dark ? "rgba(252,211,77,.14)" : "rgba(217,119,6,.1)"}`, color: dark ? "#fcd34d" : "#d97706" }}>
                       <div className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ background: dark ? "#fcd34d" : "#d97706" }} />
                       <span className="flex-1">{pendingSummaryText}</span>
-                      {awaitingTx && <button onClick={() => { setConfirmModal(awaitingTx); setSenderName(""); }} className="py-0.5 px-2 rounded-md text-[11px] font-semibold cursor-pointer shrink-0 border-none" style={{ background: dark ? "rgba(252,211,77,.15)" : "rgba(217,119,6,.12)", color: dark ? "#fcd34d" : "#d97706" }}>I've paid</button>}
+                      {awaitingTx && <>
+                        <button onClick={async () => { try { await fetch("/api/payments/manual", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: awaitingTx.reference }) }); } catch {} onRefresh?.(); }} className="py-0.5 px-2 rounded-md text-[11px] font-semibold cursor-pointer shrink-0 border-none" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>
+                        <button onClick={() => { setConfirmModal(awaitingTx); setSenderName(""); }} className="py-0.5 px-2 rounded-md text-[11px] font-semibold cursor-pointer shrink-0 border-none" style={{ background: dark ? "rgba(252,211,77,.15)" : "rgba(217,119,6,.12)", color: dark ? "#fcd34d" : "#d97706" }}>I've paid</button>
+                      </>}
                     </div>
                   );
                 })()}
@@ -769,7 +777,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         {mobileStep === 2 && (
           <>
             {/* Back button */}
-            <button onClick={() => setMobileStep(1)} className="flex items-center gap-1.5 bg-transparent border-none text-sm font-medium cursor-pointer pb-3 transition-transform duration-200 hover:-translate-y-px" style={{ color: t.textMuted, fontFamily: "inherit" }}>
+            <button onClick={() => setMobileStep(1)} className="flex items-center gap-1.5 bg-transparent border-none text-sm font-medium cursor-pointer pb-3 transition-transform duration-200 hover:-translate-y-px text-t-text-muted font-[inherit]">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
               Back
             </button>
@@ -777,21 +785,21 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             {/* Summary + Payment method — single card */}
             <div className="rounded-xl py-3.5 px-4 mb-2.5" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
               {(() => { const wb = welcomeEligible ? bonusForNaira(numAmount) : 0; return (<>
-              <div className="flex justify-between mb-2.5 text-sm"><span style={{ color: t.textMuted }}>Deposit</span><span style={{ color: t.text, fontWeight: 600 }}>{fN(numAmount)}</span></div>
-              <div className="flex justify-between mb-2.5 text-sm"><span style={{ color: t.textMuted }}>Fee</span><span style={{ color: t.green, fontWeight: 600 }}>Free</span></div>
+              <div className="flex justify-between mb-2.5 text-sm"><span className="text-t-text-muted">Deposit</span><span className="text-t-text font-semibold">{fN(numAmount)}</span></div>
+              <div className="flex justify-between mb-2.5 text-sm"><span className="text-t-text-muted">Fee</span><span className="text-t-green font-semibold">Free</span></div>
               {couponApplied && discount > 0 && (
-                <div className="flex justify-between mb-2.5 text-sm"><span style={{ color: t.textMuted }}>Coupon ({couponApplied.code})</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+{fN(discount / 100)} bonus</span></div>
+                <div className="flex justify-between mb-2.5 text-sm"><span className="text-t-text-muted">Coupon ({couponApplied.code})</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+{fN(discount / 100)} bonus</span></div>
               )}
               {wb > 0 && (
-                <div className="flex justify-between mb-2.5 text-sm"><span style={{ color: t.textMuted }}>Welcome bonus</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+₦{wb.toLocaleString()}</span></div>
+                <div className="flex justify-between mb-2.5 text-sm"><span className="text-t-text-muted">Welcome bonus</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+₦{wb.toLocaleString()}</span></div>
               )}
               <div className="flex justify-between items-center mb-3">
-                <span className="text-[11px] font-semibold uppercase tracking-[1.5px]" style={{ color: t.textMuted }}>{(couponApplied && discount > 0) || wb > 0 ? "Wallet credit" : "Total"}</span>
-                <span className="text-lg font-semibold" style={{ color: t.accent }}>{fN(numAmount + (discount > 0 ? discount / 100 : 0) + wb)}</span>
+                <span className="text-[11px] font-semibold uppercase tracking-[1.5px] text-t-text-muted">{(couponApplied && discount > 0) || wb > 0 ? "Wallet credit" : "Total"}</span>
+                <span className="text-lg font-semibold text-accent">{fN(numAmount + (discount > 0 ? discount / 100 : 0) + wb)}</span>
               </div>
               </>); })()}
-              <div className="h-px mb-3" style={{ background: t.cardBorder }} />
-              <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1.5" style={{ color: t.textMuted }}>Payment method</div>
+              <div className="h-px mb-3 bg-t-card-border" />
+              <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1.5 text-t-text-muted">Payment method</div>
               {gateways.length > 0 ? (
                 <div className="flex flex-col gap-1">
                   {gateways.map(g => { const sel = method === g.id; const meta = GW_META[g.id] || {}; return (
@@ -801,23 +809,23 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[12px] font-semibold leading-tight" style={{ color: sel ? t.accent : t.text }}>{g.name}</div>
-                        {meta.desc && <div className="text-[10px] leading-tight" style={{ color: t.textMuted }}>{meta.desc}</div>}
+                        {meta.desc && <div className="text-[10px] leading-tight text-t-text-muted">{meta.desc}</div>}
                       </div>
-                      {sel ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> : meta.speed ? <span className="text-[9px] font-medium py-px px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>{meta.speed}</span> : null}
+                      {sel ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> : meta.speed ? <span className="text-[9px] font-medium py-px px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)" }}>{meta.speed}</span> : null}
                     </button>
                   ); })}
                 </div>
               ) : (
-                <div className="py-3 text-center text-sm" style={{ color: t.textMuted }}>No payment methods available</div>
+                <div className="py-3 text-center text-sm text-t-text-muted">No payment methods available</div>
               )}
               {method === "flutterwave" && gateways.some(g => g.id === "manual") && (
-                <div className="flex items-start gap-1.5 mt-1.5 py-1.5 px-2" style={{ color: t.textMuted }}>
+                <div className="flex items-start gap-1.5 mt-1.5 py-1.5 px-2 text-t-text-muted">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                  <span className="text-[10px] leading-snug">If our bank isn't on your app, try <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold" style={{ color: t.accent, background: "none", border: "none", padding: 0, fontFamily: "inherit", fontSize: "inherit" }}>Manual Transfer</button> as a backup.</span>
+                  <span className="text-[10px] leading-snug">If our bank isn't on your app, try <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold text-accent bg-transparent border-none p-0 font-[inherit] text-[inherit]">Manual Transfer</button> as a backup.</span>
                 </div>
               )}
               <PayButton onClick={handlePay} disabled={loading} loading={loading} text={loading ? "Processing..." : `Pay ${fN(numAmount)} Now`} className="mt-3" />
-              <div className="flex items-center justify-center gap-1.5 mt-2.5 text-xs" style={{ color: t.textMuted }}>
+              <div className="flex items-center justify-center gap-1.5 mt-2.5 text-xs text-t-text-muted">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                 Encrypted & secure
               </div>
@@ -828,56 +836,56 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 
       {/* ═══ CRYPTO PAYMENT MODAL ═══ */}
       {cryptoModal && (
-        <div onClick={() => { if (cryptoIsTerminal) { stopCryptoPolling(); setCryptoModal(null); } }} onKeyDown={e=>{if(e.key==='Escape'&&cryptoIsTerminal){stopCryptoPolling();setCryptoModal(null)}}} className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" style={{ background: "rgba(0,0,0,.45)" }}>
+        <div onClick={() => { if (cryptoIsTerminal) { stopCryptoPolling(); setCryptoModal(null); } }} onKeyDown={e=>{if(e.key==='Escape'&&cryptoIsTerminal){stopCryptoPolling();setCryptoModal(null)}}} className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease] bg-black/45">
           <div role="dialog" aria-modal="true" aria-label="Crypto payment" onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl p-6 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             {cryptoPresentation.kind === "credited" ? (
               <>
                 <div className="text-center py-5">
                   <div className="mb-3 flex justify-center"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
-                  <div className="text-lg font-semibold mb-1.5" style={{ color: t.text }}>{cryptoPresentation.title}</div>
-                  <div className="text-sm" style={{ color: t.textMuted }}>{fN(cryptoResult?.amount ?? cryptoModal.amountNgn)} has been added to your wallet</div>
+                  <div className="text-lg font-semibold mb-1.5 text-t-text">{cryptoPresentation.title}</div>
+                  <div className="text-sm text-t-text-muted">{fN(cryptoResult?.amount ?? cryptoModal.amountNgn)} has been added to your wallet</div>
                 </div>
                 <div className="flex max-md:flex-col gap-3">
-                  <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); window.location.reload(); }} className="flex-1 py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.text, fontFamily: "inherit" }}>Done</button>
-                  {onPlaceOrder && <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); onPlaceOrder(); }} className="flex-1 py-3 rounded-[10px] border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ fontFamily: "inherit" }}>Place an order</button>}
+                  <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); window.location.reload(); }} className="flex-1 py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>Done</button>
+                  {onPlaceOrder && <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); onPlaceOrder(); }} className="flex-1 py-3 rounded-[10px] border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)] font-[inherit]">Place an order</button>}
                 </div>
               </>
             ) : cryptoPresentation.kind === "review" ? (
               <>
                 <div className="text-center py-5">
                   <div className="mb-3 flex justify-center"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fcd34d" : "#d97706"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-                  <div className="text-lg font-semibold mb-1.5" style={{ color: t.text }}>{cryptoPresentation.title}</div>
-                  <div className="text-sm leading-normal" style={{ color: t.textMuted }}>{cryptoPresentation.message}</div>
-                  {cryptoResult?.reference && <div className="m text-[11px] mt-3 break-all" style={{ color: t.textMuted }}>Reference: {cryptoResult.reference}</div>}
+                  <div className="text-lg font-semibold mb-1.5 text-t-text">{cryptoPresentation.title}</div>
+                  <div className="text-sm leading-normal text-t-text-muted">{cryptoPresentation.message}</div>
+                  {cryptoResult?.reference && <div className="m text-[11px] mt-3 break-all text-t-text-muted">Reference: {cryptoResult.reference}</div>}
                 </div>
-                <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); onRefresh?.(); }} className="w-full py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.text, fontFamily: "inherit" }}>Close</button>
+                <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); onRefresh?.(); }} className="w-full py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>Close</button>
               </>
             ) : cryptoPresentation.kind === "failed" ? (
               <>
                 <div className="text-center py-5">
                   <div className="mb-3 flex justify-center"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fca5a5" : "#dc2626"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
-                  <div className="text-lg font-semibold mb-1.5" style={{ color: t.text }}>{cryptoPresentation.title}</div>
-                  <div className="text-sm leading-normal" style={{ color: t.textMuted }}>{cryptoPresentation.message}</div>
+                  <div className="text-lg font-semibold mb-1.5 text-t-text">{cryptoPresentation.title}</div>
+                  <div className="text-sm leading-normal text-t-text-muted">{cryptoPresentation.message}</div>
                 </div>
-                <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); onRefresh?.(); }} className="w-full py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.text, fontFamily: "inherit" }}>Try another method</button>
+                <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); onRefresh?.(); }} className="w-full py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>Try another method</button>
               </>
             ) : (
               <>
-                <div className="text-base font-semibold mb-1" style={{ color: t.text }}>Send USDT (TRC-20)</div>
-                <div className="text-[13px] mb-4" style={{ color: t.textMuted }}>Send exactly the amount below to this address</div>
+                <div className="text-base font-semibold mb-1 text-t-text">Send USDT (TRC-20)</div>
+                <div className="text-[13px] mb-4 text-t-text-muted">Send exactly the amount below to this address</div>
 
                 <div className="p-3.5 rounded-[10px] mb-3 text-center" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.04)", border: `1px solid ${t.cardBorder}` }}>
-                  <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Amount to send</div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1 text-t-text-muted">Amount to send</div>
                   <div className="m text-[28px] font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{cryptoModal.payAmount} USDT</div>
-                  <div className="text-xs mt-0.5" style={{ color: t.textMuted }}>≈ ${cryptoModal.amountUsd} USD · {fN(cryptoModal.amountNgn)}</div>
+                  <div className="text-xs mt-0.5 text-t-text-muted">≈ ${cryptoModal.amountUsd} USD · {fN(cryptoModal.amountNgn)}</div>
                 </div>
 
                 <div className="mb-3">
-                  <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>TRC-20 Address</div>
-                  <div className="py-2.5 px-3 rounded-lg text-xs leading-normal break-all" style={{ background: dark ? "#131728" : "#f8f8f8", border: `1px solid ${t.cardBorder}`, color: t.text, fontFamily: "'JetBrains Mono',monospace" }}>
+                  <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1 text-t-text-muted">TRC-20 Address</div>
+                  <div className="py-2.5 px-3 rounded-lg text-xs leading-normal break-all text-t-text font-[JetBrains_Mono,monospace]" style={{ background: dark ? "#131728" : "#f8f8f8", border: `1px solid ${t.cardBorder}` }}>
                     {cryptoModal.payAddress}
                   </div>
-                  <button onClick={() => { navigator.clipboard.writeText(cryptoModal.payAddress); }} className="mt-1.5 py-1.5 px-3.5 rounded-md bg-transparent text-xs font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.accent}`, color: t.accent, fontFamily: "inherit" }}>Copy address</button>
+                  <button onClick={() => { navigator.clipboard.writeText(cryptoModal.payAddress); }} className="mt-1.5 py-1.5 px-3.5 rounded-md bg-transparent text-xs font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px text-accent font-[inherit]" style={{ border: `1px solid ${t.accent}` }}>Copy address</button>
                 </div>
 
                 <div className="py-2.5 px-3.5 rounded-lg mb-3.5" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.06)", border: `1px solid ${dark ? "rgba(251,191,36,.18)" : "rgba(217,119,6,.14)"}` }}>
@@ -887,10 +895,10 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                       {cryptoStatus === "Confirming" ? "Payment detected — confirming on blockchain..." : "Waiting for payment..."}
                     </span>
                   </div>
-                  <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>We check automatically every 15 seconds. Do not close this page.</div>
+                  <div className="text-[11px] mt-1 text-t-text-muted">We check automatically every 15 seconds. Do not close this page.</div>
                 </div>
 
-                <button onClick={async () => { stopCryptoPolling(); try { await fetch("/api/payments/crypto", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: cryptoModal.reference }) }); } catch {} setCryptoModal(null); onRefresh?.(); }} className="w-full py-2.5 rounded-lg bg-transparent text-sm font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted, fontFamily: "inherit" }}>Cancel</button>
+                <button onClick={async () => { stopCryptoPolling(); try { await fetch("/api/payments/crypto", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: cryptoModal.reference }) }); } catch {} setCryptoModal(null); onRefresh?.(); }} className="w-full py-2.5 rounded-lg bg-transparent text-sm font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text-muted font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>Cancel</button>
               </>
             )}
           </div>
@@ -899,24 +907,24 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 
       {/* ═══ MANUAL BANK TRANSFER MODAL ═══ */}
       {manualModal && (
-        <div onClick={() => { if (manualDone) setManualModal(null); }} onKeyDown={e=>{if(e.key==='Escape'&&manualDone)setManualModal(null)}} className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" style={{ background: "rgba(0,0,0,.45)" }}>
+        <div onClick={() => { if (manualDone) setManualModal(null); }} onKeyDown={e=>{if(e.key==='Escape'&&manualDone)setManualModal(null)}} className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease] bg-black/45">
           <div role="dialog" aria-modal="true" aria-label="Bank transfer" onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl p-6 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             {manualDone ? (
               <>
                 <div className="text-center py-5">
                   <div className="mb-3 flex justify-center"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
-                  <div className="text-lg font-semibold mb-1.5" style={{ color: t.text }}>Transfer Submitted</div>
-                  <div className="text-sm leading-normal" style={{ color: t.textMuted }}>We'll verify your payment and credit your wallet. This may take 15-60 minutes during business hours.</div>
+                  <div className="text-lg font-semibold mb-1.5 text-t-text">Transfer Submitted</div>
+                  <div className="text-sm leading-normal text-t-text-muted">We'll verify your payment and credit your wallet. This may take 15-60 minutes during business hours.</div>
                 </div>
                 <div className="flex max-md:flex-col gap-3">
-                  <button onClick={() => setManualModal(null)} className="flex-1 py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.text, fontFamily: "inherit" }}>Done</button>
-                  {onPlaceOrder && <button onClick={() => { setManualModal(null); onPlaceOrder(); }} className="flex-1 py-3 rounded-[10px] border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ fontFamily: "inherit" }}>Place an order</button>}
+                  <button onClick={() => setManualModal(null)} className="flex-1 py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>Done</button>
+                  {onPlaceOrder && <button onClick={() => { setManualModal(null); onPlaceOrder(); }} className="flex-1 py-3 rounded-[10px] border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)] font-[inherit]">Place an order</button>}
                 </div>
               </>
             ) : (
               <>
-                <div className="text-base font-semibold mb-1" style={{ color: t.text }}>{manualStep === "confirm" ? "Confirm Transfer" : "Bank Transfer"}</div>
-                <div className="text-[13px] mb-2" style={{ color: t.textMuted }}>{manualStep === "confirm" ? "Enter the name on the bank account you sent from" : "Transfer this exact amount to the account below"}</div>
+                <div className="text-base font-semibold mb-1 text-t-text">{manualStep === "confirm" ? "Confirm Transfer" : "Bank Transfer"}</div>
+                <div className="text-[13px] mb-2 text-t-text-muted">{manualStep === "confirm" ? "Enter the name on the bank account you sent from" : "Transfer this exact amount to the account below"}</div>
 
                 {manualStep === "details" ? (
                   <>
@@ -928,19 +936,19 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                     <div className="rounded-xl mb-3 overflow-hidden" style={{ border: `1px solid ${t.cardBorder}` }}>
                       <div className="p-3.5" style={{ background: dark ? "rgba(255,255,255,.04)" : "transparent" }}>
                         <div className="mb-2.5">
-                          <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Bank</div>
-                          <div className="text-[15px] font-semibold" style={{ color: t.text }}>{manualModal.bankName}</div>
+                          <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-0.5 text-t-text-muted">Bank</div>
+                          <div className="text-[15px] font-semibold text-t-text">{manualModal.bankName}</div>
                         </div>
                         <div className="mb-2.5">
-                          <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Account Number</div>
+                          <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-0.5 text-t-text-muted">Account Number</div>
                           <div className="flex items-center gap-2">
-                            <span className="m text-lg font-bold tracking-[1px]" style={{ color: t.text }}>{manualModal.accountNumber}</span>
-                            <button onClick={() => navigator.clipboard.writeText(manualModal.accountNumber)} className="py-[3px] px-2.5 rounded-md bg-transparent text-[11px] font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.accent}`, color: t.accent, fontFamily: "inherit" }}>Copy</button>
+                            <span className="m text-lg font-bold tracking-[1px] text-t-text">{manualModal.accountNumber}</span>
+                            <button onClick={() => navigator.clipboard.writeText(manualModal.accountNumber)} className="py-[3px] px-2.5 rounded-md bg-transparent text-[11px] font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px text-accent font-[inherit]" style={{ border: `1px solid ${t.accent}` }}>Copy</button>
                           </div>
                         </div>
                         <div>
-                          <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Account Name</div>
-                          <div className="text-[15px] font-semibold" style={{ color: t.text }}>{manualModal.accountName}</div>
+                          <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-0.5 text-t-text-muted">Account Name</div>
+                          <div className="text-[15px] font-semibold text-t-text">{manualModal.accountName}</div>
                         </div>
                       </div>
                     </div>
@@ -950,25 +958,25 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                     </div>
 
                     <div className="flex gap-2">
-                      <button onClick={async () => { try { await fetch("/api/payments/manual", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: manualModal.reference }) }); } catch {} setManualModal(null); onRefresh?.(); }} className="flex-1 py-2.5 rounded-lg bg-transparent text-sm font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted, fontFamily: "inherit" }}>Cancel</button>
-                      <button onClick={() => setManualStep("confirm")} className="flex-1 py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-sm font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ fontFamily: "inherit" }}>I've sent the money</button>
+                      <button onClick={async () => { try { await fetch("/api/payments/manual", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: manualModal.reference }) }); } catch {} setManualModal(null); onRefresh?.(); }} className="flex-1 py-2.5 rounded-lg bg-transparent text-sm font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text-muted font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>Cancel</button>
+                      <button onClick={() => setManualStep("confirm")} className="flex-1 py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-sm font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)] font-[inherit]">I've sent the money</button>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="mb-3">
-                      <label className="text-[11px] font-semibold uppercase tracking-[1px] mb-1.5 block" style={{ color: t.textMuted }}>Sender / Account Name</label>
-                      <input type="text" aria-label="Sender account name" value={manualRef} onChange={e => setManualRef(e.target.value)} placeholder="e.g. John Doe" autoFocus className="w-full py-2.5 px-3.5 rounded-lg text-sm font-medium outline-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", border: `1.5px solid ${manualRef.trim().length >= 3 ? (dark ? "rgba(110,231,183,.4)" : "rgba(5,150,105,.3)") : t.cardBorder}`, color: t.text, fontFamily: "inherit", transition: "border-color .2s" }} />
-                      <div className="text-[11px] mt-1.5" style={{ color: t.textMuted }}>The name on the bank account you transferred from</div>
+                      <label className="text-[11px] font-semibold uppercase tracking-[1px] mb-1.5 block text-t-text-muted">Sender / Account Name</label>
+                      <input type="text" aria-label="Sender account name" value={manualRef} onChange={e => setManualRef(e.target.value)} placeholder="e.g. John Doe" autoFocus className="w-full py-2.5 px-3.5 rounded-lg text-sm font-medium outline-none text-t-text font-[inherit] transition-[border-color] duration-200" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", border: `1.5px solid ${manualRef.trim().length >= 3 ? (dark ? "rgba(110,231,183,.4)" : "rgba(5,150,105,.3)") : t.cardBorder}` }} />
+                      <div className="text-[11px] mt-1.5 text-t-text-muted">The name on the bank account you transferred from</div>
                     </div>
 
                     <div className="py-2 px-3 rounded-lg mb-3 flex items-center justify-between" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.02)", border: `1px solid ${t.cardBorder}` }}>
-                      <span className="text-xs" style={{ color: t.textMuted }}>Amount</span>
+                      <span className="text-xs text-t-text-muted">Amount</span>
                       <span className="m text-sm font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN(manualModal.amount)}</span>
                     </div>
 
                     <div className="flex gap-2">
-                      <button onClick={() => setManualStep("details")} className="flex-1 py-2.5 rounded-lg bg-transparent text-sm font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted, fontFamily: "inherit" }}>Back</button>
+                      <button onClick={() => setManualStep("details")} className="flex-1 py-2.5 rounded-lg bg-transparent text-sm font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text-muted font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>Back</button>
                       <button onClick={async () => {
                         if (manualRef.trim().length < 3) { toast.warning("Name required", "Enter the name on the account you sent from"); return; }
                         setManualSubmitting(true);
@@ -993,14 +1001,14 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 
       {/* ═══ CONFIRM PAYMENT MODAL ═══ */}
       {confirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => !confirmLoading && setConfirmModal(null)} style={{ background: "rgba(0,0,0,.45)" }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease] bg-black/45" onClick={() => !confirmLoading && setConfirmModal(null)}>
           <div className="w-full max-w-[420px] rounded-2xl overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }} onClick={e => e.stopPropagation()}>
             <div className="h-1.5" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }} />
             <div className="p-5">
-              <div className="text-base font-semibold mb-1" style={{ color: t.text }}>Confirm Payment</div>
-              <div className="text-[13px] mb-4" style={{ color: t.textMuted }}>You're confirming a deposit of <span className="font-semibold" style={{ color: t.text }}>{fN(confirmModal.amount)}</span></div>
-              <label className="text-[12px] font-medium mb-1.5 block" style={{ color: t.textMuted }}>Account name you sent from</label>
-              <input value={senderName} onChange={e => setSenderName(e.target.value)} placeholder="e.g. John Doe" autoFocus className="w-full py-2.5 px-3 rounded-lg text-sm outline-none" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.text, fontFamily: "inherit" }} />
+              <div className="text-base font-semibold mb-1 text-t-text">Confirm Payment</div>
+              <div className="text-[13px] mb-4 text-t-text-muted">You're confirming a deposit of <span className="font-semibold text-t-text">{fN(confirmModal.amount)}</span></div>
+              <label className="text-[12px] font-medium mb-1.5 block text-t-text-muted">Account name you sent from</label>
+              <input value={senderName} onChange={e => setSenderName(e.target.value)} placeholder="e.g. John Doe" autoFocus className="w-full py-2.5 px-3 rounded-lg text-sm outline-none text-t-text font-[inherit]" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }} />
               <button onClick={async () => {
                 if (!senderName.trim()) return;
                 setConfirmLoading(true);
@@ -1084,8 +1092,8 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
     <div className="mt-6 desktop:mt-8">
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div>
-          <div className="text-base desktop:text-lg font-semibold" style={{ color: t.text }}>Wallet History</div>
-          <div className="text-[13px]" style={{ color: t.textMuted }}>{total} transaction{total === 1 ? "" : "s"} · last 6 months</div>
+          <div className="text-base desktop:text-lg font-semibold text-t-text">Wallet History</div>
+          <div className="text-[13px] text-t-text-muted">{total} transaction{total === 1 ? "" : "s"} · last 6 months</div>
         </div>
         <div className="flex gap-1.5 flex-wrap">
           <DateRangePicker dark={dark} t={t} value={dateRange} onChange={(v) => { setDateRange(v); setPage(1); }} />
@@ -1099,11 +1107,11 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="py-2.5 px-3 rounded-xl text-center" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.1)"}` }}>
-          <div className="text-[11px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Funded</div>
+          <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">Funded</div>
           <div className="m text-[15px] font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{fNShort(totalIn)}</div>
         </div>
         <div className="py-2.5 px-3 rounded-xl text-center" style={{ background: dark ? "rgba(252,165,165,.06)" : "rgba(220,38,38,.04)", border: `1px solid ${dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.1)"}` }}>
-          <div className="text-[11px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Spent</div>
+          <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">Spent</div>
           <div className="m text-[15px] font-bold" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>-{fNShort(totalOut)}</div>
         </div>
       </div>
@@ -1118,24 +1126,24 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
               <div className="w-8 h-8 desktop:w-9 desktop:h-9 rounded-[10px] flex items-center justify-center text-base font-semibold shrink-0" style={{ background: dark ? `${rowColor}15` : `${rowColor}10`, color: rowColor }}>{txIcon(tx.type)}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm desktop:text-[15px] font-medium overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{txLabel(tx.type)}</span>
+                  <span className="text-sm desktop:text-[15px] font-medium overflow-hidden text-ellipsis whitespace-nowrap text-t-text">{txLabel(tx.type)}</span>
                   {statusMeta && <span className="text-[10px] font-semibold py-px px-1.5 rounded" style={{ background: statusMeta.bg, color: statusMeta.color }}>{statusMeta.label}</span>}
                   {tx.orderStatus && !["Completed", "Cancelled"].includes(tx.orderStatus) && <span className="text-[10px] font-semibold py-px px-1.5 rounded" style={{ background: tx.orderStatus === "Processing" ? (dark ? "rgba(165,180,252,.12)" : "rgba(99,102,241,.08)") : (dark ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)"), color: tx.orderStatus === "Processing" ? (dark ? "#a5b4fc" : "#6366f1") : (dark ? "#fcd34d" : "#d97706") }}>{tx.orderStatus}</span>}
                 </div>
-                <div className="text-[12px] desktop:text-[13px] mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.textMuted }}>{txDesc(tx)}</div>
+                <div className="text-[12px] desktop:text-[13px] mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-t-text-muted">{txDesc(tx)}</div>
               </div>
               <div className="text-right shrink-0">
                 <div className="m text-[14px] desktop:text-[15px] font-bold" style={{ color: rowColor }}>
                   {txAmountPrefix(tx)}{fN(tx.amount)}
                 </div>
-                <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{tx.date ? fD(tx.date, true) : ""}</div>
+                <div className="text-[11px] mt-0.5 text-t-text-muted">{tx.date ? fD(tx.date, true) : ""}</div>
               </div>
             </div>
           );
         }) : (
-          <div className="p-10 text-center text-[15px]" style={{ color: t.textMuted }}>
-            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>{filter !== "all" || dateRange ? "No matching transactions" : "No transactions in the last 6 months"}</div>
-            <div className="text-[15px]" style={{ color: t.textMuted }}>{filter !== "all" || dateRange ? "Try adjusting your filters" : "New wallet activity will appear here"}</div>
+          <div className="p-10 text-center text-[15px] text-t-text-muted">
+            <div className="text-base font-semibold mb-1 text-t-text-soft">{filter !== "all" || dateRange ? "No matching transactions" : "No transactions in the last 6 months"}</div>
+            <div className="text-[15px] text-t-text-muted">{filter !== "all" || dateRange ? "Try adjusting your filters" : "New wallet activity will appear here"}</div>
           </div>
         )}
       </div>
@@ -1146,7 +1154,7 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
           <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} className="w-[30px] h-[30px] rounded-md flex items-center justify-center border cursor-pointer bg-transparent" style={{ borderColor: t.cardBorder, color: t.textSoft, opacity: page <= 1 ? .3 : 1 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
-          <span className="text-[13px] px-2" style={{ color: t.textMuted }}>{page} / {totalPages}</span>
+          <span className="text-[13px] px-2 text-t-text-muted">{page} / {totalPages}</span>
           <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages} className="w-[30px] h-[30px] rounded-md flex items-center justify-center border cursor-pointer bg-transparent" style={{ borderColor: t.cardBorder, color: t.textSoft, opacity: page >= totalPages ? .3 : 1 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
@@ -1164,10 +1172,10 @@ export function AddFundsSidebar({ user, txs, dark, t }) {
 
   return (
     <div className="flex flex-col gap-0">
-      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>How It Works</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>How It Works</div>
       {[["1", "Enter amount"], ["2", "Choose payment method"], ["3", "Pay securely"], ["4", "Balance updated instantly"]].map(([num, title]) => (
         <div key={num} className="flex gap-2.5 mb-2 px-1">
-          <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center text-[13px] font-semibold shrink-0" style={{ background: t.navActive, color: t.accent }}>{num}</div>
+          <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center text-[13px] font-semibold shrink-0 bg-t-nav-active text-accent">{num}</div>
           <div className="text-sm font-medium pt-0.5" style={{ color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.55)" }}>{title}</div>
         </div>
       ))}

@@ -61,7 +61,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
   const [step, setStep] = useState(1);
-  const [remember, setRemember] = useState(false);
+  const [remember, setRemember] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
   const [error, setError] = useState('');
   const [firstName, setFirstName] = useState('');

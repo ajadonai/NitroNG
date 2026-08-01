@@ -93,7 +93,10 @@ export async function GET(req) {
       ndWhere.OR = [{ apiOrderId: null, dripDispatches: { none: {} } }, { dripDispatches: { some: { status: 'failed' } } }];
 
       let statusGroups, queuedCount, needsDispatchCount;
-      [orders, total, statusGroups, queuedCount, needsDispatchCount] = await Promise.all([
+      // Keep this frequently-polled endpoint to one pool slot per request.
+      // Parallel Prisma calls can otherwise reserve several connections at once
+      // and starve concurrent Vercel invocations before any SQL is executed.
+      [orders, statusGroups, queuedCount, needsDispatchCount] = await prisma.$transaction([
         prisma.order.findMany({
           where,
           orderBy: { createdAt: 'desc' },
@@ -101,7 +104,6 @@ export async function GET(req) {
           take: perPage,
           skip: (page - 1) * perPage,
         }),
-        prisma.order.count({ where }),
         prisma.order.groupBy({ by: ['status'], where: countsWhere, _count: true }),
         prisma.order.count({ where: { ...countsWhere, queuedBehind: { not: null } } }),
         prisma.order.count({ where: searchCondition ? { ...countsWhere, AND: [...(countsWhere.AND || []), ndWhere] } : { ...baseWhere, ...ndWhere } }),
@@ -109,6 +111,10 @@ export async function GET(req) {
 
       counts = { all: 0, needs_dispatch: needsDispatchCount, queued: queuedCount };
       for (const g of statusGroups) { counts[g.status] = g._count; counts.all += g._count; }
+      if (filter === 'queued') total = queuedCount;
+      else if (filter === 'needs_dispatch') total = needsDispatchCount;
+      else if (filter && filter !== 'all') total = counts[filter] || 0;
+      else total = counts.all;
     }
 
     const orderIds = orders.map(o => o.orderId).filter(Boolean);
@@ -122,8 +128,6 @@ export async function GET(req) {
     }
 
     const sensitive = canSeeSensitive(admin);
-    const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
-    const usdRate = Number(usdRateSetting?.value || 1600);
 
     const redispatchedIds = orders.filter(o => o.redispatchedAt).map(o => o.orderId);
     let childMap = {};
@@ -189,7 +193,15 @@ export async function GET(req) {
     });
   } catch (err) {
     log.error('Admin Orders', err.message);
-    return Response.json({ error: 'Failed to load orders' }, { status: 500 });
+    const poolTimedOut = err?.code === 'P2024'
+      || /timed out fetching a new connection from the connection pool/i.test(err?.message || '');
+    return Response.json(
+      { error: poolTimedOut ? 'Orders are temporarily busy. Please retry.' : 'Failed to load orders' },
+      {
+        status: poolTimedOut ? 503 : 500,
+        ...(poolTimedOut ? { headers: { 'Retry-After': '3' } } : {}),
+      },
+    );
   }
 }
 
