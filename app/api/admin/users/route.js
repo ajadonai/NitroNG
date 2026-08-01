@@ -154,7 +154,7 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { action, userId, amount, subtype } = body;
+    const { action, userId, amount, subtype, reason } = body;
 
     if (!userId) return Response.json({ error: 'User ID required' }, { status: 400 });
 
@@ -238,7 +238,7 @@ export async function POST(req) {
             amount: amountKobo,
             method: 'admin',
             status: 'Completed',
-            note: `${label} by Nitro Team`,
+            note: reason?.trim() || `${label} by Nitro Team`,
           },
         }),
       ]);
@@ -253,6 +253,33 @@ export async function POST(req) {
       }
 
       return Response.json({ success: true, message: `₦${Number(amount).toLocaleString()} credited to ${user.name}` });
+    }
+
+    if (action === 'debit') {
+      if (!canPerformAction(admin, 'users.adjustBalance')) return Response.json({ error: 'Not authorized to adjust balances' }, { status: 403 });
+      const amountKobo = Math.round(Number(amount) * 100);
+      if (!amountKobo || amountKobo <= 0) return Response.json({ error: 'Invalid amount' }, { status: 400 });
+      if (user.balance < amountKobo) return Response.json({ error: `Insufficient balance (₦${(user.balance / 100).toLocaleString()})` }, { status: 400 });
+
+      await prisma.$transaction([
+        prisma.user.update({
+          where: { id: userId },
+          data: { balance: { decrement: amountKobo } },
+        }),
+        prisma.transaction.create({
+          data: {
+            userId,
+            type: 'admin_debit',
+            amount: -amountKobo,
+            method: 'admin',
+            status: 'Completed',
+            note: reason?.trim() || 'Balance adjustment',
+          },
+        }),
+      ]);
+
+      await logActivity(admin.name, `Debited ₦${Number(amount).toLocaleString()} from ${user.name}${reason ? `: ${reason}` : ''}`, 'user');
+      return Response.json({ success: true, message: `₦${Number(amount).toLocaleString()} debited from ${user.name}` });
     }
 
     if (action === 'suspend') {

@@ -43,7 +43,7 @@ describe('Remember me session lifetimes', () => {
 
     signUserToken({ id: 'user-1', email: 'user@example.test' }, { remember: false });
     expect(mocks.jwtSign).toHaveBeenLastCalledWith(
-      { id: 'user-1', email: 'user@example.test', type: 'user' },
+      { id: 'user-1', email: 'user@example.test', type: 'user', remember: false },
       expect.any(String),
       { expiresIn: USER_SESSION_SECONDS },
     );

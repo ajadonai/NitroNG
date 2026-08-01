@@ -8,7 +8,13 @@ import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { tgRefund, tgOrderCancelled, tgRefundAlert } from '@/lib/telegram';
 import { createCommission, voidCommissions } from '@/lib/commissions';
 import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo, awardPointsOnCompletion } from '@/lib/nitro-rewards';
-import { findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
+import {
+  claimSameLinkRetryOrder,
+  findSameLinkDispatchBlocker,
+  findSameLinkDispatchBlockers,
+  isActiveOrderConflict,
+  PROVIDER_ACTIVE_WAIT,
+} from '@/lib/order-queue';
 import { getApplicationUrl } from '@/lib/env';
 import { getBearerToken } from '@/lib/bearer-token';
 
@@ -16,6 +22,43 @@ import { getBearerToken } from '@/lib/bearer-token';
 // Auto-refunds failed/cancelled orders
 // Runs every 10 minutes via Vercel Cron
 // GET /api/cron/orders
+
+function retrySnapshotWhere(order) {
+  return {
+    id: order.id,
+    status: 'Pending',
+    apiOrderId: null,
+    deletedAt: null,
+    dripDays: null,
+    dripDispatches: { none: {} },
+    queuedBehind: order.queuedBehind || null,
+    updatedAt: order.updatedAt,
+  };
+}
+
+async function persistRetryBlocker(order, blocker) {
+  if (!order?.updatedAt || !blocker?.orderId || order.queuedBehind === blocker.orderId) return;
+  try {
+    await prisma.order.updateMany({
+      where: retrySnapshotWhere(order),
+      data: { queuedBehind: blocker.orderId },
+    });
+  } catch (error) {
+    log.warn(`Cron retry ${order.orderId}`, `Could not persist queue blocker: ${error.message}`);
+  }
+}
+
+async function persistRetryWait(order) {
+  if (!order?.updatedAt) return;
+  try {
+    await prisma.order.updateMany({
+      where: retrySnapshotWhere(order),
+      data: { lastError: PROVIDER_ACTIVE_WAIT },
+    });
+  } catch (error) {
+    log.warn(`Cron retry ${order.orderId}`, `Could not preserve retry wait: ${error.message}`);
+  }
+}
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -28,8 +71,6 @@ export async function GET(req) {
   const t0 = Date.now();
 
   try {
-    await prisma.$executeRaw`SET statement_timeout = '50s'`;
-
     // Get all active orders (Processing or Pending with apiOrderId)
     const activeOrders = await prisma.order.findMany({
       where: {
@@ -297,32 +338,24 @@ export async function GET(req) {
       const retryable = [...new Map(
         [...recentRetryable, ...queuedRetryable, ...providerWaitingRetryable].map(order => [order.id, order]),
       ).values()].sort((a, b) => a.createdAt - b.createdAt).slice(0, 50);
+      const retryBlockers = await findSameLinkDispatchBlockers(prisma, retryable);
 
       for (const order of retryable) {
         // Preserve FIFO across direct and drip orders for the same service/link.
-        const blocking = await findSameLinkDispatchBlocker(prisma, order);
+        const blocking = retryBlockers.get(order.id) || null;
         if (blocking) {
-          if (order.queuedBehind !== blocking.orderId) {
-            await prisma.order.updateMany({
-              where: { id: order.id, status: 'Pending', apiOrderId: null },
-              data: { queuedBehind: blocking.orderId },
-            }).catch(() => {});
-          }
+          await persistRetryBlocker(order, blocking);
           continue;
         }
 
-        const claimed = await prisma.order.updateMany({
-          where: {
-            id: order.id,
-            status: 'Pending',
-            apiOrderId: null,
-            dripDays: null,
-            dripDispatches: { none: {} },
-            queuedBehind: order.queuedBehind || null,
-          },
-          data: { status: 'Dispatching', dispatchedAt: new Date(), queuedBehind: null },
-        });
-        if (claimed.count === 0) continue;
+        const claimed = await claimSameLinkRetryOrder(prisma, order);
+        if (!claimed) {
+          // A blocker can appear after the bulk snapshot. Keep a raced order
+          // in the age-unbounded provider-wait retry set without creating a
+          // potentially cyclic queue pointer to a later active order.
+          await persistRetryWait(order);
+          continue;
+        }
 
         try {
           const apiOrderId = await placeWithProvider({ id: order.id, service: order.service, tier: order.tier, link: order.link, quantity: order.quantity, comments: order.comments });

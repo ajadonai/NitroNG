@@ -126,6 +126,7 @@ model Session {
   id         String   @id @default(cuid())
   userId     String
   tokenHash  String   @unique
+  remember   Boolean  @default(false)
   deviceType String   @default("web") // "web" or "mobile"
   deviceInfo String? // e.g. "Chrome · macOS", "Safari · iPhone"
   ip         String?
@@ -171,6 +172,7 @@ model AdminSession {
   id         String   @id @default(cuid())
   adminId    String
   tokenHash  String   @unique
+  remember   Boolean  @default(false)
   deviceType String   @default("web")
   deviceInfo String?
   ip         String?

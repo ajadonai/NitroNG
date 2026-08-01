@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/auth', () => ({
+  ADMIN_ABSOLUTE_LIFETIME_SECONDS: 14 * 24 * 60 * 60,
   getCurrentAdmin: (...args) => mocks.getCurrentAdmin(...args),
 }));
 
@@ -29,10 +30,13 @@ function request(next = '/pulse') {
   });
 }
 
-function currentAdmin(overrides = {}) {
+function currentAdmin(adminOverrides = {}, sessionOverrides = {}) {
   return {
     id: 'admin-1',
     _sessionId: 'session-1',
+    _remember: true,
+    _absoluteExpiresAt: new Date(Date.now() + 9 * 60 * 60 * 1000),
+    ...sessionOverrides,
     _admin: {
       id: 'admin-1',
       name: 'Owner',
@@ -40,7 +44,7 @@ function currentAdmin(overrides = {}) {
       role: 'owner',
       status: 'Active',
       customActions: null,
-      ...overrides,
+      ...adminOverrides,
     },
   };
 }
@@ -58,12 +62,13 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllEnvs();
   vi.clearAllMocks();
 });
 
 describe('internal dashboard grant mint route', () => {
-  it('sets a production-safe 15-minute child cookie and redirects to a clean path', async () => {
+  it('sets a production-safe 8-hour child cookie and redirects to a clean path', async () => {
     const response = await GET(request('/live'));
     expect(response.status).toBe(303);
     expect(response.headers.get('location')).toBe('https://nitro.ng/live');
@@ -76,6 +81,41 @@ describe('internal dashboard grant mint route', () => {
     expect(cookie).toContain('Secure');
     expect(cookie).toContain('SameSite=strict');
     expect(cookie).not.toContain('pulse_secret_key');
+  });
+
+  it('caps the child token and cookie to the remaining parent lifetime', async () => {
+    const now = new Date('2026-07-30T10:00:00.000Z');
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+    mocks.getCurrentAdmin.mockResolvedValue(currentAdmin({}, {
+      _absoluteExpiresAt: new Date(now.getTime() + 120_000),
+    }));
+
+    const response = await GET(request('/pulse'));
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get('set-cookie')).toContain('Max-Age=120');
+  });
+
+  it('keeps an unremembered child grant as a browser-session cookie', async () => {
+    mocks.getCurrentAdmin.mockResolvedValue(currentAdmin({}, { _remember: false }));
+
+    const response = await GET(request('/pulse'));
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get('set-cookie')).not.toContain('Max-Age');
+  });
+
+  it('refuses to mint a child grant after the parent absolute boundary', async () => {
+    mocks.getCurrentAdmin.mockResolvedValue(currentAdmin({}, {
+      _absoluteExpiresAt: new Date(Date.now() - 1_000),
+    }));
+
+    const response = await GET(request('/pulse'));
+
+    expect(response.status).toBe(401);
+    expect(response.headers.get('set-cookie')).toBeNull();
+    expect(response.headers.get('Cache-Control')).toContain('no-store');
   });
 
   it('sends an unauthenticated request to login with only a strict safe destination', async () => {

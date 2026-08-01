@@ -1,6 +1,48 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveLandingAuthQuery } from '@/lib/landing-auth-query';
+
+const siteInfoMocks = vi.hoisted(() => ({
+  userCount: vi.fn(),
+  orderCount: vi.fn(),
+  orderGroupBy: vi.fn(),
+  serviceGroupCount: vi.fn(),
+  serviceGroupFindMany: vi.fn(),
+  serviceTierCount: vi.fn(),
+  settingFindMany: vi.fn(),
+  alertFindMany: vi.fn(),
+}));
+
+vi.mock('@/lib/prisma', () => ({
+  default: {
+    user: { count: (...args) => siteInfoMocks.userCount(...args) },
+    order: {
+      count: (...args) => siteInfoMocks.orderCount(...args),
+      groupBy: (...args) => siteInfoMocks.orderGroupBy(...args),
+    },
+    serviceGroup: {
+      count: (...args) => siteInfoMocks.serviceGroupCount(...args),
+      findMany: (...args) => siteInfoMocks.serviceGroupFindMany(...args),
+    },
+    serviceTier: { count: (...args) => siteInfoMocks.serviceTierCount(...args) },
+    setting: { findMany: (...args) => siteInfoMocks.settingFindMany(...args) },
+    alert: { findMany: (...args) => siteInfoMocks.alertFindMany(...args) },
+  },
+}));
+
+const { GET: getSiteInfo } = await import('@/app/api/site-info/route.js');
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  siteInfoMocks.userCount.mockResolvedValue(0);
+  siteInfoMocks.orderCount.mockResolvedValue(0);
+  siteInfoMocks.orderGroupBy.mockResolvedValue([]);
+  siteInfoMocks.serviceGroupCount.mockResolvedValue(0);
+  siteInfoMocks.serviceGroupFindMany.mockResolvedValue([]);
+  siteInfoMocks.serviceTierCount.mockResolvedValue(0);
+  siteInfoMocks.settingFindMany.mockResolvedValue([]);
+  siteInfoMocks.alertFindMany.mockResolvedValue([]);
+});
 
 describe('landing attribution query state', () => {
   it('resolves affiliate and referral state before the first render', () => {
@@ -58,6 +100,20 @@ describe('landing attribution query state', () => {
     expect(landing).toContain('referralCode={heroRefCode}');
     expect(modal).not.toMatch(/window\.location\.search[\s\S]{0,100}get\(['"]ref['"]\)/);
   });
+
+  it('keeps the auth modal out of server HTML while resolving its initial mode on the server', () => {
+    const page = readFileSync('app/page.jsx', 'utf8');
+    const landing = readFileSync('components/landing-page.jsx', 'utf8');
+
+    expect(page).toContain('resolveLandingAuthQuery(await searchParams)');
+    expect(page).toContain('<HomeClient initialAuthQuery={initialAuthQuery} />');
+    expect(landing).toContain('useState(initialAuthQuery?.initialModal||null)');
+    expect(landing).not.toContain('resolveLandingAuthQuery');
+    expect(landing).toMatch(
+      /const\s+AuthModal\s*=\s*dynamic\(\s*\(\)\s*=>\s*import\(["']\.\/auth-modal["']\)\s*,\s*\{\s*ssr:\s*false\s*\}\s*\);/,
+    );
+    expect(landing).not.toMatch(/import\s+AuthModal\s+from\s+["']\.\/auth-modal["']/);
+  });
 });
 
 describe('public statistic labels', () => {
@@ -91,19 +147,29 @@ describe('public statistic labels', () => {
     expect(landing).toContain('Accounts\\ncreated');
     expect(landing).toContain('Delivery\\nbenchmark');
     expect(landing).toContain('Live activity:');
-    expect(about).toContain("'Service categories'");
     expect(publicCopy).not.toContain('Orders delivered');
     expect(publicCopy).not.toContain('Active creators');
     expect(publicCopy).not.toContain('orders processing right now');
     expect(publicCopy).not.toContain('Nigerian creators already growing with Nitro');
     expect(publicCopy).not.toMatch(/35\+ (?:social media )?platforms/i);
-    expect(publicCopy).toContain('35+ service categories');
+    expect(publicCopy).not.toContain('35+ service categories');
   });
 
-  it('preserves the existing public statistic additions and minimums', () => {
+  it('publishes the live enabled tier count as services', async () => {
+    siteInfoMocks.serviceTierCount.mockResolvedValue(137);
+
+    const response = await getSiteInfo();
+    const data = await response.json();
+
+    expect(siteInfoMocks.serviceTierCount).toHaveBeenCalledWith({
+      where: { enabled: true, group: { enabled: true } },
+    });
+    expect(data.stats.services).toBe(137);
+  });
+
+  it('preserves calculated public statistics without pinning mutable display values', () => {
     const route = readFileSync('app/api/site-info/route.js', 'utf8');
 
-    expect(route).toContain('const ORDER_BASE = 20000;');
     expect(route).toContain('const PROCESSING_BASE = 20;');
     expect(route).toContain('const displayOrders = orderCount + ORDER_BASE;');
     expect(route).toContain('Math.max(90, Math.round');

@@ -138,26 +138,26 @@ function WaitlistPage({ feature, dark, t }) {
   return (
     <div className="rounded-[14px] max-md:rounded-xl overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
       <div className="py-10 px-6 max-md:py-8 max-md:px-4 flex flex-col items-center text-center">
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", color: t.accent }}>
-          <span style={{ transform: "scale(1.8)" }}>{meta.icon}</span>
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}>
+          <span className="scale-[1.8]">{meta.icon}</span>
         </div>
-        <div className="text-xl max-md:text-lg font-semibold mb-2" style={{ color: t.text }}>{meta.title}</div>
-        <div className="text-sm max-md:text-[13px] max-w-[440px] mb-8 leading-relaxed" style={{ color: t.textMuted }}>{meta.desc}</div>
+        <div className="text-xl max-md:text-lg font-semibold mb-2 text-t-text">{meta.title}</div>
+        <div className="text-sm max-md:text-[13px] max-w-[440px] mb-8 leading-relaxed text-t-text-muted">{meta.desc}</div>
 
         {joined ? (
           <div className="rounded-xl py-4 px-6 max-md:px-4" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.12)"}` }}>
             <div className="flex items-center gap-2 justify-center mb-1">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              <span className="text-sm font-semibold" style={{ color: t.green }}>You're on the list</span>
+              <span className="text-sm font-semibold text-t-green">You're on the list</span>
             </div>
-            <div className="text-[13px]" style={{ color: t.textMuted }}>{joined.email}</div>
+            <div className="text-[13px] text-t-text-muted">{joined.email}</div>
           </div>
         ) : (
           <form onSubmit={submit} className="w-full max-w-[360px]">
             <div className="mb-4">
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your email" className="w-full py-2.5 px-3 rounded-[10px] text-sm font-[inherit] outline-none box-border" style={{ background: dark ? "rgba(255,255,255,.09)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}`, color: t.text }} />
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your email" className="w-full py-2.5 px-3 rounded-[10px] text-sm font-[inherit] outline-none box-border text-t-text" style={{ background: dark ? "rgba(255,255,255,.09)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}` }} />
             </div>
-            <button type="submit" disabled={submitting || !email.trim()} className="w-full py-2.5 rounded-[10px] text-sm font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff", opacity: submitting || !email.trim() ? 0.5 : 1 }}>
+            <button type="submit" disabled={submitting || !email.trim()} className="w-full py-2.5 rounded-[10px] text-sm font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px bg-accent text-white" style={{ opacity: submitting || !email.trim() ? 0.5 : 1 }}>
               {submitting ? "Joining..." : "Join the waitlist"}
             </button>
           </form>
@@ -210,19 +210,19 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
       {/* Header */}
       <div className="flex justify-between items-center py-3.5 px-4">
         <div className="flex items-center gap-2">
-          <span className="text-base font-semibold" style={{ color: t.text }}>Notifications</span>
-          {unreadCount > 0 && <span className="text-xs py-0.5 px-1.5 rounded-[5px] font-semibold" style={{ background: dark ? "#1c1015" : "#fdf2f4", color: t.accent }}>{unreadCount}</span>}
+          <span className="text-base font-semibold text-t-text">Notifications</span>
+          {unreadCount > 0 && <span className="text-xs py-0.5 px-1.5 rounded-[5px] font-semibold text-accent" style={{ background: dark ? "#1c1015" : "#fdf2f4" }}>{unreadCount}</span>}
         </div>
         <div className="flex gap-2.5">
-          {unreadCount > 0 && <button onClick={markAllRead} className="text-[13px] font-semibold bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ color: t.accent }}>Mark all read</button>}
-          {items.length > 0 && <button onClick={clearAll} className="text-[13px] font-semibold bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ color: t.textMuted }}>Clear all</button>}
+          {unreadCount > 0 && <button onClick={markAllRead} className="text-[13px] font-semibold bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px text-accent">Mark all read</button>}
+          {items.length > 0 && <button onClick={clearAll} className="text-[13px] font-semibold bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text-muted">Clear all</button>}
         </div>
       </div>
       {/* Filter tabs */}
       <div className="px-3.5 pb-2.5">
         <SegPill value={filter} options={[{value: "all", label: "All"}, {value: "order", label: "Orders"}, {value: "deposit", label: "Deposits"}]} onChange={setFilter} dark={dark} t={t} fill />
       </div>
-      <div className="h-px" style={{ background: t.cardBorder }} />
+      <div className="h-px bg-t-card-border" />
       {/* List */}
       <div className="max-h-[280px] overflow-y-auto">
         {display.length > 0 ? display.map((n, i) => {
@@ -232,20 +232,20 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
               <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${n.color}15`, color: n.color }}>{NOTIF_ICONS[n.icon]}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center gap-1.5">
-                  <span className="text-sm" style={{ fontWeight: isRead ? 500 : 600, color: t.text }}>{n.title}</span>
-                  {!isRead && <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: t.accent }} />}
+                  <span className="text-sm text-t-text" style={{ fontWeight: isRead ? 500 : 600 }}>{n.title}</span>
+                  {!isRead && <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-accent" />}
                 </div>
-                <div className="text-sm mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.textSoft }}>{n.desc}</div>
-                <div className="text-[13px] mt-[3px]" style={{ color: t.textMuted }}>{n.time}</div>
+                <div className="text-sm mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-t-text-soft">{n.desc}</div>
+                <div className="text-[13px] mt-[3px] text-t-text-muted">{n.time}</div>
               </div>
             </div>
           );
         }) : (
-          <div className="py-6 px-3.5 text-center text-sm" style={{ color: t.textMuted }}>No notifications</div>
+          <div className="py-6 px-3.5 text-center text-sm text-t-text-muted">No notifications</div>
         )}
       </div>
       {/* Footer */}
-      {hasMore && <div className="py-2 px-3.5 text-center text-xs" style={{ color: t.textMuted, borderTop: `1px solid ${t.cardBorder}` }}>Showing latest 10 of {filtered.length}</div>}
+      {hasMore && <div className="py-2 px-3.5 text-center text-xs text-t-text-muted" style={{ borderTop: `1px solid ${t.cardBorder}` }}>Showing latest 10 of {filtered.length}</div>}
     </div>
   );
 }
@@ -756,22 +756,26 @@ function DashboardInner({ initialData }) {
   }, [notifOpen]);
 
   const handleLogout = async () => {
+    let res;
+    try {
+      res = await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      window.alert("Unable to log out. Check your connection and try again.");
+      return;
+    }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      window.alert(data.error || "Unable to log out. Please try again.");
+      return;
+    }
     try { sessionStorage.removeItem(PAYMENT_STATUS_STORAGE_KEY); } catch {}
-    try { await fetch("/api/auth/logout", { method: "POST" }); } catch {}
     window.location.replace("/?logout=1");
   };
 
   /* Reset services state when leaving */
   useEffect(() => { if (!isServices) { setNoSelSvc(null); setNoSelTier(null); setNoLink(""); setNoComments(""); setNoCatModal(false); } }, [active]);
 
-  const t = useMemo(() => ({
-    ...baseT,
-    sidebarBg: dark ? "#0e1122" : "#eceae5",
-    sidebarBorder: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)",
-    cardBg: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.8)",
-    cardBorder: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)",
-    navActive: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)",
-  }), [dark, baseT]);
+  const t = baseT;
 
   const initials = user ? ((user.firstName?.[0] || '') + (user.lastName?.[0] || '')).toUpperCase() || user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "";
   const firstName = user ? (user.firstName || user.name.split(" ")[0]) : "";
@@ -780,9 +784,9 @@ function DashboardInner({ initialData }) {
   if (!user) {
     const skBone = `skel-bone ${dark ? "skel-dark" : "skel-light"}`;
     return (
-      <div className="dash-root" style={{ background: t.bg }}>
+      <div className="dash-root bg-t-bg">
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes skeletonShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}`}</style>
-        <nav className="dash-nav" style={{ background: t.sidebarBg, borderBottom: `0.5px solid ${t.sidebarBorder}` }}>
+        <nav className="dash-nav bg-t-sidebar-bg border-b-[0.5px] border-t-sidebar-border">
           <div className="dash-nav-left">
             <div className="dash-logo-static">
               <div className="h-7 px-3 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></div>
@@ -794,23 +798,23 @@ function DashboardInner({ initialData }) {
           </div>
         </nav>
         <div className="dash-body">
-          <aside className="dash-left" style={{ background: t.sidebarBg, borderRight: `0.5px solid ${t.sidebarBorder}` }}>
+          <aside className="dash-left bg-t-sidebar-bg border-r-[0.5px] border-t-sidebar-border">
             {[1,2,3,4,5,6,7,8].map(i => <div key={i} className={`${skBone} h-9 rounded-xl mb-1`} />)}
           </aside>
-          <main className="dash-main" style={{ background: t.bg }}>
+          <main className="dash-main bg-t-bg">
             <div className={`${skBone} w-[260px] h-6 mb-2`} />
             <div className={`${skBone} w-[200px] h-3.5 mb-6`} />
             <div className="grid grid-cols-4 gap-3 mb-6">
               {[1,2,3,4].map(i => (
                 <div key={i} className="p-5 rounded-2xl" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
-                  <div className={skBone} style={{ width: "60%", height: 10, marginBottom: 10 }} />
-                  <div className={skBone} style={{ width: "45%", height: 24, marginBottom: 8 }} />
-                  <div className={skBone} style={{ width: "70%", height: 9 }} />
+                  <div className={`${skBone} w-[60%] h-2.5 mb-2.5`} />
+                  <div className={`${skBone} w-[45%] h-6 mb-2`} />
+                  <div className={`${skBone} w-[70%] h-[9px]`} />
                 </div>
               ))}
             </div>
             <div className={`${skBone} w-[120px] h-2.5 mb-3`} />
-            <div className="rounded-2xl py-1 px-4" style={{ background: t.cardBg, borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder }}>
+            <div className="rounded-2xl py-1 px-4 bg-t-card-bg border border-t-card-border">
               {[1,2,3,4].map(i => (
                 <div key={i} className="flex justify-between items-center py-4" style={{ borderBottom: i < 4 ? `1px solid ${t.cardBorder}` : "none" }}>
                   <div>
@@ -825,10 +829,10 @@ function DashboardInner({ initialData }) {
               ))}
             </div>
           </main>
-          <div className="dash-right" style={{ background: t.sidebarBg, borderLeft: `0.5px solid ${t.sidebarBorder}` }}>
+          <div className="dash-right bg-t-sidebar-bg border-l-[0.5px] border-t-sidebar-border">
             <div className={`${skBone} w-[100px] h-2 mb-3.5`} />
             {[1,2,3].map(i => <div key={i} className={`${skBone} h-[50px] rounded-[10px] mb-1.5`} />)}
-            <div className="h-0.5 my-3" style={{ background: t.sidebarBorder }} />
+            <div className="h-0.5 my-3 bg-t-sidebar-border" />
             <div className={`${skBone} w-20 h-2 mb-3.5`} />
             <div className={`${skBone} h-20 rounded-xl`} />
           </div>
@@ -868,8 +872,8 @@ function DashboardInner({ initialData }) {
       default:
         return (
           <div className="p-10 rounded-2xl flex flex-col items-center justify-center min-h-[300px]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
-            <div className="text-base font-medium" style={{ color: t.textMuted }}>{active.charAt(0).toUpperCase() + active.slice(1).replace("-", " ")}</div>
-            <div className="text-sm opacity-50 mt-1" style={{ color: t.textMuted }}>Coming soon</div>
+            <div className="text-base font-medium text-t-text-muted">{active.charAt(0).toUpperCase() + active.slice(1).replace("-", " ")}</div>
+            <div className="text-sm opacity-50 mt-1 text-t-text-muted">Coming soon</div>
           </div>
         );
     }
@@ -878,7 +882,7 @@ function DashboardInner({ initialData }) {
   return (
     <ToastProvider dark={dark}>
     <ConfirmProvider dark={dark}>
-    <div className="dash-root user-dash" style={{ background: t.bg }}>
+    <div className="dash-root user-dash bg-t-bg">
 
       {/* ═══ TOP NAV ═══ */}
       <nav className="dash-nav" style={{ background: dark ? "rgba(9,12,21,.9)" : "rgba(248,245,241,.92)", borderBottom: `0.5px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
@@ -886,9 +890,9 @@ function DashboardInner({ initialData }) {
           {/* Mobile/tablet: hamburger + logo as one button to toggle sidebar */}
           <button className="dash-menu-btn" onClick={() => setLeftOpen(!leftOpen)} aria-label={leftOpen ? "Close menu" : "Open menu"}>
             <div className="dash-hamburger-bars" style={{ opacity: leftOpen ? 0 : 1, position: leftOpen ? "absolute" : "relative" }}>
-              <div className="h-0.5 rounded-[1px] w-4" style={{ background: t.accent }} />
-              <div className="h-0.5 rounded-[1px] w-[11px]" style={{ background: t.accent }} />
-              <div className="h-0.5 rounded-[1px] w-4" style={{ background: t.accent }} />
+              <div className="h-0.5 rounded-[1px] w-4 bg-accent" />
+              <div className="h-0.5 rounded-[1px] w-[11px] bg-accent" />
+              <div className="h-0.5 rounded-[1px] w-4 bg-accent" />
             </div>
             {leftOpen && (
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -905,7 +909,7 @@ function DashboardInner({ initialData }) {
           {/* Balance pill — desktop only */}
           <button onClick={() => setActive("add-funds")} className="max-desktop:hidden flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] cursor-pointer bg-transparent" style={{ border: `0.5px solid ${dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.12)"}`, background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", transition: "background .2s ease" }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            <span className="m text-[12px] font-semibold" style={{ color: t.green }}>₦{Math.round(user?.balance || 0).toLocaleString()}</span>
+            <span className="m text-[12px] font-semibold text-t-green">₦{Math.round(user?.balance || 0).toLocaleString()}</span>
           </button>
           {/* Theme toggle — desktop only */}
           <button onClick={toggleTheme} className="dash-theme-toggle max-desktop:hidden" aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} style={{ background: dark ? "rgba(99,102,241,.28)" : "rgba(0,0,0,.12)", border: `0.5px solid ${dark ? "rgba(99,102,241,.24)" : "rgba(0,0,0,.14)"}` }}>
@@ -923,7 +927,7 @@ function DashboardInner({ initialData }) {
           </button>
           {/* Notification bell */}
           <div ref={notifRef} className="relative">
-            <button onClick={() => setNotifOpen(!notifOpen)} className="dash-bell" aria-label="Notifications" style={{ color: t.textSoft }}>
+            <button onClick={() => setNotifOpen(!notifOpen)} className="dash-bell" aria-label="Notifications text-t-text-soft">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
               {bellUnread > 0 && <div className="dash-bell-badge">{bellUnread > 10 ? "10+" : bellUnread}</div>}
             </button>
@@ -940,7 +944,7 @@ function DashboardInner({ initialData }) {
       <div className="dash-body">
 
         {/* ── LEFT SIDEBAR ── */}
-        <aside className="dash-left" style={{ background: t.sidebarBg, borderRight: `0.5px solid ${t.sidebarBorder}`, left: leftOpen ? 0 : undefined }}>
+        <aside className="dash-left bg-t-sidebar-bg border-r-[0.5px] border-t-sidebar-border" style={{ left: leftOpen ? 0 : undefined }}>
 
             {/* ── Nav items — grouped on desktop, flat on mobile ── */}
             <>
@@ -950,11 +954,11 @@ function DashboardInner({ initialData }) {
                 const isActive = active === item.id;
                 return (
                   <Fragment key={item.id}>
-                    {(item.id === "leaderboard" || item.id === "audit") && <div className="dash-sidebar-divider max-desktop:hidden my-1" style={{ background: t.sidebarBorder }} />}
+                    {(item.id === "leaderboard" || item.id === "audit") && <div className="dash-sidebar-divider max-desktop:hidden my-1 bg-t-sidebar-border" />}
                     <button data-nav={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (isSupportItem && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setLeftOpen(false); return; } setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: isActive ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : isSupportItem ? (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)") : "transparent", color: item.soon ? t.textMuted : (isActive ? t.accent : isSupportItem ? t.accent : t.textSoft), fontWeight: isActive || isSupportItem ? 600 : 450, opacity: item.soon ? 0.5 : 1, cursor: item.soon ? "default" : "pointer" }}>
                       <span className="shrink-0" style={{ opacity: isActive || isSupportItem ? 1 : .55, color: isActive || isSupportItem ? t.accent : t.textMuted }}>{I[item.id]}</span>
                       {item.label}
-                      {item.soon && <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent, opacity: 1 }}>Soon</span>}
+                      {item.soon && <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>Soon</span>}
                       {processingCount > 0 && <span className="m dash-nav-badge">{processingCount > 99 ? "99+" : processingCount}</span>}
                     </button>
                   </Fragment>
@@ -963,24 +967,24 @@ function DashboardInner({ initialData }) {
             </>
 
           <div className="flex-1" />
-          <div className="dash-sidebar-divider" style={{ background: t.sidebarBorder }} />
+          <div className="dash-sidebar-divider bg-t-sidebar-border" />
           <div className="dash-sidebar-social">
             <div className="dash-social-btns">
-              <a href={`https://instagram.com/${(socialLinks.social_instagram || "Nitro.ng").replace(/^(https?:\/\/)?(www\.)?(instagram\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" className="dash-social-btn" title="Instagram" style={{ color: "#c47d8e" }}>
+              <a href={`https://instagram.com/${(socialLinks.social_instagram || "Nitro.ng").replace(/^(https?:\/\/)?(www\.)?(instagram\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" className="dash-social-btn text-accent" title="Instagram">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
               </a>
               <a href={`https://x.com/${(socialLinks.social_twitter || "TheNitroNG").replace(/^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" className="dash-social-btn" title="X (Twitter)" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.5)" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
               </a>
-              {socialLinks.social_whatsapp_support && <a href={`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="dash-social-btn" title="WhatsApp" style={{ color: "#25d366" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              {socialLinks.social_tiktok && <a href={`https://tiktok.com/@${socialLinks.social_tiktok.replace(/^(https?:\/\/)?(www\.)?(tiktok\.com\/@?)?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" className="dash-social-btn" title="TikTok" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.5)" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.41a8.16 8.16 0 004.77 1.52V7.48a4.85 4.85 0 01-1-.79z"/></svg>
               </a>}
-              {socialLinks.social_telegram_support && <a href={`https://t.me/${socialLinks.social_telegram_support.replace(/^(https?:\/\/)?(t\.me\/)?@?/,"")}`} target="_blank" rel="noopener noreferrer" className="dash-social-btn" title="Telegram" style={{ color: "#0088cc" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+              {socialLinks.social_whatsapp_support && <a href={`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="dash-social-btn text-[#25d366]" title="WhatsApp">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
               </a>}
             </div>
           </div>
-          <div className="dash-sidebar-divider" style={{ background: t.sidebarBorder }} />
+          <div className="dash-sidebar-divider bg-t-sidebar-border" />
           <button onClick={handleLogout} className="dash-logout">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Log Out
@@ -991,38 +995,38 @@ function DashboardInner({ initialData }) {
         {leftOpen && <div className="dash-overlay" onClick={() => setLeftOpen(false)} />}
 
         {/* ── MAIN ── */}
-        <main className="dash-main" style={{ background: t.bg, ...(isSupport ? { overflow: "hidden" } : {}) }}>
+        <main className="dash-main bg-t-bg" style={isSupport ? { overflow: "hidden" } : undefined}>
           <AnnouncementBanner alerts={alerts} dark={dark} mode="dashboard" />
           {activePromotion && (
             <div className="mb-3 rounded-xl px-4 py-2.5 flex items-center gap-2.5" style={{ background: activePromotion.bannerColor ? `${activePromotion.bannerColor}22` : (dark ? 'rgba(16,185,129,.12)' : 'rgba(16,185,129,.08)'), border: `1px solid ${activePromotion.bannerColor || '#10b981'}44` }}>
               <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: activePromotion.bannerColor || '#10b981' }} />
-              <span className="text-sm font-medium flex-1" style={{ color: t.text }}>{activePromotion.bannerCopy}</span>
+              <span className="text-sm font-medium flex-1 text-t-text">{activePromotion.bannerCopy}</span>
               <span className="px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 m text-center" style={{ background: activePromotion.bannerColor || '#10b981', color: '#fff' }}>{activePromotion.discountPercent}% OFF{activePromotion.maxDiscountPerOrder ? <><br /><span className="font-medium opacity-90" style={{ fontSize: 10 }}>up to ₦{(activePromotion.maxDiscountPerOrder / 100).toLocaleString()}</span></> : ''}</span>
             </div>
           )}
           {!isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isGuide && !isLeaderboard && !isAudit && !isCleanup && !isEarn && <div className="pb-6 max-md:pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xl max-md:text-lg font-semibold mb-0.5" style={{ color: t.text }}>Welcome back, {firstName}</div>
-                <div className="text-sm" style={{ color: t.textMuted }}>{orderSummary.total === 0 ? "Place your first order in under a minute." : "Here's your dashboard at a glance."}</div>
+                <div className="text-xl max-md:text-lg font-semibold mb-0.5 text-t-text">Welcome back, {firstName}</div>
+                <div className="text-sm text-t-text-muted">{orderSummary.total === 0 ? "Place your first order in under a minute." : "Here's your dashboard at a glance."}</div>
               </div>
               <div className="shrink-0 ml-4 py-1.5 px-3 max-md:py-1 max-md:px-2.5 rounded-xl text-right" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-                <div className="text-[10px] uppercase tracking-[1px] mb-0.5" style={{ color: t.textMuted }}>Balance</div>
-                <div className="m text-lg max-md:text-base font-semibold" style={{ color: t.green }}>{fN(user?.balance || 0)}</div>
-                {user?.bonusCredit && <div className="text-[9px] mt-0.5" style={{ color: t.accent }}>₦{(user.bonusCredit.amount / 100).toLocaleString()} bonus — expires in {Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))}d</div>}
+                <div className="text-[10px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">Balance</div>
+                <div className="m text-lg max-md:text-base font-semibold text-t-green">{fN(user?.balance || 0)}</div>
+                {user?.bonusCredit && <div className="text-[9px] mt-0.5 text-accent">₦{(user.bonusCredit.amount / 100).toLocaleString()} bonus — expires in {Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))}d</div>}
               </div>
             </div>
-            <div className="page-divider" style={{ background: t.cardBorder }} />
+            <div className="page-divider bg-t-card-border" />
           </div>}
           {isAudit && <div className="pb-3.5 max-md:pb-2">
-            <div className="text-xl max-md:text-lg font-semibold mb-0.5" style={{ color: t.text }}>Audit</div>
-            <div className="text-sm" style={{ color: t.textMuted }}>Deep analytics and insights for your social accounts</div>
-            <div className="page-divider" style={{ background: t.cardBorder }} />
+            <div className="text-xl max-md:text-lg font-semibold mb-0.5 text-t-text">Audit</div>
+            <div className="text-sm text-t-text-muted">Deep analytics and insights for your social accounts</div>
+            <div className="page-divider bg-t-card-border" />
           </div>}
           {isCleanup && <div className="pb-3.5 max-md:pb-2">
-            <div className="text-xl max-md:text-lg font-semibold mb-0.5" style={{ color: t.text }}>Cleanup</div>
-            <div className="text-sm" style={{ color: t.textMuted }}>Remove ghost followers, non-followers, and inactive accounts</div>
-            <div className="page-divider" style={{ background: t.cardBorder }} />
+            <div className="text-xl max-md:text-lg font-semibold mb-0.5 text-t-text">Cleanup</div>
+            <div className="text-sm text-t-text-muted">Remove ghost followers, non-followers, and inactive accounts</div>
+            <div className="page-divider bg-t-card-border" />
           </div>}
 
           <div key={active} className="dash-page-enter" style={isSupport ? { flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" } : undefined}>
@@ -1032,7 +1036,7 @@ function DashboardInner({ initialData }) {
         </main>
 
         {/* ── RIGHT SIDEBAR ── */}
-        <aside className="dash-right" style={{ background: t.sidebarBg, borderLeft: `0.5px solid ${t.sidebarBorder}` }}>
+        <aside className="dash-right bg-t-sidebar-bg border-l-[0.5px] border-t-sidebar-border">
           {isServices ? (
             <ServicesSidebar dark={dark} t={t} />
           ) : isOrders ? (
@@ -1051,21 +1055,21 @@ function DashboardInner({ initialData }) {
             <LeaderboardCard dark={dark} t={t} />
           ) : isAudit ? (
             <div className="flex flex-col gap-0">
-              <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>What you'll get</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>What you'll get</div>
               {[["Follower quality score", "See how many real vs ghost followers you have"],["Engagement rate", "Your true engagement compared to your follower count"],["Best posting times", "When your audience is most active"],["Growth trends", "Track follower gains and losses over time"]].map(([title, desc]) => (
                 <div key={title} className="py-2.5 px-3 rounded-lg mb-1.5" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.02)" }}>
-                  <div className="text-sm font-medium mb-0.5" style={{ color: t.text }}>{title}</div>
-                  <div className="text-xs" style={{ color: t.textMuted }}>{desc}</div>
+                  <div className="text-sm font-medium mb-0.5 text-t-text">{title}</div>
+                  <div className="text-xs text-t-text-muted">{desc}</div>
                 </div>
               ))}
             </div>
           ) : isCleanup ? (
             <div className="flex flex-col gap-0">
-              <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Cleanup tools</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Cleanup tools</div>
               {[["Ghost followers", "Remove inactive accounts that never engage"],["Non-followers", "Unfollow people who don't follow you back"],["Mass unfollow", "Bulk unfollow with filters and safety limits"],["Inactive accounts", "Detect and remove accounts that haven't posted in months"]].map(([title, desc]) => (
                 <div key={title} className="py-2.5 px-3 rounded-lg mb-1.5" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.02)" }}>
-                  <div className="text-sm font-medium mb-0.5" style={{ color: t.text }}>{title}</div>
-                  <div className="text-xs" style={{ color: t.textMuted }}>{desc}</div>
+                  <div className="text-sm font-medium mb-0.5 text-t-text">{title}</div>
+                  <div className="text-xs text-t-text-muted">{desc}</div>
                 </div>
               ))}
             </div>
@@ -1092,10 +1096,10 @@ function DashboardInner({ initialData }) {
               );
             }
             return (
-              <button key={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (item.id === "support" && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setMoreOpen(false); return; } setActive(item.id); setMoreOpen(false); }} className="dash-more-item" style={{ background: active === item.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)"), color: item.soon ? (dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)") : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.6)")), fontWeight: active === item.id ? 600 : 500, cursor: item.soon ? "default" : "pointer", borderColor: item.soon ? "transparent" : undefined }}>
-                <div className="dash-more-item-icon" style={{ background: item.soon ? (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)") : (active === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)")), color: item.soon ? (dark ? "rgba(255,255,255,.3)" : "rgba(0,0,0,.3)") : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)")) }}>{I[item.id]}</div>
+              <button key={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (item.id === "support" && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setMoreOpen(false); return; } setActive(item.id); setMoreOpen(false); }} className="dash-more-item" style={{ background: item.id === "support" ? (dark ? "rgba(37,211,102,.15)" : "rgba(37,211,102,.1)") : (active === item.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)")), color: item.soon ? (dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)") : (item.id === "support" ? "#25d366" : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.6)"))), fontWeight: active === item.id ? 600 : 500, cursor: item.soon ? "default" : "pointer", borderColor: item.soon ? "transparent" : undefined }}>
+                <div className="dash-more-item-icon" style={{ background: item.soon ? (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)") : (item.id === "support" ? (dark ? "rgba(37,211,102,.12)" : "rgba(37,211,102,.08)") : (active === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"))), color: item.soon ? (dark ? "rgba(255,255,255,.3)" : "rgba(0,0,0,.3)") : (item.id === "support" ? "#25d366" : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)"))) }}>{I[item.id]}</div>
                 {item.label}
-                {item.soon && <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>Soon</span>}
+                {item.soon && <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>Soon</span>}
               </button>
             );
           })}
@@ -1103,8 +1107,8 @@ function DashboardInner({ initialData }) {
             <a href={`https://instagram.com/${(socialLinks.social_instagram || "Nitro.ng").replace(/^(https?:\/\/)?(www\.)?(instagram\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: "#E1306C" }}>{I.instagram}</a>
             <div className="w-px h-5 shrink-0" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }} />
             <a href={`https://x.com/${(socialLinks.social_twitter || "TheNitroNG").replace(/^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="X" className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.4)" }}>{I.x}</a>
+            {socialLinks.social_tiktok && <><div className="w-px h-5 shrink-0" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }} /><a href={`https://tiktok.com/@${socialLinks.social_tiktok.replace(/^(https?:\/\/)?(www\.)?(tiktok\.com\/@?)?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.4)" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.41a8.16 8.16 0 004.77 1.52V7.48a4.85 4.85 0 01-1-.79z"/></svg></a></>}
             {socialLinks.social_whatsapp_support && <><div className="w-px h-5 shrink-0" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }} /><a href={`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: "#25d366" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a></>}
-            {socialLinks.social_telegram_support && <><div className="w-px h-5 shrink-0" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }} /><a href={`https://t.me/${socialLinks.social_telegram_support.replace(/^(https?:\/\/)?(t\.me\/)?@?/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="Telegram" className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: "#0088cc" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg></a></>}
           </div>
         </div>
       )}
@@ -1132,28 +1136,28 @@ function DashboardInner({ initialData }) {
 
       {/* Phone number prompt for existing users */}
       {user && !user.phone && !(currentTosVersion && user.tosVersion !== currentTosVersion) && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 99998, background: "rgba(0,0,0,.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div style={{ background: dark ? "#1a1a1a" : "#fff", borderRadius: 16, padding: "32px 28px", maxWidth: 420, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,.3)" }}>
-            <div style={{ textAlign: "center", marginBottom: 20 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(37,211,102,.15)", display: "inline-flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+        <div className="fixed inset-0 z-[99998] bg-black/60 flex items-center justify-center p-5">
+          <div className="rounded-2xl py-8 px-7 max-w-[420px] w-full shadow-[0_20px_60px_rgba(0,0,0,.3)]" style={{ background: dark ? "#1a1a1a" : "#fff" }}>
+            <div className="text-center mb-5">
+              <div className="w-12 h-12 rounded-[14px] bg-[rgba(37,211,102,.15)] inline-flex items-center justify-center relative">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                {phonePromptDone && <div style={{ position: "absolute", bottom: -3, right: -3, width: 20, height: 20, borderRadius: "50%", background: "#25d366", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${dark ? "#1a1a1a" : "#fff"}` }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>}
+                {phonePromptDone && <div className="absolute -bottom-[3px] -right-[3px] w-5 h-5 rounded-full bg-[#25d366] flex items-center justify-center" style={{ border: `2px solid ${dark ? "#1a1a1a" : "#fff"}` }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>}
               </div>
             </div>
             {phonePromptDone ? <>
-              <h2 style={{ fontSize: 18, fontWeight: 600, color: t.text, textAlign: "center", margin: "0 0 8px" }}>Number saved</h2>
-              <p style={{ fontSize: 13, color: t.textMuted, textAlign: "center", margin: 0, lineHeight: 1.6 }}>
+              <h2 className="text-lg font-semibold text-t-text text-center m-0 mb-2">Number saved</h2>
+              <p className="text-[13px] text-t-text-muted text-center m-0 leading-[1.6]">
                 We'll reach you on WhatsApp for order updates and support.
               </p>
             </> : <>
-            <h2 style={{ fontSize: 18, fontWeight: 600, color: t.text, textAlign: "center", margin: "0 0 8px" }}>Add your WhatsApp number</h2>
-            <p style={{ fontSize: 13, color: t.textMuted, textAlign: "center", margin: "0 0 20px", lineHeight: 1.6 }}>
+            <h2 className="text-lg font-semibold text-t-text text-center m-0 mb-2">Add your WhatsApp number</h2>
+            <p className="text-[13px] text-t-text-muted text-center m-0 mb-5 leading-[1.6]">
               We need your WhatsApp number to send you order updates and support.
             </p>
-            {phonePromptError && <div style={{ background: dark ? "rgba(220,38,38,0.1)" : "#fef2f2", border: `1px solid ${dark ? "rgba(220,38,38,.28)" : "#fecaca"}`, color: dark ? "#fca5a5" : "#dc2626", padding: "8px 12px", borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{phonePromptError}</div>}
-            <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-              <div style={{ padding: "12px 14px", borderRadius: 12, fontSize: 15, flexShrink: 0, display: "flex", alignItems: "center", gap: 6, background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>
-                <span style={{ fontSize: 16 }}>🇳🇬</span> +234
+            {phonePromptError && <div className="py-2 px-3 rounded-lg text-[13px] mb-3" style={{ background: dark ? "rgba(220,38,38,0.1)" : "#fef2f2", border: `1px solid ${dark ? "rgba(220,38,38,.28)" : "#fecaca"}`, color: dark ? "#fca5a5" : "#dc2626" }}>{phonePromptError}</div>}
+            <div className="flex gap-2 mb-5">
+              <div className="py-3 px-3.5 rounded-xl text-[15px] shrink-0 flex items-center gap-1.5 text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)"}` }}>
+                <span className="text-base">🇳🇬</span> +234
               </div>
               <input
                 value={phonePromptVal}
@@ -1161,7 +1165,8 @@ function DashboardInner({ initialData }) {
                 placeholder="8012345678"
                 type="tel"
                 autoComplete="tel"
-                style={{ flex: 1, padding: "12px 14px", borderRadius: 12, fontSize: 15, outline: "none", background: dark ? "rgba(255,255,255,.07)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)"}`, color: t.text, fontFamily: "inherit" }}
+                className="flex-1 py-3 px-3.5 rounded-xl text-[15px] outline-none font-[inherit] text-t-text"
+                style={{ background: dark ? "rgba(255,255,255,.07)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)"}` }}
               />
             </div>
             <button
@@ -1178,11 +1183,12 @@ function DashboardInner({ initialData }) {
                 } catch { setPhonePromptError("Network error. Try again."); }
                 setPhonePromptSaving(false);
               }}
+              className="w-full py-3 rounded-[10px] border-none text-sm font-semibold font-[inherit] transition-all duration-200"
               style={{
-                width: "100%", padding: "12px 0", borderRadius: 10, border: "none", cursor: /^[789]\d{9}$/.test(phonePromptVal.replace(/^0+/, "")) && !phonePromptSaving ? "pointer" : "default",
+                cursor: /^[789]\d{9}$/.test(phonePromptVal.replace(/^0+/, "")) && !phonePromptSaving ? "pointer" : "default",
                 background: /^[789]\d{9}$/.test(phonePromptVal.replace(/^0+/, "")) ? "#25d366" : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"),
-                color: /^[789]\d{9}$/.test(phonePromptVal.replace(/^0+/, "")) ? "#fff" : t.textMuted, fontSize: 14, fontWeight: 600, fontFamily: "inherit",
-                opacity: phonePromptSaving ? 0.7 : 1, transition: "all .2s",
+                color: /^[789]\d{9}$/.test(phonePromptVal.replace(/^0+/, "")) ? "#fff" : t.textMuted,
+                opacity: phonePromptSaving ? 0.7 : 1,
               }}
             >{phonePromptSaving ? "Saving..." : "Save"}</button>
             </>}
@@ -1192,22 +1198,22 @@ function DashboardInner({ initialData }) {
 
       {/* ToS re-acceptance modal */}
       {currentTosVersion && user && user.tosVersion !== currentTosVersion && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div style={{ background: t.cardBg, borderRadius: 16, padding: "32px 28px", maxWidth: 420, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,.3)" }}>
-            <div style={{ textAlign: "center", marginBottom: 20 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: `linear-gradient(135deg, ${t.accent}, ${dark ? "#6b3a4a" : "#8b5e6b"})`, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><svg width="22" height="24" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></div>
+        <div className="fixed inset-0 z-[99999] bg-black/60 flex items-center justify-center p-5">
+          <div className="rounded-2xl py-8 px-7 max-w-[420px] w-full shadow-[0_20px_60px_rgba(0,0,0,.3)] bg-t-card-bg">
+            <div className="text-center mb-5">
+              <div className="w-12 h-12 rounded-[14px] inline-flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${t.accent}, ${dark ? "#6b3a4a" : "#8b5e6b"})` }}><svg width="22" height="24" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></div>
             </div>
-            <h2 style={{ fontSize: 18, fontWeight: 600, color: t.text, textAlign: "center", margin: "0 0 8px" }}>We've updated our Terms</h2>
-            <p style={{ fontSize: 13, color: t.textMuted, textAlign: "center", margin: "0 0 20px", lineHeight: 1.6 }}>
+            <h2 className="text-lg font-semibold text-t-text text-center m-0 mb-2">We've updated our Terms</h2>
+            <p className="text-[13px] text-t-text-muted text-center m-0 mb-5 leading-[1.6]">
               Our Terms of Service and Privacy Policy have been updated. Please review and accept to continue using Nitro.
             </p>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center", marginBottom: 20 }}>
-              <a href="/terms" target="_blank" rel="noopener" style={{ fontSize: 13, color: t.accent, textDecoration: "none", fontWeight: 500 }}>Terms of Service ↗</a>
-              <a href="/privacy" target="_blank" rel="noopener" style={{ fontSize: 13, color: t.accent, textDecoration: "none", fontWeight: 500 }}>Privacy Policy ↗</a>
+            <div className="flex gap-3 justify-center mb-5">
+              <a href="/terms" target="_blank" rel="noopener" className="text-[13px] text-accent no-underline font-medium">Terms of Service ↗</a>
+              <a href="/privacy" target="_blank" rel="noopener" className="text-[13px] text-accent no-underline font-medium">Privacy Policy ↗</a>
             </div>
-            <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", marginBottom: 20, padding: "12px 14px", borderRadius: 10, background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)" }}>
-              <input type="checkbox" checked={tosChecked} onChange={e => setTosChecked(e.target.checked)} aria-label="Agree to updated terms" style={{ marginTop: 2, accentColor: t.accent }} />
-              <span style={{ fontSize: 13, color: t.text, lineHeight: 1.5 }}>I have read and agree to the updated Terms of Service and Privacy Policy</span>
+            <label className="flex items-start gap-2.5 cursor-pointer mb-5 py-3 px-3.5 rounded-[10px]" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)" }}>
+              <input type="checkbox" checked={tosChecked} onChange={e => setTosChecked(e.target.checked)} aria-label="Agree to updated terms" className="mt-0.5" style={{ accentColor: t.accent }} />
+              <span className="text-[13px] text-t-text leading-normal">I have read and agree to the updated Terms of Service and Privacy Policy</span>
             </label>
             <button
               disabled={!tosChecked || tosAccepting}
@@ -1219,11 +1225,12 @@ function DashboardInner({ initialData }) {
                 } catch {}
                 setTosAccepting(false);
               }}
+              className="w-full py-3 rounded-[10px] border-none text-sm font-semibold font-[inherit] transition-all duration-200"
               style={{
-                width: "100%", padding: "12px 0", borderRadius: 10, border: "none", cursor: tosChecked && !tosAccepting ? "pointer" : "default",
+                cursor: tosChecked && !tosAccepting ? "pointer" : "default",
                 background: tosChecked ? t.accent : dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)",
-                color: tosChecked ? "#fff" : t.textMuted, fontSize: 14, fontWeight: 600, fontFamily: "inherit",
-                opacity: tosAccepting ? 0.7 : 1, transition: "all .2s",
+                color: tosChecked ? "#fff" : t.textMuted,
+                opacity: tosAccepting ? 0.7 : 1,
               }}
             >{tosAccepting ? "Accepting…" : "Accept & Continue"}</button>
           </div>

@@ -594,6 +594,10 @@ Codebase is growing. TypeScript catches bugs at compile time, improves IDE exper
 - Add strict mode gradually — start with basic types, tighten over time
 - Prisma already generates types; leverage those as the foundation
 
+### Bundled: finish dark-mode CSS migration
+
+521 inline styles remain across 10 components — all `dark ? valueA : valueB` ternaries that couldn't be converted to Tailwind classes without changing the theme system. During the TS migration, replace the JS-side `dark` prop pattern with Tailwind's `dark:` variant (the CSS custom properties foundation is already in globals.css). This eliminates the `dark` prop threading and the remaining inline styles in one pass.
+
 ---
 
 ## Platform Campaigns | Seasonal & Recurring Discounts

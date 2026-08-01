@@ -69,7 +69,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const isSeo = apiType === "seo";
   const isReview = svcName.includes("review") && !svcName.includes("review like");
   const needsComments = isCustomComment || isReview;
-  const showComments = isCustomComment || isComment || isReview;
+  const showComments = isCustomComment || isReview;
   const needsUsernames = isMention;
   const needsAnswer = isPoll;
   const needsKeywords = isSeo;

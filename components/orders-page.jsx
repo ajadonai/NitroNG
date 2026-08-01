@@ -191,7 +191,7 @@ function DotMenu({ items, dark, t, loading }) {
 
   return (
     <div ref={ref} className="dot-menu-root">
-      <button ref={btnRef} onPointerDown={handleOpen} className="w-9 h-9 max-md:w-10 max-md:h-10 flex items-center justify-center rounded-md border-none cursor-pointer bg-transparent" style={{ color: t.textMuted, opacity: loading ? .5 : 1, touchAction: "none" }} aria-label="Actions">
+      <button ref={btnRef} onPointerDown={handleOpen} className="w-9 h-9 max-md:w-10 max-md:h-10 flex items-center justify-center rounded-md border-none cursor-pointer bg-transparent text-t-text-muted" style={{ opacity: loading ? .5 : 1, touchAction: "none" }} aria-label="Actions">
         {loading ? <NitroLoader size={14} mono ariaHidden /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>}
       </button>
       {open && (
@@ -253,16 +253,16 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
       {/* Link */}
       {o.link && (
         <div className="mb-3 py-2 px-2.5 rounded-lg flex items-center gap-2 min-w-0 max-w-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.025)", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>
-          <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>
+          <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)" }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
           </div>
-          <a href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="m min-w-0 flex-1 text-[12px] desktop:text-[13px] leading-[1.45] overflow-hidden text-ellipsis whitespace-nowrap no-underline" style={{ color: t.textSoft }}>{o.link}</a>
+          <a href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="m min-w-0 flex-1 text-[12px] desktop:text-[13px] leading-[1.45] overflow-hidden text-ellipsis whitespace-nowrap no-underline text-t-text-soft">{o.link}</a>
         </div>
       )}
 
       {/* View comments button */}
       {o.comments && (
-        <button onClick={(e) => { e.stopPropagation(); onViewComments?.(o.comments); }} className="mb-3 flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", color: t.textSoft }}>
+        <button onClick={(e) => { e.stopPropagation(); onViewComments?.(o.comments); }} className="mb-3 flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5 text-t-text-soft" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)" }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
           View comments
         </button>
@@ -276,7 +276,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         return (
           <div className="mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
             <div className="flex items-center justify-between text-[12px] mb-1.5">
-              <span style={{ color: t.textMuted }}>{isCancelled ? "Cancelled" : waiting ? (isQueued ? "Queued" : "Waiting to start") : "Delivered"}</span>
+              <span className="text-t-text-muted">{isCancelled ? "Cancelled" : waiting ? (isQueued ? "Queued" : "Waiting to start") : "Delivered"}</span>
               {!waiting && <span className="m font-semibold" style={{ color: barColor }}>{delivered.toLocaleString()} / {qty.toLocaleString()}</span>}
             </div>
             <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
@@ -405,19 +405,19 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
       {/* Info grid */}
       <div className="grid grid-cols-2 desktop:grid-cols-4 gap-2 mb-3">
         <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-          <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Order No</div>
+          <div className="text-[11px] uppercase tracking-[1px] mb-1 text-t-text-muted">Order No</div>
           <CopyId value={o.id} dark={dark} />
         </div>
         <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-          <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Status</div>
+          <div className="text-[11px] uppercase tracking-[1px] mb-1 text-t-text-muted">Status</div>
           <Badge status={isQueued ? "Queued" : o.status} dark={dark} />
         </div>
         <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-          <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>{o.status === "Cancelled" ? "Refunded" : "Charge"}</div>
+          <div className="text-[11px] uppercase tracking-[1px] mb-1 text-t-text-muted">{o.status === "Cancelled" ? "Refunded" : "Charge"}</div>
           <div className="m text-sm font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
         </div>
         <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-          <div className="text-[11px] uppercase tracking-[1px] mb-1" style={{ color: t.textMuted }}>Start Count</div>
+          <div className="text-[11px] uppercase tracking-[1px] mb-1 text-t-text-muted">Start Count</div>
           <div className="m text-sm font-semibold" style={{ color: o.startCount != null ? t.text : t.textMuted }}>{o.startCount != null ? o.startCount.toLocaleString() : "—"}</div>
         </div>
       </div>
@@ -427,11 +427,11 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         {(o.status === "Processing" || o.status === "Pending") && (
           <>
             <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(165,180,252,.12)" : "rgba(79,70,229,.07)", color: dark ? "#a5b4fc" : "#4f46e5" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#a5b4fc" : "#4f46e5"} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}Check</button>
-            {!o.apiOrderId && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cancel</button>}
+            {o.status === "Pending" && !o.apiOrderId && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cancel</button>}
           </>
         )}
         {(o.status === "Completed" || o.status === "Cancelled") && !o.offerDisabled && (
-          <button onClick={async () => { const ok = await confirm({ title: "Reorder", message: `Reorder ${o.service}? ₦${o.charge?.toLocaleString()} will be charged from your wallet.`, confirmLabel: "Place Reorder" }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", color: t.accent }}>{actionLoading === o.id ? <Spinner size={14} color={t.accent} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>}Reorder</button>
+          <button onClick={async () => { const ok = await confirm({ title: "Reorder", message: `Reorder ${o.service}? ₦${o.charge?.toLocaleString()} will be charged from your wallet.`, confirmLabel: "Place Reorder" }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5 text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)" }}>{actionLoading === o.id ? <Spinner size={14} color={t.accent} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>}Reorder</button>
         )}
         {reportIssueButton}
       </div>
@@ -448,7 +448,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
   const accentColor = hasAttentionOrders ? (dark ? "#fcd34d" : "#d97706") : t.accent;
 
   const hasActive = batch.orders.some(o => o.status === "Processing" || o.status === "Pending");
-  const hasCancellable = batch.orders.some(o => (o.status === "Processing" || o.status === "Pending") && !o.apiOrderId);
+  const hasCancellable = batch.orders.some(o => o.status === "Pending" && !o.apiOrderId);
   const reorderableOrders = batch.orders.filter(o => o.status === "Completed" || o.status === "Cancelled");
   const hasReorderable = reorderableOrders.length > 0 && reorderableOrders.every(o => !o.offerDisabled);
 
@@ -465,9 +465,9 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{batch.batchId}</div>
-          <div className="text-[11px] desktop:text-xs font-medium mt-0.5" style={{ color: t.accent }}>{batch.orders.length} order{batch.orders.length !== 1 ? "s" : ""}</div>
-          {batch.created && <div className="text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(batch.created, true)}</div>}
+          <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap text-t-text">{batch.batchId}</div>
+          <div className="text-[11px] desktop:text-xs font-medium mt-0.5 text-accent">{batch.orders.length} order{batch.orders.length !== 1 ? "s" : ""}</div>
+          {batch.created && <div className="text-[10px] desktop:text-[11px] mt-0.5 text-t-text-muted">{fD(batch.created, true)}</div>}
         </div>
         <div className="text-right shrink-0 flex items-center gap-1.5">
           {(batchSt === "Processing") && <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: sClr("Processing", dark) }} />}
@@ -481,7 +481,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
         <div style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", borderLeft: `3px solid ${accentColor}`, borderTop: `2px solid ${dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)"}` }}>
           {/* Batch action bar */}
           <div className="flex items-center gap-5 py-2.5 px-4 desktop:px-5" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-            <span className="text-[11px] uppercase tracking-[1px] font-medium mr-auto" style={{ color: t.textMuted }}>Batch actions</span>
+            <span className="text-[11px] uppercase tracking-[1px] font-medium mr-auto text-t-text-muted">Batch actions</span>
             {hasActive && (
               <button onClick={() => doBatchAction(batch.batchId, "check")} disabled={isLoading} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(165,180,252,.12)" : "rgba(79,70,229,.07)", color: dark ? "#a5b4fc" : "#4f46e5", opacity: isLoading ? .5 : 1 }}>
                 {isLoading ? <Spinner size={12} color={dark ? "#a5b4fc" : "#4f46e5"} /> : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}Check all
@@ -491,7 +491,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
               <button onClick={async () => { const ok = await confirm({ title: "Cancel Batch", message: `Cancel all pending orders in ${batch.batchId} that haven't been sent to providers yet? Your wallet will be refunded.`, confirmLabel: "Cancel All", danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isLoading} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: dark ? "#fca5a5" : "#dc2626", opacity: isLoading ? .5 : 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cancel all</button>
             )}
             {hasReorderable && (
-              <button onClick={async () => { const ok = await confirm({ title: "Reorder Batch", message: `Reorder all completed/cancelled orders from ${batch.batchId}?`, confirmLabel: "Reorder All" }); if (ok) doBatchAction(batch.batchId, "reorder_completed"); }} disabled={isLoading} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", color: t.accent, opacity: isLoading ? .5 : 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>Reorder all</button>
+              <button onClick={async () => { const ok = await confirm({ title: "Reorder Batch", message: `Reorder all completed/cancelled orders from ${batch.batchId}?`, confirmLabel: "Reorder All" }); if (ok) doBatchAction(batch.batchId, "reorder_completed"); }} disabled={isLoading} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5 text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", opacity: isLoading ? .5 : 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>Reorder all</button>
             )}
           </div>
 
@@ -503,9 +503,9 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                   <PlatformIcon platform={o.platform} dark={dark} size={22} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
-                  {o.tier && <div className="text-[10px] desktop:text-[11px] font-medium mt-0.5" style={{ color: t.accent }}>{o.tier}</div>}
-                  {o.created && <div className="text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(o.created, true)}</div>}
+                  <div className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical] text-t-text">{o.service}</div>
+                  {o.tier && <div className="text-[10px] desktop:text-[11px] font-medium mt-0.5 text-accent">{o.tier}</div>}
+                  {o.created && <div className="text-[10px] desktop:text-[11px] mt-0.5 text-t-text-muted">{fD(o.created, true)}</div>}
                   {expandedOrder !== o.id && <ProgressBar order={o} dark={dark} />}
                 </div>
                 <div className="text-right shrink-0">
@@ -530,11 +530,11 @@ function Pagination({ total, page, setPage, perPage, setPerPage, t }) {
   return (
     <div className="flex justify-between items-center mt-3.5 flex-wrap gap-2">
       <div className="flex items-center gap-2 text-[13px] desktop:text-sm">
-        <span style={{ color: t.textMuted }}>Show</span>
-        <select value={perPage} onChange={e => { const v = Number(e.target.value); setPerPage(v); setPage(1); try { localStorage.setItem("nitro-per-page", String(v)); } catch {} fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ perPagePreference: v }) }).catch(() => {}); }} className="m py-1 px-2 rounded-md text-sm outline-none border" style={{ background: t.cardBg, borderColor: t.cardBorder, color: t.text }}>
+        <span className="text-t-text-muted">Show</span>
+        <select value={perPage} onChange={e => { const v = Number(e.target.value); setPerPage(v); setPage(1); try { localStorage.setItem("nitro-per-page", String(v)); } catch {} fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ perPagePreference: v }) }).catch(() => {}); }} className="m py-1 px-2 rounded-md text-sm outline-none border bg-t-card-bg border-t-card-border text-t-text">
           {PER_PAGE_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
         </select>
-        <span style={{ color: t.textMuted }}>{total} total</span>
+        <span className="text-t-text-muted">{total} total</span>
       </div>
       <div className="flex items-center gap-1">
         <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} className="w-[30px] h-[30px] rounded-md flex items-center justify-center border cursor-pointer bg-transparent transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: t.cardBorder, color: t.textSoft, opacity: page <= 1 ? .3 : 1 }}>
@@ -713,21 +713,21 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       <div className="pb-2 desktop:pb-3">
         <div className="adm-header-row">
           <div>
-            <div className="text-lg desktop:text-[22px] font-semibold mb-0.5" style={{ color: t.text }}>Orders</div>
-            <div className="text-sm desktop:text-[15px]" style={{ color: t.textMuted }}>Track delivery, refunds, and reorders</div>
+            <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">Orders</div>
+            <div className="text-sm desktop:text-[15px] text-t-text-muted">Track delivery, refunds, and reorders</div>
           </div>
         </div>
-        <div className="page-divider" style={{ background: t.cardBorder }} />
+        <div className="page-divider bg-t-card-border" />
       </div>
 
       {/* Search + filters */}
       <div className="flex items-center gap-2 desktop:gap-3 mb-2 desktop:mb-3 flex-nowrap desktop:flex-wrap min-w-0">
         <div className="flex-1 min-w-0 desktop:min-w-[200px]">
           <div className="relative">
-            <input aria-label="Search orders" placeholder="Search orders..." value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="w-full min-w-0 py-2 desktop:py-2.5 px-3 desktop:px-3.5 pr-8 rounded-[10px] border text-[13px] desktop:text-sm font-[inherit] outline-none box-border" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.09)" : "#fff", color: t.text }} />
-            {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setOPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
+            <input aria-label="Search orders" placeholder="Search orders..." value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="w-full min-w-0 py-2 desktop:py-2.5 px-3 desktop:px-3.5 pr-8 rounded-[10px] border border-t-card-border text-[13px] desktop:text-sm font-[inherit] outline-none box-border text-t-text" style={{ background: dark ? "rgba(255,255,255,.09)" : "#fff" }} />
+            {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setOPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
           </div>
-          {searchTooShort && <div className="text-[11px] desktop:text-xs mt-1" style={{ color: t.textMuted }}>Type at least 2 characters to search.</div>}
+          {searchTooShort && <div className="text-[11px] desktop:text-xs mt-1 text-t-text-muted">Type at least 2 characters to search.</div>}
         </div>
         <DateRangePicker dark={dark} t={t} value={dateRange} onChange={(v) => { setDateRange(v); setOPage(1); }} />
         <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setOPage(1); setExpanded(null); }} options={
@@ -739,9 +739,9 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
 
       {/* Result count */}
       {hasFilters && (
-        <div className="text-[12px] desktop:text-[13px] mb-2" style={{ color: t.textMuted }}>
+        <div className="text-[12px] desktop:text-[13px] mb-2 text-t-text-muted">
           Showing {pagedGroups.length} of {total} matching result{total === 1 ? "" : "s"} ({matchingOrdersTotal} order{matchingOrdersTotal === 1 ? "" : "s"})
-          {hasFilters && <button onClick={() => { setFilter("all"); setSearch(""); setDateRange(null); setOPage(1); }} className="ml-2 underline cursor-pointer bg-transparent border-none font-[inherit] text-[12px] desktop:text-[13px]" style={{ color: t.accent }}>Clear filters</button>}
+          {hasFilters && <button onClick={() => { setFilter("all"); setSearch(""); setDateRange(null); setOPage(1); }} className="ml-2 underline cursor-pointer bg-transparent border-none font-[inherit] text-[12px] desktop:text-[13px] text-accent">Clear filters</button>}
         </div>
       )}
 
@@ -770,9 +770,9 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
                   <PlatformIcon platform={o.platform} dark={dark} size={26} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap desktop:whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
-                  {o.tier && <div className="text-[11px] desktop:text-xs font-medium mt-0.5" style={{ color: t.accent }}>{o.tier}</div>}
-                  {o.created && <div className="text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(o.created, true)}</div>}
+                  <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap desktop:whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical] text-t-text">{o.service}</div>
+                  {o.tier && <div className="text-[11px] desktop:text-xs font-medium mt-0.5 text-accent">{o.tier}</div>}
+                  {o.created && <div className="text-[10px] desktop:text-[11px] mt-0.5 text-t-text-muted">{fD(o.created, true)}</div>}
                   {expanded !== o.id && <ProgressBar order={o} dark={dark} />}
                 </div>
                 <div className="text-right shrink-0 flex items-center gap-1.5">
@@ -787,17 +787,17 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
             </div>
           );
         }) : (
-          <div className="py-10 px-6 text-center" style={{ color: t.textMuted }}>
+          <div className="py-10 px-6 text-center text-t-text-muted">
             {hasFilters ? (
               <>
-                <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No orders match your filters</div>
-                <div className="text-[14px]" style={{ color: t.textMuted }}>Try adjusting your search or filters</div>
-                <button onClick={() => { setFilter("all"); setSearch(""); setDateRange(null); setOPage(1); }} className="mt-3 py-1.5 px-4 rounded-lg text-[13px] font-semibold cursor-pointer border" style={{ background: "transparent", borderColor: t.cardBorder, color: t.accent }}>Clear all filters</button>
+                <div className="text-base font-semibold mb-1 text-t-text-soft">No orders match your filters</div>
+                <div className="text-[14px] text-t-text-muted">Try adjusting your search or filters</div>
+                <button onClick={() => { setFilter("all"); setSearch(""); setDateRange(null); setOPage(1); }} className="mt-3 py-1.5 px-4 rounded-lg text-[13px] font-semibold cursor-pointer border bg-transparent border-t-card-border text-accent">Clear all filters</button>
               </>
             ) : (
               <>
-                <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No orders yet</div>
-                <div className="text-[14px]" style={{ color: t.textMuted }}>Your orders will show up here once you start boosting</div>
+                <div className="text-base font-semibold mb-1 text-t-text-soft">No orders yet</div>
+                <div className="text-[14px] text-t-text-muted">Your orders will show up here once you start boosting</div>
               </>
             )}
           </div>
@@ -807,17 +807,17 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
 
       {viewComments && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={() => setViewComments(null)}>
-          <div className="absolute inset-0" style={{ background: "rgba(0,0,0,.55)" }} />
+          <div className="absolute inset-0 bg-black/55" />
           <div className="relative w-full max-w-md rounded-xl shadow-xl overflow-hidden" style={{ background: dark ? "#252320" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>
               <div className="flex items-center gap-2">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                <span className="text-[13px] font-semibold" style={{ color: t.text }}>Submitted comments</span>
+                <span className="text-[13px] font-semibold text-t-text">Submitted comments</span>
               </div>
-              <button onClick={() => setViewComments(null)} className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <button onClick={() => setViewComments(null)} className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer border-none text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div className="px-4 py-3 max-h-[60vh] overflow-y-auto">
-              <pre className="m-0 text-[13px] leading-[1.65] whitespace-pre-wrap break-words" style={{ color: t.textSoft, fontFamily: "inherit" }}>{viewComments}</pre>
+              <pre className="m-0 text-[13px] leading-[1.65] whitespace-pre-wrap break-words text-t-text-soft font-[inherit]">{viewComments}</pre>
             </div>
           </div>
         </div>
@@ -834,12 +834,11 @@ export function OrdersSidebar({ orders, orderSummary, dark, t }) {
   const attentionCount = orderSummary?.attention || 0;
   const completedCount = orderSummary?.completed || 0;
   const totalSpent = orderSummary?.spent || 0;
-  const refundedTotal = orderSummary?.refunded || 0;
   const totalOrders = orderSummary?.total ?? 0;
 
   return (
     <div className="flex flex-col gap-0">
-      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Order Summary</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Order Summary</div>
       <div className="grid grid-cols-2 gap-1.5 mb-3">
         {[
           ["Total", String(totalOrders), dark ? "#a5b4fc" : "#4f46e5"],
@@ -847,10 +846,9 @@ export function OrdersSidebar({ orders, orderSummary, dark, t }) {
           ["Completed", String(completedCount), dark ? "#6ee7b7" : "#059669"],
           ...(attentionCount > 0 ? [["Attention", String(attentionCount), dark ? "#fbbf24" : "#d97706"]] : []),
           ["Spent", fN(totalSpent), t.accent],
-          ...(refundedTotal > 0 ? [["Refunded", fN(refundedTotal), dark ? "#6ee7b7" : "#059669"]] : []),
         ].map(([label, val, color]) => (
-          <div key={label} className="p-3 rounded-[10px]" style={{ background: t.cardBg }}>
-            <div className="text-xs uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>{label}</div>
+          <div key={label} className="p-3 rounded-[10px] bg-t-card-bg">
+            <div className="text-xs uppercase tracking-[0.5px] mb-1 text-t-text-muted">{label}</div>
             <div className="text-base font-semibold" style={{ color }}>{val}</div>
           </div>
         ))}
@@ -865,17 +863,17 @@ export function OrdersSidebar({ orders, orderSummary, dark, t }) {
         </div>
       )}
 
-      <div className="h-px mb-3" style={{ background: t.sidebarBorder }} />
+      <div className="h-px mb-3 bg-t-sidebar-border" />
 
-      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Recent Activity</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Recent Activity</div>
       {orders.slice(0, 5).map(o => (
-        <div key={o.id} className="py-2 px-2.5 rounded-lg mb-1" style={{ background: t.cardBg }}>
+        <div key={o.id} className="py-2 px-2.5 rounded-lg mb-1 bg-t-card-bg">
           <div className="flex items-center gap-2.5">
             <PlatformIcon platform={o.platform} dark={dark} size={28} />
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{o.service}</div>
-              {o.tier && <div className="text-[11px] font-medium" style={{ color: t.accent }}>{o.tier}</div>}
-              <div className="text-[11px]" style={{ color: t.textMuted }}>{o.created ? fD(o.created, true) : ""}</div>
+              <div className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap text-t-text">{o.service}</div>
+              {o.tier && <div className="text-[11px] font-medium text-accent">{o.tier}</div>}
+              <div className="text-[11px] text-t-text-muted">{o.created ? fD(o.created, true) : ""}</div>
             </div>
           </div>
         </div>

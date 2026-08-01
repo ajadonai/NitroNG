@@ -10,7 +10,7 @@ const prisma = {
     aggregate: vi.fn(),
   },
   alert: { findMany: vi.fn() },
-  setting: { findUnique: vi.fn() },
+  setting: { findMany: vi.fn() },
   ticket: { findMany: vi.fn() },
   $queryRaw: vi.fn(),
 };
@@ -63,7 +63,7 @@ beforeEach(() => {
   prisma.transaction.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
   prisma.user.findMany.mockResolvedValue([]);
   prisma.alert.findMany.mockResolvedValue([]);
-  prisma.setting.findUnique.mockResolvedValue(null);
+  prisma.setting.findMany.mockResolvedValue([]);
   prisma.ticket.findMany.mockResolvedValue([]);
 });
 
@@ -173,9 +173,69 @@ describe('GET /api/dashboard — bounded rows with exact summaries', () => {
     const response = await GET();
     const body = await response.json();
 
-    const historyQuery = prisma.transaction.findMany.mock.calls[0][0];
+    const historyQuery = prisma.transaction.findMany.mock.calls
+      .map(([query]) => query)
+      .find(query => query.take === 100);
+    expect(historyQuery).toBeDefined();
     expect(historyQuery.take).toBe(100);
     expect(historyQuery.where.createdAt.gte).toBeInstanceOf(Date);
     expect(body.transactionsTotal).toBe(143);
+  });
+
+  it('loads dashboard settings in one narrow query', async () => {
+    prisma.setting.findMany.mockResolvedValue([
+      { key: 'tos_version', value: '2026-07' },
+      { key: 'ref_min_deposit', value: '50000' },
+    ]);
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(prisma.setting.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.setting.findMany).toHaveBeenCalledWith({
+      where: { key: { in: ['ref_min_deposit', 'tos_version'] } },
+      select: { key: true, value: true },
+    });
+    expect(body.currentTosVersion).toBe('2026-07');
+  });
+
+  it('folds referral earnings into transaction totals without changing its signed all-status sum', async () => {
+    prisma.transaction.groupBy.mockResolvedValue([
+      { type: 'referral', status: 'Completed', _sum: { amount: 12500 } },
+      { type: 'referral', status: 'Pending', _sum: { amount: -2500 } },
+    ]);
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(body.user.earnings).toBe(100);
+    expect(body.walletSummary.funded).toBe(125);
+    expect(prisma.transaction.aggregate).not.toHaveBeenCalled();
+    expect(prisma.transaction.groupBy).toHaveBeenCalledWith({
+      by: ['type', 'status'],
+      where: {
+        userId: 'user-1',
+        OR: [
+          { status: 'Completed' },
+          { type: 'referral' },
+        ],
+      },
+      _sum: { amount: true },
+    });
+  });
+
+  it('falls back to the standalone earnings aggregate only when transaction summaries fail', async () => {
+    prisma.transaction.groupBy.mockRejectedValueOnce(new Error('summary unavailable'));
+    prisma.transaction.aggregate.mockResolvedValueOnce({ _sum: { amount: 7500 } });
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(body.user.earnings).toBe(75);
+    expect(prisma.transaction.aggregate).toHaveBeenCalledTimes(1);
+    expect(prisma.transaction.aggregate).toHaveBeenCalledWith({
+      where: { userId: 'user-1', type: 'referral' },
+      _sum: { amount: true },
+    });
   });
 });

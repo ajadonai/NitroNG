@@ -1,8 +1,11 @@
 'use client';
 import { useEffect } from 'react';
 import Dashboard from '@/components/dashboard';
+import { useSessionHeartbeat } from '@/lib/use-session-heartbeat';
 
 export default function DashboardClient() {
+  useSessionHeartbeat('user');
+
   useEffect(() => {
     const entries = performance.getEntriesByType?.('navigation');
     const nav = entries?.[0];

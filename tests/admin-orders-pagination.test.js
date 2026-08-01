@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockOrder = {
@@ -15,6 +16,7 @@ const mockPrisma = {
   dripDispatch: mockDripDispatch,
   transaction: mockTransaction,
   setting: mockSetting,
+  $transaction: vi.fn(queries => Promise.all(queries)),
 };
 
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
@@ -94,6 +96,8 @@ describe('GET /api/admin/orders — pagination', () => {
 
     expect(body.total).toBe(50);
     expect(body.orders).toHaveLength(2);
+    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.$transaction.mock.calls[0][0]).toHaveLength(4);
   });
 
   it('passes take and skip to findMany', async () => {
@@ -149,6 +153,25 @@ describe('GET /api/admin/orders — pagination', () => {
     expect(body.counts.Pending).toBe(10);
     expect(body.counts.Completed).toBe(30);
     expect(body.counts.all).toBe(40);
+    expect(body.total).toBe(10);
+  });
+
+  it.each([
+    ['queued', 7],
+    ['needs_dispatch', 3],
+  ])('derives the %s total from the existing filter counts', async (filter, expected) => {
+    mockOrder.findMany.mockResolvedValue([]);
+    mockOrder.groupBy.mockResolvedValue([
+      { status: 'Pending', _count: 40 },
+    ]);
+    mockOrder.count
+      .mockResolvedValueOnce(7)
+      .mockResolvedValueOnce(3);
+
+    const res = await GET(makeReq({ filter }));
+    const body = await res.json();
+
+    expect(body.total).toBe(expected);
   });
 
   it('applies search to both paginated query and count query', async () => {
@@ -192,6 +215,24 @@ describe('GET /api/admin/orders — pagination', () => {
     expect(call.take).toBe(50);
     expect(call.skip).toBe(0);
   });
+
+  it('returns a retryable 503 when Prisma cannot acquire a pool connection', async () => {
+    mockOrder.findMany.mockResolvedValue([]);
+    mockOrder.groupBy.mockResolvedValue([]);
+    mockOrder.count.mockResolvedValue(0);
+    mockPrisma.$transaction.mockRejectedValueOnce(
+      Object.assign(new Error('Timed out fetching a new connection from the connection pool'), {
+        code: 'P2024',
+      }),
+    );
+
+    const res = await GET(makeReq());
+    const body = await res.json();
+
+    expect(res.status).toBe(503);
+    expect(res.headers.get('retry-after')).toBe('3');
+    expect(body.error).toContain('temporarily busy');
+  });
 });
 
 describe('GET /api/admin/orders — batchId', () => {
@@ -217,5 +258,27 @@ describe('GET /api/admin/orders — batchId', () => {
 
     expect(mockOrder.count).not.toHaveBeenCalled();
     expect(mockOrder.groupBy).not.toHaveBeenCalled();
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe('admin orders pool-pressure controls', () => {
+  it('does not poll from hidden tabs or overlap a request already in flight', () => {
+    const source = readFileSync('components/admin-orders.jsx', 'utf8');
+
+    expect(source).toContain('document.visibilityState !== "visible" || abortRef.current');
+    expect(source).toContain('{ background: true }');
+    expect(source).toContain('if (abortRef.current === controller) abortRef.current = null');
+    expect(source).toContain('if (!r.ok) throw new Error');
+  });
+
+  it('does not run the expensive overview poll from the orders page or hidden tabs', () => {
+    const source = readFileSync('components/admin-dashboard.jsx', 'utf8');
+
+    expect(source).toContain("if (initialData) applyThemePreference(initialData)");
+    expect(source).toContain("else load()");
+    expect(source).toContain("document.visibilityState !== 'visible' || inFlight");
+    expect(source).toContain("if (active === 'overview')");
+    expect(source).toContain('}, [redirecting, active]);');
   });
 });

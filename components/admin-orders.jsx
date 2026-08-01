@@ -247,8 +247,9 @@ export default function AdminOrdersPage({ dark, t }) {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const abortRef = useRef(null);
 
-  const fetchOrders = useCallback((q, f, p, pp) => {
-    abortRef.current?.abort();
+  const fetchOrders = useCallback((q, f, p, pp, { background = false } = {}) => {
+    if (background && (document.visibilityState !== "visible" || abortRef.current)) return;
+    if (!background) abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
     const params = new URLSearchParams();
@@ -257,12 +258,18 @@ export default function AdminOrdersPage({ dark, t }) {
     params.set('page', String(p || 1));
     params.set('perPage', String(pp || 25));
     const qs = params.toString();
-    fetch(`/api/admin/orders${qs ? `?${qs}` : ''}`, { signal: controller.signal }).then(r => r.json()).then(d => {
+    fetch(`/api/admin/orders${qs ? `?${qs}` : ''}`, { signal: controller.signal }).then(async r => {
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || "Failed to load orders");
+      return data;
+    }).then(d => {
       setOrders(d.orders || []);
       setTotal(d.total || 0);
       if (d.counts) setCounts(d.counts);
       setLoading(false);
-    }).catch(e => { if (e.name !== 'AbortError') setLoading(false); });
+    }).catch(e => { if (e.name !== 'AbortError') setLoading(false); }).finally(() => {
+      if (abortRef.current === controller) abortRef.current = null;
+    });
   }, []);
 
   useEffect(() => {
@@ -276,11 +283,20 @@ export default function AdminOrdersPage({ dark, t }) {
   }, [fetchOrders, debouncedSearch, filter, page, perPage]);
 
   useEffect(() => {
-    const id = setInterval(() => fetchOrders(debouncedSearch, filter, page, perPage), 30000);
-    const onVis = () => { if (document.visibilityState === 'visible') fetchOrders(debouncedSearch, filter, page, perPage); };
+    const refreshInBackground = () => fetchOrders(
+      debouncedSearch,
+      filter,
+      page,
+      perPage,
+      { background: true },
+    );
+    const id = setInterval(refreshInBackground, 30000);
+    const onVis = () => { if (document.visibilityState === 'visible') refreshInBackground(); };
     document.addEventListener('visibilitychange', onVis);
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); };
   }, [fetchOrders, debouncedSearch, filter, page, perPage]);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const grouped = groupOrders(orders);
   const totalPages = Math.ceil(total / perPage);

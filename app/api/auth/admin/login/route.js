@@ -1,7 +1,14 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import bcrypt from 'bcryptjs';
-import { signAdminToken, setAdminCookie, hashToken, detectDevice } from '@/lib/auth';
+import {
+  createSessionId,
+  detectDevice,
+  hashToken,
+  setAdminCookie,
+  signAdminToken,
+  verifyAdminToken,
+} from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
 import {
   accountRateLimitKey,
@@ -62,19 +69,18 @@ export async function POST(req) {
 
     const cookieStore = await cookies();
     const previousToken = cookieStore.get('nitro_admin_token')?.value;
+    const previousPayload = previousToken ? verifyAdminToken(previousToken) : null;
     const previousTokenHash = previousToken ? hashToken(previousToken) : null;
 
-    // Sign first so the durable session can be created while the admin row is
-    // locked. The cookie is not exposed until that transaction succeeds.
-    const token = signAdminToken(admin, { remember });
     const hdrs = await headers();
     const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown';
     const device = detectDevice(hdrs.get('user-agent'));
-    const tHash = hashToken(token);
 
-    const sessionCreated = await prisma.$transaction(async tx => {
+    const sid = createSessionId();
+
+    const sessionResult = await prisma.$transaction(async tx => {
       const rows = await tx.$queryRaw`
-        SELECT "password", "status"
+        SELECT "id", "name", "email", "role", "password", "status"
         FROM "admins"
         WHERE "id" = ${admin.id}
         FOR UPDATE
@@ -86,19 +92,31 @@ export async function POST(req) {
         return false;
       }
 
-      // Account switching must revoke the browser's previous durable session in
-      // the same transaction that creates its replacement. This also revokes
-      // every short-lived internal-dashboard grant bound to the old session.
-      if (previousTokenHash) {
+      if (previousPayload?.sid) {
         await tx.adminSession.deleteMany({
-          where: { tokenHash: previousTokenHash },
+          where: {
+            id: previousPayload.sid,
+            adminId: previousPayload.id,
+          },
         });
+      } else if (previousTokenHash) {
+        await tx.adminSession.deleteMany({ where: { tokenHash: previousTokenHash } });
       }
 
+      const lockedIdentity = {
+        id: lockedAdmin.id,
+        name: lockedAdmin.name,
+        email: lockedAdmin.email,
+        role: lockedAdmin.role,
+      };
+      const token = signAdminToken(lockedIdentity, { remember, sid });
+      const tokenHash = hashToken(token);
       await tx.adminSession.create({
         data: {
-          adminId: admin.id,
-          tokenHash: tHash,
+          id: sid,
+          adminId: lockedIdentity.id,
+          tokenHash,
+          remember,
           deviceType: device.type,
           deviceInfo: device.info,
           ip,
@@ -108,25 +126,18 @@ export async function POST(req) {
         where: { id: admin.id },
         data: { lastActive: new Date() },
       });
-      return true;
+      return { admin: lockedIdentity, token };
     }, { isolationLevel: 'Serializable' });
 
-    if (!sessionCreated) {
+    if (!sessionResult) {
       return error('Credentials changed during login. Please try again.', 401);
     }
 
-    // A browser may switch directly from one admin account to another. Never
-    // let the previous account's short-lived dashboard grant cross that boundary.
     clearInternalDashboardGrantCookie(cookieStore);
-    await setAdminCookie(token, admin.role, { remember });
+    await setAdminCookie(sessionResult.token, sessionResult.admin.role, { remember });
 
     return ok({
-      admin: {
-        id: admin.id,
-        name: admin.name,
-        email: admin.email,
-        role: admin.role,
-      },
+      admin: sessionResult.admin,
     });
 
   } catch (err) {

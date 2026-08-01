@@ -1,16 +1,11 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { getCurrentUser, hashToken } from '@/lib/auth';
-import { cookies } from 'next/headers';
+import { getCurrentUser } from '@/lib/auth';
 
 export async function GET() {
   try {
     const user = await getCurrentUser();
     if (!user) return Response.json({ error: 'Not authenticated' }, { status: 401 });
-
-    const cookieStore = await cookies();
-    const currentToken = cookieStore.get('nitro_token')?.value;
-    const currentHash = currentToken ? hashToken(currentToken) : null;
 
     const sessions = await prisma.session.findMany({
       where: { userId: user.id },
@@ -25,7 +20,7 @@ export async function GET() {
         ip: s.ip,
         lastActive: s.lastActive.toISOString(),
         created: s.createdAt.toISOString(),
-        current: s.tokenHash === currentHash,
+        current: s.id === user._sessionId,
       })),
     });
   } catch (err) {
@@ -42,16 +37,12 @@ export async function DELETE(req) {
     const { sessionId } = await req.json();
     if (!sessionId) return Response.json({ error: 'Session ID required' }, { status: 400 });
 
-    // Only delete own sessions
     const session = await prisma.session.findFirst({
       where: { id: sessionId, userId: user.id },
     });
     if (!session) return Response.json({ error: 'Session not found' }, { status: 404 });
 
-    // Don't allow revoking current session (use logout instead)
-    const cookieStore = await cookies();
-    const currentToken = cookieStore.get('nitro_token')?.value;
-    if (currentToken && hashToken(currentToken) === session.tokenHash) {
+    if (session.id === user._sessionId) {
       return Response.json({ error: 'Use logout to end current session' }, { status: 400 });
     }
 

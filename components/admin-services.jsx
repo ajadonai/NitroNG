@@ -43,7 +43,7 @@ export default function AdminServicesPage({ dark, t }) {
     if (statusFilter === "in-use" && s.tiers === 0) return false;
     if (statusFilter === "in-use-disabled" && !(s.tiers > 0 && !s.enabled)) return false;
     if (catFilter !== "all" && s.category !== catFilter) return false;
-    if (search) { const q = search.toLowerCase(); return s.name?.toLowerCase().includes(q) || s.category?.toLowerCase().includes(q); }
+    if (search) { const q = search.toLowerCase(); return s.name?.toLowerCase().includes(q) || s.category?.toLowerCase().includes(q) || String(s.apiId) === q; }
     return true;
   });
   const totalPages = Math.ceil(filtered.length / perPage);

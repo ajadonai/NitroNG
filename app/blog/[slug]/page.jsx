@@ -6,18 +6,41 @@ import { getLiveValues, injectLiveValues } from '@/lib/blog-values';
 import { renderBlogContent, serializeJsonLd } from '@/lib/blog-rendering';
 import BLOG_CATEGORIES, { getTopicsForSlug } from '@/lib/blog-categories';
 
+async function q(fn) {
+  for (let i = 0; i < 3; i++) {
+    try { return await fn(); } catch (err) {
+      if (i < 2 && err?.code === 'P1001') { await new Promise(r => setTimeout(r, 2000)); continue; }
+      throw err;
+    }
+  }
+}
+
+function isDatabaseUnavailableError(err) {
+  if (err?.code === 'P1001' || err?.errorCode === 'P1001') return true;
+  return err?.name === 'PrismaClientInitializationError'
+    && /can't reach database server/i.test(String(err?.message || ''));
+}
+
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
-  const posts = await prisma.blogPost.findMany({
-    where: { published: true, NOT: { category: 'Help' } },
-    select: { slug: true },
-  });
-  const slugs = posts.map(p => ({ slug: p.slug }));
-  for (const key of Object.keys(BLOG_CATEGORIES)) {
-    slugs.push({ slug: key });
+  try {
+    const posts = await q(() => prisma.blogPost.findMany({
+      where: { published: true, NOT: { category: 'Help' } },
+      select: { slug: true },
+    }));
+    const slugs = posts.map(p => ({ slug: p.slug }));
+    for (const key of Object.keys(BLOG_CATEGORIES)) {
+      slugs.push({ slug: key });
+    }
+    return slugs;
+  } catch (err) {
+    if (!isDatabaseUnavailableError(err)) throw err;
+    // CI intentionally builds without a reachable database. Returning no
+    // prebuilt paths lets Next generate and cache each blog route on demand.
+    console.warn('[Blog] Database unavailable during static path generation; using on-demand rendering.');
+    return [];
   }
-  return slugs;
 }
 
 const META_TITLE_OVERRIDES = {
@@ -77,10 +100,10 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  const post = await prisma.blogPost.findFirst({
+  const post = await q(() => prisma.blogPost.findFirst({
     where: { slug, published: true },
     select: { title: true, excerpt: true, authorName: true, createdAt: true, updatedAt: true },
-  });
+  }));
   if (!post) return {};
 
   const description = post.excerpt || post.title;
@@ -118,11 +141,11 @@ export default async function BlogSlugPage({ params }) {
 
 
 async function renderCategory(slug, cat) {
-  const allPosts = await prisma.blogPost.findMany({
+  const allPosts = await q(() => prisma.blogPost.findMany({
     where: { published: true, NOT: { category: 'Help' } },
     select: { id: true, title: true, slug: true, excerpt: true, category: true, thumbnail: true, authorName: true, createdAt: true },
     orderBy: { createdAt: 'desc' },
-  });
+  }));
 
   const posts = allPosts
     .filter(p => cat.match(p.slug))
@@ -162,7 +185,7 @@ async function renderCategory(slug, cat) {
 
 async function renderPost(slug) {
   const [post, liveValues] = await Promise.all([
-    prisma.blogPost.findFirst({ where: { slug, published: true } }),
+    q(() => prisma.blogPost.findFirst({ where: { slug, published: true } })),
     getLiveValues(),
   ]);
   if (!post) notFound();
@@ -173,11 +196,11 @@ async function renderPost(slug) {
   const topics = getTopicsForSlug(slug);
   let related = [];
   if (topics.length) {
-    const allPosts = await prisma.blogPost.findMany({
+    const allPosts = await q(() => prisma.blogPost.findMany({
       where: { published: true, NOT: [{ category: 'Help' }, { slug }] },
       select: { title: true, slug: true, excerpt: true, category: true, thumbnail: true, authorName: true, createdAt: true },
       orderBy: { views: 'desc' },
-    });
+    }));
     const seen = new Set();
     for (const p of allPosts) {
       if (seen.has(p.slug)) continue;

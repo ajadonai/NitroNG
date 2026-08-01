@@ -6,29 +6,95 @@
   input, select, textarea { font-size: 16px !important; }
 }
 
+/* ── Auto-switching theme tokens ── */
+:root {
+  --t-bg: #f0ede8;
+  --t-text: #1c1b19;
+  --t-soft: #555250;
+  --t-muted: #757170;
+  --t-accent: #c47d8e;
+  --t-grad: linear-gradient(135deg, #c47d8e, #a3586b);
+  --t-green: #059669;
+  --t-red: #dc2626;
+  --t-surface: rgba(255,255,255,.6);
+  --t-surface-brd: rgba(0,0,0,.1);
+  --t-surface-border: rgba(0,0,0,.18);
+  --t-sidebar-bg: rgba(240,237,232,.95);
+  --t-input-bg: #fff;
+  --t-input-border: rgba(0,0,0,.18);
+  --t-btn-primary: linear-gradient(135deg, #c47d8e, #a3586b);
+  --t-overlay: rgba(0,0,0,.3);
+  --t-hero-bg: linear-gradient(135deg, #c47d8e 0%, #a3586b 50%, #8b4a5e 100%);
+  --t-hero-text: #fff;
+  --t-hero-soft: rgba(255,255,255,.85);
+  --t-hero-muted: rgba(255,255,255,.55);
+  --t-hero-glass: rgba(255,255,255,.16);
+  --t-hero-glass-brd: rgba(255,255,255,.2);
+  --t-hero-accent-badge: rgba(255,255,255,.15);
+  --t-text-soft: #555250;
+  --t-text-muted: #757170;
+  --t-accent-light: rgba(196,125,142,.08);
+  --t-card-bg: rgba(255,255,255,.8);
+  --t-card-border: rgba(0,0,0,.1);
+  --t-nav-active: rgba(196,125,142,.08);
+  --t-sidebar-border: rgba(0,0,0,.18);
+}
+.dark {
+  --t-bg: #090c15;
+  --t-text: #f5f3f0;
+  --t-soft: #a09b95;
+  --t-muted: #8a8580;
+  --t-green: #6ee7b7;
+  --t-red: #fca5a5;
+  --t-surface: rgba(255,255,255,.07);
+  --t-surface-brd: rgba(255,255,255,.12);
+  --t-surface-border: rgba(255,255,255,.18);
+  --t-sidebar-bg: rgba(14,17,34,.95);
+  --t-input-bg: #131728;
+  --t-input-border: rgba(255,255,255,.18);
+  --t-overlay: rgba(0,0,0,.6);
+  --t-hero-bg: #090c15;
+  --t-hero-text: #f5f3f0;
+  --t-hero-soft: #a09b95;
+  --t-hero-muted: #8a8580;
+  --t-hero-glass: rgba(255,255,255,.07);
+  --t-hero-glass-brd: rgba(255,255,255,.09);
+  --t-hero-accent-badge: rgba(196,125,142,.12);
+  --t-text-soft: #a09b95;
+  --t-text-muted: #8a8580;
+  --t-accent-light: rgba(196,125,142,.12);
+  --t-card-bg: rgba(255,255,255,.07);
+  --t-card-border: rgba(255,255,255,.14);
+  --t-nav-active: rgba(196,125,142,.12);
+  --t-sidebar-border: rgba(255,255,255,.18);
+}
+/* Dashboard-specific overrides */
+.user-dash { --t-sidebar-bg: #eceae5; }
+.dark .user-dash { --t-sidebar-bg: #0e1122; }
+
 @theme {
   --color-accent: #c47d8e;
   --color-accent-dark: #a3586b;
-  --color-bg-dark: #080b14;
-  --color-bg-dark-alt: #0f1322;
-  --color-bg-light: #f4f1ed;
-  --color-bg-light-alt: #e6e3dc;
-  --color-t-text: #1c1b19;
-  --color-t-text-dark: #f5f3f0;
-  --color-t-soft: #555250;
-  --color-t-soft-dark: #a09b95;
-  --color-t-muted: #757170;
-  --color-t-muted-dark: #706c68;
-  --color-t-input-bg: #fff;
-  --color-t-input-bg-dark: #0d1020;
-  --color-t-input-border: rgba(0,0,0,0.1);
-  --color-t-input-border-dark: rgba(255,255,255,0.08);
-  --color-t-surface-border: rgba(0,0,0,0.1);
-  --color-t-surface-border-dark: rgba(255,255,255,0.08);
-  --color-t-green: #059669;
-  --color-t-green-dark: #6ee7b7;
-  --color-t-red: #dc2626;
-  --color-t-red-dark: #fca5a5;
+  --color-t-bg: var(--t-bg);
+  --color-t-text: var(--t-text);
+  --color-t-soft: var(--t-soft);
+  --color-t-muted: var(--t-muted);
+  --color-t-green: var(--t-green);
+  --color-t-red: var(--t-red);
+  --color-t-surface: var(--t-surface);
+  --color-t-surface-brd: var(--t-surface-brd);
+  --color-t-surface-border: var(--t-surface-border);
+  --color-t-input-bg: var(--t-input-bg);
+  --color-t-input-border: var(--t-input-border);
+  --color-t-card-bg: var(--t-card-bg);
+  --color-t-card-border: var(--t-card-border);
+  --color-t-accent-light: var(--t-accent-light);
+  --color-t-text-soft: var(--t-text-soft);
+  --color-t-text-muted: var(--t-text-muted);
+  --color-t-sidebar-bg: var(--t-sidebar-bg);
+  --color-t-sidebar-border: var(--t-sidebar-border);
+  --color-t-nav-active: var(--t-nav-active);
+  --color-t-overlay: var(--t-overlay);
   --breakpoint-desktop: 1200px;
   --font-outfit: 'Plus Jakarta Sans', sans-serif;
   --font-serif: 'Cormorant Garamond', serif;

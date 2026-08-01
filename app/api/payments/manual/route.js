@@ -31,7 +31,9 @@ export async function POST(req) {
     });
     if (existingPending) {
       const ageMs = Date.now() - new Date(existingPending.createdAt).getTime();
-      if (ageMs > 6 * 60 * 60 * 1000) {
+      const confirmed = existingPending.note?.includes('[user_confirmed');
+      const expiryMs = confirmed ? 6 * 60 * 60 * 1000 : 30 * 60 * 1000;
+      if (ageMs > expiryMs) {
         await prisma.transaction.update({ where: { id: existingPending.id }, data: { status: 'Failed', note: existingPending.note + ' [expired]' } });
       } else {
         return Response.json({ error: 'You have a pending bank transfer. Please contact admin on WhatsApp if you need to make another transfer.' }, { status: 400 });

@@ -66,11 +66,11 @@ function ListRow({ entry, dark, t, tab, isLast }) {
   const val = getVal(entry, tab);
   return (
     <div className="flex items-center gap-3 max-md:gap-2.5 py-3 px-4 max-md:py-2.5 max-md:px-3 transition-colors duration-150" style={{ borderBottom: isLast ? "none" : `1px solid ${t.cardBorder}`, background: entry.isYou ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)") : "transparent" }}>
-      <div className="w-7 text-center text-sm max-md:text-[13px] font-bold shrink-0" style={{ color: t.textMuted }}>{entry.rank}</div>
+      <div className="w-7 text-center text-sm max-md:text-[13px] font-bold shrink-0 text-t-text-muted">{entry.rank}</div>
       <div className="w-[34px] h-[34px] max-md:w-[30px] max-md:h-[30px] rounded-full flex items-center justify-center font-semibold text-[13px] max-md:text-[11px] shrink-0" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.45)" }}><UserIcon size={14} /></div>
       <div className="flex-1 min-w-0">
-        <div className="text-sm max-md:text-[13px] font-medium" style={{ color: t.text }}>{entry.name}{entry.isYou ? " (You)" : ""}</div>
-        {entry.badge && <div className="flex items-center gap-1 mt-0.5"><ShieldBadge color={entry.badgeColor || "#6B7280"} size={12} tier={entry.badge} /><span className="text-[11px]" style={{ color: t.textMuted }}>{entry.badge}</span></div>}
+        <div className="text-sm max-md:text-[13px] font-medium text-t-text">{entry.name}{entry.isYou ? " (You)" : ""}</div>
+        {entry.badge && <div className="flex items-center gap-1 mt-0.5"><ShieldBadge color={entry.badgeColor || "#6B7280"} size={12} tier={entry.badge} /><span className="text-[11px] text-t-text-muted">{entry.badge}</span></div>}
       </div>
       <div className="ml-auto text-right">
         <div className="text-sm max-md:text-[13px] font-bold shrink-0" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{val}</div>
@@ -111,20 +111,20 @@ export default function LeaderboardPage({ dark, t }) {
       {/* Header */}
       <div className="pb-3.5">
         <div className="flex items-center gap-3">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={dark ? "#c47d8e" : "#a3586b"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: .7 }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={dark ? "#c47d8e" : "#a3586b"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-70">
             <path d="M8 21V12H2v9h6z"/><path d="M22 21V8h-6v13h6z"/><path d="M15 21V4H9v17h6z"/>
           </svg>
           <div>
-            <div className="text-[22px] max-md:text-lg font-semibold mb-0.5" style={{ color: t.text }}>Leaderboard</div>
-            <div className="text-[15px] max-md:text-[13px]" style={{ color: t.textMuted }}>Top Nitro users · {periodLabel}</div>
+            <div className="text-[22px] max-md:text-lg font-semibold mb-0.5 text-t-text">Leaderboard</div>
+            <div className="text-[15px] max-md:text-[13px] text-t-text-muted">Top Nitro users · {periodLabel}</div>
           </div>
         </div>
-        <div className="page-divider" style={{ background: t.cardBorder }} />
+        <div className="page-divider bg-t-card-border" />
       </div>
 
       {/* Announcement */}
       {rewardAnnouncement && (
-        <div className="rounded-[10px] py-3 px-4 mb-4 border text-sm font-medium leading-normal flex items-center gap-3" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", borderColor: dark ? "rgba(196,125,142,.24)" : "rgba(196,125,142,.19)", color: t.text }}>
+        <div className="rounded-[10px] py-3 px-4 mb-4 border text-sm font-medium leading-normal flex items-center gap-3 text-t-text" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", borderColor: dark ? "rgba(196,125,142,.24)" : "rgba(196,125,142,.19)" }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={dark ? "#c47d8e" : "#a3586b"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>
           <span>{rewardAnnouncement}</span>
         </div>
@@ -146,7 +146,7 @@ export default function LeaderboardPage({ dark, t }) {
       </div>
 
       {/* Category hint */}
-      <div className="text-xs italic mb-3" style={{ color: t.textMuted }}>
+      <div className="text-xs italic mb-3 text-t-text-muted">
         {tab === "spenders" && "Ranked by total amount spent, not number of orders placed."}
         {tab === "referrers" && "Ranked by number of successful referrals who signed up and verified their account."}
         {tab === "active" && "Ranked by total number of orders placed within the selected period."}
@@ -164,12 +164,12 @@ export default function LeaderboardPage({ dark, t }) {
           {tab === "spenders" && <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke={dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.1)"} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4 block"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg>}
           {tab === "referrers" && <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke={dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.1)"} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4 block"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>}
           {tab === "active" && <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke={dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.1)"} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4 block"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>}
-          <div className="text-[15px] font-semibold mb-1.5" style={{ color: t.text }}>
+          <div className="text-[15px] font-semibold mb-1.5 text-t-text">
             {tab === "spenders" && "No top spenders yet"}
             {tab === "referrers" && "No referrals yet"}
             {tab === "active" && "No activity yet"}
           </div>
-          <div className="text-[13px] max-w-[280px] mx-auto" style={{ color: t.textMuted }}>
+          <div className="text-[13px] max-w-[280px] mx-auto text-t-text-muted">
             {tab === "spenders" && "Place orders to climb the leaderboard and earn Nitro Points."}
             {tab === "referrers" && "Share your referral code with friends to appear here."}
             {tab === "active" && "Start ordering to see your name on the board."}
@@ -182,15 +182,15 @@ export default function LeaderboardPage({ dark, t }) {
           <div className="lb-you-desktop rounded-xl py-3.5 px-5 max-md:py-3 max-md:px-3.5 flex items-center gap-4 mb-5 border" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderColor: dark ? "rgba(196,125,142,.22)" : "rgba(196,125,142,.16)" }}>
             <div className="text-[26px] max-md:text-xl font-bold" style={{ color: dark ? "#c47d8e" : "#a3586b" }}>#{yourRank}</div>
             <div className="flex-1">
-              <div className="text-sm font-semibold flex items-center gap-1.5" style={{ color: t.text }}>Your Rank {yourBadge && <><ShieldBadge color={yourBadge.color} size={14} tier={yourBadge.name} /><span style={{ color: yourBadge.color }}>{yourBadge.name}</span></>}</div>
-              <div className="text-xs" style={{ color: t.textMuted }}>
+              <div className="text-sm font-semibold flex items-center gap-1.5 text-t-text">Your Rank {yourBadge && <><ShieldBadge color={yourBadge.color} size={14} tier={yourBadge.name} /><span style={{ color: yourBadge.color }}>{yourBadge.name}</span></>}</div>
+              <div className="text-xs text-t-text-muted">
                 {tab === "spenders" && `${list.find(e => e.isYou)?.orders || 0} orders`}
                 {tab === "referrers" && `${list.find(e => e.isYou)?.referrals || 0} referrals`}
                 {tab === "active" && `${list.find(e => e.isYou)?.orders || 0} orders`}
               </div>
             </div>
             {yourBadge?.nextTier && (
-              <div className="text-[11px] text-right max-md:hidden" style={{ color: t.textMuted }}>
+              <div className="text-[11px] text-right max-md:hidden text-t-text-muted">
                 Next: <span className="font-semibold" style={{ color: yourBadge.nextTier.color || t.textSoft }}>{yourBadge.nextTier.name}</span>
               </div>
             )}
@@ -251,14 +251,14 @@ export function LeaderboardCard({ dark, t, onViewAll }) {
   const medals = ["🥇", "🥈", "🥉"];
   return (
     <div className="rounded-[14px] p-4 border" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)" }}>
-      <div className="text-xs font-semibold uppercase tracking-[1.5px] mb-3 py-2 px-3 rounded-lg flex items-center gap-2" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>
+      <div className="text-xs font-semibold uppercase tracking-[1.5px] mb-3 py-2 px-3 rounded-lg flex items-center gap-2 text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21V12H2v9h6z"/><path d="M22 21V8h-6v13h6z"/><path d="M15 21V4H9v17h6z"/></svg>
         <span>Top Spenders · {month}</span>
       </div>
       {top3.map((entry, i) => (
         <div key={i} className="flex items-center gap-2.5 py-1.5">
           <div className="text-base w-6 text-center">{medals[i]}</div>
-          <div className="text-sm font-medium flex-1" style={{ color: t.text }}>{entry.name}{entry.isYou ? " (You)" : ""}</div>
+          <div className="text-sm font-medium flex-1 text-t-text">{entry.name}{entry.isYou ? " (You)" : ""}</div>
           <div className="text-[13px] font-semibold shrink-0" style={{ color: dark ? "#6ee7b7" : "#059669" }}>
             {entry.orders} order{entry.orders !== 1 ? "s" : ""}
           </div>

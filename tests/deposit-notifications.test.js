@@ -4,6 +4,9 @@ const mocks = vi.hoisted(() => ({
   trackDeposit: vi.fn(),
   tgPayment: vi.fn(),
   tgBonusWithheld: vi.fn(),
+  tgOutreachAlert: vi.fn(),
+  sendOutreach: vi.fn(),
+  transactionCount: vi.fn(),
   sendEmail: vi.fn(),
   walletCreditEmail: vi.fn(() => '<html>deposit</html>'),
   referralBonusEmail: vi.fn(() => '<html>referral</html>'),
@@ -15,6 +18,11 @@ vi.mock('@/lib/meta-capi', () => ({ trackDeposit: mocks.trackDeposit }));
 vi.mock('@/lib/telegram', () => ({
   tgPayment: mocks.tgPayment,
   tgBonusWithheld: mocks.tgBonusWithheld,
+  tgOutreachAlert: mocks.tgOutreachAlert,
+}));
+vi.mock('@/lib/ify/outreach', () => ({ sendOutreach: mocks.sendOutreach }));
+vi.mock('@/lib/prisma', () => ({
+  default: { transaction: { count: mocks.transactionCount } },
 }));
 vi.mock('@/lib/email', () => ({
   sendEmail: mocks.sendEmail,
@@ -49,7 +57,14 @@ function result(overrides = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.trackDeposit.mockResolvedValue(undefined);
+  mocks.tgPayment.mockResolvedValue(undefined);
+  mocks.tgBonusWithheld.mockResolvedValue(undefined);
+  mocks.tgOutreachAlert.mockResolvedValue(undefined);
+  mocks.sendOutreach.mockResolvedValue({ ok: true });
+  mocks.transactionCount.mockResolvedValue(0);
   mocks.sendEmail.mockResolvedValue({ success: true });
+  mocks.walletCreditEmail.mockReturnValue('<html>deposit</html>');
+  mocks.referralBonusEmail.mockReturnValue('<html>referral</html>');
   mocks.getWhatsAppChannelUrl.mockResolvedValue('https://example.test/channel');
 });
 
@@ -75,6 +90,37 @@ describe('notifyDepositFinalized', () => {
       kind: 'deposit', bonus: 1_200, newBalance: 6_700, method: 'Flutterwave',
     }));
     expect(mocks.sendEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends first-deposit outreach after the launch gate when this is the first completed deposit', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-01T00:00:01Z'));
+    mocks.transactionCount.mockResolvedValue(1);
+
+    try {
+      const summary = await notifyDepositFinalized(result());
+
+      expect(summary.failed).toEqual([]);
+      expect(mocks.transactionCount).toHaveBeenCalledWith({
+        where: { userId: 'user-1', type: 'deposit', status: 'Completed' },
+      });
+      expect(mocks.tgOutreachAlert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Test User',
+          email: 'user@example.test',
+          phone: '+2348000000000',
+        }),
+        'firstDeposit',
+        { amount: 5_000, bonus: 1_700 },
+      );
+      expect(mocks.sendOutreach).toHaveBeenCalledWith({
+        user: { id: 'user-1', name: 'Test User', phone: '+2348000000000' },
+        trigger: 'firstDeposit',
+        extra: { amount: 5_000, bonus: 1_700 },
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('attempts the referrer email and withheld-bonus alert through the same post-commit boundary', async () => {

@@ -95,6 +95,29 @@ describe('heartbeat actor resolution', () => {
     }
   });
 
+  it('resolves a renewed admin token by stable sid instead of its rotated token hash', async () => {
+    const database = db({ adminSession: validAdminSession });
+    const verifyAdmin = vi.fn().mockReturnValue({
+      id: 'admin-1',
+      sid: 'admin-session-1',
+      type: 'admin',
+    });
+
+    await expect(resolveHeartbeatActor(database, {
+      page: '/admin',
+      adminToken: 'renewed-admin-token',
+      verifyAdmin,
+    })).resolves.toMatchObject({ kind: 'admin', id: 'admin-1' });
+
+    expect(database.adminSession.findUnique).toHaveBeenCalledWith({
+      where: { id: 'admin-session-1' },
+      select: {
+        adminId: true,
+        admin: { select: { id: true, status: true } },
+      },
+    });
+  });
+
   it('does not relabel an internal admin page as a user when admin access is revoked', async () => {
     const database = db({ userSession: validUserSession, adminSession: null });
     const verifyUser = vi.fn().mockReturnValue({ id: 'user-1' });
@@ -126,4 +149,3 @@ describe('heartbeat actor resolution', () => {
     }
   });
 });
-

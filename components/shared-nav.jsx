@@ -75,40 +75,37 @@ export function ThemeProvider({ children, storageKey = "nitro-theme" }) {
   }, [storageKey, dark]);
 
   const t = useMemo(() => ({
-    // Core
-    bg: dark ? "#090c15" : "#f0ede8",
-    text: dark ? "#f5f3f0" : "#1c1b19",
-    soft: dark ? "#a09b95" : "#555250",
-    muted: dark ? "#8a8580" : "#757170",
-    accent: "#c47d8e",
-    grad: "linear-gradient(135deg,#c47d8e,#a3586b)",
-    green: dark ? "#6ee7b7" : "#059669",
-    red: dark ? "#fca5a5" : "#dc2626",
-    // Surfaces
-    surface: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.6)",
-    surfaceBrd: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)",
-    surfaceBorder: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)",
-    // Sidebar
-    sidebarBg: dark ? "rgba(14,17,34,.95)" : "rgba(240,237,232,.95)",
-    // Inputs
-    inputBg: dark ? "#131728" : "#fff",
-    inputBorder: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)",
-    // Buttons
-    btnPrimary: "linear-gradient(135deg,#c47d8e,#a3586b)",
-    overlay: dark ? "rgba(0,0,0,.6)" : "rgba(0,0,0,.3)",
-    // Hero-specific
-    heroBg: dark ? "#090c15" : "linear-gradient(135deg,#c47d8e 0%,#a3586b 50%,#8b4a5e 100%)",
-    heroText: dark ? "#f5f3f0" : "#fff",
-    heroSoft: dark ? "#a09b95" : "rgba(255,255,255,.85)",
-    heroMuted: dark ? "#8a8580" : "rgba(255,255,255,.55)",
-    heroGlass: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.16)",
-    heroGlassBrd: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.2)",
-    heroAccentBadge: dark ? "rgba(196,125,142,.12)" : "rgba(255,255,255,.15)",
-    // Aliases
-    textSoft: dark ? "#a09b95" : "#555250",
-    textMuted: dark ? "#8a8580" : "#757170",
-    accentLight: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)",
-  }), [dark]);
+    bg: "var(--t-bg)",
+    text: "var(--t-text)",
+    soft: "var(--t-soft)",
+    muted: "var(--t-muted)",
+    accent: "var(--t-accent)",
+    grad: "var(--t-grad)",
+    green: "var(--t-green)",
+    red: "var(--t-red)",
+    surface: "var(--t-surface)",
+    surfaceBrd: "var(--t-surface-brd)",
+    surfaceBorder: "var(--t-surface-border)",
+    sidebarBg: "var(--t-sidebar-bg)",
+    inputBg: "var(--t-input-bg)",
+    inputBorder: "var(--t-input-border)",
+    btnPrimary: "var(--t-btn-primary)",
+    overlay: "var(--t-overlay)",
+    heroBg: "var(--t-hero-bg)",
+    heroText: "var(--t-hero-text)",
+    heroSoft: "var(--t-hero-soft)",
+    heroMuted: "var(--t-hero-muted)",
+    heroGlass: "var(--t-hero-glass)",
+    heroGlassBrd: "var(--t-hero-glass-brd)",
+    heroAccentBadge: "var(--t-hero-accent-badge)",
+    textSoft: "var(--t-text-soft)",
+    textMuted: "var(--t-text-muted)",
+    accentLight: "var(--t-accent-light)",
+    cardBg: "var(--t-card-bg)",
+    cardBorder: "var(--t-card-border)",
+    navActive: "var(--t-nav-active)",
+    sidebarBorder: "var(--t-sidebar-border)",
+  }), []);
 
   return <ThemeCtx.Provider value={{ dark, setDark, toggleTheme, t, loaded, themeMode, setThemeMode }}>{children}</ThemeCtx.Provider>;
 }
@@ -119,7 +116,18 @@ export default function SharedNav({ action = "back" }) {
   const { dark, toggleTheme, t } = useTheme();
 
   const handleLogout = async () => {
-    try { await fetch("/api/auth/logout", { method: "POST" }); } catch {}
+    let res;
+    try {
+      res = await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      window.alert("Unable to log out. Check your connection and try again.");
+      return;
+    }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      window.alert(data.error || "Unable to log out. Please try again.");
+      return;
+    }
     window.location.href = "/";
   };
 
@@ -177,8 +185,8 @@ export function SharedFooter() {
 
   const xHandle = (sl.social_twitter || "TheNitroNG").replace(/^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\/?/i, "").replace(/^@/, "").replace(/\/$/, "");
   const igHandle = (sl.social_instagram || "Nitro.ng").replace(/^(https?:\/\/)?(www\.)?(instagram\.com)\/?/i, "").replace(/^@/, "").replace(/\/$/, "");
+  const tkHandle = sl.social_tiktok ? sl.social_tiktok.replace(/^(https?:\/\/)?(www\.)?(tiktok\.com\/@?)?/i, "").replace(/^@/, "").replace(/\/$/, "") : null;
   const waNum = sl.social_whatsapp_support ? sl.social_whatsapp_support.replace(/\D/g, "") : null;
-  const tgHandle = sl.social_telegram_support ? sl.social_telegram_support.replace(/^(https?:\/\/)?(t\.me\/)?@?/, "") : null;
 
   const socialBtn = "w-10 h-10 rounded-[10px] flex items-center justify-center no-underline transition-transform duration-200 hover:-translate-y-px";
   const linkCls = "block text-[13px] font-medium py-[5px] no-underline transition-all duration-200 hover:-translate-y-px hover:opacity-80";
@@ -195,10 +203,10 @@ export function SharedFooter() {
           </div>
           <p className="text-[13px] leading-[1.7] max-w-[260px] mb-5" style={{ color: dark ? "rgba(244,241,237,.45)" : "rgba(28,27,25,.5)" }}>We handle the numbers so you can handle the content. {platformCount?`${platformCount}+`:"140+"} service types, Naira pricing, fast delivery.</p>
           <div className="flex gap-2.5">
-            <a href={`https://x.com/${xHandle}`} target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className={socialBtn} style={{ background: dark ? "rgba(255,255,255,.10)" : "rgba(0,0,0,.06)", border: `0.5px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: dark ? "rgba(244,241,237,.5)" : "rgba(28,27,25,.45)" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
             <a href={`https://instagram.com/${igHandle}`} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className={socialBtn} style={{ background: dark ? "rgba(225,48,108,.08)" : "rgba(225,48,108,.06)", border: `0.5px solid ${dark ? "rgba(225,48,108,.18)" : "rgba(225,48,108,.14)"}` }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
+            <a href={`https://x.com/${xHandle}`} target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className={socialBtn} style={{ background: dark ? "rgba(255,255,255,.10)" : "rgba(0,0,0,.06)", border: `0.5px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: dark ? "rgba(244,241,237,.5)" : "rgba(28,27,25,.45)" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+            {tkHandle && <a href={`https://tiktok.com/@${tkHandle}`} target="_blank" rel="noopener noreferrer" aria-label="TikTok" className={socialBtn} style={{ background: dark ? "rgba(255,255,255,.10)" : "rgba(0,0,0,.06)", border: `0.5px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: dark ? "rgba(244,241,237,.5)" : "rgba(28,27,25,.45)" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.41a8.16 8.16 0 004.77 1.52V7.48a4.85 4.85 0 01-1-.79z"/></svg></a>}
             {waNum && <a href={`https://wa.me/${waNum}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className={socialBtn} style={{ background: dark ? "rgba(37,211,102,.08)" : "rgba(37,211,102,.06)", border: `0.5px solid ${dark ? "rgba(37,211,102,.18)" : "rgba(37,211,102,.14)"}` }}><svg width="14" height="14" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>}
-            {tgHandle && <a href={`https://t.me/${tgHandle}`} target="_blank" rel="noopener noreferrer" aria-label="Telegram" className={socialBtn} style={{ background: dark ? "rgba(0,136,204,.08)" : "rgba(0,136,204,.06)", border: `0.5px solid ${dark ? "rgba(0,136,204,.18)" : "rgba(0,136,204,.14)"}` }}><svg width="14" height="14" viewBox="0 0 24 24" fill="#0088cc"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg></a>}
           </div>
         </div>
 
