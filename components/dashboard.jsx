@@ -29,6 +29,67 @@ export {
   decorateUserWithRewardsStatus,
 } from "../lib/dashboard-state";
 
+function normalizedPromptPhone(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+export function advancePhoneGeneration(currentGeneration, phone) {
+  return normalizedPromptPhone(phone) ? currentGeneration + 1 : currentGeneration;
+}
+
+export function isCurrentPhoneRequest(requestGeneration, currentGeneration) {
+  return requestGeneration === null || requestGeneration === currentGeneration;
+}
+
+export function createPhoneConfirmation(user) {
+  const phone = normalizedPromptPhone(user?.phone);
+  return {
+    userId: user?.id || null,
+    // A non-empty phone can safely suppress the prompt immediately. An empty
+    // server-rendered value is rechecked against /api/auth/me before prompting.
+    phone: phone || null,
+  };
+}
+
+export function reconcilePhoneConfirmation(current, incoming, { authoritative = false, allowClear = false } = {}) {
+  if (!incoming?.id) return current || { userId: null, phone: null };
+
+  const sameUser = current?.userId === incoming.id;
+  const hasPhoneField = Object.prototype.hasOwnProperty.call(incoming, 'phone');
+  const phone = hasPhoneField ? normalizedPromptPhone(incoming.phone) : '';
+
+  if (authoritative) {
+    if (!hasPhoneField) return sameUser ? current : { userId: incoming.id, phone: null };
+    // A caller may clear a confirmed number only after proving its request was
+    // opened after the latest phone observation/save. This fences stale reads.
+    if (phone || allowClear) {
+      return { userId: incoming.id, phone };
+    }
+    return sameUser ? current : { userId: incoming.id, phone: null };
+  }
+
+  // Dashboard payloads may be stale or incomplete. They may confirm a saved
+  // number, but cannot erase one or prove that a number is missing.
+  if (phone) return { userId: incoming.id, phone };
+  return sameUser ? current : { userId: incoming.id, phone: null };
+}
+
+export function mergeDashboardUser(previous, incoming) {
+  if (!incoming) return previous;
+  const previousPhone = previous?.id === incoming.id
+    ? normalizedPromptPhone(previous.phone)
+    : '';
+  const incomingPhone = normalizedPromptPhone(incoming.phone);
+  return previousPhone && !incomingPhone
+    ? { ...incoming, phone: previous.phone }
+    : incoming;
+}
+
+export function shouldShowPhonePrompt({ phoneKnown, phone, user, currentTosVersion }) {
+  const promptPhone = phone === undefined ? user?.phone : phone;
+  return !!(phoneKnown && user && !normalizedPromptPhone(promptPhone) && !(currentTosVersion && user.tosVersion !== currentTosVersion));
+}
+
 /* Dynamic imports — only load when user navigates to that page */
 const NewOrderPage = dynamic(() => import("./new-order").then(m => m.default), { ssr: false });
 const ServicesSidebar = dynamic(() => import("./new-order").then(m => m.ServicesSidebar), { ssr: false });
@@ -47,6 +108,8 @@ const GuideSidebar = dynamic(() => import("./guide-page").then(m => m.GuideSideb
 const LeaderboardPage = dynamic(() => import("./leaderboard-page").then(m => m.default), { ssr: false });
 const LeaderboardCard = dynamic(() => import("./leaderboard-page").then(m => m.LeaderboardCard), { ssr: false });
 const EarnPage = dynamic(() => import("./earn-page").then(m => m.default), { ssr: false });
+const ResellerLabPage = dynamic(() => import("./reseller-lab-page").then(m => m.ResellerLabDashboard), { ssr: false });
+const ResellerLabSidebar = dynamic(() => import("./reseller-lab-page").then(m => m.ResellerLabSidebar), { ssr: false });
 
 /* ═══════════════════════════════════════════ */
 /* ═══ SVG ICONS                          ═══ */
@@ -63,6 +126,7 @@ const I = {
   support: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
   settings: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
   earn: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M15.5 9.5c0-1.38-1.57-2.5-3.5-2.5s-3.5 1.12-3.5 2.5S10.07 12 12 12s3.5 1.12 3.5 2.5-1.57 2.5-3.5 2.5-3.5-1.12-3.5-2.5"/></svg>,
+  lab: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 3h6v7l5 8a1 1 0 01-.85 1.52H4.85A1 1 0 014 18l5-8V3z"/><line x1="9" y1="3" x2="15" y2="3"/></svg>,
   changelog: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>,
   leaderboard: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg>,
   instagram: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>,
@@ -78,6 +142,7 @@ const NAV_ITEMS = [
   { id: "guide", label: "Blog" },
   { id: "changelog", label: "What's New", href: "/changelog" },
   { id: "referrals", label: "Referrals" },
+  { id: "lab", label: "Reseller HQ" },
   { id: "support", label: "Support" },
   { id: "settings", label: "Settings" },
 ];
@@ -386,10 +451,15 @@ function DashboardInner({ initialData }) {
   const [currentTosVersion, setCurrentTosVersion] = useState(initialData?.currentTosVersion || null);
   const [tosChecked, setTosChecked] = useState(false);
   const [tosAccepting, setTosAccepting] = useState(false);
+  const [phoneConfirmation, setPhoneConfirmation] = useState(() => createPhoneConfirmation(initialData?.user));
+  const phoneKnown = phoneConfirmation.userId === user?.id && phoneConfirmation.phone !== null;
+  const phoneForPrompt = phoneKnown ? phoneConfirmation.phone : null;
   const [phonePromptVal, setPhonePromptVal] = useState("");
   const [phonePromptSaving, setPhonePromptSaving] = useState(false);
   const [phonePromptError, setPhonePromptError] = useState("");
   const [phonePromptDone, setPhonePromptDone] = useState(false);
+  const currentUserIdRef = useRef(initialData?.user?.id || null);
+  const identityRequestGenerationRef = useRef(0);
   const [socialLinks, setSocialLinks] = useState({});
   const [rewards, setRewards] = useState(initialData?.rewards || null);
   const userWithRewardsStatus = useMemo(
@@ -413,6 +483,55 @@ function DashboardInner({ initialData }) {
     persistPaymentStatus(sessionStorage, val, user?.id || initialData?.user?.id);
   };
   const notifRef = useRef(null);
+
+  const applyDashboardUser = (incoming, {
+    authoritativePhone = false,
+    requestGeneration = null,
+  } = {}) => {
+    if (!incoming) return;
+    if (currentUserIdRef.current && incoming.id && currentUserIdRef.current !== incoming.id) {
+      window.location.reload();
+      return;
+    }
+    if (incoming.id) currentUserIdRef.current = incoming.id;
+
+    const hasPhoneField = Object.prototype.hasOwnProperty.call(incoming, 'phone');
+    const incomingPhone = hasPhoneField ? normalizedPromptPhone(incoming.phone) : '';
+    const responseIsCurrent = isCurrentPhoneRequest(
+      requestGeneration,
+      identityRequestGenerationRef.current,
+    );
+    const stalePhoneResponse = authoritativePhone
+      && requestGeneration !== null
+      && !responseIsCurrent;
+    const allowPhoneClear = authoritativePhone
+      && hasPhoneField
+      && !incomingPhone
+      && responseIsCurrent;
+
+    // A newly observed number invalidates all older identity/dashboard reads.
+    if (authoritativePhone && incomingPhone && responseIsCurrent) {
+      identityRequestGenerationRef.current = advancePhoneGeneration(
+        identityRequestGenerationRef.current,
+        incomingPhone,
+      );
+    }
+    if (!stalePhoneResponse) {
+      setPhoneConfirmation(current => reconcilePhoneConfirmation(
+        current,
+        incoming,
+        { authoritative: authoritativePhone, allowClear: allowPhoneClear },
+      ));
+    }
+    setUser(previous => {
+      if (stalePhoneResponse && hasPhoneField) {
+        return { ...incoming, phone: previous?.id === incoming.id ? previous.phone : '' };
+      }
+      return allowPhoneClear
+        ? { ...incoming, phone: '' }
+        : mergeDashboardUser(previous, incoming);
+    });
+  };
 
   // Reconcile a persisted transient notice only against the exact Flutterwave
   // deposit that created it. A confirmed success is never downgraded by stale
@@ -461,7 +580,7 @@ function DashboardInner({ initialData }) {
       })),
       ...txs.filter(tx => (tx.type === "bonus" || tx.type === "admin_credit" || tx.type === "referral") && tx.date && new Date(tx.date) >= cutoff).map(tx => ({
         id: `bonus-${tx.id || tx.reference}`, type: "reward", title: tx.type === "referral" ? "Referral bonus" : tx.type === "bonus" ? "Reward received!" : "Balance credited",
-        desc: `${fN(tx.amount)} — ${tx.description || "Bonus from Nitro"}`,
+        desc: `${fN(tx.amount)} — ${(tx.description || "Bonus from Nitro").replace(/\s*\[[^\]]+\]\s*/g, " ").trim()}`,
         time: tx.date ? fD(tx.date) : "", ts: new Date(tx.date),
         color: dark_ ? "#e0a458" : "#d97706",
         icon: "gift",
@@ -509,6 +628,7 @@ function DashboardInner({ initialData }) {
   const isAudit = active === "audit";
   const isCleanup = active === "cleanup";
   const isEarn = active === "earn";
+  const isLab = active === "lab";
   const noHasOrder = noSelSvc && noSelTier;
 
   // Trigger order tour on first visit to services page
@@ -537,10 +657,14 @@ function DashboardInner({ initialData }) {
   /* Refresh dashboard data */
   const refreshDashboard = async () => {
     try {
-      const res = await fetch("/api/dashboard");
+      const phoneRequestGeneration = identityRequestGenerationRef.current;
+      const res = await fetch("/api/dashboard", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
-        setUser(data.user);
+        applyDashboardUser(data.user, {
+          authoritativePhone: true,
+          requestGeneration: phoneRequestGeneration,
+        });
         if (data.orders) setOrders(data.orders);
         if (data.activeOrders) setActiveOrders(data.activeOrders);
         if (data.ordersTotal != null) setOrdersTotal(data.ordersTotal);
@@ -570,16 +694,22 @@ function DashboardInner({ initialData }) {
     async function load() {
       try {
         /* Check maintenance mode first */
-        const maintRes = await fetch("/api/maintenance-check");
-        if (maintRes.ok) { const m = await maintRes.json(); if (m.maintenance) { window.location.replace("/maintenance"); return; } }
+        try {
+          const maintRes = await fetch("/api/maintenance-check");
+          if (maintRes.ok) { const m = await maintRes.json(); if (m.maintenance) { window.location.replace("/maintenance"); return; } }
+        } catch {}
 
-        /* Skip dashboard fetch if server already provided data (but always refresh user for phone prompt) */
+        /* Skip the full dashboard fetch if the server already provided data. */
         if (!initialData) {
-          const res = await fetch("/api/dashboard");
+          const phoneRequestGeneration = identityRequestGenerationRef.current;
+          const res = await fetch("/api/dashboard", { cache: "no-store" });
           if (res.status === 401) { window.location.replace("/?session_expired=1"); return; }
           if (res.ok) {
             const data = await res.json();
-            setUser(data.user);
+            applyDashboardUser(data.user, {
+              authoritativePhone: true,
+              requestGeneration: phoneRequestGeneration,
+            });
             if (data.orders) setOrders(data.orders);
             if (data.activeOrders) setActiveOrders(data.activeOrders);
             if (data.ordersTotal != null) setOrdersTotal(data.ordersTotal);
@@ -590,9 +720,7 @@ function DashboardInner({ initialData }) {
             if (data.walletSummary) setWalletSummary(data.walletSummary);
             if (data.alerts) setAlerts(data.alerts);
             if (data.currentTosVersion) setCurrentTosVersion(data.currentTosVersion);
-          } else setUser({ name: "User", email: "", balance: 0, refCode: "—", refs: 0, earnings: 0 });
-        } else {
-          fetch("/api/auth/me").then(r => r.ok ? r.json() : null).then(d => { if (d?.user) setUser(prev => ({ ...prev, phone: d.user.phone })); }).catch(() => {});
+          } else setUser(prev => prev || { name: "User", email: "", balance: 0, phone: "", refCode: "—", refs: 0, earnings: 0 });
         }
         /* Fetch social links + active promotion + rewards */
         try { const sr = await fetch("/api/settings"); if (sr.ok) { const sd = await sr.json(); setSocialLinks(sd.settings || {}); } } catch {}
@@ -636,7 +764,7 @@ function DashboardInner({ initialData }) {
           }
         } catch {}
         setNotifSynced(true);
-      } catch { setUser({ name: "User", email: "", balance: 0, refCode: "—", refs: 0, earnings: 0 }); }
+      } catch { setUser(prev => prev || { name: "User", email: "", balance: 0, phone: "", refCode: "—", refs: 0, earnings: 0 }); }
     }
     load().then(() => {
       // Check tour state from DB (via user data) + localStorage as fallback
@@ -644,6 +772,77 @@ function DashboardInner({ initialData }) {
       // We'll check after user state is set
     });
   }, []);
+
+  // Confirm an empty phone against the narrow identity endpoint before ever
+  // showing the mandatory prompt. Retry transient failures, and fence older
+  // responses so they cannot undo a phone saved while the request was open.
+  useEffect(() => {
+    const expectedUserId = user?.id;
+    if (!expectedUserId) return undefined;
+
+    let cancelled = false;
+    let retryTimer = null;
+    let retryIndex = 0;
+    const retryDelays = [3000, 15000];
+    setPhonePromptDone(false);
+
+    const confirmIdentity = async () => {
+      const requestGeneration = ++identityRequestGenerationRef.current;
+      let confirmed = false;
+      try {
+        const response = await fetch("/api/auth/me", { cache: "no-store" });
+        const data = response.ok ? await response.json() : null;
+        if (cancelled || requestGeneration !== identityRequestGenerationRef.current) return;
+        if (data?.user?.id && data.user.id !== expectedUserId) {
+          window.location.reload();
+          return;
+        }
+        if (data?.user && Object.prototype.hasOwnProperty.call(data.user, 'phone')) {
+          const phone = normalizedPromptPhone(data.user.phone);
+          // A confirmed number wins over dashboard reads that began while this
+          // identity request was still in flight.
+          identityRequestGenerationRef.current = advancePhoneGeneration(
+            identityRequestGenerationRef.current,
+            phone,
+          );
+          setPhoneConfirmation(current => reconcilePhoneConfirmation(
+            current,
+            data.user,
+            { authoritative: true, allowClear: true },
+          ));
+          setUser(previous => previous?.id === data.user.id ? { ...previous, phone } : previous);
+          confirmed = true;
+        }
+      } catch {}
+
+      if (!confirmed && !cancelled && requestGeneration === identityRequestGenerationRef.current && retryIndex < retryDelays.length) {
+        const delay = retryDelays[retryIndex++];
+        retryTimer = setTimeout(confirmIdentity, delay);
+      } else if (!confirmed && !cancelled && requestGeneration === identityRequestGenerationRef.current) {
+        // Rare fallback: if the narrow identity lookup repeatedly fails, do
+        // one fresh dashboard read instead of leaving a missing-phone user in
+        // an unknown state until the regular 60-second poll.
+        const dashboardRequestGeneration = identityRequestGenerationRef.current;
+        try {
+          const response = await fetch("/api/dashboard", { cache: "no-store" });
+          const data = response.ok ? await response.json() : null;
+          if (!cancelled && data?.user) {
+            applyDashboardUser(data.user, {
+              authoritativePhone: true,
+              requestGeneration: dashboardRequestGeneration,
+            });
+          }
+        } catch {}
+      }
+    };
+
+    confirmIdentity();
+    return () => {
+      cancelled = true;
+      identityRequestGenerationRef.current += 1;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
+  }, [user?.id]);
 
   // Sync order tour state from DB to localStorage
   useEffect(() => {
@@ -659,11 +858,15 @@ function DashboardInner({ initialData }) {
         // Check maintenance
         const mRes = await fetch("/api/maintenance-check");
         if (mRes.ok) { const m = await mRes.json(); if (m.maintenance) { window.location.replace("/maintenance"); return; } }
-        const res = await fetch("/api/dashboard");
+        const phoneRequestGeneration = identityRequestGenerationRef.current;
+        const res = await fetch("/api/dashboard", { cache: "no-store" });
         if (res.status === 401) { window.location.replace("/?session_expired=1"); return; }
         if (res.ok) {
           const data = await res.json();
-          if (data.user) setUser(data.user);
+          if (data.user) applyDashboardUser(data.user, {
+            authoritativePhone: true,
+            requestGeneration: phoneRequestGeneration,
+          });
           if (data.orders) setOrders(data.orders);
           if (data.activeOrders) setActiveOrders(data.activeOrders);
           if (data.ordersTotal != null) setOrdersTotal(data.ordersTotal);
@@ -722,10 +925,14 @@ function DashboardInner({ initialData }) {
           }
           /* Refresh user balance */
           try {
-            const dashRes = await fetch("/api/dashboard");
+            const phoneRequestGeneration = identityRequestGenerationRef.current;
+            const dashRes = await fetch("/api/dashboard", { cache: "no-store" });
             if (dashRes.ok) {
               const dashData = await dashRes.json();
-              setUser(dashData.user);
+              applyDashboardUser(dashData.user, {
+                authoritativePhone: true,
+                requestGeneration: phoneRequestGeneration,
+              });
               if (dashData.transactions) setTxs(dashData.transactions);
               if (dashData.transactionsTotal != null) setTransactionsTotal(dashData.transactionsTotal);
               if (dashData.unreadTickets) setUnreadTickets(dashData.unreadTickets);
@@ -869,6 +1076,8 @@ function DashboardInner({ initialData }) {
         return <WaitlistPage feature="audit" dark={dark} t={t} />;
       case "cleanup":
         return <WaitlistPage feature="cleanup" dark={dark} t={t} />;
+      case "lab":
+        return <ResellerLabPage dark={dark} t={t} />;
       default:
         return (
           <div className="p-10 rounded-2xl flex flex-col items-center justify-center min-h-[300px]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
@@ -927,7 +1136,7 @@ function DashboardInner({ initialData }) {
           </button>
           {/* Notification bell */}
           <div ref={notifRef} className="relative">
-            <button onClick={() => setNotifOpen(!notifOpen)} className="dash-bell" aria-label="Notifications text-t-text-soft">
+            <button onClick={() => setNotifOpen(!notifOpen)} className="dash-bell" aria-label="Notifications" style={{ color: t.textSoft }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
               {bellUnread > 0 && <div className="dash-bell-badge">{bellUnread > 10 ? "10+" : bellUnread}</div>}
             </button>
@@ -955,8 +1164,8 @@ function DashboardInner({ initialData }) {
                 return (
                   <Fragment key={item.id}>
                     {(item.id === "leaderboard" || item.id === "audit") && <div className="dash-sidebar-divider max-desktop:hidden my-1 bg-t-sidebar-border" />}
-                    <button data-nav={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (isSupportItem && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setLeftOpen(false); return; } setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: isActive ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : isSupportItem ? (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)") : "transparent", color: item.soon ? t.textMuted : (isActive ? t.accent : isSupportItem ? t.accent : t.textSoft), fontWeight: isActive || isSupportItem ? 600 : 450, opacity: item.soon ? 0.5 : 1, cursor: item.soon ? "default" : "pointer" }}>
-                      <span className="shrink-0" style={{ opacity: isActive || isSupportItem ? 1 : .55, color: isActive || isSupportItem ? t.accent : t.textMuted }}>{I[item.id]}</span>
+                    <button data-nav={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (isSupportItem && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setLeftOpen(false); return; } setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: isActive ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : isSupportItem ? (dark ? "rgba(37,211,102,.12)" : "rgba(37,211,102,.08)") : "transparent", color: item.soon ? t.textMuted : (isActive ? t.accent : isSupportItem ? "#25d366" : t.textSoft), fontWeight: isActive || isSupportItem ? 600 : 450, opacity: item.soon ? 0.5 : 1, cursor: item.soon ? "default" : "pointer" }}>
+                      <span className="shrink-0" style={{ opacity: isActive || isSupportItem ? 1 : .55, color: isActive || isSupportItem ? (isSupportItem ? "#25d366" : t.accent) : t.textMuted }}>{I[item.id]}</span>
                       {item.label}
                       {item.soon && <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>Soon</span>}
                       {processingCount > 0 && <span className="m dash-nav-badge">{processingCount > 99 ? "99+" : processingCount}</span>}
@@ -1004,7 +1213,7 @@ function DashboardInner({ initialData }) {
               <span className="px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 m text-center" style={{ background: activePromotion.bannerColor || '#10b981', color: '#fff' }}>{activePromotion.discountPercent}% OFF{activePromotion.maxDiscountPerOrder ? <><br /><span className="font-medium opacity-90" style={{ fontSize: 10 }}>up to ₦{(activePromotion.maxDiscountPerOrder / 100).toLocaleString()}</span></> : ''}</span>
             </div>
           )}
-          {!isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isGuide && !isLeaderboard && !isAudit && !isCleanup && !isEarn && <div className="pb-6 max-md:pb-4">
+          {!isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isGuide && !isLeaderboard && !isAudit && !isCleanup && !isEarn && !isLab && <div className="pb-6 max-md:pb-4">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xl max-md:text-lg font-semibold mb-0.5 text-t-text">Welcome back, {firstName}</div>
@@ -1026,6 +1235,11 @@ function DashboardInner({ initialData }) {
           {isCleanup && <div className="pb-3.5 max-md:pb-2">
             <div className="text-xl max-md:text-lg font-semibold mb-0.5 text-t-text">Cleanup</div>
             <div className="text-sm text-t-text-muted">Remove ghost followers, non-followers, and inactive accounts</div>
+            <div className="page-divider bg-t-card-border" />
+          </div>}
+          {isLab && <div className="pb-2 desktop:pb-3.5">
+            <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">Reseller HQ</div>
+            <div className="text-sm desktop:text-[15px] text-t-text-muted">API access for your panel, or a white-label storefront we run for you</div>
             <div className="page-divider bg-t-card-border" />
           </div>}
 
@@ -1063,6 +1277,8 @@ function DashboardInner({ initialData }) {
                 </div>
               ))}
             </div>
+          ) : isLab ? (
+            <ResellerLabSidebar dark={dark} t={t} />
           ) : isCleanup ? (
             <div className="flex flex-col gap-0">
               <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Cleanup tools</div>
@@ -1135,7 +1351,7 @@ function DashboardInner({ initialData }) {
       </nav>
 
       {/* Phone number prompt for existing users */}
-      {user && !user.phone && !(currentTosVersion && user.tosVersion !== currentTosVersion) && (
+      {(phonePromptDone || shouldShowPhonePrompt({ phoneKnown, phone: phoneForPrompt, user, currentTosVersion })) && (
         <div className="fixed inset-0 z-[99998] bg-black/60 flex items-center justify-center p-5">
           <div className="rounded-2xl py-8 px-7 max-w-[420px] w-full shadow-[0_20px_60px_rgba(0,0,0,.3)]" style={{ background: dark ? "#1a1a1a" : "#fff" }}>
             <div className="text-center mb-5">
@@ -1178,7 +1394,19 @@ function DashboardInner({ initialData }) {
                 setPhonePromptSaving(true);
                 try {
                   const res = await fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone: `+234${cleaned}` }) });
-                  if (res.ok) { setPhonePromptDone(true); setTimeout(() => setUser(prev => ({ ...prev, phone: `+234${cleaned}` })), 3000); }
+                  if (res.ok) {
+                    const savedPhone = `+234${cleaned}`;
+                    const savedUserId = user?.id;
+                    identityRequestGenerationRef.current += 1;
+                    setPhonePromptDone(true);
+                    setUser(prev => prev?.id === savedUserId ? { ...prev, phone: savedPhone } : prev);
+                    setPhoneConfirmation(prev => prev.userId === savedUserId
+                      ? { userId: savedUserId, phone: savedPhone }
+                      : prev);
+                    setTimeout(() => {
+                      setPhonePromptDone(false);
+                    }, 3000);
+                  }
                   else { const d = await res.json(); setPhonePromptError(d.error || "Failed to save"); }
                 } catch { setPhonePromptError("Network error. Try again."); }
                 setPhonePromptSaving(false);

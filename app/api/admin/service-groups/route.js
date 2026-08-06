@@ -47,6 +47,7 @@ export async function GET() {
           enabled: t.enabled,
           pricePinned: t.pricePinned,
           customComments: t.customComments,
+          trafficTargeting: t.trafficTargeting,
           sortOrder: t.sortOrder,
           serviceId: t.serviceId,
           service: t.service,
@@ -153,7 +154,7 @@ export async function POST(req) {
 
     // ── Tier actions ──
     if (action === 'add-tier') {
-      const { groupId, serviceId, tier, sellPer1k, speed, customComments } = body;
+      const { groupId, serviceId, tier, sellPer1k, speed, customComments, trafficTargeting } = body;
       if (!groupId || !serviceId) return Response.json({ error: 'Group ID and service ID required' }, { status: 400 });
 
       const group = await prisma.serviceGroup.findUnique({ where: { id: groupId } });
@@ -183,6 +184,7 @@ export async function POST(req) {
           refill: (tier || 'Standard') !== 'Budget',
           refillDays: (tier || 'Standard') === 'Budget' ? 0 : (tier || 'Standard') === 'Premium' ? 365 : 30,
           customComments: !!customComments,
+          trafficTargeting: !!trafficTargeting,
           speed: speed || service.avgTime || '0-2 hrs',
           sortOrder: (maxSort._max.sortOrder || 0) + 1,
         },
@@ -209,6 +211,7 @@ export async function POST(req) {
       if (updates.serviceId !== undefined) data.serviceId = updates.serviceId || null;
       if (updates.pricePinned !== undefined) data.pricePinned = !!updates.pricePinned;
       if (updates.customComments !== undefined) data.customComments = !!updates.customComments;
+      if (updates.trafficTargeting !== undefined) data.trafficTargeting = !!updates.trafficTargeting;
 
       const updated = await prisma.serviceTier.update({ where: { id: tierIdToUpdate }, data });
       await logActivity(admin.name, `Updated tier ${updated.tier}`, 'service');

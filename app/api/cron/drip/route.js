@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { placeOrder, checkOrder, checkOrders } from '@/lib/smm';
 import { tgDripTimeout } from '@/lib/telegram';
-import { isInWindow, snapToWindow } from '@/lib/drip-feed';
+import { isInWindow, snapToWindow, sliceCommentsForBatch } from '@/lib/drip-feed';
 import { computeDripRollup, normalizeProviderStatus, applyDripRollup } from '@/lib/drip-completion';
 import { findSameLinkDispatchBlocker, isActiveOrderConflict, wouldCreateCycle } from '@/lib/order-queue';
 import { getBearerToken } from '@/lib/bearer-token';
@@ -231,6 +231,24 @@ export async function GET(req) {
       orderBy: { scheduledAt: 'asc' },
     });
 
+    // Batch-load dispatch schedules for orders with custom comments
+    const commentSchedules = new Map();
+    const commentOrderIds = [...new Set(
+      due.filter(d => d.order?.comments && !['seo', 'poll'].includes((d.order.service?.apiType || '').toLowerCase()) && !(d.order.service?.apiType || '').toLowerCase().includes('mention'))
+        .map(d => d.orderId)
+    )];
+    if (commentOrderIds.length > 0) {
+      const allSiblings = await prisma.dripDispatch.findMany({
+        where: { orderId: { in: commentOrderIds } },
+        select: { orderId: true, day: true, batch: true, quantity: true, status: true, lastError: true, remains: true },
+        orderBy: [{ day: 'asc' }, { batch: 'asc' }],
+      });
+      for (const s of allSiblings) {
+        if (!commentSchedules.has(s.orderId)) commentSchedules.set(s.orderId, []);
+        commentSchedules.get(s.orderId).push(s);
+      }
+    }
+
     for (const dispatch of due) {
       const order = dispatch.order;
       if (!order || order.deletedAt) continue;
@@ -308,7 +326,18 @@ export async function GET(req) {
           if (apiType === 'seo') extra.keywords = order.comments;
           else if (apiType.includes('mention')) extra.usernames = order.comments;
           else if (apiType === 'poll') extra.answer_number = order.comments;
-          else extra.comments = order.comments;
+          else {
+            const allDispatches = commentSchedules.get(dispatch.orderId) || [dispatch];
+            extra.comments = sliceCommentsForBatch(order.comments, dispatch.quantity, allDispatches, dispatch);
+          }
+        }
+
+        if (order.trafficConfig) {
+          const tc = order.trafficConfig;
+          if (tc.country) extra.country = tc.country;
+          if (tc.device) extra.device = tc.device;
+          if (tc.trafficType === 'keyword' && tc.keyword) extra.keywords = tc.keyword;
+          else if (tc.trafficType === 'referrer' && tc.referrer) extra.referrer = tc.referrer;
         }
 
         if (apiType === 'subscriptions') {

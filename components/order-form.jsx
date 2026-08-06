@@ -4,7 +4,20 @@ import { BONUS_PRESETS, bonusForNaira } from "../lib/welcome-bonus";
 import { calculateOrderPrice, formatOrderQuantity, getDripSchedule, LINK_EXAMPLES, LINK_HINTS, MULTIDAY_THRESHOLD, validateOrderLink } from "../lib/order-form-core";
 import NitroLoader from "./nitro-loader";
 
-export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible, pointsRedeemable = false, pointsBalance = 0, redeemPoints = false, setRedeemPoints, tierStyles = {} }) {
+const TRAFFIC_DEVICES = [
+  { value: 'desktop', label: 'Desktop' },
+  { value: 'android', label: 'Mobile (Android)' },
+  { value: 'ios', label: 'Mobile (iOS)' },
+  { value: 'mobile', label: 'Mixed (Mobile)' },
+  { value: 'all', label: 'Mixed (Mobile & Desktop)' },
+];
+const TRAFFIC_TYPES = [
+  { value: 'keyword', label: 'Google Keyword' },
+  { value: 'referrer', label: 'Custom Referrer' },
+  { value: 'blank', label: 'Blank Referrer' },
+];
+
+export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible, pointsRedeemable = false, pointsBalance = 0, redeemPoints = false, setRedeemPoints, trafficConfig, setTrafficConfig, tierStyles = {} }) {
   const minQty = selTier?.min || 100;
   const maxQty = selTier?.max || 50000;
   const isPackage = minQty === maxQty;
@@ -73,6 +86,24 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const needsUsernames = isMention;
   const needsAnswer = isPoll;
   const needsKeywords = isSeo;
+  const showTraffic = !!(selTier?.trafficTargeting && platform === "webtraffic" && setTrafficConfig);
+
+  useEffect(() => {
+    if (showTraffic && !trafficConfig) {
+      setTrafficConfig({ country: '', device: 'all', trafficType: 'keyword', keyword: '', referrer: '' });
+    } else if (!showTraffic && trafficConfig) {
+      setTrafficConfig(null);
+    }
+  }, [showTraffic]);
+
+  const trafficValid = !showTraffic || (
+    trafficConfig &&
+    trafficConfig.country.trim().length >= 2 &&
+    trafficConfig.device &&
+    (trafficConfig.trafficType === 'blank' ||
+      (trafficConfig.trafficType === 'keyword' && trafficConfig.keyword.trim()) ||
+      (trafficConfig.trafficType === 'referrer' && trafficConfig.referrer.trim()))
+  );
 
   const commentLines = (comments || "").split("\n").filter(l => l.trim()).length;
   const minCommentLines = isCustomComment ? Math.max(selTier?.min || 10, 10) : 0;
@@ -206,6 +237,47 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
               </div>;
             })()}
         </div>
+        {showTraffic && trafficConfig && (
+          <div className="mb-3.5 rounded-xl p-3.5" style={{ background: dark ? "rgba(99,153,255,.06)" : "rgba(59,130,246,.04)", border: `1px solid ${dark ? "rgba(99,153,255,.15)" : "rgba(59,130,246,.1)"}` }}>
+            <div className="flex items-center gap-2 mb-3">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#60a5fa" : "#2563eb"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+              <span className="text-[12px] font-semibold" style={{ color: dark ? "#60a5fa" : "#2563eb" }}>Traffic Targeting</span>
+            </div>
+            <div className="mb-2.5">
+              <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[5px]" style={{ color: t.textMuted }}>Country <span className="font-normal normal-case tracking-normal">(2-letter code)</span></label>
+              <input type="text" maxLength={3} disabled={orderLoading} placeholder="US" value={trafficConfig.country} onChange={e => setTrafficConfig(c => ({ ...c, country: e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) }))} className="w-full py-2 px-3 rounded-lg border border-solid text-[14px] outline-none box-border font-[inherit] disabled:opacity-50 uppercase tracking-wider" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text }} />
+            </div>
+            <div className="mb-2.5">
+              <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[5px]" style={{ color: t.textMuted }}>Device</label>
+              <div className="flex flex-wrap gap-1.5">
+                {TRAFFIC_DEVICES.map(d => (
+                  <button key={d.value} type="button" disabled={orderLoading} onClick={() => setTrafficConfig(c => ({ ...c, device: d.value }))} className="py-[6px] px-2.5 rounded-lg text-[11.5px] font-medium cursor-pointer border border-solid disabled:opacity-40 transition-colors duration-150" style={{ borderColor: trafficConfig.device === d.value ? (dark ? "#60a5fa" : "#2563eb") : (dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.12)"), background: trafficConfig.device === d.value ? (dark ? "rgba(99,153,255,.15)" : "rgba(59,130,246,.08)") : "transparent", color: trafficConfig.device === d.value ? (dark ? "#93bbfd" : "#1d4ed8") : t.textMuted }}>{d.label}</button>
+                ))}
+              </div>
+            </div>
+            <div className="mb-2.5">
+              <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[5px]" style={{ color: t.textMuted }}>Type of Traffic</label>
+              <div className="flex gap-1.5">
+                {TRAFFIC_TYPES.map(tt => (
+                  <button key={tt.value} type="button" disabled={orderLoading} onClick={() => setTrafficConfig(c => ({ ...c, trafficType: tt.value, keyword: tt.value === 'keyword' ? c.keyword : '', referrer: tt.value === 'referrer' ? c.referrer : '' }))} className="flex-1 py-[7px] px-2 rounded-lg text-[11.5px] font-medium cursor-pointer border border-solid disabled:opacity-40 transition-colors duration-150" style={{ borderColor: trafficConfig.trafficType === tt.value ? (dark ? "#60a5fa" : "#2563eb") : (dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.12)"), background: trafficConfig.trafficType === tt.value ? (dark ? "rgba(99,153,255,.15)" : "rgba(59,130,246,.08)") : "transparent", color: trafficConfig.trafficType === tt.value ? (dark ? "#93bbfd" : "#1d4ed8") : t.textMuted }}>{tt.label}</button>
+                ))}
+              </div>
+            </div>
+            {trafficConfig.trafficType === 'keyword' && (
+              <div>
+                <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[5px]" style={{ color: t.textMuted }}>Google Keyword</label>
+                <input type="text" disabled={orderLoading} placeholder="best smm panel nigeria" value={trafficConfig.keyword} onChange={e => setTrafficConfig(c => ({ ...c, keyword: e.target.value }))} className="w-full py-2 px-3 rounded-lg border border-solid text-[13px] outline-none box-border font-[inherit] disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text }} />
+                <div className="text-[10.5px] mt-1" style={{ color: t.textMuted }}>Max 5 keywords, separated by commas</div>
+              </div>
+            )}
+            {trafficConfig.trafficType === 'referrer' && (
+              <div>
+                <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[5px]" style={{ color: t.textMuted }}>Referrer URL</label>
+                <input type="url" disabled={orderLoading} placeholder="https://instagram.com" value={trafficConfig.referrer} onChange={e => setTrafficConfig(c => ({ ...c, referrer: e.target.value }))} className="w-full py-2 px-3 rounded-lg border border-solid text-[13px] outline-none box-border font-[inherit] disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text }} />
+              </div>
+            )}
+          </div>
+        )}
         {showComments && (
           <div className="mb-3.5">
             <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{isReview ? "Reviews" : "Comments"} <span className="font-normal normal-case tracking-normal text-[11px]">({needsComments ? "required, one per line" : "optional, one per line"})</span></label>
@@ -313,7 +385,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             )
           ) : (<>
             <div className="text-[10.5px] mb-2 px-0.5" style={{ color: t.textMuted }}>Profile must be <b style={{ color: t.text }}>public</b>. No refunds for orders on private profiles.</div>
-            <button onClick={() => { if (dripOn && showMultiDay) { setDripStep(2); } else { onSubmit(dripOn && showMultiDay ? clampedDays : undefined); } }} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames || needsKeywords) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer || needsKeywords) || (comments || "").trim()) && !commentShort && !orderLoading ? 1 : .5 }}>{orderLoading ? <span className="inline-flex items-center justify-center gap-2"><NitroLoader size={16} mono ariaHidden />Placing...</span> : dripOn && showMultiDay ? "Next" : "Place Order"}</button>
+            <button onClick={() => { if (dripOn && showMultiDay) { setDripStep(2); } else { onSubmit(dripOn && showMultiDay ? clampedDays : undefined); } }} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames || needsKeywords) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || !trafficValid || orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer || needsKeywords) || (comments || "").trim()) && !commentShort && trafficValid && !orderLoading ? 1 : .5 }}>{orderLoading ? <span className="inline-flex items-center justify-center gap-2"><NitroLoader size={16} mono ariaHidden />Placing...</span> : dripOn && showMultiDay ? "Next" : "Place Order"}</button>
           </>)}
         </>) : (<>
           {/* Step 2: Drip config — replaces entire form body */}

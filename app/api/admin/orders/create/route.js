@@ -6,6 +6,9 @@ import { validateDripConfig, calculateIntradayDrip, calculateMultiDayDrip, getDr
 import { buildOrderOfferSnapshot } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder } from '@/lib/order-queue';
 import { tgNewOrder } from '@/lib/telegram';
+import { getNitroStatus, getEligibleSpendKoboTx } from '@/lib/nitro-rewards';
+import { lockOrderSettlementAccount } from '@/lib/account-deletion';
+import { enqueueMetaEvent, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -39,6 +42,10 @@ async function nextBatchId() {
 
 export const maxDuration = 60;
 
+function triggerPurchaseDelivery(eventId) {
+  scheduleQueuedMetaEventDelivery(eventId);
+}
+
 export async function POST(req) {
   const { admin, error } = await requireAdmin('orders', true);
   if (error) return error;
@@ -50,11 +57,18 @@ export async function POST(req) {
     if (!userId) return Response.json({ error: 'User is required' }, { status: 400 });
     if (!['single', 'bulk', 'drip'].includes(mode)) return Response.json({ error: 'Invalid mode' }, { status: 400 });
 
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, name: true, email: true, balance: true } });
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, name: true, email: true, phone: true, balance: true } });
     if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
 
     const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
     const usdRate = Number(usdRateSetting?.value || 1600);
+
+    let nitroTierKey = null;
+    try {
+      const spendKobo = await getEligibleSpendKoboTx(prisma, userId);
+      const tier = getNitroStatus(Math.floor(spendKobo / 100));
+      if (tier) nitroTierKey = tier.key;
+    } catch (err) { log.warn('Admin Create Order: Nitro status lookup', err.message); }
 
     if (mode === 'bulk') {
       const { items } = body;
@@ -107,13 +121,22 @@ export async function POST(req) {
       const batchId = await nextBatchId();
 
       const createdIds = await prisma.$transaction(async (tx) => {
+        if (!await lockOrderSettlementAccount(tx, user.id)) return null;
         if (shouldCharge && totalCharge > 0) {
-          const debited = await tx.$executeRaw`UPDATE users SET balance = balance - ${totalCharge} WHERE id = ${user.id} AND balance >= ${totalCharge}`;
+          const debited = await tx.$executeRaw`
+            UPDATE users SET balance = balance - ${totalCharge}
+            WHERE id = ${user.id}
+              AND status IN ('Active', 'Suspended')
+              AND "deletedAt" IS NULL
+              AND "anonymizedAt" IS NULL
+              AND balance >= ${totalCharge}
+          `;
           if (Number(debited) !== 1) throw new Error('Insufficient balance');
         }
 
         const ids = await nextOrderIds(tx, orders.length);
         const orderIds = [];
+        let firstCreatedAt = null;
 
         for (let i = 0; i < orders.length; i++) {
           const o = orders[i];
@@ -125,9 +148,11 @@ export async function POST(req) {
               link: o.link, quantity: o.quantity, charge: o.charge, cost: o.cost,
               batchId, status: 'Pending',
               ...o.snapshot,
+              ...(nitroTierKey ? { nitroStatusAtPurchase: nitroTierKey } : {}),
               ...(blocker ? { queuedBehind: blocker.orderId } : {}),
             },
           });
+          if (!firstCreatedAt) firstCreatedAt = created.createdAt;
 
           if (o.charge > 0) {
             await tx.transaction.create({
@@ -142,11 +167,28 @@ export async function POST(req) {
           orderIds.push(ids[i]);
         }
 
+        if (totalCharge > 0) {
+          await enqueueMetaEvent(tx, 'Purchase', {
+            eventId: `purchase_${batchId}`,
+            eventTime: firstCreatedAt,
+            email: user.email,
+            phone: user.phone,
+            externalId: user.id,
+            sourceUrl: req.headers.get('referer') || req.url,
+            customData: { value: totalCharge / 100, currency: 'NGN' },
+          });
+        }
+
         return orderIds;
       });
+      if (!createdIds) {
+        return Response.json({ error: 'This account is pending deletion and cannot receive new orders' }, { status: 409 });
+      }
+
+      if (totalCharge > 0) triggerPurchaseDelivery(`purchase_${batchId}`);
 
       tgNewOrder(batchId, `Batch (${createdIds.length} orders) by ${admin.name}`, createdIds.length, totalCharge, user.name, null, null).catch(() => {});
-      await logActivity(admin.name, `Created batch ${batchId} (${createdIds.length} orders, ${shouldCharge ? `₦${(totalCharge / 100).toLocaleString()} charged` : 'free'}) for ${user.name}`, 'order');
+      logActivity(admin.name, `Created batch ${batchId} (${createdIds.length} orders, ${shouldCharge ? `₦${(totalCharge / 100).toLocaleString()} charged` : 'free'}) for ${user.name}`, 'order').catch(e => log.error('Admin Create Order logActivity', e.message));
 
       return Response.json({ success: true, batchId, count: createdIds.length, orderIds: createdIds });
     }
@@ -230,8 +272,16 @@ export async function POST(req) {
     const blocker = await findOpenSameLinkOrder(prisma, { serviceId: tier.serviceId, link });
 
     const orderId = await prisma.$transaction(async (tx) => {
+      if (!await lockOrderSettlementAccount(tx, user.id)) return null;
       if (shouldCharge && chargeKobo > 0) {
-        const debited = await tx.$executeRaw`UPDATE users SET balance = balance - ${chargeKobo} WHERE id = ${user.id} AND balance >= ${chargeKobo}`;
+        const debited = await tx.$executeRaw`
+          UPDATE users SET balance = balance - ${chargeKobo}
+          WHERE id = ${user.id}
+            AND status IN ('Active', 'Suspended')
+            AND "deletedAt" IS NULL
+            AND "anonymizedAt" IS NULL
+            AND balance >= ${chargeKobo}
+        `;
         if (Number(debited) !== 1) throw new Error('Insufficient balance');
       }
 
@@ -243,6 +293,7 @@ export async function POST(req) {
           link, quantity: qty, charge: chargeKobo, cost: costKobo,
           status: 'Pending',
           ...snapshot,
+          ...(nitroTierKey ? { nitroStatusAtPurchase: nitroTierKey } : {}),
           ...(blocker ? { queuedBehind: blocker.orderId } : {}),
           ...(dripSchedule ? { dripDays: dripNum || 1, ...(dripConfigObj ? { dripConfig: dripConfigObj } : {}) } : {}),
         },
@@ -264,13 +315,27 @@ export async function POST(req) {
             note: `Admin order ${id} — ${snapshot.serviceNameAtPurchase || 'Service'}${snapshot.tierNameAtPurchase ? ` (${snapshot.tierNameAtPurchase})` : ''} x${qty.toLocaleString()}${dripNum ? ` (${dripNum}-day drip)` : ''}`,
           },
         });
+        await enqueueMetaEvent(tx, 'Purchase', {
+          eventId: `purchase_${id}`,
+          eventTime: created.createdAt,
+          email: user.email,
+          phone: user.phone,
+          externalId: user.id,
+          sourceUrl: req.headers.get('referer') || req.url,
+          customData: { value: chargeKobo / 100, currency: 'NGN' },
+        });
       }
 
       return id;
     });
+    if (!orderId) {
+      return Response.json({ error: 'This account is pending deletion and cannot receive new orders' }, { status: 409 });
+    }
+
+    if (chargeKobo > 0) triggerPurchaseDelivery(`purchase_${orderId}`);
 
     tgNewOrder(orderId, `${snapshot.serviceNameAtPurchase || 'Service'} (${snapshot.tierNameAtPurchase || ''}) by ${admin.name}`, qty, chargeKobo, user.name, link, snapshot.platformAtPurchase).catch(() => {});
-    await logActivity(admin.name, `Created order ${orderId} (${snapshot.serviceNameAtPurchase} ${snapshot.tierNameAtPurchase}, ${qty.toLocaleString()} qty${dripNum ? `, ${dripNum}-day drip` : ''}, ${shouldCharge ? `₦${(chargeKobo / 100).toLocaleString()}` : 'free'}) for ${user.name}`, 'order');
+    logActivity(admin.name, `Created order ${orderId} (${snapshot.serviceNameAtPurchase} ${snapshot.tierNameAtPurchase}, ${qty.toLocaleString()} qty${dripNum ? `, ${dripNum}-day drip` : ''}, ${shouldCharge ? `₦${(chargeKobo / 100).toLocaleString()}` : 'free'}) for ${user.name}`, 'order').catch(e => log.error('Admin Create Order logActivity', e.message));
 
     return Response.json({ success: true, orderIds: [orderId] });
   } catch (err) {

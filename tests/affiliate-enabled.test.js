@@ -143,8 +143,6 @@ describe('link POST: affiliate_enabled', () => {
 
   it('allows link creation when enabled', async () => {
     mockPrisma.setting.findMany.mockResolvedValue([{ key: 'affiliate_enabled', value: 'true' }]);
-    mockTx.setting.findMany.mockResolvedValue([{ key: 'affiliate_max_links', value: '10' }]);
-    mockTx.acquisitionLink.count.mockResolvedValue(0);
     mockTx.acquisitionLink.create.mockResolvedValue({
       id: 'new', name: 'Test', slug: 'test', enabled: true, createdByChiefId: 'chief1', createdAt: new Date(),
     });

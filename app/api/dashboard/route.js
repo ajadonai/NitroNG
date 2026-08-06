@@ -219,9 +219,9 @@ export async function GET() {
           .map(row => [row.type, Math.abs(row._sum.amount || 0)]),
       );
       const funded = ['deposit', 'admin_credit', 'admin_gift', 'referral', 'bonus'].reduce((sum, type) => sum + (totals[type] || 0), 0);
-      const orderDebits = totals.order || 0;
+      const allDebits = (totals.order || 0) + (totals.charge || 0);
       const refunds = totals.refund || 0;
-      walletSummary = { funded: funded / 100, spent: (orderDebits - refunds) / 100 };
+      walletSummary = { funded: funded / 100, spent: (allDebits - refunds) / 100 };
       // Preserve the prior earnings definition: a raw signed sum across every
       // referral row, while wallet funding continues to count Completed only.
       referralEarnings = totalsByTypeAndStatus

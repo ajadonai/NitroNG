@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateMultiDayDrip, calculateIntradayDrip, buildDripConfig, validateDripConfig, rescheduleRemaining, distributeByCurve, checkDripFeasibility, validateIntradayDuration } from '@/lib/drip-feed';
+import { calculateMultiDayDrip, calculateIntradayDrip, buildDripConfig, validateDripConfig, rescheduleRemaining, distributeByCurve, checkDripFeasibility, validateIntradayDuration, sliceCommentsForBatch } from '@/lib/drip-feed';
 
 const BASE = new Date('2026-07-23T09:00:00.000Z');
 const MIN = 50;
@@ -629,7 +629,9 @@ describe('checkDripFeasibility', () => {
   });
 
   it('accepts feasible config', () => {
-    const config = { window: { startHour: 9, endHour: 17 } };
+    const start = new Date();
+    start.setHours(10, 0, 0, 0);
+    const config = { window: { startHour: 9, endHour: 17 }, startAt: start.toISOString() };
     const result = checkDripFeasibility(1000, 5, config, 'followers', 'instagram', 50);
     expect(result.feasible).toBe(true);
   });
@@ -720,5 +722,103 @@ describe('validateDripConfig rejects falsey non-null', () => {
   it('rejects empty string', () => {
     const r = validateDripConfig('', 5);
     expect(r.ok).toBe(false);
+  });
+});
+
+describe('sliceCommentsForBatch', () => {
+  const comments = 'a\nb\nc\nd\ne\nf\ng\nh\ni\nj';
+  const dispatches = [
+    { day: 1, batch: 1, quantity: 3 },
+    { day: 1, batch: 2, quantity: 3 },
+    { day: 1, batch: 3, quantity: 4 },
+  ];
+
+  it('returns first N comments for batch 1', () => {
+    const result = sliceCommentsForBatch(comments, 3, dispatches, { day: 1, batch: 1 });
+    expect(result).toBe('a\nb\nc');
+  });
+
+  it('offsets into comments for batch 2', () => {
+    const result = sliceCommentsForBatch(comments, 3, dispatches, { day: 1, batch: 2 });
+    expect(result).toBe('d\ne\nf');
+  });
+
+  it('returns remaining comments for last batch', () => {
+    const result = sliceCommentsForBatch(comments, 4, dispatches, { day: 1, batch: 3 });
+    expect(result).toBe('g\nh\ni\nj');
+  });
+
+  it('distributes proportionally when comments are fewer than total quantity', () => {
+    const short = 'x\ny\nz';
+    const twoDispatches = [
+      { day: 1, batch: 1, quantity: 2 },
+      { day: 1, batch: 2, quantity: 2 },
+    ];
+    // 3 lines, 4 total qty → batch 2 offset=2, start=floor(2/4*3)=1, end=floor(4/4*3)=3
+    const result = sliceCommentsForBatch(short, 2, twoDispatches, { day: 1, batch: 2 });
+    expect(result).toBe('y\nz');
+  });
+
+  it('preserves offset for other batches when a batch is superseded', () => {
+    // batch 1 fails, gets reset → superseded, replacement is batch 3
+    const dispatches = [
+      { day: 1, batch: 1, quantity: 3, status: 'superseded', lastError: 'replaced:#3' },
+      { day: 1, batch: 2, quantity: 3 },
+      { day: 1, batch: 3, quantity: 3 },
+    ];
+    // batch 2 should still start at offset 3 (batch 1's slot counts)
+    const result = sliceCommentsForBatch(comments, 3, dispatches, { day: 1, batch: 2 });
+    expect(result).toBe('d\ne\nf');
+  });
+
+  it('replacement batch inherits original slot position', () => {
+    const dispatches = [
+      { day: 1, batch: 1, quantity: 3, status: 'superseded', lastError: 'replaced:#3' },
+      { day: 1, batch: 2, quantity: 3 },
+      { day: 1, batch: 3, quantity: 3 },
+    ];
+    // batch 3 replaces batch 1 → gets offset 0 (batch 1's slot)
+    const result = sliceCommentsForBatch(comments, 3, dispatches, { day: 1, batch: 3 });
+    expect(result).toBe('a\nb\nc');
+  });
+
+  it('partial reset replacement starts after delivered comments', () => {
+    // batch 2 delivered 2 of 4 (remains=2), then superseded
+    const dispatches = [
+      { day: 1, batch: 1, quantity: 3, status: 'completed' },
+      { day: 1, batch: 2, quantity: 4, status: 'superseded', lastError: 'replaced:#3', remains: 2 },
+      { day: 1, batch: 3, quantity: 2 },
+    ];
+    // batch 3 replaces batch 2: slot offset=3, delivered=2, effective offset=5
+    const result = sliceCommentsForBatch(comments, 2, dispatches, { day: 1, batch: 3 });
+    expect(result).toBe('f\ng');
+  });
+
+  it('cancelled batches are excluded from offset', () => {
+    const dispatches = [
+      { day: 1, batch: 1, quantity: 3, status: 'completed' },
+      { day: 1, batch: 2, quantity: 3, status: 'cancelled' },
+      { day: 1, batch: 3, quantity: 4 },
+    ];
+    // batch 3 offset: batch 1 (3) counted, batch 2 cancelled → skipped. offset=3
+    const result = sliceCommentsForBatch(comments, 4, dispatches, { day: 1, batch: 3 });
+    expect(result).toBe('d\ne\nf\ng');
+  });
+
+  it('never repeats lines when fewer comments than quantity', () => {
+    const five = 'a\nb\nc\nd\ne';
+    const dispatches = [
+      { day: 1, batch: 1, quantity: 25 },
+      { day: 1, batch: 2, quantity: 26 },
+    ];
+    const b1 = sliceCommentsForBatch(five, 25, dispatches, { day: 1, batch: 1 });
+    const b2 = sliceCommentsForBatch(five, 26, dispatches, { day: 1, batch: 2 });
+    const b1Lines = b1.split('\n');
+    const b2Lines = b2.split('\n');
+    // No line appears in both batches
+    const overlap = b1Lines.filter(l => b2Lines.includes(l));
+    expect(overlap).toEqual([]);
+    // All lines used exactly once across both batches
+    expect([...b1Lines, ...b2Lines].sort()).toEqual(['a', 'b', 'c', 'd', 'e'].sort());
   });
 });

@@ -42,8 +42,10 @@ function cleanNote(note) {
   return (note || '')
     .replace(/\[rejected_by:([^\]]+)\]/g, 'Rejected by $1')
     .replace(/\[approved_by:([^\]]+)\]/g, 'Approved by $1')
+    .replace(/\[(initiated_by|admin_initiated):([^\]]+)\]/g, 'Initiated by $2')
     .replace(/\[user_confirmed[^\]]*\]/g, '')
     .replace(/\[awaiting_confirmation\]/g, '')
+    .replace(/\[[^\]]+\]/g, '')
     .trim();
 }
 

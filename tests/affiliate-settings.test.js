@@ -11,8 +11,8 @@ const {
 } = await import('@/lib/affiliate-settings');
 
 describe('AFFILIATE_KEYS', () => {
-  it('contains all 12 canonical keys', () => {
-    expect(ALL_AFFILIATE_KEY_NAMES).toHaveLength(12);
+  it('contains all 11 canonical keys', () => {
+    expect(ALL_AFFILIATE_KEY_NAMES).toHaveLength(11);
     expect(ALL_AFFILIATE_KEY_NAMES).toContain('affiliate_enabled');
     expect(ALL_AFFILIATE_KEY_NAMES).toContain('affiliate_starter_rate');
     expect(ALL_AFFILIATE_KEY_NAMES).toContain('affiliate_growth_rate');
@@ -23,7 +23,6 @@ describe('AFFILIATE_KEYS', () => {
     expect(ALL_AFFILIATE_KEY_NAMES).toContain('affiliate_hold_days');
     expect(ALL_AFFILIATE_KEY_NAMES).toContain('affiliate_min_payout');
     expect(ALL_AFFILIATE_KEY_NAMES).toContain('affiliate_min_order');
-    expect(ALL_AFFILIATE_KEY_NAMES).toContain('affiliate_max_links');
     expect(ALL_AFFILIATE_KEY_NAMES).toContain('crew_telegram_group_link');
   });
 
@@ -37,7 +36,6 @@ describe('AFFILIATE_KEYS', () => {
     expect(AFFILIATE_KEYS.affiliate_hold_days.default).toBe(7);
     expect(AFFILIATE_KEYS.affiliate_min_payout.default).toBe(5000);
     expect(AFFILIATE_KEYS.affiliate_min_order.default).toBe(1000);
-    expect(AFFILIATE_KEYS.affiliate_max_links.default).toBe(5);
   });
 });
 
@@ -64,9 +62,9 @@ describe('getAffiliateSettings', () => {
 
   it('returns defaults when DB rows are missing', async () => {
     mockPrisma.setting.findMany.mockResolvedValue([]);
-    const s = await getAffiliateSettings(['affiliate_starter_rate', 'affiliate_max_links']);
+    const s = await getAffiliateSettings(['affiliate_starter_rate', 'affiliate_min_order']);
     expect(s.affiliate_starter_rate).toBe(30);
-    expect(s.affiliate_max_links).toBe(5);
+    expect(s.affiliate_min_order).toBe(1000);
   });
 
   it('returns default for non-numeric DB value', async () => {

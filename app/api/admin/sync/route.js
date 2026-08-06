@@ -7,6 +7,7 @@ import { calculateTierPrice } from '@/lib/markup';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
 import { findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
+import { lockOrderSettlementAccount, ORDER_SETTLEMENT_ACCOUNT_STATUSES } from '@/lib/account-deletion';
 
 export const maxDuration = 60;
 
@@ -119,6 +120,7 @@ export async function POST(req) {
           dripDays: null,
           dripDispatches: { none: {} },
           deletedAt: null,
+          user: { status: { in: ORDER_SETTLEMENT_ACCOUNT_STATUSES }, deletedAt: null, anonymizedAt: null },
         },
         include: { service: { select: { provider: true } } },
         take: 200,
@@ -154,7 +156,13 @@ export async function POST(req) {
 
             if (!newStatus && liveRemains != null && liveRemains !== order.remains) {
               await prisma.order.updateMany({
-                where: { id: order.id, status: order.status, apiOrderId: order.apiOrderId, deletedAt: null },
+                where: {
+                  id: order.id,
+                  status: order.status,
+                  apiOrderId: order.apiOrderId,
+                  deletedAt: null,
+                  user: { status: { in: ORDER_SETTLEMENT_ACCOUNT_STATUSES }, deletedAt: null, anonymizedAt: null },
+                },
                 data: { remains: liveRemains, ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}) },
               });
               continue;
@@ -167,52 +175,66 @@ export async function POST(req) {
               continue;
             }
 
-            const transitioned = await prisma.order.updateMany({
-              where: { id: order.id, status: order.status, apiOrderId: order.apiOrderId, deletedAt: null },
-              data: { status: newStatus, ...(liveRemains != null ? { remains: liveRemains } : {}), ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}) },
-            });
-            // A concurrent cancel/partial/completion wins. Never revive or refund
-            // from the stale provider response captured above.
-            if (transitioned.count === 0) continue;
-            stats.updated++;
-
-            if (newStatus === 'Cancelled' && order.charge > 0) {
-              const alreadyRefunded = await getTotalRefundedKobo(prisma, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
-              const refundAmount = Math.max(0, order.charge - alreadyRefunded);
-              if (refundAmount > 0) {
-                await prisma.$transaction(async (tx) => {
-                  const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, refundAmount);
-                  if (walletRefund > 0) {
-                    await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
-                    await tx.transaction.create({ data: { userId: order.userId, type: 'refund', amount: walletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund for cancelled order ${order.orderId}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} already refunded)` : ''}` } });
-                  }
-                  await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
-                });
-                stats.refunded++;
+            const settlement = await prisma.$transaction(async (tx) => {
+              if (!await lockOrderSettlementAccount(tx, order.userId)) {
+                return { transitioned: false, refundAmount: 0 };
               }
-            }
 
-            if (newStatus === 'Partial' && result.remains) {
-              const remains = Number(result.remains) || 0;
-              if (remains > 0 && order.charge > 0 && order.quantity > 0) {
-                const refundAmount = Math.round((remains / order.quantity) * order.charge);
-                if (refundAmount > 0) {
-                  const alreadyRefunded = await getTotalRefundedKobo(prisma, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
-                  const cappedRefund = Math.max(0, refundAmount - alreadyRefunded);
-                  if (cappedRefund > 0) {
-                    await prisma.$transaction(async (tx) => {
-                      const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, cappedRefund);
-                      if (walletRefund > 0) {
-                        await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
-                        await tx.transaction.create({ data: { userId: order.userId, type: 'refund', amount: walletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Partial refund for ${order.orderId}` } });
-                      }
-                      await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: cappedRefund });
-                    });
-                    stats.refunded++;
-                  }
+              const transitioned = await tx.order.updateMany({
+                where: {
+                  id: order.id,
+                  status: order.status,
+                  apiOrderId: order.apiOrderId,
+                  deletedAt: null,
+                },
+                data: {
+                  status: newStatus,
+                  ...(liveRemains != null ? { remains: liveRemains } : {}),
+                  ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}),
+                  ...(['Cancelled', 'Partial'].includes(newStatus) ? { refundedAt: new Date() } : {}),
+                },
+              });
+              // A concurrent deletion/cancel/completion wins. Status and money
+              // move together under the account lock, never in two transactions.
+              if (transitioned.count !== 1) return { transitioned: false, refundAmount: 0 };
+
+              let refundAmount = 0;
+              if (newStatus === 'Cancelled' && order.charge > 0) {
+                const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
+                refundAmount = Math.max(0, order.charge - alreadyRefunded);
+              } else if (newStatus === 'Partial' && liveRemains > 0 && order.charge > 0 && order.quantity > 0) {
+                const calculated = Math.round((liveRemains / order.quantity) * order.charge);
+                if (calculated > 0) {
+                  const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
+                  refundAmount = Math.max(0, calculated - alreadyRefunded);
                 }
               }
-            }
+
+              if (refundAmount > 0) {
+                const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, refundAmount);
+                if (walletRefund > 0) {
+                  await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
+                  await tx.transaction.create({
+                    data: {
+                      userId: order.userId,
+                      type: 'refund',
+                      amount: walletRefund,
+                      method: 'wallet',
+                      status: 'Completed',
+                      reference: `REF-${order.orderId}`,
+                      note: newStatus === 'Cancelled'
+                        ? `Auto-refund for cancelled order ${order.orderId}`
+                        : `Partial refund for ${order.orderId}`,
+                    },
+                  });
+                }
+                await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
+              }
+              return { transitioned: true, refundAmount };
+            });
+            if (!settlement.transitioned) continue;
+            stats.updated++;
+            if (settlement.refundAmount > 0) stats.refunded++;
           } catch (err) {
             stats.errors++;
             log.warn(`Sync order ${order.orderId}`, err.message);

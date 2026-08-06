@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Nitro · Panel Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--accent:#c47d8e;--accent2:#8b5e6b;--grad:linear-gradient(135deg,#c47d8e,#8b5e6b)}
+[data-theme="light"]{--bg:#f0ede8;--shell:rgba(240,237,232,.97);--text:#1c1b19;--soft:#4a4744;--muted:#757170;--card:rgba(255,255,255,.85);--panel:#fff;--brd:rgba(0,0,0,.12);--hair:rgba(0,0,0,.08);--track:rgba(0,0,0,.05);--shadow:0 14px 40px rgba(28,27,25,.1);--accent-soft:rgba(196,125,142,.08);--accent-soft2:rgba(196,125,142,.16);--green:#059669;--green-soft:rgba(5,150,105,.1);--red:#dc2626;--red-soft:rgba(220,38,38,.08);--amber:#d97706;--amber-soft:rgba(217,119,6,.1);--code:#faf8f5}
+[data-theme="dark"]{--bg:#090c15;--shell:rgba(14,17,34,.95);--text:#f5f3f0;--soft:#c9c5c0;--muted:#8a8580;--card:rgba(255,255,255,.07);--panel:#131728;--brd:rgba(255,255,255,.16);--hair:rgba(255,255,255,.09);--track:rgba(255,255,255,.07);--shadow:0 14px 40px rgba(0,0,0,.45);--accent-soft:rgba(196,125,142,.12);--accent-soft2:rgba(196,125,142,.22);--green:#6ee7b7;--green-soft:rgba(110,231,183,.12);--red:#fca5a5;--red-soft:rgba(252,165,165,.1);--amber:#e0a458;--amber-soft:rgba(224,164,88,.12);--code:#0d101d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;transition:background .3s,color .3s;padding-bottom:50px}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit}
+svg{display:block}
+.m{font-family:'JetBrains Mono',monospace}
+.controls{position:sticky;top:0;z-index:60;display:flex;gap:10px;justify-content:center;padding:12px 8px;background:var(--bg);border-bottom:1px solid var(--hair);flex-wrap:wrap}
+.ctl-group{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--card);border:1px solid var(--hair)}
+.ctl{padding:7px 13px;border-radius:8px;font-size:12px;font-weight:600;color:var(--muted);transition:.15s}
+.ctl:hover{color:var(--text)}
+.ctl.on{background:var(--grad);color:#fff}
+
+.frame{max-width:1180px;margin:18px auto 0;border:1px solid var(--brd);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);background:var(--bg)}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 22px;border-bottom:1px solid var(--hair);background:var(--shell)}
+.wm{font-size:20px;font-weight:800;color:var(--accent);letter-spacing:-.5px}
+.tb-right{display:flex;gap:11px;align-items:center}
+.avatar{width:32px;height:32px;border-radius:99px;background:var(--grad);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.main{padding:24px 30px 40px;max-width:980px;margin:0 auto}
+.crumb{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:14px}
+.crumb button{color:var(--accent);font-weight:700;display:inline-flex;align-items:center;gap:5px}
+.phead{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.phead h1{font-size:24px;font-weight:800;letter-spacing:-.5px;display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+.badge{font-size:10px;font-weight:800;padding:4px 11px;border-radius:99px}
+.b-live{background:var(--green-soft);color:var(--green)}
+.b-paused{background:var(--amber-soft);color:var(--amber)}
+.urlpill{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:8px 13px;font-size:12.5px;color:var(--soft)}
+.urlpill button{color:var(--muted);display:flex}
+.urlpill button:hover{color:var(--accent)}
+
+.banner{display:flex;gap:11px;align-items:flex-start;padding:13px 16px;border-radius:13px;background:var(--amber-soft);border:1px solid color-mix(in srgb,var(--amber) 30%,transparent);font-size:12.5px;line-height:1.6;color:var(--soft);margin-bottom:18px}
+.banner b{color:var(--text)}
+.banner svg{color:var(--amber);flex-shrink:0;margin-top:2px}
+.banner .bb{margin-left:auto;flex-shrink:0;background:var(--grad);color:#fff;font-size:12px;font-weight:800;padding:9px 15px;border-radius:9px}
+
+.tabs{display:flex;gap:4px;padding:4px;border-radius:13px;background:var(--card);border:1px solid var(--brd);margin-bottom:20px;overflow-x:auto}
+.tabs button{flex:1;padding:10px 12px;border-radius:9px;font-size:12.5px;font-weight:700;color:var(--muted);transition:.15s;white-space:nowrap}
+.tabs button.on{background:var(--grad);color:#fff}
+.tabs button .n{font-size:9px;font-weight:800;background:var(--amber-soft);color:var(--amber);border-radius:99px;padding:1px 6px;margin-left:5px;vertical-align:1px}
+.tabs button.on .n{background:rgba(255,255,255,.25);color:#fff}
+
+.card{background:var(--card);border:.5px solid var(--brd);border-radius:15px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:860px){.grid4,.grid2{grid-template-columns:1fr}.main{padding:20px 16px 36px}}
+body.mob .frame{max-width:402px}
+body.mob .grid4,body.mob .grid2{grid-template-columns:1fr}
+body.mob .main{padding:18px 14px 34px}
+body.mob .phead h1{font-size:20px}
+.stat{padding:15px}
+.stat .sl{font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.stat .sv{font-size:19px;font-weight:800;margin-top:5px}
+.stat .sd{font-size:11px;color:var(--muted);margin-top:3px}
+.slab{font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin:24px 0 10px}
+.slab:first-child{margin-top:0}
+.slab i{font-style:normal;color:var(--accent)}
+
+.tbl{border:1px solid var(--hair);border-radius:14px;overflow:hidden;background:var(--panel)}
+.tbl table{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{text-align:left;padding:10px 14px;font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--hair)}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--hair);color:var(--soft);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.stag{font-size:9px;font-weight:800;padding:2px 8px;border-radius:99px}
+
+.fld{margin-bottom:12px}
+.fl2{font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px}
+.fin{width:100%;background:var(--code);border:1px solid var(--brd);border-radius:9px;padding:10px 12px;font-size:12.5px;color:var(--text);outline:none;transition:.12s}
+.fin:focus{border-color:var(--accent)}
+.btn-p{background:var(--grad);color:#fff;font-size:12.5px;font-weight:800;padding:10px 18px;border-radius:10px;transition:.15s;display:inline-flex;align-items:center;gap:7px;box-shadow:0 4px 12px rgba(196,125,142,.25)}
+.btn-p:hover{transform:translateY(-1px)}
+.btn-g{font-size:12px;font-weight:700;padding:9px 14px;border-radius:10px;border:1px solid var(--brd);color:var(--soft);transition:.15s;background:var(--card)}
+.btn-g:hover{color:var(--text)}
+
+/* swatches + preview */
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.swatch{width:34px;height:34px;border-radius:11px;border:2px solid transparent;transition:.15s;cursor:pointer}
+.swatch.on{border-color:var(--text);transform:scale(1.08)}
+.preview{border:1px solid var(--hair);border-radius:13px;overflow:hidden;background:var(--panel)}
+.pv-top{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;color:#fff}
+.pv-top b{font-size:14px;font-weight:800}
+.pv-top span{font-size:9px;font-weight:700;background:rgba(255,255,255,.22);border-radius:99px;padding:3px 8px}
+.pv-body{padding:12px 14px}
+.pv-line{height:8px;border-radius:99px;background:var(--track);margin-bottom:7px}
+.pv-btn{height:26px;border-radius:8px;width:110px;margin-top:4px}
+
+/* toggles */
+.sw{width:38px;height:22px;border-radius:99px;background:var(--track);border:1px solid var(--brd);position:relative;transition:.18s;flex-shrink:0;cursor:pointer}
+.sw::after{content:"";position:absolute;width:16px;height:16px;border-radius:99px;background:#fff;top:2px;left:2px;transition:.18s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.sw.on{background:var(--grad);border-color:transparent}
+.sw.on::after{left:18px}
+.featrow{display:flex;gap:13px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--hair)}
+.featrow:last-child{border-bottom:none}
+.featrow h4{font-size:13px;font-weight:800}
+.featrow h4 .fb2{font-size:8.5px;font-weight:800;letter-spacing:.6px;padding:2px 7px;border-radius:99px;background:var(--accent-soft2);color:var(--accent);margin-left:7px;vertical-align:1px}
+.featrow p{font-size:11.5px;color:var(--muted);line-height:1.55;margin-top:2px}
+.featrow .sw{margin-left:auto}
+
+/* pricing */
+.mkrow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.mkchip{background:var(--accent-soft2);color:var(--accent);border-radius:99px;padding:5px 13px;font-weight:800;font-size:11.5px;white-space:nowrap}
+.mkr{width:100%;accent-color:var(--accent);margin-top:12px}
+.mkscale{display:flex;justify-content:space-between;font-size:9.5px;color:var(--muted);margin-top:3px}
+.ov-in{width:96px;background:var(--code);border:1px solid var(--brd);border-radius:8px;padding:7px 9px;font-size:12px;color:var(--text);outline:none}
+.ov-in:focus{border-color:var(--accent)}
+.catseg{display:flex;gap:4px;background:var(--track);border-radius:10px;padding:3px}
+.catseg button{font-size:10.5px;font-weight:800;padding:6px 11px;border-radius:8px;color:var(--muted);transition:.15s;white-space:nowrap}
+.catseg button.on{background:var(--panel);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+/* deposits */
+.dep{display:flex;gap:13px;padding:13px 16px;border-bottom:1px solid var(--hair);align-items:flex-start}
+.dep:last-child{border-bottom:none}
+.dep.pend{box-shadow:inset 2.5px 0 0 var(--amber)}
+.dav{width:36px;height:36px;border-radius:99px;background:var(--accent-soft2);color:var(--accent);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.dinfo{flex:1;min-width:0}
+.dnm{font-size:13.5px;font-weight:700}
+.dfrow{display:flex;align-items:center;gap:10px;margin-top:5px}
+.dflab{width:46px;flex-shrink:0;font-size:8.5px;font-weight:800;letter-spacing:1px;color:var(--muted)}
+.dfval{font-size:12.5px;font-weight:600;color:var(--soft);display:flex;align-items:center;gap:6px;min-width:0}
+.dref{display:inline-flex;align-items:center;gap:6px;background:var(--track);border:1px solid var(--hair);border-radius:7px;padding:2px 8px;font-size:10.5px;color:var(--soft)}
+.dright{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
+.damt{font-size:15.5px;font-weight:700}
+.b-ok{background:linear-gradient(135deg,#34d399,#059669);color:#fff;font-size:11.5px;font-weight:800;padding:7px 14px;border-radius:9px;transition:.15s}
+.b-ok:hover{transform:translateY(-1px)}
+.b-no{font-size:11.5px;font-weight:700;padding:7px 12px;border-radius:9px;border:1px solid color-mix(in srgb,var(--red) 35%,transparent);color:var(--red);transition:.15s}
+.b-no:hover{background:var(--red-soft)}
+.note{display:none;font-size:11.5px;line-height:1.55;color:var(--muted);border:1px dashed var(--accent-soft2);background:var(--accent-soft);border-radius:10px;padding:8px 11px;margin-top:14px}
+.note b{color:var(--accent)}
+body.notes .note{display:block}
+.toasts{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:10px;z-index:90}
+.toast{width:300px;background:var(--panel);border:1px solid var(--accent-soft2);border-left:3px solid var(--accent);border-radius:12px;padding:11px 13px;box-shadow:var(--shadow);animation:tIn .25s ease}
+@keyframes tIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.toast .tt{font-size:12.5px;font-weight:700}
+.toast .td2{font-size:11px;color:var(--muted);margin-top:2px;word-break:break-all}
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <div class="ctl-group" id="stateCtl">
+    <button class="ctl on" data-st="live">Panel live</button>
+    <button class="ctl" data-st="paused">Renewal missed</button>
+  </div>
+  <div class="ctl-group" id="vpCtl">
+    <button class="ctl on" data-vp="desk">Desktop</button>
+    <button class="ctl" data-vp="mob">Mobile</button>
+  </div>
+  <div class="ctl-group">
+    <button class="ctl" id="themeCtl">◐ Dark</button>
+    <button class="ctl" id="notesCtl">ⓘ Notes</button>
+  </div>
+</div>
+
+<div class="frame">
+  <div class="topbar">
+    <span class="wm">nitro</span>
+    <div class="tb-right"><div class="avatar">T</div></div>
+  </div>
+  <div class="main" id="main"></div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const N=n=>"₦"+Math.round(n).toLocaleString("en-US");
+let tab='overview', paused=false, mk=30, brandColor='#c47d8e', panelCat='curated';
+let feats={grad:true,refill:true,bonus:false,wa:true};
+let overrides={};
+const SVCS=[["Instagram Followers · Standard",2720],["Instagram Likes · Premium",1150],["TikTok Views",520],["TikTok Followers",3100],["YouTube Subscribers",7150]];
+let DEPS=[
+ {user:"Chiamaka O.",sender:"C. Obi Ventures",ref:"BLS-8QK2PLLM",amount:15000,date:"6 Aug, 09:12"},
+ {user:"Tunde A.",sender:"Tunde Adeyemi",ref:"BLS-2ZV9XKCD",amount:5000,date:"6 Aug, 08:47"},
+ {user:"Blessing E.",sender:"Blessing Ek.",ref:"BLS-MRT1BGGF",amount:25000,date:"5 Aug, 22:03"}];
+const CUSTOMERS=[
+ ["bella_o","Chiamaka O.",34,"₦8,400","2 Jun 2026","Active"],
+ ["tunde.a","Tunde A.",21,"₦1,150","14 Jun 2026","Active"],
+ ["blessing","Blessing E.",17,"₦0","1 Jul 2026","Active"],
+ ["mrsteve","Steve I.",9,"₦3,000","19 Jul 2026","Active"],
+ ["dara_xx","Dara M.",2,"₦500","2 Aug 2026","New"]];
+const SWATCHES=["#c47d8e","#e05252","#2563eb","#34a97b","#d97706","#7c3aed"];
+
+function toast(t,d){const el=document.createElement('div');el.className='toast';el.innerHTML='<div class="tt">'+t+'</div>'+(d?'<div class="td2 m">'+d+'</div>':'');$('toasts').appendChild(el);setTimeout(()=>el.remove(),3400);}
+function copy(t,l){try{navigator.clipboard.writeText(t);}catch(e){}toast(l||"Copied",t);}
+const note=t=>'<div class="note">'+t+'</div>';
+const warn='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+const cpy='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+
+function price(cost,i){const o=overrides[i];return o!=null&&o!==''?Number(o):Math.round(cost*(1+mk/100));}
+
+const TABS=[["overview","Overview"],["branding","Branding"],["pricing","Pricing"],["features","Features"],["customers","Customers"],["payments","Payments"]];
+
+function vOverview(){
+  return '<div class="grid4">'
+   +[["Sales this month",N(86400),"paid to your bank"],["Fulfilment",N(61200),"drawn from wallet"],["Your margin",N(25200),"sales minus fulfilment"],["Customers","47","5 new this month"]]
+   .map(([l,v,d])=>'<div class="card stat"><div class="sl">'+l+'</div><div class="sv m">'+v+'</div><div class="sd">'+d+'</div></div>').join('')+'</div>'
+   +'<div class="slab">Panel</div>'
+   +'<div class="grid2">'
+   +'<div class="card" style="padding:16px">'
+   +'<div style="display:flex;flex-direction:column;gap:11px">'
+   +[["Storefront","bella-smm.nitro.ng"],["Plan","₦25,000/month, auto-renews from wallet"],["Next renewal",paused?"1 Aug 2026, missed":"1 Sep 2026"],["Currency","NGN"]]
+   .map(([l,v])=>'<div style="display:flex;gap:10px;font-size:12.5px"><span style="width:110px;flex-shrink:0;font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding-top:2px">'+l+'</span><span style="font-weight:600;color:var(--soft)">'+v+'</span></div>').join('')
+   +'</div>'
+   +'<div style="display:flex;gap:8px;margin-top:15px;flex-wrap:wrap"><button class="btn-p" data-toast="Opening bella-smm.nitro.ng">Visit storefront</button><button class="btn-g" data-copy-url="1">Copy link</button></div>'
+   +'</div>'
+   +'<div class="card" style="padding:16px"><div class="sl" style="font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Latest orders on your panel</div>'
+   +'<div style="margin-top:10px;display:flex;flex-direction:column;gap:9px">'
+   +[["bella_o","IG Followers · 1k","In progress",N(3536)],["mrsteve","TikTok Views · 5k","Completed",N(3380)],["tunde.a","IG Likes · 500","Completed",N(748)]]
+   .map(([u,s,st,a])=>'<div style="display:flex;gap:10px;align-items:center;font-size:12px"><span class="m" style="color:var(--muted)">'+u+'</span><span style="flex:1;color:var(--soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+s+'</span><span class="stag" style="background:'+(st==="Completed"?"var(--green-soft);color:var(--green)":"var(--amber-soft);color:var(--amber)")+'">'+st.toUpperCase()+'</span><b class="m" style="font-size:12px">'+a+'</b></div>').join('')
+   +'</div></div>'
+   +'</div>'
+   +note("<b>The money story, in one row.</b> Sales landed in their bank, fulfilment drew from the wallet, margin is the gap. Same numbers as the Lab's earnings pitch, now real.");
+}
+function vBranding(){
+  return '<div class="grid2">'
+   +'<div class="card" style="padding:16px">'
+   +'<div class="fld"><span class="fl2">Panel name</span><input class="fin" id="bName" value="Bella SMM"></div>'
+   +'<div class="fld"><span class="fl2">Logo</span><div style="display:flex;gap:10px;align-items:center"><div style="width:44px;height:44px;border-radius:12px;background:'+brandColor+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px">B</div><button class="btn-g" data-toast="Upload coming in build">Upload logo</button></div></div>'
+   +'<div class="fld"><span class="fl2">Accent color</span><div class="swatches">'+SWATCHES.map(c=>'<div class="swatch'+(c===brandColor?' on':'')+'" data-sw="'+c+'" style="background:'+c+'"></div>').join('')+'</div></div>'
+   +'<button class="btn-p" data-toast="Branding saved">Save branding</button>'
+   +'</div>'
+   +'<div><span class="fl2">Live preview</span>'
+   +'<div class="preview"><div class="pv-top" style="background:'+brandColor+'"><b id="pvName">Bella SMM</b><span>SIGN IN</span></div>'
+   +'<div class="pv-body"><div class="pv-line" style="width:70%"></div><div class="pv-line" style="width:45%"></div><div class="pv-line" style="width:58%"></div><div class="pv-btn" style="background:'+brandColor+'"></div></div></div>'
+   +'<div style="font-size:11px;color:var(--muted);margin-top:9px;line-height:1.6">Your customers see this name, this color and your logo. Nitro appears nowhere.</div>'
+   +'</div></div>';
+}
+function vPricing(){
+  return '<div class="card" style="padding:16px;margin-bottom:14px"><div class="mkrow"><span style="font-size:12.5px;color:var(--soft)"><b>Default markup</b> over your reseller rates, applied to every service without an override</span><span class="mkchip">Markup <b class="m" id="mkV">'+mk+'%</b></span></div>'
+   +'<input type="range" class="mkr" id="mkR" min="10" max="100" step="5" value="'+mk+'"><div class="mkscale"><span>10%</span><span>100%</span></div></div>'
+   +'<div class="card" style="padding:16px;margin-bottom:14px"><div class="mkrow"><span style="font-size:12.5px;color:var(--soft)"><b>Catalog on your storefront</b></span>'
+   +'<div class="catseg">'+[["curated","Curated tiers"],["full","Full providers"],["both","Both"]].map(([k,l])=>'<button data-pcat="'+k+'"'+(panelCat===k?' class="on"':'')+'>'+l+'</button>').join('')+'</div></div></div>'
+   +'<div class="tbl"><table><thead><tr><th>Service</th><th>Your cost / 1k</th><th>Customer price / 1k</th><th>Override</th><th>You keep</th></tr></thead><tbody>'
+   +SVCS.map(([s,c],i)=>{const p=price(c,i);return '<tr><td style="font-weight:600;color:var(--text)">'+s+'</td><td class="m">'+N(c)+'</td><td class="m" data-price="'+i+'">'+N(p)+'</td><td><input class="ov-in m" data-ov="'+i+'" placeholder="auto" value="'+(overrides[i]??'')+'"></td><td class="m" style="color:var(--green);font-weight:700" data-keep="'+i+'">'+N(p-c)+'</td></tr>';}).join('')
+   +'</tbody></table></div>'
+   +'<div style="font-size:11px;color:var(--muted);margin-top:10px">Overrides win over the default markup. Clear the field to go back to auto.</div>'
+   +note("<b>Same slider as the Lab pitch,</b> now wired to a real table. Overrides are per service, typed as a flat price per 1k.");
+}
+function vFeatures(){
+  const F=[
+   ["grad","Gradual delivery","OPT-IN","Nitro's slow, natural-looking delivery engine on your storefront. Your customers pick it at checkout as a premium option most panels can't offer."],
+   ["refill","Refill button","","Customers can trigger refills on eligible orders themselves, no ticket needed."],
+   ["bonus","Welcome bonus","","New signups get ₦500 storefront credit to place a first order."],
+   ["wa","WhatsApp support link","","A chat button on your storefront that opens your WhatsApp business number."]];
+  return '<div class="card">'+F.map(([k,t,b,d])=>'<div class="featrow"><div><h4>'+t+(b?'<span class="fb2">'+b+'</span>':'')+'</h4><p>'+d+'</p></div><div class="sw'+(feats[k]?' on':'')+'" data-feat="'+k+'"></div></div>').join('')+'</div>';
+}
+function vCustomers(){
+  return '<div class="tbl"><table><thead><tr><th>Username</th><th>Name</th><th>Orders</th><th>Balance</th><th>Joined</th><th>Status</th></tr></thead><tbody>'
+   +CUSTOMERS.map(([u,n,o,b,j,s])=>'<tr><td class="m" style="color:var(--text);font-weight:600">'+u+'</td><td>'+n+'</td><td class="m">'+o+'</td><td class="m">'+b+'</td><td>'+j+'</td><td><span class="stag" style="background:'+(s==="New"?"var(--accent-soft2);color:var(--accent)":"var(--green-soft);color:var(--green)")+'">'+s.toUpperCase()+'</span></td></tr>').join('')
+   +'</tbody></table></div>'
+   +'<div style="font-size:11px;color:var(--muted);margin-top:10px">Balances live on your storefront and are funded by deposits you approve in Payments.</div>';
+}
+function vPayments(){
+  return '<div class="grid2" style="margin-bottom:14px">'
+   +'<div class="card" style="padding:16px"><span class="fl2">How customers pay you</span>'
+   +'<div style="font-size:11.5px;color:var(--muted);line-height:1.6;margin-bottom:12px">These details show on your storefront\'s top-up page. Money goes straight to you, never through Nitro.</div>'
+   +'<div class="fld"><span class="fl2">Bank name</span><input class="fin" value="OPay"></div>'
+   +'<div class="fld"><span class="fl2">Account number</span><input class="fin m" value="8123456790"></div>'
+   +'<div class="fld"><span class="fl2">Account name</span><input class="fin" value="Bella Adeola"></div>'
+   +'<div class="fld"><span class="fl2">USDT address · optional</span><input class="fin m" placeholder="TRC20 address"></div>'
+   +'<button class="btn-p" id="savePay">Save payout details</button></div>'
+   +'<div class="card" style="padding:16px"><span class="fl2">The flow</span>'
+   +'<div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">'
+   +[["1","Customer transfers to your account above"],["2","You approve it in the queue below"],["3","Their storefront balance is credited"],["4","Their orders fulfil from your Nitro wallet"]]
+   .map(([n,t])=>'<div style="display:flex;gap:10px;align-items:center;font-size:12.5px;color:var(--soft)"><span style="width:22px;height:22px;border-radius:99px;background:var(--accent-soft2);color:var(--accent);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+n+'</span>'+t+'</div>').join('')
+   +'</div></div></div>'
+   +'<div class="slab">Deposit approvals <i>· '+DEPS.length+' pending</i></div>'
+   +'<div class="card">'+(DEPS.length?DEPS.map((d,i)=>'<div class="dep pend"><div class="dav">'+d.user.split(" ").map(w=>w[0]).join("").slice(0,2)+'</div>'
+   +'<div class="dinfo"><div class="dnm">'+d.user+'</div>'
+   +'<div class="dfrow"><span class="dflab">SENDER</span><span class="dfval">'+d.sender+'</span></div>'
+   +'<div class="dfrow"><span class="dflab">REF</span><span class="dfval"><span class="dref m">'+d.ref+'<button data-copy-ref="'+d.ref+'">'+cpy+'</button></span></span></div>'
+   +'<div class="dfrow"><span class="dflab">DATE</span><span class="dfval" style="color:var(--muted);font-weight:500">'+d.date+'</span></div></div>'
+   +'<div class="dright"><div class="damt m">'+N(d.amount)+'</div><div style="display:flex;gap:7px"><button class="b-ok" data-appr="'+i+'">Approve</button><button class="b-no" data-rej="'+i+'">Reject</button></div></div></div>').join('')
+   :'<div style="padding:22px;text-align:center;font-size:12.5px;color:var(--muted)">Queue clear. New transfers from your customers land here.</div>')+'</div>'
+   +note("<b>Their own approval queue,</b> same card language as Nitro's admin deposits, because it's the same job one level down. Approving credits the customer's storefront balance only; no Nitro money moves.");
+}
+
+function render(){
+  const V={overview:vOverview,branding:vBranding,pricing:vPricing,features:vFeatures,customers:vCustomers,payments:vPayments};
+  $('main').innerHTML=
+   '<div class="crumb"><button data-toast="Back to Reseller Lab"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Reseller Lab</button><span>/</span><span>Panel Manager</span></div>'
+   +'<div class="phead"><h1>Bella SMM <span class="badge '+(paused?'b-paused">● PAUSED':'b-live">● LIVE')+'</span></h1>'
+   +'<span class="urlpill m">bella-smm.nitro.ng<button data-copy-url="1">'+cpy+'</button></span></div>'
+   +(paused?'<div class="banner">'+warn+'<span><b>Renewal missed.</b> Your wallet couldn\'t cover ₦25,000 on 1 Aug, so the storefront is paused. Nothing is deleted; customers and balances are safe. Fund the wallet and it\'s back instantly.</span><button class="bb" data-toast="Opening Wallet">Top up ₦25,000</button></div>':'')
+   +'<div class="tabs">'+TABS.map(([k,l])=>'<button data-tab="'+k+'"'+(tab===k?' class="on"':'')+'>'+l+(k==='payments'&&DEPS.length?'<span class="n">'+DEPS.length+'</span>':'')+'</button>').join('')+'</div>'
+   +V[tab]();
+  wire();
+}
+function wire(){
+  document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{tab=b.dataset.tab;render();}));
+  document.querySelectorAll('[data-toast]').forEach(b=>b.addEventListener('click',()=>toast(b.dataset.toast)));
+  document.querySelectorAll('[data-copy-url]').forEach(b=>b.addEventListener('click',()=>copy("https://bella-smm.nitro.ng","Link copied")));
+  document.querySelectorAll('[data-copy-ref]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();copy(b.dataset.copyRef,"Reference copied");}));
+  document.querySelectorAll('.swatch').forEach(s=>s.addEventListener('click',()=>{brandColor=s.dataset.sw;render();}));
+  const bn=$('bName'); if(bn) bn.addEventListener('input',()=>{const pv=$('pvName');if(pv)pv.textContent=bn.value||'Your Panel';});
+  const mr=$('mkR'); if(mr) mr.addEventListener('input',()=>{mk=Number(mr.value);$('mkV').textContent=mk+'%';
+    SVCS.forEach(([s,c],i)=>{const p=price(c,i);const pe=document.querySelector('[data-price="'+i+'"]'),ke=document.querySelector('[data-keep="'+i+'"]');if(pe)pe.textContent=N(p);if(ke)ke.textContent=N(p-c);});});
+  document.querySelectorAll('[data-ov]').forEach(inp=>inp.addEventListener('input',()=>{const i=Number(inp.dataset.ov);overrides[i]=inp.value.replace(/[^0-9]/g,'');inp.value=overrides[i];
+    const c=SVCS[i][1],p=price(c,i);document.querySelector('[data-price="'+i+'"]').textContent=N(p);document.querySelector('[data-keep="'+i+'"]').textContent=N(p-c);}));
+  document.querySelectorAll('[data-pcat]').forEach(b=>b.addEventListener('click',()=>{panelCat=b.dataset.pcat;render();toast("Catalog updated","Storefront now sells: "+(panelCat==='both'?'curated + full':panelCat));}));
+  document.querySelectorAll('[data-feat]').forEach(s=>s.addEventListener('click',()=>{feats[s.dataset.feat]=!feats[s.dataset.feat];render();
+    if(s.dataset.feat==='grad')toast(feats.grad?"Gradual delivery ON":"Gradual delivery OFF",feats.grad?"Customers can pick it at checkout":"Checkout shows full speed only");}));
+  const sp=$('savePay'); if(sp) sp.addEventListener('click',()=>toast("Payout details saved","Shown on your top-up page"));
+  document.querySelectorAll('[data-appr]').forEach(b=>b.addEventListener('click',()=>{const d=DEPS.splice(Number(b.dataset.appr),1)[0];render();toast("Deposit approved",d.user+" credited "+N(d.amount));}));
+  document.querySelectorAll('[data-rej]').forEach(b=>b.addEventListener('click',()=>{const d=DEPS.splice(Number(b.dataset.rej),1)[0];render();toast("Deposit rejected",d.ref);}));
+}
+$('stateCtl').addEventListener('click',e=>{const b=e.target.closest('.ctl');if(!b)return;
+  document.querySelectorAll('#stateCtl .ctl').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  paused=b.dataset.st==='paused';render();});
+$('vpCtl').addEventListener('click',e=>{const b=e.target.closest('.ctl');if(!b)return;
+  document.querySelectorAll('#vpCtl .ctl').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  document.body.classList.toggle('mob',b.dataset.vp==='mob');});
+$('themeCtl').addEventListener('click',e=>{const d=document.documentElement.dataset.theme==='dark';
+  document.documentElement.dataset.theme=d?'light':'dark';e.target.textContent=d?'◐ Dark':'◑ Light';});
+$('notesCtl').addEventListener('click',e=>{document.body.classList.toggle('notes');e.target.classList.toggle('on');});
+render();
+</script>
+</body>
+</html>

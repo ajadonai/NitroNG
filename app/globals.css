@@ -324,7 +324,7 @@
 .dash-theme-thumb { width: 18px; height: 18px; border-radius: 50%; position: absolute; top: 2px; transition: left .6s cubic-bezier(.4,0,.2,1), background .6s cubic-bezier(.4,0,.2,1), box-shadow .6s cubic-bezier(.4,0,.2,1); display: flex; align-items: center; justify-content: center; }
 
 /* Bell */
-.dash-bell { background: none; display: flex; align-items: center; justify-content: center; position: relative; width: 34px; height: 34px; border-radius: 10px; }
+.dash-bell { background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative; width: 34px; height: 34px; border-radius: 10px; }
 .dash-bell-badge { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; border-radius: 8px; background: #dc2626; color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 3px; font-family: 'JetBrains Mono', monospace; line-height: 1; }
 
 /* Avatar */

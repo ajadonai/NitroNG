@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Nitro · Reseller Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--accent:#c47d8e;--accent2:#8b5e6b;--grad:linear-gradient(135deg,#c47d8e,#8b5e6b);--bgrad:linear-gradient(135deg,#60a5fa,#2563eb)}
+[data-theme="light"]{--bg:#f0ede8;--shell:rgba(240,237,232,.97);--text:#1c1b19;--soft:#4a4744;--muted:#757170;--card:rgba(255,255,255,.85);--panel:#fff;--brd:rgba(0,0,0,.12);--hair:rgba(0,0,0,.08);--track:rgba(0,0,0,.05);--shadow:0 14px 40px rgba(28,27,25,.1);--accent-soft:rgba(196,125,142,.08);--accent-soft2:rgba(196,125,142,.16);--green:#059669;--green-soft:rgba(5,150,105,.1);--red:#dc2626;--amber:#d97706;--blue:#2563eb;--blue-soft:rgba(37,99,235,.08);--blue-soft2:rgba(37,99,235,.15);--code:#faf8f5}
+[data-theme="dark"]{--bg:#090c15;--shell:rgba(14,17,34,.95);--text:#f5f3f0;--soft:#c9c5c0;--muted:#8a8580;--card:rgba(255,255,255,.07);--panel:#131728;--brd:rgba(255,255,255,.16);--hair:rgba(255,255,255,.09);--track:rgba(255,255,255,.07);--shadow:0 14px 40px rgba(0,0,0,.45);--accent-soft:rgba(196,125,142,.12);--accent-soft2:rgba(196,125,142,.22);--green:#6ee7b7;--green-soft:rgba(110,231,183,.12);--red:#fca5a5;--amber:#e0a458;--blue:#60a5fa;--blue-soft:rgba(96,165,250,.1);--blue-soft2:rgba(96,165,250,.2);--code:#0d101d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;transition:background .3s,color .3s;padding-bottom:50px}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit}
+svg{display:block}
+.m{font-family:'JetBrains Mono',monospace}
+.controls{position:sticky;top:0;z-index:60;display:flex;gap:10px;justify-content:center;padding:12px 8px;background:var(--bg);border-bottom:1px solid var(--hair);flex-wrap:wrap}
+.ctl-group{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--card);border:1px solid var(--hair)}
+.ctl{padding:7px 13px;border-radius:8px;font-size:12px;font-weight:600;color:var(--muted);transition:.15s}
+.ctl:hover{color:var(--text)}
+.ctl.on{background:var(--grad);color:#fff}
+.note{display:none;font-size:11.5px;line-height:1.55;color:var(--muted);border:1px dashed var(--accent-soft2);background:var(--accent-soft);border-radius:10px;padding:8px 11px;margin-top:14px}
+.note b{color:var(--accent)}
+body.notes .note{display:block}
+
+/* shell */
+.frame{max-width:1180px;margin:18px auto 0;border:1px solid var(--brd);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);background:var(--bg)}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 22px;border-bottom:1px solid var(--hair);background:var(--shell)}
+.wm{font-size:20px;font-weight:800;color:var(--accent);letter-spacing:-.5px}
+.tb-right{display:flex;gap:11px;align-items:center}
+.bell{width:32px;height:32px;border-radius:10px;border:1px solid var(--brd);display:flex;align-items:center;justify-content:center;color:var(--soft)}
+.avatar{width:32px;height:32px;border-radius:99px;background:var(--grad);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.appgrid{display:grid;grid-template-columns:206px 1fr;min-height:760px}
+.nav{border-right:1px solid var(--hair);background:var(--shell);padding:14px 10px;display:flex;flex-direction:column;gap:2px}
+.nav button{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:10px;font-size:13px;font-weight:500;color:var(--muted);text-align:left}
+.nav button.on{background:var(--accent-soft2);color:var(--text);font-weight:600}
+.newchip{margin-left:auto;font-size:8.5px;font-weight:800;letter-spacing:.5px;background:var(--grad);color:#fff;border-radius:99px;padding:2px 6px}
+.main{min-width:0;overflow:hidden}
+.wrap{padding:0 34px 34px;max-width:960px;margin:0 auto}
+
+/* hero */
+.hero{padding:40px 34px 32px;position:relative;overflow:hidden;border-bottom:1px solid var(--hair)}
+.hero::before{content:"";position:absolute;width:560px;height:560px;border-radius:99px;top:-360px;right:-140px;background:radial-gradient(circle,var(--accent-soft2) 0%,transparent 66%);pointer-events:none}
+.hero-in{max-width:892px;margin:0 auto;position:relative}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--accent);background:var(--accent-soft2);border-radius:99px;padding:5px 12px}
+.hero h1{font-size:33px;font-weight:800;letter-spacing:-.8px;margin-top:14px;line-height:1.15}
+.hero .lede{font-size:14.5px;line-height:1.7;color:var(--muted);max-width:640px;margin-top:10px}
+.hero .lede b{color:var(--soft);font-weight:700}
+.hero-meta{font-size:11.5px;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap;margin-top:16px}
+.hero-meta span{display:inline-flex;align-items:center;gap:6px}
+.hero-meta svg{color:var(--green)}
+
+/* buttons */
+.btn-p{background:var(--grad);color:#fff;font-size:13px;font-weight:800;padding:11px 20px;border-radius:11px;transition:.15s;display:inline-flex;align-items:center;gap:8px;box-shadow:0 5px 16px rgba(196,125,142,.28)}
+.btn-b{background:var(--bgrad);color:#fff;font-size:13px;font-weight:800;padding:11px 20px;border-radius:11px;transition:.15s;display:inline-flex;align-items:center;gap:8px;box-shadow:0 5px 16px rgba(37,99,235,.25)}
+.btn-p:hover,.btn-b:hover{transform:translateY(-1px)}
+.btn-g{font-size:12.5px;font-weight:700;padding:10px 16px;border-radius:11px;border:1px solid var(--brd);color:var(--soft);transition:.15s;display:inline-flex;align-items:center;gap:7px;background:var(--card)}
+.btn-g:hover{color:var(--text);transform:translateY(-1px)}
+
+/* product pick cards */
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:892px;margin:-46px auto 0;position:relative;z-index:5}
+@media(max-width:860px){.pick{grid-template-columns:1fr;margin-top:16px}}
+.pcard{background:var(--panel);border:1px solid var(--brd);border-radius:18px;padding:22px;text-align:left;transition:.18s;position:relative;overflow:hidden;box-shadow:var(--shadow);cursor:pointer}
+.pcard::before{content:"";position:absolute;inset:0 0 auto 0;height:4px}
+.pcard.api::before{background:var(--bgrad)}
+.pcard.panel::before{background:var(--grad)}
+.pcard:hover{transform:translateY(-3px)}
+.pcard.sel.api{border-color:var(--blue)}
+.pcard.sel.panel{border-color:var(--accent)}
+.pnum{font-size:10px;font-weight:800;letter-spacing:1.6px}
+.pcard.api .pnum{color:var(--blue)}
+.pcard.panel .pnum{color:var(--accent)}
+.pcard h3{font-size:18px;font-weight:800;margin-top:8px;letter-spacing:-.3px}
+.pcard .pd{font-size:12.5px;color:var(--muted);line-height:1.65;margin-top:7px;min-height:60px}
+.pfacts{display:flex;margin-top:14px;border-top:1px solid var(--hair);padding-top:13px}
+.pfacts div{flex:1;font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.pfacts b{display:block;font-size:13.5px;font-weight:800;color:var(--text);letter-spacing:0;text-transform:none;margin-top:2px}
+.plink{margin-top:15px;font-size:12.5px;font-weight:800;display:inline-flex;align-items:center;gap:6px}
+.pcard.api .plink{color:var(--blue)}
+.pcard.panel .plink{color:var(--accent)}
+
+/* sections */
+.sec{margin-top:40px}
+.sec-head{text-align:center;max-width:560px;margin:0 auto}
+.sec-lab{font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--accent)}
+.sec h2{font-size:20px;font-weight:800;letter-spacing:-.3px;margin-top:7px}
+.sec .sub{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.65}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+@media(max-width:860px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--card);border:.5px solid var(--brd);border-radius:15px}
+
+/* catalog cards */
+.cat{padding:20px}
+.cat .chead{display:flex;align-items:center;gap:12px}
+.cat .ic{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.cat h3{font-size:15.5px;font-weight:800;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cat .tagline{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:1px}
+.cat p{font-size:12px;color:var(--muted);line-height:1.65;margin-top:12px}
+.cat .stats{display:flex;margin-top:14px;border-top:1px solid var(--hair);padding-top:12px}
+.cat .stats div{flex:1;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.cat .stats b{display:block;font-size:14px;font-weight:800;color:var(--text);margin-top:2px;text-transform:none;letter-spacing:0}
+.badge{font-size:9.5px;font-weight:800;padding:3px 8px;border-radius:99px}
+
+/* product switch */
+.pswitch{display:flex;border-radius:18px 18px 0 0;background:var(--card);border:1px solid var(--brd);border-bottom:none;margin:22px 0 0;overflow:hidden}
+.pswitch button{flex:1;padding:14px 10px;font-size:13px;font-weight:700;color:var(--muted);transition:.18s;display:flex;align-items:center;justify-content:center;gap:8px}
+.pswitch button:hover{color:var(--text)}
+.pswitch button .dot{width:7px;height:7px;border-radius:99px;background:currentColor;opacity:.4}
+.pswitch button.on{color:#fff}
+.pswitch button.on .dot{opacity:1;background:#fff}
+.pswitch button.on[data-prod="api"]{background:var(--bgrad)}
+.pswitch button.on[data-prod="panel"]{background:var(--grad)}
+
+/* product detail block */
+.pblock{border-radius:0 0 18px 18px;border:1px solid var(--brd);background:var(--card);overflow:hidden}
+.pblock .phead{padding:22px 24px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--hair)}
+.pblock.api .phead{background:linear-gradient(135deg,var(--blue-soft) 0%,transparent 55%)}
+.pblock.panel .phead{background:linear-gradient(135deg,var(--accent-soft) 0%,transparent 55%)}
+.phead .price{font-size:24px}
+.pblock.api .phead .price{color:var(--blue)}
+.pblock.panel .phead .price{color:var(--accent)}
+.phead .price-sub{margin-top:3px}
+.phead .pt{font-size:12.5px;color:var(--muted);max-width:400px;text-align:right;line-height:1.6}
+.pbody{padding:22px 24px 24px}
+.blab{font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin:26px 0 12px}
+.blab:first-child{margin-top:0}
+.blab i{font-style:normal}
+.pblock.api .blab i{color:var(--blue)}
+.pblock.panel .blab i{color:var(--accent)}
+
+/* feature rows */
+.feats{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+@media(max-width:860px){.feats{grid-template-columns:1fr}}
+.feat{display:flex;gap:12px;padding:13px 14px;border-radius:13px;background:var(--panel);border:1px solid var(--hair);align-items:center}
+.feat .fi{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pblock.api .feat .fi{background:var(--blue-soft2);color:var(--blue)}
+.pblock.panel .feat .fi{background:var(--accent-soft2);color:var(--accent)}
+.feat h4{font-size:13px;font-weight:800}
+.feat p{font-size:11.5px;color:var(--muted);line-height:1.6;margin-top:3px}
+.feat .fb{font-size:9px;font-weight:800;letter-spacing:.6px;padding:2px 7px;border-radius:99px;margin-left:6px;vertical-align:2px}
+
+/* build panel (however you build) */
+.build{display:grid;grid-template-columns:236px 1fr;border:1px solid var(--hair);border-radius:14px;overflow:hidden;background:var(--panel)}
+@media(max-width:860px){.build{grid-template-columns:1fr}}
+.bmenu{border-right:1px solid var(--hair);display:flex;flex-direction:column}
+@media(max-width:860px){.bmenu{flex-direction:row;border-right:none;border-bottom:1px solid var(--hair)}}
+.bopt{text-align:left;padding:16px;border-bottom:1px solid var(--hair);transition:.15s;flex:1}
+.bopt:last-child{border-bottom:none}
+.bopt h5{font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:8px}
+.bopt h5 .bdot{width:6px;height:6px;border-radius:99px;background:var(--muted);opacity:.35;flex-shrink:0}
+.bopt p{font-size:11px;color:var(--muted);line-height:1.55;margin-top:4px}
+.bopt.on{background:var(--blue-soft)}
+.bopt.on h5{color:var(--blue)}
+.bopt.on h5 .bdot{background:var(--blue);opacity:1}
+.bstage{padding:16px;min-width:0}
+.bstage .btag{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.code{background:var(--code);border:1px solid var(--hair);border-radius:11px;padding:13px 15px;font-size:11.5px;line-height:1.75;overflow-x:auto;position:relative}
+.code pre{margin:0}
+.cbtn{position:absolute;top:8px;right:8px;font-size:10px;font-weight:700;padding:4px 10px;border-radius:7px;background:var(--track);color:var(--muted);border:1px solid var(--hair)}
+.cbtn:hover{color:var(--accent)}
+.cmt{color:var(--muted)}
+.kw{color:var(--blue)}
+.field{display:flex;align-items:center;gap:10px;background:var(--code);border:1px solid var(--hair);border-radius:10px;padding:10px 13px;margin-bottom:8px}
+.field .fl{width:64px;flex-shrink:0;font-size:9.5px;font-weight:800;letter-spacing:.8px;color:var(--muted);text-transform:uppercase}
+.field .fv{font-size:11.5px;color:var(--soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.endp{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.endp span{font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:99px;background:var(--track);color:var(--soft)}
+
+/* rates + ladder */
+.rt{border:1px solid var(--hair);border-radius:14px;overflow:hidden;background:var(--panel)}
+.rt .rrow{display:grid;grid-template-columns:1fr auto auto;gap:14px;padding:11px 16px;border-bottom:1px solid var(--hair);align-items:center;font-size:12.5px}
+.rt .rrow:last-child{border-bottom:none}
+.rt .rrow.rhead{font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:10px 16px}
+.rt .old-p{font-size:12px;color:var(--muted);text-decoration:line-through;text-align:right}
+.rt .new-p{font-size:13px;font-weight:800;color:var(--blue);text-align:right;min-width:86px}
+.ladder{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+body.mob .ladder{grid-template-columns:1fr}
+@media(max-width:860px){.ladder{grid-template-columns:1fr}}
+.lad{padding:13px 14px;border-radius:12px;border:1px solid var(--hair);background:var(--panel)}
+.lad .ln{font-size:9.5px;font-weight:800;letter-spacing:1.2px;color:var(--blue)}
+.lad b{display:block;font-size:13px;font-weight:800;margin-top:4px}
+.lad p{font-size:11px;color:var(--muted);line-height:1.55;margin-top:3px}
+
+/* earnings calc */
+.earnbox{border:1px solid var(--hair);border-radius:14px;background:var(--panel);padding:16px}
+.earnbox .etop{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.earnbox .etop b{color:var(--text);font-size:13px}
+.mkr{width:100%;accent-color:var(--accent);margin-top:12px}
+.earn{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
+body.mob .earn{grid-template-columns:1fr}
+@media(max-width:640px){.earn{grid-template-columns:1fr}}
+.estat{padding:11px 13px;border-radius:11px;background:var(--card);border:1px solid var(--hair)}
+.estat .el{font-size:9.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+.estat .ev{font-size:15.5px;font-weight:800;margin-top:3px}
+.mkchip{background:var(--accent-soft2);color:var(--accent);border-radius:99px;padding:5px 13px;font-weight:800;font-size:11.5px;display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+.mkscale{display:flex;justify-content:space-between;font-size:9.5px;color:var(--muted);margin-top:3px}
+.kbtns{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.keystrip .kmsg{flex:1;min-width:190px;font-size:12px;color:var(--muted)}
+.btn-wa{font-size:12.5px;font-weight:700;padding:10px 16px;border-radius:11px;border:1px solid rgba(37,211,102,.4);color:#1e9e50;background:rgba(37,211,102,.12);transition:.15s;display:inline-flex;align-items:center;gap:7px}
+.btn-wa:hover{transform:translateY(-1px)}
+[data-theme="dark"] .btn-wa{color:#25d366;background:rgba(37,211,102,.14)}
+.catseg{display:flex;gap:4px;background:var(--track);border-radius:10px;padding:3px}
+.catseg button{font-size:10.5px;font-weight:800;padding:6px 11px;border-radius:8px;color:var(--muted);transition:.15s}
+.catseg button.on{background:var(--panel);color:var(--blue);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--hair);border-radius:14px;overflow:hidden;background:var(--panel)}
+@media(max-width:860px){.steps{grid-template-columns:1fr}}
+.step{padding:16px;border-right:1px solid var(--hair)}
+.step:last-child{border-right:none}
+@media(max-width:860px){.step{border-right:none;border-bottom:1px solid var(--hair)}.step:last-child{border-bottom:none}}
+.step .n{font-size:11px;font-weight:800;margin-bottom:8px}
+.pblock.api .step .n{color:var(--blue)}
+.pblock.panel .step .n{color:var(--accent)}
+.step h4{font-size:12.5px;font-weight:800}
+.step p{font-size:11px;color:var(--muted);line-height:1.6;margin-top:4px}
+
+/* key box */
+.keyfield{flex:1;min-width:220px;background:var(--code);border:1px solid var(--brd);border-radius:10px;padding:11px 13px;font-size:12px;color:var(--soft);letter-spacing:.4px}
+.keystrip{padding:14px 24px;border-bottom:1px solid var(--hair);background:var(--blue-soft);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.keystrip .kl{font-size:9.5px;font-weight:800;letter-spacing:1.2px;color:var(--blue);flex-shrink:0}
+.keystrip .keyfield{padding:9px 12px;min-width:200px}
+.keystrip .btn-g{padding:8px 13px;font-size:12px}
+
+/* setup form */
+.dmode{display:flex;gap:6px;margin-bottom:4px}
+.dmode button{flex:1;padding:9px 8px;border-radius:9px;border:1px solid var(--brd);font-size:11.5px;font-weight:700;color:var(--muted);transition:.15s}
+.dmode button.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.fl2{font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin:11px 0 5px}
+.fin{width:100%;background:var(--code);border:1px solid var(--brd);border-radius:9px;padding:10px 12px;font-size:12.5px;color:var(--text);outline:none}
+.fin:focus{border-color:var(--accent)}
+.nsbox{margin-top:8px;padding:10px 12px;border-radius:9px;background:var(--accent-soft);border:1px dashed var(--accent-soft2);font-size:11px;color:var(--soft);line-height:1.7}
+
+/* faq */
+.faq{border:1px solid var(--hair);border-radius:14px;overflow:hidden;background:var(--panel)}
+.faq details{border-bottom:1px solid var(--hair)}
+.faq details:last-child{border-bottom:none}
+.faq summary{list-style:none;cursor:pointer;padding:13px 16px;font-size:12.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary .chev{transition:.2s;color:var(--muted);flex-shrink:0}
+.faq details[open] summary .chev{transform:rotate(180deg);color:var(--accent)}
+.faq .fa{padding:0 16px 13px;font-size:12px;color:var(--muted);line-height:1.65;max-width:640px}
+
+/* panel pricing */
+.price{font-size:29px;font-weight:800;letter-spacing:-.5px}
+.price-sub{font-size:11.5px;color:var(--muted)}
+.balbar{padding:13px 15px;border-radius:12px;background:var(--panel);border:1px solid var(--hair)}
+.balbar .top{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-bottom:7px;gap:10px;flex-wrap:wrap}
+.balbar .top b{color:var(--text)}
+.prog{height:6px;border-radius:99px;background:var(--track);overflow:hidden}
+.prog i{display:block;height:100%;border-radius:99px;background:var(--grad);transition:width .4s}
+
+/* compare */
+.cmp{border:1px solid var(--hair);border-radius:15px;overflow:hidden;margin-top:20px;background:var(--panel)}
+.cmp-h{display:grid;grid-template-columns:128px 1fr 1fr;gap:0 14px;padding:13px 16px;font-size:11px;font-weight:800;border-bottom:1px solid var(--hair)}
+.cmp-h .a{color:var(--blue)}
+.cmp-h .p{color:var(--accent)}
+.cmp-row{display:grid;grid-template-columns:128px 1fr 1fr;gap:2px 14px;padding:11px 16px;border-bottom:1px solid var(--hair);font-size:12px;color:var(--soft);line-height:1.55}
+.cmp-row:last-child{border-bottom:none}
+.cmp-row .lab{font-weight:800;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;padding-top:2px}
+.cmp-row b{color:var(--text)}
+.ctag{display:none;font-size:8.5px;font-weight:800;letter-spacing:.8px;margin-bottom:3px}
+.ctag.a{color:var(--blue)}
+.ctag.p{color:var(--accent)}
+
+/* mobile preview */
+.mtabs{display:none;position:sticky;bottom:0;z-index:40;background:var(--shell);border-top:1px solid var(--hair);padding:7px 4px;backdrop-filter:blur(8px)}
+.mtabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:700;color:var(--muted);padding:4px 0}
+.mtabs button.on{color:var(--accent)}
+body.mob .frame{max-width:402px}
+body.mob .appgrid{grid-template-columns:1fr;min-height:0}
+body.mob .nav{display:none}
+body.mob .mtabs{display:flex}
+body.mob .hero{padding:26px 18px 20px}
+body.mob .hero h1{font-size:23px}
+body.mob .hero .lede{font-size:12.5px}
+body.mob .hero-meta{flex-direction:column;gap:7px;align-items:flex-start}
+body.mob .wrap{padding:0 14px 30px}
+body.mob .pick{grid-template-columns:1fr;gap:12px}
+body.mob .pcard .pd{min-height:0}
+body.mob .grid2,body.mob .feats,body.mob .steps{grid-template-columns:1fr}
+body.mob .step{border-right:none;border-bottom:1px solid var(--hair)}
+body.mob .step:last-child{border-bottom:none}
+body.mob .build{grid-template-columns:1fr}
+body.mob .bmenu{flex-direction:row;border-right:none;border-bottom:1px solid var(--hair)}
+body.mob .bopt{border-bottom:none;border-right:1px solid var(--hair)}
+body.mob .bopt:last-child{border-right:none}
+body.mob .phead{flex-direction:column;align-items:flex-start;padding:18px 16px}
+body.mob .phead>div:last-child{text-align:left}
+body.mob .keystrip{padding:12px 16px}
+body.mob .pbody{padding:18px 16px 20px}
+body.mob .sec{margin-top:32px}
+body.mob .cmp-h{display:none}
+body.mob .cmp-row{grid-template-columns:1fr 1fr;gap:6px 12px;padding:12px 14px}
+body.mob .cmp-row .lab{grid-column:1/-1;padding-top:0}
+body.mob .ctag{display:block}
+body.mob .closer{flex-direction:column;align-items:flex-start}
+
+/* modal + toasts */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:80;padding:16px}
+.modal-ov.show{display:flex}
+.modal{width:430px;max-width:94vw;max-height:86vh;overflow-y:auto;background:var(--panel);border:1px solid var(--brd);border-radius:16px;box-shadow:var(--shadow);padding:22px}
+.modal h3{font-size:16px;font-weight:800;margin-bottom:7px}
+.modal p{font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:13px}
+.mrow{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.toasts{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:10px;z-index:90}
+.toast{width:300px;background:var(--panel);border:1px solid var(--accent-soft2);border-left:3px solid var(--accent);border-radius:12px;padding:11px 13px;box-shadow:var(--shadow);animation:tIn .25s ease}
+@keyframes tIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.toast .tt{font-size:12.5px;font-weight:700}
+.toast .td2{font-size:11px;color:var(--muted);margin-top:2px;word-break:break-all}
+
+/* closer */
+.closer{margin-top:36px;padding:24px;border-radius:16px;background:var(--grad);color:#fff;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.closer h3{font-size:17px;font-weight:800}
+.closer p{font-size:12.5px;opacity:.9;margin-top:4px}
+.closer .cb{background:#fff;color:var(--accent2);font-size:13px;font-weight:800;padding:11px 18px;border-radius:11px;transition:.15s}
+.closer .cb:hover{transform:translateY(-1px)}
+.closer .cb.ghost{background:rgba(255,255,255,.18);color:#fff;margin-left:8px}
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <div class="ctl-group" id="keyCtl">
+    <button class="ctl on" data-k="0">No API key yet</button>
+    <button class="ctl" data-k="1">Key generated</button>
+  </div>
+  <div class="ctl-group" id="balCtl">
+    <button class="ctl on" data-b="low">Wallet ₦8,000</button>
+    <button class="ctl" data-b="high">Wallet ₦124,500</button>
+    <button class="ctl" data-b="own">Panel owned</button>
+  </div>
+  <div class="ctl-group" id="vpCtl">
+    <button class="ctl on" data-vp="desk">Desktop</button>
+    <button class="ctl" data-vp="mob">Mobile</button>
+  </div>
+  <div class="ctl-group">
+    <button class="ctl" id="themeCtl">◐ Dark</button>
+    <button class="ctl" id="notesCtl">ⓘ Notes</button>
+  </div>
+</div>
+
+<div class="frame">
+  <div class="topbar">
+    <span class="wm">nitro</span>
+    <div class="tb-right">
+      <div class="bell"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div>
+      <div class="avatar">T</div>
+    </div>
+  </div>
+  <div class="appgrid">
+    <nav class="nav" id="retailNav"></nav>
+    <div class="main" id="main"></div>
+  </div>
+  <div class="mtabs" id="mtabs"></div>
+</div>
+
+<div class="modal-ov" id="modalOv"><div class="modal" id="modalBox"></div></div>
+<div class="toasts" id="toasts"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const N=n=>"₦"+Math.round(n).toLocaleString("en-US");
+const API_KEY="ntr_live_4x9kq2mvt8p1zc6ba8f7c640";
+const PANEL_MONTHLY=25000, EARN_COST=2720;
+let prod='api', buildMode='std', hasKey=false, bal=8000, owned=false, keyShown=false, mk=30, cat='curated';
+
+function toast(t,d){const el=document.createElement('div');el.className='toast';el.innerHTML='<div class="tt">'+t+'</div>'+(d?'<div class="td2 m">'+d+'</div>':'');$('toasts').appendChild(el);setTimeout(()=>el.remove(),3600);}
+function copy(t,l){try{navigator.clipboard.writeText(t);}catch(e){}toast(l||"Copied",t.length>44?t.slice(0,44)+"…":t);}
+function modal(h){$('modalBox').innerHTML=h;$('modalOv').classList.add('show');}
+function closeModal(){$('modalOv').classList.remove('show');}
+$('modalOv').addEventListener('click',e=>{if(e.target===$('modalOv'))closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+const note=t=>'<div class="note">'+t+'</div>';
+const chk='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+const S='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+const arrow='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+const WA='<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.297-.497.1-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
+
+const NAV=["Home","New Order","History","Wallet","Referrals","Support","Settings"];
+function renderNav(){$('retailNav').innerHTML=NAV.map(n=>'<button>'+n+'</button>').join('')+'<button class="on">Reseller Lab<span class="newchip">NEW</span></button>';
+  $('mtabs').innerHTML=[["Home",'<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>'],["Order",'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>'],["Wallet",'<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>'],["Reseller",'<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/>'],["More",'<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>']]
+   .map(([l,p],i)=>'<button class="'+(i===3?'on':'')+'">'+S.replace('width="15" height="15"','width="17" height="17"')+p+'</svg>'+l+'</button>').join('');}
+
+/* ── hero + product pick ── */
+function hero(){
+  return '<div class="hero"><div class="hero-in">'
+   +'<span class="eyebrow">Reseller Lab</span>'
+   +'<h1>Build your business on Nitro</h1>'
+   +'<div class="lede">Two products, one wallet. Plug our <b>API</b> into a panel you already run, or launch a <b>ready-made panel</b> on Nitro\'s system with your brand on the door. Reseller pricing on both.</div>'
+   +'<div class="hero-meta">'
+   +['API access is free, no application','Panel unlocks instantly with wallet balance','Everything settles in Naira'].map(t=>'<span>'+chk+t+'</span>').join('')
+   +'</div>'
+   +'<div style="height:64px"></div>'
+   +'</div></div>'
+   +'<div class="wrap"><div class="pick">'
+   +'<button class="pcard api'+(prod==='api'?' sel':'')+'" data-pick="api">'
+   +'<div class="pnum">PRODUCT 01 · FOR PANEL OWNERS'+(hasKey?' &nbsp;<span class="badge" style="background:var(--green-soft);color:var(--green)">● ACTIVE</span>':'')+'</div><h3>API Access</h3>'
+   +'<div class="pd">You already have a panel, a bot, or a script. Point it at Nitro and fulfil through us at reseller rates. Full natural speed, never queued behind gradual delivery.</div>'
+   +'<div class="pfacts"><div>Entry<b>Free</b></div><div>Setup<b>Instant key</b></div><div>Delivery<b>Full speed</b></div></div>'
+   +'<span class="plink">Explore API access '+arrow+'</span></button>'
+   +'<button class="pcard panel'+(prod==='panel'?' sel':'')+'" data-pick="panel">'
+   +'<div class="pnum">PRODUCT 02 · FOR NEW OWNERS'+(owned?' &nbsp;<span class="badge" style="background:var(--green-soft);color:var(--green)">● LIVE</span>':'')+'</div><h3>Your Own Panel</h3>'
+   +'<div class="pd">No panel? Start one. A white-label storefront on Nitro\'s engine: your own domain or a free subdomain, your prices, your customers. We build it, we fulfil it, you sell.</div>'
+   +'<div class="pfacts"><div>Entry<b class="m">₦25k/mo</b></div><div>Setup<b>We build it</b></div><div>Delivery<b>Gradual opt&#8209;in</b></div></div>'
+   +'<span class="plink">Explore your panel '+arrow+'</span></button>'
+   +'</div>';
+}
+
+/* ── shared: catalogs ── */
+function catalogs(){
+  return '<div class="sec"><div class="sec-head"><span class="sec-lab">What you\'ll sell</span><h2>Two catalogs, your pick</h2>'
+   +'<div class="sub">Both products sell from the same catalogs and the same live pricing. Your key serves whichever list you pick, and you can switch anytime.</div></div>'
+   +'<div class="grid2">'
+   +'<div class="card cat"><div class="chead"><div class="ic" style="background:var(--grad)">'+S+'<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>'
+   +'<div><h3>Nitro Curated <span class="badge" style="background:var(--accent-soft2);color:var(--accent)">DEFAULT</span></h3><div class="tagline">The catalog we stake our name on</div></div></div>'
+   +'<p>Hand-picked, stress-tested services sorted into Budget, Standard and Premium tiers. Refill-backed where it counts. Fewer choices, far fewer disappointed customers. The exact list we sell retail.</p>'
+   +'<div class="stats"><div>Services<b>~140</b></div><div>Structure<b>3 tiers</b></div><div>Refill<b>30d / life</b></div></div></div>'
+   +'<div class="card cat"><div class="chead"><div class="ic" style="background:var(--bgrad)">'+S+'<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>'
+   +'<div><h3>Full Catalogue</h3><div class="tagline">Everything our providers can reach</div></div></div>'
+   +'<p>The raw list across every connected provider: thousands of services, every platform, every niche the curated list leaves out. For resellers who want breadth and know how to pick.</p>'
+   +'<div class="stats"><div>Services<b>3,400+</b></div><div>Platforms<b>35+</b></div><div>Providers<b>3</b></div></div></div>'
+   +'</div>'
+   +note("<b>Same endpoint either way.</b> Catalog mode is the reseller's own choice, switched from the API block below. The <span class='m'>services</span> call just returns a different list, so nothing changes in their integration.")
+   +'</div>';
+}
+
+/* ── API product block ── */
+function apiBlock(){
+  const masked="•••••••••••••••"+API_KEY.slice(-8);
+  const FE=[
+   ['<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',"Full speed, always","API orders never enter the gradual delivery queue. They hit providers at natural speed, and your customers see movement in minutes."],
+   ['<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',"Reseller rates","Priced below retail on every API order, and they improve automatically as your monthly volume climbs. No renegotiation."],
+   ['<path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',"Auto refunds","Anything we can't deliver refunds to your wallet automatically. You're never out of pocket on a failed order."],
+   ['<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',"Live tracking","Start count, remains and status on every order, pollable so your panel can show your customers real progress."]];
+  return '<div class="pblock api" id="detail">'
+   +'<div class="phead"><div>'+(hasKey
+     ? '<span class="badge" style="background:var(--green-soft);color:var(--green);font-size:11px;padding:6px 12px">● KEY ACTIVE</span>'
+     : '<div class="price m">Free</div><div class="price-sub">no application · instant key</div>')+'</div>'
+   +'<div class="pt">For the reseller who already has somewhere to sell</div></div>'
+   +(hasKey
+     ? '<div class="keystrip"><span class="kl">YOUR API KEY</span><div class="keyfield m">'+(keyShown?API_KEY:masked)+'</div>'
+       +'<div class="kbtns"><button class="btn-g" id="revealK">'+(keyShown?"Hide":"Reveal")+'</button>'
+       +'<button class="btn-g" data-copy-key="1">Copy</button>'
+       +'<button class="btn-g" id="docsBtnA">API docs</button>'
+       +'<button class="btn-g" id="regenK" style="color:var(--red)">Regenerate</button></div></div>'
+     : '<div class="keystrip"><span class="kl">YOUR API KEY</span><span class="kmsg">None yet. Access is free and instant, no application.</span>'
+       +'<div class="kbtns"><button class="btn-b" id="genKey" style="padding:9px 16px;font-size:12.5px">Generate API key</button>'
+       +'<button class="btn-g" id="docsBtnA">API docs</button></div></div>')
+   +'<div class="pbody">'
+   +'<div class="blab"><i>01</i> · What you get</div>'
+   +'<div class="feats">'+FE.map(([p,t,d])=>'<div class="feat"><div class="fi">'+S+p+'</svg></div><div><h4>'+t+'</h4><p>'+d+'</p></div></div>').join('')+'</div>'
+   +'<div class="blab"><i>02</i> · Your rates</div>'
+   +'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px"><span style="font-size:12px;color:var(--muted)">Your key serves the list you pick here. Switch anytime.</span>'
+   +'<div class="catseg"><button data-cat="curated"'+(cat==='curated'?' class="on"':'')+'>Curated tiers</button><button data-cat="full"'+(cat==='full'?' class="on"':'')+'>Full providers</button></div></div>'
+   +'<div class="rt">'
+   +'<div class="rrow rhead"><span>Sample services · per 1,000</span><span>Retail</span><span style="text-align:right">Your rate</span></div>'
+   +[["Instagram Followers — Standard",4200,2720],["TikTok Views",850,520],["YouTube Subscribers",9800,7150]]
+     .map(([s,r,y])=>'<div class="rrow"><span>'+s+'</span><span class="old-p m">'+N(r)+'</span><span class="new-p m">'+N(y)+'</span></div>').join('')
+   +'<div class="rrow" style="font-size:11.5px;color:var(--muted)"><span>'+(cat==='curated'?'Plus the rest of the curated list, ~140 tiered services.':'Plus 3,400+ raw provider services across 35+ platforms.')+' Pull live prices with <span class="m">services</span></span><span></span><span></span></div>'
+   +'</div>'
+   +'<div class="ladder">'
+   +[["STARTER","Under ₦250k / month","Base reseller rates, already below retail on every service."],["GROWTH","₦250k – ₦1m / month","A deeper discount unlocks automatically. No renegotiation."],["SCALE","₦1m+ / month","Our best rates, plus priority support."]]
+     .map(([n,t,d])=>'<div class="lad"><span class="ln">'+n+'</span><b>'+t+'</b><p>'+d+'</p></div>').join('')
+   +'</div>'
+   +'<div class="blab"><i>03</i> · However you build</div>'
+   +'<div class="build">'
+   +'<div class="bmenu">'
+   +'<button class="bopt'+(buildMode==='std'?' on':'')+'" data-bm="std"><h5><span class="bdot"></span>Standard panels &amp; scripts</h5><p>Ready-made panel software already speaks our language. Paste two values and you\'re live.</p></button>'
+   +'<button class="bopt'+(buildMode==='custom'?' on':'')+'" data-bm="custom"><h5><span class="bdot"></span>Building your own</h5><p>Custom bot or dashboard? Six endpoints cover ordering, status, refills and balance.</p></button>'
+   +'</div>'
+   +'<div class="bstage">'+(buildMode==='std'
+     ? '<div class="btag">Your panel\'s provider settings. That\'s the whole setup</div>'
+       +'<div class="field"><span class="fl">API URL</span><span class="fv m">https://nitro.ng/api/v2</span></div>'
+       +'<div class="field"><span class="fl">API Key</span><span class="fv m">'+(hasKey?API_KEY:'ntr_live_ · · ·  generate yours above')+'</span></div>'
+       +'<div class="field"><span class="fl" style="color:var(--green)">Then</span><span class="fv">Hit “sync services”, set your margins, done.</span></div>'
+       +'<div class="endp"><span>service / link / quantity</span><span>same fields every panel uses</span><span>zero custom code</span></div>'
+     : '<div class="btag">Same key, full toolset</div>'
+       +'<div class="code m"><button class="cbtn" data-copy-curl="1">Copy</button><pre><span class="cmt"># place an order</span>\ncurl -X POST https://nitro.ng/api/v2 \\\n  -d <span class="kw">key</span>='+(hasKey?'YOUR_KEY':'ntr_live_…')+' \\\n  -d <span class="kw">action</span>=add \\\n  -d <span class="kw">service</span>=3877 \\\n  -d <span class="kw">link</span>=https://instagram.com/client \\\n  -d <span class="kw">quantity</span>=1000\n<span class="cmt"># => {"order": 4211}</span></pre></div>'
+       +'<div class="endp"><span>services</span><span>add</span><span>status</span><span>refill</span><span>balance</span><span>cancel</span></div>')
+   +'</div></div>'
+   +'<div class="blab"><i>04</i> · Live in four steps</div>'
+   +'<div class="steps">'+[["Generate your key","One click, right here. No application, every Nitro account qualifies."],["Fetch services &amp; prices","Pull the catalog with your reseller rates, set your margins on top."],["Place orders","From your panel, bot or code. Orders charge your Nitro wallet."],["Track &amp; scale","Poll status live. Volume climbs, rates improve automatically."]]
+    .map(([t,d],i)=>'<div class="step"><div class="n">STEP '+(i+1)+'</div><h4>'+t+'</h4><p>'+d+'</p></div>').join('')+'</div>'
+   +'<div class="blab"><i>05</i> · Questions, answered</div>'
+   +'<div class="faq">'+[
+    ["Do I need to apply or get approved?","No. Generate a key on this page and it works immediately, with reseller rates applied from the first order."],
+    ["How do I connect my panel?","Point your panel's provider settings at <span class='m'>https://nitro.ng/api/v2</span> with your key. It speaks the standard <span class='m'>service / link / quantity</span> format, so ready-made panels connect with zero custom code."],
+    ["Which services can my key order?","Whichever list you pick above: the curated tiers or the full provider list. Switch anytime; the <span class='m'>services</span> call always returns your current list."],
+    ["Why do API orders never run gradual delivery?","Gradual delivery is a retail safety feature. As a reseller you manage your own customers' expectations, so your orders go at full natural speed. If you want gradual delivery as a product, that's what the child panel offers."],
+    ["What happens to orders that can't deliver?","They refund to your wallet automatically. You're never out of pocket on a failed order."],
+    ["How do my rates improve?","Your monthly fulfilment spend sets your tier on the volume ladder. Tiers upgrade automatically and apply to every order after."],
+    ["Is there a rate limit?","Generous ones, built to keep the engine healthy. Normal panel traffic never touches them."],
+    ["Can I run the API and a child panel together?","Yes. One wallet, one volume ladder, two revenue streams."]]
+    .map(([q,a])=>'<details><summary>'+q+'<span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></summary><div class="fa">'+a+'</div></details>').join('')+'</div>'
+   +note("<b>The split.</b> This block is Product 01 only — blue identity, its own perks, steps and CTA. The key lives in a strip pinned to the top of the block so it can't be missed, and gradual delivery is deliberately absent here except as the promise that API orders skip it.")
+   +'</div></div>';
+}
+
+/* ── Panel product block ── */
+function panelBlock(){
+  const enough=bal>=PANEL_MONTHLY, pct=Math.min(100,Math.round(bal/PANEL_MONTHLY*100));
+  const FE=[
+   ['<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',"Your storefront","Free yourbrand.nitro.ng, or connect a domain you already own by pointing its nameservers at us. Live within 48 hours.",""],
+   ['<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',"True white-label","Your name, logo, colors and domain everywhere. Nitro never appears anywhere your customers can see.",""],
+   ['<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>',"Your pricing","Set any markup over your reseller rates, per service. The gap between their price and fulfilment cost is yours.",""],
+   ['<path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/>',"Gradual delivery engine","Nitro's slow, natural-looking delivery, available on your storefront when you switch it on. Most panels can't offer this.","OPT-IN"],
+   ['<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',"Customer accounts","Registrations, balances and order history for your users, managed by our system under your brand.",""],
+   ['<circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>',"Automated fulfilment","Orders placed on your panel route straight to our engine and providers. No manual forwarding, ever.",""],
+   ['<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>',"You get paid directly","Your bank account and crypto address sit on your top-up page. Customer money goes straight to you, never through us.",""],
+   ['<polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/>',"Launch kit","A promo pack and setup guide the day you go live: launch posts, pricing templates, how to land your first customers.",""]];
+  const FAQ=[
+   ["Do I need technical knowledge?","No. You pick a domain and set your prices from a simple dashboard. Hosting, delivery, providers and maintenance are all on us."],
+   ["How long until my panel is live?","Usually within 48 hours of starting. Own domains go live as soon as your nameserver change propagates, which can add up to 24 hours."],
+   ["Can I use my own domain?","Yes. Buy any domain from any registrar, point its nameservers to <span class='m'>ns1.nitro.ng</span> and <span class='m'>ns2.nitro.ng</span>, and we white-label everything on it. Or take the free subdomain and skip DNS entirely."],
+   ["Will my customers know Nitro is behind it?","No. Your storefront carries your name, logo, colors, domain and prices. Nitro appears nowhere your customers look."],
+   ["How do my customers pay me?","Directly. Your own bank account and crypto address go on your storefront's top-up page (your own gateway keys are a later upgrade). You approve deposits from your panel admin, your customer's balance updates, and the money sits in <i>your</i> bank. It never routes through Nitro."],
+   ["So how does Nitro get paid?","Two ways only: your "+N(PANEL_MONTHLY)+" monthly, and fulfilment at reseller rates drawn from your Nitro wallet when your customers' orders run. We never touch or hold your customers' money. The rhythm is simple: you get paid, you keep the wallet funded, and orders are never delayed."],
+   ["What if my wallet can't cover a month?","Your panel pauses. Nothing is deleted and your customers' data stays put. Top up and it's back instantly. Same idea for orders: if the wallet can't cover an order's fulfilment cost, it queues until you top up."],
+   ["Can my customers get gradual delivery?","If you switch it on. Nitro's gradual delivery engine is an opt-in feature on your storefront, a selling point most panels can't match."],
+   ["Why not build my own panel from scratch?","Software, providers, payments, uptime and support are months of work before your first sale. Here you're selling in 48 hours and the engine is ours to maintain."],
+   ["Can I get a refund?","Month one refunds to your wallet in full if we haven't started your build. Once your panel is live, months already charged aren't refunded, but you can cancel renewal anytime."]];
+  const chev='<span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>';
+  let action;
+  if(owned) action='<div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center"><button class="btn-p" data-toast="Opening panel manager">Manage my panel</button><button class="btn-g" data-copy="https://bella-smm.nitro.ng">bella-smm.nitro.ng</button></div>';
+  else if(enough) action='<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn-p" id="buyPanel">Start my panel now</button><span style="font-size:11.5px;color:var(--green);font-weight:700;display:inline-flex;gap:5px;align-items:center">'+chk+' Balance covers month one, instant start</span></div>';
+  else action='<div style="display:flex;gap:9px;flex-wrap:wrap"><button class="btn-p" id="topUpFor">Top up '+N(PANEL_MONTHLY-bal)+' to start</button><button class="btn-wa" data-toast="Opening WhatsApp chat">'+WA+'Ask a question first</button></div>';
+  return '<div class="pblock panel" id="detail">'
+   +'<div class="phead"><div>'+(owned
+     ? '<span class="badge" style="background:var(--green-soft);color:var(--green);font-size:11px;padding:6px 12px">● PANEL LIVE</span>'
+     : '<div class="price m">'+N(PANEL_MONTHLY)+'<span style="font-size:12px;font-weight:700;color:var(--muted)">/mo</span></div><div class="price-sub">auto-charged from wallet · cancel anytime · no setup fee</div>')+'</div>'
+   +'<div class="pt">A white-label storefront on Nitro\'s system, with your name on it</div></div>'
+   +'<div class="pbody">'
+   +'<div class="blab"><i>01</i> · What you get</div>'
+   +'<div class="feats">'+FE.map(([p,t,d,b])=>'<div class="feat"><div class="fi">'+S+p+'</svg></div><div><h4>'+t+(b?'<span class="fb" style="background:var(--accent-soft2);color:var(--accent)">'+b+'</span>':'')+'</h4><p>'+d+'</p></div></div>').join('')+'</div>'
+   +'<div class="blab"><i>02</i> · What you\'d earn</div>'
+   +'<div class="earnbox"><div class="etop"><span>Example: <b>Instagram Followers</b> · fulfilment <b class="m">'+N(EARN_COST)+'</b>/1k</span><span class="mkchip">Markup <b class="m" id="mkV">'+mk+'%</b></span></div>'
+   +'<input type="range" class="mkr" id="mkR" min="10" max="100" step="5" value="'+mk+'">'
+   +'<div class="mkscale"><span>10%</span><span>100%</span></div>'
+   +'<div class="earn">'
+   +'<div class="estat"><div class="el">Customer pays / 1k</div><div class="ev m" id="ePay">'+N(EARN_COST*(1+mk/100))+'</div></div>'
+   +'<div class="estat"><div class="el">Fulfilment / 1k</div><div class="ev m" style="color:var(--muted)">'+N(EARN_COST)+'</div></div>'
+   +'<div class="estat"><div class="el">You keep / 1k</div><div class="ev m" id="eKeep" style="color:var(--green)">'+N(EARN_COST*mk/100)+'</div></div>'
+   +'</div>'
+   +'<div style="font-size:11px;color:var(--muted);margin-top:10px">Markup is per service, set by you, changeable anytime. Customer pays you in your bank; fulfilment draws from your wallet.</div></div>'
+   +'<div class="blab"><i>03</i> · How it starts</div>'
+   +'<div class="steps">'+[["Fund your wallet","Month one is "+N(PANEL_MONTHLY)+", from the same wallet you already top up."],["Set up your panel","Domain (yours or a free subdomain), storefront currency and your admin login. One form."],["We build it","Live within 48 hours. Own domains follow once your nameservers propagate."],["Set prices &amp; sell","Choose your markup, switch on gradual delivery if you want it, open the doors."]]
+    .map(([t,d],i)=>'<div class="step"><div class="n">STEP '+(i+1)+'</div><h4>'+t+'</h4><p>'+d+'</p></div>').join('')+'</div>'
+   +'<div class="blab"><i>04</i> · '+(owned?'Your panel':'Start it')+'</div>'
+   +(owned?'':'<div class="balbar" style="margin-bottom:12px"><div class="top"><span>Your wallet balance</span><span><b class="m">'+N(bal)+'</b> vs first month '+N(PANEL_MONTHLY)+'</span></div><div class="prog"><i style="width:'+pct+'%"></i></div>'
+     +'<div style="font-size:11.5px;color:'+(enough?'var(--green)':'var(--muted)')+';margin-top:8px;font-weight:'+(enough?'700':'400')+';display:flex;gap:5px;align-items:center">'
+     +(enough?chk+' Covered. Start now and we begin building immediately.':'Fund '+N(PANEL_MONTHLY-bal)+' more and your panel starts instantly, with no application or approval queue.')+'</div></div>')
+   +action
+   +(owned?'':'<div style="font-size:11px;color:var(--muted);margin-top:10px">Renews monthly from your wallet. If a renewal can\'t be covered, your panel pauses, never deleted, until you top up. Pro move: your customers pay you first, so keep a slice of that in the wallet ahead of demand and orders never wait.</div>')
+   +'<div class="blab"><i>05</i> · Questions, answered</div>'
+   +'<div class="faq">'+FAQ.map(([q,a])=>'<details><summary>'+q+chev+'</summary><div class="fa">'+a+'</div></details>').join('')+'</div>'
+   +note("<b>The MTP upgrade, Nitro-ized.</b> Monthly pricing auto-charged from the unified wallet, both domain paths (free subdomain or own domain via ns1/ns2.nitro.ng), a real setup form capturing domain, currency and admin login, and the FAQ — but the start is still instant with balance, no application.")
+   +'</div></div>';
+}
+
+/* ── product section w/ switch ── */
+function products(){
+  return '<div class="sec" id="prodsec"><div class="sec-head"><span class="sec-lab">The products</span><h2>Two different businesses. Pick yours.</h2>'
+   +'<div class="sub">One is a supply line into a panel you already run. The other is a complete panel we run for you. Different prices, different delivery rules, different work.</div></div>'
+   +'<div class="pswitch" id="pswitch">'
+   +'<button data-prod="api" class="'+(prod==='api'?'on':'')+'"><span class="dot"></span>01 · API Access</button>'
+   +'<button data-prod="panel" class="'+(prod==='panel'?'on':'')+'"><span class="dot"></span>02 · Your Own Panel</button>'
+   +'</div>'
+   +(prod==='api'?apiBlock():panelBlock())
+   +'</div>';
+}
+
+/* ── compare ── */
+function compare(){
+  const R=[
+   ["Best for","You already run a panel, bot or shop","You want a panel without building one"],
+   ["Entry cost","<b>Free</b>, just generate a key","<b>"+N(PANEL_MONTHLY)+"/month</b> from your wallet, cancel anytime"],
+   ["Your customers buy on","Your existing panel or app","<b>Your own domain</b> or free yourbrand.nitro.ng"],
+   ["Delivery","<b>Full speed, always.</b> Never gradual","Full speed, or <b>gradual delivery</b> if you opt in"],
+   ["You handle","Your own software and support","Pricing and marketing. We run the rest"],
+   ["Money flow","Your wallet funds fulfilment","Customers pay <b>you</b> directly; your wallet only funds fulfilment"]];
+  return '<div class="sec"><div class="sec-head"><span class="sec-lab">Side by side</span><h2>Which one is yours?</h2></div>'
+   +'<div class="cmp"><div class="cmp-h"><span></span><span class="a">01 · API ACCESS</span><span class="p">02 · YOUR OWN PANEL</span></div>'
+   +R.map(r=>'<div class="cmp-row"><span class="lab">'+r[0]+'</span><span><span class="ctag a">API ACCESS</span>'+r[1]+'</span><span><span class="ctag p">YOUR PANEL</span>'+r[2]+'</span></div>').join('')
+   +'</div>'
+   +'<div style="text-align:center;margin-top:14px;font-size:12px;color:var(--muted)">Running both? They coexist: one wallet, one volume ladder, two revenue streams.</div>'
+   +'</div>';
+}
+
+function closer(){
+  return '<div class="closer"><div><h3>'+(hasKey?"Key's live. Go sell.":"Start where you are.")+'</h3><p>'+(hasKey?"Docs cover all six endpoints with copy-paste examples.":"Got a panel? Grab a key. Don't? Fund the wallet and we'll build yours.")+'</p></div>'
+   +'<div>'+(hasKey?'<button class="cb" id="docsBtnC">Read the docs</button><button class="cb ghost" data-pick="panel">See the panel</button>'
+    :'<button class="cb" id="genKey3">Generate free API key</button><button class="cb ghost" data-pick="panel">See the panel</button>')+'</div></div>';
+}
+
+function render(){
+  renderNav();
+  $('main').innerHTML=hero()+catalogs()+products()+compare()+closer()+'</div>';
+  wire();
+}
+function goDetail(){const el=$('detail');if(el&&el.scrollIntoView)try{el.scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}}
+function buyModal(mode){
+  const CUR=['NGN — Nigerian naira','USD — US dollar','GHS — Ghanaian cedi','KES — Kenyan shilling','ZAR — South African rand','XOF — CFA franc','EGP — Egyptian pound','TZS — Tanzanian shilling','UGX — Ugandan shilling','GBP — Pound sterling','EUR — Euro','INR — Indian rupee'].map((c,i)=>'<option'+(i===0?' selected':'')+'>'+c+'</option>').join('');
+  modal('<h3>Set up your panel</h3><p>'+N(PANEL_MONTHLY)+'/month, auto-charged from your wallet. Month one starts your build, usually live within 48 hours.</p>'
+   +'<div class="dmode"><button id="dmSub"'+(mode==='sub'?' class="on"':'')+'>Free subdomain</button><button id="dmOwn"'+(mode==='own'?' class="on"':'')+'>My own domain</button></div>'
+   +(mode==='sub'
+     ? '<span class="fl2">Choose your subdomain</span><input class="fin m" id="subIn" placeholder="yourbrand"><div style="font-size:11px;color:var(--muted);margin-top:5px">Your storefront: <span class="m" id="subPrev">yourbrand.nitro.ng</span></div>'
+     : '<span class="fl2">Your domain</span><input class="fin m" id="domIn" placeholder="yourbrand.com"><div class="nsbox">Point your domain\'s nameservers to <b class="m">ns1.nitro.ng</b> and <b class="m">ns2.nitro.ng</b>. We handle SSL and everything else. Your panel goes live once it propagates.</div>')
+   +'<span class="fl2">Storefront currency</span><select class="fin" id="curSel">'+CUR+'</select>'
+   +'<div style="font-size:11px;color:var(--muted);margin-top:5px">What your customers see and pay in. Your Nitro wallet stays in Naira.</div>'
+   +'<span class="fl2">Admin username</span><input class="fin" id="admU" placeholder="bella_admin">'
+   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><span class="fl2">Admin password</span><input type="password" class="fin" id="admP"></div><div><span class="fl2">Confirm</span><input type="password" class="fin" id="admP2"></div></div>'
+   +'<div class="mrow"><button class="btn-g" id="mCancel">Cancel</button><button class="btn-p" id="mOk" style="padding:10px 18px">Pay '+N(PANEL_MONTHLY)+' &amp; start build</button></div>');
+  $('dmSub').addEventListener('click',()=>buyModal('sub'));
+  $('dmOwn').addEventListener('click',()=>buyModal('own'));
+  const si=$('subIn'); if(si) si.addEventListener('input',()=>{const v=si.value.trim().toLowerCase().replace(/[^a-z0-9-]/g,'');$('subPrev').textContent=(v||'yourbrand')+'.nitro.ng';});
+  $('mCancel').addEventListener('click',closeModal);
+  $('mOk').addEventListener('click',()=>{closeModal();owned=true;bal-=PANEL_MONTHLY;render();toast("Panel started","Build underway, live within 48 hours");});
+}
+function wire(){
+  document.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>{prod=b.dataset.pick;render();setTimeout(goDetail,60);}));
+  document.querySelectorAll('#pswitch [data-prod]').forEach(b=>b.addEventListener('click',()=>{prod=b.dataset.prod;render();}));
+  document.querySelectorAll('[data-bm]').forEach(b=>b.addEventListener('click',()=>{buildMode=b.dataset.bm;render();}));
+  document.querySelectorAll('[data-cat]').forEach(b=>b.addEventListener('click',()=>{if(cat===b.dataset.cat)return;cat=b.dataset.cat;render();
+    toast("Catalog switched",cat==='curated'?"services now returns the curated tiers":"services now returns the full provider list");}));
+  document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click',()=>copy(b.dataset.copy)));
+  document.querySelectorAll('[data-copy-key]').forEach(b=>b.addEventListener('click',()=>copy(API_KEY,"API key copied")));
+  document.querySelectorAll('[data-copy-curl]').forEach(b=>b.addEventListener('click',()=>copy('curl -X POST https://nitro.ng/api/v2 -d key=YOUR_KEY -d action=add -d service=3877 -d link=https://instagram.com/client -d quantity=1000',"Example copied")));
+  document.querySelectorAll('[data-toast]').forEach(b=>b.addEventListener('click',()=>toast(b.dataset.toast)));
+  ['docsBtnA','docsBtnC'].forEach(id=>{const b=$(id);if(b)b.addEventListener('click',()=>toast("Opening API documentation","6 endpoints · PHP + Python examples"));});
+  const gen=()=>{hasKey=true;keyShown=true;prod='api';render();toast("API key generated","Copy it now, reseller rates are live");setTimeout(goDetail,60);};
+  ['genKey','genKey2','genKey3'].forEach(id=>{const b=$(id);if(b)b.addEventListener('click',gen);});
+  const rv=$('revealK'); if(rv) rv.addEventListener('click',()=>{keyShown=!keyShown;render();});
+  const rg=$('regenK'); if(rg) rg.addEventListener('click',()=>{
+    modal('<h3>Regenerate API key?</h3><p>This invalidates your current key immediately. Every request using it will fail until you update your panel.</p><div class="mrow"><button class="btn-g" id="mCancel">Cancel</button><button class="btn-g" id="mOk" style="color:var(--red)">Regenerate</button></div>');
+    $('mCancel').addEventListener('click',closeModal);$('mOk').addEventListener('click',()=>{closeModal();keyShown=true;render();toast("New key generated","Old key is now dead");});
+  });
+  const bp=$('buyPanel'); if(bp) bp.addEventListener('click',()=>buyModal('sub'));
+  const tu=$('topUpFor'); if(tu) tu.addEventListener('click',()=>toast("Opening Wallet","Fund "+N(PANEL_MONTHLY-bal)+" to start instantly"));
+  const mr=$('mkR'); if(mr) mr.addEventListener('input',()=>{mk=Number(mr.value);
+    $('mkV').textContent=mk+'%';$('ePay').textContent=N(EARN_COST*(1+mk/100));$('eKeep').textContent=N(EARN_COST*mk/100);});
+}
+$('keyCtl').addEventListener('click',e=>{const b=e.target.closest('.ctl');if(!b)return;
+  document.querySelectorAll('#keyCtl .ctl').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  hasKey=b.dataset.k==="1";keyShown=hasKey;render();});
+$('balCtl').addEventListener('click',e=>{const b=e.target.closest('.ctl');if(!b)return;
+  document.querySelectorAll('#balCtl .ctl').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  owned=b.dataset.b==="own"; bal=b.dataset.b==="high"?124500:owned?30000:8000; if(b.dataset.b!=="low")prod='panel'; render();});
+$('vpCtl').addEventListener('click',e=>{const b=e.target.closest('.ctl');if(!b)return;
+  document.querySelectorAll('#vpCtl .ctl').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  document.body.classList.toggle('mob',b.dataset.vp==='mob');});
+$('themeCtl').addEventListener('click',e=>{const d=document.documentElement.dataset.theme==='dark';
+  document.documentElement.dataset.theme=d?'light':'dark';e.target.textContent=d?'◐ Dark':'◑ Light';});
+$('notesCtl').addEventListener('click',e=>{document.body.classList.toggle('notes');e.target.classList.toggle('on');});
+render();
+</script>
+</body>
+</html>

@@ -14,7 +14,9 @@ const mocks = vi.hoisted(() => ({
   orderCount: vi.fn(),
   transactionAggregate: vi.fn(),
   txOrderFindMany: vi.fn(),
+  txOrderFindFirst: vi.fn(),
   txOrderUpdateMany: vi.fn(),
+  txOrderUpdateManyAndReturn: vi.fn(),
   txTransactionCreate: vi.fn(),
   txUserUpdate: vi.fn(),
   txSessionDeleteMany: vi.fn(),
@@ -27,7 +29,9 @@ const tx = {
   $queryRaw: (...args) => mocks.txQueryRaw(...args),
   order: {
     findMany: (...args) => mocks.txOrderFindMany(...args),
+    findFirst: (...args) => mocks.txOrderFindFirst(...args),
     updateMany: (...args) => mocks.txOrderUpdateMany(...args),
+    updateManyAndReturn: (...args) => mocks.txOrderUpdateManyAndReturn(...args),
   },
   transaction: { create: (...args) => mocks.txTransactionCreate(...args) },
   user: { update: (...args) => mocks.txUserUpdate(...args) },
@@ -89,21 +93,186 @@ const customer = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockPrisma.$transaction.mockReset().mockImplementation(async work => work(tx));
   mocks.getCurrentUser.mockResolvedValue({ id: customer.id });
   mocks.rateLimit.mockResolvedValue({ unavailable: false, limited: false, retryAfter: 60 });
   mocks.compare.mockResolvedValue(true);
   mocks.userFindUnique.mockResolvedValue(customer);
   mocks.outerOrderFindMany.mockResolvedValue([]);
   mocks.txOrderFindMany.mockResolvedValue([]);
-  mocks.txQueryRaw.mockResolvedValue([{ id: customer.id, status: 'Active' }]);
+  mocks.txOrderFindFirst.mockResolvedValue(null);
+  mocks.txOrderUpdateManyAndReturn.mockResolvedValue([]);
+  mocks.txDripDispatchUpdateMany.mockResolvedValue({ count: 0 });
+  mocks.txQueryRaw.mockResolvedValue([{
+    id: customer.id,
+    status: 'Active',
+    deletedAt: null,
+    anonymizedAt: null,
+  }]);
   mocks.txUserUpdate.mockResolvedValue({});
   mocks.txSessionDeleteMany.mockResolvedValue({ count: 1 });
-  mocks.orderCount.mockResolvedValueOnce(7).mockResolvedValueOnce(0);
+  mocks.orderCount.mockReset().mockResolvedValue(7);
   mocks.transactionAggregate.mockResolvedValue({ _sum: { amount: 987600 } });
   mocks.sendEmail.mockResolvedValue({ success: true });
 });
 
 describe('account-deletion notices', () => {
+  it('does not commit deletion while an earlier provider cancellation is in progress', async () => {
+    mocks.txOrderFindFirst.mockResolvedValue({
+      id: 'order-being-cancelled',
+      updatedAt: new Date(),
+    });
+
+    const response = await POST(new Request('https://nitro.ng/api/auth/delete-account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: 'correct-password' }),
+    }));
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: 'An order cancellation is in progress. Please try deleting your account again shortly.',
+    });
+    expect(mocks.txOrderFindFirst).toHaveBeenCalledWith({
+      where: { userId: customer.id, status: 'Cancelling', deletedAt: null },
+      select: { id: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+    });
+    expect(mocks.txOrderUpdateManyAndReturn).not.toHaveBeenCalled();
+    expect(mocks.txUserUpdate).not.toHaveBeenCalled();
+    expect(mocks.txSessionDeleteMany).not.toHaveBeenCalled();
+    expect(mocks.sendEmail).not.toHaveBeenCalled();
+    expect(mocks.telegramDeletion).not.toHaveBeenCalled();
+    expect(mocks.clearUserCookie).not.toHaveBeenCalled();
+  });
+
+  it('finishes stale cancelling work without a refund and proceeds with deletion', async () => {
+    mocks.txOrderFindFirst.mockResolvedValue({
+      id: 'stale-cancelling-order',
+      updatedAt: new Date(Date.now() - 10 * 60 * 1000 - 1),
+    });
+    mocks.txOrderUpdateManyAndReturn.mockResolvedValue([{ id: 'stale-cancelling-order' }]);
+    mocks.txDripDispatchUpdateMany.mockResolvedValue({ count: 2 });
+
+    const response = await POST(new Request('https://nitro.test/api/auth/delete-account', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password: 'correct password' }),
+    }));
+
+    expect(response.status, JSON.stringify(mocks.logError.mock.calls)).toBe(200);
+    expect(mocks.txOrderUpdateManyAndReturn).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        userId: customer.id,
+        status: { in: expect.arrayContaining(['Cancelling']) },
+      }),
+      data: expect.objectContaining({ status: 'Completed', remains: 0 }),
+    }));
+    expect(mocks.txDripDispatchUpdateMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: 'completed', remains: 0 }),
+    }));
+    expect(mocks.txTransactionCreate).not.toHaveBeenCalled();
+    expect(mocks.txUserUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: 'PendingDeletion' }),
+    }));
+    expect(mocks.txSessionDeleteMany).toHaveBeenCalledWith({ where: { userId: customer.id } });
+  });
+
+  it('allows a suspended account to settle its orders before deletion', async () => {
+    mocks.userFindUnique.mockResolvedValue({ ...customer, status: 'Suspended' });
+    mocks.txQueryRaw.mockResolvedValue([{
+      id: customer.id,
+      status: 'Suspended',
+      deletedAt: null,
+      anonymizedAt: null,
+    }]);
+
+    const response = await POST(new Request('https://nitro.test/api/auth/delete-account', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password: 'correct password' }),
+    }));
+
+    expect(response.status, JSON.stringify(mocks.logError.mock.calls)).toBe(200);
+    expect(mocks.txUserUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: 'PendingDeletion' }),
+    }));
+  });
+
+  it.each([
+    ['PendingDeletion', new Date('2026-08-16T12:00:00.000Z'), null],
+    ['Deleted', new Date('2026-07-17T12:00:00.000Z'), new Date('2026-07-17T12:00:00.000Z')],
+    ['Active', new Date('2026-08-16T12:00:00.000Z'), null],
+  ])('rejects locked deletion state %s before settling orders', async (status, deletedAt, anonymizedAt) => {
+    mocks.txQueryRaw.mockResolvedValue([{
+      id: customer.id,
+      status,
+      deletedAt,
+      anonymizedAt,
+    }]);
+
+    const response = await POST(new Request('https://nitro.test/api/auth/delete-account', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password: 'correct password' }),
+    }));
+
+    expect(response.status).toBe(500);
+    expect(mocks.txOrderUpdateManyAndReturn).not.toHaveBeenCalled();
+    expect(mocks.txUserUpdate).not.toHaveBeenCalled();
+  });
+
+  it('retries a P2034 conflict before settling the deletion request', async () => {
+    const conflict = Object.assign(new Error('serialization conflict'), { code: 'P2034' });
+    mockPrisma.$transaction
+      .mockRejectedValueOnce(conflict)
+      .mockImplementation(async work => work(tx));
+
+    const response = await POST(new Request('https://nitro.test/api/auth/delete-account', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password: 'correct password' }),
+    }));
+
+    expect(response.status, JSON.stringify(mocks.logError.mock.calls)).toBe(200);
+    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(2);
+    expect(mocks.txUserUpdate).toHaveBeenCalledOnce();
+  });
+
+  it('completes active work without creating a refund or changing the wallet balance', async () => {
+    mocks.txOrderUpdateManyAndReturn.mockResolvedValue([
+      { id: 'direct-order' },
+      { id: 'mixed-drip-order' },
+    ]);
+    mocks.txDripDispatchUpdateMany.mockResolvedValue({ count: 3 });
+
+    const response = await POST(new Request('https://nitro.test/api/auth/delete-account', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password: 'correct password' }),
+    }));
+
+    expect(response.status, JSON.stringify(mocks.logError.mock.calls)).toBe(200);
+    expect(mocks.txOrderUpdateManyAndReturn).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        status: 'Completed',
+        remains: 0,
+        queuedBehind: null,
+      }),
+    }));
+    expect(mocks.txDripDispatchUpdateMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: 'completed', remains: 0 }),
+    }));
+    expect(mocks.txTransactionCreate).not.toHaveBeenCalled();
+    expect(mocks.txUserUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.not.objectContaining({ balance: expect.anything() }),
+    }));
+
+    const adminNotice = mocks.sendEmail.mock.calls.find(([to]) => to === 'accounts@nitro.ng')?.join('\n') || '';
+    expect(adminNotice).toContain('2 (completed, no refund)');
+    expect(adminNotice).not.toContain('cancelled, no refund');
+  });
+
   it('keeps PII and referral codes out of the admin email and Telegram notice', async () => {
     const response = await POST(new Request('https://nitro.test/api/auth/delete-account', {
       method: 'POST',

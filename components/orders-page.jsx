@@ -116,7 +116,7 @@ function txDesc(tx) {
   if (tx.type === "refund") return tx.reference ? `Refund for ${tx.reference.replace(/^(ADM-)?REF-/, "")}` : "Order refund";
   if (tx.type === "deposit") return tx.reference || "Wallet top-up";
   if (tx.type === "referral") return "Referral commission";
-  if (tx.type === "admin_credit" || tx.type === "admin_gift") return tx.description || "Credited by Nitro Team";
+  if (tx.type === "admin_credit" || tx.type === "admin_gift") return (tx.description || "Credited by Nitro Team").replace(/\s*\[[^\]]+\]\s*/g, " ").trim();
   return tx.reference || "";
 }
 
@@ -844,7 +844,6 @@ export function OrdersSidebar({ orders, orderSummary, dark, t }) {
           ["Total", String(totalOrders), dark ? "#a5b4fc" : "#4f46e5"],
           ["Active", String(activeCount), dark ? "#fcd34d" : "#d97706"],
           ["Completed", String(completedCount), dark ? "#6ee7b7" : "#059669"],
-          ...(attentionCount > 0 ? [["Attention", String(attentionCount), dark ? "#fbbf24" : "#d97706"]] : []),
           ["Spent", fN(totalSpent), t.accent],
         ].map(([label, val, color]) => (
           <div key={label} className="p-3 rounded-[10px] bg-t-card-bg">

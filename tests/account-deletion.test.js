@@ -2,11 +2,17 @@ import { readFileSync } from 'node:fs';
 import { describe, it, expect, vi } from 'vitest';
 import {
   ACCOUNT_DELETION_BATCH_MAX,
+  ACCOUNT_DELETION_ACTIVE_ORDER_STATUSES,
   ACCOUNT_DELETION_REDACTION,
+  ORDER_SETTLEMENT_ACCOUNT_STATUSES,
   accountDeletionTombstones,
+  completeActiveOrdersForAccountDeletion,
   finalizeAccountDeletion,
   finalizeDueAccountDeletions,
+  isOrderSettlementAccountEligible,
+  lockOrderSettlementAccount,
   reinstatePendingAccountDeletion,
+  withAccountDeletionRetry,
 } from '@/lib/account-deletion';
 
 const NOW = new Date('2026-07-17T12:00:00.000Z');
@@ -92,6 +98,7 @@ function mockDatabase(user = pendingUser()) {
     order: {
       findMany: vi.fn().mockResolvedValue([]),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      updateManyAndReturn: vi.fn().mockResolvedValue([]),
     },
     dripDispatch: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     transaction: {
@@ -159,6 +166,121 @@ describe('account deletion tombstones', () => {
     expect(migration).toContain('"signupIp" IS NULL');
     expect(migration).toContain('"lastUa" IS NULL');
     expect(migration).toContain('NOT VALID');
+  });
+});
+
+describe('completeActiveOrdersForAccountDeletion', () => {
+  it('seals every active parent and remaining live drip without creating a refund', async () => {
+    const { tx } = mockDatabase();
+    tx.order.updateManyAndReturn.mockResolvedValue([
+      { id: 'direct-order' },
+      { id: 'drip-order' },
+    ]);
+    tx.dripDispatch.updateMany.mockResolvedValue({ count: 3 });
+
+    const result = await completeActiveOrdersForAccountDeletion(tx, 'user-sensitive-id', NOW);
+
+    expect(result).toEqual({ orders: 2, dispatches: 3 });
+    expect(ACCOUNT_DELETION_ACTIVE_ORDER_STATUSES).toEqual([
+      'Pending',
+      'Processing',
+      'Dispatching',
+      'In progress',
+      'In Progress',
+      'Cancelling',
+    ]);
+    expect(tx.order.updateManyAndReturn).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-sensitive-id',
+        status: { in: ACCOUNT_DELETION_ACTIVE_ORDER_STATUSES },
+        deletedAt: null,
+      },
+      data: {
+        status: 'Completed',
+        remains: 0,
+        completedAt: NOW,
+        queuedBehind: null,
+        lastError: null,
+      },
+      select: { id: true },
+    });
+    expect(tx.dripDispatch.updateMany).toHaveBeenCalledWith({
+      where: {
+        orderId: { in: ['direct-order', 'drip-order'] },
+        status: { notIn: ['completed', 'superseded'] },
+        OR: [
+          { lastError: null },
+          { lastError: { not: { startsWith: 'replaced:#' } } },
+        ],
+      },
+      data: {
+        status: 'completed',
+        remains: 0,
+        completedAt: NOW,
+        lastError: null,
+      },
+    });
+    expect(tx.transaction.create).not.toHaveBeenCalled();
+    expect(tx.user.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('does not rewrite terminal orders or historical drip rows when nothing is active', async () => {
+    const { tx } = mockDatabase();
+    tx.order.updateManyAndReturn.mockResolvedValue([]);
+
+    const result = await completeActiveOrdersForAccountDeletion(tx, 'user-sensitive-id', NOW);
+
+    expect(result).toEqual({ orders: 0, dispatches: 0 });
+    expect(tx.dripDispatch.updateMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('order settlement account guard', () => {
+  it.each(ORDER_SETTLEMENT_ACCOUNT_STATUSES)(
+    'accepts a non-deleting %s account',
+    status => {
+      expect(isOrderSettlementAccountEligible({
+        id: 'user-sensitive-id',
+        status,
+        deletedAt: null,
+        anonymizedAt: null,
+      })).toBe(true);
+    },
+  );
+
+  it.each([
+    [null, 'a missing account'],
+    [{ status: 'PendingDeletion', deletedAt: FUTURE, anonymizedAt: null }, 'pending deletion'],
+    [{ status: 'Deleted', deletedAt: NOW, anonymizedAt: NOW }, 'a deleted account'],
+    [{ status: 'Active', deletedAt: FUTURE, anonymizedAt: null }, 'an active account with a deletion marker'],
+    [{ status: 'Suspended', deletedAt: null, anonymizedAt: NOW }, 'an anonymized suspended account'],
+  ])('rejects %s (%s)', (account) => {
+    expect(isOrderSettlementAccountEligible(account)).toBe(false);
+  });
+
+  it('locks and returns the full account deletion state', async () => {
+    const { tx } = mockDatabase();
+    const locked = {
+      id: 'user-sensitive-id',
+      status: 'Suspended',
+      deletedAt: null,
+      anonymizedAt: null,
+    };
+    tx.$queryRaw.mockResolvedValue([locked]);
+
+    await expect(lockOrderSettlementAccount(tx, locked.id)).resolves.toEqual(locked);
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries P2034 serializable conflicts', async () => {
+    const { db, tx } = mockDatabase();
+    const conflict = Object.assign(new Error('serialization conflict'), { code: 'P2034' });
+    db.$transaction.mockRejectedValueOnce(conflict).mockImplementation(async work => work(tx));
+    const work = vi.fn().mockResolvedValue('settled');
+
+    await expect(withAccountDeletionRetry(db, work)).resolves.toBe('settled');
+    expect(db.$transaction).toHaveBeenCalledTimes(2);
+    expect(work).toHaveBeenCalledOnce();
   });
 });
 

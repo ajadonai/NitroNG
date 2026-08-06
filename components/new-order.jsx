@@ -364,6 +364,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(null);
   const [redeemPoints, setRedeemPoints] = useState(false);
+  const [trafficConfig, setTrafficConfig] = useState(null);
   const successTierClr = orderSuccess ? (tierClr[orderSuccess.tier] || tierClr.Budget) : null;
   const successPlatformIcon = orderSuccess ? PLATFORMS.find(p => p.id === platform || p.label.toLowerCase().includes((orderSuccess.platform || "").toLowerCase()))?.icon : null;
   const successChrome = dark
@@ -515,6 +516,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
             provider: tier.provider || "mtp",
             apiType: tier.apiType || "Default",
             customComments: tier.customComments || false,
+            trafficTargeting: tier.trafficTargeting || false,
             tags: tier.tags || [],
           })),
         };
@@ -527,7 +529,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   const price = selTier ? Math.round(((Number(qty) || 0) / 1000) * (selTier.pricePer1k || selTier.price)) : 0;
   const activePlat = PLATFORMS.find(p => p.id === platform);
 
-  useEffect(() => { setSelSvc(null); setSelTier(null); setFilterType("all"); setOrderModal(false); setOrderSuccess(null); setSearch(""); setLink(""); setComments(""); setQty(""); setRedeemPoints(false); }, [platform]);
+  useEffect(() => { setSelSvc(null); setSelTier(null); setFilterType("all"); setOrderModal(false); setOrderSuccess(null); setSearch(""); setLink(""); setComments(""); setQty(""); setRedeemPoints(false); setTrafficConfig(null); }, [platform]);
 
   useEffect(() => {
     if (platform !== 'tiktok') return;
@@ -652,7 +654,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tierId: selTier.id, link: `https://${link.trim()}`, quantity: qty, ...(comments?.trim() ? { comments: comments.trim() } : {}), serviceType: selSvc?.type || "", ...(dripDaysArg != null ? { dripDays: dripDaysArg } : {}), ...(confirmDuplicate ? { confirmDuplicate: true } : {}), ...(shouldRedeem ? { redeemPoints: true } : {}) }),
+        body: JSON.stringify({ tierId: selTier.id, link: `https://${link.trim()}`, quantity: qty, ...(comments?.trim() ? { comments: comments.trim() } : {}), serviceType: selSvc?.type || "", ...(dripDaysArg != null ? { dripDays: dripDaysArg } : {}), ...(confirmDuplicate ? { confirmDuplicate: true } : {}), ...(shouldRedeem ? { redeemPoints: true } : {}), ...(trafficConfig ? { trafficConfig } : {}) }),
         signal: AbortSignal.timeout(30000),
       });
       const data = await res.json();
@@ -1051,7 +1053,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 </div>
               </div>
             ) : (
-              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => { setOrderModal(false); setRedeemPoints(false); }} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} welcomeBonusEligible={user?.welcomeBonusEligible} pointsRedeemable={rewards?.points?.redeemable || false} pointsBalance={rewards?.points?.balance || 0} redeemPoints={redeemPoints} setRedeemPoints={setRedeemPoints} />
+              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => { setOrderModal(false); setRedeemPoints(false); }} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} welcomeBonusEligible={user?.welcomeBonusEligible} pointsRedeemable={rewards?.points?.redeemable || false} pointsBalance={rewards?.points?.balance || 0} redeemPoints={redeemPoints} setRedeemPoints={setRedeemPoints} trafficConfig={trafficConfig} setTrafficConfig={setTrafficConfig} />
             )}
           </div>
         </div>

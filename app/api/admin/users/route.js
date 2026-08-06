@@ -340,7 +340,7 @@ export async function POST(req) {
           method: 'flutterwave',
           status: 'Pending',
           reference,
-          note: `Admin-initiated deposit ₦${amountNum.toLocaleString()} [initiated_by:${admin.name}]`,
+          note: `Admin-initiated deposit [initiated_by:${admin.name}]`,
         },
       });
 

@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { checkOrder, isProviderConfigured } from '@/lib/smm';
 import { tgRefundAlert } from '@/lib/telegram';
 import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
+import { lockOrderSettlementAccount, ORDER_SETTLEMENT_ACCOUNT_STATUSES } from '@/lib/account-deletion';
 
 export async function POST(req) {
   try {
@@ -19,6 +20,10 @@ export async function POST(req) {
     });
 
     if (!order) return Response.json({ error: 'Order not found' }, { status: 404 });
+
+    if (order.status === 'Cancelling') {
+      return Response.json({ status: 'Cancelling', message: 'Cancellation is being finalized', charge: order.charge / 100 });
+    }
 
     // If no external order ID, can't check with provider
     if (!order.apiOrderId) {
@@ -46,15 +51,26 @@ export async function POST(req) {
         'Refunded': 'Cancelled',
       };
 
-      const terminal = ['Partial', 'Cancelled'].includes(order.status);
+      const terminal = ['Completed', 'Partial', 'Cancelled', 'Cancelling'].includes(order.status);
       const newStatus = terminal ? order.status : (statusMap[providerStatus.status] || order.status);
+      let effectiveStatus = newStatus;
 
       // Always persist delivery progress from provider (unless terminal)
       const progressData = {
         ...(!terminal && providerStatus.remains != null && { remains: Number(providerStatus.remains) }),
       };
       if (newStatus === order.status && Object.keys(progressData).length > 0) {
-        await prisma.order.update({ where: { id: order.id }, data: progressData });
+        await prisma.order.updateMany({
+          where: {
+            id: order.id,
+            userId: session.id,
+            status: order.status,
+            apiOrderId: order.apiOrderId,
+            deletedAt: null,
+            user: { status: { in: ORDER_SETTLEMENT_ACCOUNT_STATUSES }, deletedAt: null, anonymizedAt: null },
+          },
+          data: progressData,
+        });
       }
 
       // Update if status changed
@@ -63,12 +79,19 @@ export async function POST(req) {
           return Response.json({ status: order.status, remains: providerStatus.remains, startCount: providerStatus.start_count, charge: order.charge / 100 });
         }
         if (newStatus === 'Cancelled' && order.status !== 'Cancelled' && order.charge > 0) {
-          await prisma.$transaction(async (tx) => {
+          const cancellation = await prisma.$transaction(async (tx) => {
+            if (!await lockOrderSettlementAccount(tx, session.id)) return { transitioned: false, refundAmount: 0 };
             const claimed = await tx.order.updateMany({
-              where: { id: order.id, status: { not: 'Cancelled' } },
+              where: {
+                id: order.id,
+                userId: session.id,
+                status: order.status,
+                apiOrderId: order.apiOrderId,
+                deletedAt: null,
+              },
               data: { status: 'Cancelled', refundedAt: new Date() },
             });
-            if (claimed.count === 0) return;
+            if (claimed.count === 0) return { transitioned: false, refundAmount: 0 };
             const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: session.id });
             const refundAmount = Math.max(0, order.charge - alreadyRefunded);
             if (refundAmount > 0) {
@@ -86,18 +109,35 @@ export async function POST(req) {
               }
               await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
             }
+            return { transitioned: true, refundAmount };
           });
-          tgRefundAlert({ orderId: order.orderId, amount: order.charge, charge: order.charge, qty: order.quantity, status: 'Cancelled', reason: 'provider_cancelled', source: 'check' });
+          if (cancellation.transitioned && cancellation.refundAmount > 0) {
+            tgRefundAlert({ orderId: order.orderId, amount: cancellation.refundAmount, charge: order.charge, qty: order.quantity, status: 'Cancelled', reason: 'provider_cancelled', source: 'check' });
+          } else if (!cancellation.transitioned) {
+            const current = await prisma.order.findUnique({ where: { id: order.id }, select: { status: true } });
+            effectiveStatus = current?.status || order.status;
+          }
         } else if (newStatus === 'Partial' && providerStatus.remains) {
           const remains = Number(providerStatus.remains) || 0;
           if (remains > 0 && order.charge > 0 && order.quantity > 0) {
             const refundAmount = Math.round((remains / order.quantity) * order.charge / 100) * 100;
             if (refundAmount > 0) {
-              await prisma.$transaction(async (tx) => {
-                await tx.order.update({ where: { id: order.id }, data: { status: 'Partial', refundedAt: new Date() } });
+              const partial = await prisma.$transaction(async (tx) => {
+                if (!await lockOrderSettlementAccount(tx, session.id)) return { transitioned: false, refundAmount: 0 };
+                const claimed = await tx.order.updateMany({
+                  where: {
+                    id: order.id,
+                    userId: session.id,
+                    status: order.status,
+                    apiOrderId: order.apiOrderId,
+                    deletedAt: null,
+                  },
+                  data: { status: 'Partial', remains, refundedAt: new Date() },
+                });
+                if (claimed.count !== 1) return { transitioned: false, refundAmount: 0 };
                 const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: session.id });
                 const cappedRefund = Math.max(0, refundAmount - alreadyRefunded);
-                if (cappedRefund <= 0) return;
+                if (cappedRefund <= 0) return { transitioned: true, refundAmount: 0 };
                 const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, cappedRefund);
                 if (walletRefund > 0) {
                   await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${session.id}`;
@@ -111,23 +151,40 @@ export async function POST(req) {
                   });
                 }
                 await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: cappedRefund });
+                return { transitioned: true, refundAmount: cappedRefund };
               });
-              tgRefundAlert({ orderId: order.orderId, amount: refundAmount, charge: order.charge, qty: order.quantity, remains, status: 'Partial', reason: 'provider_partial', source: 'check' });
+              if (partial.transitioned && partial.refundAmount > 0) {
+                tgRefundAlert({ orderId: order.orderId, amount: partial.refundAmount, charge: order.charge, qty: order.quantity, remains, status: 'Partial', reason: 'provider_partial', source: 'check' });
+              } else if (!partial.transitioned) {
+                const current = await prisma.order.findUnique({ where: { id: order.id }, select: { status: true } });
+                effectiveStatus = current?.status || order.status;
+              }
             }
           }
         } else {
-          await prisma.order.update({
-            where: { id: order.id },
+          const transitioned = await prisma.order.updateMany({
+            where: {
+              id: order.id,
+              userId: session.id,
+              status: order.status,
+              apiOrderId: order.apiOrderId,
+              deletedAt: null,
+              user: { status: { in: ORDER_SETTLEMENT_ACCOUNT_STATUSES }, deletedAt: null, anonymizedAt: null },
+            },
             data: {
               status: newStatus,
               ...(providerStatus.remains != null && { remains: Number(providerStatus.remains) }),
             },
           });
+          if (transitioned.count !== 1) {
+            const current = await prisma.order.findUnique({ where: { id: order.id }, select: { status: true } });
+            effectiveStatus = current?.status || order.status;
+          }
         }
       }
 
       return Response.json({
-        status: newStatus,
+        status: effectiveStatus,
         remains: providerStatus.remains,
         startCount: providerStatus.start_count,
         charge: order.charge / 100,
