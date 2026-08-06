@@ -46,7 +46,6 @@ describe('affiliate setting validation', () => {
         affiliate_hold_days: '7',
         affiliate_min_payout: '5000',
         affiliate_min_order: '1000',
-        affiliate_max_links: '5',
       },
     }));
     const body = await res.json();
@@ -78,15 +77,6 @@ describe('affiliate setting validation', () => {
     const body = await res.json();
     expect(res.status).toBe(400);
     expect(body.error).toMatch(/affiliate_lead_split.*between 0 and 100/);
-  });
-
-  it('rejects max_links below 1', async () => {
-    const res = await POST(makeReq({
-      settings: { affiliate_max_links: '0' },
-    }));
-    const body = await res.json();
-    expect(res.status).toBe(400);
-    expect(body.error).toMatch(/affiliate_max_links.*between 1 and 100/);
   });
 
   it('rejects hold_days above 365', async () => {
@@ -130,7 +120,6 @@ describe('affiliate setting validation', () => {
         affiliate_pro_rate: '100',
         affiliate_hold_days: '0',
         affiliate_min_payout: '0',
-        affiliate_max_links: '1',
       },
     }));
     const body = await res.json();

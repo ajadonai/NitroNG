@@ -5,6 +5,7 @@ const mockOrder = { findMany: vi.fn(), findFirst: vi.fn(), findUnique: vi.fn(), 
 const mockAdminIssue = { create: vi.fn().mockReturnValue({ catch: () => {} }) };
 const mockExecuteRawUnsafe = vi.fn();
 const mockQueryRaw = vi.fn();
+const mockLockOrderSettlementAccount = vi.fn();
 
 const mockPrisma = {
   dripDispatch: mockDripDispatch,
@@ -24,6 +25,9 @@ vi.mock('@/lib/drip-feed', async () => {
   return { ...actual, getDripConfig: () => ({ intervalHours: 2 }) };
 });
 vi.mock('@/lib/nitro-rewards', () => ({ awardPointsOnCompletion: vi.fn().mockResolvedValue(0) }));
+vi.mock('@/lib/account-deletion', () => ({
+  lockOrderSettlementAccount: (...args) => mockLockOrderSettlementAccount(...args),
+}));
 
 function makeReq(secret = 'test-secret') {
   return {
@@ -39,6 +43,7 @@ beforeEach(async () => {
   mockAdminIssue.create.mockReset().mockReturnValue({ catch: () => {} });
   mockExecuteRawUnsafe.mockReset();
   mockQueryRaw.mockReset().mockResolvedValue([]);
+  mockLockOrderSettlementAccount.mockReset().mockResolvedValue({ id: 'user-1', status: 'Active' });
   const { placeOrder, checkOrder, checkOrders } = await import('@/lib/smm');
   placeOrder.mockReset();
   checkOrder.mockReset();
@@ -494,6 +499,7 @@ describe('drip cron — section 4 rollup', () => {
   function setupEmpty() {
     // Sections 0-3 produce nothing
     mockDripDispatch.findMany.mockResolvedValue([]);
+    mockOrder.findUnique.mockResolvedValue({ userId: 'user-1' });
   }
 
   it('rolls up all-done orders via transactional applyDripRollup', async () => {
@@ -504,7 +510,7 @@ describe('drip cron — section 4 rollup', () => {
     ];
     mockOrder.findMany.mockResolvedValue([{ id: 'ord-1', startCount: null, dripDispatches: dispatches }]);
     mockQueryRaw
-      .mockResolvedValueOnce([{ id: 'ord-1', status: 'Processing', deletedAt: null }])
+      .mockResolvedValueOnce([{ id: 'ord-1', userId: 'user-1', status: 'Processing', deletedAt: null }])
       .mockResolvedValueOnce(dispatches);
 
     const { GET } = await import('@/app/api/cron/drip/route');
@@ -513,6 +519,9 @@ describe('drip cron — section 4 rollup', () => {
 
     expect(body.ok).toBe(true);
     expect(body.stats.rolledUp).toBe(1);
+    expect(mockLockOrderSettlementAccount).toHaveBeenCalledWith(mockPrisma, 'user-1');
+    expect(mockLockOrderSettlementAccount.mock.invocationCallOrder[0])
+      .toBeLessThan(mockQueryRaw.mock.invocationCallOrder[0]);
     expect(mockExecuteRawUnsafe).not.toHaveBeenCalled();
     expect(mockOrder.updateMany).toHaveBeenCalledWith({
       where: { id: 'ord-1', status: { notIn: ['Cancelled', 'Completed', 'Partial'] }, deletedAt: null },
@@ -556,7 +565,7 @@ describe('drip cron — section 4 rollup', () => {
     ];
     mockOrder.findMany.mockResolvedValue([{ id: 'ord-3', startCount: 100, dripDispatches: dispatches }]);
     mockQueryRaw
-      .mockResolvedValueOnce([{ id: 'ord-3', status: 'Processing', deletedAt: null }])
+      .mockResolvedValueOnce([{ id: 'ord-3', userId: 'user-1', status: 'Processing', deletedAt: null }])
       .mockResolvedValueOnce(dispatches);
 
     const { GET } = await import('@/app/api/cron/drip/route');
@@ -579,7 +588,7 @@ describe('drip cron — section 4 rollup', () => {
     ];
     mockOrder.findMany.mockResolvedValue([{ id: 'ord-4', startCount: null, dripDispatches: dispatches }]);
     mockQueryRaw
-      .mockResolvedValueOnce([{ id: 'ord-4', status: 'Processing', deletedAt: null }])
+      .mockResolvedValueOnce([{ id: 'ord-4', userId: 'user-1', status: 'Processing', deletedAt: null }])
       .mockResolvedValueOnce(dispatches);
 
     const { GET } = await import('@/app/api/cron/drip/route');
@@ -608,7 +617,7 @@ describe('drip cron — section 4 rollup', () => {
       },
     ]);
     mockQueryRaw
-      .mockResolvedValueOnce([{ id: 'ord-a', status: 'Processing', deletedAt: null }])
+      .mockResolvedValueOnce([{ id: 'ord-a', userId: 'user-1', status: 'Processing', deletedAt: null }])
       .mockResolvedValueOnce(ordADispatches);
 
     const { GET } = await import('@/app/api/cron/drip/route');
@@ -641,7 +650,7 @@ describe('drip cron — section 4 rollup', () => {
     const dispatches = [{ status: 'completed', quantity: 100, remains: 0, startCount: null, day: 1, batch: 1 }];
     mockOrder.findMany.mockResolvedValue([{ id: 'ord-x', startCount: null, dripDispatches: dispatches }]);
     mockQueryRaw
-      .mockResolvedValueOnce([{ id: 'ord-x', status: 'Processing', deletedAt: null }])
+      .mockResolvedValueOnce([{ id: 'ord-x', userId: 'user-1', status: 'Processing', deletedAt: null }])
       .mockResolvedValueOnce(dispatches);
     mockOrder.updateMany.mockRejectedValueOnce(new Error('db gone'));
 
@@ -657,6 +666,7 @@ describe('drip cron — section 4 rollup', () => {
 describe('drip cron — section 4 rollup awards points', () => {
   function setupEmpty() {
     mockDripDispatch.findMany.mockResolvedValue([]);
+    mockOrder.findUnique.mockResolvedValue({ userId: 'user-1' });
   }
 
   it('calls awardPointsOnCompletion for Partial parent orders', async () => {
@@ -668,7 +678,7 @@ describe('drip cron — section 4 rollup awards points', () => {
     ];
     mockOrder.findMany.mockResolvedValue([{ id: 'ord-partial', startCount: null, dripDispatches: dispatches }]);
     mockQueryRaw
-      .mockResolvedValueOnce([{ id: 'ord-partial', status: 'Processing', deletedAt: null }])
+      .mockResolvedValueOnce([{ id: 'ord-partial', userId: 'user-1', status: 'Processing', deletedAt: null }])
       .mockResolvedValueOnce(dispatches);
 
     const { GET } = await import('@/app/api/cron/drip/route');
@@ -688,7 +698,7 @@ describe('drip cron — section 4 rollup awards points', () => {
     ];
     mockOrder.findMany.mockResolvedValue([{ id: 'ord-done', startCount: null, dripDispatches: dispatches }]);
     mockQueryRaw
-      .mockResolvedValueOnce([{ id: 'ord-done', status: 'Processing', deletedAt: null }])
+      .mockResolvedValueOnce([{ id: 'ord-done', userId: 'user-1', status: 'Processing', deletedAt: null }])
       .mockResolvedValueOnce(dispatches);
 
     const { GET } = await import('@/app/api/cron/drip/route');
@@ -708,7 +718,7 @@ describe('drip cron — section 4 rollup awards points', () => {
     ];
     mockOrder.findMany.mockResolvedValue([{ id: 'ord-cancel', startCount: null, dripDispatches: dispatches }]);
     mockQueryRaw
-      .mockResolvedValueOnce([{ id: 'ord-cancel', status: 'Processing', deletedAt: null }])
+      .mockResolvedValueOnce([{ id: 'ord-cancel', userId: 'user-1', status: 'Processing', deletedAt: null }])
       .mockResolvedValueOnce(dispatches);
 
     const { GET } = await import('@/app/api/cron/drip/route');

@@ -6,6 +6,9 @@ const mocks = vi.hoisted(() => ({
   orderUpdateMany: vi.fn(),
   orderUpdate: vi.fn(),
   orderCount: vi.fn(),
+  accountQueryRaw: vi.fn(),
+  executeRaw: vi.fn(),
+  transactionCreate: vi.fn(),
   transaction: vi.fn(),
   queryRawUnsafe: vi.fn(),
   idempotencyDeleteMany: vi.fn(),
@@ -14,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   voidCommissions: vi.fn(),
   refundEmail: vi.fn(),
   placeWithProvider: vi.fn(),
+  checkOrder: vi.fn(),
 }));
 
 vi.mock('@/lib/prisma', () => ({
@@ -31,7 +35,7 @@ vi.mock('@/lib/prisma', () => ({
   },
 }));
 vi.mock('@/lib/logger', () => ({ log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
-vi.mock('@/lib/smm', () => ({ checkOrder: vi.fn() }));
+vi.mock('@/lib/smm', () => ({ checkOrder: (...args) => mocks.checkOrder(...args) }));
 vi.mock('@/lib/email', () => ({
   sendEmail: (...args) => mocks.refundEmail(...args),
   walletCreditEmail: vi.fn(),
@@ -54,6 +58,7 @@ vi.mock('@/lib/nitro-rewards', () => ({
   awardPointsOnCompletion: vi.fn(),
 }));
 
+const { ORDER_SETTLEMENT_ACCOUNT_STATUSES } = await import('@/lib/account-deletion');
 const { GET } = await import('@/app/api/cron/orders/route');
 const originalSecret = process.env.CRON_SECRET;
 const originalFetch = global.fetch;
@@ -72,11 +77,22 @@ beforeEach(() => {
   mocks.orderFindMany.mockResolvedValue([]);
   mocks.orderFindFirst.mockResolvedValue(null);
   mocks.orderUpdateMany.mockResolvedValue({ count: 0 });
+  mocks.accountQueryRaw.mockResolvedValue([{
+    id: 'active-user',
+    status: 'Active',
+    deletedAt: null,
+    anonymizedAt: null,
+  }]);
+  mocks.executeRaw.mockResolvedValue(1);
+  mocks.transactionCreate.mockResolvedValue({ id: 'refund-transaction' });
   mocks.orderCount.mockResolvedValue(0);
   mocks.idempotencyDeleteMany.mockResolvedValue({ count: 0 });
   mocks.queryRawUnsafe.mockResolvedValue([]);
   mocks.transaction.mockImplementation(async callback => callback({
     order: { updateMany: mocks.orderUpdateMany },
+    transaction: { create: mocks.transactionCreate },
+    $queryRaw: mocks.accountQueryRaw,
+    $executeRaw: mocks.executeRaw,
   }));
   global.fetch = vi.fn().mockResolvedValue(new Response('{}'));
 });
@@ -88,6 +104,12 @@ afterAll(() => {
 });
 
 describe('orders cron — queued and drip safety', () => {
+  it('allows suspended accounts to settle while deletion states remain excluded', () => {
+    expect(ORDER_SETTLEMENT_ACCOUNT_STATUSES).toEqual(['Active', 'Suspended']);
+    expect(ORDER_SETTLEMENT_ACCOUNT_STATUSES).not.toContain('PendingDeletion');
+    expect(ORDER_SETTLEMENT_ACCOUNT_STATUSES).not.toContain('Deleted');
+  });
+
   it('keeps queued orders retryable at any age and limits stale refunds to unqueued direct orders', async () => {
     const response = await GET(request());
     expect(response.status).toBe(200);
@@ -105,6 +127,11 @@ describe('orders cron — queued and drip safety', () => {
       status: 'Pending',
       apiOrderId: null,
       deletedAt: null,
+      user: {
+        status: { in: ORDER_SETTLEMENT_ACCOUNT_STATUSES },
+        deletedAt: null,
+        anonymizedAt: null,
+      },
       queuedBehind: null,
       dripDays: null,
       dripDispatches: { none: {} },
@@ -117,6 +144,99 @@ describe('orders cron — queued and drip safety', () => {
     expect(stale.where.AND).toContainEqual({
       OR: [{ lastError: null }, { lastError: { not: 'provider_active_wait' } }],
     });
+
+    const settlementUserWhere = {
+      status: { in: ORDER_SETTLEMENT_ACCOUNT_STATUSES },
+      deletedAt: null,
+      anonymizedAt: null,
+    };
+    const activeProviderOrders = calls.find(query => query.where?.apiOrderId?.not === null);
+    const recoverySweep = calls.find(query => query.where?.refundedAt === null);
+    expect(activeProviderOrders?.where.user).toEqual(settlementUserWhere);
+    expect(recoverySweep?.where.user).toEqual(settlementUserWhere);
+  });
+
+  it('keeps provider progress and completion updates enabled for suspended accounts', async () => {
+    const baseOrder = {
+      userId: 'suspended-user',
+      status: 'Processing',
+      remains: 100,
+      startCount: null,
+      service: { provider: 'mtp', category: 'Instagram' },
+      tier: null,
+      batchId: null,
+      charge: 10_000,
+      cost: 5_000,
+      quantity: 100,
+    };
+    mocks.orderFindMany.mockResolvedValueOnce([
+      { ...baseOrder, id: 'progress-order', orderId: 'NTR-PROGRESS', apiOrderId: 'provider-1' },
+      { ...baseOrder, id: 'completed-order', orderId: 'NTR-COMPLETED', apiOrderId: 'provider-2' },
+    ]);
+    mocks.checkOrder
+      .mockResolvedValueOnce({ status: 'unknown', remains: 60 })
+      .mockResolvedValueOnce({ status: 'Completed', remains: 0 });
+    mocks.orderUpdateMany.mockResolvedValue({ count: 1 });
+
+    const response = await GET(request());
+
+    expect(response.status).toBe(200);
+    const settlementUserWhere = {
+      status: { in: ORDER_SETTLEMENT_ACCOUNT_STATUSES },
+      deletedAt: null,
+      anonymizedAt: null,
+    };
+    expect(mocks.orderUpdateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ id: 'progress-order', user: settlementUserWhere }),
+      data: expect.objectContaining({ remains: 60 }),
+    }));
+    expect(mocks.orderUpdateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ id: 'completed-order', user: settlementUserWhere }),
+      data: expect.objectContaining({ status: 'Completed' }),
+    }));
+  });
+
+  it('auto-refunds a suspended account after an undispatched order exhausts retries', async () => {
+    const staleCandidate = {
+      id: 'suspended-order', orderId: 'NTR-SUSPENDED', userId: 'suspended-user',
+      status: 'Pending', apiOrderId: null, queuedBehind: null, dripDays: null,
+      charge: 100_000, nitroPointsRedeemedKobo: 0, retryCount: 5,
+      createdAt: new Date('2026-07-16T08:00:00Z'),
+      updatedAt: new Date('2026-07-17T08:00:00Z'),
+    };
+    mocks.orderFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([staleCandidate])
+      .mockResolvedValueOnce([]);
+    mocks.orderUpdateMany.mockResolvedValue({ count: 1 });
+    mocks.accountQueryRaw.mockResolvedValueOnce([{
+      id: 'suspended-user',
+      status: 'Suspended',
+      deletedAt: null,
+      anonymizedAt: null,
+    }]);
+
+    const response = await GET(request());
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.autoRefunded).toBe(1);
+    expect(mocks.accountQueryRaw).toHaveBeenCalledTimes(1);
+    expect(mocks.accountQueryRaw.mock.calls[0][1]).toBe('suspended-user');
+    expect(mocks.executeRaw).toHaveBeenCalledTimes(1);
+    expect(mocks.transactionCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'suspended-user',
+        type: 'refund',
+        amount: 100_000,
+        reference: 'REF-NTR-SUSPENDED',
+      }),
+    });
+    expect(mocks.tgRefund).toHaveBeenCalledWith('NTR-SUSPENDED', 100_000, 'dispatch_failed');
+    expect(mocks.tgRefundAlert).toHaveBeenCalledTimes(1);
   });
 
   it('does not refund or notify when an admin retry changes the stale-order snapshot', async () => {
@@ -150,6 +270,11 @@ describe('orders cron — queued and drip safety', () => {
         queuedBehind: null,
         dripDays: null,
         dripDispatches: { none: {} },
+        user: {
+          status: { in: ORDER_SETTLEMENT_ACCOUNT_STATUSES },
+          deletedAt: null,
+          anonymizedAt: null,
+        },
         updatedAt: staleUpdatedAt,
         AND: [
           {
@@ -167,6 +292,53 @@ describe('orders cron — queued and drip safety', () => {
     expect(mocks.tgRefundAlert).not.toHaveBeenCalled();
     expect(mocks.voidCommissions).not.toHaveBeenCalled();
     expect(mocks.refundEmail).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    {
+      label: 'pending deletion',
+      account: { id: 'deleted-user', status: 'PendingDeletion', deletedAt: new Date('2026-08-12T08:00:00Z'), anonymizedAt: null },
+    },
+    {
+      label: 'deleted status',
+      account: { id: 'deleted-user', status: 'Deleted', deletedAt: new Date('2026-08-05T08:00:00Z'), anonymizedAt: null },
+    },
+    {
+      label: 'anonymized account',
+      account: { id: 'deleted-user', status: 'Active', deletedAt: null, anonymizedAt: new Date('2026-08-05T08:00:00Z') },
+    },
+  ])('does not terminalize or refund after a $label account wins the user lock', async ({ account }) => {
+    const staleCandidate = {
+      id: 'deleted-order', orderId: 'NTR-DELETED', userId: 'deleted-user',
+      status: 'Pending', apiOrderId: null, queuedBehind: null, dripDays: null,
+      charge: 100_000, nitroPointsRedeemedKobo: 0, retryCount: 5,
+      createdAt: new Date('2026-07-16T08:00:00Z'),
+      updatedAt: new Date('2026-07-17T08:00:00Z'),
+    };
+    mocks.orderFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([staleCandidate])
+      .mockResolvedValueOnce([]);
+    mocks.accountQueryRaw.mockResolvedValueOnce([account]);
+
+    const response = await GET(request());
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.autoRefunded).toBe(0);
+    expect(mocks.accountQueryRaw).toHaveBeenCalledTimes(1);
+    expect(mocks.accountQueryRaw.mock.calls[0][1]).toBe('deleted-user');
+    const deletionUnsafeWrites = mocks.orderUpdateMany.mock.calls
+      .map(([query]) => query)
+      .filter(query => query.where?.id === 'deleted-order');
+    expect(deletionUnsafeWrites).toHaveLength(0);
+    expect(mocks.executeRaw).not.toHaveBeenCalled();
+    expect(mocks.transactionCreate).not.toHaveBeenCalled();
+    expect(mocks.tgRefund).not.toHaveBeenCalled();
+    expect(mocks.tgRefundAlert).not.toHaveBeenCalled();
   });
 
   it('returns a raced provider active-order rejection to the queue instead of stranding it as Dispatching', async () => {

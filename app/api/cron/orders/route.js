@@ -17,6 +17,10 @@ import {
 } from '@/lib/order-queue';
 import { getApplicationUrl } from '@/lib/env';
 import { getBearerToken } from '@/lib/bearer-token';
+import {
+  ORDER_SETTLEMENT_ACCOUNT_STATUSES,
+  lockOrderSettlementAccount,
+} from '@/lib/account-deletion';
 
 // Polls provider APIs for order status updates
 // Auto-refunds failed/cancelled orders
@@ -77,6 +81,11 @@ export async function GET(req) {
         status: { in: ['Processing', 'Pending', 'In progress'] },
         apiOrderId: { not: null },
         deletedAt: null,
+        user: {
+          status: { in: ORDER_SETTLEMENT_ACCOUNT_STATUSES },
+          deletedAt: null,
+          anonymizedAt: null,
+        },
       },
       include: { service: { select: { provider: true, category: true } }, tier: { select: { group: { select: { type: true } } } } },
       take: 200, // batch limit
@@ -119,7 +128,20 @@ export async function GET(req) {
           const liveStartCount = result.start_count != null ? Number(result.start_count) : null;
 
           if (!newStatus && liveRemains != null && liveRemains !== order.remains) {
-            await prisma.order.update({ where: { id: order.id }, data: { remains: liveRemains, ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}) } });
+            await prisma.order.updateMany({
+              where: {
+                id: order.id,
+                status: order.status,
+                apiOrderId: order.apiOrderId,
+                deletedAt: null,
+                user: {
+                  status: { in: ORDER_SETTLEMENT_ACCOUNT_STATUSES },
+                  deletedAt: null,
+                  anonymizedAt: null,
+                },
+              },
+              data: { remains: liveRemains, ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}) },
+            });
             continue;
           }
 
@@ -168,9 +190,17 @@ export async function GET(req) {
 
           if (newStatus === 'Cancelled') {
             // Atomic: status update + refund in one transaction so neither can succeed alone
-            const { safeRefund: cancelledRefund } = await prisma.$transaction(async (tx) => {
-              await tx.order.update({
-                where: { id: order.id },
+            const cancellation = await prisma.$transaction(async (tx) => {
+              if (!await lockOrderSettlementAccount(tx, order.userId)) {
+                return { safeRefund: 0, transitioned: false };
+              }
+              const transitioned = await tx.order.updateMany({
+                where: {
+                  id: order.id,
+                  status: order.status,
+                  apiOrderId: order.apiOrderId,
+                  deletedAt: null,
+                },
                 data: {
                   status: 'Cancelled',
                   queuedBehind: null,
@@ -180,6 +210,7 @@ export async function GET(req) {
                   refundedAt: new Date(),
                 },
               });
+              if (transitioned.count !== 1) return { safeRefund: 0, transitioned: false };
               const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
               const safeRefund = Math.max(0, order.charge - alreadyRefunded);
               if (safeRefund > 0) {
@@ -192,8 +223,10 @@ export async function GET(req) {
                 }
                 await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: safeRefund });
               }
-              return { safeRefund };
+              return { safeRefund, transitioned: true };
             });
+            if (!cancellation.transitioned) continue;
+            const cancelledRefund = cancellation.safeRefund;
             stats.updated++;
             voidCommissions(order.id, 'order_cancelled').catch(() => {});
             if (cancelledRefund > 0) {
@@ -207,9 +240,17 @@ export async function GET(req) {
             const refundAmount = remains > 0 && order.charge > 0 && order.quantity > 0
               ? Math.floor((remains / order.quantity) * order.charge / 100) * 100 : 0;
             // Atomic: status update + partial refund
-            const { safeRefund: partialRefund } = await prisma.$transaction(async (tx) => {
-              await tx.order.update({
-                where: { id: order.id },
+            const partial = await prisma.$transaction(async (tx) => {
+              if (!await lockOrderSettlementAccount(tx, order.userId)) {
+                return { safeRefund: 0, transitioned: false };
+              }
+              const transitioned = await tx.order.updateMany({
+                where: {
+                  id: order.id,
+                  status: order.status,
+                  apiOrderId: order.apiOrderId,
+                  deletedAt: null,
+                },
                 data: {
                   status: 'Partial',
                   queuedBehind: null,
@@ -218,6 +259,7 @@ export async function GET(req) {
                   ...(refundAmount > 0 ? { refundedAt: new Date() } : {}),
                 },
               });
+              if (transitioned.count !== 1) return { safeRefund: 0, transitioned: false };
               await awardPointsOnCompletion(order.id, tx);
               let safeRefund = 0;
               if (refundAmount > 0) {
@@ -234,8 +276,10 @@ export async function GET(req) {
                   await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: safeRefund });
                 }
               }
-              return { safeRefund };
+              return { safeRefund, transitioned: true };
             });
+            if (!partial.transitioned) continue;
+            const partialRefund = partial.safeRefund;
             stats.updated++;
             if (partialRefund > 0) {
               stats.refunded++;
@@ -249,8 +293,18 @@ export async function GET(req) {
               createCommission(order.id, order.userId, partialCharge, partialCost).catch(() => {});
             }
           } else {
-            await prisma.order.update({
-              where: { id: order.id },
+            const transitioned = await prisma.order.updateMany({
+              where: {
+                id: order.id,
+                status: order.status,
+                apiOrderId: order.apiOrderId,
+                deletedAt: null,
+                user: {
+                  status: { in: ORDER_SETTLEMENT_ACCOUNT_STATUSES },
+                  deletedAt: null,
+                  anonymizedAt: null,
+                },
+              },
               data: {
                 status: newStatus,
                 ...(newStatus === 'Completed' ? { completedAt: new Date(), queuedBehind: null } : {}),
@@ -258,6 +312,7 @@ export async function GET(req) {
                 ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}),
               },
             });
+            if (transitioned.count !== 1) continue;
             stats.updated++;
             if (newStatus === 'Completed') {
               createCommission(order.id, order.userId, order.charge, order.cost).catch(() => {});
@@ -446,6 +501,11 @@ export async function GET(req) {
       const stale = await prisma.order.findMany({
         where: {
           status: 'Pending', apiOrderId: null, deletedAt: null,
+          user: {
+            status: { in: ORDER_SETTLEMENT_ACCOUNT_STATUSES },
+            deletedAt: null,
+            anonymizedAt: null,
+          },
           queuedBehind: null,
           dripDays: null,
           dripDispatches: { none: {} },
@@ -470,6 +530,7 @@ export async function GET(req) {
       for (const order of stale) {
         try {
           const claimed = await prisma.$transaction(async (tx) => {
+            if (!await lockOrderSettlementAccount(tx, order.userId)) return false;
             const claimed = await tx.order.updateMany({
               where: {
                 id: order.id,
@@ -479,6 +540,11 @@ export async function GET(req) {
                 queuedBehind: null,
                 dripDays: null,
                 dripDispatches: { none: {} },
+                user: {
+                  status: { in: ORDER_SETTLEMENT_ACCOUNT_STATUSES },
+                  deletedAt: null,
+                  anonymizedAt: null,
+                },
                 // Any admin retry or concurrent edit advances @updatedAt and
                 // invalidates this stale snapshot before money can move.
                 updatedAt: order.updatedAt,
@@ -531,6 +597,11 @@ export async function GET(req) {
           deletedAt: null,
           refundedAt: null,
           charge: { gt: 0 },
+          user: {
+            status: { in: ORDER_SETTLEMENT_ACCOUNT_STATUSES },
+            deletedAt: null,
+            anonymizedAt: null,
+          },
           createdAt: { gt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
         },
         take: 50,
@@ -547,16 +618,27 @@ export async function GET(req) {
             refundAmount = order.charge;
           }
           if (refundAmount <= 0) {
-            await prisma.order.update({ where: { id: order.id }, data: { refundedAt: new Date() } });
+            await prisma.order.updateMany({
+              where: { id: order.id, status: order.status, deletedAt: null, refundedAt: null },
+              data: { refundedAt: new Date() },
+            });
             continue;
           }
           const { safeRefund: recoveredRefund } = await prisma.$transaction(async (tx) => {
+            if (!await lockOrderSettlementAccount(tx, order.userId)) return { safeRefund: 0 };
+            const claimed = await tx.order.updateMany({
+              where: {
+                id: order.id,
+                status: order.status,
+                deletedAt: null,
+                refundedAt: null,
+              },
+              data: { refundedAt: new Date() },
+            });
+            if (claimed.count !== 1) return { safeRefund: 0 };
             const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
             const safeRefund = Math.max(0, refundAmount - alreadyRefunded);
-            if (safeRefund <= 0) {
-              await tx.order.update({ where: { id: order.id }, data: { refundedAt: new Date() } });
-              return { safeRefund: 0 };
-            }
+            if (safeRefund <= 0) return { safeRefund: 0 };
             const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, safeRefund);
             if (walletRefund > 0) {
               await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
@@ -565,7 +647,6 @@ export async function GET(req) {
               });
             }
             await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: safeRefund });
-            await tx.order.update({ where: { id: order.id }, data: { refundedAt: new Date() } });
             return { safeRefund };
           });
           if (recoveredRefund > 0) {
@@ -624,6 +705,7 @@ async function refundOrder(order, amount = null, emailOnly = false, failReason =
 
   if (!emailOnly) {
     await prisma.$transaction(async (tx) => {
+      if (!await lockOrderSettlementAccount(tx, order.userId)) return;
       const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
       const safeRefund = Math.max(0, (amount || order.charge) - alreadyRefunded);
       if (safeRefund <= 0) return;

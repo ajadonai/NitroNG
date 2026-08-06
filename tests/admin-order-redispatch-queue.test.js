@@ -17,6 +17,12 @@ const mocks = vi.hoisted(() => ({
   executeRaw: vi.fn(),
   queryRaw: vi.fn(),
   placeOrder: vi.fn(),
+  placeWithProvider: vi.fn(),
+  checkOrder: vi.fn(),
+  lockOrderSettlementAccount: vi.fn(),
+  enqueueMetaEvent: vi.fn(),
+  scheduleQueuedMetaEventDelivery: vi.fn(),
+  getTotalRefundedKobo: vi.fn(),
 }));
 
 const tx = {
@@ -62,17 +68,29 @@ vi.mock('@/lib/admin', () => ({
 vi.mock('@/lib/email', () => ({ sendEmail: vi.fn(), walletCreditEmail: vi.fn() }));
 vi.mock('@/lib/smm', () => ({
   placeOrder: (...args) => mocks.placeOrder(...args),
-  checkOrder: vi.fn(), cancelOrder: vi.fn(), refillOrder: vi.fn(),
+  checkOrder: (...args) => mocks.checkOrder(...args),
+  cancelOrder: vi.fn(), refillOrder: vi.fn(),
   isProviderConfigured: () => false,
   getProviderName: () => 'MoreThanPanel',
 }));
+vi.mock('@/lib/bulk-dispatch', () => ({
+  placeWithProvider: (...args) => mocks.placeWithProvider(...args),
+}));
 vi.mock('@/lib/commissions', () => ({ voidCommissions: vi.fn() }));
 vi.mock('@/lib/clean-link', () => ({ cleanLink: value => value }));
+vi.mock('@/lib/account-deletion', () => ({
+  ORDER_SETTLEMENT_ACCOUNT_STATUSES: ['Active', 'Suspended'],
+  lockOrderSettlementAccount: (...args) => mocks.lockOrderSettlementAccount(...args),
+}));
+vi.mock('@/lib/meta-capi', () => ({
+  enqueueMetaEvent: (...args) => mocks.enqueueMetaEvent(...args),
+  scheduleQueuedMetaEventDelivery: (...args) => mocks.scheduleQueuedMetaEventDelivery(...args),
+}));
 vi.mock('@/lib/telegram', () => ({ tgRefundAlert: vi.fn() }));
 vi.mock('@/lib/nitro-rewards', () => ({
   reverseOrderPoints: vi.fn(),
   computeRefundSplit: charge => ({ walletRefund: charge, pointsRestore: 0 }),
-  getTotalRefundedKobo: vi.fn().mockResolvedValue(1_945_900),
+  getTotalRefundedKobo: (...args) => mocks.getTotalRefundedKobo(...args),
 }));
 vi.mock('@/lib/order-offer-display', () => ({
   buildOrderOfferSnapshot: () => ({
@@ -131,6 +149,22 @@ function dispatchRequest() {
   });
 }
 
+function retryRequest() {
+  return new Request('https://nitro.test/api/admin/orders', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'retry', orderId: 'NTR-3080' }),
+  });
+}
+
+function checkRequest() {
+  return new Request('https://nitro.test/api/admin/orders', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'check', orderId: 'NTR-2913' }),
+  });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   for (const mock of Object.values(mocks)) mock.mockReset();
@@ -146,9 +180,32 @@ beforeEach(() => {
   mocks.orderCreate.mockImplementation(({ data }) => ({
     id: 'child-db-id', createdAt: new Date('2026-07-17T17:05:07Z'), ...data,
   }));
+  mocks.lockOrderSettlementAccount.mockResolvedValue({ id: 'user-1', status: 'Active' });
+  mocks.getTotalRefundedKobo.mockResolvedValue(1_945_900);
 });
 
 describe('admin redispatch — same-link queue safety', () => {
+  it('keeps a cancelling order immutable while its cancellation lease is being finalized', async () => {
+    mocks.orderFindFirst.mockResolvedValueOnce({
+      ...parentOrder(),
+      status: 'Cancelling',
+      apiOrderId: 'provider-2913',
+    });
+
+    const response = await POST(checkRequest());
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      success: true,
+      status: 'Cancelling',
+      message: 'Cancellation is being finalized',
+    });
+    expect(mocks.checkOrder).not.toHaveBeenCalled();
+    expect(mocks.orderUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.executeRaw).not.toHaveBeenCalled();
+    expect(mocks.ledgerCreate).not.toHaveBeenCalled();
+  });
+
   it('refuses to manually dispatch a terminal drip parent', async () => {
     const terminal = {
       ...parentOrder(),
@@ -166,6 +223,95 @@ describe('admin redispatch — same-link queue safety', () => {
     expect(response.status).toBe(400);
     expect(mocks.dripUpdateMany).not.toHaveBeenCalled();
     expect(mocks.placeOrder).not.toHaveBeenCalled();
+  });
+
+  it('rejects retry while cancellation owns the parent lease', async () => {
+    const cancelling = {
+      ...parentOrder(),
+      id: 'cancelling-db-id',
+      orderId: 'NTR-3080',
+      status: 'Cancelling',
+      apiOrderId: null,
+    };
+    mocks.orderFindFirst
+      .mockResolvedValueOnce({ ...cancelling, service: { provider: 'mtp' } })
+      .mockResolvedValueOnce(cancelling);
+
+    const response = await POST(retryRequest());
+
+    expect(response.status).toBe(409);
+    expect(mocks.orderUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.dripUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.placeOrder).not.toHaveBeenCalled();
+    expect(mocks.placeWithProvider).not.toHaveBeenCalled();
+  });
+
+  it('rejects retry before reopening an order when the account is unavailable', async () => {
+    const pending = {
+      ...parentOrder(),
+      id: 'pending-db-id',
+      orderId: 'NTR-3080',
+      status: 'Pending',
+      apiOrderId: null,
+    };
+    mocks.orderFindFirst
+      .mockResolvedValueOnce({ ...pending, service: { provider: 'mtp' } })
+      .mockResolvedValueOnce(pending);
+    mocks.lockOrderSettlementAccount.mockResolvedValue(null);
+
+    const response = await POST(retryRequest());
+
+    expect(response.status).toBe(409);
+    expect(mocks.lockOrderSettlementAccount).toHaveBeenCalledWith(tx, 'user-1');
+    expect(mocks.orderUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.dripUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.placeOrder).not.toHaveBeenCalled();
+    expect(mocks.placeWithProvider).not.toHaveBeenCalled();
+  });
+
+  it('rejects dispatch while cancellation owns the parent lease', async () => {
+    const cancelling = {
+      ...parentOrder(),
+      id: 'cancelling-db-id',
+      orderId: 'NTR-3080',
+      status: 'Cancelling',
+      apiOrderId: null,
+    };
+    mocks.orderFindFirst
+      .mockResolvedValueOnce({ ...cancelling, service: { provider: 'mtp' } })
+      .mockResolvedValueOnce(cancelling);
+
+    const response = await POST(dispatchRequest());
+
+    expect(response.status).toBe(409);
+    expect(mocks.orderUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.dripUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.placeOrder).not.toHaveBeenCalled();
+    expect(mocks.placeWithProvider).not.toHaveBeenCalled();
+  });
+
+  it('rejects dispatch before queue or provider work when the account is unavailable', async () => {
+    const pending = {
+      ...parentOrder(),
+      id: 'pending-db-id',
+      orderId: 'NTR-3080',
+      status: 'Pending',
+      apiOrderId: null,
+      queuedBehind: null,
+    };
+    mocks.orderFindFirst
+      .mockResolvedValueOnce({ ...pending, service: { provider: 'mtp' } })
+      .mockResolvedValueOnce(pending);
+    mocks.lockOrderSettlementAccount.mockResolvedValue(null);
+
+    const response = await POST(dispatchRequest());
+
+    expect(response.status).toBe(409);
+    expect(mocks.lockOrderSettlementAccount).toHaveBeenCalledWith(tx, 'user-1');
+    expect(mocks.orderUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.dripUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.placeOrder).not.toHaveBeenCalled();
+    expect(mocks.placeWithProvider).not.toHaveBeenCalled();
   });
 
   it('prevents manual dispatch from bypassing an active same-link queue', async () => {
@@ -188,7 +334,13 @@ describe('admin redispatch — same-link queue safety', () => {
     expect(response.status).toBe(200);
     expect(body).toMatchObject({ success: true, queued: true, queuedBehind: 'NTR-2890' });
     expect(mocks.orderUpdateMany).toHaveBeenCalledWith({
-      where: { id: 'child-db-id', status: { notIn: ['Cancelled', 'Partial', 'Completed'] }, apiOrderId: null },
+      where: {
+        id: 'child-db-id',
+        userId: 'user-1',
+        status: { in: ['Pending', 'Processing', 'Dispatching'] },
+        apiOrderId: null,
+        deletedAt: null,
+      },
       data: { status: 'Pending', queuedBehind: 'NTR-2890' },
     });
     expect(mocks.dripFindFirst).not.toHaveBeenCalled();
@@ -261,11 +413,47 @@ describe('admin redispatch — same-link queue safety', () => {
     expect(mocks.dripCreateMany).toHaveBeenCalled();
     expect(mocks.placeOrder).not.toHaveBeenCalled();
     expect(mocks.dripUpdate).not.toHaveBeenCalled();
+    expect(mocks.enqueueMetaEvent).toHaveBeenCalledWith(
+      tx,
+      'Purchase',
+      expect.objectContaining({ eventId: 'purchase_NTR-3080' }),
+    );
+    expect(mocks.scheduleQueuedMetaEventDelivery).toHaveBeenCalledWith('purchase_NTR-3080');
     expect(mocks.logActivity).toHaveBeenCalledWith(
       'Soludo',
       expect.stringContaining('queued behind NTR-2890'),
       'order',
     );
+  });
+
+  it('does not enqueue a Purchase when original held funds fully cover the redispatch', async () => {
+    const parent = parentOrder();
+    mocks.getTotalRefundedKobo.mockResolvedValue(0);
+    mocks.orderFindFirst
+      .mockResolvedValueOnce({ ...parent, service: { provider: 'mtp' } })
+      .mockResolvedValueOnce(parent)
+      .mockResolvedValueOnce({ orderId: 'NTR-2890' })
+      .mockResolvedValueOnce({ orderId: 'NTR-2890' });
+
+    const response = await POST(request());
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      success: true,
+      queued: true,
+      newOrderId: 'NTR-3080',
+    });
+    expect(mocks.orderCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        orderId: 'NTR-3080',
+        charge: 0,
+      }),
+    });
+    expect(mocks.executeRaw).not.toHaveBeenCalled();
+    expect(mocks.ledgerCreate).not.toHaveBeenCalled();
+    expect(mocks.enqueueMetaEvent).not.toHaveBeenCalled();
+    expect(mocks.scheduleQueuedMetaEventDelivery).not.toHaveBeenCalled();
   });
 
   it('allows only one concurrent redispatch to claim the cancelled parent', async () => {
@@ -299,6 +487,29 @@ describe('admin redispatch — same-link queue safety', () => {
     await expect(response.json()).resolves.toEqual({ error: 'Insufficient balance' });
     expect(mocks.orderCreate).not.toHaveBeenCalled();
     expect(mocks.ledgerCreate).not.toHaveBeenCalled();
+    expect(mocks.placeOrder).not.toHaveBeenCalled();
+  });
+
+  it('rejects redispatch before claiming, debiting, or creating when the account is unavailable', async () => {
+    const parent = parentOrder();
+    mocks.orderFindFirst
+      .mockResolvedValueOnce({ ...parent, service: { provider: 'mtp' } })
+      .mockResolvedValueOnce(parent)
+      .mockResolvedValueOnce({ orderId: 'NTR-2890' });
+    mocks.lockOrderSettlementAccount.mockResolvedValue(null);
+
+    const response = await POST(request());
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      error: 'This account is pending deletion and cannot receive redispatched orders',
+    });
+    expect(mocks.lockOrderSettlementAccount).toHaveBeenCalledWith(tx, 'user-1');
+    expect(mocks.orderUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.executeRaw).not.toHaveBeenCalled();
+    expect(mocks.orderCreate).not.toHaveBeenCalled();
+    expect(mocks.ledgerCreate).not.toHaveBeenCalled();
+    expect(mocks.dripCreateMany).not.toHaveBeenCalled();
     expect(mocks.placeOrder).not.toHaveBeenCalled();
   });
 });

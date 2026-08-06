@@ -8,8 +8,7 @@ import { sendEmail, batchPlacementEmail } from '@/lib/email';
 import { getWhatsAppChannelUrl } from '@/lib/settings';
 import { cleanLink } from '@/lib/clean-link';
 import { calculateIntradayDrip, getDripConfig, validateIntradayDuration } from '@/lib/drip-feed';
-import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
-import { headers as getHeaders } from 'next/headers';
+import { enqueueMetaEvent, parseFbCookies, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
 import { tgNewOrder, tgOutreachAlert, tgRefundAlert } from '@/lib/telegram';
 import { sendOutreach as ifySendOutreach } from '@/lib/ify/outreach';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
@@ -17,6 +16,7 @@ import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrde
 import { isReservedProviderQueryLeaseKey } from '@/lib/provider-query-lease';
 import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder, findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
+import { lockOrderSettlementAccount } from '@/lib/account-deletion';
 
 async function checkFirstOrder(userId, serviceName) {
   try {
@@ -62,6 +62,27 @@ async function nextBatchId() {
 }
 
 export const maxDuration = 60;
+
+function buildPurchaseEvent(req, { eventId, eventTime, email, phone, externalId, valueKobo }) {
+  const { fbp, fbc } = parseFbCookies(req.headers.get('cookie'));
+  return {
+    eventId,
+    eventTime,
+    email,
+    phone,
+    externalId,
+    clientIp: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip'),
+    userAgent: req.headers.get('user-agent'),
+    fbp,
+    fbc,
+    sourceUrl: req.headers.get('referer'),
+    customData: { value: valueKobo / 100, currency: 'NGN' },
+  };
+}
+
+function triggerPurchaseDelivery(eventId) {
+  scheduleQueuedMetaEventDelivery(eventId);
+}
 export const dynamic = 'force-dynamic';
 
 const NITRO_MINS = { followers: 100, likes: 100, views: 500, comments: 10, engagement: 50, plays: 500, reviews: 10 };
@@ -75,6 +96,14 @@ function providerExtras(order, quantity) {
     else if (apiType.includes('mention')) extra.usernames = order.comments;
     else if (apiType === 'poll') extra.answer_number = order.comments;
     else extra.comments = order.comments;
+  }
+
+  if (order.trafficConfig) {
+    const tc = order.trafficConfig;
+    if (tc.country) extra.country = tc.country;
+    if (tc.device) extra.device = tc.device;
+    if (tc.trafficType === 'keyword' && tc.keyword) extra.keywords = tc.keyword;
+    else if (tc.trafficType === 'referrer' && tc.referrer) extra.referrer = tc.referrer;
   }
 
   if (apiType === 'subscriptions') {
@@ -177,6 +206,17 @@ async function dispatchCreatedOrder(order, { timeoutMs = 0 } = {}) {
     if (!claimOk) return { state: 'skipped' };
 
     try {
+      if (order.comments && !['seo', 'poll'].includes((order.service?.apiType || '').toLowerCase()) && !(order.service?.apiType || '').toLowerCase().includes('mention')) {
+        const { sliceCommentsForBatch } = await import('@/lib/drip-feed');
+        const allDispatches = await prisma.dripDispatch.findMany({
+          where: { orderId: order.dbId },
+          select: { day: true, batch: true, quantity: true, status: true, lastError: true, remains: true },
+          orderBy: [{ day: 'asc' }, { batch: 'asc' }],
+        });
+        if (allDispatches.length > 1) {
+          order = { ...order, comments: sliceCommentsForBatch(order.comments, first.quantity, allDispatches, first) };
+        }
+      }
       const result = await providerRequest(order, first.quantity, timeoutMs);
       const apiOrderId = result.order ? String(result.order) : null;
       if (!apiOrderId) {
@@ -442,6 +482,9 @@ export async function PATCH(req) {
 
     if (action === 'cancel') {
       const result = await prisma.$transaction(async (tx) => {
+        if (!await lockOrderSettlementAccount(tx, session.id)) {
+          return { cancelled: 0, refunded: 0, accountLocked: true };
+        }
         const cancellable = await tx.order.findMany({
           where: {
             batchId,
@@ -488,13 +531,14 @@ export async function PATCH(req) {
         }
         return { cancelled, refunded: totalWalletRefund / 100 };
       });
+      if (result.accountLocked) return Response.json({ error: 'Account is being deleted; orders can no longer be cancelled or refunded' }, { status: 409 });
       if (result.cancelled === 0) return Response.json({ error: 'No cancellable orders — all have been sent to providers' }, { status: 400 });
       tgRefundAlert({ orderId: batchId, amount: result.refunded * 100, charge: result.refunded * 100, qty: result.cancelled, status: 'Cancelled', reason: 'user_cancelled (bulk)', source: 'user' });
       return Response.json({ success: true, ...result });
     }
 
     if (action === 'check') {
-      const checkable = batchOrders.filter(o => o.apiOrderId && !['Completed', 'Cancelled'].includes(o.status));
+      const checkable = batchOrders.filter(o => o.apiOrderId && !['Completed', 'Cancelled', 'Cancelling'].includes(o.status));
       if (checkable.length === 0) return Response.json({ success: true, updated: 0 });
 
       let updated = 0;
@@ -509,46 +553,68 @@ export async function PATCH(req) {
           else if (['in progress', 'inprogress', 'processing'].includes(providerStatus)) newStatus = 'Processing';
 
           if (!newStatus || newStatus === order.status) continue;
-          await prisma.order.update({ where: { id: order.id }, data: { status: newStatus } });
-          updated++;
 
-          if (newStatus === 'Cancelled') {
-            await prisma.$transaction(async (tx) => {
+          // The provider request happens outside the transaction. Revalidate
+          // the observed order only after taking the same user-row lock used by
+          // account deletion, then move status and money atomically.
+          const liveRemains = result.remains != null ? Number(result.remains) : null;
+          const settlement = await prisma.$transaction(async (tx) => {
+            if (!await lockOrderSettlementAccount(tx, session.id)) {
+              return { transitioned: false, refundAmount: 0 };
+            }
+
+            const transitioned = await tx.order.updateMany({
+              where: {
+                id: order.id,
+                userId: session.id,
+                status: order.status,
+                apiOrderId: order.apiOrderId,
+                deletedAt: null,
+              },
+              data: {
+                status: newStatus,
+                ...(Number.isFinite(liveRemains) ? { remains: liveRemains } : {}),
+                ...(['Cancelled', 'Partial'].includes(newStatus) ? { refundedAt: new Date() } : {}),
+              },
+            });
+            if (transitioned.count !== 1) return { transitioned: false, refundAmount: 0 };
+
+            let refundAmount = 0;
+            if (newStatus === 'Cancelled' && order.charge > 0) {
               const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: session.id });
-              const cappedRefund = Math.max(0, order.charge - alreadyRefunded);
-              if (cappedRefund <= 0) return;
-              const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, cappedRefund);
+              refundAmount = Math.max(0, order.charge - alreadyRefunded);
+            } else if (newStatus === 'Partial' && liveRemains > 0 && order.charge > 0 && order.quantity > 0) {
+              const calculated = Math.round((liveRemains / order.quantity) * order.charge);
+              if (calculated > 0) {
+                const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: session.id });
+                refundAmount = Math.max(0, calculated - alreadyRefunded);
+              }
+            }
+
+            if (refundAmount > 0) {
+              const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, refundAmount);
               if (walletRefund > 0) {
                 await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${session.id}`;
                 await tx.transaction.create({
-                  data: { userId: session.id, type: 'refund', amount: walletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund cancelled ${order.orderId}` },
+                  data: {
+                    userId: session.id,
+                    type: 'refund',
+                    amount: walletRefund,
+                    method: 'wallet',
+                    status: 'Completed',
+                    reference: `REF-${order.orderId}`,
+                    note: newStatus === 'Cancelled'
+                      ? `Auto-refund cancelled ${order.orderId}`
+                      : `Partial refund ${order.orderId}`,
+                  },
                 });
               }
-              await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: cappedRefund });
-            });
-          }
-
-          if (newStatus === 'Partial' && result.remains) {
-            const remains = Number(result.remains) || 0;
-            if (remains > 0 && order.charge > 0 && order.quantity > 0) {
-              const refundAmount = Math.round((remains / order.quantity) * order.charge);
-              if (refundAmount > 0) {
-                await prisma.$transaction(async (tx) => {
-                  const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: session.id });
-                  const cappedRefund = Math.max(0, refundAmount - alreadyRefunded);
-                  if (cappedRefund <= 0) return;
-                  const { walletRefund: partialWalletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, cappedRefund);
-                  if (partialWalletRefund > 0) {
-                    await tx.$executeRaw`UPDATE users SET balance = balance + ${partialWalletRefund} WHERE id = ${session.id}`;
-                    await tx.transaction.create({
-                      data: { userId: session.id, type: 'refund', amount: partialWalletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Partial refund ${order.orderId}` },
-                    });
-                  }
-                  await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: cappedRefund });
-                });
-              }
+              await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
             }
-          }
+
+            return { transitioned: true, refundAmount };
+          });
+          if (settlement.transitioned) updated++;
         } catch (err) {
           log.warn(`Bulk check ${order.orderId}`, err.message);
         }
@@ -640,6 +706,7 @@ export async function PATCH(req) {
               charge: d.charge,
               cost: d.cost,
               comments: o.comments,
+              ...(o.trafficConfig ? { trafficConfig: o.trafficConfig } : {}),
               status: 'Pending',
               ...offerSnapshot,
               ...(blocker ? { queuedBehind: blocker.orderId } : {}),
@@ -667,8 +734,19 @@ export async function PATCH(req) {
           data: { userId: session.id, type: 'order', amount: -totalCharge, method: 'wallet', status: 'Completed', reference: newBatchId, note: `Reorder from ${batchId} — ${orderData.length} orders` },
         });
 
+        await enqueueMetaEvent(tx, 'Purchase', buildPurchaseEvent(req, {
+          eventId: `purchase_${newBatchId}`,
+          eventTime: createdOrders[0].createdAt,
+          email: session.email,
+          phone: session.phone,
+          externalId: session.id,
+          valueKobo: totalCharge,
+        }));
+
         return { createdOrders, totalCharge };
       });
+
+      triggerPurchaseDelivery(`purchase_${newBatchId}`);
 
       for (const o of result.createdOrders) {
         const tierName = `${o.offerSnapshot.serviceNameAtPurchase}${o.offerSnapshot.tierNameAtPurchase ? ` — ${o.offerSnapshot.tierNameAtPurchase}` : ''}`;
@@ -818,6 +896,41 @@ export async function POST(req) {
         }
       }
 
+      let trafficConfig = undefined;
+      if (row.trafficConfig != null) {
+        if (!tier.trafficTargeting) {
+          return Response.json({ error: `Row ${i + 1}: traffic targeting not available for this tier` }, { status: 400 });
+        }
+        const tc = row.trafficConfig;
+        if (!tc || typeof tc !== 'object' || Array.isArray(tc)) {
+          return Response.json({ error: `Row ${i + 1}: invalid traffic config` }, { status: 400 });
+        }
+        const validDevices = ['desktop', 'android', 'ios', 'mobile', 'all'];
+        const validTypes = ['keyword', 'referrer', 'blank'];
+        if (!tc.country || typeof tc.country !== 'string' || tc.country.trim().length < 2 || tc.country.trim().length > 3) {
+          return Response.json({ error: `Row ${i + 1}: traffic targeting requires a 2-letter country code` }, { status: 400 });
+        }
+        if (!tc.device || !validDevices.includes(tc.device)) {
+          return Response.json({ error: `Row ${i + 1}: invalid device selection` }, { status: 400 });
+        }
+        if (!tc.trafficType || !validTypes.includes(tc.trafficType)) {
+          return Response.json({ error: `Row ${i + 1}: invalid traffic type` }, { status: 400 });
+        }
+        if (tc.trafficType === 'keyword' && (!tc.keyword || typeof tc.keyword !== 'string' || !tc.keyword.trim())) {
+          return Response.json({ error: `Row ${i + 1}: Google Keyword required for keyword traffic` }, { status: 400 });
+        }
+        if (tc.trafficType === 'referrer' && (!tc.referrer || typeof tc.referrer !== 'string' || !tc.referrer.trim())) {
+          return Response.json({ error: `Row ${i + 1}: Referrer URL required for referrer traffic` }, { status: 400 });
+        }
+        trafficConfig = {
+          country: tc.country.trim().toUpperCase(),
+          device: tc.device,
+          trafficType: tc.trafficType,
+          ...(tc.trafficType === 'keyword' ? { keyword: tc.keyword.trim().slice(0, 500) } : {}),
+          ...(tc.trafficType === 'referrer' ? { referrer: tc.referrer.trim().slice(0, 500) } : {}),
+        };
+      }
+
       const bulkGroupType = (tier.group?.type || '').toLowerCase();
       const bulkPlatform = (service.category || '').toLowerCase();
       const bulkDripCfg = getDripConfig(bulkGroupType, bulkPlatform);
@@ -826,7 +939,7 @@ export async function POST(req) {
         const durationErr = validateIntradayDuration(dripSchedule.dispatches);
         if (durationErr) return Response.json({ error: `Row ${i + 1}: ${durationErr}` }, { status: 400 });
       }
-      resolved.push({ tier, service, link: trimmedLink, qty, charge, cost, tierName, comments, dripSchedule, offerSnapshot });
+      resolved.push({ tier, service, link: trimmedLink, qty, charge, cost, tierName, comments, trafficConfig, dripSchedule, offerSnapshot });
     }
 
     if (driftRows.length > 0) {
@@ -893,6 +1006,7 @@ export async function POST(req) {
             charge: o.finalCharge,
             cost: o.cost,
             comments: o.comments,
+            ...(o.trafficConfig ? { trafficConfig: o.trafficConfig } : {}),
             loyaltyDiscount: o.discount,
             nitroStatusAtPurchase: nitroTier?.key || null,
             ...o.offerSnapshot,
@@ -947,7 +1061,19 @@ export async function POST(req) {
         },
       });
 
-      return { createdOrders, totalCharge, nitroTier };
+      const eventId = batchId
+        ? `purchase_${batchId}`
+        : `purchase_${createdOrders[0].orderId}`;
+      await enqueueMetaEvent(tx, 'Purchase', buildPurchaseEvent(req, {
+        eventId,
+        eventTime: createdOrders[0].createdAt,
+        email: session.email,
+        phone: session.phone,
+        externalId: session.id,
+        valueKobo: totalCharge,
+      }));
+
+      return { createdOrders, totalCharge, nitroTier, eventId };
     });
 
     const orderResults = result.createdOrders.map(o => ({
@@ -973,19 +1099,8 @@ export async function POST(req) {
       }
     }
 
-    const eventId = batchId ? `purchase_${batchId}` : `purchase_${result.createdOrders[0]?.orderId || Date.now()}`;
-    const hdrs = await getHeaders();
-    const { fbp, fbc } = parseFbCookies(hdrs.get('cookie'));
-    sendEvent('Purchase', {
-      eventId,
-      email: session.email,
-      externalId: session.id,
-      clientIp: hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip'),
-      userAgent: hdrs.get('user-agent'),
-      fbp, fbc,
-      sourceUrl: hdrs.get('referer'),
-      customData: { value: result.totalCharge / 100, currency: 'NGN' },
-    });
+    triggerPurchaseDelivery(result.eventId);
+    const eventId = result.eventId;
 
     for (const o of result.createdOrders) {
       tgNewOrder(o.orderId, o.tierName, o.qty, o.finalCharge || o.charge, session.email, o.link, o.offerSnapshot?.platformAtPurchase || '');

@@ -2,7 +2,13 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getCurrentUser, clearUserCookie } from '@/lib/auth';
 import { sendEmail, accountDeletionEmail, emailWrap, emailDataBox, emailRow } from '@/lib/email';
-import { cancelOrder, isProviderConfigured } from '@/lib/smm';
+import {
+  completeActiveOrdersForAccountDeletion,
+  isOrderCancellationLeaseActive,
+  isOrderSettlementAccountEligible,
+  lockOrderSettlementAccount,
+  withAccountDeletionRetry,
+} from '@/lib/account-deletion';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import bcrypt from 'bcryptjs';
 import { tgUserDeletionRequested } from '@/lib/telegram';
@@ -29,57 +35,47 @@ export async function POST(req) {
       return Response.json({ error: 'Account is already scheduled for deletion' }, { status: 400 });
     }
 
-    const deletionDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    const completedAt = new Date();
+    const deletionDate = new Date(completedAt.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
-    // Cancel active orders on providers (best-effort, before transaction)
-    const activeOrders = await prisma.order.findMany({
-      where: { userId: user.id, status: { in: ['Pending', 'Processing', 'Dispatching', 'In progress'] }, deletedAt: null },
-      include: { service: { select: { provider: true } } },
-    });
-    for (const order of activeOrders) {
-      const provider = order.service?.provider || 'mtp';
-      if (order.apiOrderId && isProviderConfigured(provider)) {
-        try { await cancelOrder(provider, order.apiOrderId); } catch (err) { log.warn('Cancel order on deletion', err.message); }
-      }
-    }
-
-    // Atomic: cancel active orders (no refund), mark deletion, clear sessions
-    await prisma.$transaction(async (tx) => {
+    // Atomic: close active orders without refund, mark deletion, clear sessions
+    const closedWork = await withAccountDeletionRetry(prisma, async (tx) => {
       // Serialize deletion against order placement. Order creation acquires the
       // same user-row lock through deductBalance, so a request that won first is
       // visible below and a request that lost can no longer spend afterward.
-      const [lockedUser] = await tx.$queryRaw`
-        SELECT id, status FROM users WHERE id = ${user.id} FOR UPDATE
-      `;
-      if (!lockedUser || lockedUser.status !== 'Active') {
+      const lockedUser = await lockOrderSettlementAccount(tx, user.id);
+      if (!isOrderSettlementAccountEligible(lockedUser)) {
         throw new Error('ACCOUNT_STATE_CHANGED');
       }
 
-      // Cancel all ongoing orders without refunding — the provider has already
-      // been charged, so refunding would let a reactivated user double-dip.
-      const ongoingStatuses = ['Pending', 'Processing', 'Dispatching', 'In progress'];
-      await tx.order.updateMany({
-        where: { userId: user.id, status: { in: ongoingStatuses }, deletedAt: null },
-        data: { status: 'Cancelled' },
+      // A provider cancellation that already claimed the parent is the earlier
+      // operation. Do not commit deletion while that worker still owns the
+      // right to call the provider; the customer can retry once it settles.
+      const cancellationInProgress = await tx.order.findFirst({
+        where: { userId: user.id, status: 'Cancelling', deletedAt: null },
+        select: { id: true, updatedAt: true },
+        orderBy: { updatedAt: 'desc' },
       });
+      if (isOrderCancellationLeaseActive(cancellationInProgress, new Date())) {
+        return { orders: 0, dispatches: 0, cancellationInProgress: true };
+      }
 
-      // Cancel all pending drip dispatches so they don't fire after deletion
-      await tx.dripDispatch.updateMany({
-        where: { order: { userId: user.id }, status: 'pending' },
-        data: { status: 'cancelled' },
-      });
+      const completed = await completeActiveOrdersForAccountDeletion(tx, user.id, completedAt);
       await tx.user.update({
         where: { id: user.id },
         data: { status: 'PendingDeletion', deletedAt: deletionDate, deletedName: user.name, deletedEmail: user.email },
       });
       await tx.session.deleteMany({ where: { userId: user.id } });
+      return completed;
     });
+    if (closedWork.cancellationInProgress) {
+      return Response.json({ error: 'An order cancellation is in progress. Please try deleting your account again shortly.' }, { status: 409 });
+    }
 
     // Count user stats for admin email
-    const [orderCount, totalSpent, activeOrderCount] = await Promise.all([
+    const [orderCount, totalSpent] = await Promise.all([
       prisma.order.count({ where: { userId: user.id } }),
       prisma.transaction.aggregate({ where: { userId: user.id, type: 'order' }, _sum: { amount: true } }),
-      prisma.order.count({ where: { userId: user.id, status: { in: ['Pending', 'Processing'] } } }),
     ]);
 
     // Keep the internal deletion notice useful without creating another copy
@@ -87,7 +83,7 @@ export async function POST(req) {
     const rows = emailRow('User ID', user.id)
       + emailRow('Balance', '₦' + (user.balance / 100).toLocaleString(), '#059669')
       + emailRow('Total Orders', orderCount)
-      + emailRow('Active Orders', activeOrderCount + (activeOrderCount > 0 ? ' (cancelled, no refund)' : ''), activeOrderCount > 0 ? '#dc2626' : '#333')
+      + emailRow('Active Orders', closedWork.orders + (closedWork.orders > 0 ? ' (completed, no refund)' : ''), closedWork.orders > 0 ? '#dc2626' : '#333')
       + emailRow('Total Spent', '₦' + ((totalSpent._sum.amount || 0) / 100).toLocaleString())
       + emailRow('Signed Up', user.createdAt.toLocaleDateString('en-NG'));
     const adminHtml = await emailWrap({

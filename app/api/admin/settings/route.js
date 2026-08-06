@@ -22,7 +22,7 @@ const ALLOWED_KEYS = new Set([
   'winback_credit_expiry_days',
   'affiliate_enabled', 'affiliate_starter_rate', 'affiliate_growth_rate', 'affiliate_pro_rate',
   'affiliate_lead_split', 'affiliate_growth_threshold', 'affiliate_pro_threshold',
-  'affiliate_hold_days', 'affiliate_min_payout', 'affiliate_min_order', 'affiliate_max_links',
+  'affiliate_hold_days', 'affiliate_min_payout', 'affiliate_min_order',
   'crew_telegram_group_link',
 ]);
 
@@ -95,7 +95,7 @@ export async function POST(req) {
     const AFFILIATE_KEYS = new Set([
       'affiliate_enabled', 'affiliate_starter_rate', 'affiliate_growth_rate', 'affiliate_pro_rate',
       'affiliate_lead_split', 'affiliate_growth_threshold', 'affiliate_pro_threshold',
-      'affiliate_hold_days', 'affiliate_min_payout', 'affiliate_min_order', 'affiliate_max_links',
+      'affiliate_hold_days', 'affiliate_min_payout', 'affiliate_min_order',
       'crew_telegram_group_link',
     ]);
     const affChanges = entries.filter(([k]) => AFFILIATE_KEYS.has(k));

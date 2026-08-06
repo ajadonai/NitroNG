@@ -9,6 +9,23 @@ import { tgRefundAlert } from '@/lib/telegram';
 import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
 import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder, findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
+import { lockOrderSettlementAccount, ORDER_SETTLEMENT_ACCOUNT_STATUSES } from '@/lib/account-deletion';
+import { enqueueMetaEvent, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
+
+function triggerPurchaseDelivery(eventId) {
+  scheduleQueuedMetaEventDelivery(eventId);
+}
+
+async function renewAdminCancellationLease(orderId, userId) {
+  return prisma.$transaction(async (tx) => {
+    if (!await lockOrderSettlementAccount(tx, userId)) return false;
+    const renewed = await tx.order.updateMany({
+      where: { id: orderId, userId, status: 'Cancelling', deletedAt: null },
+      data: { updatedAt: new Date() },
+    });
+    return renewed.count === 1;
+  });
+}
 
 async function nextOrderId(tx) {
   const rows = await (tx || prisma).order.findMany({
@@ -225,16 +242,15 @@ export async function POST(req) {
     const providerLabel = getProviderName(provider);
 
     if (action === 'cancel') {
-      if (order.apiOrderId && isProviderConfigured(provider)) {
-        try {
-          await cancelOrder(provider, order.apiOrderId);
-        } catch (e) { log.warn(`Admin Cancel ${providerLabel}`, e.message); }
-      }
-
       // Phase 1: claim cancellation — blocks dispatch/reset/sync on children
       const phase1 = await prisma.$transaction(async (tx) => {
+        const settlementAccount = await lockOrderSettlementAccount(tx, order.userId);
+        if (!settlementAccount) {
+          return { ok: false, reason: 'This account is pending deletion; active orders are closed without refunds' };
+        }
+
         const freshRows = await tx.$queryRaw`
-          SELECT "id", "orderId", "userId", "status", "quantity", "remains", "charge", "nitroPointsRedeemedKobo", "deletedAt"
+          SELECT "id", "orderId", "userId", "status", "quantity", "remains", "charge", "nitroPointsRedeemedKobo", "apiOrderId", "deletedAt"
           FROM "orders"
           WHERE "id" = ${order.id}
           FOR UPDATE
@@ -262,13 +278,18 @@ export async function POST(req) {
           }
         }
 
-        if (children.length > 0 && childProviderIds.length > 0) {
-          if (fresh.status !== 'Cancelling') {
-            await tx.order.updateMany({
-              where: { id: order.id, status: fresh.status },
-              data: { status: 'Cancelling' },
-            });
-          }
+        // This durable claim is the cancellation operation's linearization
+        // point. Account deletion checks it under the same user lock and asks
+        // the customer to retry instead of committing while provider I/O is
+        // still authorized.
+        if (fresh.status !== 'Cancelling') {
+          const claimed = await tx.order.updateMany({
+            where: { id: order.id, status: fresh.status, deletedAt: null },
+            data: { status: 'Cancelling' },
+          });
+          if (claimed.count !== 1) return { ok: false };
+        }
+        if (children.length > 0) {
           await tx.dripDispatch.updateMany({
             where: { orderId: order.id, status: { notIn: ['completed', 'partial', 'cancelled', 'superseded'] } },
             data: { status: 'cancelling' },
@@ -280,10 +301,21 @@ export async function POST(req) {
 
       if (!phase1.ok) return Response.json({ error: phase1.reason || 'Order is already terminal or deleted' }, { status: 409 });
 
+      // Provider side effects happen only after the account and order claim
+      // succeeds. A deletion-state account never reaches the provider.
+      if (phase1.fresh.apiOrderId && isProviderConfigured(provider)) {
+        try {
+          if (await renewAdminCancellationLease(order.id, order.userId)) {
+            await cancelOrder(provider, phase1.fresh.apiOrderId);
+          }
+        } catch (e) { log.warn(`Admin Cancel ${providerLabel}`, e.message); }
+      }
+
       // Cancel child provider orders and re-query remains (awaited, before refund)
       const confirmedRemains = new Map();
       if (phase1.childProviderIds.length > 0 && isProviderConfigured(provider)) {
         for (const provId of phase1.childProviderIds) {
+          if (!await renewAdminCancellationLease(order.id, order.userId)) break;
           try { await cancelOrder(provider, provId); } catch (e) { log.warn(`Admin drip cancel ${providerLabel} ${provId}`, e.message); }
           try {
             const s = await checkOrder(provider, provId);
@@ -294,6 +326,11 @@ export async function POST(req) {
 
       // Phase 2: compute delivery from confirmed state, commit terminal + refund
       const result = await prisma.$transaction(async (tx) => {
+        const settlementAccount = await lockOrderSettlementAccount(tx, order.userId);
+        if (!settlementAccount) {
+          return { ok: false, reason: 'This account is pending deletion; active orders are closed without refunds' };
+        }
+
         const freshRows = await tx.$queryRaw`
           SELECT "id", "orderId", "userId", "status", "quantity", "remains", "charge", "nitroPointsRedeemedKobo", "deletedAt"
           FROM "orders"
@@ -383,7 +420,7 @@ export async function POST(req) {
         return { ok: true, isPartial, delivered, quantity: Number(fresh.quantity), remains: actualRemains, refundAmount, walletRefund: split.walletRefund, pointsRestore: split.pointsRestore };
       });
 
-      if (!result.ok) return Response.json({ error: 'Order is already terminal or deleted' }, { status: 409 });
+      if (!result.ok) return Response.json({ error: result.reason || 'Order is already terminal or deleted' }, { status: 409 });
 
       if (result.fullyDelivered) {
         await logActivity(admin.name, `Cancel rejected for ${orderId}: fully delivered (${result.delivered}/${result.quantity}), finalized as Completed`, 'order');
@@ -436,11 +473,14 @@ export async function POST(req) {
     }
 
     if (action === 'check') {
+      if (order.status === 'Cancelling') {
+        return Response.json({ success: true, status: 'Cancelling', message: 'Cancellation is being finalized' });
+      }
       if (order.apiOrderId && isProviderConfigured(provider)) {
         try {
           const status = await checkOrder(provider, order.apiOrderId);
           const statusMap = { 'Completed': 'Completed', 'In progress': 'Processing', 'Processing': 'Processing', 'Pending': 'Pending', 'Partial': 'Partial', 'Canceled': 'Cancelled', 'Refunded': 'Cancelled' };
-          const terminal = ['Partial', 'Cancelled'].includes(order.status);
+          const terminal = ['Completed', 'Partial', 'Cancelled', 'Cancelling'].includes(order.status);
           const newStatus = terminal ? order.status : (statusMap[status.status] || order.status);
           const liveRemains = status.remains != null ? Number(status.remains) : null;
           const liveStartCount = status.start_count != null ? Number(status.start_count) : null;
@@ -448,19 +488,35 @@ export async function POST(req) {
           if (!terminal && liveRemains != null && liveRemains !== order.remains) remainsUpdate.remains = liveRemains;
           if (liveStartCount != null && !order.startCount) remainsUpdate.startCount = liveStartCount;
           if (Object.keys(remainsUpdate).length > 0) {
-            await prisma.order.update({ where: { id: order.id }, data: remainsUpdate });
+            await prisma.order.updateMany({
+              where: {
+                id: order.id,
+                status: order.status,
+                apiOrderId: order.apiOrderId,
+                deletedAt: null,
+                user: { status: { in: ORDER_SETTLEMENT_ACCOUNT_STATUSES }, deletedAt: null, anonymizedAt: null },
+              },
+              data: remainsUpdate,
+            });
           }
           if (newStatus !== order.status) {
             if (newStatus === 'Cancelled' && order.protected) {
               return Response.json({ success: true, status: order.status, remains: liveRemains, message: `Provider says cancelled but order is protected — use explicit Cancel to override` });
             }
             if (newStatus === 'Cancelled' && order.status !== 'Cancelled' && order.charge > 0) {
-              await prisma.$transaction(async (tx) => {
+              const transitioned = await prisma.$transaction(async (tx) => {
+                const settlementAccount = await lockOrderSettlementAccount(tx, order.userId);
+                if (!settlementAccount) return false;
                 const claimed = await tx.order.updateMany({
-                  where: { id: order.id, status: { not: 'Cancelled' } },
+                  where: {
+                    id: order.id,
+                    status: order.status,
+                    apiOrderId: order.apiOrderId,
+                    deletedAt: null,
+                  },
                   data: { status: 'Cancelled', queuedBehind: null, refundedAt: new Date() },
                 });
-                if (claimed.count === 0) return;
+                if (claimed.count === 0) return false;
                 const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
                 const refundAmount = Math.max(0, order.charge - alreadyRefunded);
                 if (refundAmount > 0) {
@@ -478,17 +534,33 @@ export async function POST(req) {
                   }
                   await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
                 }
+                return true;
               });
+              if (!transitioned) {
+                const current = await prisma.order.findUnique({ where: { id: order.id }, select: { status: true, remains: true, startCount: true } });
+                return Response.json({ success: true, status: current?.status || order.status, remains: current?.remains ?? liveRemains, startCount: current?.startCount ?? liveStartCount, message: 'Order state changed before settlement; no refund was issued' });
+              }
             } else if (newStatus === 'Partial' && status.remains) {
               const remains = Number(status.remains) || 0;
               if (remains > 0 && order.charge > 0 && order.quantity > 0) {
                 const refundAmount = Math.round((remains / order.quantity) * order.charge / 100) * 100;
                 if (refundAmount > 0) {
-                  await prisma.$transaction(async (tx) => {
-                    await tx.order.update({ where: { id: order.id }, data: { status: 'Partial', queuedBehind: null, refundedAt: new Date() } });
+                  const transitioned = await prisma.$transaction(async (tx) => {
+                    const settlementAccount = await lockOrderSettlementAccount(tx, order.userId);
+                    if (!settlementAccount) return false;
+                    const claimed = await tx.order.updateMany({
+                      where: {
+                        id: order.id,
+                        status: order.status,
+                        apiOrderId: order.apiOrderId,
+                        deletedAt: null,
+                      },
+                      data: { status: 'Partial', queuedBehind: null, refundedAt: new Date() },
+                    });
+                    if (claimed.count !== 1) return false;
                     const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
                     const cappedRefund = Math.max(0, refundAmount - alreadyRefunded);
-                    if (cappedRefund <= 0) return;
+                    if (cappedRefund <= 0) return true;
                     const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, cappedRefund);
                     if (walletRefund > 0) {
                       await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
@@ -502,11 +574,29 @@ export async function POST(req) {
                       });
                     }
                     await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: cappedRefund });
+                    return true;
                   });
+                  if (!transitioned) {
+                    const current = await prisma.order.findUnique({ where: { id: order.id }, select: { status: true, remains: true, startCount: true } });
+                    return Response.json({ success: true, status: current?.status || order.status, remains: current?.remains ?? liveRemains, startCount: current?.startCount ?? liveStartCount, message: 'Order state changed before settlement; no refund was issued' });
+                  }
                 }
               }
             } else {
-              await prisma.order.update({ where: { id: order.id }, data: { status: newStatus, queuedBehind: null } });
+              const transitioned = await prisma.order.updateMany({
+                where: {
+                  id: order.id,
+                  status: order.status,
+                  apiOrderId: order.apiOrderId,
+                  deletedAt: null,
+                  user: { status: { in: ORDER_SETTLEMENT_ACCOUNT_STATUSES }, deletedAt: null, anonymizedAt: null },
+                },
+                data: { status: newStatus, queuedBehind: null },
+              });
+              if (transitioned.count !== 1) {
+                const current = await prisma.order.findUnique({ where: { id: order.id }, select: { status: true, remains: true, startCount: true } });
+                return Response.json({ success: true, status: current?.status || order.status, remains: current?.remains ?? liveRemains, startCount: current?.startCount ?? liveStartCount, message: 'Order state changed before settlement' });
+              }
             }
           }
           await logActivity(admin.name, `Checked order ${orderId} via ${providerLabel}: ${newStatus}`, 'order');
@@ -581,24 +671,27 @@ export async function POST(req) {
         return Response.json({ error: 'Percent must be 25, 50, or 100' }, { status: 400 });
       }
 
-      const alreadyRefunded = await getTotalRefundedKobo(prisma, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
-      const maxRefundable = Math.max(0, order.charge - alreadyRefunded);
-
-      if (maxRefundable <= 0) return Response.json({ error: 'Order already fully refunded' }, { status: 400 });
-
-      let refundAmount;
-      if (percent === 100) {
-        refundAmount = maxRefundable;
-      } else {
-        refundAmount = Math.round(maxRefundable * percent / 100);
-        if (refundAmount > maxRefundable) refundAmount = maxRefundable;
-      }
-      if (refundAmount <= 0) return Response.json({ error: 'Nothing left to refund' }, { status: 400 });
-
       const label = percent === 100 ? 'full' : `${percent}%`;
 
-      await prisma.$transaction(async (tx) => {
-        const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, refundAmount);
+      const settlement = await prisma.$transaction(async (tx) => {
+        const settlementAccount = await lockOrderSettlementAccount(tx, order.userId);
+        if (!settlementAccount) {
+          return { ok: false, status: 409, error: 'This account is pending deletion and cannot receive refunds' };
+        }
+
+        // Recompute under the user lock so concurrent admin refunds cannot both
+        // spend the same refundable remainder.
+        const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });
+        const maxRefundable = Math.max(0, order.charge - alreadyRefunded);
+        if (maxRefundable <= 0) return { ok: false, status: 400, error: 'Order already fully refunded' };
+
+        let refundAmount = percent === 100
+          ? maxRefundable
+          : Math.round(maxRefundable * percent / 100);
+        refundAmount = Math.min(refundAmount, maxRefundable);
+        if (refundAmount <= 0) return { ok: false, status: 400, error: 'Nothing left to refund' };
+
+        const { walletRefund, pointsRestore } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, refundAmount);
         if (walletRefund > 0) {
           await tx.user.update({ where: { id: order.userId }, data: { balance: { increment: walletRefund } } });
           await tx.transaction.create({
@@ -612,9 +705,11 @@ export async function POST(req) {
         }
         await tx.order.update({ where: { id: order.id }, data: { refundedAt: new Date() } });
         await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
+        return { ok: true, refundAmount, walletRefund, pointsRestore };
       });
+      if (!settlement.ok) return Response.json({ error: settlement.error }, { status: settlement.status });
 
-      const { walletRefund: rWallet, pointsRestore: rPoints } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, refundAmount);
+      const { refundAmount, walletRefund: rWallet, pointsRestore: rPoints } = settlement;
       try {
         const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true, notifEmail: true, notifOrders: true } });
         if (user?.email && user.notifEmail !== false && user.notifOrders !== false) {
@@ -640,11 +735,17 @@ export async function POST(req) {
       const order = await prisma.order.findFirst({ where: { orderId, deletedAt: null } });
       if (!order) return Response.json({ error: 'Order not found' }, { status: 404 });
       if (order.apiOrderId) return Response.json({ error: 'Order already dispatched' }, { status: 400 });
-      if (['Cancelled', 'Completed', 'Partial'].includes(order.status)) return Response.json({ error: `Cannot retry a ${order.status.toLowerCase()} order` }, { status: 400 });
-      const reset = await prisma.order.updateMany({
-        where: { id: order.id, status: order.status, apiOrderId: null, deletedAt: null },
-        data: { status: 'Pending', retryCount: 0, lastError: null },
+      if (order.status === 'Cancelling') return Response.json({ error: 'Order cancellation is still in progress' }, { status: 409 });
+      const retryableStatuses = ['Pending', 'Processing', 'Dispatching', 'Failed'];
+      if (!retryableStatuses.includes(order.status)) return Response.json({ error: `Cannot retry a ${order.status.toLowerCase()} order` }, { status: 400 });
+      const reset = await prisma.$transaction(async (tx) => {
+        if (!await lockOrderSettlementAccount(tx, order.userId)) return null;
+        return tx.order.updateMany({
+          where: { id: order.id, userId: order.userId, status: order.status, apiOrderId: null, deletedAt: null },
+          data: { status: 'Pending', retryCount: 0, lastError: null },
+        });
       });
+      if (!reset) return Response.json({ error: 'This account is pending deletion and cannot retry orders' }, { status: 409 });
       if (reset.count === 0) return Response.json({ error: 'Order state changed before retry' }, { status: 409 });
       await logActivity(admin.name, `Reset order ${orderId} for retry`, 'order');
       return Response.json({ success: true });
@@ -670,18 +771,29 @@ export async function POST(req) {
         include: { service: true, tier: { include: { group: true } } },
       });
       if (!fullOrder) return Response.json({ error: 'Order not found' }, { status: 404 });
-      if (['Cancelled', 'Completed', 'Partial'].includes(fullOrder.status)) return Response.json({ error: `Cannot dispatch a ${fullOrder.status.toLowerCase()} order` }, { status: 400 });
+      if (fullOrder.status === 'Cancelling') return Response.json({ error: 'Order cancellation is still in progress' }, { status: 409 });
+      if (!['Pending', 'Processing', 'Dispatching'].includes(fullOrder.status)) return Response.json({ error: `Cannot dispatch a ${fullOrder.status.toLowerCase()} order` }, { status: 400 });
       if (fullOrder.apiOrderId) return Response.json({ error: 'Order already dispatched' }, { status: 400 });
 
       const dispatchBlocker = await findSameLinkDispatchBlocker(prisma, fullOrder);
       if (dispatchBlocker) {
-        const queued = await prisma.order.updateMany({
-          where: { id: fullOrder.id, status: { notIn: ['Cancelled', 'Partial', 'Completed'] }, apiOrderId: null },
-          data: {
-            status: fullOrder.dripDelivered > 0 ? 'Processing' : 'Pending',
-            queuedBehind: dispatchBlocker.orderId,
-          },
+        const queued = await prisma.$transaction(async (tx) => {
+          if (!await lockOrderSettlementAccount(tx, fullOrder.userId)) return null;
+          return tx.order.updateMany({
+            where: {
+              id: fullOrder.id,
+              userId: fullOrder.userId,
+              status: { in: ['Pending', 'Processing', 'Dispatching'] },
+              apiOrderId: null,
+              deletedAt: null,
+            },
+            data: {
+              status: fullOrder.dripDelivered > 0 ? 'Processing' : 'Pending',
+              queuedBehind: dispatchBlocker.orderId,
+            },
+          });
         });
+        if (!queued) return Response.json({ error: 'This account is pending deletion and cannot dispatch orders' }, { status: 409 });
         if (queued.count === 0) return Response.json({ error: 'Order state changed before it could be queued' }, { status: 409 });
         await logActivity(admin.name, `Kept ${orderId} queued behind ${dispatchBlocker.orderId}`, 'order');
         return Response.json({
@@ -701,16 +813,21 @@ export async function POST(req) {
       // stale pointer can be cleared before the child-batch claim. The claim still
       // requires queuedBehind=null and an active parent.
       if (hasDrip && fullOrder.queuedBehind) {
-        const released = await prisma.order.updateMany({
-          where: {
-            id: fullOrder.id,
-            status: { in: ['Pending', 'Processing'] },
-            apiOrderId: null,
-            queuedBehind: fullOrder.queuedBehind,
-            deletedAt: null,
-          },
-          data: { queuedBehind: null },
+        const released = await prisma.$transaction(async (tx) => {
+          if (!await lockOrderSettlementAccount(tx, fullOrder.userId)) return null;
+          return tx.order.updateMany({
+            where: {
+              id: fullOrder.id,
+              userId: fullOrder.userId,
+              status: { in: ['Pending', 'Processing'] },
+              apiOrderId: null,
+              queuedBehind: fullOrder.queuedBehind,
+              deletedAt: null,
+            },
+            data: { queuedBehind: null },
+          });
         });
+        if (!released) return Response.json({ error: 'This account is pending deletion and cannot dispatch orders' }, { status: 409 });
         if (released.count === 0) return Response.json({ error: 'Order state changed before dispatch' }, { status: 409 });
       }
 
@@ -722,8 +839,13 @@ export async function POST(req) {
         });
         if (!candidate) return Response.json({ error: 'No pending or failed batch to dispatch' }, { status: 400 });
 
+        if (candidate.status === 'failed' && (candidate.lastError?.startsWith('[TIMEOUT]') || candidate.lastError?.startsWith('[VERIFY_STALE]'))) {
+          return Response.json({ error: `Batch ${candidate.batch} has an ambiguous provider state (${candidate.lastError.split(']')[0]}]). Check the provider dashboard and reconcile before redispatching.` }, { status: 409 });
+        }
+
         // Lock parent then claim child — serializes with finalizer and reset
         const claimOk = await prisma.$transaction(async (tx) => {
+          if (!await lockOrderSettlementAccount(tx, fullOrder.userId)) return false;
           const parentRows = await tx.$queryRaw`
             SELECT "id", "status", "deletedAt", "queuedBehind"
             FROM "orders"
@@ -768,7 +890,15 @@ export async function POST(req) {
             if (apiType === 'seo') extra.keywords = fullOrder.comments;
             else if (apiType.includes('mention')) extra.usernames = fullOrder.comments;
             else if (apiType === 'poll') extra.answer_number = fullOrder.comments;
-            else extra.comments = fullOrder.comments;
+            else {
+              const { sliceCommentsForBatch } = await import('@/lib/drip-feed');
+              const allDispatches = await prisma.dripDispatch.findMany({
+                where: { orderId: fullOrder.id },
+                select: { day: true, batch: true, quantity: true, status: true, lastError: true, remains: true },
+                orderBy: [{ day: 'asc' }, { batch: 'asc' }],
+              });
+              extra.comments = sliceCommentsForBatch(fullOrder.comments, candidate.quantity, allDispatches, candidate);
+            }
           }
           if (apiType === 'subscriptions') {
             const match = fullOrder.link.match(/instagram\.com\/([^/?#]+)/);
@@ -863,19 +993,24 @@ export async function POST(req) {
       }
 
       // Non-drip order — atomic claim to prevent race with cron or another admin
-      const claimed = await prisma.order.updateMany({
-        where: {
-          id: fullOrder.id,
-          apiOrderId: null,
-          queuedBehind: fullOrder.queuedBehind || null,
-          deletedAt: null,
-          OR: [
-            { status: 'Pending' },
-            { status: 'Dispatching', dispatchedAt: { lte: new Date(Date.now() - 5 * 60 * 1000) } },
-          ],
-        },
-        data: { status: 'Dispatching', dispatchedAt: new Date(), queuedBehind: null },
+      const claimed = await prisma.$transaction(async (tx) => {
+        if (!await lockOrderSettlementAccount(tx, fullOrder.userId)) return null;
+        return tx.order.updateMany({
+          where: {
+            id: fullOrder.id,
+            userId: fullOrder.userId,
+            apiOrderId: null,
+            queuedBehind: fullOrder.queuedBehind || null,
+            deletedAt: null,
+            OR: [
+              { status: 'Pending' },
+              { status: 'Dispatching', dispatchedAt: { lte: new Date(Date.now() - 5 * 60 * 1000) } },
+            ],
+          },
+          data: { status: 'Dispatching', dispatchedAt: new Date(), queuedBehind: null },
+        });
       });
+      if (!claimed) return Response.json({ error: 'This account is pending deletion and cannot dispatch orders' }, { status: 409 });
       if (claimed.count === 0) return Response.json({ error: 'Order was claimed by another process or is still in flight' }, { status: 409 });
       try {
         const apiOrderId = await placeWithProvider({ id: fullOrder.id, service: fullOrder.service, tier: fullOrder.tier, link: fullOrder.link, quantity: fullOrder.quantity, comments: fullOrder.comments });
@@ -918,7 +1053,7 @@ export async function POST(req) {
       const { link: newLink } = body;
       const fullOrder = await prisma.order.findFirst({
         where: { OR: [{ orderId }, { id: orderId }], deletedAt: null },
-        include: { service: true, tier: { include: { service: true, group: true } }, user: { select: { id: true, balance: true } }, dripDispatches: true },
+        include: { service: true, tier: { include: { service: true, group: true } }, user: { select: { id: true, email: true, phone: true, balance: true } }, dripDispatches: true },
       });
       if (!fullOrder) return Response.json({ error: 'Order not found' }, { status: 404 });
       if (fullOrder.status !== 'Cancelled') return Response.json({ error: 'Only cancelled orders can be re-dispatched' }, { status: 400 });
@@ -963,7 +1098,7 @@ export async function POST(req) {
       const expectedCharge = Math.round(fullOrder.charge * remainingQty / fullOrder.quantity);
       const totalRefunded = await getTotalRefundedKobo(prisma, { orderId: fullOrder.orderId, orderDbId: fullOrder.id, userId: fullOrder.userId });
       const heldFromOriginal = Math.max(0, fullOrder.charge - totalRefunded);
-      const newCharge = Math.max(0, expectedCharge - heldFromOriginal);
+      let newCharge = Math.max(0, expectedCharge - heldFromOriginal);
       if (newCharge > 0 && fullOrder.user.balance < newCharge) {
         return Response.json({ error: `Insufficient balance (has ₦${(fullOrder.user.balance / 100).toLocaleString()}, needs ₦${(newCharge / 100).toLocaleString()})` }, { status: 400 });
       }
@@ -1018,6 +1153,19 @@ export async function POST(req) {
       let newOrder;
       try {
         newOrder = await prisma.$transaction(async (tx) => {
+          if (!await lockOrderSettlementAccount(tx, fullOrder.userId)) {
+            const unavailable = new Error('Account is pending deletion');
+            unavailable.code = 'ACCOUNT_UNAVAILABLE';
+            throw unavailable;
+          }
+
+          // A refund and redispatch both own the user row, so recompute the
+          // charge only after taking that lock instead of using the stale
+          // amount observed before this transaction.
+          const lockedRefunded = await getTotalRefundedKobo(tx, { orderId: fullOrder.orderId, orderDbId: fullOrder.id, userId: fullOrder.userId });
+          const lockedHeld = Math.max(0, fullOrder.charge - lockedRefunded);
+          newCharge = Math.max(0, expectedCharge - lockedHeld);
+
           const parentClaim = await tx.order.updateMany({
             where: { id: fullOrder.id, status: 'Cancelled', redispatchedAt: null },
             data: { redispatchedAt: new Date() },
@@ -1028,7 +1176,14 @@ export async function POST(req) {
             throw conflict;
           }
           if (newCharge > 0) {
-            const debited = await tx.$executeRaw`UPDATE users SET balance = balance - ${newCharge} WHERE id = ${fullOrder.user.id} AND balance >= ${newCharge}`;
+            const debited = await tx.$executeRaw`
+              UPDATE users SET balance = balance - ${newCharge}
+              WHERE id = ${fullOrder.user.id}
+                AND status IN ('Active', 'Suspended')
+                AND "deletedAt" IS NULL
+                AND "anonymizedAt" IS NULL
+                AND balance >= ${newCharge}
+            `;
             if (Number(debited) !== 1) {
               const insufficient = new Error('Insufficient balance');
               insufficient.code = 'INSUFFICIENT_BALANCE';
@@ -1039,7 +1194,10 @@ export async function POST(req) {
             data: {
               orderId: newId, userId: fullOrder.userId, serviceId: service.id, tierId: fullOrder.tierId,
               link, quantity: remainingQty, charge: newCharge, cost: newCost, status: 'Pending',
-              parentOrderId: fullOrder.orderId, comments: fullOrder.comments,
+              parentOrderId: fullOrder.orderId,
+              comments: (fullOrder.comments && delivered > 0)
+                ? (() => { const cl = fullOrder.comments.split('\n').filter(l => l.trim()); return cl.length > delivered ? cl.slice(delivered).join('\n') : fullOrder.comments; })()
+                : fullOrder.comments,
               ...childOfferSnapshot,
               ...(initialBlocker ? { queuedBehind: initialBlocker.orderId } : {}),
               ...(dripSchedule ? { dripDays: redispatchDripDays || 1, ...(redispatchDripConfig ? { dripConfig: redispatchDripConfig } : {}) } : {}),
@@ -1052,6 +1210,15 @@ export async function POST(req) {
                 method: 'wallet', status: 'Completed', reference: newId,
                 note: `Re-dispatch ${fullOrder.orderId} → ${newId} (${remainingQty} qty)`,
               },
+            });
+            await enqueueMetaEvent(tx, 'Purchase', {
+              eventId: `purchase_${newId}`,
+              eventTime: child.createdAt,
+              email: fullOrder.user.email,
+              phone: fullOrder.user.phone,
+              externalId: fullOrder.userId,
+              sourceUrl: req.headers.get('referer') || req.url,
+              customData: { value: newCharge / 100, currency: 'NGN' },
             });
           }
           if (dripSchedule) {
@@ -1070,8 +1237,13 @@ export async function POST(req) {
         if (err.code === 'INSUFFICIENT_BALANCE') {
           return Response.json({ error: 'Insufficient balance' }, { status: 409 });
         }
+        if (err.code === 'ACCOUNT_UNAVAILABLE') {
+          return Response.json({ error: 'This account is pending deletion and cannot receive redispatched orders' }, { status: 409 });
+        }
         throw err;
       }
+
+      if (newCharge > 0) triggerPurchaseDelivery(`purchase_${newId}`);
 
       const { placeOrder } = await import('@/lib/smm');
       const prov = service.provider || 'mtp';

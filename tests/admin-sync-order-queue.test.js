@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => ({
   checkOrder: vi.fn(),
   reverseOrderPoints: vi.fn(),
   getTotalRefundedKobo: vi.fn(),
+  prismaTransaction: vi.fn(),
+  lockOrderSettlementAccount: vi.fn(),
 }));
 
 vi.mock('@/lib/prisma', () => ({
@@ -25,7 +27,7 @@ vi.mock('@/lib/prisma', () => ({
     dripDispatch: {
       findMany: (...args) => mocks.dripFindMany(...args),
     },
-    $transaction: vi.fn(),
+    $transaction: (...args) => mocks.prismaTransaction(...args),
   },
 }));
 vi.mock('@/lib/logger', () => ({ log: { error: vi.fn(), warn: vi.fn() } }));
@@ -50,7 +52,12 @@ vi.mock('@/lib/nitro-rewards', () => ({
   computeRefundSplit: amount => ({ walletRefund: amount, pointsRestore: 0 }),
   getTotalRefundedKobo: (...args) => mocks.getTotalRefundedKobo(...args),
 }));
+vi.mock('@/lib/account-deletion', () => ({
+  ORDER_SETTLEMENT_ACCOUNT_STATUSES: ['Active', 'Suspended'],
+  lockOrderSettlementAccount: (...args) => mocks.lockOrderSettlementAccount(...args),
+}));
 
+const { default: mockPrisma } = await import('@/lib/prisma');
 const { POST } = await import('@/app/api/admin/sync/route');
 
 function request() {
@@ -95,6 +102,8 @@ beforeEach(() => {
   mocks.orderUpdateMany.mockResolvedValue({ count: 1 });
   mocks.getTotalRefundedKobo.mockResolvedValue(0);
   mocks.dripFindMany.mockResolvedValue([]);
+  mocks.lockOrderSettlementAccount.mockResolvedValue({ id: 'user-1', status: 'Active' });
+  mocks.prismaTransaction.mockImplementation(callback => callback(mockPrisma));
 });
 
 describe('admin sync-orders — direct-order ownership', () => {
@@ -245,6 +254,7 @@ describe('admin sync-orders — direct-order ownership', () => {
     const body = await response.json();
 
     expect(body).toMatchObject({ checked: 1, updated: 0, refunded: 0 });
+    expect(mocks.lockOrderSettlementAccount).toHaveBeenCalledWith(mockPrisma, 'user-1');
     expect(mocks.orderUpdateMany).toHaveBeenCalledWith({
       where: {
         id: 'order-new',

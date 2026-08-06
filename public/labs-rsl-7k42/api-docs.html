@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Nitro · API Documentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--accent:#c47d8e;--accent2:#8b5e6b;--grad:linear-gradient(135deg,#c47d8e,#8b5e6b);--bgrad:linear-gradient(135deg,#60a5fa,#2563eb)}
+[data-theme="light"]{--bg:#f0ede8;--shell:rgba(240,237,232,.97);--text:#1c1b19;--soft:#4a4744;--muted:#757170;--card:rgba(255,255,255,.85);--panel:#fff;--brd:rgba(0,0,0,.12);--hair:rgba(0,0,0,.08);--track:rgba(0,0,0,.05);--shadow:0 14px 40px rgba(28,27,25,.1);--accent-soft:rgba(196,125,142,.08);--accent-soft2:rgba(196,125,142,.16);--green:#059669;--green-soft:rgba(5,150,105,.1);--red:#dc2626;--red-soft:rgba(220,38,38,.08);--blue:#2563eb;--blue-soft:rgba(37,99,235,.08);--blue-soft2:rgba(37,99,235,.15);--code:#faf8f5}
+[data-theme="dark"]{--bg:#090c15;--shell:rgba(14,17,34,.95);--text:#f5f3f0;--soft:#c9c5c0;--muted:#8a8580;--card:rgba(255,255,255,.07);--panel:#131728;--brd:rgba(255,255,255,.16);--hair:rgba(255,255,255,.09);--track:rgba(255,255,255,.07);--shadow:0 14px 40px rgba(0,0,0,.45);--accent-soft:rgba(196,125,142,.12);--accent-soft2:rgba(196,125,142,.22);--green:#6ee7b7;--green-soft:rgba(110,231,183,.12);--red:#fca5a5;--red-soft:rgba(252,165,165,.1);--blue:#60a5fa;--blue-soft:rgba(96,165,250,.1);--blue-soft2:rgba(96,165,250,.2);--code:#0d101d}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;transition:background .3s,color .3s}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+svg{display:block}
+.m{font-family:'JetBrains Mono',monospace}
+.controls{position:sticky;top:0;z-index:60;display:flex;gap:10px;justify-content:center;padding:12px 8px;background:var(--bg);border-bottom:1px solid var(--hair);flex-wrap:wrap}
+.ctl-group{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--card);border:1px solid var(--hair)}
+.ctl{padding:7px 13px;border-radius:8px;font-size:12px;font-weight:600;color:var(--muted);transition:.15s}
+.ctl:hover{color:var(--text)}
+.ctl.on{background:var(--grad);color:#fff}
+
+.frame{max-width:1180px;margin:18px auto 40px;border:1px solid var(--brd);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);background:var(--bg)}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 22px;border-bottom:1px solid var(--hair);background:var(--shell)}
+.wm{font-size:20px;font-weight:800;color:var(--accent);letter-spacing:-.5px}
+.wm span{color:var(--muted);font-weight:600;font-size:13px;letter-spacing:0;margin-left:10px}
+.tb-right{display:flex;gap:10px;align-items:center}
+.pill-link{font-size:12px;font-weight:700;padding:8px 14px;border-radius:10px;border:1px solid var(--brd);color:var(--soft)}
+.pill-link.p{background:var(--bgrad);color:#fff;border:none}
+
+.docgrid{display:grid;grid-template-columns:230px 1fr;min-height:700px}
+.toc{border-right:1px solid var(--hair);background:var(--shell);padding:18px 12px;position:sticky;top:0;align-self:start}
+.toc .tl{font-size:9.5px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);padding:0 10px;margin:14px 0 6px}
+.toc .tl:first-child{margin-top:0}
+.toc a{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:9px;font-size:12.5px;font-weight:500;color:var(--muted);text-decoration:none;transition:.12s}
+.toc a:hover{color:var(--text);background:var(--track)}
+.toc a.on{background:var(--blue-soft2);color:var(--blue);font-weight:700}
+.toc .mth{font-size:8.5px;font-weight:800;padding:2px 6px;border-radius:5px;background:var(--blue-soft2);color:var(--blue);margin-left:auto}
+
+.doc{min-width:0;padding:30px 36px 50px}
+.dhero{margin-bottom:8px}
+.dhero .eyebrow{display:inline-flex;font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--blue);background:var(--blue-soft2);border-radius:99px;padding:5px 12px}
+.dhero h1{font-size:28px;font-weight:800;letter-spacing:-.6px;margin-top:12px}
+.dhero p{font-size:13.5px;color:var(--muted);line-height:1.7;max-width:640px;margin-top:8px}
+.basecard{display:flex;gap:0;border:1px solid var(--hair);border-radius:13px;overflow:hidden;margin-top:16px;background:var(--panel);flex-wrap:wrap}
+.basecard div{padding:13px 18px;border-right:1px solid var(--hair);flex:1;min-width:150px}
+.basecard div:last-child{border-right:none}
+.basecard .bl{font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.basecard .bv{font-size:13px;font-weight:700;margin-top:3px}
+
+.sec{margin-top:36px;scroll-margin-top:80px}
+.sec h2{font-size:19px;font-weight:800;letter-spacing:-.3px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sec h2 .mth{font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:6px;background:var(--blue-soft2);color:var(--blue)}
+.sec .desc{font-size:13px;color:var(--muted);line-height:1.7;margin-top:7px;max-width:640px}
+.sec .desc .m{font-size:12px;background:var(--track);padding:1px 6px;border-radius:5px}
+
+.ptable{border:1px solid var(--hair);border-radius:12px;overflow:hidden;margin-top:14px;background:var(--panel)}
+.ptable table{width:100%;border-collapse:collapse;font-size:12.5px}
+.ptable th{text-align:left;padding:10px 14px;font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--hair)}
+.ptable td{padding:10px 14px;border-bottom:1px solid var(--hair);color:var(--soft);vertical-align:top;line-height:1.55}
+.ptable tr:last-child td{border-bottom:none}
+.ptable td:first-child{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--text);white-space:nowrap}
+.req{font-size:8.5px;font-weight:800;letter-spacing:.5px;padding:2px 6px;border-radius:5px;background:var(--accent-soft2);color:var(--accent);margin-left:7px;vertical-align:1px}
+.opt{font-size:8.5px;font-weight:800;letter-spacing:.5px;padding:2px 6px;border-radius:5px;background:var(--track);color:var(--muted);margin-left:7px;vertical-align:1px}
+
+.codewrap{margin-top:14px;border:1px solid var(--hair);border-radius:13px;overflow:hidden;background:var(--code)}
+.codehead{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--hair);background:var(--panel)}
+.langtabs{display:flex;gap:3px}
+.langtabs button{font-size:11px;font-weight:700;padding:5px 12px;border-radius:8px;color:var(--muted);transition:.12s}
+.langtabs button.on{background:var(--blue-soft2);color:var(--blue)}
+.copybtn{font-size:10.5px;font-weight:700;padding:5px 12px;border-radius:8px;background:var(--track);color:var(--muted);border:1px solid var(--hair)}
+.copybtn:hover{color:var(--accent)}
+.codewrap pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.75;overflow-x:auto;color:var(--soft)}
+.cmt{color:var(--muted)}
+.kw{color:var(--blue)}
+.str{color:var(--accent)}
+.rlab{font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:14px 0 0}
+.resp{margin-top:8px;border:1px solid var(--hair);border-radius:13px;background:var(--code);overflow:hidden}
+.resp pre{padding:13px 16px;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.7;overflow-x:auto;color:var(--soft)}
+
+.callout{display:flex;gap:11px;padding:13px 15px;border-radius:12px;margin-top:14px;font-size:12.5px;line-height:1.65;border:1px solid}
+.callout.blue{background:var(--blue-soft);border-color:var(--blue-soft2);color:var(--soft)}
+.callout.rose{background:var(--accent-soft);border-color:var(--accent-soft2);color:var(--soft)}
+.callout b{color:var(--text)}
+.callout svg{flex-shrink:0;margin-top:2px}
+.callout.blue svg{color:var(--blue)}
+.callout.rose svg{color:var(--accent)}
+
+.errtable td:first-child{color:var(--red);font-weight:600}
+.foot{margin-top:40px;padding:20px 22px;border-radius:15px;background:var(--grad);color:#fff;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.foot h3{font-size:15.5px;font-weight:800}
+.foot p{font-size:12px;opacity:.9;margin-top:3px}
+.foot .fb{background:#fff;color:var(--accent2);font-size:12.5px;font-weight:800;padding:10px 16px;border-radius:10px}
+.toasts{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:10px;z-index:90}
+.toast{width:290px;background:var(--panel);border:1px solid var(--accent-soft2);border-left:3px solid var(--accent);border-radius:12px;padding:11px 13px;box-shadow:var(--shadow);animation:tIn .25s ease}
+@keyframes tIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.toast .tt{font-size:12.5px;font-weight:700}
+.toast .td2{font-size:11px;color:var(--muted);margin-top:2px;word-break:break-all}
+
+body.mob .frame{max-width:402px}
+body.mob .docgrid{grid-template-columns:1fr}
+body.mob .toc{position:static;border-right:none;border-bottom:1px solid var(--hair);display:flex;gap:4px;overflow-x:auto;padding:10px 12px}
+body.mob .toc .tl{display:none}
+body.mob .toc a{white-space:nowrap;font-size:11.5px;flex-shrink:0}
+body.mob .toc .mth{display:none}
+body.mob .doc{padding:22px 16px 36px}
+body.mob .dhero h1{font-size:22px}
+body.mob .basecard div{min-width:100%;border-right:none;border-bottom:1px solid var(--hair)}
+body.mob .basecard div:last-child{border-bottom:none}
+@media(max-width:860px){.docgrid{grid-template-columns:1fr}.toc{position:static;border-right:none;border-bottom:1px solid var(--hair);display:flex;gap:4px;overflow-x:auto}.toc .tl{display:none}.toc a{white-space:nowrap}}
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <div class="ctl-group" id="vpCtl">
+    <button class="ctl on" data-vp="desk">Desktop</button>
+    <button class="ctl" data-vp="mob">Mobile</button>
+  </div>
+  <div class="ctl-group">
+    <button class="ctl" id="themeCtl">◐ Dark</button>
+  </div>
+</div>
+
+<div class="frame">
+  <div class="topbar">
+    <span class="wm">nitro<span>API documentation</span></span>
+    <div class="tb-right">
+      <button class="pill-link" data-toast="Back to Reseller Lab">Reseller Lab</button>
+      <button class="pill-link p" data-toast="Opening your dashboard">Dashboard</button>
+    </div>
+  </div>
+  <div class="docgrid">
+    <nav class="toc" id="toc"></nav>
+    <div class="doc" id="doc"></div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+let lang='curl';
+function toast(t,d){const el=document.createElement('div');el.className='toast';el.innerHTML='<div class="tt">'+t+'</div>'+(d?'<div class="td2 m">'+d+'</div>':'');$('toasts').appendChild(el);setTimeout(()=>el.remove(),3200);}
+const info='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+
+/* ── code sample builders ── */
+function curlOf(params){
+  return '<span class="cmt"># POST · application/x-www-form-urlencoded</span>\ncurl -X POST https://nitro.ng/api/v2 \\\n'
+   +params.map(([k,v],i)=>'  -d <span class="kw">'+k+'</span>='+v+(i<params.length-1?' \\':'')).join('\n');
+}
+function phpOf(params){
+  return '$ch = curl_init(<span class="str">"https://nitro.ng/api/v2"</span>);\ncurl_setopt($ch, CURLOPT_POST, true);\ncurl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\ncurl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([\n'
+   +params.map(([k,v])=>'  <span class="str">"'+k+'"</span> => <span class="str">"'+v.replace(/<[^>]*>/g,'')+'"</span>,').join('\n')
+   +'\n]));\n$res = json_decode(curl_exec($ch), true);';
+}
+function pyOf(params){
+  return '<span class="kw">import</span> requests\n\nres = requests.post(<span class="str">"https://nitro.ng/api/v2"</span>, data={\n'
+   +params.map(([k,v])=>'  <span class="str">"'+k+'"</span>: <span class="str">"'+v.replace(/<[^>]*>/g,'')+'"</span>,').join('\n')
+   +'\n}).json()';
+}
+function codeBlock(id,params){
+  const body=lang==='curl'?curlOf(params):lang==='php'?phpOf(params):pyOf(params);
+  const plain=params.map(([k,v])=>k+'='+v.replace(/<[^>]*>/g,'')).join(' ');
+  return '<div class="codewrap"><div class="codehead"><div class="langtabs">'
+   +['curl','php','python'].map(l=>'<button data-lang="'+l+'"'+(lang===l?' class="on"':'')+'>'+(l==='curl'?'cURL':l==='php'?'PHP':'Python')+'</button>').join('')
+   +'</div><button class="copybtn" data-copy="'+plain.replace(/"/g,'&quot;')+'">Copy</button></div>'
+   +'<pre>'+body+'</pre></div>';
+}
+function respBlock(json){return '<div class="rlab">Response</div><div class="resp"><pre>'+json+'</pre></div>';}
+function ptable(rows){
+  return '<div class="ptable"><table><thead><tr><th>Parameter</th><th>Description</th></tr></thead><tbody>'
+   +rows.map(([p,r,d])=>'<tr><td>'+p+(r?'<span class="req">REQUIRED</span>':'<span class="opt">OPTIONAL</span>')+'</td><td>'+d+'</td></tr>').join('')
+   +'</tbody></table></div>';
+}
+
+/* ── sections ── */
+const SECTIONS=[
+ {id:'start',nav:'Getting started',group:'Basics'},
+ {id:'auth',nav:'Authentication',group:'Basics'},
+ {id:'catalogs',nav:'Catalogs &amp; rates',group:'Basics'},
+ {id:'services',nav:'services',group:'Endpoints',mth:true},
+ {id:'add',nav:'add',group:'Endpoints',mth:true},
+ {id:'status',nav:'status',group:'Endpoints',mth:true},
+ {id:'refill',nav:'refill',group:'Endpoints',mth:true},
+ {id:'balance',nav:'balance',group:'Endpoints',mth:true},
+ {id:'cancel',nav:'cancel',group:'Endpoints',mth:true},
+ {id:'errors',nav:'Errors',group:'Reference'},
+ {id:'limits',nav:'Limits',group:'Reference'}
+];
+
+function renderToc(active){
+  let html='',lastGroup='';
+  SECTIONS.forEach(s=>{
+    if(s.group!==lastGroup){html+='<div class="tl">'+s.group+'</div>';lastGroup=s.group;}
+    html+='<a href="#'+s.id+'" data-sec="'+s.id+'"'+(active===s.id?' class="on"':'')+'>'+s.nav+(s.mth?'<span class="mth">POST</span>':'')+'</a>';
+  });
+  $('toc').innerHTML=html;
+}
+
+function renderDoc(){
+  $('doc').innerHTML=
+  '<div class="dhero"><span class="eyebrow">API v2</span><h1>The Nitro API</h1>'
+  +'<p>One endpoint, six actions, the standard format every SMM panel speaks. Point your panel or code at the base URL below with your key, and orders flow at reseller rates with full natural delivery speed.</p>'
+  +'<div class="basecard">'
+  +'<div><div class="bl">Base URL</div><div class="bv m">https://nitro.ng/api/v2</div></div>'
+  +'<div><div class="bl">Method</div><div class="bv">POST · form-encoded</div></div>'
+  +'<div><div class="bl">Response</div><div class="bv">JSON</div></div>'
+  +'<div><div class="bl">Currency</div><div class="bv">NGN, from your wallet</div></div>'
+  +'</div></div>'
+
+  +'<div class="sec" id="start"><h2>Getting started</h2>'
+  +'<div class="desc">Every request is a <span class="m">POST</span> to the base URL with your <span class="m">key</span> and an <span class="m">action</span>. Running ready-made panel software? Paste the base URL and your key into its provider settings, hit sync, and skip straight to setting your margins. Building custom? The six actions below are everything.</div>'
+  +codeBlock('start',[['key','YOUR_API_KEY'],['action','balance']])
+  +respBlock('{"balance": "124500.00", "currency": "NGN"}')
+  +'</div>'
+
+  +'<div class="sec" id="auth"><h2>Authentication</h2>'
+  +'<div class="desc">Your key is generated in the <b>Reseller Lab</b>, free and instant. It identifies your account, applies your reseller rates, and charges your Nitro wallet. Keep it server-side and never in client code or public repos. Regenerating from the Lab kills the old key immediately.</div>'
+  +'<div class="callout rose">'+info+'<span><b>Orders are never delayed by gradual delivery.</b> API orders run at full natural provider speed. Keep your wallet funded ahead of your sales and fulfilment starts the moment an order lands.</span></div>'
+  +'</div>'
+
+  +'<div class="sec" id="catalogs"><h2>Catalogs &amp; rates</h2>'
+  +'<div class="desc">Your key serves one of two lists, chosen by you in the Reseller Lab and switchable anytime: <b>Nitro Curated</b> (~140 tested services in Budget, Standard and Premium tiers) or the <b>Full Catalogue</b> (3,400+ raw provider services). The <span class="m">services</span> action always returns your current list at your current reseller rates. Rates improve automatically as your monthly volume climbs the ladder.</div>'
+  +'</div>'
+
+  +'<div class="sec" id="services"><h2><span class="mth">POST</span>services</h2>'
+  +'<div class="desc">Returns your service list with live pricing. Sync this into your panel, then set your own margins on top.</div>'
+  +ptable([['key',1,'Your API key'],['action',1,'<span class="m">services</span>']])
+  +codeBlock('services',[['key','YOUR_API_KEY'],['action','services']])
+  +respBlock('[\n  {\n    "service": 3877,\n    "name": "Instagram Followers · Standard",\n    "category": "Instagram",\n    "rate": "2720.00",\n    "min": 100,\n    "max": 50000,\n    "refill": true,\n    "cancel": true\n  },\n  { "service": 4102, "name": "TikTok Views", "category": "TikTok", "rate": "520.00", "min": 500, "max": 1000000, "refill": false, "cancel": false }\n]')
+  +'</div>'
+
+  +'<div class="sec" id="add"><h2><span class="mth">POST</span>add</h2>'
+  +'<div class="desc">Places an order. The charge is <span class="m">rate × quantity ÷ 1000</span>, deducted from your wallet at your reseller rate.</div>'
+  +ptable([['key',1,'Your API key'],['action',1,'<span class="m">add</span>'],['service',1,'Service ID from <span class="m">services</span>'],['link',1,'Target URL or username'],['quantity',1,'Amount, within the service min and max'],['comments',0,'Custom comments, one per line, for comment services only']])
+  +codeBlock('add',[['key','YOUR_API_KEY'],['action','add'],['service','3877'],['link','https://instagram.com/client'],['quantity','1000']])
+  +respBlock('{"order": 4211}')
+  +'<div class="callout blue">'+info+'<span><b>Insufficient balance?</b> The order is rejected with an error, nothing is queued and nothing is charged. Top up and resend.</span></div>'
+  +'</div>'
+
+  +'<div class="sec" id="status"><h2><span class="mth">POST</span>status</h2>'
+  +'<div class="desc">Order state, start count and remains. Pass one order ID, or up to 100 comma-separated IDs to poll in bulk. Statuses: <span class="m">Pending</span>, <span class="m">In progress</span>, <span class="m">Completed</span>, <span class="m">Partial</span>, <span class="m">Canceled</span>, <span class="m">Refunded</span>.</div>'
+  +ptable([['key',1,'Your API key'],['action',1,'<span class="m">status</span>'],['order',1,'Order ID'],['orders',0,'Up to 100 IDs, comma separated, instead of <span class="m">order</span>']])
+  +codeBlock('status',[['key','YOUR_API_KEY'],['action','status'],['order','4211']])
+  +respBlock('{\n  "charge": "2720.00",\n  "start_count": "1200",\n  "status": "In progress",\n  "remains": "450",\n  "currency": "NGN"\n}')
+  +'</div>'
+
+  +'<div class="sec" id="refill"><h2><span class="mth">POST</span>refill</h2>'
+  +'<div class="desc">Triggers a refill on an eligible order (services with <span class="m">refill: true</span>). Free within the service refill window.</div>'
+  +ptable([['key',1,'Your API key'],['action',1,'<span class="m">refill</span>'],['order',1,'Order ID to refill']])
+  +codeBlock('refill',[['key','YOUR_API_KEY'],['action','refill'],['order','4211']])
+  +respBlock('{"refill": "1"}')
+  +'</div>'
+
+  +'<div class="sec" id="balance"><h2><span class="mth">POST</span>balance</h2>'
+  +'<div class="desc">Your current wallet balance. Poll it to gate spend in your own panel before accepting customer orders.</div>'
+  +ptable([['key',1,'Your API key'],['action',1,'<span class="m">balance</span>']])
+  +codeBlock('balance',[['key','YOUR_API_KEY'],['action','balance']])
+  +respBlock('{"balance": "124500.00", "currency": "NGN"}')
+  +'</div>'
+
+  +'<div class="sec" id="cancel"><h2><span class="mth">POST</span>cancel</h2>'
+  +'<div class="desc">Requests cancellation on eligible orders (services with <span class="m">cancel: true</span>) that haven\'t completed. Cancelled remains refund to your wallet automatically.</div>'
+  +ptable([['key',1,'Your API key'],['action',1,'<span class="m">cancel</span>'],['orders',1,'Up to 100 IDs, comma separated']])
+  +codeBlock('cancel',[['key','YOUR_API_KEY'],['action','cancel'],['orders','4211,4212']])
+  +respBlock('[\n  {"order": 4211, "cancel": 1},\n  {"order": 4212, "cancel": {"error": "Order already completed"}}\n]')
+  +'</div>'
+
+  +'<div class="sec" id="errors"><h2>Errors</h2>'
+  +'<div class="desc">Errors come back as JSON with an <span class="m">error</span> field and a 200 status, the SMM panel convention your software already expects.</div>'
+  +'<div class="ptable errtable"><table><thead><tr><th>Error</th><th>Meaning</th></tr></thead><tbody>'
+  +[["Invalid API key","The key is wrong, or was regenerated. Grab the current one from the Reseller Lab."],
+    ["Incorrect service ID","The service isn\'t in your current catalog. Re-sync <span class=\'m\'>services</span>."],
+    ["Not enough funds","Wallet can\'t cover the charge. Nothing was queued. Top up and resend."],
+    ["Quantity out of range","Outside the service min and max. Check the service entry."],
+    ["Invalid link","The target URL or username failed validation."],
+    ["Order not found","No order with that ID on your account."]]
+  .map(([e,m])=>'<tr><td class="m">'+e+'</td><td>'+m+'</td></tr>').join('')
+  +'</tbody></table></div>'
+  +respBlock('{"error": "Not enough funds"}')
+  +'</div>'
+
+  +'<div class="sec" id="limits"><h2>Limits</h2>'
+  +'<div class="desc">Generous and boring, the way limits should be: up to <b>300 requests per minute</b> per key. Normal panel traffic never touches this. Poll <span class="m">status</span> in bulk with the <span class="m">orders</span> parameter instead of one call per order, and cache <span class="m">services</span> for a few minutes rather than fetching per pageview.</div>'
+  +'<div class="callout blue">'+info+'<span><b>Need more?</b> Scale-tier resellers can request higher limits. Message us on WhatsApp from your dashboard.</span></div>'
+  +'</div>'
+
+  +'<div class="foot"><div><h3>Key not generated yet?</h3><p>It\'s free and instant in the Reseller Lab, reseller rates from the first order.</p></div><button class="fb" data-toast="Back to Reseller Lab">Open Reseller Lab</button></div>';
+  wire();
+}
+
+function wire(){
+  document.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>{
+    if(lang===b.dataset.lang)return; lang=b.dataset.lang;
+    const y=window.scrollY; renderDoc(); window.scrollTo(0,y);
+  }));
+  document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click',()=>{
+    try{navigator.clipboard.writeText(b.dataset.copy);}catch(e){}
+    toast("Copied",b.dataset.copy.length>44?b.dataset.copy.slice(0,44)+"…":b.dataset.copy);
+  }));
+  document.querySelectorAll('[data-toast]').forEach(b=>b.addEventListener('click',()=>toast(b.dataset.toast)));
+  document.querySelectorAll('#toc a').forEach(a=>a.addEventListener('click',()=>{renderToc(a.dataset.sec);
+    document.querySelectorAll('#toc a').forEach(x=>x.classList.toggle('on',x.dataset.sec===a.dataset.sec));}));
+}
+
+$('vpCtl').addEventListener('click',e=>{const b=e.target.closest('.ctl');if(!b)return;
+  document.querySelectorAll('#vpCtl .ctl').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  document.body.classList.toggle('mob',b.dataset.vp==='mob');});
+$('themeCtl').addEventListener('click',e=>{const d=document.documentElement.dataset.theme==='dark';
+  document.documentElement.dataset.theme=d?'light':'dark';e.target.textContent=d?'◐ Dark':'◑ Light';});
+renderToc('start');
+renderDoc();
+</script>
+</body>
+</html>

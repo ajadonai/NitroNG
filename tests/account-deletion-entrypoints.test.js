@@ -94,10 +94,13 @@ describe('Phase 6 account-deletion entrypoints', () => {
 
   it('serializes a deletion request against in-flight order placement', () => {
     const deletion = readFileSync('app/api/auth/delete-account/route.js', 'utf8');
+    const deletionCore = readFileSync('lib/account-deletion.js', 'utf8');
     const orders = readFileSync('app/api/orders/route.js', 'utf8');
     const balance = readFileSync('lib/bonus-credit.js', 'utf8');
 
-    expect(deletion).toMatch(/SELECT id, status FROM users WHERE id = \$\{user\.id\} FOR UPDATE/);
+    expect(deletion).toContain('lockOrderSettlementAccount');
+    expect(deletion).toContain('await lockOrderSettlementAccount(tx, user.id)');
+    expect(deletionCore).toMatch(/SELECT id, status, "deletedAt", "anonymizedAt"\s+FROM users\s+WHERE id = \$\{userId\}\s+FOR UPDATE/);
     expect(balance).toContain("status = 'Active'");
     expect(balance).toContain('"anonymizedAt" IS NULL');
     expect(orders).toContain('await deductBalance(tx, session.id, walletCharge)');

@@ -91,8 +91,8 @@ function txDesc(tx) {
   if (tx.type === "refund") return tx.reference ? `Refund for ${tx.reference.replace(/^(ADM-)?REF-/, "")}` : "Order refund";
   if (tx.type === "deposit") return tx.reference || "Wallet top-up";
   if (tx.type === "referral") return "Referral commission";
-  if (tx.type === "admin_credit" || tx.type === "admin_gift") return tx.description || "Credited by Nitro Team";
-  if (tx.type === "admin_debit") return tx.description || "Balance adjustment";
+  if (tx.type === "admin_credit" || tx.type === "admin_gift") return (tx.description || "Credited by Nitro Team").replace(/\s*\[[^\]]+\]\s*/g, " ").trim();
+  if (tx.type === "admin_debit") return (tx.description || "Balance adjustment").replace(/\s*\[[^\]]+\]\s*/g, " ").trim();
   return tx.reference || "";
 }
 

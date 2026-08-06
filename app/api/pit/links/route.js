@@ -116,19 +116,12 @@ export async function POST(req) {
             if (!activeAssignee) throw Object.assign(new Error('inactive assignee'), { _assignee: true });
           }
 
-          const [affSettings, activeCount] = await Promise.all([
-            getAffiliateSettings(['affiliate_max_links'], tx),
-            tx.acquisitionLink.count({ where: { createdByChiefId: member.id, archivedAt: null } }),
-          ]);
-          const maxLinks = affSettings.affiliate_max_links;
-          if (activeCount >= maxLinks) throw Object.assign(new Error('limit'), { _limit: maxLinks });
           return tx.acquisitionLink.create({ data: { name: name.trim(), slug, affiliateId: assigneeId, createdByChiefId: member.id } });
         }, { isolationLevel: 'Serializable' });
         break;
       } catch (e) {
         if (e._inactive) return Response.json({ error: "Member is no longer active" }, { status: 409 });
         if (e._assignee) return Response.json({ error: "Invalid affiliate" }, { status: 400 });
-        if (e._limit) return Response.json({ error: `Maximum ${e._limit} active links allowed` }, { status: 400 });
         if (e.code === 'P2002') return Response.json({ error: "That slug is already taken" }, { status: 409 });
         if (e.code === 'P2034' && attempt < MAX_RETRIES - 1) continue;
         throw e;
