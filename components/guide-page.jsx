@@ -24,7 +24,23 @@ export default function GuidePage({ dark, t }) {
       </div>
 
       {loading ? (
-        <div className="p-6">{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-20 rounded-xl mb-2.5`} />)}</div>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3.5">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="rounded-[14px] overflow-hidden" style={{ border: `1px solid ${t.cardBorder}` }}>
+              <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[140px]`} style={{ borderRadius: 0 }} />
+              <div className="p-3.5">
+                <div className="flex gap-1.5 mb-2">
+                  <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[60px] h-[18px] rounded`} />
+                  <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[70px] h-[14px]`} />
+                </div>
+                <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[16px] mb-1.5`} style={{ width: `${65 + i * 8}%` }} />
+                <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[80%] h-[12px] mb-1`} />
+                <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[60%] h-[12px]`} />
+                <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[70px] h-[13px] mt-4`} />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : posts.length === 0 ? (
         <div className="p-10 text-center">
           <div className="mb-4 flex justify-center"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity=".4"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg></div>

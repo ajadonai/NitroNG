@@ -24,6 +24,8 @@ const TX_META = {
   admin_credit: { label: "Admin credit",  icon: "＋", clr: dk => dk ? "#a5b4fc" : "#4f46e5" },
   admin_gift:   { label: "Gift",          icon: "✦", clr: dk => dk ? "#f0abfc" : "#a855f7" },
   admin_debit:  { label: "Adjustment",    icon: "↑", clr: dk => dk ? "#fca5a5" : "#dc2626" },
+  bonus:        { label: "Task reward",   icon: "✦", clr: dk => dk ? "#f0abfc" : "#a855f7" },
+  bonus_expired:{ label: "Credit expired",icon: "↑", clr: dk => dk ? "#a1a1aa" : "#71717a" },
 };
 function txClr(type, dk) { return (TX_META[type] || TX_META.order).clr(dk); }
 function isFlutterwaveDeposit(tx) {
@@ -640,6 +642,15 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               <div className="text-[28px] font-bold text-t-green">{fN(balance)}</div>
             </div>
             {lastFunded && <div className="text-[11px] mt-1 text-t-text-muted">Last funded {fD(lastFunded.date, true)}</div>}
+            {user?.bonusCredit?.amount > 0 && (() => {
+              const daysLeft = Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000));
+              return (
+                <div className="flex items-center gap-1.5 mt-2 py-2 px-2.5 rounded-lg text-[12px]" style={{ background: dark ? "rgba(240,171,252,.06)" : "rgba(168,85,247,.04)", border: `1px solid ${dark ? "rgba(240,171,252,.14)" : "rgba(168,85,247,.1)"}`, color: dark ? "#f0abfc" : "#a855f7" }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/></svg>
+                  <span>{fN(user.bonusCredit.amount / 100)} bonus credit — expires in {daysLeft}d</span>
+                </div>
+              );
+            })()}
             {pendingDeposits.length > 0 && (() => {
               const awaitingTx = pendingDeposits.find(tx => tx.awaitingConfirmation);
               return (
@@ -694,7 +705,17 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 
               <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1.5 text-t-text-muted">Payment method</div>
               {gatewaysLoading ? (
-                <div className={`skel-bone h-[42px] rounded-[10px] ${dark ? "skel-dark" : "skel-light"}`} />
+                <div className="flex flex-col gap-1">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="flex items-center gap-2 py-2.5 px-2.5 rounded-lg" style={{ border: `1.5px solid ${t.cardBorder}` }}>
+                      <div className={`skel-bone w-7 h-7 rounded-md shrink-0 ${dark ? "skel-dark" : "skel-light"}`} />
+                      <div className="flex-1">
+                        <div className={`skel-bone w-[90px] h-[11px] mb-1 ${dark ? "skel-dark" : "skel-light"}`} />
+                        <div className={`skel-bone w-[130px] h-[9px] ${dark ? "skel-dark" : "skel-light"}`} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <div className="flex flex-col gap-1">
                   {gateways.map(g => { const sel = method === g.id; const meta = GW_META[g.id] || {}; return (
@@ -745,6 +766,15 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                   <div className="text-[11px] uppercase tracking-[1.5px] text-t-text-muted">Current Balance</div>
                   <div className="text-[22px] font-semibold text-t-green">{fN(balance)}</div>
                 </div>
+                {user?.bonusCredit?.amount > 0 && (() => {
+                  const daysLeft = Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000));
+                  return (
+                    <div className="flex items-center gap-1.5 mt-1.5 py-2 px-2 rounded-lg text-[11px]" style={{ background: dark ? "rgba(240,171,252,.06)" : "rgba(168,85,247,.04)", border: `1px solid ${dark ? "rgba(240,171,252,.14)" : "rgba(168,85,247,.1)"}`, color: dark ? "#f0abfc" : "#a855f7" }}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/></svg>
+                      <span>{fN(user.bonusCredit.amount / 100)} bonus — expires in {daysLeft}d</span>
+                    </div>
+                  );
+                })()}
                 {pendingDeposits.length > 0 && (() => {
                   const awaitingTx = pendingDeposits.find(tx => tx.awaitingConfirmation);
                   return (

@@ -191,7 +191,11 @@ export default function AdminTasksPage({ dark, t }) {
     try {
       const res = await fetch('/api/admin/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, id, reason }) });
       const d = await res.json();
-      if (d.ok) { toast?.success?.(action === 'approve' ? 'Approved & credited' : 'Rejected'); loadSubs(); loadTasks(); }
+      if (d.ok) {
+        toast?.success?.(action === 'approve' ? 'Approved & credited' : 'Rejected');
+        setSubs(prev => prev.map(s => s.id === id ? { ...s, status: action === 'approve' ? 'approved' : 'rejected' } : s));
+        loadSubs(); loadTasks();
+      }
       else toast?.error?.(d.error || 'Failed');
     } catch { toast?.error?.('Failed'); }
   };
@@ -229,11 +233,51 @@ export default function AdminTasksPage({ dark, t }) {
     return parts.join(' · ');
   };
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: `${t.accent} transparent transparent transparent` }} />
-    </div>
-  );
+  if (loading) {
+    const sk = `skel-bone ${dark ? 'skel-dark' : 'skel-light'}`;
+    return (
+      <>
+        <div className="adm-header">
+          <div className="flex items-center justify-between gap-4 mb-1">
+            <div className={`${sk} w-[80px] h-[22px]`} />
+            <div className={`${sk} w-[100px] h-[34px] rounded-[9px]`} />
+          </div>
+          <div className={`${sk} w-[200px] h-[12px] mt-2`} />
+          <div className="page-divider" style={{ background: t.cardBorder }} />
+        </div>
+        <div className="grid grid-cols-4 max-md:grid-cols-2 rounded-[14px] overflow-hidden mb-7" style={{ background: cardBg, border: cardBorder }}>
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className={`py-4 px-5 ${i > 1 ? 'border-l max-md:border-l-0' : ''} ${i >= 3 ? 'max-md:border-t' : ''}`} style={{ borderColor: t.cardBorder }}>
+              <div className={`${sk} w-[90px] h-[8px] mb-3`} />
+              <div className={`${sk} w-[50px] h-[17px]`} />
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-5 mb-[18px]" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
+          <div className={`${sk} w-[60px] h-[14px] mb-2.5`} />
+          <div className={`${sk} w-[90px] h-[14px] mb-2.5`} />
+        </div>
+        <div className="flex gap-2 mb-3.5">
+          <div className={`${sk} w-[210px] h-[34px] rounded-lg`} />
+          <div className={`${sk} w-[120px] h-[34px] rounded-lg`} />
+          <div className={`${sk} w-[120px] h-[34px] rounded-lg`} />
+        </div>
+        <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBorder }}>
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="flex items-center gap-3 px-5 py-3.5" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
+              <div className={`${sk} w-[30px] h-[30px] rounded-[10px] shrink-0`} />
+              <div className="flex-1">
+                <div className={`${sk} h-[13px] mb-1.5`} style={{ width: `${40 + i * 10}%` }} />
+                <div className={`${sk} w-[130px] h-[10px]`} />
+              </div>
+              <div className={`${sk} w-[70px] h-[14px] shrink-0`} />
+              <div className={`${sk} w-[32px] h-[18px] rounded-full shrink-0`} />
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -347,6 +391,10 @@ export default function AdminTasksPage({ dark, t }) {
       {tab === 'subs' && (
         <>
           <div className="flex gap-2 flex-wrap items-center mb-3.5">
+            <div className="relative max-md:flex-[1_1_100%] max-md:order-[-1]">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={dark ? '#706c68' : '#8a8580'} strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
+              <input type="text" placeholder="Search user" value={fUser} onChange={e => { setFUser(e.target.value); setSubPage(1); }} className="h-[34px] pl-8 pr-3 rounded-lg text-[13px] outline-none max-md:w-full" style={{ ...inputStyle, width: 210 }} />
+            </div>
             {/* Status segment */}
             <div className="inline-flex gap-0.5 rounded-[9px] p-[3px] h-[34px] overflow-x-auto" style={{ background: cardBg, border: cardBorder, scrollbarWidth: 'none' }}>
               {['all', 'pending', 'approved', 'rejected'].map(s => (
@@ -359,11 +407,6 @@ export default function AdminTasksPage({ dark, t }) {
               <option value="all">All platforms</option>
               {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <div className="flex-1" />
-            <div className="relative">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={dark ? '#706c68' : '#8a8580'} strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
-              <input type="text" placeholder="Search user" value={fUser} onChange={e => { setFUser(e.target.value); setSubPage(1); }} className="h-[34px] pl-8 pr-3 rounded-lg text-[13px] outline-none" style={{ ...inputStyle, width: 210 }} />
-            </div>
           </div>
 
           <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBorder }}>
@@ -495,8 +538,8 @@ export default function AdminTasksPage({ dark, t }) {
 
       {/* ══ MODAL ══ */}
       {modal && (
-        <div className="fixed inset-0 z-[200] flex items-start justify-center overflow-y-auto py-10 px-4 max-md:py-3.5 max-md:px-2.5" style={{ background: 'rgba(4,6,12,.78)', backdropFilter: 'blur(3px)' }} onClick={e => { if (e.target === e.currentTarget) setModal(null); }}>
-          <div className="w-full max-w-[560px] rounded-2xl p-6 max-md:p-4 animate-[slideUp_.18s_ease]" style={{ background: dark ? '#0f1322' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.13)' : 'rgba(0,0,0,.12)'}` }}>
+        <div className="fixed inset-0 z-[1100] backdrop-blur-[4px] flex items-start justify-center overflow-y-auto py-10 px-4 max-md:py-3.5 max-md:px-2.5 animate-[modalFadeIn_.2s_ease]" style={{ background: 'rgba(0,0,0,.45)' }} onClick={e => { if (e.target === e.currentTarget) setModal(null); }}>
+          <div className="w-full max-w-[560px] rounded-2xl p-6 max-md:p-4 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? '#0e1120' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}`, boxShadow: dark ? '0 20px 60px rgba(0,0,0,.4)' : '0 20px 60px rgba(0,0,0,.1)' }} onClick={e => e.stopPropagation()}>
             <h2 className="text-[15.5px] font-bold" style={{ color: t.text }}>{modal.mode === 'create' ? 'New Task' : 'Edit Task'}</h2>
             <p className="text-[12px] mt-0.5 mb-5" style={{ color: dark ? '#706c68' : '#8a8580' }}>Platform, reward, proof, gates and limits — everything lives here.</p>
 
@@ -625,7 +668,8 @@ export default function AdminTasksPage({ dark, t }) {
       )}
 
       <style jsx global>{`
-        @keyframes slideUp { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes modalBounceIn { from { transform: translateY(12px) scale(.97); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
       `}</style>
     </>
   );

@@ -58,7 +58,14 @@ export default function AdminOutreachPage({ dark }) {
       </div>
 
       {loading && !data ? (
-        <div style={{ textAlign: 'center', padding: 40, opacity: .5 }}>Loading...</div>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} style={{ padding: 20, borderRadius: 12, background: dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.03)', flex: '1 1 200px', minWidth: 160 }}>
+              <div className={`skel-bone ${dark ? 'skel-dark' : 'skel-light'}`} style={{ width: 80, height: 12, borderRadius: 4, marginBottom: 10 }} />
+              <div className={`skel-bone ${dark ? 'skel-dark' : 'skel-light'}`} style={{ width: 100, height: 28, borderRadius: 6 }} />
+            </div>
+          ))}
+        </div>
       ) : (
         <>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>

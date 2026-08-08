@@ -347,7 +347,23 @@ export function AdminCrewPage({ dark, t }) {
           </div>
 
           {loading ? (
-            <div className="py-12 text-center text-sm" style={{ color: t.textMuted }}>Loading crew...</div>
+            <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBd, boxShadow: shadow }}>
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="grid items-center gap-[14px] px-[18px] min-h-[60px]" style={{ gridTemplateColumns: "minmax(0,1fr) 96px 64px 110px 38px", borderTop: i > 1 ? `1px solid ${hair}` : "none" }}>
+                  <div className="flex items-center gap-[11px] py-2">
+                    <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-8 h-8 rounded-[9px] shrink-0`} />
+                    <div className="min-w-0 flex-1">
+                      <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[14px] rounded mb-1.5`} style={{ width: `${50 + i * 10}%` }} />
+                      <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[11px] w-[70%] rounded`} />
+                    </div>
+                  </div>
+                  <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[18px] w-[50px] rounded-[5px] max-md:hidden`} />
+                  <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[13px] w-[32px] rounded max-md:hidden`} />
+                  <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[14px] w-[70px] rounded ml-auto`} />
+                  <div />
+                </div>
+              ))}
+            </div>
           ) : filtered.length === 0 ? (
             <div className="rounded-[14px] py-16 flex flex-col items-center gap-3" style={{ background: cardBg, border: cardBd, boxShadow: shadow }}>
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)" }}>
