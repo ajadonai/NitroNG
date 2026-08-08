@@ -142,7 +142,6 @@ const NAV_ITEMS = [
   { id: "guide", label: "Blog" },
   { id: "changelog", label: "What's New", href: "/changelog" },
   { id: "referrals", label: "Referrals" },
-  { id: "lab", label: "Reseller HQ" },
   { id: "support", label: "Support" },
   { id: "settings", label: "Settings" },
 ];
@@ -1077,7 +1076,7 @@ function DashboardInner({ initialData }) {
       case "cleanup":
         return <WaitlistPage feature="cleanup" dark={dark} t={t} />;
       case "lab":
-        return <ResellerLabPage dark={dark} t={t} />;
+        return <ResellerLabPage dark={dark} t={t} onNavigate={setActive} />;
       default:
         return (
           <div className="p-10 rounded-2xl flex flex-col items-center justify-center min-h-[300px]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
@@ -1278,7 +1277,7 @@ function DashboardInner({ initialData }) {
               ))}
             </div>
           ) : isLab ? (
-            <ResellerLabSidebar dark={dark} t={t} />
+            <ResellerLabSidebar dark={dark} t={t} onNavigate={setActive} />
           ) : isCleanup ? (
             <div className="flex flex-col gap-0">
               <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Cleanup tools</div>
