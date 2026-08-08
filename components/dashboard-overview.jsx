@@ -36,7 +36,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
   return (
     <>
       {/* ── Rewards strip (Nitro Status · Nitro Points · Tasks) ── */}
-      <RewardsStrip rewards={rewards} dark={dark} t={t} onStatus={() => setStatusOpen(true)} onPoints={() => setPointsOpen(true)} onTasks={() => {}} />
+      <RewardsStrip rewards={rewards} dark={dark} t={t} onStatus={() => setStatusOpen(true)} onPoints={() => setPointsOpen(true)} onTasks={() => setActive("tasks")} />
 
       {/* Add to Home Screen — mobile/tablet only */}
       {!a2hs.dismissed && (a2hs.ready || a2hs.isIos) && (

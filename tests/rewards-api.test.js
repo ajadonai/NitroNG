@@ -5,6 +5,8 @@ const prisma = {
   transaction: { aggregate: vi.fn() },
   orderCreditUsage: { aggregate: vi.fn() },
   nitroPointLedger: { aggregate: vi.fn(), findMany: vi.fn() },
+  task: { findMany: vi.fn().mockResolvedValue([]) },
+  taskSubmission: { findMany: vi.fn().mockResolvedValue([]) },
 };
 
 vi.mock('@/lib/prisma', () => ({ default: prisma }));

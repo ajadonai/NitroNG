@@ -17,8 +17,7 @@ import { useState } from 'react';
 // "Nitro Status discount" (never "loyalty"), 1 point = ₦1, min redeem 2,000.
 // ─────────────────────────────────────────────────────────────────
 
-// Flip when the Tasks page ships; the strip grows its third cell.
-export const TASKS_ENABLED = false;
+export const TASKS_ENABLED = true;
 
 export const STATUS_TIERS = [
   { key: 'spark',  name: 'Spark',  min: 0,        minLabel: '₦0+',     discountPct: 0,   pointEarnPct: 0.5,  color: '#9ca3af' },

@@ -10,6 +10,8 @@ const mockPrisma = {
   orderCreditUsage: { aggregate: vi.fn() },
   nitroPointLedger: { aggregate: vi.fn(), findMany: vi.fn(), groupBy: vi.fn(), create: vi.fn() },
   user: { updateMany: vi.fn() },
+  task: { findMany: vi.fn().mockResolvedValue([]) },
+  taskSubmission: { findMany: vi.fn().mockResolvedValue([]) },
 };
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
 
