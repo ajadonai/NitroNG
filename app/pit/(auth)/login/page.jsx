@@ -4,6 +4,6 @@ import LoginPage from "@/components/m/login-page";
 
 export default async function Login() {
   const member = await getCrewSession();
-  if (member) redirect("/pit");
+  if (member) redirect("/pit/dashboard");
   return <LoginPage />;
 }

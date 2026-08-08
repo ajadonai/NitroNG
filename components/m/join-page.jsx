@@ -43,7 +43,7 @@ function Inner({ token }) {
       });
       const data = await res.json();
       if (res.ok) {
-        router.push("/pit");
+        router.push("/pit/dashboard");
       } else {
         setError(data.error || "Something went wrong");
       }

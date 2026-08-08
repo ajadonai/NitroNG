@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
@@ -131,6 +132,7 @@ export async function POST(req) {
 
   const submission = await prisma.taskSubmission.create({
     data: {
+      id: crypto.randomBytes(12).toString('base64url'),
       taskId,
       userId: user.id,
       proof: normalizedProof,

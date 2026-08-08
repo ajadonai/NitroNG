@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useToast } from './toast';
 
 const PLATFORM_ICONS = {
   x: { bg: 'rgba(245,243,240,.12)', lbg: 'rgba(28,27,25,.08)', svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> },
@@ -62,10 +63,10 @@ export default function TasksPage({ dark, t }) {
   const [expanded, setExpanded] = useState(null);
   const [proofs, setProofs] = useState({});
   const [submitting, setSubmitting] = useState(null);
-  const [toast, setToast] = useState(null);
   const [filter, setFilter] = useState('open');
   const [filterOpen, setFilterOpen] = useState(false);
 
+  const toast = useToast();
   const accent = '#c47d8e';
   const border = dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.07)';
   const cardBg = dark ? 'rgba(255,255,255,.04)' : '#fff';
@@ -84,11 +85,6 @@ export default function TasksPage({ dark, t }) {
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  };
-
   const handleSubmit = async (taskId) => {
     const proof = (proofs[taskId] || '').trim();
     if (!proof) return;
@@ -101,14 +97,14 @@ export default function TasksPage({ dark, t }) {
       });
       const json = await res.json();
       if (res.ok) {
-        showToast('Submitted for review');
+        toast.success('Submitted for review');
         setProofs(p => ({ ...p, [taskId]: '' }));
         fetchTasks();
       } else {
-        showToast(json.error || 'Something went wrong');
+        toast.error(json.error || 'Something went wrong');
       }
     } catch {
-      showToast('Network error');
+      toast.error('Network error');
     } finally {
       setSubmitting(null);
     }
@@ -256,12 +252,6 @@ export default function TasksPage({ dark, t }) {
         </div>
       )}
 
-      {/* Toast */}
-      {toast && (
-        <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-50 text-[12.5px] font-semibold py-[11px] px-[18px] rounded-xl whitespace-nowrap" style={{ background: dark ? '#1a1f31' : '#fff', color: dark ? '#f5f3f0' : '#1c1b19', border: `1px solid ${border}`, boxShadow: dark ? '0 8px 30px rgba(0,0,0,.4)' : '0 8px 30px rgba(0,0,0,.12)' }}>
-          {toast}
-        </div>
-      )}
     </>
   );
 }

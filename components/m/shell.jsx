@@ -23,7 +23,7 @@ const ICONS = {
 };
 
 const SIDEBAR_ITEMS = [
-  { key: "dashboard", label: "Dashboard", href: "/pit", icon: ICONS.dashboard },
+  { key: "dashboard", label: "Dashboard", href: "/pit/dashboard", icon: ICONS.dashboard },
   { key: "links", label: "Tracking Links", href: "/pit/links", icon: ICONS.links, chiefOnly: true },
   { key: "team", label: "Team", href: "/pit/team", icon: ICONS.team, chiefOnly: true },
   { key: "commissions", label: "Commissions", href: "/pit/commissions", icon: ICONS.commissions },
@@ -31,8 +31,8 @@ const SIDEBAR_ITEMS = [
   { key: "settings", label: "Settings", href: "/pit/settings", icon: ICONS.settings },
 ];
 
-const PAGE_TITLES = { "/pit": "Dashboard", "/pit/links": "Tracking Links", "/pit/team": "Team", "/pit/commissions": "Commissions", "/pit/payouts": "Payouts", "/pit/settings": "Settings" };
-const PAGE_SUBS = { "/pit": "Overview of your performance", "/pit/links": "Create and manage your referral links", "/pit/team": "Manage your crew members", "/pit/commissions": "Track your earnings from referrals", "/pit/payouts": "Request and track withdrawals", "/pit/settings": "Manage your account" };
+const PAGE_TITLES = { "/pit/dashboard": "Dashboard", "/pit/links": "Tracking Links", "/pit/team": "Team", "/pit/commissions": "Commissions", "/pit/payouts": "Payouts", "/pit/settings": "Settings" };
+const PAGE_SUBS = { "/pit/dashboard": "Overview of your performance", "/pit/links": "Create and manage your referral links", "/pit/team": "Manage your crew members", "/pit/commissions": "Track your earnings from referrals", "/pit/payouts": "Request and track withdrawals", "/pit/settings": "Manage your account" };
 
 function ShellInner({ children, member }) {
   const { dark, toggleTheme, t } = useTheme();
@@ -48,7 +48,7 @@ function ShellInner({ children, member }) {
   useEffect(() => setHeaderAction(null), [pathname]);
   const initials = (member?.name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
-  const isActive = (href) => href === "/pit" ? pathname === "/pit" : pathname.startsWith(href);
+  const isActive = (href) => href === "/pit/dashboard" ? pathname === "/pit/dashboard" : pathname.startsWith(href);
 
   const handleLogout = async () => {
     await fetch("/api/pit/auth/logout", { method: "POST" });
@@ -58,13 +58,13 @@ function ShellInner({ children, member }) {
   const nav = (href) => { router.push(href); };
 
   const bottomTabs = isChief ? [
-    { key: "dashboard", label: "Home", href: "/pit", icon: ICONS.dashboard },
+    { key: "dashboard", label: "Home", href: "/pit/dashboard", icon: ICONS.dashboard },
     { key: "links", label: "Links", href: "/pit/links", icon: ICONS.links },
     { key: "commissions", label: "Earnings", href: "/pit/commissions", icon: ICONS.commissions },
     { key: "payouts", label: "Payouts", href: "/pit/payouts", icon: ICONS.payouts },
     { key: "team", label: "Team", href: "/pit/team", icon: ICONS.team },
   ] : [
-    { key: "dashboard", label: "Home", href: "/pit", icon: ICONS.dashboard },
+    { key: "dashboard", label: "Home", href: "/pit/dashboard", icon: ICONS.dashboard },
     { key: "commissions", label: "Earnings", href: "/pit/commissions", icon: ICONS.commissions },
     { key: "payouts", label: "Payouts", href: "/pit/payouts", icon: ICONS.payouts },
     { key: "settings", label: "Settings", href: "/pit/settings", icon: ICONS.settings },

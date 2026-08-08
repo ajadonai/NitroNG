@@ -22,7 +22,7 @@ export default async function sitemap() {
     { url: `${base}/services`, lastModified: '2025-07-01', changeFrequency: 'weekly', priority: 0.8 },
     { url: `${base}/quality`, lastModified: '2025-06-15', changeFrequency: 'monthly', priority: 0.8 },
     { url: `${base}/contact`, lastModified: '2025-06-15', changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${base}/reseller`, lastModified: '2025-06-15', changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${base}/pit`, lastModified: '2025-06-15', changeFrequency: 'monthly', priority: 0.7 },
     { url: `${base}/lagos`, lastModified: '2025-06-15', changeFrequency: 'monthly', priority: 0.6 },
     { url: `${base}/reviews`, lastModified: '2025-07-01', changeFrequency: 'monthly', priority: 0.7 },
     { url: `${base}/help`, lastModified: '2025-06-15', changeFrequency: 'monthly', priority: 0.5 },
