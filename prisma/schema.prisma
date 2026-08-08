@@ -107,6 +107,7 @@ model User {
   crewMember       CrewMember?
   bonusCredits     BonusCredit[]
   taskSubmissions  TaskSubmission[]
+  outreachContacts OutreachContact[]
   nitroPointLedger NitroPointLedger[]
   resellerProfile  ResellerProfile?
 
@@ -1176,6 +1177,20 @@ model ResellerProfile {
   updatedAt DateTime @updatedAt
 
   @@map("reseller_profiles")
+}
+
+model OutreachContact {
+  id          String   @id @default(cuid())
+  userId      String
+  touchType   String
+  contactedAt DateTime @default(now())
+  contactedBy String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([contactedAt])
+  @@map("outreach_contacts")
 }
 
 model ResellerServiceMap {
