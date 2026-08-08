@@ -21,6 +21,8 @@ const nextConfig = {
   allowedDevOrigins: ['192.168.1.11', '192.168.1.12', '192.168.1.15', '192.168.1.16'],
   async redirects() {
     return [
+      // Creator Economy Index vanity URL
+      { source: '/index', destination: '/blog/creator-economy-index-edition-one', statusCode: 301 },
       // Merged blog posts — 301 losers into winners
       { source: '/blog/why-instagram-followers-drop-after-buying', destination: '/blog/why-smm-followers-drop-how-to-avoid-it', permanent: true },
       { source: '/blog/best-smm-panel-nigeria-2026-comparison', destination: '/blog/best-smm-panel-nigeria', permanent: true },

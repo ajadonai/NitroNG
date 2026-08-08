@@ -54,7 +54,7 @@ describe('public blog rendering paths', () => {
     const page = await BlogPostPage({ params: Promise.resolve({ slug: 'test-post' }) });
     const [articleJsonLd, breadcrumbJsonLd, article] = page.props.children;
 
-    expect(article.props.post.content).toContain('<h2>Safe heading</h2>');
+    expect(article.props.post.content).toContain('<h2 id="sec-1">Safe heading</h2>');
     expect(article.props.post.content).toContain('<pre><code>hello</code></pre>');
     expect(article.props.post.content).not.toContain('onmouseover');
     expect(article.props.post.content).not.toContain('alert(document.domain)');
@@ -77,7 +77,7 @@ describe('public blog rendering paths', () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.post.content).toContain('<h2>Referral guide</h2>');
+    expect(body.post.content).toContain('<h2 id="sec-1">Referral guide</h2>');
     expect(body.post.content).toContain('<p>Existing article</p>');
     expect(body.post.content).not.toContain('onclick');
     expect(body.post.content).not.toContain('<script');
