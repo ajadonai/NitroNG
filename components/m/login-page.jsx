@@ -35,7 +35,7 @@ function Inner() {
       });
       const data = await res.json();
       if (res.ok) {
-        router.push("/pit");
+        router.push("/pit/dashboard");
       } else if (data.error === "pending") {
         setStatusMsg("Your application is under review. We'll notify you once approved.");
       } else if (data.error === "rejected") {

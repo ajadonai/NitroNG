@@ -213,7 +213,7 @@ export function SharedFooter() {
         {/* Product */}
         <div>
           <div className="text-[11px] font-semibold tracking-[1.5px] uppercase mb-4" style={{ color: headingColor }}>Product</div>
-          {[["Pricing", "/pricing"], ["Services", "/services"], ["Quality", "/quality"], ["Reviews", "/reviews"], ["Reseller", "/reseller"], ["About", "/about"], ["Blog", "/blog"], ["What's New", "/changelog"]].map(([l, h]) => (
+          {[["Pricing", "/pricing"], ["Services", "/services"], ["Quality", "/quality"], ["Reviews", "/reviews"], ["The Pit", "/pit"], ["About", "/about"], ["Blog", "/blog"], ["What's New", "/changelog"]].map(([l, h]) => (
             <a key={l} href={h} className={linkCls} style={{ color: linkColor }}>{l}</a>
           ))}
         </div>
