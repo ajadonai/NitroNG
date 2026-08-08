@@ -810,7 +810,18 @@ export function AdminCouponsPage({ dark, t }) {
         )}
 
         {loading ? (
-          <div className="adm-empty" style={{ color: t.textMuted }}>Loading coupons...</div>
+          <div>{[1, 2, 3].map(i => (
+            <div key={i} className="adm-list-row flex-wrap gap-2.5" style={{ borderBottom: i < 3 ? `1px solid ${t.cardBorder}` : "none" }}>
+              <div className="flex-1 min-w-[160px]">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[80px] h-[16px] rounded`} />
+                  <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[60px] h-[14px] rounded`} />
+                </div>
+                <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[70%] h-[13px] rounded mt-1`} />
+              </div>
+              <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[52px] h-[30px] rounded-lg`} />
+            </div>
+          ))}</div>
         ) : coupons.length > 0 ? coupons.map((c, i) => (
           <div key={c.id || c.code} className="adm-list-row flex-wrap gap-2.5" style={{ borderBottom: i < coupons.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
             <div className="flex-1 min-w-[160px]">
@@ -2420,7 +2431,22 @@ export function AdminChangelogPage({ dark, t }) {
         </div>
       )}
 
-      {loading ? <div className="text-sm py-8 text-center" style={{ color: t.textMuted }}>Loading...</div> : (
+      {loading ? (
+        <div className="flex flex-col gap-1.5">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex items-start gap-3 rounded-xl py-3 px-4" style={{ background: dark ? "rgba(255,255,255,.04)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` }}>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[44px] h-[18px] rounded-md`} />
+                  <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[72px] h-[12px] rounded`} />
+                </div>
+                <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[14px] rounded mb-1`} style={{ width: `${55 + i * 10}%` }} />
+                <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[80%] h-[12px] rounded`} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
         <div className="flex flex-col gap-1.5">
           {entries.map(e => {
             const tc = tagColors[e.tag] || tagColors.new;

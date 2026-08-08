@@ -849,8 +849,20 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {menuLoading && (
         <div className="p-0">
-          <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[38px] rounded-lg mb-3.5`} />
-          {[1, 2, 3, 4, 5].map(i => (
+          <div className="flex gap-0 mb-3.5 border-b border-solid" style={{ borderBottomColor: t.cardBorder }}>
+            {[72, 48, 88].map((w, i) => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[32px] rounded-md`} style={{ width: w }} />)}
+          </div>
+          <div className="hidden desktop:grid desktop:grid-cols-10 desktop:gap-2 desktop:mb-4">
+            {Array.from({ length: 10 }, (_, i) => (
+              <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} aspect-square rounded-[14px]`} />
+            ))}
+          </div>
+          <div className="hidden max-desktop:grid grid-cols-5 gap-1.5 mb-3.5">
+            {Array.from({ length: 5 }, (_, i) => (
+              <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} aspect-square rounded-[12px]`} />
+            ))}
+          </div>
+          {[1, 2, 3, 4].map(i => (
             <div key={i} className="py-3.5 px-4 rounded-xl mb-2 border border-solid" style={{ borderColor: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)", background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.6)" }}>
               <div className="flex justify-between items-center">
                 <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-4 rounded`} style={{ width: `${45 + i * 8}%` }} />

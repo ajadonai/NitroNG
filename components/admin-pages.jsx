@@ -447,7 +447,7 @@ function FinanceOverviewTab({ dark, t }) {
         <DateRangePicker dark={dark} t={t} value={dateValue} onChange={changeDateValue} defaultPreset="This month" />
       </div>
 
-      {loading ? <div className="adm-stats">{[1,2,3,4].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[90px] rounded-xl`} />)}</div> : <>
+      {loading ? <div className="adm-stats">{[1,2,3,4,5,6,7,8].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[90px] rounded-xl`} />)}</div> : <>
       <div className="adm-stats mt-0">
         {[
           ["Revenue", fN(s.totalRevenue || 0), t.green],
