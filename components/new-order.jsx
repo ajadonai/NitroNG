@@ -9,6 +9,16 @@ import InlineAlert from "./inline-alert";
 import NitroLoader from "./nitro-loader";
 import { cleanLink } from "../lib/clean-link";
 import { OrderForm as ExtractedOrderForm } from "./order-form";
+import { TASKS_ENABLED } from './rewards';
+
+// ── Success-modal promo slides ──
+// 'tasks' activates automatically when TASKS_ENABLED flips in rewards.jsx.
+// Flip RESELLER_SLIDE_ENABLED to true when the reseller programme launches
+// (and point RESELLER_SLIDE_HREF at the live reseller hub route).
+const RESELLER_SLIDE_ENABLED = false;
+const TASKS_SLIDE_HREF = '/dashboard'; // confirm the Tasks route at launch
+const RESELLER_SLIDE_HREF = '/reseller'; // update to the reseller hub route on activation
+const PROMO_SLIDES = ['wa', 'ig', ...(TASKS_ENABLED ? ['tasks'] : []), ...(RESELLER_SLIDE_ENABLED ? ['reseller'] : [])];
 
 /* ═══════════════════════════════════════════ */
 /* ═══ PLATFORM DATA — 35 platforms        ═══ */
@@ -373,12 +383,12 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
   const waChannelUrl = socialLinks?.social_whatsapp_channel || 'https://whatsapp.com/channel/0029Vb8hC6rJ3jv7Ig2m3D3Q';
   const igHandle = (socialLinks?.social_instagram || 'Nitro.ng').replace(/^(https?:\/\/)?(www\.)?(instagram\.com)\/?/i, '').replace(/^@/, '').replace(/\/$/, '');
-  const [promoSlide, setPromoSlide] = useState(() => Math.random() < 0.5 ? 0 : 1);
+  const [promoSlide, setPromoSlide] = useState(() => Math.floor(Math.random() * PROMO_SLIDES.length));
   const [promoPaused, setPromoPaused] = useState(false);
   const promoTouchX = useRef(null);
   useEffect(() => {
     if (!orderSuccess || promoPaused) return;
-    const iv = setInterval(() => setPromoSlide(s => (s + 1) % 2), 5000);
+    const iv = setInterval(() => setPromoSlide(s => (s + 1) % PROMO_SLIDES.length), 5000);
     return () => clearInterval(iv);
   }, [orderSuccess, promoPaused, promoSlide]);
 
@@ -1014,9 +1024,9 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                   onMouseEnter={() => setPromoPaused(true)}
                   onMouseLeave={() => setPromoPaused(false)}
                   onTouchStart={e => { promoTouchX.current = e.touches[0].clientX; setPromoPaused(true); }}
-                  onTouchEnd={e => { const sx = promoTouchX.current; promoTouchX.current = null; setPromoPaused(false); if (sx != null) { const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 36) setPromoSlide(s => (s + (dx < 0 ? 1 : -1) + 2) % 2); } }}
+                  onTouchEnd={e => { const sx = promoTouchX.current; promoTouchX.current = null; setPromoPaused(false); if (sx != null) { const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 36) setPromoSlide(s => (s + (dx < 0 ? 1 : -1) + PROMO_SLIDES.length) % PROMO_SLIDES.length); } }}
                 >
-                  {promoSlide === 0 ? (
+                  {PROMO_SLIDES[promoSlide] === "wa" ? (
                     <div className="rounded-2xl p-[15px] pr-4 flex items-center gap-[13px] max-[380px]:items-start" style={{ background: successChrome.waTint }}>
                       <div className="w-[42px] h-[42px] rounded-full flex items-center justify-center shrink-0 text-white" style={{ background: "linear-gradient(135deg,#2bc76a,#128c46)", boxShadow: "0 6px 16px rgba(18,140,70,.25)" }}>
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-3-.2-.3A8.2 8.2 0 1112 20.2zm4.6-6.1c-.3-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.2-.3.2-.5.1a6.7 6.7 0 01-2-1.2 7.5 7.5 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5v-.5c0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 .6.3 1.1.4 1.5.6.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.4z"/></svg>
@@ -1026,7 +1036,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                       </div>
                       <a href={waChannelUrl} target="_blank" rel="noopener" className="shrink-0 text-white text-[12.5px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap" style={{ background: "#128c46" }}>Follow</a>
                     </div>
-                  ) : (
+                  ) : PROMO_SLIDES[promoSlide] === "ig" ? (
                     <div className="rounded-2xl p-[15px] pr-4 flex items-center gap-[13px] max-[380px]:items-start" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)" }}>
                       <div className="w-[42px] h-[42px] rounded-full flex items-center justify-center shrink-0 text-white" style={{ background: "linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", boxShadow: "0 6px 16px rgba(220,39,67,.25)" }}>
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
@@ -1036,9 +1046,31 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                       </div>
                       <a href={`https://instagram.com/${igHandle}`} target="_blank" rel="noopener" className="shrink-0 text-white text-[12.5px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap" style={{ background: t.accent }}>Follow</a>
                     </div>
+                  ) : PROMO_SLIDES[promoSlide] === "tasks" ? (
+                    <div className="rounded-2xl p-[15px] pr-4 flex items-center gap-[13px] max-[380px]:items-start" style={{ background: dark ? "rgba(224,164,88,.09)" : "rgba(217,119,6,.06)" }}>
+                      <div className="w-[42px] h-[42px] rounded-full flex items-center justify-center shrink-0 text-white" style={{ background: "linear-gradient(135deg,#f2b866,#d97706)", boxShadow: "0 6px 16px rgba(217,119,6,.28)" }}>
+                        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13.5px] font-bold" style={{ color: successChrome.text }}>Earn while it delivers</div>
+                        <div className="text-[11.5px] mt-0.5" style={{ color: successChrome.soft || (dark ? "rgba(244,241,237,.55)" : "rgba(28,27,25,.55)") }}>Quick tasks, real promo credit.</div>
+                      </div>
+                      <a href={TASKS_SLIDE_HREF} className="shrink-0 text-white text-[12.5px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap" style={{ background: "#d97706" }}>See tasks</a>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl p-[15px] pr-4 flex items-center gap-[13px] max-[380px]:items-start" style={{ background: dark ? "rgba(96,165,250,.09)" : "rgba(37,99,235,.06)" }}>
+                      <div className="w-[42px] h-[42px] rounded-full flex items-center justify-center shrink-0 text-white" style={{ background: "linear-gradient(135deg,#60a5fa,#2563eb)", boxShadow: "0 6px 16px rgba(37,99,235,.28)" }}>
+                        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2v6.31L4.72 17.7A2 2 0 0 0 6.46 21h11.08a2 2 0 0 0 1.74-3.3L14 8.31V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13.5px] font-bold" style={{ color: successChrome.text }}>Ordering for clients?</div>
+                        <div className="text-[11.5px] mt-0.5" style={{ color: successChrome.soft || (dark ? "rgba(244,241,237,.55)" : "rgba(28,27,25,.55)") }}>Reseller rates and your own panel.</div>
+                      </div>
+                      <a href={RESELLER_SLIDE_HREF} className="shrink-0 text-white text-[12.5px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap" style={{ background: "#2563eb" }}>Open Lab</a>
+                    </div>
                   )}
                   <div className="flex justify-center gap-1.5 mt-2.5">
-                    {[0, 1].map(i => (
+                    {PROMO_SLIDES.map((_, i) => (
                       <button key={i} onClick={() => setPromoSlide(i)} aria-label={`Slide ${i + 1}`} className="relative h-[6px] rounded-full border-none p-0 cursor-pointer overflow-hidden transition-all duration-300" style={{ width: promoSlide === i ? 26 : 6, background: promoSlide === i ? (dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.22)") : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.12)") }}>
                         {promoSlide === i && <span key={`f${promoSlide}`} className="absolute inset-0 rounded-full origin-left" style={{ background: t.accent, animation: promoPaused ? "none" : "promoFill 5s linear forwards" }} />}
                       </button>
