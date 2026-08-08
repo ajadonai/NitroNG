@@ -96,7 +96,7 @@ export default function AdminTasksPage({ dark, t }) {
 
   const cardBg = dark ? 'rgba(255,255,255,.09)' : 'rgba(255,255,255,.85)';
   const cardBorder = `0.5px solid ${t.cardBorder}`;
-  const inputStyle = { borderColor: t.cardBorder, background: dark ? '#131728' : '#fff', color: t.text };
+  const inputStyle = { border: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.07)' : '#fff', color: t.text };
 
   const loadTasks = useCallback(async () => {
     try {
@@ -245,9 +245,9 @@ export default function AdminTasksPage({ dark, t }) {
           <div className={`${sk} w-[200px] h-[12px] mt-2`} />
           <div className="page-divider" style={{ background: t.cardBorder }} />
         </div>
-        <div className="grid grid-cols-4 max-md:grid-cols-2 rounded-[14px] overflow-hidden mb-7" style={{ background: cardBg, border: cardBorder }}>
+        <div className="adm-stats mb-6">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className={`py-4 px-5 ${i > 1 ? 'border-l max-md:border-l-0' : ''} ${i >= 3 ? 'max-md:border-t' : ''}`} style={{ borderColor: t.cardBorder }}>
+            <div key={i} className="dash-stat-card" style={{ background: dark ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.85)', border: `0.5px solid ${dark ? 'rgba(255,255,255,.16)' : 'rgba(0,0,0,.12)'}` }}>
               <div className={`${sk} w-[90px] h-[8px] mb-3`} />
               <div className={`${sk} w-[50px] h-[17px]`} />
             </div>
@@ -285,7 +285,7 @@ export default function AdminTasksPage({ dark, t }) {
       <div className="adm-header">
         <div className="flex items-center justify-between gap-4 mb-1">
           <div className="adm-title" style={{ color: t.text }}>Tasks</div>
-          <button onClick={openCreate} className="inline-flex items-center justify-center gap-1.5 h-[34px] px-4 rounded-[9px] text-[13px] font-semibold" style={{ background: t.accent, color: dark ? '#14060a' : '#14060a' }}>
+          <button onClick={openCreate} className="inline-flex items-center justify-center gap-1.5 h-[34px] px-4 rounded-[9px] text-[13px] font-semibold border-none cursor-pointer font-[inherit] transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: 'linear-gradient(135deg,#c47d8e,#8b5e6b)', color: '#fff' }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
             New Task
           </button>
@@ -295,17 +295,18 @@ export default function AdminTasksPage({ dark, t }) {
       </div>
 
       {/* ── Stats ── */}
-      <div className="grid grid-cols-4 max-md:grid-cols-2 rounded-[14px] overflow-hidden mb-7" style={{ background: cardBg, border: cardBorder }}>
+      <div className="adm-stats mb-6">
         {[
-          { label: 'Pending review', value: stats.pending ?? '—', mono: true },
-          { label: `Approved · ${new Date().toLocaleDateString('en-US', { month: 'long' })}`, value: stats.approvedMonth ?? '—', mono: true },
-          { label: `Credit issued · ${new Date().toLocaleDateString('en-US', { month: 'long' })}`, value: `₦${fmt(Math.round((stats.creditMonth || 0) / 100))}`, sub: `/ ₦${fmt(Math.round((stats.budget || 0) / 100))}`, bar: stats.budget ? Math.min(100, Math.round((stats.creditMonth || 0) / stats.budget * 100)) : 0, mono: true },
-          { label: 'Active tasks', value: stats.activeTasks ?? '—', mono: true },
-        ].map((s, i) => (
-          <div key={i} className={`py-4 px-5 max-md:py-3.5 max-md:px-4 ${i > 0 ? 'border-l max-md:border-l-0' : ''} ${i >= 2 ? 'max-md:border-t' : ''}`} style={{ borderColor: t.cardBorder }}>
-            <div className="text-[10px] uppercase tracking-[1.1px] mb-1.5 whitespace-nowrap" style={{ color: dark ? '#706c68' : '#8a8580' }}>{s.label}</div>
-            <div className="text-[17px] max-md:text-[15px] font-semibold font-mono">{s.value}{s.sub && <small className="text-[11px] font-medium ml-1" style={{ color: dark ? '#706c68' : '#8a8580' }}>{s.sub}</small>}</div>
-            {s.bar !== undefined && <div className="max-w-[130px] h-[3px] rounded-full mt-2.5" style={{ background: 'rgba(255,255,255,.08)' }}><div className="h-full rounded-full" style={{ width: `${s.bar}%`, background: '#a3586b' }} /></div>}
+          ['Pending review', stats.pending ?? '—', '#fbbf24'],
+          [`Approved · ${new Date().toLocaleDateString('en-US', { month: 'long' })}`, stats.approvedMonth ?? '—', t.green],
+          [`Credit issued · ${new Date().toLocaleDateString('en-US', { month: 'long' })}`, `₦${fmt(Math.round((stats.creditMonth || 0) / 100))}`, t.accent, `/ ₦${fmt(Math.round((stats.budget || 0) / 100))}`],
+          ['Active tasks', stats.activeTasks ?? '—', t.blue],
+        ].map(([label, val, color, sub]) => (
+          <div key={label} className="dash-stat-card" style={{ background: dark ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.85)', border: `0.5px solid ${dark ? 'rgba(255,255,255,.16)' : 'rgba(0,0,0,.12)'}` }}>
+            <div className="dash-stat-dot" style={{ background: color }} />
+            <div className="dash-stat-label" style={{ color: t.textMuted }}>{label}</div>
+            <div className="m dash-stat-value" style={{ color }}>{val}</div>
+            {sub && <div className="dash-stat-sub" style={{ color: t.textMuted }}>{sub}</div>}
           </div>
         ))}
       </div>
@@ -316,8 +317,8 @@ export default function AdminTasksPage({ dark, t }) {
           { id: 'tasks', label: 'Tasks', count: tasks.length },
           { id: 'subs', label: 'Submissions', count: subCounts.all || stats.pending || 0 },
         ].map(tb => (
-          <button key={tb.id} onClick={() => setTab(tb.id)} className="pb-2.5 text-[13.5px] font-semibold -mb-px" style={{ color: tab === tb.id ? t.text : (dark ? '#706c68' : '#8a8580'), borderBottom: `2px solid ${tab === tb.id ? t.accent : 'transparent'}` }}>
-            {tb.label} <span className="text-[11px] font-medium ml-1" style={{ color: dark ? '#706c68' : '#8a8580' }}>{tb.count}</span>
+          <button key={tb.id} onClick={() => setTab(tb.id)} className="pb-2.5 text-[13.5px] font-semibold -mb-px bg-transparent border-none border-b-2 cursor-pointer font-[inherit]" style={{ color: tab === tb.id ? t.text : t.textMuted, borderBottom: `2px solid ${tab === tb.id ? t.accent : 'transparent'}` }}>
+            {tb.label} <span className="text-[11px] font-medium ml-1" style={{ color: t.textMuted }}>{tb.count}</span>
           </button>
         ))}
       </div>
@@ -327,14 +328,14 @@ export default function AdminTasksPage({ dark, t }) {
         <>
           <div className="flex gap-2 flex-wrap items-center mb-3.5">
             <div className="relative max-md:flex-[1_1_100%] max-md:order-[-1]">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={dark ? '#706c68' : '#8a8580'} strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
               <input type="text" placeholder="Search tasks" value={tq} onChange={e => setTq(e.target.value)} className="h-[34px] pl-8 pr-3 rounded-lg text-[13px] outline-none max-md:w-full" style={{ ...inputStyle, width: 210 }} />
             </div>
-            <select value={tPlat} onChange={e => setTPlat(e.target.value)} className="h-[34px] pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none max-md:flex-1" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23706c68' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
+            <select value={tPlat} onChange={e => setTPlat(e.target.value)} className="h-[34px] pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none max-md:flex-1" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
               <option value="all">All platforms</option>
               {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <select value={tSt} onChange={e => setTSt(e.target.value)} className="h-[34px] pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none max-md:flex-1" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23706c68' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
+            <select value={tSt} onChange={e => setTSt(e.target.value)} className="h-[34px] pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none max-md:flex-1" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
               <option value="all">Active & paused</option>
               <option value="1">Active</option>
               <option value="0">Paused</option>
@@ -343,40 +344,40 @@ export default function AdminTasksPage({ dark, t }) {
 
           <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBorder }}>
             {/* List header (desktop) */}
-            <div className="hidden md:grid grid-cols-[46px_minmax(0,1fr)_88px_104px_96px] items-center px-5 py-2.5" style={{ borderBottom: `1px solid ${t.cardBorder}`, background: 'rgba(255,255,255,.015)' }}>
-              <span className="col-span-2 text-[9.5px] uppercase tracking-[1.1px] font-semibold" style={{ color: dark ? '#706c68' : '#8a8580' }}>Task</span>
-              <span className="text-[9.5px] uppercase tracking-[1.1px] font-semibold text-right" style={{ color: dark ? '#706c68' : '#8a8580' }}>Done</span>
-              <span className="text-[9.5px] uppercase tracking-[1.1px] font-semibold text-right" style={{ color: dark ? '#706c68' : '#8a8580' }}>Reward</span>
-              <span className="text-[9.5px] uppercase tracking-[1.1px] font-semibold text-right" style={{ color: dark ? '#706c68' : '#8a8580' }}>Active</span>
+            <div className="hidden md:grid grid-cols-[46px_minmax(0,1fr)_88px_104px_96px] items-center px-5 py-2.5" style={{ borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>
+              <span className="col-span-2 text-[9.5px] uppercase tracking-[1.1px] font-semibold" style={{ color: t.textMuted }}>Task</span>
+              <span className="text-[9.5px] uppercase tracking-[1.1px] font-semibold text-right" style={{ color: t.textMuted }}>Done</span>
+              <span className="text-[9.5px] uppercase tracking-[1.1px] font-semibold text-right" style={{ color: t.textMuted }}>Reward</span>
+              <span className="text-[9.5px] uppercase tracking-[1.1px] font-semibold text-right" style={{ color: t.textMuted }}>Active</span>
             </div>
 
             {groupedTasks.length === 0 && (
-              <div className="text-[10px] uppercase tracking-[1.2px] py-4 px-5 font-semibold" style={{ color: dark ? '#706c68' : '#8a8580' }}>No tasks match.</div>
+              <div className="text-[10px] uppercase tracking-[1.2px] py-4 px-5 font-semibold" style={{ color: t.textMuted }}>No tasks match.</div>
             )}
 
             {groupedTasks.map(group => (
               <div key={group.id}>
-                <div className="text-[10px] uppercase tracking-[1.2px] font-semibold pt-4 pb-2 px-5" style={{ color: dark ? '#706c68' : '#8a8580', borderBottom: `1px solid ${t.cardBorder}`, background: 'rgba(255,255,255,.008)' }}>
+                <div className="text-[10px] uppercase tracking-[1.2px] font-semibold pt-4 pb-2 px-5" style={{ color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.008)' : 'rgba(0,0,0,.02)' }}>
                   {group.label}<span className="opacity-60 ml-1.5 tracking-normal">· {group.tasks.length}</span>
                 </div>
                 {group.tasks.map(task => (
-                  <div key={task.id} className={`grid grid-cols-[46px_minmax(0,1fr)_88px_104px_96px] max-md:grid-cols-[42px_minmax(0,1fr)_auto_auto] items-center px-5 max-md:px-3.5 py-3 group hover:bg-white/[.015] ${!task.active ? 'opacity-40' : ''}`} style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
+                  <div key={task.id} className={`grid grid-cols-[46px_minmax(0,1fr)_88px_104px_96px] max-md:grid-cols-[42px_minmax(0,1fr)_auto_auto] items-center px-5 max-md:px-3.5 py-3 group hover:bg-black/[.015] dark:hover:bg-white/[.015] ${!task.active ? 'opacity-40' : ''}`} style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
                     <PlatformIcon platform={task.platform} size={30} />
                     <div className="min-w-0 pr-3.5 max-md:pr-2.5">
                       <div className="text-[13.5px] font-semibold truncate max-md:whitespace-normal" style={{ color: t.text }}>{task.title}</div>
-                      <div className="text-[11.5px] mt-0.5 truncate max-md:whitespace-normal" style={{ color: dark ? '#706c68' : '#8a8580' }}>{taskMeta(task)}</div>
+                      <div className="text-[11.5px] mt-0.5 truncate max-md:whitespace-normal" style={{ color: t.textMuted }}>{taskMeta(task)}</div>
                     </div>
-                    <div className="text-[12px] text-right font-mono max-md:hidden" style={{ color: dark ? '#a09b95' : '#706c68' }}>{task.doneCount || '—'}</div>
+                    <div className="text-[12px] text-right font-mono max-md:hidden" style={{ color: t.textSoft }}>{task.doneCount || '—'}</div>
                     <div className="text-right">
                       <div className="text-[13.5px] font-semibold font-mono">₦{fmt(task.reward / 100)}</div>
-                      {task.viralBonus && <div className="text-[10px] mt-0.5" style={{ color: dark ? '#706c68' : '#8a8580' }}>+₦{fmt(task.viralAmount / 100)} at {fmt(task.viralThreshold)}</div>}
+                      {task.viralBonus && <div className="text-[10px] mt-0.5" style={{ color: t.textMuted }}>+₦{fmt(task.viralAmount / 100)} at {fmt(task.viralThreshold)}</div>}
                     </div>
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => openEdit(task)} className="w-7 h-7 rounded-lg inline-flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: dark ? '#706c68' : '#8a8580' }}>
+                      <button onClick={() => openEdit(task)} className="w-7 h-7 rounded-lg inline-flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: t.textMuted }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 3a2.8 2.8 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></svg>
                       </button>
-                      <button onClick={() => toggleTask(task.id, !task.active)} className="relative w-8 h-[18px] rounded-full shrink-0 ml-1.5 transition-colors" style={{ background: task.active ? '#a3586b' : 'rgba(255,255,255,.1)' }}>
-                        <span className="absolute top-[2.5px] left-[2.5px] w-[13px] h-[13px] rounded-full bg-white shadow-sm transition-transform" style={{ transform: task.active ? 'translateX(14px)' : 'translateX(0)', background: task.active ? '#fff' : '#7a756f' }} />
+                      <button onClick={() => toggleTask(task.id, !task.active)} className="relative w-8 h-[18px] rounded-full shrink-0 ml-1.5 transition-colors" style={{ background: task.active ? '#a3586b' : (dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.12)') }}>
+                        <span className="absolute top-[2.5px] left-[2.5px] w-[13px] h-[13px] rounded-full bg-white shadow-sm transition-transform" style={{ transform: task.active ? 'translateX(14px)' : 'translateX(0)', background: task.active ? '#fff' : (dark ? '#7a756f' : '#999') }} />
                       </button>
                     </div>
                   </div>
@@ -392,18 +393,18 @@ export default function AdminTasksPage({ dark, t }) {
         <>
           <div className="flex gap-2 flex-wrap items-center mb-3.5">
             <div className="relative max-md:flex-[1_1_100%] max-md:order-[-1]">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={dark ? '#706c68' : '#8a8580'} strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
               <input type="text" placeholder="Search user" value={fUser} onChange={e => { setFUser(e.target.value); setSubPage(1); }} className="h-[34px] pl-8 pr-3 rounded-lg text-[13px] outline-none max-md:w-full" style={{ ...inputStyle, width: 210 }} />
             </div>
             {/* Status segment */}
             <div className="inline-flex gap-0.5 rounded-[9px] p-[3px] h-[34px] overflow-x-auto" style={{ background: cardBg, border: cardBorder, scrollbarWidth: 'none' }}>
               {['all', 'pending', 'approved', 'rejected'].map(s => (
-                <button key={s} onClick={() => { setFSt(s); setSubPage(1); }} className="px-3 rounded-md text-[12px] font-semibold whitespace-nowrap" style={{ background: fSt === s ? 'rgba(255,255,255,.06)' : 'transparent', color: fSt === s ? t.text : (dark ? '#706c68' : '#8a8580') }}>
+                <button key={s} onClick={() => { setFSt(s); setSubPage(1); }} className="px-3 rounded-md text-[12px] font-semibold whitespace-nowrap" style={{ background: fSt === s ? (dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)') : 'transparent', color: fSt === s ? t.text : t.textMuted }}>
                   {s[0].toUpperCase() + s.slice(1)}<span className="text-[10.5px] opacity-70 ml-1">{subCounts[s] || 0}</span>
                 </button>
               ))}
             </div>
-            <select value={fPlat} onChange={e => { setFPlat(e.target.value); setSubPage(1); }} className="h-[34px] pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23706c68' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
+            <select value={fPlat} onChange={e => { setFPlat(e.target.value); setSubPage(1); }} className="h-[34px] pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
               <option value="all">All platforms</option>
               {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
@@ -415,45 +416,45 @@ export default function AdminTasksPage({ dark, t }) {
               <table className="w-full border-collapse text-[12.5px]">
                 <thead>
                   <tr>
-                    <th className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap" style={{ color: dark ? '#706c68' : '#8a8580', borderBottom: `1px solid ${t.cardBorder}`, background: 'rgba(255,255,255,.015)' }}>User</th>
-                    <th className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap" style={{ color: dark ? '#706c68' : '#8a8580', borderBottom: `1px solid ${t.cardBorder}`, background: 'rgba(255,255,255,.015)' }}>Task</th>
-                    <th className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap" style={{ color: dark ? '#706c68' : '#8a8580', borderBottom: `1px solid ${t.cardBorder}`, background: 'rgba(255,255,255,.015)' }}>Proof</th>
-                    <th onClick={() => sortSubs('views')} className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ color: dark ? '#706c68' : '#8a8580', borderBottom: `1px solid ${t.cardBorder}`, background: 'rgba(255,255,255,.015)' }}>Views {subSort === 'views' ? (subDir === 'desc' ? '↓' : '↑') : ''}</th>
-                    <th onClick={() => sortSubs('reward')} className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ color: dark ? '#706c68' : '#8a8580', borderBottom: `1px solid ${t.cardBorder}`, background: 'rgba(255,255,255,.015)' }}>Reward {subSort === 'reward' ? (subDir === 'desc' ? '↓' : '↑') : ''}</th>
-                    <th onClick={() => sortSubs('date')} className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ color: dark ? '#706c68' : '#8a8580', borderBottom: `1px solid ${t.cardBorder}`, background: 'rgba(255,255,255,.015)' }}>Submitted {subSort === 'date' ? (subDir === 'desc' ? '↓' : '↑') : ''}</th>
-                    <th className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap" style={{ color: dark ? '#706c68' : '#8a8580', borderBottom: `1px solid ${t.cardBorder}`, background: 'rgba(255,255,255,.015)' }}>Status</th>
-                    <th className="px-4 py-3" style={{ borderBottom: `1px solid ${t.cardBorder}`, background: 'rgba(255,255,255,.015)' }}></th>
+                    <th className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap" style={{ color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>User</th>
+                    <th className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap" style={{ color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>Task</th>
+                    <th className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap" style={{ color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>Proof</th>
+                    <th onClick={() => sortSubs('views')} className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>Views {subSort === 'views' ? (subDir === 'desc' ? '↓' : '↑') : ''}</th>
+                    <th onClick={() => sortSubs('reward')} className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>Reward {subSort === 'reward' ? (subDir === 'desc' ? '↓' : '↑') : ''}</th>
+                    <th onClick={() => sortSubs('date')} className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>Submitted {subSort === 'date' ? (subDir === 'desc' ? '↓' : '↑') : ''}</th>
+                    <th className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap" style={{ color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>Status</th>
+                    <th className="px-4 py-3" style={{ borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {subs.length === 0 && (
-                    <tr><td colSpan={8} className="px-4 py-8 text-center text-[13px]" style={{ color: dark ? '#706c68' : '#8a8580' }}>{subLoading ? 'Loading...' : 'No submissions'}</td></tr>
+                    <tr><td colSpan={8} className="px-4 py-8 text-center text-[13px]" style={{ color: t.textMuted }}>{subLoading ? 'Loading...' : 'No submissions'}</td></tr>
                   )}
                   {subs.map(s => (
-                    <tr key={s.id} className="hover:bg-white/[.015]">
+                    <tr key={s.id} className="hover:bg-black/[.015] dark:hover:bg-white/[.015]">
                       <td className="px-4 py-3 whitespace-nowrap" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
                         <div className="flex items-center gap-2 font-semibold">
-                          <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10.5px] font-semibold" style={{ background: 'rgba(255,255,255,.06)', color: dark ? '#a09b95' : '#706c68' }}>{(s.user?.name || '?')[0].toUpperCase()}</span>
+                          <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10.5px] font-semibold" style={{ background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)', color: t.textSoft }}>{(s.user?.name || '?')[0].toUpperCase()}</span>
                           {s.user?.name || 'Unknown'}
                         </div>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-                        <div className="flex items-center gap-2" style={{ color: dark ? '#a09b95' : '#706c68' }}>
+                        <div className="flex items-center gap-2" style={{ color: t.textSoft }}>
                           <PlatformIcon platform={s.task?.platform} size={20} />
                           <span className="truncate max-w-[160px]">{s.task?.title}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-                        <span className="inline-flex items-center gap-1.5 text-[11.5px] max-w-[190px] truncate" style={{ color: dark ? '#a09b95' : '#706c68' }}>
+                        <span className="inline-flex items-center gap-1.5 text-[11.5px] max-w-[190px] truncate" style={{ color: t.textSoft }}>
                           {s.proof?.startsWith('http') && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 14L21 3M15 3h6v6M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /></svg>}
                           {s.proof}
                         </span>
                       </td>
-                      <td className="px-4 py-3 font-mono whitespace-nowrap" style={{ borderBottom: `1px solid ${t.cardBorder}`, color: dark ? '#a09b95' : '#706c68' }}>{s.views != null ? fmt(s.views) : '—'}</td>
+                      <td className="px-4 py-3 font-mono whitespace-nowrap" style={{ borderBottom: `1px solid ${t.cardBorder}`, color: t.textSoft }}>{s.views != null ? fmt(s.views) : '—'}</td>
                       <td className="px-4 py-3 font-mono whitespace-nowrap" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>₦{fmt((s.task?.reward || 0) / 100)}</td>
-                      <td className="px-4 py-3 whitespace-nowrap" style={{ borderBottom: `1px solid ${t.cardBorder}`, color: dark ? '#a09b95' : '#706c68' }}>{fAgo(s.createdAt)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap" style={{ borderBottom: `1px solid ${t.cardBorder}`, color: t.textSoft }}>{fAgo(s.createdAt)}</td>
                       <td className="px-4 py-3 whitespace-nowrap" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-                        <span className="inline-flex items-center gap-1.5 text-[11.5px] font-medium" style={{ color: dark ? '#a09b95' : '#706c68' }}>
+                        <span className="inline-flex items-center gap-1.5 text-[11.5px] font-medium" style={{ color: t.textSoft }}>
                           <span className="w-[5px] h-[5px] rounded-full shrink-0" style={{ background: s.status === 'pending' ? '#fbbf24' : s.status === 'approved' ? '#6ee7b7' : '#fca5a5' }} />
                           {s.status[0].toUpperCase() + s.status.slice(1)}
                         </span>
@@ -462,7 +463,7 @@ export default function AdminTasksPage({ dark, t }) {
                         {s.status === 'pending' && (
                           <div className="flex gap-1 justify-end">
                             <button onClick={() => reviewSub(s.id, 'approve')} className="h-[26px] px-2.5 rounded-[7px] text-[11px] font-semibold" style={{ border: `1px solid ${t.cardBorder}`, color: '#6ee7b7' }}>Approve</button>
-                            <button onClick={() => reviewSub(s.id, 'reject')} className="h-[26px] px-2.5 rounded-[7px] text-[11px] font-semibold" style={{ border: `1px solid ${t.cardBorder}`, color: dark ? '#706c68' : '#8a8580' }}>Reject</button>
+                            <button onClick={() => reviewSub(s.id, 'reject')} className="h-[26px] px-2.5 rounded-[7px] text-[11px] font-semibold" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}>Reject</button>
                           </div>
                         )}
                       </td>
@@ -474,27 +475,27 @@ export default function AdminTasksPage({ dark, t }) {
 
             {/* Mobile cards */}
             <div className="md:hidden">
-              {subs.length === 0 && <div className="px-4 py-8 text-center text-[13px]" style={{ color: dark ? '#706c68' : '#8a8580' }}>{subLoading ? 'Loading...' : 'No submissions'}</div>}
+              {subs.length === 0 && <div className="px-4 py-8 text-center text-[13px]" style={{ color: t.textMuted }}>{subLoading ? 'Loading...' : 'No submissions'}</div>}
               {subs.map(s => (
                 <div key={s.id} className="px-4 py-3.5" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
                   <div className="flex items-center justify-between gap-2.5">
                     <div className="flex items-center gap-2 font-semibold text-[13px]">
-                      <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10.5px] font-semibold" style={{ background: 'rgba(255,255,255,.06)', color: dark ? '#a09b95' : '#706c68' }}>{(s.user?.name || '?')[0].toUpperCase()}</span>
+                      <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10.5px] font-semibold" style={{ background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)', color: t.textSoft }}>{(s.user?.name || '?')[0].toUpperCase()}</span>
                       {s.user?.name}
                     </div>
-                    <span className="inline-flex items-center gap-1.5 text-[11.5px] font-medium" style={{ color: dark ? '#a09b95' : '#706c68' }}>
+                    <span className="inline-flex items-center gap-1.5 text-[11.5px] font-medium" style={{ color: t.textSoft }}>
                       <span className="w-[5px] h-[5px] rounded-full" style={{ background: s.status === 'pending' ? '#fbbf24' : s.status === 'approved' ? '#6ee7b7' : '#fca5a5' }} />
                       {s.status[0].toUpperCase() + s.status.slice(1)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2.5 mt-2">
-                    <div className="flex items-center gap-2 text-[12.5px]" style={{ color: dark ? '#a09b95' : '#706c68' }}>
+                    <div className="flex items-center gap-2 text-[12.5px]" style={{ color: t.textSoft }}>
                       <PlatformIcon platform={s.task?.platform} size={20} />
                       {s.task?.title}
                     </div>
                     <span className="font-mono text-[13px] font-semibold shrink-0">₦{fmt((s.task?.reward || 0) / 100)}</span>
                   </div>
-                  <div className="flex items-center justify-between mt-1.5 text-[11px]" style={{ color: dark ? '#706c68' : '#8a8580' }}>
+                  <div className="flex items-center justify-between mt-1.5 text-[11px]" style={{ color: t.textMuted }}>
                     <span className="inline-flex items-center gap-1.5 truncate max-w-[60%]">
                       {s.proof?.startsWith('http') && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 14L21 3M15 3h6v6M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /></svg>}
                       {s.proof}
@@ -503,7 +504,7 @@ export default function AdminTasksPage({ dark, t }) {
                   </div>
                   {s.status === 'pending' && (
                     <div className="flex gap-1.5 mt-3">
-                      <button onClick={() => reviewSub(s.id, 'reject')} className="flex-1 h-[30px] rounded-lg text-[12px] font-semibold" style={{ border: `1px solid ${t.cardBorder}`, color: dark ? '#a09b95' : '#706c68' }}>Reject</button>
+                      <button onClick={() => reviewSub(s.id, 'reject')} className="flex-1 h-[30px] rounded-lg text-[12px] font-semibold" style={{ border: `1px solid ${t.cardBorder}`, color: t.textSoft }}>Reject</button>
                       <button onClick={() => reviewSub(s.id, 'approve')} className="flex-1 h-[30px] rounded-lg text-[12px] font-semibold" style={{ border: `1px solid ${t.cardBorder}`, color: '#6ee7b7' }}>Approve</button>
                     </div>
                   )}
@@ -513,20 +514,20 @@ export default function AdminTasksPage({ dark, t }) {
 
             {/* Pagination */}
             <div className="flex items-center gap-2.5 px-4 max-md:px-3 py-2.5 flex-wrap" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
-              <span className="text-[11.5px] mr-auto max-md:flex-[1_1_100%] max-md:order-3 max-md:mt-0.5" style={{ color: dark ? '#706c68' : '#8a8580' }}>{pageStart}–{pageEnd} of {subTotal}</span>
+              <span className="text-[11.5px] mr-auto max-md:flex-[1_1_100%] max-md:order-3 max-md:mt-0.5" style={{ color: t.textMuted }}>{pageStart}–{pageEnd} of {subTotal}</span>
               <div className="flex gap-[3px] items-center max-md:mr-auto">
-                <button disabled={subPage <= 1} onClick={() => setSubPage(p => p - 1)} className="min-w-[27px] h-[27px] px-1.5 rounded-[7px] text-[12px] font-semibold disabled:opacity-30" style={{ color: dark ? '#706c68' : '#8a8580' }}>‹</button>
+                <button disabled={subPage <= 1} onClick={() => setSubPage(p => p - 1)} className="min-w-[27px] h-[27px] px-1.5 rounded-[7px] text-[12px] font-semibold disabled:opacity-30" style={{ color: t.textMuted }}>‹</button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).filter(p => totalPages <= 7 || p <= 2 || p >= totalPages - 1 || Math.abs(p - subPage) <= 1).map((p, i, arr) => {
                   const prev = arr[i - 1];
                   const gap = prev && p - prev > 1;
                   return [
-                    gap && <span key={`d${p}`} className="text-[11px] px-0.5" style={{ color: dark ? '#706c68' : '#8a8580' }}>…</span>,
-                    <button key={p} onClick={() => setSubPage(p)} className="min-w-[27px] h-[27px] px-1.5 rounded-[7px] text-[12px] font-semibold" style={{ background: p === subPage ? 'rgba(196,125,142,.14)' : 'transparent', color: p === subPage ? t.accent : (dark ? '#706c68' : '#8a8580') }}>{p}</button>,
+                    gap && <span key={`d${p}`} className="text-[11px] px-0.5" style={{ color: t.textMuted }}>…</span>,
+                    <button key={p} onClick={() => setSubPage(p)} className="min-w-[27px] h-[27px] px-1.5 rounded-[7px] text-[12px] font-semibold" style={{ background: p === subPage ? 'rgba(196,125,142,.14)' : 'transparent', color: p === subPage ? t.accent : t.textMuted }}>{p}</button>,
                   ];
                 })}
-                <button disabled={subPage >= totalPages} onClick={() => setSubPage(p => p + 1)} className="min-w-[27px] h-[27px] px-1.5 rounded-[7px] text-[12px] font-semibold disabled:opacity-30" style={{ color: dark ? '#706c68' : '#8a8580' }}>›</button>
+                <button disabled={subPage >= totalPages} onClick={() => setSubPage(p => p + 1)} className="min-w-[27px] h-[27px] px-1.5 rounded-[7px] text-[12px] font-semibold disabled:opacity-30" style={{ color: t.textMuted }}>›</button>
               </div>
-              <select value={subPer} onChange={e => { setSubPer(+e.target.value); setSubPage(1); }} className="h-7 text-[11.5px] pl-2.5 pr-6 rounded-lg outline-none appearance-none" style={{ ...inputStyle, background: 'transparent', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23706c68' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}>
+              <select value={subPer} onChange={e => { setSubPer(+e.target.value); setSubPage(1); }} className="h-7 text-[11.5px] pl-2.5 pr-6 rounded-lg outline-none appearance-none" style={{ ...inputStyle, background: 'transparent', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}>
                 <option value="10">10 / page</option>
                 <option value="25">25 / page</option>
                 <option value="50">50 / page</option>
@@ -541,18 +542,16 @@ export default function AdminTasksPage({ dark, t }) {
         <div className="fixed inset-0 z-[1100] backdrop-blur-[4px] flex items-start justify-center overflow-y-auto py-10 px-4 max-md:py-3.5 max-md:px-2.5 animate-[modalFadeIn_.2s_ease]" style={{ background: 'rgba(0,0,0,.45)' }} onClick={e => { if (e.target === e.currentTarget) setModal(null); }}>
           <div className="w-full max-w-[560px] rounded-2xl p-6 max-md:p-4 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? '#0e1120' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}`, boxShadow: dark ? '0 20px 60px rgba(0,0,0,.4)' : '0 20px 60px rgba(0,0,0,.1)' }} onClick={e => e.stopPropagation()}>
             <h2 className="text-[15.5px] font-bold" style={{ color: t.text }}>{modal.mode === 'create' ? 'New Task' : 'Edit Task'}</h2>
-            <p className="text-[12px] mt-0.5 mb-5" style={{ color: dark ? '#706c68' : '#8a8580' }}>Platform, reward, proof, gates and limits — everything lives here.</p>
+            <p className="text-[12px] mt-0.5 mb-5" style={{ color: t.textMuted }}>Platform, reward, proof, gates and limits — everything lives here.</p>
 
-            {/* Platform grid */}
+            {/* Platform */}
             <div className="mb-[18px]">
-              <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: dark ? '#706c68' : '#8a8580' }}>Platform</label>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-1.5">
-                {PLATFORMS.map(p => (
-                  <button key={p.id} onClick={() => setForm(f => ({ ...f, platform: p.id }))} className="flex flex-col items-center gap-1.5 py-2 px-1 rounded-[10px] text-[9.5px] font-semibold transition-all" style={{ border: `1px solid ${form.platform === p.id ? t.accent : 'transparent'}`, color: form.platform === p.id ? t.text : (dark ? '#706c68' : '#8a8580'), background: form.platform === p.id ? 'rgba(196,125,142,.07)' : 'transparent' }}>
-                    <PlatformIcon platform={p.id} size={26} />
-                    <span>{p.name.split(' ')[0]}</span>
-                  </button>
-                ))}
+              <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Platform</label>
+              <div className="flex items-center gap-2.5">
+                <PlatformIcon platform={form.platform} size={28} />
+                <select value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))} className="flex-1 h-9 pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none font-[inherit]" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
+                  {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
               </div>
               {(form.platform === 'google' || form.platform === 'trustpilot') && (
                 <div className="text-[11px] mt-2 leading-snug" style={{ color: '#fbbf24', opacity: .85 }}>⚠ Paid reviews breach Google / Trustpilot policy — see the proposal doc before enabling.</div>
@@ -561,27 +560,27 @@ export default function AdminTasksPage({ dark, t }) {
 
             {/* Title */}
             <div className="mb-[18px]">
-              <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: dark ? '#706c68' : '#8a8580' }}>Task title</label>
+              <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Task title</label>
               <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none" style={inputStyle} />
             </div>
 
             {/* Instructions */}
             <div className="mb-[18px]">
-              <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: dark ? '#706c68' : '#8a8580' }}>Instructions shown to the user</label>
+              <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Instructions shown to the user</label>
               <textarea value={form.instructions} onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))} rows={3} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none resize-y leading-relaxed" style={inputStyle} />
             </div>
 
             {/* Category + Proof */}
             <div className="grid grid-cols-2 max-md:grid-cols-1 gap-3.5 mb-[18px]">
               <div>
-                <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: dark ? '#706c68' : '#8a8580' }}>Category</label>
-                <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="w-full h-9 pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23706c68' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
+                <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Category</label>
+                <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="w-full h-9 pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
                   {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: dark ? '#706c68' : '#8a8580' }}>Proof required</label>
-                <select value={form.proofType} onChange={e => setForm(f => ({ ...f, proofType: e.target.value }))} className="w-full h-9 pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23706c68' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
+                <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Proof required</label>
+                <select value={form.proofType} onChange={e => setForm(f => ({ ...f, proofType: e.target.value }))} className="w-full h-9 pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
                   {PROOF_TYPES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
                 </select>
               </div>
@@ -590,19 +589,19 @@ export default function AdminTasksPage({ dark, t }) {
             {/* Reward + Frequency */}
             <div className="grid grid-cols-2 max-md:grid-cols-1 gap-3.5 mb-[18px]">
               <div>
-                <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: dark ? '#706c68' : '#8a8580' }}>Reward (credit)</label>
+                <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Reward (credit)</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12.5px]" style={{ color: dark ? '#706c68' : '#8a8580' }}>₦</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12.5px]" style={{ color: t.textMuted }}>₦</span>
                   <input type="number" value={form.reward} onChange={e => setForm(f => ({ ...f, reward: e.target.value }))} className="w-full py-2 pl-6 pr-3 rounded-lg text-[13px] outline-none" style={inputStyle} />
                 </div>
-                <div className="text-[10.5px] mt-1 leading-snug" style={{ color: dark ? '#706c68' : '#8a8580' }}>Spend-only credit · real cost ≈ <span className="font-mono">₦{fmt(Math.round((parseFloat(form.reward) || 0) * 0.375))}</span></div>
+                <div className="text-[10.5px] mt-1 leading-snug" style={{ color: t.textMuted }}>Spend-only credit · real cost ≈ <span className="font-mono">₦{fmt(Math.round((parseFloat(form.reward) || 0) * 0.375))}</span></div>
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: dark ? '#706c68' : '#8a8580' }}>Frequency</label>
-                <select value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))} className="w-full h-9 pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23706c68' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
+                <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Frequency</label>
+                <select value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))} className="w-full h-9 pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
                   {FREQUENCIES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
                 </select>
-                <div className="text-[10.5px] mt-1 leading-snug" style={{ color: dark ? '#706c68' : '#8a8580' }}>Max per user / month: <input type="number" value={form.maxPerMonth} onChange={e => setForm(f => ({ ...f, maxPerMonth: e.target.value }))} className="w-[52px] py-0.5 px-1.5 rounded text-[11px] ml-1 outline-none" style={inputStyle} /></div>
+                <div className="text-[10.5px] mt-1 leading-snug" style={{ color: t.textMuted }}>Max per user / month: <input type="number" value={form.maxPerMonth} onChange={e => setForm(f => ({ ...f, maxPerMonth: e.target.value }))} className="w-[52px] py-0.5 px-1.5 rounded text-[11px] ml-1 outline-none" style={inputStyle} /></div>
               </div>
             </div>
 
@@ -610,20 +609,20 @@ export default function AdminTasksPage({ dark, t }) {
 
             {/* Requirements */}
             <div className="mb-[18px]">
-              <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: dark ? '#706c68' : '#8a8580' }}>Requirements <span className="normal-case tracking-normal font-medium">— leave 0 for none</span></label>
+              <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Requirements <span className="normal-case tracking-normal font-medium">— leave 0 for none</span></label>
               <div className="grid grid-cols-3 max-md:grid-cols-1 gap-3.5">
-                <div><input type="number" value={form.minViews} onChange={e => setForm(f => ({ ...f, minViews: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none" style={inputStyle} /><div className="text-[10.5px] mt-1" style={{ color: dark ? '#706c68' : '#8a8580' }}>Min views</div></div>
-                <div><input type="number" value={form.minFollowers} onChange={e => setForm(f => ({ ...f, minFollowers: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none" style={inputStyle} /><div className="text-[10.5px] mt-1" style={{ color: dark ? '#706c68' : '#8a8580' }}>Min followers</div></div>
-                <div><input type="number" value={form.keepDays} onChange={e => setForm(f => ({ ...f, keepDays: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none" style={inputStyle} /><div className="text-[10.5px] mt-1" style={{ color: dark ? '#706c68' : '#8a8580' }}>Keep live (days)</div></div>
+                <div><input type="number" value={form.minViews} onChange={e => setForm(f => ({ ...f, minViews: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none" style={inputStyle} /><div className="text-[10.5px] mt-1" style={{ color: t.textMuted }}>Min views</div></div>
+                <div><input type="number" value={form.minFollowers} onChange={e => setForm(f => ({ ...f, minFollowers: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none" style={inputStyle} /><div className="text-[10.5px] mt-1" style={{ color: t.textMuted }}>Min followers</div></div>
+                <div><input type="number" value={form.keepDays} onChange={e => setForm(f => ({ ...f, keepDays: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none" style={inputStyle} /><div className="text-[10.5px] mt-1" style={{ color: t.textMuted }}>Keep live (days)</div></div>
               </div>
             </div>
 
             {/* Monthly cap */}
             <div className="grid grid-cols-2 max-md:grid-cols-1 gap-3.5 mb-[18px]">
               <div>
-                <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: dark ? '#706c68' : '#8a8580' }}>Monthly approval cap</label>
+                <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Monthly approval cap</label>
                 <input type="number" value={form.monthlyCap} onChange={e => setForm(f => ({ ...f, monthlyCap: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none" style={inputStyle} />
-                <div className="text-[10.5px] mt-1" style={{ color: dark ? '#706c68' : '#8a8580' }}>0 = unlimited · global budget still applies</div>
+                <div className="text-[10.5px] mt-1" style={{ color: t.textMuted }}>0 = unlimited · global budget still applies</div>
               </div>
             </div>
 
@@ -631,37 +630,37 @@ export default function AdminTasksPage({ dark, t }) {
 
             {/* Toggles */}
             <div className="flex items-center justify-between gap-2.5 py-2.5">
-              <div><div className="text-[12.5px] font-semibold" style={{ color: t.text }}>Viral bonus</div><div className="text-[10.5px] mt-0.5" style={{ color: dark ? '#706c68' : '#8a8580' }}>Extra credit if the post crosses a bigger view mark</div></div>
-              <button onClick={() => setForm(f => ({ ...f, viralBonus: !f.viralBonus }))} className="relative w-8 h-[18px] rounded-full shrink-0 ml-1.5 transition-colors" style={{ background: form.viralBonus ? '#a3586b' : 'rgba(255,255,255,.1)' }}>
-                <span className="absolute top-[2.5px] left-[2.5px] w-[13px] h-[13px] rounded-full shadow-sm transition-transform" style={{ transform: form.viralBonus ? 'translateX(14px)' : 'translateX(0)', background: form.viralBonus ? '#fff' : '#7a756f' }} />
+              <div><div className="text-[12.5px] font-semibold" style={{ color: t.text }}>Viral bonus</div><div className="text-[10.5px] mt-0.5" style={{ color: t.textMuted }}>Extra credit if the post crosses a bigger view mark</div></div>
+              <button onClick={() => setForm(f => ({ ...f, viralBonus: !f.viralBonus }))} className="relative w-8 h-[18px] rounded-full shrink-0 ml-1.5 transition-colors" style={{ background: form.viralBonus ? '#a3586b' : (dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.12)') }}>
+                <span className="absolute top-[2.5px] left-[2.5px] w-[13px] h-[13px] rounded-full shadow-sm transition-transform" style={{ transform: form.viralBonus ? 'translateX(14px)' : 'translateX(0)', background: form.viralBonus ? '#fff' : (dark ? '#7a756f' : '#999') }} />
               </button>
             </div>
             {form.viralBonus && (
               <div className="grid grid-cols-2 max-md:grid-cols-1 gap-3.5 mb-1.5">
-                <div><label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: dark ? '#706c68' : '#8a8580' }}>Bonus threshold (views)</label><input type="number" value={form.viralThreshold} onChange={e => setForm(f => ({ ...f, viralThreshold: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none" style={inputStyle} /></div>
-                <div><label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: dark ? '#706c68' : '#8a8580' }}>Bonus amount</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12.5px]" style={{ color: dark ? '#706c68' : '#8a8580' }}>₦</span><input type="number" value={form.viralAmount} onChange={e => setForm(f => ({ ...f, viralAmount: e.target.value }))} className="w-full py-2 pl-6 pr-3 rounded-lg text-[13px] outline-none" style={inputStyle} /></div></div>
+                <div><label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Bonus threshold (views)</label><input type="number" value={form.viralThreshold} onChange={e => setForm(f => ({ ...f, viralThreshold: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none" style={inputStyle} /></div>
+                <div><label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Bonus amount</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12.5px]" style={{ color: t.textMuted }}>₦</span><input type="number" value={form.viralAmount} onChange={e => setForm(f => ({ ...f, viralAmount: e.target.value }))} className="w-full py-2 pl-6 pr-3 rounded-lg text-[13px] outline-none" style={inputStyle} /></div></div>
               </div>
             )}
 
             <div className="flex items-center justify-between gap-2.5 py-2.5">
-              <div><div className="text-[12.5px] font-semibold" style={{ color: t.text }}>Allow non-depositors</div><div className="text-[10.5px] mt-0.5" style={{ color: dark ? '#706c68' : '#8a8580' }}>Users with no deposit yet can still earn (₦500 redeem cap)</div></div>
-              <button onClick={() => setForm(f => ({ ...f, allowNonDepositors: !f.allowNonDepositors }))} className="relative w-8 h-[18px] rounded-full shrink-0 ml-1.5 transition-colors" style={{ background: form.allowNonDepositors ? '#a3586b' : 'rgba(255,255,255,.1)' }}>
-                <span className="absolute top-[2.5px] left-[2.5px] w-[13px] h-[13px] rounded-full shadow-sm transition-transform" style={{ transform: form.allowNonDepositors ? 'translateX(14px)' : 'translateX(0)', background: form.allowNonDepositors ? '#fff' : '#7a756f' }} />
+              <div><div className="text-[12.5px] font-semibold" style={{ color: t.text }}>Allow non-depositors</div><div className="text-[10.5px] mt-0.5" style={{ color: t.textMuted }}>Users with no deposit yet can still earn (₦500 redeem cap)</div></div>
+              <button onClick={() => setForm(f => ({ ...f, allowNonDepositors: !f.allowNonDepositors }))} className="relative w-8 h-[18px] rounded-full shrink-0 ml-1.5 transition-colors" style={{ background: form.allowNonDepositors ? '#a3586b' : (dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.12)') }}>
+                <span className="absolute top-[2.5px] left-[2.5px] w-[13px] h-[13px] rounded-full shadow-sm transition-transform" style={{ transform: form.allowNonDepositors ? 'translateX(14px)' : 'translateX(0)', background: form.allowNonDepositors ? '#fff' : (dark ? '#7a756f' : '#999') }} />
               </button>
             </div>
 
             <div className="flex items-center justify-between gap-2.5 py-2.5">
-              <div><div className="text-[12.5px] font-semibold" style={{ color: t.text }}>Active</div><div className="text-[10.5px] mt-0.5" style={{ color: dark ? '#706c68' : '#8a8580' }}>Visible on the task page right away</div></div>
-              <button onClick={() => setForm(f => ({ ...f, active: !f.active }))} className="relative w-8 h-[18px] rounded-full shrink-0 ml-1.5 transition-colors" style={{ background: form.active ? '#a3586b' : 'rgba(255,255,255,.1)' }}>
-                <span className="absolute top-[2.5px] left-[2.5px] w-[13px] h-[13px] rounded-full shadow-sm transition-transform" style={{ transform: form.active ? 'translateX(14px)' : 'translateX(0)', background: form.active ? '#fff' : '#7a756f' }} />
+              <div><div className="text-[12.5px] font-semibold" style={{ color: t.text }}>Active</div><div className="text-[10.5px] mt-0.5" style={{ color: t.textMuted }}>Visible on the task page right away</div></div>
+              <button onClick={() => setForm(f => ({ ...f, active: !f.active }))} className="relative w-8 h-[18px] rounded-full shrink-0 ml-1.5 transition-colors" style={{ background: form.active ? '#a3586b' : (dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.12)') }}>
+                <span className="absolute top-[2.5px] left-[2.5px] w-[13px] h-[13px] rounded-full shadow-sm transition-transform" style={{ transform: form.active ? 'translateX(14px)' : 'translateX(0)', background: form.active ? '#fff' : (dark ? '#7a756f' : '#999') }} />
               </button>
             </div>
 
             {/* Footer */}
             <div className="flex gap-1.5 items-center justify-end pt-4 mt-1" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
               {modal.mode === 'edit' && <button onClick={deleteTask} className="mr-auto text-[13px] font-semibold" style={{ color: '#fca5a5', opacity: .85 }}>Delete</button>}
-              <button onClick={() => setModal(null)} className="h-[34px] px-4 rounded-[9px] text-[13px] font-semibold" style={{ color: dark ? '#a09b95' : '#706c68' }}>Cancel</button>
-              <button onClick={saveTask} disabled={saving || !form.title.trim()} className="h-[34px] px-4 rounded-[9px] text-[13px] font-semibold" style={{ background: t.accent, color: '#14060a', opacity: saving || !form.title.trim() ? .5 : 1 }}>{saving ? 'Saving...' : 'Save task'}</button>
+              <button onClick={() => setModal(null)} className="h-[34px] px-4 rounded-[9px] text-[13px] font-semibold" style={{ color: t.textSoft }}>Cancel</button>
+              <button onClick={saveTask} disabled={saving || !form.title.trim()} className="h-[34px] px-4 rounded-[9px] text-[13px] font-semibold border-none cursor-pointer font-[inherit]" style={{ background: 'linear-gradient(135deg,#c47d8e,#8b5e6b)', color: '#fff', opacity: saving || !form.title.trim() ? .5 : 1 }}>{saving ? 'Saving...' : 'Save task'}</button>
             </div>
           </div>
         </div>
