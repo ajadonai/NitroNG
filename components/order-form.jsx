@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from "react";
 import { BONUS_PRESETS, bonusForNaira } from "../lib/welcome-bonus";
-import { calculateOrderPrice, formatOrderQuantity, getDripSchedule, LINK_EXAMPLES, LINK_HINTS, MULTIDAY_THRESHOLD, validateOrderLink } from "../lib/order-form-core";
+import { calculateOrderPrice, formatOrderQuantity, getDripSchedule, getLinkPlaceholder, LINK_EXAMPLES, LINK_HINTS, MULTIDAY_THRESHOLD, validateOrderLink } from "../lib/order-form-core";
 import NitroLoader from "./nitro-loader";
 
 const TRAFFIC_DEVICES = [
@@ -116,7 +116,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays|watch.?time/i.test(svcName) && !isProfileSvc && !isChannelSvc;
 
   const isCommentLikeSvc = svcName.includes("comment like") || svcName.includes("likes (comments)");
-  const linkPlaceholder = (LINK_EXAMPLES[platform] ? (isCommentLikeSvc ? LINK_EXAMPLES[platform].commentLike?.[0] : isPostSvc ? LINK_EXAMPLES[platform].post?.[0] : isChannelSvc ? (LINK_EXAMPLES[platform].channel?.[0] || LINK_EXAMPLES[platform].profile?.[0]) : isProfileSvc ? LINK_EXAMPLES[platform].profile?.[0] : null) : null) || LINK_HINTS[platform] || `${platform}.com/...`;
+  const linkPlaceholder = getLinkPlaceholder(platform, svcName);
   const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
 
   return (

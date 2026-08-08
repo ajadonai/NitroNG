@@ -37,6 +37,8 @@ function PwStrength({ pw, dark }) {
 }
 
 
+function CountUp({value,duration=1500}){const[display,setDisplay]=useState("0");const rafRef=useRef(null);useEffect(()=>{if(value==null)return;if(rafRef.current)cancelAnimationFrame(rafRef.current);const str=String(value);const m=str.match(/^([\d.]+)(.*)$/);if(!m){setDisplay(str);return;}const target=parseFloat(m[1]);const suffix=m[2];const dec=m[1].includes(".");if(target===0){setDisplay("0"+suffix);return;}const start=performance.now();const step=now=>{const p=Math.min((now-start)/duration,1);const e=1-Math.pow(1-p,3);const n=e*target;setDisplay((dec?n.toFixed(1):String(Math.round(n)))+suffix);if(p<1)rafRef.current=requestAnimationFrame(step);};rafRef.current=requestAnimationFrame(step);return()=>{if(rafRef.current)cancelAnimationFrame(rafRef.current);};},[value,duration]);return display;}
+
 function LandingInner({ initialAuthQuery }){
   const { dark, toggleTheme, t: baseT } = useTheme();
 
@@ -66,7 +68,7 @@ function LandingInner({ initialAuthQuery }){
   const [scrolled,setScrolled]=useState(false);
   const [activeSection,setActiveSection]=useState(0);
   const scrollRef=useRef(null);
-  const [siteStats,setSiteStats]=useState({users:"2.3K",orders:"20K+"});
+  const [siteStats,setSiteStats]=useState({users:null,orders:null,deliveryRate:0,processing:0});
   const [siteAlerts,setSiteAlerts]=useState([]);
   const [socialLinks,setSocialLinks]=useState({});
   const [pricingData,setPricingData]=useState(null);
@@ -210,11 +212,11 @@ function LandingInner({ initialAuthQuery }){
               <p className="text-base max-md:text-[13px] font-normal max-w-[460px] max-desktop:max-w-[480px] max-md:max-w-[300px] mb-6 max-desktop:mb-5 max-md:mb-4 leading-[1.65] max-md:leading-[1.55] max-desktop:text-center" style={{color:t.heroSoft}}>Nigeria's fastest content promotion platform with the cleanest dashboard.<br/>Fast results across {siteStats.platforms?`${siteStats.platforms}+`:"140+"} service types.<br/>Naira pricing. Human support.</p>
 
               {/* Stats — desktop/tablet only (inside mobile card below) */}
-              {siteStats.processing>0&&<div className="fu fd3 flex items-center gap-2 max-md:!hidden mb-2.5 max-desktop:justify-center" style={{color:dark?"rgba(255,255,255,.5)":"rgba(255,255,255,.7)"}}><span className="relative flex h-[6px] w-[6px]"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#34d399] opacity-75"/><span className="relative inline-flex rounded-full h-[6px] w-[6px] bg-[#34d399]"/></span><span className="text-[12px] font-medium">Live activity: <span className="m font-semibold" style={{color:dark?"#f5f3f0":"#fff"}}>{siteStats.processing}</span></span></div>}
+              {siteStats.processing!=null&&<div className="fu fd3 flex items-center gap-2 max-md:!hidden mb-2.5 max-desktop:justify-center" style={{color:dark?"rgba(255,255,255,.5)":"rgba(255,255,255,.7)"}}><span className="relative flex h-[6px] w-[6px]"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#34d399] opacity-75"/><span className="relative inline-flex rounded-full h-[6px] w-[6px] bg-[#34d399]"/></span><span className="text-[12px] font-medium">Live activity: <span className="m font-semibold" style={{color:dark?"#f5f3f0":"#fff"}}><CountUp value={siteStats.processing}/></span></span></div>}
               <div className="fu fd3 flex gap-2.5 max-md:!hidden mb-7 w-full max-w-[460px] max-desktop:max-w-[400px] max-desktop:justify-center">
                 {[[siteStats.orders||"0","Orders\nplaced",false],[siteStats.users||"0","Accounts\ncreated",false],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,"Delivery\nbenchmark",true]]:[])].map(([num,label,accent],i)=>
                   <div key={i} className="flex-1 py-3.5 px-2.5 max-md:py-3 max-md:px-1.5 rounded-xl max-md:rounded-[10px] text-center" style={{background:accent?(dark?"rgba(196,125,142,.12)":"rgba(255,255,255,.24)"):(dark?"rgba(255,255,255,.12)":"rgba(255,255,255,.18)"),border:`1px solid ${accent?(dark?"rgba(196,125,142,.18)":"rgba(255,255,255,.28)"):(dark?"rgba(255,255,255,.16)":"rgba(255,255,255,.19)")}`}}>
-                    <div className="text-xl max-md:text-lg font-bold mb-0.5" style={{color:accent?(dark?t.accent:"#fff"):t.heroText}}>{num}</div>
+                    <div className="text-xl max-md:text-lg font-bold mb-0.5" style={{color:accent?(dark?t.accent:"#fff"):t.heroText}}><CountUp value={num}/></div>
                     <div className="text-[10px] max-md:text-[9px] font-medium uppercase tracking-[.5px] leading-[1.3]" style={{color:dark?"rgba(255,255,255,.5)":"rgba(255,255,255,.6)",whiteSpace:"pre-line"}}>{label}</div>
                   </div>
                 )}
@@ -230,11 +232,11 @@ function LandingInner({ initialAuthQuery }){
               <div className="fu fd4 hidden max-desktop:!flex max-desktop:flex-col max-desktop:items-center max-desktop:mt-4 max-md:mt-3 w-full max-md:max-w-full relative z-[2]">
                 <div className="w-full max-w-[380px] max-md:max-w-full rounded-[18px] backdrop-blur-[20px]" style={{background:dark?"rgba(17,22,40,0.92)":"rgba(255,255,255,0.92)",border:`1px solid ${dark?"rgba(255,255,255,.12)":"rgba(0,0,0,.08)"}`,boxShadow:dark?"0 20px 60px rgba(0,0,0,0.5)":"0 20px 60px rgba(0,0,0,.16)"}}>
                   <div className="px-5 pt-4 pb-3 max-md:px-4">
-                    {siteStats.processing>0&&<div className="flex items-center justify-center gap-1.5 mb-2.5" style={{color:dark?"rgba(255,255,255,.45)":"rgba(0,0,0,.4)"}}><span className="relative flex h-[5px] w-[5px]"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#34d399] opacity-75"/><span className="relative inline-flex rounded-full h-[5px] w-[5px] bg-[#34d399]"/></span><span className="text-[11px] font-medium">Live activity: <span className="m font-semibold" style={{color:dark?"#eae7e2":"#1a1a1a"}}>{siteStats.processing}</span></span></div>}
+                    {siteStats.processing!=null&&<div className="flex items-center justify-center gap-1.5 mb-2.5" style={{color:dark?"rgba(255,255,255,.45)":"rgba(0,0,0,.4)"}}><span className="relative flex h-[5px] w-[5px]"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#34d399] opacity-75"/><span className="relative inline-flex rounded-full h-[5px] w-[5px] bg-[#34d399]"/></span><span className="text-[11px] font-medium">Live activity: <span className="m font-semibold" style={{color:dark?"#eae7e2":"#1a1a1a"}}><CountUp value={siteStats.processing}/></span></span></div>}
                     <div className="flex gap-2 mb-3">
                       {[[siteStats.orders||"0","Orders placed"],[siteStats.users||"0","Accounts"],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,"Benchmark"]]:[])].map(([num,label],i)=>
                         <div key={i} className="flex-1 py-2 rounded-lg text-center" style={{background:dark?"rgba(255,255,255,.06)":"rgba(0,0,0,.03)",border:`1px solid ${dark?"rgba(255,255,255,.08)":"rgba(0,0,0,.06)"}`}}>
-                          <div className="text-[14px] font-bold" style={{color:dark?"#eae7e2":"#1a1a1a"}}>{num}</div>
+                          <div className="text-[14px] font-bold" style={{color:dark?"#eae7e2":"#1a1a1a"}}><CountUp value={num}/></div>
                           <div className="text-[9px] font-medium uppercase tracking-[.5px]" style={{color:dark?"rgba(255,255,255,.4)":"rgba(0,0,0,.4)"}}>{label}</div>
                         </div>
                       )}
@@ -256,7 +258,7 @@ function LandingInner({ initialAuthQuery }){
               {/* Trust signals — desktop/tablet only (moved into mobile card above) */}
               <div className="fu fd4 hero-guarantee flex max-md:!hidden items-center gap-[6px] mt-3.5 text-xs flex-wrap" style={{color:dark?"rgba(244,241,237,.3)":"rgba(255,255,255,.6)"}}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                {siteStats.users||"2.3K"}+ Nitro accounts created
+                <CountUp value={siteStats.users||"0"}/>+ Nitro accounts created
                 {socialLinks.social_whatsapp_support&&<><span style={{margin:"0 2px",opacity:.4}}>{"·"}</span><a href={`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-[5px] no-underline transition-opacity duration-200 hover:opacity-100" style={{color:dark?"rgba(37,211,102,.55)":"rgba(37,211,102,.8)",opacity:.85}}><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>We reply fast on WhatsApp</a></>}
               </div>
             </div>

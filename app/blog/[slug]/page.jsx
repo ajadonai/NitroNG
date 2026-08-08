@@ -72,6 +72,7 @@ const META_TITLE_OVERRIDES = {
   'how-nigerian-creators-get-paid-from-abroad': 'How Nigerian Creators Get Paid from Abroad',
   'smm-panel-scams-nigeria-red-flags': 'SMM Panel Scams in Nigeria: Red Flags',
   'best-smm-panel-nigeria': 'Best SMM Panel in Nigeria: What to Look For',
+  'mass-order-smm-panel-nigeria': 'Mass Order on SMM Panels: Old Way vs Better Way',
 };
 
 function metaTitleFor(slug, dbTitle) {
@@ -213,6 +214,20 @@ async function renderPost(slug) {
     }
   }
 
+  // Prev / next by publish date (excludes Help)
+  const [prevPost, nextPost] = await Promise.all([
+    q(() => prisma.blogPost.findFirst({
+      where: { published: true, NOT: { category: 'Help' }, createdAt: { lt: post.createdAt } },
+      orderBy: { createdAt: 'desc' },
+      select: { slug: true, title: true },
+    })),
+    q(() => prisma.blogPost.findFirst({
+      where: { published: true, NOT: { category: 'Help' }, createdAt: { gt: post.createdAt } },
+      orderBy: { createdAt: 'asc' },
+      select: { slug: true, title: true },
+    })),
+  ]);
+
   const articleSchema = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -246,7 +261,7 @@ async function renderPost(slug) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }} />
-      <BlogPostView post={serialized} related={related} />
+      <BlogPostView post={serialized} related={related} prev={prevPost} next={nextPost} />
     </>
   );
 }

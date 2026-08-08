@@ -138,7 +138,7 @@ describe('blog HTML sanitisation', () => {
     it('renders Markdown before sanitising the final HTML', () => {
       const result = renderBlogContent('## Heading\n\nSome **bold** text.');
 
-      expect(result).toContain('<h2>Heading</h2>');
+      expect(result).toContain('<h2 id="sec-1">Heading</h2>');
       expect(result).toContain('<strong>bold</strong>');
     });
 
@@ -155,7 +155,7 @@ describe('blog HTML sanitisation', () => {
       const result = renderBlogContent(legacy);
 
       expect(getBlogContentFormat(legacy)).toBe('html');
-      expect(result).toContain('<h2>Existing guide</h2>');
+      expect(result).toContain('<h2 id="sec-1">Existing guide</h2>');
       expect(result).toContain('<p>Useful text</p>');
       expect(result).not.toContain('onclick');
       expect(result).not.toContain('<script');

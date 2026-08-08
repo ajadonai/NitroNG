@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback, forwardRef } from "react";
 import { trackViewContent } from "./capi-tracker";
 import { fN } from "../lib/format";
-import { formatOrderQuantity as fQty, isValidLink, LINK_HINTS } from "../lib/order-form-core";
+import { formatOrderQuantity as fQty, isValidLink, getLinkPlaceholder } from "../lib/order-form-core";
 import { useToast } from "./toast";
 import { SegPill } from "./seg-pill";
 import InlineAlert from "./inline-alert";
@@ -1500,7 +1500,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
               <div className="flex gap-2 items-center mb-2.5">
                 <div className="flex rounded-lg overflow-hidden flex-1 min-w-0" style={{ border: `1px solid ${badLink ? (dark ? "#fca5a5" : "#dc2626") : emptyLink ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)")}`, background: emptyLink ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)") : (dark ? "#0f1322" : "#fff") }}>
                   <span className="inline-flex items-center px-2.5 text-[11px] font-semibold shrink-0 select-none" style={{ borderRight: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.textMuted }}>https://</span>
-                  <input aria-label="Link" disabled={loading} placeholder={LINK_HINTS[row.platform] || `${row.platform}.com/...`} value={row.link} onChange={e => updateRow(idx, { link: e.target.value.replace(/^https?:\/\//i, "") })} className="flex-1 py-2 px-2.5 text-[12px] outline-none min-w-0 font-[JetBrains_Mono,monospace] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
+                  <input aria-label="Link" disabled={loading} placeholder={getLinkPlaceholder(row.platform, row.name)} value={row.link} onChange={e => updateRow(idx, { link: e.target.value.replace(/^https?:\/\//i, "") })} className="flex-1 py-2 px-2.5 text-[12px] outline-none min-w-0 font-[JetBrains_Mono,monospace] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
                 </div>
                 <input aria-label="Quantity" disabled={loading} type="number" min={1} step="1" value={row.qty} onChange={e => { const v = Math.min(row.max, Math.floor(Number(e.target.value)) || 0); updateRow(idx, { qty: v }); }} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="w-[76px] py-2 px-2.5 rounded-lg border border-solid text-[12px] font-medium text-right outline-none shrink-0 font-[JetBrains_Mono,monospace] disabled:opacity-50" style={{ background: dark ? "#0f1322" : "#fff", borderColor: qtyBad ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"), color: t.text }} />
               </div>

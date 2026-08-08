@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useToast } from "./toast";
 import { fN } from "../lib/format";
+import { getLinkPlaceholder } from "../lib/order-form-core";
 import { distributeByCurve } from "../lib/drip-feed";
 import { cleanLink } from "@/lib/clean-link";
 
@@ -538,7 +539,7 @@ export function AdminCreateOrderPage({ dark, t }) {
             <span style={lab}>Link</span>
             <div style={{ display: "flex", borderRadius: 10, overflow: "hidden", border: `1px solid ${link && linkValid === false ? (dark ? "#f87171" : "#dc2626") : !link ? t.accent : (dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.14)")}`, background: !link ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)") : (dark ? "rgba(19,23,40,1)" : "#fff"), transition: "border-color .15s" }}>
               <span style={{ display: "inline-flex", alignItems: "center", padding: "0 10px", fontSize: 13, fontWeight: 600, color: t.textMuted, borderRight: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, userSelect: "none", flexShrink: 0, fontFamily: "'JetBrains Mono', monospace" }}>https://</span>
-              <input value={link} onChange={e => setLink(e.target.value.replace(/^https?:\/\//i, "").trim())} onBlur={() => { if (link) setLink(cleanLink(fullLink(link)).replace(/^https?:\/\//i, "")); }} placeholder={platform ? ({"Instagram":"instagram.com/username","TikTok":"tiktok.com/@username","YouTube":"youtube.com/@channel","Twitter":"x.com/username","Facebook":"facebook.com/share/ABC123"}[platform] || "paste link here") : "paste link here"} style={{ ...inpM, border: "none", borderRadius: 0, flex: 1 }} />
+              <input value={link} onChange={e => setLink(e.target.value.replace(/^https?:\/\//i, "").trim())} onBlur={() => { if (link) setLink(cleanLink(fullLink(link)).replace(/^https?:\/\//i, "")); }} placeholder={platform ? getLinkPlaceholder(platform.toLowerCase(), selectedGroup?.name || "") : "paste link here"} style={{ ...inpM, border: "none", borderRadius: 0, flex: 1 }} />
             </div>
             {link && linkValid === false && <div style={{ fontSize: 11, color: dark ? "#f87171" : "#dc2626", marginTop: 4 }}>Enter a valid URL — e.g. instagram.com/username</div>}
           </div>
