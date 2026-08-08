@@ -334,6 +334,8 @@ export async function generateMetadata({ params }) {
   };
 }
 
+function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
 async function getPlatformData(platformName, dbPlatform) {
   const groups = await prisma.serviceGroup.findMany({
     where: { enabled: true, platform: dbPlatform || platformName },
@@ -348,10 +350,20 @@ async function getPlatformData(platformName, dbPlatform) {
 
   if (!groups.length) return null;
 
+  const prefixes = [escapeRe(platformName)];
+  if (dbPlatform && dbPlatform !== platformName) {
+    prefixes.push(escapeRe(dbPlatform));
+    if (dbPlatform.includes('/')) {
+      prefixes.push(escapeRe(dbPlatform.split('/').reverse().join('/')));
+    }
+  }
+  prefixes.sort((a, b) => b.length - a.length);
+  const stripRe = new RegExp(`^(?:${prefixes.join('|')})[/\\s]*`, 'i');
+
   const services = [];
   for (const g of groups) {
     if (!g.tiers.length) continue;
-    const type = g.name.replace(new RegExp(`^${platformName}\\s*`, 'i'), '').trim() || g.type || g.name;
+    const type = g.name.replace(stripRe, '').trim() || g.type || g.name;
     if (!services.find(s => s.type === type)) {
       services.push({
         type,
@@ -400,6 +412,7 @@ export default async function PlatformPage({ params }) {
   } : null;
 
   const relatedLinks = [
+    { href: '/services', label: 'All platforms' },
     { href: '/quality', label: 'How Nitro keeps drop rates low' },
     { href: '/blog/why-smm-followers-drop-how-to-avoid-it', label: 'Why SMM followers drop (and how to avoid it)' },
     { href: '/reviews', label: 'What using Nitro is actually like' },

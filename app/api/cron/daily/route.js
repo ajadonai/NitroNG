@@ -566,7 +566,10 @@ export async function GET(req) {
   }
 
   // ═══ OUTREACH: multi-touch WhatsApp activation + winback ═══
-  // Paused until 1 Aug 2026 — remove this gate once live
+  // TG queue is OFF for day1/3/7/winback until the new hire + Ify start together.
+  // Flip this to true to re-enable the Telegram queue for manual WhatsApp sending.
+  // First Deposit / First Order alerts are event-triggered elsewhere — not affected.
+  const TG_QUEUE_LIVE = false;
   const outreachLive = new Date() >= new Date('2026-08-01T00:00:00Z');
   const noDeposit = { transactions: { none: { type: 'deposit', status: 'Completed' } }, orders: { none: {} } };
   const outreachTouches = [
@@ -590,11 +593,15 @@ export async function GET(req) {
           take: 200,
         });
         if (batch.length > 0) {
-          await tgOutreach(batch, touch.key, { label: touch.label });
+          if (TG_QUEUE_LIVE) {
+            await tgOutreach(batch, touch.key, { label: touch.label });
+          }
+          const stampDate = new Date();
           for (const u of batch) {
+            prisma.user.update({ where: { id: u.id }, data: { [touch.field]: stampDate } }).catch(() => {});
             ifySendOutreach({ user: u, trigger: touch.key }).catch(() => {});
           }
-          log.info('Outreach', `${touch.key}: sent ${batch.length}`);
+          log.info('Outreach', `${touch.key}: stamped ${batch.length}${TG_QUEUE_LIVE ? ' + TG' : ''}`);
         }
         results[`outreach_${touch.key}`] = { sent: batch.length };
       } catch (err) {
@@ -633,12 +640,16 @@ export async function GET(req) {
           const credit = u.bonusCredits?.[0]?.amountGranted;
           if (credit) creditMap.set(u.id, credit / 100);
         });
-        await tgOutreach(winbackBatch, 'winback', { label: 'Winback — 30 days inactive', creditMap });
+        if (TG_QUEUE_LIVE) {
+          await tgOutreach(winbackBatch, 'winback', { label: 'Winback — 30 days inactive', creditMap });
+        }
+        const stampDate = new Date();
         for (const u of winbackBatch) {
           const creditNaira = creditMap.get(u.id) || 0;
+          prisma.user.update({ where: { id: u.id }, data: { outreachWinbackSentAt: stampDate } }).catch(() => {});
           ifySendOutreach({ user: u, trigger: 'winback', extra: { creditNaira } }).catch(() => {});
         }
-        log.info('Outreach', `winback: sent ${winbackBatch.length}`);
+        log.info('Outreach', `winback: stamped ${winbackBatch.length}${TG_QUEUE_LIVE ? ' + TG' : ''}`);
       }
       results.outreach_winback = { sent: winbackBatch.length };
     } catch (err) {

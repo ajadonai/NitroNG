@@ -73,6 +73,7 @@ const META_TITLE_OVERRIDES = {
   'smm-panel-scams-nigeria-red-flags': 'SMM Panel Scams in Nigeria: Red Flags',
   'best-smm-panel-nigeria': 'Best SMM Panel in Nigeria: What to Look For',
   'mass-order-smm-panel-nigeria': 'Mass Order on SMM Panels: Old Way vs Better Way',
+  'creator-economy-index-edition-one': "Nigeria's Creator Economy Runs on ₦1,000: 2026 Data Report",
 };
 
 function metaTitleFor(slug, dbTitle) {
@@ -103,13 +104,12 @@ export async function generateMetadata({ params }) {
 
   const post = await q(() => prisma.blogPost.findFirst({
     where: { slug, published: true },
-    select: { title: true, excerpt: true, authorName: true, createdAt: true, updatedAt: true },
+    select: { title: true, excerpt: true, thumbnail: true, authorName: true, createdAt: true, updatedAt: true },
   }));
   if (!post) return {};
 
   const description = post.excerpt || post.title;
-
-  return {
+  const meta = {
     title: metaTitleFor(slug, post.title),
     description,
     alternates: { canonical: `https://nitro.ng/blog/${slug}` },
@@ -128,6 +128,13 @@ export async function generateMetadata({ params }) {
       description,
     },
   };
+
+  if (post.thumbnail) {
+    const imgUrl = `https://nitro.ng${post.thumbnail}`;
+    meta.twitter.images = [imgUrl];
+  }
+
+  return meta;
 }
 
 
@@ -184,6 +191,72 @@ async function renderCategory(slug, cat) {
 }
 
 
+const DATASET_META = {
+  'creator-economy-index-edition-one': {
+    name: 'The Nitro NG Creator Economy Index, Edition One',
+    alternateName: 'Nigeria Creator Economy Index 2026, Edition One',
+    version: '1',
+    description: 'Aggregated and anonymised order data from 15,345 social media promotion orders placed by 4,773 Nigerian creators and small businesses between May and August 2026, covering spend by platform, service tier mix, repeat purchase rate and the price premium for targeted Nigerian engagement.',
+    datePublished: '2026-08-07',
+    temporalCoverage: '2026-05-01/2026-08-07',
+    csv: '/data/creator-economy-index-edition-one.csv',
+    variables: [
+      { name: 'Orders processed', value: 15345 },
+      { name: 'Registered users', value: 4773 },
+      { name: 'Average order value', value: 1195, unitText: 'NGN' },
+      { name: 'Order completion rate', value: 91, unitText: '%', unitCode: 'P1' },
+      { name: 'Repeat purchase rate', value: 66.4, unitText: '%', unitCode: 'P1' },
+      { name: 'Instagram share of orders', value: 66, unitText: '%', unitCode: 'P1' },
+      { name: 'Average YouTube order value', value: 6336, unitText: 'NGN' },
+      { name: 'Nigerian targeted follower price per 1,000', value: 17205, unitText: 'NGN' },
+      { name: 'Untargeted follower price per 1,000', value: 3818, unitText: 'NGN' },
+    ],
+  },
+};
+
+function buildDatasetSchema(slug, post) {
+  const d = DATASET_META[slug];
+  if (!d) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Dataset',
+    '@id': `https://nitro.ng/blog/${slug}#dataset`,
+    name: d.name,
+    alternateName: d.alternateName,
+    version: d.version,
+    description: d.description,
+    url: `https://nitro.ng/blog/${slug}`,
+    keywords: [
+      'Nigeria creator economy',
+      'social media marketing spend Nigeria',
+      'creator economy data',
+      'Instagram Nigeria',
+      'TikTok Nigeria',
+      'influencer marketing Nigeria',
+    ],
+    license: 'https://creativecommons.org/licenses/by/4.0/',
+    isAccessibleForFree: true,
+    creator: { '@type': 'Organization', name: 'The Nitro NG', url: 'https://nitro.ng' },
+    publisher: { '@type': 'Organization', name: 'The Nitro NG', url: 'https://nitro.ng' },
+    datePublished: d.datePublished,
+    dateModified: post.updatedAt.toISOString(),
+    temporalCoverage: d.temporalCoverage,
+    spatialCoverage: { '@type': 'Place', name: 'Nigeria' },
+    distribution: {
+      '@type': 'DataDownload',
+      encodingFormat: 'text/csv',
+      contentUrl: `https://nitro.ng${d.csv}`,
+    },
+    variableMeasured: d.variables.map(v => ({
+      '@type': 'PropertyValue',
+      name: v.name,
+      value: v.value,
+      ...(v.unitText && { unitText: v.unitText }),
+      ...(v.unitCode && { unitCode: v.unitCode }),
+    })),
+  };
+}
+
 async function renderPost(slug) {
   const [post, liveValues] = await Promise.all([
     q(() => prisma.blogPost.findFirst({ where: { slug, published: true } })),
@@ -231,6 +304,7 @@ async function renderPost(slug) {
   const articleSchema = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
+    "@id": `https://nitro.ng/blog/${slug}#article`,
     headline: post.title,
     description: post.excerpt || post.title,
     ...(post.thumbnail && { image: `https://nitro.ng${post.thumbnail}` }),
@@ -251,6 +325,8 @@ async function renderPost(slug) {
     ],
   };
 
+  const datasetSchema = slug.startsWith('creator-economy-index-') ? buildDatasetSchema(slug, post) : null;
+
   const serialized = {
     ...post,
     createdAt: post.createdAt.toISOString(),
@@ -261,6 +337,7 @@ async function renderPost(slug) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }} />
+      {datasetSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(datasetSchema) }} />}
       <BlogPostView post={serialized} related={related} prev={prevPost} next={nextPost} />
     </>
   );

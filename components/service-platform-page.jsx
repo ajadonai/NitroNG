@@ -116,7 +116,7 @@ function ServicePlatformInner({ platform, services, copy, nextPlatform, relatedL
               {[
                 ['1', 'Create a free account', 'Sign up in seconds — no card required. Just an email or Google account.'],
                 ['2', 'Fund your wallet', 'Add funds via bank transfer, card, or crypto. Minimum ₦1,000.'],
-                ['3', 'Place your order', `Choose a ${platform} service, paste your link, pick a tier, and confirm. Results start within minutes.`],
+                ['3', 'Place your order', `Choose ${/^[aeiou]/i.test(platform) || platform === 'X' ? 'an' : 'a'} ${platform} service, paste your link, pick a tier, and confirm. Results start within minutes.`],
               ].map(([num, title, desc]) => (
                 <div key={num} className="p-5 rounded-xl" style={{ background: cardBg, border: `1px solid ${border}` }}>
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[12px] font-bold mb-3" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)", color: accent }}>{num}</div>
