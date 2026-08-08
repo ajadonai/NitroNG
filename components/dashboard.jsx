@@ -110,6 +110,7 @@ const LeaderboardCard = dynamic(() => import("./leaderboard-page").then(m => m.L
 const EarnPage = dynamic(() => import("./earn-page").then(m => m.default), { ssr: false });
 const ResellerLabPage = dynamic(() => import("./reseller-lab-page").then(m => m.ResellerLabDashboard), { ssr: false });
 const ResellerLabSidebar = dynamic(() => import("./reseller-lab-page").then(m => m.ResellerLabSidebar), { ssr: false });
+const TasksPage = dynamic(() => import("./tasks-page").then(m => m.default), { ssr: false });
 
 /* ═══════════════════════════════════════════ */
 /* ═══ SVG ICONS                          ═══ */
@@ -126,6 +127,7 @@ const I = {
   support: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
   settings: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
   earn: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M15.5 9.5c0-1.38-1.57-2.5-3.5-2.5s-3.5 1.12-3.5 2.5S10.07 12 12 12s3.5 1.12 3.5 2.5-1.57 2.5-3.5 2.5-3.5-1.12-3.5-2.5"/></svg>,
+  tasks: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg>,
   lab: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 3h6v7l5 8a1 1 0 01-.85 1.52H4.85A1 1 0 014 18l5-8V3z"/><line x1="9" y1="3" x2="15" y2="3"/></svg>,
   changelog: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>,
   leaderboard: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg>,
@@ -142,6 +144,7 @@ const NAV_ITEMS = [
   { id: "guide", label: "Blog" },
   { id: "changelog", label: "What's New", href: "/changelog" },
   { id: "referrals", label: "Referrals" },
+  { id: "tasks", label: "Tasks" },
   { id: "support", label: "Support" },
   { id: "settings", label: "Settings" },
 ];
@@ -155,6 +158,7 @@ const BOTTOM_TABS = [
 ];
 const MORE_ITEMS = [
   { id: "referrals", label: "Referrals" },
+  { id: "tasks", label: "Tasks" },
   { id: "guide", label: "Blog" },
   { id: "changelog", label: "What's New", href: "/changelog" },
   { id: "support", label: "Support" },
@@ -628,6 +632,7 @@ function DashboardInner({ initialData }) {
   const isCleanup = active === "cleanup";
   const isEarn = active === "earn";
   const isLab = active === "lab";
+  const isTasks = active === "tasks";
   const noHasOrder = noSelSvc && noSelTier;
 
   // Trigger order tour on first visit to services page
@@ -1075,6 +1080,8 @@ function DashboardInner({ initialData }) {
         return <WaitlistPage feature="audit" dark={dark} t={t} />;
       case "cleanup":
         return <WaitlistPage feature="cleanup" dark={dark} t={t} />;
+      case "tasks":
+        return <TasksPage dark={dark} t={t} />;
       case "lab":
         return <ResellerLabPage dark={dark} t={t} onNavigate={setActive} />;
       default:
@@ -1159,12 +1166,14 @@ function DashboardInner({ initialData }) {
               {NAV_ITEMS.map((item, i) => {
                 const processingCount = item.id === "orders" ? orderSummary.active : 0;
                 const isSupportItem = item.id === "support";
+                const isTasksItem = item.id === "tasks";
                 const isActive = active === item.id;
+                const specialClr = isSupportItem ? "#25d366" : isTasksItem ? (dark ? "#fbbf24" : "#d97706") : null;
                 return (
                   <Fragment key={item.id}>
                     {(item.id === "leaderboard" || item.id === "audit") && <div className="dash-sidebar-divider max-desktop:hidden my-1 bg-t-sidebar-border" />}
-                    <button data-nav={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (isSupportItem && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setLeftOpen(false); return; } setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: isActive ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : isSupportItem ? (dark ? "rgba(37,211,102,.12)" : "rgba(37,211,102,.08)") : "transparent", color: item.soon ? t.textMuted : (isActive ? t.accent : isSupportItem ? "#25d366" : t.textSoft), fontWeight: isActive || isSupportItem ? 600 : 450, opacity: item.soon ? 0.5 : 1, cursor: item.soon ? "default" : "pointer" }}>
-                      <span className="shrink-0" style={{ opacity: isActive || isSupportItem ? 1 : .55, color: isActive || isSupportItem ? (isSupportItem ? "#25d366" : t.accent) : t.textMuted }}>{I[item.id]}</span>
+                    <button data-nav={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (isSupportItem && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setLeftOpen(false); return; } setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: isActive ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : specialClr ? (dark ? `${specialClr}1e` : `${specialClr}14`) : "transparent", color: item.soon ? t.textMuted : (isActive ? t.accent : specialClr || t.textSoft), fontWeight: isActive || specialClr ? 600 : 450, opacity: item.soon ? 0.5 : 1, cursor: item.soon ? "default" : "pointer" }}>
+                      <span className="shrink-0" style={{ opacity: isActive || specialClr ? 1 : .55, color: isActive ? (specialClr || t.accent) : specialClr || t.textMuted }}>{I[item.id]}</span>
                       {item.label}
                       {item.soon && <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>Soon</span>}
                       {processingCount > 0 && <span className="m dash-nav-badge">{processingCount > 99 ? "99+" : processingCount}</span>}
@@ -1212,7 +1221,7 @@ function DashboardInner({ initialData }) {
               <span className="px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 m text-center" style={{ background: activePromotion.bannerColor || '#10b981', color: '#fff' }}>{activePromotion.discountPercent}% OFF{activePromotion.maxDiscountPerOrder ? <><br /><span className="font-medium opacity-90" style={{ fontSize: 10 }}>up to ₦{(activePromotion.maxDiscountPerOrder / 100).toLocaleString()}</span></> : ''}</span>
             </div>
           )}
-          {!isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isGuide && !isLeaderboard && !isAudit && !isCleanup && !isEarn && !isLab && <div className="pb-6 max-md:pb-4">
+          {!isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isGuide && !isLeaderboard && !isAudit && !isCleanup && !isEarn && !isLab && !isTasks && <div className="pb-6 max-md:pb-4">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xl max-md:text-lg font-semibold mb-0.5 text-t-text">Welcome back, {firstName}</div>
@@ -1239,6 +1248,11 @@ function DashboardInner({ initialData }) {
           {isLab && <div className="pb-2 desktop:pb-3.5">
             <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">Reseller HQ</div>
             <div className="text-sm desktop:text-[15px] text-t-text-muted">API access for your panel, or a white-label storefront we run for you</div>
+            <div className="page-divider bg-t-card-border" />
+          </div>}
+          {isTasks && <div className="pb-2 desktop:pb-3.5">
+            <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">Tasks</div>
+            <div className="text-sm desktop:text-[15px] text-t-text-muted">Do tasks, earn free credit</div>
             <div className="page-divider bg-t-card-border" />
           </div>}
 
@@ -1311,8 +1325,8 @@ function DashboardInner({ initialData }) {
               );
             }
             return (
-              <button key={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (item.id === "support" && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setMoreOpen(false); return; } setActive(item.id); setMoreOpen(false); }} className="dash-more-item" style={{ background: item.id === "support" ? (dark ? "rgba(37,211,102,.15)" : "rgba(37,211,102,.1)") : (active === item.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)")), color: item.soon ? (dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)") : (item.id === "support" ? "#25d366" : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.6)"))), fontWeight: active === item.id ? 600 : 500, cursor: item.soon ? "default" : "pointer", borderColor: item.soon ? "transparent" : undefined }}>
-                <div className="dash-more-item-icon" style={{ background: item.soon ? (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)") : (item.id === "support" ? (dark ? "rgba(37,211,102,.12)" : "rgba(37,211,102,.08)") : (active === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"))), color: item.soon ? (dark ? "rgba(255,255,255,.3)" : "rgba(0,0,0,.3)") : (item.id === "support" ? "#25d366" : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)"))) }}>{I[item.id]}</div>
+              <button key={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (item.id === "support" && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setMoreOpen(false); return; } setActive(item.id); setMoreOpen(false); }} className="dash-more-item" style={{ background: item.id === "support" ? (dark ? "rgba(37,211,102,.15)" : "rgba(37,211,102,.1)") : item.id === "tasks" ? (dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)") : (active === item.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)")), color: item.soon ? (dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)") : (item.id === "support" ? "#25d366" : item.id === "tasks" ? (dark ? "#fbbf24" : "#d97706") : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.6)"))), fontWeight: active === item.id || item.id === "tasks" ? 600 : 500, cursor: item.soon ? "default" : "pointer", borderColor: item.soon ? "transparent" : undefined }}>
+                <div className="dash-more-item-icon" style={{ background: item.soon ? (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)") : (item.id === "support" ? (dark ? "rgba(37,211,102,.12)" : "rgba(37,211,102,.08)") : item.id === "tasks" ? (dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)") : (active === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"))), color: item.soon ? (dark ? "rgba(255,255,255,.3)" : "rgba(0,0,0,.3)") : (item.id === "support" ? "#25d366" : item.id === "tasks" ? (dark ? "#fbbf24" : "#d97706") : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)"))) }}>{I[item.id]}</div>
                 {item.label}
                 {item.soon && <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>Soon</span>}
               </button>
