@@ -227,6 +227,7 @@ export async function GET(req) {
         refill: o.tier?.refill || false,
         refillDays: o.tier?.refillDays || 0,
         completedAt: o.completedAt?.toISOString() || null,
+        refillRequestedAt: o.refillRequestedAt?.toISOString() || null,
         created: o.createdAt.toISOString(),
         serviceType: offer.serviceType,
         dripDays: o.dripDays || null,

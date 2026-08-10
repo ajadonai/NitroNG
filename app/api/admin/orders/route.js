@@ -196,6 +196,7 @@ export async function GET(req) {
         serviceType: offer.serviceType,
         refundedAt: o.refundedAt?.toISOString() || null,
         redispatchedAt: o.redispatchedAt?.toISOString() || null,
+        refillRequestedAt: o.refillRequestedAt?.toISOString() || null,
         parentOrderId: o.parentOrderId || null,
         childOrderId: childMap[o.orderId] || null,
         refundedTotal: (() => {
@@ -468,8 +469,15 @@ export async function POST(req) {
           await refillOrder(provider, order.apiOrderId);
         } catch (e) { log.warn(`Admin Refill ${providerLabel}`, e.message); }
       }
+      await prisma.order.update({ where: { id: order.id }, data: { refillRequestedAt: new Date() } });
       await logActivity(admin.name, `Requested refill for ${orderId} (${providerLabel})`, 'order');
       return Response.json({ success: true, message: 'Refill requested' });
+    }
+
+    if (action === 'reset_refill') {
+      await prisma.order.update({ where: { id: order.id }, data: { refillRequestedAt: null } });
+      await logActivity(admin.name, `Reset refill for ${orderId}`, 'order');
+      return Response.json({ success: true, message: 'Refill reset — user can request again' });
     }
 
     if (action === 'check') {
