@@ -1,9 +1,8 @@
 # Nitro v2 Product Roadmap
 
-**Status:** Parked · do not implement until explicit go-ahead from Adonai (Trip)
-**Planning starts:** After Phase 1 ships and panel is generating revenue (estimated 60–90 days post-launch)
+**Status:** Active · Phase 1 shipped, V2 is the current development phase
 **Owner:** Adonai (Trip)
-**Last updated:** May 2026
+**Last updated:** August 2026
 
 ---
 
@@ -923,6 +922,34 @@ The email activation sequence ships first to validate whether the 3-touch cadenc
 ### Status
 
 Not yet built. Ship email activation first, measure for 1-2 weeks, then evaluate.
+
+---
+
+## Product 9: Reseller API
+
+*Added August 2026*
+
+### What it is
+
+A public REST API that lets resellers (panel owners, agencies, automation builders) place orders, check statuses, and manage their Nitro wallet programmatically. Mirrors the core panel functionality — service listing, order placement, order status, balance check — without requiring the Nitro dashboard UI.
+
+### Who it's for
+
+- **Primary:** Nigerian SMM panel resellers who white-label Nitro services under their own brand
+- **Secondary:** Agencies with internal tools that automate order placement for clients
+- **Tertiary:** Developers building bots or integrations (Telegram bots, Discord bots, custom dashboards)
+
+### Key design constraints
+
+- API keys per user, scoped to their own account and wallet
+- Rate limiting per key to prevent abuse
+- Do NOT expose upstream provider names (MTP, DaoSMM) — resellers see Nitro service IDs only
+- Pricing uses the same tier engine as the dashboard (resellers pay their tier price, not cost)
+- Orders placed via API are indistinguishable from dashboard orders in the admin view (tagged with source for analytics)
+
+### Status
+
+Not yet built. `components/reseller-api-docs.jsx` exists as an early scaffold. Ship after Phase 1 is stable and reseller demand is validated.
 
 ---
 

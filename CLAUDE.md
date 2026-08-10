@@ -19,9 +19,9 @@ When pushing the drip changes, **restore these items that were removed in commit
 
 Before building or shipping ANYTHING related to the Tasks page, task rewards, or the tasks launch email: **read `docs/TASKS_LAUNCH_GATE.md` and ask Trip the questions in it first.** The launch email already promises users specific numbers; do not ship task amounts Trip has not confirmed in that conversation.
 
-## ⛔ Support tickets moved to WhatsApp
+## ⛔ Support tickets moved to WhatsApp — DO NOT TOUCH
 
-Customer support is handled entirely through WhatsApp — there is no in-app ticket system. The admin `tickets` page and `SupportPage` exist only as legacy read-only views of old data. **Do not** build, fix, improve, or redesign any ticket-related features: no ticket sidebar widgets, no ticket notifications, no ticket status flows, no new ticket creation UI. If a task mentions tickets, clarify with Trip first — the answer is almost certainly "that's handled on WhatsApp now."
+Customer support is handled entirely through WhatsApp — there is no in-app ticket system. The admin `tickets` page, `SupportPage`, `admin-tickets.jsx`, and all ticket-related API routes exist only as legacy read-only views of old data. **Do not** build, fix, improve, refactor, or redesign any ticket-related code: no ticket sidebar widgets, no ticket notifications, no ticket status flows, no new ticket creation UI, no polling fixes, no cleanup of ticket polling intervals, no "while we're here" improvements. Leave ticket code exactly as-is — it will be removed entirely in a future cleanup pass. If a task mentions tickets, clarify with Trip first — the answer is almost certainly "that's handled on WhatsApp now."
 
 ## ⛔ PROTECTED — never modify without flagging
 
@@ -103,9 +103,9 @@ At the start of each session, if it has been 7+ days since the last changelog en
 
 ---
 
-## V2 Roadmap (parked — do not build)
+## V2 Roadmap (active)
 
-V2 includes: **Audit** (account analytics), **Cleanup** (bulk unfollow tool), **Earn** (2048 game + video rewards), **AI Support** (chatbot for tickets), **AI Comments** (blog social proof), a visitor acquisition flow, and a **TypeScript migration**. None of this should be built until Adonai (Trip) gives explicit go-ahead.
+Phase 1 has shipped. We are now in V2. V2 products: **Audit** (account analytics), **Cleanup** (bulk unfollow tool), **Earn** (2048 game + video rewards), **AI Support** (chatbot — note: tickets moved to WhatsApp, so scope may shift), **AI Comments** (blog social proof), a visitor acquisition flow, a **Reseller API**, and a **TypeScript migration**.
 
 ### Where v2 docs live
 
@@ -116,16 +116,13 @@ V2 includes: **Audit** (account analytics), **Cleanup** (bulk unfollow tool), **
 - `/docs/v2/mockups/cleanup_internal.html` — fully interactive Cleanup mockup, 5 states (includes per-platform connection flows)
 - `/docs/v2/mockups/visitor_flow.html` — public audit + Cleanup demo + signup modal, 4 views
 
-### How to handle v2 questions during Phase 1 work
+### How to handle v2 work
 
-If Adonai mentions v2 features during Phase 1 engineering work, **do not start implementing**. Acknowledge the request, point to `/docs/V2_ROADMAP.md`, and ask whether this is a planning discussion or an implementation request.
-
-If Adonai explicitly asks to start v2 work, the path is:
-1. Confirm Phase 1 has shipped and is stable
-2. Confirm pre-launch validation experiments (in V2_ROADMAP.md) have been run
-3. Pick one product to start with (likely Audit as the wedge)
-4. Write a proper engineering brief following the brief template at `/docs/CLAUDE_CODE_BRIEF_TEMPLATE.md`
-5. Get the brief approved before any code is written
+V2 is the current phase — no need to gate on "has Phase 1 shipped." When Trip asks for a v2 feature:
+1. Check `/docs/V2_ROADMAP.md` for existing design decisions and constraints
+2. Write a proper engineering brief following the brief template at `/docs/CLAUDE_CODE_BRIEF_TEMPLATE.md` if the feature is large
+3. Get the brief approved before writing code
+4. For smaller tasks within an already-approved product, proceed directly
 
 ### What v2 must not do
 
