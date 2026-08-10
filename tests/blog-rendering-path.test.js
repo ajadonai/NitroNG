@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const prisma = {
   blogPost: {
     findFirst: vi.fn(),
+    findMany: vi.fn(),
     update: vi.fn(),
   },
 };
@@ -42,6 +43,7 @@ function post(overrides = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   prisma.blogPost.update.mockResolvedValue({});
+  prisma.blogPost.findMany.mockResolvedValue([]);
 });
 
 describe('public blog rendering paths', () => {
@@ -52,7 +54,7 @@ describe('public blog rendering paths', () => {
     }));
 
     const page = await BlogPostPage({ params: Promise.resolve({ slug: 'test-post' }) });
-    const [articleJsonLd, breadcrumbJsonLd, article] = page.props.children;
+    const [articleJsonLd, breadcrumbJsonLd, /* dataset */, article] = page.props.children;
 
     expect(article.props.post.content).toContain('<h2 id="sec-1">Safe heading</h2>');
     expect(article.props.post.content).toContain('<pre><code>hello</code></pre>');
