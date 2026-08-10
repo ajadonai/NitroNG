@@ -4,6 +4,7 @@ import { useConfirm } from './confirm-dialog';
 import { useToast } from './toast';
 import InlineAlert from './inline-alert';
 import { PlatformIcon } from './platform-icon';
+import { proofToLink } from '@/lib/proof-link';
 const fmt = (n) => Math.abs(n).toLocaleString('en-NG');
 
 const PLATFORMS = [
@@ -88,6 +89,8 @@ export default function AdminTasksPage({ dark, t }) {
   const [subSort, setSubSort] = useState('date');
   const [subDir, setSubDir] = useState('desc');
   const [subLoading, setSubLoading] = useState(false);
+  const [expanded, setExpanded] = useState({});
+  const toggleExpand = (id) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
 
   // Modal
   const [modal, setModal] = useState(null); // null | { mode: 'create' } | { mode: 'edit', task: {...} }
@@ -194,16 +197,11 @@ export default function AdminTasksPage({ dark, t }) {
       if (d.ok) {
         toast?.success?.(action === 'approve' ? 'Approved & credited' : 'Rejected');
         setSubs(prev => prev.map(s => s.id === id ? { ...s, status: action === 'approve' ? 'approved' : 'rejected' } : s));
+        setExpanded(prev => ({ ...prev, [id]: false }));
         loadSubs(); loadTasks();
       }
       else toast?.error?.(d.error || 'Failed');
     } catch { toast?.error?.('Failed'); }
-  };
-
-  const sortSubs = (col) => {
-    if (subSort === col) setSubDir(d => d === 'asc' ? 'desc' : 'asc');
-    else { setSubSort(col); setSubDir('desc'); }
-    setSubPage(1);
   };
 
   // ── Filtered tasks ──
@@ -408,109 +406,73 @@ export default function AdminTasksPage({ dark, t }) {
               <option value="all">All platforms</option>
               {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
+            <select value={`${subSort}_${subDir}`} onChange={e => { const [s, d] = e.target.value.split('_'); setSubSort(s); setSubDir(d); setSubPage(1); }} className="h-[34px] pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none max-md:flex-1" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
+              <option value="date_desc">Newest</option>
+              <option value="date_asc">Oldest</option>
+              <option value="views_desc">Most views</option>
+              <option value="reward_desc">Highest reward</option>
+            </select>
           </div>
 
           <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBorder }}>
-            {/* Desktop table */}
-            <div className="max-md:hidden overflow-x-auto">
-              <table className="w-full border-collapse text-[12.5px]">
-                <thead>
-                  <tr>
-                    <th className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap" style={{ color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>User</th>
-                    <th className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap" style={{ color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>Task</th>
-                    <th className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap" style={{ color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>Proof</th>
-                    <th onClick={() => sortSubs('views')} className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>Views {subSort === 'views' ? (subDir === 'desc' ? '↓' : '↑') : ''}</th>
-                    <th onClick={() => sortSubs('reward')} className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>Reward {subSort === 'reward' ? (subDir === 'desc' ? '↓' : '↑') : ''}</th>
-                    <th onClick={() => sortSubs('date')} className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>Submitted {subSort === 'date' ? (subDir === 'desc' ? '↓' : '↑') : ''}</th>
-                    <th className="text-left px-4 py-3 text-[9.5px] uppercase tracking-[1.1px] font-semibold whitespace-nowrap" style={{ color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>Status</th>
-                    <th className="px-4 py-3" style={{ borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subs.length === 0 && (
-                    <tr><td colSpan={8} className="px-4 py-8 text-center text-[13px]" style={{ color: t.textMuted }}>{subLoading ? 'Loading...' : 'No submissions'}</td></tr>
-                  )}
-                  {subs.map(s => (
-                    <tr key={s.id} className="hover:bg-black/[.015] dark:hover:bg-white/[.015]">
-                      <td className="px-4 py-3 whitespace-nowrap" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-                        <div className="flex items-center gap-2 font-semibold">
-                          <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10.5px] font-semibold" style={{ background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)', color: t.textSoft }}>{(s.user?.name || '?')[0].toUpperCase()}</span>
-                          {s.user?.name || 'Unknown'}
+            {subs.length === 0 && <div className="px-4 py-8 text-center text-[13px]" style={{ color: t.textMuted }}>{subLoading ? 'Loading...' : 'No submissions'}</div>}
+            {subs.map(s => {
+              const isOpen = expanded[s.id];
+              const link = proofToLink(s.proof, s.task?.platform);
+              return (
+                <div key={s.id} style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
+                  <div onClick={() => toggleExpand(s.id)} className="flex items-center gap-3 px-5 max-md:px-3.5 py-3 cursor-pointer select-none hover:bg-black/[.015] dark:hover:bg-white/[.015]">
+                    <PlatformIcon platform={s.task?.platform} size={28} />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[13.5px] font-semibold truncate" style={{ color: t.text }}>{s.task?.title}</div>
+                      <div className="flex items-center gap-1.5 mt-0.5 text-[11.5px] flex-wrap" style={{ color: t.textMuted }}>
+                        <span>{s.user?.name || 'Unknown'}</span>
+                        <span>·</span>
+                        <span className="font-mono">₦{fmt((s.task?.reward || 0) / 100)}</span>
+                        <span>·</span>
+                        <span>{fAgo(s.createdAt)}</span>
+                      </div>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 text-[11.5px] font-medium shrink-0" style={{ color: t.textSoft }}>
+                      <span className="w-[5px] h-[5px] rounded-full" style={{ background: s.status === 'pending' ? '#fbbf24' : s.status === 'approved' ? '#6ee7b7' : '#fca5a5' }} />
+                      <span className="max-md:hidden">{s.status[0].toUpperCase() + s.status.slice(1)}</span>
+                    </span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" className="shrink-0 transition-transform" style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }}>
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </div>
+                  {isOpen && (
+                    <div className="pb-4 pt-2 pr-5 max-md:pr-3.5 pl-[60px] max-md:pl-3.5" style={{ borderTop: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>
+                      <div className="flex flex-wrap items-start gap-x-6 gap-y-2 text-[12.5px]">
+                        <div>
+                          <div className="text-[9.5px] uppercase tracking-[1.1px] font-semibold mb-1" style={{ color: t.textMuted }}>Proof</div>
+                          {link ? (
+                            <a href={link.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5" style={{ color: t.accent, textDecoration: 'none' }}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 14L21 3M15 3h6v6M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /></svg>
+                              {link.label}
+                            </a>
+                          ) : (
+                            <span style={{ color: t.textSoft }}>{s.proof}</span>
+                          )}
                         </div>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-                        <div className="flex items-center gap-2" style={{ color: t.textSoft }}>
-                          <PlatformIcon platform={s.task?.platform} size={20} />
-                          <span className="truncate max-w-[160px]">{s.task?.title}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-                        <span className="inline-flex items-center gap-1.5 text-[11.5px] max-w-[190px] truncate" style={{ color: t.textSoft }}>
-                          {s.proof?.startsWith('http') && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 14L21 3M15 3h6v6M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /></svg>}
-                          {s.proof}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 font-mono whitespace-nowrap" style={{ borderBottom: `1px solid ${t.cardBorder}`, color: t.textSoft }}>{s.views != null ? fmt(s.views) : '—'}</td>
-                      <td className="px-4 py-3 font-mono whitespace-nowrap" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>₦{fmt((s.task?.reward || 0) / 100)}</td>
-                      <td className="px-4 py-3 whitespace-nowrap" style={{ borderBottom: `1px solid ${t.cardBorder}`, color: t.textSoft }}>{fAgo(s.createdAt)}</td>
-                      <td className="px-4 py-3 whitespace-nowrap" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-                        <span className="inline-flex items-center gap-1.5 text-[11.5px] font-medium" style={{ color: t.textSoft }}>
-                          <span className="w-[5px] h-[5px] rounded-full shrink-0" style={{ background: s.status === 'pending' ? '#fbbf24' : s.status === 'approved' ? '#6ee7b7' : '#fca5a5' }} />
-                          {s.status[0].toUpperCase() + s.status.slice(1)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-                        {s.status === 'pending' && (
-                          <div className="flex gap-1 justify-end">
-                            <button onClick={() => reviewSub(s.id, 'approve')} className="h-[26px] px-2.5 rounded-[7px] text-[11px] font-semibold" style={{ border: `1px solid ${t.cardBorder}`, color: '#6ee7b7' }}>Approve</button>
-                            <button onClick={() => reviewSub(s.id, 'reject')} className="h-[26px] px-2.5 rounded-[7px] text-[11px] font-semibold" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}>Reject</button>
+                        {s.views != null && (
+                          <div>
+                            <div className="text-[9.5px] uppercase tracking-[1.1px] font-semibold mb-1" style={{ color: t.textMuted }}>Views</div>
+                            <span className="font-mono" style={{ color: t.textSoft }}>{fmt(s.views)}</span>
                           </div>
                         )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile cards */}
-            <div className="md:hidden">
-              {subs.length === 0 && <div className="px-4 py-8 text-center text-[13px]" style={{ color: t.textMuted }}>{subLoading ? 'Loading...' : 'No submissions'}</div>}
-              {subs.map(s => (
-                <div key={s.id} className="px-4 py-3.5" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-                  <div className="flex items-center justify-between gap-2.5">
-                    <div className="flex items-center gap-2 font-semibold text-[13px]">
-                      <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10.5px] font-semibold" style={{ background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)', color: t.textSoft }}>{(s.user?.name || '?')[0].toUpperCase()}</span>
-                      {s.user?.name}
-                    </div>
-                    <span className="inline-flex items-center gap-1.5 text-[11.5px] font-medium" style={{ color: t.textSoft }}>
-                      <span className="w-[5px] h-[5px] rounded-full" style={{ background: s.status === 'pending' ? '#fbbf24' : s.status === 'approved' ? '#6ee7b7' : '#fca5a5' }} />
-                      {s.status[0].toUpperCase() + s.status.slice(1)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2.5 mt-2">
-                    <div className="flex items-center gap-2 text-[12.5px]" style={{ color: t.textSoft }}>
-                      <PlatformIcon platform={s.task?.platform} size={20} />
-                      {s.task?.title}
-                    </div>
-                    <span className="font-mono text-[13px] font-semibold shrink-0">₦{fmt((s.task?.reward || 0) / 100)}</span>
-                  </div>
-                  <div className="flex items-center justify-between mt-1.5 text-[11px]" style={{ color: t.textMuted }}>
-                    <span className="inline-flex items-center gap-1.5 truncate max-w-[60%]">
-                      {s.proof?.startsWith('http') && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 14L21 3M15 3h6v6M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /></svg>}
-                      {s.proof}
-                    </span>
-                    <span>{s.views != null ? `${fmt(s.views)} views · ` : ''}{fAgo(s.createdAt)}</span>
-                  </div>
-                  {s.status === 'pending' && (
-                    <div className="flex gap-1.5 mt-3">
-                      <button onClick={() => reviewSub(s.id, 'reject')} className="flex-1 h-[30px] rounded-lg text-[12px] font-semibold" style={{ border: `1px solid ${t.cardBorder}`, color: t.textSoft }}>Reject</button>
-                      <button onClick={() => reviewSub(s.id, 'approve')} className="flex-1 h-[30px] rounded-lg text-[12px] font-semibold" style={{ border: `1px solid ${t.cardBorder}`, color: '#6ee7b7' }}>Approve</button>
+                      </div>
+                      {s.status === 'pending' && (
+                        <div className="flex gap-2 mt-3">
+                          <button onClick={(e) => { e.stopPropagation(); reviewSub(s.id, 'reject'); }} className="h-[30px] px-3.5 rounded-lg text-[12px] font-semibold" style={{ border: `1px solid ${t.cardBorder}`, color: t.textSoft }}>Reject</button>
+                          <button onClick={(e) => { e.stopPropagation(); reviewSub(s.id, 'approve'); }} className="h-[30px] px-3.5 rounded-lg text-[12px] font-semibold border-none cursor-pointer font-[inherit]" style={{ background: 'linear-gradient(135deg,#c47d8e,#8b5e6b)', color: '#fff' }}>Approve</button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
+              );
+            })}
 
             {/* Pagination */}
             <div className="flex items-center gap-2.5 px-4 max-md:px-3 py-2.5 flex-wrap" style={{ borderTop: `1px solid ${t.cardBorder}` }}>

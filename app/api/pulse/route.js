@@ -71,8 +71,8 @@ export async function GET(req) {
       welcomeBonusResult,
       monthDepositorsResult,
     ] = await Promise.all([
-      prisma.user.count({ where: { emailVerified: true } }),
-      prisma.user.count({ where: { createdAt: { gte: todayStart }, emailVerified: true } }),
+      prisma.user.count({ where: { status: { not: 'Deleted' } } }),
+      prisma.user.count({ where: { createdAt: { gte: todayStart }, status: { not: 'Deleted' } } }),
       prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
       prisma.order.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
       prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true } }),

@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
+import { tgTaskSubmission } from '@/lib/telegram';
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -138,6 +139,8 @@ export async function POST(req) {
       proof: normalizedProof,
     },
   });
+
+  tgTaskSubmission(user.name, user.email, task.title, normalizedProof, task.platform).catch(() => {});
 
   return ok({ ok: true, submissionId: submission.id });
 }
