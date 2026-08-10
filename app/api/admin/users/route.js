@@ -86,13 +86,13 @@ export async function GET(req) {
     let stats;
     if (includeStats) {
       const [totalUsers, activeUsers, balanceAgg, totalOrders, newThisWeek, ordersThisMonth, fundedWallets] = await Promise.all([
-        prisma.user.count(),
+        prisma.user.count({ where: { status: { not: 'Deleted' } } }),
         prisma.user.count({ where: { status: 'Active' } }),
         prisma.user.aggregate({ _sum: { balance: true } }),
         prisma.order.count({ where: { status: { not: 'Cancelled' }, deletedAt: null } }),
-        prisma.user.count({ where: { createdAt: { gte: startOfWeek } } }),
+        prisma.user.count({ where: { createdAt: { gte: startOfWeek }, status: { not: 'Deleted' } } }),
         prisma.order.count({ where: { createdAt: { gte: startOfMonth }, status: { not: 'Cancelled' }, deletedAt: null } }),
-        prisma.user.count({ where: { balance: { gt: 0 } } }),
+        prisma.user.count({ where: { balance: { gt: 0 }, status: { not: 'Deleted' } } }),
       ]);
       stats = {
         totalUsers,

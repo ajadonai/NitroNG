@@ -85,7 +85,7 @@ describe('notifyDepositFinalized', () => {
     expect(mocks.trackDeposit).toHaveBeenCalledWith(expect.objectContaining({
       userId: 'user-1', reference: 'NTR-ONE', amountKobo: 500_000,
     }));
-    expect(mocks.tgPayment).toHaveBeenCalledWith('Test User', 500_000, 170_000, 'Flutterwave', undefined);
+    expect(mocks.tgPayment).toHaveBeenCalledWith('Test User', 500_000, 170_000, 'Flutterwave', undefined, null);
     expect(mocks.walletCreditEmail).toHaveBeenCalledWith('Test User', 5_000, null, expect.objectContaining({
       kind: 'deposit', bonus: 1_200, newBalance: 6_700, method: 'Flutterwave',
     }));

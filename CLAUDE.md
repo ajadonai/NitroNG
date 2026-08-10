@@ -165,3 +165,13 @@ Tasks to complete on or before launch day:
 ## Git conventions
 
 All commits and deploys are authored as `Trip <devbyadonai@gmail.com>`. Set `git config user.name "Trip"` and `git config user.email "devbyadonai@gmail.com"` before committing. **Do not** add `Co-Authored-By` trailers or any other attribution — `devbyadonai@gmail.com` is the sole contributor on every commit.
+
+### Commit versioning
+
+Commit messages use a semantic prefix that reflects the significance of the change:
+
+- **`v2:`** — version-level changes (new product phase, major architectural shift)
+- **`v2.1:`** — milestones (a product launches, a major feature ships to users)
+- **`v2.1.1:`** — casual fixes (bug fixes, polish, plumbing, admin UX tweaks, refactors)
+
+The milestone counter increments on each milestone (`v2.1`, `v2.2`, `v2.3`, …). The patch counter increments within the current milestone (`v2.1.1`, `v2.1.2`, …) and resets when a new milestone ships. When deciding which prefix to use, ask: "Does this change what users can do?" If yes, it's at least a milestone. If no, it's a casual fix.

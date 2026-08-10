@@ -6,7 +6,7 @@ export const revalidate = 300;
 export async function GET() {
   try {
     let userCount = 0, orderCount = 0, platformCount = 0, serviceCount = 0, uniquePlatforms = 0;
-    try { userCount = await prisma.user.count(); } catch {}
+    try { userCount = await prisma.user.count({ where: { status: { not: 'Deleted' } } }); } catch {}
     try { orderCount = await prisma.order.count(); } catch {}
     try {
       const [groups, tiers, distinctPlatforms] = await Promise.all([
