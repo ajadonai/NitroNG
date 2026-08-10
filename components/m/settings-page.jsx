@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Modal } from "./kit";
 import { useTheme } from "../shared-nav";
 import { useToast } from "../toast";
@@ -70,6 +70,9 @@ function SocialsCard({ member, dark, t, toast }) {
   const [xError, setXError] = useState(null);
 
   const [disconnectTarget, setDisconnectTarget] = useState(null);
+  const tgPollRef = useRef(null);
+
+  useEffect(() => () => { if (tgPollRef.current) clearInterval(tgPollRef.current); }, []);
 
   const hdr = { background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` };
   const dimBg = dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)";
@@ -87,23 +90,23 @@ function SocialsCard({ member, dark, t, toast }) {
       if (d.error) { setTgError(d.error); setTgLoading(false); return; }
       window.open(`https://t.me/NitroMarshal_bot?start=${d.code}`, "_blank");
       let attempts = 0;
-      const poll = setInterval(async () => {
+      tgPollRef.current = setInterval(async () => {
         attempts++;
         try {
           const r = await fetch("/api/pit/settings?check=telegram");
           const s = await r.json();
           if (s.linked) {
-            clearInterval(poll);
+            clearInterval(tgPollRef.current); tgPollRef.current = null;
             setTgLinked(true);
             setTgHandle(s.handle);
             setTgLoading(false);
             toast.success("Telegram connected");
           } else if (attempts >= 30) {
-            clearInterval(poll);
+            clearInterval(tgPollRef.current); tgPollRef.current = null;
             setTgLoading(false);
           }
         } catch {
-          clearInterval(poll);
+          clearInterval(tgPollRef.current); tgPollRef.current = null;
           setTgLoading(false);
         }
       }, 3000);

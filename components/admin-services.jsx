@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { fN } from "../lib/format";
@@ -26,9 +26,18 @@ export default function AdminServicesPage({ dark, t }) {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(50);
 
-  useEffect(() => {
+  const fetchServices = useCallback(() => {
     fetch("/api/admin/services").then(r => r.json()).then(d => { setServices(d.services || []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
+
+  useEffect(() => { fetchServices(); }, [fetchServices]);
+
+  useEffect(() => {
+    const iv = setInterval(fetchServices, 30000);
+    const onVis = () => { if (document.visibilityState === 'visible') fetchServices(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis); };
+  }, [fetchServices]);
 
   const categories = [...new Set(services.map(s => s.category))].filter(Boolean);
   const providers = [...new Set(services.map(s => s.provider || "mtp"))];

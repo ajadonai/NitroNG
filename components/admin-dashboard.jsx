@@ -70,7 +70,7 @@ const ADMIN_NAV = [
     { id: "alerts", label: "Announcements", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> },
     { id: "notifications", label: "Email Blasts", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 17H2a3 3 0 003-3V9a7 7 0 0114 0v5a3 3 0 003 3zm-8.27 4a2 2 0 01-3.46 0"/></svg> },
     { id: "rewards", label: "Rewards", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg> },
-    { id: "tasks", label: "Tasks", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> },
+    { id: "tasks", label: "Tasks", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>, badge: 'tasks' },
     { id: "acquisition", label: "Tracking Links", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg> },
     { id: "outreach", label: "Outreach", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg> },
     { id: "crew", label: "Pit", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> },
@@ -348,7 +348,7 @@ function AdminDashboardInner({ initialData }) {
   const [data, setData] = useState(() => {
     if (!initialData) return { stats: {}, recentOrders: [], recentUsers: [], openTickets: [], activity: [], unreadTicketCount: 0, pendingManualCount: 0, pendingOrderCount: 0, openIssueCount: 0 };
     const d = initialData;
-    return { stats: d, recentOrders: d.recentOrders || [], recentUsers: d.recentUsers || [], openTickets: d.openTickets || [], activity: d.activity || [], unreadTicketCount: d.unreadTicketCount || 0, pendingManualCount: d.pendingManualCount || 0, pendingOrderCount: d.pendingOrderCount || 0 };
+    return { stats: d, recentOrders: d.recentOrders || [], recentUsers: d.recentUsers || [], openTickets: d.openTickets || [], activity: d.activity || [], unreadTicketCount: d.unreadTicketCount || 0, pendingManualCount: d.pendingManualCount || 0, pendingOrderCount: d.pendingOrderCount || 0, openIssueCount: d.openIssueCount || 0, pendingTaskReviewCount: d.pendingTaskReviewCount || 0 };
   });
   const toastRef = useRef(null);
 
@@ -396,6 +396,7 @@ function AdminDashboardInner({ initialData }) {
           pendingManualCount: d.pendingManualCount || 0,
           pendingOrderCount: d.pendingOrderCount || 0,
           openIssueCount: d.openIssueCount || 0,
+          pendingTaskReviewCount: d.pendingTaskReviewCount || 0,
         });
         applyThemePreference(d);
       } catch {
@@ -582,6 +583,7 @@ function AdminDashboardInner({ initialData }) {
               pendingManualCount: d.pendingManualCount || 0,
               pendingOrderCount: d.pendingOrderCount || 0,
               openIssueCount: d.openIssueCount || 0,
+              pendingTaskReviewCount: d.pendingTaskReviewCount || 0,
             });
           }
         }
@@ -744,7 +746,8 @@ function AdminDashboardInner({ initialData }) {
   const paymentCount = data.pendingManualCount || 0;
   const orderCount = data.pendingOrderCount || 0;
   const issueCount = data.openIssueCount || 0;
-  const badgeCounts = { tickets: ticketCount, payments: paymentCount, orders: orderCount, issues: issueCount };
+  const taskReviewCount = data.pendingTaskReviewCount || 0;
+  const badgeCounts = { tickets: ticketCount, payments: paymentCount, orders: orderCount, issues: issueCount, tasks: taskReviewCount };
 
 
   return (
@@ -786,11 +789,11 @@ function AdminDashboardInner({ initialData }) {
           {/* Open tickets */}
           <button onClick={() => { setActive("tickets"); setLeftOpen(false); }} className="dash-bell relative text-t-text-soft" aria-label="Open tickets">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-            {ticketCount > 0 && <div className="dash-bell-badge">{ticketCount > 10 ? "10+" : ticketCount}</div>}
+            {ticketCount > 0 && <div className="dash-bell-badge">{ticketCount > 9 ? "9+" : ticketCount}</div>}
           </button>
           <button onClick={() => { setActive("payments"); setLeftOpen(false); }} className="dash-bell relative text-t-text-soft" aria-label="Pending payments">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            {paymentCount > 0 && <div className="dash-bell-badge">{paymentCount > 10 ? "10+" : paymentCount}</div>}
+            {paymentCount > 0 && <div className="dash-bell-badge">{paymentCount > 9 ? "9+" : paymentCount}</div>}
           </button>
           <button onClick={() => { setActive("settings"); setLeftOpen(false); }} className="dash-avatar-btn" aria-label="Profile">
             <Avatar size={30} rounded={10} />
@@ -813,7 +816,7 @@ function AdminDashboardInner({ initialData }) {
                 <button key={item.id} onClick={() => { setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: active === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", color: active === item.id ? t.accent : t.textSoft, fontWeight: active === item.id ? 600 : 450 }}>
                   <span className="shrink-0" style={{ opacity: active === item.id ? 1 : .55, color: active === item.id ? t.accent : t.textMuted }}>{item.icon}</span>
                   {item.label}
-                  {item.badge && badgeCounts[item.badge] > 0 && <span className="m dash-nav-badge">{badgeCounts[item.badge] > 99 ? "99+" : badgeCounts[item.badge]}</span>}
+                  {item.badge && badgeCounts[item.badge] > 0 && <span className="m dash-nav-badge">{item.badge === 'orders' ? badgeCounts[item.badge] : badgeCounts[item.badge] > 9 ? "9+" : badgeCounts[item.badge]}</span>}
                 </button>
               ))}
             </div>

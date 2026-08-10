@@ -994,9 +994,12 @@ export function AdminNotificationsPage({ dark, t }) {
   const [sending, setSending] = useState(false);
   const [promoCount, setPromoCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const blastPollRef = useRef(null);
+  const blastTimeoutRef = useRef(null);
 
   useEffect(() => {
     fetch("/api/admin/notifications").then(r => r.json()).then(d => { setHistory(d.history || []); setPromoCount(d.promoCount || 0); setTotalCount(d.totalCount || 0); setLoading(false); }).catch(() => setLoading(false));
+    return () => { if (blastPollRef.current) clearInterval(blastPollRef.current); if (blastTimeoutRef.current) clearTimeout(blastTimeoutRef.current); };
   }, []);
 
   const send = async () => {
@@ -1008,18 +1011,19 @@ export function AdminNotificationsPage({ dark, t }) {
       if (res.ok) {
         toast.success("Sending", data.message || "Email blast started");
         setSubject(""); setMessage("");
-        const pollDone = setInterval(() => {
+        blastPollRef.current = setInterval(() => {
           fetch("/api/admin/notifications").then(r => r.json()).then(d => {
             setHistory(d.history || []);
             const latest = (d.history || [])[0];
             if (latest && latest.status !== "sending") {
-              clearInterval(pollDone);
+              clearInterval(blastPollRef.current); blastPollRef.current = null;
+              if (blastTimeoutRef.current) { clearTimeout(blastTimeoutRef.current); blastTimeoutRef.current = null; }
               if (latest.status === "failed") toast.error("Send failed", `${latest.sent}/${latest.recipients} delivered`);
               else toast.success("Delivered", `${latest.sent}/${latest.recipients} delivered`);
             }
           });
         }, 3000);
-        setTimeout(() => clearInterval(pollDone), 120000);
+        blastTimeoutRef.current = setTimeout(() => { clearInterval(blastPollRef.current); blastPollRef.current = null; blastTimeoutRef.current = null; }, 120000);
       }
       else toast.error("Failed", data.error || "Something went wrong");
     } catch { toast.error("Request failed", "Check your connection"); }
