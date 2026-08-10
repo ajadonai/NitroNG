@@ -85,6 +85,11 @@ export default function TasksPage({ dark, t }) {
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
+  useEffect(() => {
+    const iv = setInterval(fetchTasks, 60000);
+    return () => clearInterval(iv);
+  }, [fetchTasks]);
+
   const handleSubmit = async (taskId) => {
     const proof = (proofs[taskId] || '').trim();
     if (!proof) return;

@@ -220,6 +220,13 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
+  useEffect(() => {
+    const iv = setInterval(fetchUsers, 30000);
+    const onVis = () => { if (document.visibilityState === 'visible') fetchUsers(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis); };
+  }, [fetchUsers]);
+
   /* ── Close menu on outside click / escape ─────── */
 
   useEffect(() => {

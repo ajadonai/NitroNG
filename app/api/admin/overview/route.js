@@ -104,7 +104,7 @@ export async function GET() {
       todayOrders, todayRevenueAgg, todayUsers, todayDepositsAgg,
       yesterdayRevenueAgg, yesterdayDepositsAgg,
       partials,
-      unreadTicketCount, pendingManualCount, pendingOrderCount, openIssueCount,
+      unreadTicketCount, pendingManualCount, pendingOrderCount, openIssueCount, pendingTaskReviewCount,
     ] = await Promise.all([
       prisma.user.count({ where: { emailVerified: true } }),
       prisma.order.count({ where: { deletedAt: null } }),
@@ -123,6 +123,7 @@ export async function GET() {
       prisma.transaction.count({ where: { type: 'deposit', method: 'manual', status: 'Pending', NOT: { note: { contains: '[awaiting_confirmation]' } } } }).catch(() => 0),
       prisma.order.count({ where: { status: { in: ['Pending', 'Processing'] }, deletedAt: null, queuedBehind: null } }).catch(() => 0),
       prisma.adminIssue?.findMany({ where: { status: 'open' }, select: { type: true }, distinct: ['type'] }).then(r => r.length).catch(() => 0) ?? Promise.resolve(0),
+      prisma.taskSubmission.count({ where: { status: 'pending' } }).catch(() => 0),
     ]);
 
     const partialAll = partials;
@@ -201,6 +202,7 @@ export async function GET() {
       pendingManualCount,
       pendingOrderCount,
       openIssueCount,
+      pendingTaskReviewCount,
       openTickets: openTickets.map(tk => ({
         id: tk.ticketId || tk.id,
         subject: tk.subject,

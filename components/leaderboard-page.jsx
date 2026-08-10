@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const TABS = [
   { id: "spenders", label: "Top Spenders", shortLabel: "Spenders" },
@@ -85,13 +85,19 @@ export default function LeaderboardPage({ dark, t }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    setLoading(true);
+  const fetchLeaderboard = useCallback(() => {
     fetch(`/api/leaderboard?period=${period}`)
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, [period]);
+
+  useEffect(() => { setLoading(true); fetchLeaderboard(); }, [fetchLeaderboard]);
+
+  useEffect(() => {
+    const iv = setInterval(fetchLeaderboard, 60000);
+    return () => clearInterval(iv);
+  }, [fetchLeaderboard]);
 
   const list = data?.[tab] || [];
   const podium = list.slice(0, 3);

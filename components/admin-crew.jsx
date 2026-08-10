@@ -167,6 +167,14 @@ export function AdminCrewPage({ dark, t }) {
   useEffect(() => { if (tab === "activity") loadActivity(); }, [tab, loadActivity]);
 
   useEffect(() => {
+    if (tab !== "members") return;
+    const iv = setInterval(load, 30000);
+    const onVis = () => { if (document.visibilityState === 'visible') load(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis); };
+  }, [tab, load]);
+
+  useEffect(() => {
     if (!drawerMember) return;
     const onKey = (e) => { if (e.key === "Escape") setDrawerMember(null); };
     window.addEventListener("keydown", onKey);
