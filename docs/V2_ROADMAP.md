@@ -953,6 +953,27 @@ Not yet built. `components/reseller-api-docs.jsx` exists as an early scaffold. S
 
 ---
 
+## Product 10: Trovex (Digital Goods Marketplace)
+
+*Added August 2026*
+
+### What it is
+
+A separate platform for buying digital goods: social media accounts, phone numbers for verification, gift cards, and similar products. Fully independent brand from Nitro, lives on its own domain (`trovex.ng`).
+
+### Architecture decisions (confirmed)
+
+- **Shared Neon database** — same PostgreSQL instance as Nitro, shared `users` table. Existing Nitro users log in with the same credentials.
+- **Separate wallets** — Trovex wallet is isolated from Nitro wallet. Protects against cross-platform disputes.
+- **Shared sessions** — user authenticated on Nitro is already authenticated on Trovex (and vice versa).
+- **Separate Vercel project** — independent deploys, independent domain.
+
+### Status
+
+Name chosen, architecture sketched. Not yet built. Requires its own engineering brief before any code.
+
+---
+
 ## When to revisit this doc
 
 Revisit when any of these become true:
