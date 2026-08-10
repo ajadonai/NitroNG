@@ -82,6 +82,7 @@ export default function AdminPricingPage({ dark, t }) {
   const [usdBuffer, setUsdBuffer] = useState(200);
   const [fxThreshold, setFxThreshold] = useState(20);
   const [tierMults, setTierMults] = useState({ Budget: 1.0, Standard: 1.15, Premium: 1.35 });
+  const [provBonuses, setProvBonuses] = useState({ mtp: 0, dao: 0, jap: 0 });
   const [saving, setSaving] = useState(false);
   const [recalcing, setRecalcing] = useState(false);
   const [simCost, setSimCost] = useState(500);
@@ -102,11 +103,12 @@ export default function AdminPricingPage({ dark, t }) {
       if (s.markup_usd_buffer) setUsdBuffer(Number(s.markup_usd_buffer));
       if (s.markup_fx_threshold) setFxThreshold(Number(s.markup_fx_threshold));
       try { if (s.markup_tier_multipliers) setTierMults(JSON.parse(s.markup_tier_multipliers)); } catch {}
+      setProvBonuses({ mtp: Number(s.markup_provider_bonus_mtp || 0), dao: Number(s.markup_provider_bonus_dao || 0), jap: Number(s.markup_provider_bonus_jap || 0) });
     });
   }, []);
 
   const usdRate = usdMarket + usdBuffer;
-  const pack = () => ({ markup_brackets: JSON.stringify(brackets), markup_margin_floor: String(floorPct), markup_floor_ceiling: String(floorCeiling), markup_ng_bonus: String(ngBonus), markup_usd_buffer: String(usdBuffer), markup_fx_threshold: String(fxThreshold), markup_usd_rate: String(usdRate), markup_tier_multipliers: JSON.stringify(tierMults) });
+  const pack = () => ({ markup_brackets: JSON.stringify(brackets), markup_margin_floor: String(floorPct), markup_floor_ceiling: String(floorCeiling), markup_ng_bonus: String(ngBonus), markup_usd_buffer: String(usdBuffer), markup_fx_threshold: String(fxThreshold), markup_usd_rate: String(usdRate), markup_tier_multipliers: JSON.stringify(tierMults), markup_provider_bonus_mtp: String(provBonuses.mtp), markup_provider_bonus_dao: String(provBonuses.dao), markup_provider_bonus_jap: String(provBonuses.jap) });
 
   const save = async () => {
     setSaving(true);
@@ -123,7 +125,7 @@ export default function AdminPricingPage({ dark, t }) {
     setRecalcing(false);
   };
 
-  const reset = () => { setBrackets(DEF_BRACKETS); setFloorPct(50); setFloorCeiling(5000); setNgBonus(25); setUsdBuffer(200); setFxThreshold(20); toast.info("Reset to defaults", "Not saved yet"); };
+  const reset = () => { setBrackets(DEF_BRACKETS); setFloorPct(50); setFloorCeiling(5000); setNgBonus(25); setUsdBuffer(200); setFxThreshold(20); setProvBonuses({ mtp: 0, dao: 0, jap: 0 }); toast.info("Reset to defaults", "Not saved yet"); };
 
   // Simulator
   const simSell = calcSell(simCost, brackets, floorPct, floorCeiling);
@@ -241,6 +243,24 @@ export default function AdminPricingPage({ dark, t }) {
             <span className="text-xs ml-1.5" style={{ color: t.textMuted }}>/ $1</span>
           </Row>
         </div>
+      </div>
+
+      {/* ═══ PROVIDER BONUS ═══ */}
+      <div className="adm-card p-5 mb-4" style={cardS}>
+        <div className="set-card-title" style={{ color: t.textMuted }}>Provider bonus</div>
+        <div className="set-card-desc" style={{ color: t.textMuted }}>Extra markup on services from a specific provider — use to pocket volume discounts without changing user-facing prices.</div>
+        <div className="set-card-divider" style={divS} />
+        <Tip dark={dark}>When you get a 3% discount from a provider, set their bonus to 3% — user prices stay the same while your margin grows on that provider's services only.</Tip>
+        {[
+          ["MTP", "mtp", "Primary provider"],
+          ["DAO", "dao", "Secondary provider"],
+          ["JAP", "jap", "Japanese provider"],
+        ].map(([label, key, hint]) => (
+          <Row key={key} dark={dark} label={label} hint={hint}>
+            <NumInput dark={dark} value={provBonuses[key]} onChange={v => setProvBonuses(prev => ({ ...prev, [key]: v }))} min={0} max={50} fallback={0} width={64} decimal />
+            <span className="text-sm" style={{ color: t.textMuted }}>%</span>
+          </Row>
+        ))}
       </div>
 
       {/* ═══ SIMULATOR ═══ */}

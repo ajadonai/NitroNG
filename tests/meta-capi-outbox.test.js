@@ -49,6 +49,7 @@ function queued(overrides = {}) {
     status: 'pending',
     attempts: 0,
     sentAt: null,
+    firstError: null,
     ...overrides,
   };
 }
@@ -235,6 +236,7 @@ describe('Meta CAPI durable outbox', () => {
       status: 'failed',
       attempts: { increment: 1 },
       leaseToken: null,
+      firstError: expect.any(String),
     });
     expect(result.nextAttemptAt.getTime()).toBe(now.getTime() + 5 * 60_000);
     expect(mocks.reportOperationalFailure).toHaveBeenCalledWith(

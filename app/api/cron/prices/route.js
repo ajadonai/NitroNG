@@ -3,7 +3,7 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getServices, isProviderConfigured } from '@/lib/smm';
-import { calculateTierPrice } from '@/lib/markup';
+import { calculateTierPrice, getProviderBonus } from '@/lib/markup';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 
 export async function GET(req) {
@@ -73,12 +73,13 @@ export async function GET(req) {
       if (costChanged) stats.updated++;
 
       const costKobo = cost * usdRate;
+      const pb = getProviderBonus(s.provider, ms);
 
       if (s.tiers.length > 0) {
         for (const t of s.tiers) {
           if (t.pricePinned) continue;
           const ng = t.group?.nigerian || false;
-          const newSell = calculateTierPrice(cost, t.tier, ms, ng);
+          const newSell = calculateTierPrice(cost, t.tier, ms, ng, pb);
           if (newSell !== Number(t.sellPer1k)) {
             ops.push(prisma.serviceTier.update({ where: { id: t.id }, data: { sellPer1k: newSell } }));
             stats.repriced++;
@@ -89,7 +90,7 @@ export async function GET(req) {
         }
       }
 
-      const baseNewSell = s.tiers.length === 0 ? calculateTierPrice(cost, 'Standard', ms, false) : Number(s.sellPer1k);
+      const baseNewSell = s.tiers.length === 0 ? calculateTierPrice(cost, 'Standard', ms, false, pb) : Number(s.sellPer1k);
       if (costChanged || (s.tiers.length === 0 && baseNewSell !== Number(s.sellPer1k))) {
         ops.push(prisma.service.update({ where: { id: s.id }, data: { ...(costChanged ? { costPer1k: liveCost } : {}), ...(s.tiers.length === 0 ? { sellPer1k: baseNewSell } : {}) } }));
         if (s.tiers.length === 0 && baseNewSell !== Number(s.sellPer1k)) stats.repriced++;
