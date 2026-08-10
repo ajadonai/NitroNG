@@ -548,6 +548,7 @@ model MetaCapiEvent {
   leaseToken     String?
   leaseExpiresAt DateTime?
   lastError      String?   @db.Text
+  firstError     String?   @db.Text
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 

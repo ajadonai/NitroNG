@@ -3,7 +3,7 @@ import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
 import { getServices, getBalance, isProviderConfigured, getProviderName, checkOrder } from '@/lib/smm';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
-import { calculateTierPrice } from '@/lib/markup';
+import { calculateTierPrice, getProviderBonus } from '@/lib/markup';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
 import { findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
@@ -451,11 +451,12 @@ export async function POST(req) {
         if (costChanged) stats.updated++;
 
         const costKobo = cost * usdRate;
+        const pb = getProviderBonus(s.provider, ms);
 
         if (s.tiers.length > 0) {
           for (const t of s.tiers) {
             const ng = t.group?.nigerian || false;
-            const newSell = calculateTierPrice(cost, t.tier, ms, ng);
+            const newSell = calculateTierPrice(cost, t.tier, ms, ng, pb);
             if (newSell !== Number(t.sellPer1k)) {
               ops.push(prisma.serviceTier.update({ where: { id: t.id }, data: { sellPer1k: newSell } }));
               stats.repriced++;
@@ -466,7 +467,7 @@ export async function POST(req) {
           }
         }
 
-        const baseNewSell = s.tiers.length === 0 ? calculateTierPrice(cost, 'Standard', ms, false) : Number(s.sellPer1k);
+        const baseNewSell = s.tiers.length === 0 ? calculateTierPrice(cost, 'Standard', ms, false, pb) : Number(s.sellPer1k);
         if (costChanged || (s.tiers.length === 0 && baseNewSell !== Number(s.sellPer1k))) {
           ops.push(prisma.service.update({ where: { id: s.id }, data: { ...(costChanged ? { costPer1k: liveCost } : {}), ...(s.tiers.length === 0 ? { sellPer1k: baseNewSell } : {}) } }));
           if (s.tiers.length === 0 && baseNewSell !== Number(s.sellPer1k)) stats.repriced++;

@@ -166,12 +166,13 @@ export async function POST(req) {
       // Auto-calculate sell price from markup if not provided
       let finalSellPer1k = Number(sellPer1k);
       if (!finalSellPer1k || finalSellPer1k <= 0) {
-        const { calculateTierPrice } = await import('@/lib/markup');
+        const { calculateTierPrice, getProviderBonus } = await import('@/lib/markup');
         // Load markup settings from DB
         const markupSettings = {};
         const settings = await prisma.setting.findMany({ where: { key: { startsWith: 'markup_' } } });
         settings.forEach(s => { markupSettings[s.key] = s.value; });
-        finalSellPer1k = calculateTierPrice(Number(service.costPer1k), tier || 'Standard', markupSettings);
+        const pb = getProviderBonus(service.provider, markupSettings);
+        finalSellPer1k = calculateTierPrice(Number(service.costPer1k), tier || 'Standard', markupSettings, false, pb);
       }
 
       const maxSort = await prisma.serviceTier.aggregate({ where: { groupId }, _max: { sortOrder: true } });
@@ -251,7 +252,7 @@ export async function POST(req) {
     }
 
     if (action === 'recalculate-prices') {
-      const { calculateTierPrice } = await import('@/lib/markup');
+      const { calculateTierPrice, getProviderBonus } = await import('@/lib/markup');
       // Load markup settings from DB
       const markupRows = await prisma.setting.findMany({ where: { key: { startsWith: 'markup_' } } });
       const ms = {};
@@ -260,7 +261,7 @@ export async function POST(req) {
       // Get all tiers with their linked service AND group (to check nigerian flag)
       const allTiers = await prisma.serviceTier.findMany({
         include: {
-          service: { select: { costPer1k: true } },
+          service: { select: { costPer1k: true, provider: true } },
           group: { select: { nigerian: true } },
         },
       });
@@ -275,7 +276,8 @@ export async function POST(req) {
           continue;
         }
         const isNigerian = !!t.group?.nigerian;
-        const newSell = calculateTierPrice(Number(t.service.costPer1k), t.tier, ms, isNigerian);
+        const pb = getProviderBonus(t.service.provider, ms);
+        const newSell = calculateTierPrice(Number(t.service.costPer1k), t.tier, ms, isNigerian, pb);
         if (newSell > 0 && newSell !== Number(t.sellPer1k)) {
           ops.push(prisma.serviceTier.update({ where: { id: t.id }, data: { sellPer1k: newSell } }));
           updated++;
