@@ -229,7 +229,12 @@ function groupOrders(orders) {
 
 
 /* ── Shared expanded order details ── */
-function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, compact, toast, onNavigate, waNum, onViewComments }) {
+function refillEligible(o) {
+  if (o.status !== "Completed" || !o.refill || !o.completedAt) return false;
+  return Date.now() < new Date(o.completedAt).getTime() + (o.refillDays || 30) * 86400000;
+}
+
+function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, compact, toast, onNavigate, waNum, onViewComments, doRefill, refillLoading }) {
   const qty = o.quantity || 0;
   const isCancelled = o.status === "Cancelled";
   const hasData = o.remains != null;
@@ -302,7 +307,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
           <div>
             <div className="text-[13px] font-semibold mb-0.5" style={{ color: dark ? "#6ee7b7" : "#059669" }}>Your order is complete!</div>
-            <div className="text-[12px] leading-[1.55]" style={{ color: dark ? "#a09b95" : "#555250" }}>If you notice a small dip in the next few days, don't worry — platforms routinely clean up inactive accounts and it's completely normal. <strong style={{ color: dark ? "#e5e0db" : "#1a1a1a" }}>Services with refill will top you back up automatically.</strong></div>
+            <div className="text-[12px] leading-[1.55]" style={{ color: dark ? "#a09b95" : "#555250" }}>If you notice a small dip in the next few days, don't worry — platforms routinely clean up inactive accounts and it's completely normal.{refillEligible(o) ? <strong style={{ color: dark ? "#e5e0db" : "#1a1a1a" }}> Use the Request Refill button below to top up at no extra cost.</strong> : o.refill ? <strong style={{ color: dark ? "#e5e0db" : "#1a1a1a" }}> Your refill window for this order has ended.</strong> : null}</div>
           </div>
         </div>
       )}
@@ -435,6 +440,18 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         {(o.status === "Completed" || o.status === "Cancelled") && !o.offerDisabled && (
           <button onClick={async () => { const ok = await confirm({ title: "Reorder", message: `Reorder ${o.service}? ₦${o.charge?.toLocaleString()} will be charged from your wallet.`, confirmLabel: "Place Reorder" }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5 text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)" }}>{actionLoading === o.id ? <Spinner size={14} color={t.accent} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>}Reorder</button>
         )}
+        {o.refillRequestedAt && refillEligible(o) && (
+          <span className="m flex items-center gap-1.5 text-[12px] font-semibold rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.06)", color: dark ? "#fcd34d" : "#d97706" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+            Refill in Progress
+          </span>
+        )}
+        {!o.refillRequestedAt && refillEligible(o) && (
+          <button onClick={async () => { const ok = await confirm({ title: "Request Refill", message: "If your count dropped after delivery, we'll top it back up at no extra cost. This may take a few hours.", confirmLabel: "Request Refill" }); if (ok) doRefill(o.id); }} disabled={refillLoading === o.id} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(34,197,94,.12)" : "rgba(34,197,94,.07)", color: dark ? "#6ee7b7" : "#059669" }}>
+            {refillLoading === o.id ? <Spinner size={14} color={dark ? "#6ee7b7" : "#059669"} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>}
+            Request Refill
+          </button>
+        )}
         {reportIssueButton}
       </div>
     </div>
@@ -443,7 +460,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
 
 
 /* ── Batch row ── */
-function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpandedOrder, doAction, actionLoading, doBatchAction, batchActionLoading, confirm, toast, onNavigate, waNum, onViewComments }) {
+function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpandedOrder, doAction, actionLoading, doBatchAction, batchActionLoading, confirm, toast, onNavigate, waNum, onViewComments, doRefill, refillLoading }) {
   const hasAttentionOrders = batch.orders.some(isAttention);
   const totalCharge = batch.orders.reduce((s, o) => s + (o.charge || 0), 0);
   const isLoading = batchActionLoading === batch.batchId;
@@ -515,7 +532,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                 </div>
                 <svg className="shrink-0 ml-0.5" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expandedOrder === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s", }}><polyline points="6 9 12 15 18 9"/></svg>
               </div>
-              {expandedOrder === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={onViewComments} compact />}
+              {expandedOrder === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={onViewComments} doRefill={doRefill} refillLoading={refillLoading} compact />}
             </div>
           ))}
         </div>
@@ -577,6 +594,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
   const [total, setTotal] = useState(initialTotalCount);
   const [matchingOrdersTotal, setMatchingOrdersTotal] = useState(initialTotalCount);
   const [actionLoading, setActionLoading] = useState(null);
+  const [refillLoading, setRefillLoading] = useState(null);
   const [batchActionLoading, setBatchActionLoading] = useState(null);
   const [dateRange, setDateRange] = useState(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -651,6 +669,18 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       }
     } catch { toast.error("Request failed", "Check your connection and try again"); }
     setActionLoading(null);
+  };
+
+  const doRefill = async (orderId) => {
+    setRefillLoading(orderId);
+    try {
+      const res = await fetch("/api/orders/refill", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId }) });
+      const data = await res.json();
+      if (!res.ok) { toast.error("Refill failed", data.error || "Something went wrong"); setRefillLoading(null); return; }
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, refillRequestedAt: new Date().toISOString() } : o));
+      toast.success("Refill requested", "Delivery will begin shortly");
+    } catch { toast.error("Request failed", "Check your connection and try again"); }
+    setRefillLoading(null);
   };
 
   const doBatchAction = async (batchId, action) => {
@@ -761,7 +791,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
         {pagedGroups.length > 0 ? pagedGroups.map((item, i) => {
           if (item.type === "batch") {
-            return <BatchRow key={item.batchId} batch={item} dark={dark} t={t} expanded={expandedBatch === item.batchId} onToggle={(id) => { setExpandedBatch(expandedBatch === id ? null : id); setExpandedBatchOrder(null); setExpanded(null); }} expandedOrder={expandedBatchOrder} setExpandedOrder={setExpandedBatchOrder} doAction={doAction} actionLoading={actionLoading} doBatchAction={doBatchAction} batchActionLoading={batchActionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={setViewComments} />;
+            return <BatchRow key={item.batchId} batch={item} dark={dark} t={t} expanded={expandedBatch === item.batchId} onToggle={(id) => { setExpandedBatch(expandedBatch === id ? null : id); setExpandedBatchOrder(null); setExpanded(null); }} expandedOrder={expandedBatchOrder} setExpandedOrder={setExpandedBatchOrder} doAction={doAction} actionLoading={actionLoading} doBatchAction={doBatchAction} batchActionLoading={batchActionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={setViewComments} doRefill={doRefill} refillLoading={refillLoading} />;
           }
           const o = item.order;
           const attn = isAttention(o);
@@ -785,7 +815,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
               </div>
 
               {/* Expanded details */}
-              {expanded === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={setViewComments} />}
+              {expanded === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={setViewComments} doRefill={doRefill} refillLoading={refillLoading} />}
             </div>
           );
         }) : (

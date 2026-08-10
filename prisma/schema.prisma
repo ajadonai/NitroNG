@@ -302,6 +302,7 @@ model Order {
   completedAt             DateTime?
   refundedAt              DateTime?
   redispatchedAt          DateTime?
+  refillRequestedAt       DateTime?
   parentOrderId           String?
   source                  String    @default("web") // "web" | "api"
   loyaltyDiscount         Int       @default(0)

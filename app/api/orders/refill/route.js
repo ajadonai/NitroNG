@@ -23,6 +23,10 @@ export async function POST(req) {
   if (!order.apiOrderId) return Response.json({ error: 'Order has no provider reference' }, { status: 400 });
   if (!order.tier?.refill) return Response.json({ error: 'This service does not support refills' }, { status: 400 });
 
+  if (order.refillRequestedAt) {
+    return Response.json({ error: 'A refill is already in progress for this order.' }, { status: 400 });
+  }
+
   const refillDays = order.tier.refillDays || 30;
   const completedAt = order.completedAt || order.updatedAt;
   const expiresAt = new Date(completedAt.getTime() + refillDays * 24 * 60 * 60 * 1000);
@@ -34,7 +38,8 @@ export async function POST(req) {
   const provider = order.service?.provider || 'mtp';
 
   try {
-    const result = await refillOrder(provider, order.apiOrderId);
+    await refillOrder(provider, order.apiOrderId);
+    await prisma.order.update({ where: { id: order.id }, data: { refillRequestedAt: new Date() } });
     log.info('User refill', `${session.email} requested refill for ${order.orderId}`);
     return Response.json({ success: true, message: 'Refill requested — delivery will begin shortly' });
   } catch (err) {
@@ -44,6 +49,7 @@ export async function POST(req) {
       return Response.json({ error: 'This order cannot be refilled by the provider.' }, { status: 400 });
     }
     if (msg.includes('Refill already')) {
+      await prisma.order.update({ where: { id: order.id }, data: { refillRequestedAt: new Date() } });
       return Response.json({ error: 'A refill is already in progress for this order.' }, { status: 400 });
     }
     return Response.json({ error: msg || 'Failed to request refill. Please try again or contact support.' }, { status: 500 });
