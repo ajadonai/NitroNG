@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 const workflow = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
 const migrationReadme = readFileSync(new URL('../prisma/migrations/README.md', import.meta.url), 'utf8');
 
-const BASELINE_COMMIT = '7d2bb02f03f495af04e55279bc63df7dcd7944ff';
+const BASELINE_COMMIT = '2e43adc182a461c5e1a06baec9ba489b69d9d69f';
 const BASELINE_SCHEMA_SHA256 = '44ce5a054d9c2db1d47e2647f698a3a27e7f397808843897a295a3a02e870dbb';
 const LAST_LEGACY_MIGRATION = '20260712020000_add_order_nitro_points_redeemed';
 const FIRST_REMEDIATION_MIGRATION = '20260717010000_add_payment_provider_audit_fields';

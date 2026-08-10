@@ -42,7 +42,17 @@ jobs:
           node-version: 22.23.1
           cache: npm
       - name: Install locked dependencies
-        run: npm ci
+        run: |
+          npm ci
+          # Lockfile generated on macOS skips linux native bindings (npm bug #4828).
+          npm install --no-save \
+            @rolldown/binding-linux-x64-gnu \
+            @rollup/rollup-linux-x64-gnu \
+            lightningcss-linux-x64-gnu \
+            @tailwindcss/oxide-linux-x64-gnu \
+            @unrs/resolver-binding-linux-x64-gnu \
+            @next/swc-linux-x64-gnu \
+            2>/dev/null || true
       - name: Lint application
         run: npm run lint:ci
       - name: Verify tracked migration manifest
@@ -51,7 +61,7 @@ jobs:
         run: npx prisma validate
       - name: Materialize immutable pre-remediation baseline
         env:
-          PRE_REMEDIATION_BASELINE_COMMIT: 7d2bb02f03f495af04e55279bc63df7dcd7944ff
+          PRE_REMEDIATION_BASELINE_COMMIT: 2e43adc182a461c5e1a06baec9ba489b69d9d69f
           PRE_REMEDIATION_SCHEMA_SHA256: 44ce5a054d9c2db1d47e2647f698a3a27e7f397808843897a295a3a02e870dbb
         run: |
           baseline_schema="$RUNNER_TEMP/pre-remediation-schema.prisma"
@@ -140,7 +150,9 @@ jobs:
       - name: Install Chromium for browser journeys
         run: npx playwright install --with-deps chromium
       - name: Run critical browser journeys
-        run: npm run test:e2e
+        run: |
+          rm -rf .next
+          npm run test:e2e
       - name: Upload browser-test diagnostics
         if: failure()
         uses: actions/upload-artifact@v4

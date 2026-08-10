@@ -29,7 +29,7 @@ be replayed directly or rewritten: those SQL files are already represented in
 real migration histories and their checksums are immutable.
 
 For its disposable PostgreSQL service only, CI uses the Prisma schema from
-commit `7d2bb02f03f495af04e55279bc63df7dcd7944ff`, the Phase 1–3 consolidation
+commit `2e43adc182a461c5e1a06baec9ba489b69d9d69f`, the Phase 1–3 consolidation
 immediately before the remediation migrations, as an immutable structural
 snapshot. CI checks out full Git history, installs the required `pg_trgm`
 extension, materializes that schema with `prisma db push`, executes the one
