@@ -43,6 +43,7 @@ model User {
   lastName               String?
   phone                  String?   @unique
   balance                Int       @default(0)
+  depositCount           Int       @default(0)
   referralCode           String    @unique @default(cuid())
   referredBy             String?
   emailVerified          Boolean   @default(false)

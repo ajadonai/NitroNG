@@ -46,7 +46,8 @@
     "20260806120000_add_meta_capi_outbox": "a8d30117f9853048cc90b4830d1c2925c9cef88f893c30318302b2ad53747ec5",
     "20260806120100_add_order_source_column": "1ccb45f129c6bdbc727c88c5934b93ac8e487d89ffc3e24903f4b03e8aa0d0d4",
     "20260806130000_add_traffic_targeting": "334607c54771b9f5056dfb75bc95333f8d760e8907697ec4337d92efff12c1e6",
-    "20260810000000_add_first_error_to_meta_capi": "5bb43aa349272f0f19f37ccc8ba449bff17de2c3b91cf415d42a175698aedfea"
+    "20260810000000_add_first_error_to_meta_capi": "5bb43aa349272f0f19f37ccc8ba449bff17de2c3b91cf415d42a175698aedfea",
+    "20260810010000_add_deposit_count": "f6417eabd21ed4417a63bc6996e844ad342d482502e1320ea7e3310de101325a"
   },
   "appliedOverrides": {
     "0_init": "c864f484fce76fd7b8db286181967d98cdb91559be1081e34df0fd65cc60b7c5",
