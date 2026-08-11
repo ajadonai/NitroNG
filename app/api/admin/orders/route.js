@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { requireAdmin, logActivity, canSeeSensitive, maskEmail, maskPhone } from '@/lib/admin';
+import { requireAdmin, logActivity, canSeeSensitive, canPerformAction, maskEmail, maskPhone } from '@/lib/admin';
 import { sendEmail, walletCreditEmail } from '@/lib/email';
 import { checkOrder, cancelOrder, refillOrder, isProviderConfigured, getProviderName } from '@/lib/smm';
 import { voidCommissions } from '@/lib/commissions';
@@ -174,8 +174,7 @@ export async function GET(req) {
         offerDisabled: offer.offerDisabled,
         platform: offer.platform,
         category: o.service?.category || 'unknown',
-        provider: o.service?.provider || 'mtp',
-        serviceApiId: o.service?.apiId || null,
+        ...(sensitive ? { provider: o.service?.provider || 'mtp', serviceApiId: o.service?.apiId || null } : {}),
         link: o.link,
         quantity: o.quantity,
         charge: o.charge / 100,
@@ -183,7 +182,7 @@ export async function GET(req) {
         remains: o.remains,
         startCount: o.startCount,
         status: o.status,
-        apiOrderId: o.apiOrderId,
+        ...(sensitive ? { apiOrderId: o.apiOrderId } : {}),
         dripDays: o.dripDays || null,
         dripConfig: o.dripConfig || null,
         dripEndAt: o.dripDispatches?.filter(d => !['completed', 'partial', 'failed'].includes(d.status)).sort((a, b) => b.scheduledAt - a.scheduledAt)[0]?.scheduledAt?.toISOString() || null,
@@ -241,6 +240,11 @@ export async function POST(req) {
 
     const provider = order.service?.provider || 'mtp';
     const providerLabel = getProviderName(provider);
+
+    const actionKey = { cancel: 'orders.cancel', refill: 'orders.refill', reset_refill: 'orders.reset_refill', check: 'orders.check', refund: 'orders.refund', retry: 'orders.retry', update_link: 'orders.update_link', dispatch: 'orders.dispatch', redispatch: 'orders.redispatch', reset_drip: 'orders.reset_drip' }[action];
+    if (actionKey && !canPerformAction(admin, actionKey)) {
+      return Response.json({ error: 'You do not have permission for this action' }, { status: 403 });
+    }
 
     if (action === 'cancel') {
       // Phase 1: claim cancellation — blocks dispatch/reset/sync on children

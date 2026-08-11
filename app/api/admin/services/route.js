@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { requireAdmin, logActivity } from '@/lib/admin';
+import { requireAdmin, logActivity, canSeeSensitive } from '@/lib/admin';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 
 export async function GET() {
@@ -19,6 +19,7 @@ export async function GET() {
     ]);
 
     const usdRate = Number(usdSetting?.value || 1600);
+    const sensitive = canSeeSensitive(admin);
 
     return Response.json({
       services: services.map(s => ({
@@ -26,7 +27,7 @@ export async function GET() {
         apiId: s.apiId,
         name: s.name,
         category: s.category,
-        costPer1k: Math.round(Number(s.costPer1k) * usdRate) / 100,
+        ...(sensitive ? { costPer1k: Math.round(Number(s.costPer1k) * usdRate) / 100 } : {}),
         sellPer1k: Number(s.sellPer1k) / 100,
         markup: s.markup,
         min: s.min,
@@ -34,7 +35,7 @@ export async function GET() {
         refill: s.refill,
         avgTime: s.avgTime,
         enabled: s.enabled,
-        provider: s.provider || 'mtp',
+        ...(sensitive ? { provider: s.provider || 'mtp' } : {}),
         tags: s.tags || [],
         orders: s._count.orders,
         tiers: s._count.tiers,

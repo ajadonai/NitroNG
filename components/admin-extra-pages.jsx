@@ -280,10 +280,21 @@ const ALL_PAGES = [
   { id:"overview", label:"Overview", g:"Main" },{ id:"orders", label:"Orders", g:"Main" },{ id:"users", label:"Users", g:"Main" },{ id:"leaderboard", label:"Leaderboard", g:"Main" },{ id:"tickets", label:"Tickets", g:"Main" },
   { id:"services", label:"Services", g:"Catalog" },{ id:"menu-builder", label:"Menu Builder", g:"Catalog" },{ id:"pricing", label:"Pricing", g:"Catalog" },{ id:"blog", label:"Blog", g:"Catalog" },
   { id:"payments", label:"Payments", g:"Finance" },{ id:"finance", label:"Finance", g:"Finance" },{ id:"financials", label:"Breakdown (Finance)", g:"Finance" },{ id:"rewards", label:"Rewards", g:"Finance" },
-  { id:"crew", label:"Crew", g:"Marketing" },{ id:"promotions", label:"Promotions", g:"Marketing" },{ id:"acquisition", label:"Acquisition", g:"Marketing" },{ id:"changelog", label:"Changelog", g:"Marketing" },{ id:"issues", label:"Issues", g:"Marketing" },
+  { id:"refills", label:"Refills", g:"Main" },{ id:"outreach", label:"Outreach", g:"Marketing" },
+  { id:"crew", label:"Crew", g:"Marketing" },{ id:"promotions", label:"Promotions", g:"Marketing" },{ id:"acquisition", label:"Acquisition", g:"Marketing" },{ id:"changelog", label:"Changelog", g:"Marketing" },{ id:"issues", label:"Issues", g:"Marketing" },{ id:"tasks", label:"Tasks", g:"Marketing" },
   { id:"alerts", label:"Alerts", g:"System" },{ id:"notifications", label:"Notifications", g:"System" },{ id:"activity", label:"Activity Log", g:"System" },{ id:"team", label:"Team", g:"System" },{ id:"api", label:"API", g:"System" },{ id:"maintenance", label:"Maintenance", g:"System" },{ id:"settings", label:"Settings", g:"System" },
 ];
 const GRANTABLE_ACTIONS = [
+  { id: "orders.dispatch", label: "Dispatch Orders", g: "Orders" },
+  { id: "orders.redispatch", label: "Redispatch Orders", g: "Orders" },
+  { id: "orders.cancel", label: "Cancel Orders", g: "Orders" },
+  { id: "orders.refund", label: "Refund Orders", g: "Orders" },
+  { id: "orders.retry", label: "Retry Failed Orders", g: "Orders" },
+  { id: "orders.check", label: "Check Order Status", g: "Orders" },
+  { id: "orders.refill", label: "Send Refills", g: "Orders" },
+  { id: "orders.reset_refill", label: "Reset Refill Requests", g: "Orders" },
+  { id: "orders.update_link", label: "Update Order Links", g: "Orders" },
+  { id: "orders.reset_drip", label: "Reset Drip Schedules", g: "Orders" },
   { id: "payments.approve", label: "Approve/Reject Deposits", g: "Finance" },
   { id: "payments.configure", label: "Configure Gateways", g: "Finance" },
   { id: "finance.topup", label: "Record Provider Top-ups", g: "Finance" },
@@ -300,9 +311,10 @@ const GRANTABLE_ACTIONS = [
   { id: "api.sync", label: "Sync Provider Data", g: "System" },
 ];
 const DEFAULT_PAGES = {
-  admin: ["overview","orders","users","leaderboard","tickets","menu-builder","services","pricing","blog","alerts","rewards","finance","activity","promotions","acquisition","issues","crew","changelog","notifications"],
+  admin: ["overview","orders","users","leaderboard","tickets","menu-builder","services","pricing","blog","alerts","rewards","finance","activity","promotions","acquisition","issues","crew","changelog","notifications","tasks","outreach","refills"],
   support: ["overview","tickets","users","orders"],
   finance: ["overview","orders","finance","financials","payments","leaderboard"],
+  staff: ["overview","outreach","orders","refills","users"],
 };
 const PAGE_GROUPS = [...new Set(ALL_PAGES.map(p => p.g))];
 const ACTION_GROUPS = [...new Set(GRANTABLE_ACTIONS.map(a => a.g))];

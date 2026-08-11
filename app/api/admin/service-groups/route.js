@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { requireAdmin, logActivity } from '@/lib/admin';
+import { requireAdmin, logActivity, canSeeSensitive } from '@/lib/admin';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 
 export async function GET() {
@@ -28,6 +28,8 @@ export async function GET() {
       select: { id: true, apiId: true, name: true, category: true, provider: true, costPer1k: true, sellPer1k: true, min: true, max: true, refill: true, avgTime: true },
     });
 
+    const sensitive = canSeeSensitive(admin);
+
     return Response.json({
       groups: groups.map(g => ({
         id: g.id,
@@ -50,7 +52,7 @@ export async function GET() {
           trafficTargeting: t.trafficTargeting,
           sortOrder: t.sortOrder,
           serviceId: t.serviceId,
-          service: t.service,
+          service: sensitive ? t.service : { id: t.service?.id, apiId: t.service?.apiId, name: t.service?.name, category: t.service?.category, min: t.service?.min, max: t.service?.max, refill: t.service?.refill, avgTime: t.service?.avgTime },
         })),
       })),
       services: services.map(s => ({
@@ -58,8 +60,7 @@ export async function GET() {
         apiId: s.apiId,
         name: s.name,
         category: s.category,
-        provider: s.provider,
-        costPer1k: s.costPer1k,
+        ...(sensitive ? { provider: s.provider, costPer1k: s.costPer1k } : {}),
         sellPer1k: s.sellPer1k,
         min: s.min,
         max: s.max,

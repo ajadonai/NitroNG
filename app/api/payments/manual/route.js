@@ -29,17 +29,6 @@ export async function POST(req) {
       where: { userId: user.id, method: 'manual', status: 'Pending' },
       orderBy: { createdAt: 'desc' },
     });
-    if (existingPending) {
-      const ageMs = Date.now() - new Date(existingPending.createdAt).getTime();
-      const confirmed = existingPending.note?.includes('[user_confirmed');
-      const expiryMs = confirmed ? 6 * 60 * 60 * 1000 : 30 * 60 * 1000;
-      if (ageMs > expiryMs) {
-        await prisma.transaction.update({ where: { id: existingPending.id }, data: { status: 'Failed', note: existingPending.note + ' [expired]' } });
-      } else {
-        return Response.json({ error: 'You have a pending bank transfer. Please contact admin on WhatsApp if you need to make another transfer.' }, { status: 400 });
-      }
-    }
-
     // Get bank details from admin config
     const setting = await prisma.setting.findUnique({ where: { key: 'gateway_manual' } });
     if (!setting) return Response.json({ error: 'Bank transfer not configured' }, { status: 503 });
@@ -51,6 +40,23 @@ export async function POST(req) {
 
     const { bankName, accountNumber, accountName } = config.fields || {};
     if (!bankName || !accountNumber || !accountName) return Response.json({ error: 'Bank details not configured. Contact admin.' }, { status: 503 });
+
+    if (existingPending) {
+      const ageMs = Date.now() - new Date(existingPending.createdAt).getTime();
+      const confirmed = existingPending.note?.includes('[user_confirmed');
+      const expiryMs = confirmed ? 6 * 60 * 60 * 1000 : 30 * 60 * 1000;
+      if (ageMs > expiryMs) {
+        await prisma.transaction.update({ where: { id: existingPending.id }, data: { status: 'Failed', note: existingPending.note + ' [expired]' } });
+      } else {
+        return Response.json({
+          bankName, accountNumber, accountName,
+          amount: existingPending.amount / 100,
+          reference: existingPending.reference,
+          resumed: true,
+          confirmed: confirmed,
+        });
+      }
+    }
 
     const reference = `NTR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const amountKobo = Math.round(amountNum * 100);
