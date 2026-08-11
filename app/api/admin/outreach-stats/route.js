@@ -5,8 +5,8 @@ const STAFF_NAMES = { '8567146346': 'Nitro', '1935066216': 'Soludo', '8911494544
 function staffName(tgId) { return STAFF_NAMES[String(tgId)] || `Staff ${String(tgId).slice(-4)}`; }
 
 export async function GET(req) {
-  const admin = await requireAdmin(req);
-  if (admin instanceof Response) return admin;
+  const { admin, error } = await requireAdmin('outreach');
+  if (error) return error;
 
   const period = req.nextUrl.searchParams.get('period') || 'week';
   const now = new Date();

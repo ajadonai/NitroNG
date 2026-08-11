@@ -247,8 +247,9 @@ function PlaceholderPage({ title, subtitle, dark, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ RIGHT SIDEBAR                       ═══ */
 /* ═══════════════════════════════════════════ */
-function AdminRightSidebar({ data, dark, t, active }) {
-  const showProviderColors = ["orders", "services", "menu-builder", "pricing", "finance", "payments"].includes(active);
+function AdminRightSidebar({ data, dark, t, active, admin }) {
+  const isSensitive = admin?.role === 'owner' || admin?.role === 'superadmin';
+  const showProviderColors = isSensitive && ["orders", "services", "menu-builder", "pricing", "finance", "payments"].includes(active);
   const showActivity = !["leaderboard"].includes(active);
 
   const activityTypeMap = {
@@ -714,7 +715,7 @@ function AdminDashboardInner({ initialData }) {
     }
     switch (active) {
       case "overview": return <AdminOverview data={data} dark={dark} t={t} setActive={setActive} />;
-      case "orders": return <AdminOrdersPage dark={dark} t={t} />;
+      case "orders": return <AdminOrdersPage dark={dark} t={t} admin={admin} />;
       case "users": return <AdminUsersPage dark={dark} t={t} admin={admin} />;
       case "leaderboard": return <AdminLeaderboardPage dark={dark} t={t} />;
       case "tickets": return <AdminTicketsPage dark={dark} t={t} adminName={admin?.name || "Admin"} />;
@@ -847,7 +848,7 @@ function AdminDashboardInner({ initialData }) {
         </main>
 
         <div className="dash-right bg-t-sidebar-bg" style={{ borderLeft: `0.5px solid ${t.sidebarBorder}` }}>
-          {active === "create-order" ? <div id="create-order-sidebar" className="flex flex-col gap-4 flex-1 overflow-auto min-h-0" /> : active === "leaderboard" ? <AdminLeaderboardSidebar dark={dark} t={t} /> : <AdminRightSidebar data={data} dark={dark} t={t} active={active} />}
+          {active === "create-order" ? <div id="create-order-sidebar" className="flex flex-col gap-4 flex-1 overflow-auto min-h-0" /> : active === "leaderboard" ? <AdminLeaderboardSidebar dark={dark} t={t} /> : <AdminRightSidebar data={data} dark={dark} t={t} active={active} admin={admin} />}
         </div>
       </div>
     </div>

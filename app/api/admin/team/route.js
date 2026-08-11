@@ -46,7 +46,7 @@ export async function POST(req) {
     const name = titleCase(body.name);
 
     // Prevent creating owner or superadmin via API
-    const ASSIGNABLE = ['admin', 'support', 'finance'];
+    const ASSIGNABLE = ['admin', 'support', 'finance', 'staff'];
 
     if (action === 'create') {
       if (!canPerformAction(admin, 'team.create')) return Response.json({ error: 'Not authorized to create admins' }, { status: 403 });
