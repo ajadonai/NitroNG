@@ -75,19 +75,34 @@ export default function AdminOutreachPage({ dark }) {
             <StatCard dark={dark} label="Deposits" value={s.deposits || 0} prev={p.deposits} prefix="₦" />
           </div>
 
-          {s.byTouch && Object.keys(s.byTouch).length > 0 && (
-            <div style={{ marginBottom: 24, padding: 16, borderRadius: 12, background: dark ? 'rgba(255,255,255,.03)' : 'rgba(0,0,0,.02)' }}>
-              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, opacity: .6, textTransform: 'uppercase', letterSpacing: '.5px' }}>By Touch Type</div>
-              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                {Object.entries(s.byTouch).sort((a, b) => b[1] - a[1]).map(([k, v]) => (
-                  <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{v}</span>
-                    <span style={{ opacity: .6, fontSize: 13 }}>{TOUCH_LABELS[k] || k}</span>
-                  </div>
-                ))}
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
+            {s.byTouch && Object.keys(s.byTouch).length > 0 && (
+              <div style={{ flex: '1 1 280px', padding: 16, borderRadius: 12, background: dark ? 'rgba(255,255,255,.03)' : 'rgba(0,0,0,.02)' }}>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, opacity: .6, textTransform: 'uppercase', letterSpacing: '.5px' }}>By Touch Type</div>
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  {Object.entries(s.byTouch).sort((a, b) => b[1] - a[1]).map(([k, v]) => (
+                    <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{v}</span>
+                      <span style={{ opacity: .6, fontSize: 13 }}>{TOUCH_LABELS[k] || k}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+            {s.byStaff && Object.keys(s.byStaff).length > 0 && (
+              <div style={{ flex: '1 1 280px', padding: 16, borderRadius: 12, background: dark ? 'rgba(255,255,255,.03)' : 'rgba(0,0,0,.02)' }}>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, opacity: .6, textTransform: 'uppercase', letterSpacing: '.5px' }}>By Staff</div>
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  {Object.entries(s.byStaff).sort((a, b) => b[1] - a[1]).map(([k, v]) => (
+                    <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{v}</span>
+                      <span style={{ opacity: .6, fontSize: 13 }}>{k}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, opacity: .6, textTransform: 'uppercase', letterSpacing: '.5px' }}>Recent Contacts</div>
           <div style={{ overflowX: 'auto' }}>
@@ -96,6 +111,7 @@ export default function AdminOutreachPage({ dark }) {
                 <tr style={{ borderBottom: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)'}` }}>
                   <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 600, opacity: .5, fontSize: 12 }}>User</th>
                   <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 600, opacity: .5, fontSize: 12 }}>Touch</th>
+                  <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 600, opacity: .5, fontSize: 12 }}>By</th>
                   <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 600, opacity: .5, fontSize: 12 }}>Contacted</th>
                   <th style={{ textAlign: 'right', padding: '8px 12px', fontWeight: 600, opacity: .5, fontSize: 12 }}>Orders</th>
                   <th style={{ textAlign: 'right', padding: '8px 12px', fontWeight: 600, opacity: .5, fontSize: 12 }}>Revenue</th>
@@ -110,6 +126,7 @@ export default function AdminOutreachPage({ dark }) {
                         {TOUCH_LABELS[r.touchType] || r.touchType}
                       </span>
                     </td>
+                    <td style={{ padding: '10px 12px', fontSize: 13, fontWeight: 500 }}>{r.contactedBy || '—'}</td>
                     <td style={{ padding: '10px 12px', opacity: .7, fontSize: 13 }}>{new Date(r.contactedAt).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}>{r.orders}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", fontWeight: r.revenue > 0 ? 600 : 400, color: r.revenue > 0 ? '#4ade80' : 'inherit' }}>
@@ -118,7 +135,16 @@ export default function AdminOutreachPage({ dark }) {
                   </tr>
                 ))}
                 {(!data?.rows?.length) && (
-                  <tr><td colSpan={5} style={{ padding: 24, textAlign: 'center', opacity: .4 }}>No contacts recorded yet. Contacts are tracked when you tap the checkmark in Telegram.</td></tr>
+                  <tr><td colSpan={6} style={{ padding: '60px 20px', textAlign: 'center' }}>
+                    <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: 'block', margin: '0 auto 14px', opacity: .7 }}>
+                      <path d="M12 16h40v32a4 4 0 0 1-4 4H16a4 4 0 0 1-4-4V16z" stroke="#c47d8e" strokeWidth="1.5" opacity=".2" />
+                      <path d="M12 16l20 16 20-16" stroke="#c47d8e" strokeWidth="1.5" opacity=".3" strokeLinecap="round" strokeLinejoin="round" />
+                      <circle cx="32" cy="36" r="6" stroke="#c47d8e" strokeWidth="1.5" opacity=".2" />
+                      <path d="M30 36l1.5 1.5 3-3" stroke="#c47d8e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity=".4" />
+                    </svg>
+                    <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4, color: dark ? 'rgba(255,255,255,.6)' : 'rgba(0,0,0,.5)' }}>No contacts recorded yet</div>
+                    <div style={{ fontSize: 14, color: dark ? 'rgba(255,255,255,.35)' : 'rgba(0,0,0,.35)' }}>Contacts are tracked when you tap the checkmark in Telegram</div>
+                  </td></tr>
                 )}
               </tbody>
             </table>

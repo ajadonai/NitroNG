@@ -1,6 +1,9 @@
 import prisma from '@/lib/prisma';
 import { requireAdmin } from '@/lib/admin';
 
+const STAFF_NAMES = { '8567146346': 'Nitro', '1935066216': 'Soludo', '8911494544': 'Eshiema' };
+function staffName(tgId) { return STAFF_NAMES[String(tgId)] || `Staff ${String(tgId).slice(-4)}`; }
+
 export async function GET(req) {
   const admin = await requireAdmin(req);
   if (admin instanceof Response) return admin;
@@ -14,11 +17,11 @@ export async function GET(req) {
   const [contacts, prevContacts] = await Promise.all([
     prisma.outreachContact.findMany({
       where: { contactedAt: { gte: since } },
-      select: { userId: true, touchType: true, contactedAt: true },
+      select: { userId: true, touchType: true, contactedAt: true, contactedBy: true },
     }),
     prisma.outreachContact.findMany({
       where: { contactedAt: { gte: prevSince, lt: since } },
-      select: { userId: true, touchType: true, contactedAt: true },
+      select: { userId: true, touchType: true, contactedAt: true, contactedBy: true },
     }),
   ]);
 
@@ -28,7 +31,7 @@ export async function GET(req) {
   const recentContacts = await prisma.outreachContact.findMany({
     where: { contactedAt: { gte: since } },
     select: {
-      id: true, touchType: true, contactedAt: true,
+      id: true, touchType: true, contactedAt: true, contactedBy: true,
       user: { select: { id: true, name: true, email: true } },
     },
     orderBy: { contactedAt: 'desc' },
@@ -48,6 +51,7 @@ export async function GET(req) {
     id: c.id,
     touchType: c.touchType,
     contactedAt: c.contactedAt,
+    contactedBy: c.contactedBy ? staffName(c.contactedBy) : null,
     userName: c.user?.name || c.user?.email?.split('@')[0] || 'User',
     userId: c.user?.id,
     revenue: orderMap[c.user?.id]?.revenue || 0,
@@ -58,11 +62,16 @@ export async function GET(req) {
 }
 
 async function buildStats(contacts, since) {
-  if (!contacts.length) return { contacts: 0, users: 0, converted: 0, revenue: 0, deposits: 0, byTouch: {} };
+  if (!contacts.length) return { contacts: 0, users: 0, converted: 0, revenue: 0, deposits: 0, byTouch: {}, byStaff: {} };
 
   const userIds = [...new Set(contacts.map(c => c.userId))];
   const byTouch = {};
   for (const c of contacts) byTouch[c.touchType] = (byTouch[c.touchType] || 0) + 1;
+  const byStaff = {};
+  for (const c of contacts) {
+    const name = c.contactedBy ? staffName(c.contactedBy) : 'Unassigned';
+    byStaff[name] = (byStaff[name] || 0) + 1;
+  }
 
   const earliestContact = {};
   for (const c of contacts) {
@@ -101,5 +110,5 @@ async function buildStats(contacts, since) {
     }
   }
 
-  return { contacts: contacts.length, users: userIds.length, converted: converted.size, revenue: totalRevenue, deposits: totalDeposits, byTouch };
+  return { contacts: contacts.length, users: userIds.length, converted: converted.size, revenue: totalRevenue, deposits: totalDeposits, byTouch, byStaff };
 }

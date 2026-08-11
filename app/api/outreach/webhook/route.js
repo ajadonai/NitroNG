@@ -5,6 +5,13 @@ const SECRET = process.env.CRON_SECRET;
 
 const TOPIC_TO_TOUCH = { 8: 'day1', 9: 'day3', 10: 'day7', 11: 'winback', 13: 'firstDeposit', 14: 'firstOrder' };
 
+const OUTREACH_STAFF = ['8567146346', '8911494544'];
+const STAFF_NAMES = { '8567146346': 'Nitro', '1935066216': 'Soludo', '8911494544': 'Eshiema' };
+
+function staffName(tgId) {
+  return STAFF_NAMES[String(tgId)] || `Staff ${String(tgId).slice(-4)}`;
+}
+
 function tg(method, body) {
   return fetch(`https://api.telegram.org/bot${TOKEN}/${method}`, {
     method: 'POST',
@@ -13,13 +20,17 @@ function tg(method, body) {
   });
 }
 
-async function recordContact(userId, threadId, tgUserId) {
+async function claimContact(userId, threadId, tgUserId) {
   const touchType = TOPIC_TO_TOUCH[threadId] || 'unknown';
-  try {
-    await prisma.outreachContact.create({
-      data: { userId, touchType, contactedBy: tgUserId ? String(tgUserId) : null },
-    });
-  } catch {}
+  const existing = await prisma.outreachContact.findFirst({
+    where: { userId, touchType },
+    select: { contactedBy: true },
+  });
+  if (existing) return { claimed: false, by: existing.contactedBy };
+  await prisma.outreachContact.create({
+    data: { userId, touchType, contactedBy: tgUserId ? String(tgUserId) : null },
+  });
+  return { claimed: true };
 }
 
 export async function POST(req) {
@@ -35,41 +46,71 @@ export async function POST(req) {
       const { id, data, message, from } = body.callback_query;
       const threadId = message?.message_thread_id;
       const tgUserId = from?.id;
+      const clicker = staffName(tgUserId);
+
+      if (data !== 'n' && !OUTREACH_STAFF.includes(String(tgUserId))) {
+        await tg('answerCallbackQuery', {
+          callback_query_id: id,
+          text: 'You don’t have access to outreach actions.',
+          show_alert: true,
+        });
+        return Response.json({ ok: true });
+      }
 
       if (data === 'sent') {
-        // Legacy single-alert checkmark (no user ID embedded)
         await tg('editMessageReplyMarkup', {
           chat_id: message.chat.id,
           message_id: message.message_id,
-          reply_markup: { inline_keyboard: [[{ text: '\u{2705} Sent', callback_data: 'n' }]] },
+          reply_markup: { inline_keyboard: [[{ text: `\u{2705} ${clicker}`, callback_data: 'n' }]] },
         });
         await tg('answerCallbackQuery', { callback_query_id: id, text: 'Marked as sent!' });
       } else if (data.startsWith('c:')) {
         const userId = data.slice(2);
-        await recordContact(userId, threadId, tgUserId);
+        const result = await claimContact(userId, threadId, tgUserId);
+        if (!result.claimed) {
+          await tg('answerCallbackQuery', {
+            callback_query_id: id,
+            text: `Already contacted by ${staffName(result.by)}`,
+            show_alert: true,
+          });
+          return Response.json({ ok: true });
+        }
         await tg('editMessageReplyMarkup', {
           chat_id: message.chat.id,
           message_id: message.message_id,
-          reply_markup: { inline_keyboard: [[{ text: '\u{2705} Sent', callback_data: 'n' }]] },
+          reply_markup: { inline_keyboard: [[{ text: `\u{2705} ${clicker}`, callback_data: 'n' }]] },
         });
         await tg('answerCallbackQuery', { callback_query_id: id, text: 'Marked as sent!' });
       } else if (data.startsWith('s:')) {
         const userId = data.slice(2);
-        if (userId.length > 5) await recordContact(userId, threadId, tgUserId);
-        const kb = message.reply_markup?.inline_keyboard || [];
-        const newKb = kb.map(row => {
-          const cb = row.find(b => b.callback_data === data);
-          if (!cb) return row;
-          const urlBtn = row.find(b => b.url);
-          const label = urlBtn?.text?.replace(/^\u{1F4AC}\s*/u, '') || 'User';
-          return [{ text: `\u{2705} ${label}`, callback_data: 'n' }];
-        });
-        await tg('editMessageReplyMarkup', {
-          chat_id: message.chat.id,
-          message_id: message.message_id,
-          reply_markup: { inline_keyboard: newKb },
-        });
-        await tg('answerCallbackQuery', { callback_query_id: id, text: 'Marked as sent!' });
+        let blocked = false;
+        if (userId.length > 5) {
+          const result = await claimContact(userId, threadId, tgUserId);
+          if (!result.claimed) {
+            await tg('answerCallbackQuery', {
+              callback_query_id: id,
+              text: `Already contacted by ${staffName(result.by)}`,
+              show_alert: true,
+            });
+            blocked = true;
+          }
+        }
+        if (!blocked) {
+          const kb = message.reply_markup?.inline_keyboard || [];
+          const newKb = kb.map(row => {
+            const cb = row.find(b => b.callback_data === data);
+            if (!cb) return row;
+            const urlBtn = row.find(b => b.url);
+            const label = urlBtn?.text?.replace(/^\u{1F4AC}\s*/u, '') || 'User';
+            return [{ text: `\u{2705} ${label} \u{2014} ${clicker}`, callback_data: 'n' }];
+          });
+          await tg('editMessageReplyMarkup', {
+            chat_id: message.chat.id,
+            message_id: message.message_id,
+            reply_markup: { inline_keyboard: newKb },
+          });
+          await tg('answerCallbackQuery', { callback_query_id: id, text: 'Marked as sent!' });
+        }
       } else if (data === 'n') {
         await tg('answerCallbackQuery', { callback_query_id: id, text: 'Already marked as sent' });
       }

@@ -8,6 +8,9 @@ const TOUCH_LABELS = {
   winback: 'Winback', firstDeposit: 'First Deposit', firstOrder: 'First Order',
 };
 
+const STAFF_NAMES = { '8567146346': 'Nitro', '1935066216': 'Soludo', '8911494544': 'Eshiema' };
+function staffName(tgId) { return STAFF_NAMES[String(tgId)] || `Staff ${String(tgId).slice(-4)}`; }
+
 export async function GET(req) {
   const token = req.nextUrl.searchParams.get('token');
   const authHeader = req.headers.get('authorization');
@@ -35,7 +38,7 @@ export async function GET(req) {
 
   const contacts = await prisma.outreachContact.findMany({
     where: { contactedAt: { gte: since } },
-    select: { userId: true, touchType: true, contactedAt: true },
+    select: { userId: true, touchType: true, contactedAt: true, contactedBy: true },
   });
 
   if (!contacts.length) {
@@ -133,6 +136,18 @@ export async function GET(req) {
     + `<b>Converted:</b> ${converted.size} users (${convRate}%)\n`
     + `<b>Deposits after contact:</b> \u{20A6}${Number(totalDeposits).toLocaleString()}\n`
     + `<b>Revenue after contact:</b> \u{20A6}${Number(totalRevenue).toLocaleString()}`;
+
+  const byStaff = {};
+  for (const c of contacts) {
+    const name = c.contactedBy ? staffName(c.contactedBy) : 'Unassigned';
+    byStaff[name] = (byStaff[name] || 0) + 1;
+  }
+  const staffBreakdown = Object.entries(byStaff)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, count]) => `  ${name}: ${count}`)
+    .join('\n');
+
+  text += '\n\n<b>By staff:</b>\n' + staffBreakdown;
 
   if (topConverters) {
     text += '\n\n<b>Top conversions:</b>\n' + topConverters;

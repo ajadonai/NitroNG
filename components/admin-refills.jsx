@@ -71,15 +71,15 @@ export default function AdminRefillsPage({ dark, t }) {
           <Spinner size={20} color={t.accent} />
         </div>
       ) : refills.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center py-16">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="block mx-auto mb-3 opacity-40">
-              <polyline points="23 4 23 10 17 10" />
-              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-            </svg>
-            <div className="text-sm font-semibold text-t-text-muted">No pending refills</div>
-            <div className="text-xs mt-1 text-t-text-muted opacity-70">Refill requests from users will appear here</div>
-          </div>
+        <div className="py-[60px] px-5 text-center">
+          <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
+            <circle cx="32" cy="32" r="22" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
+            <path d="M42 22a14 14 0 1 0 .5 17" stroke={t.accent} strokeWidth="1.5" opacity=".3" strokeLinecap="round" />
+            <polyline points="42 17 42 23 36 23" stroke={t.accent} strokeWidth="2" opacity=".4" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M29 32l3 3 5-5" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity=".3" />
+          </svg>
+          <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No pending refills</div>
+          <div className="text-sm" style={{ color: t.textMuted }}>Refill requests from users will appear here</div>
         </div>
       ) : (
         <div className="rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
