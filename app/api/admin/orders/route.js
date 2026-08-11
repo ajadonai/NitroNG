@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { requireAdmin, logActivity, canSeeSensitive, maskEmail, maskPhone } from '@/lib/admin';
+import { requireAdmin, logActivity, canSeeSensitive, canPerformAction, maskEmail, maskPhone } from '@/lib/admin';
 import { sendEmail, walletCreditEmail } from '@/lib/email';
 import { checkOrder, cancelOrder, refillOrder, isProviderConfigured, getProviderName } from '@/lib/smm';
 import { voidCommissions } from '@/lib/commissions';
@@ -240,6 +240,11 @@ export async function POST(req) {
 
     const provider = order.service?.provider || 'mtp';
     const providerLabel = getProviderName(provider);
+
+    const actionKey = { cancel: 'orders.cancel', refill: 'orders.refill', reset_refill: 'orders.reset_refill', check: 'orders.check', refund: 'orders.refund', retry: 'orders.retry', update_link: 'orders.update_link', dispatch: 'orders.dispatch', redispatch: 'orders.redispatch', reset_drip: 'orders.reset_drip' }[action];
+    if (actionKey && !canPerformAction(admin, actionKey)) {
+      return Response.json({ error: 'You do not have permission for this action' }, { status: 403 });
+    }
 
     if (action === 'cancel') {
       // Phase 1: claim cancellation — blocks dispatch/reset/sync on children
