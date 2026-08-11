@@ -111,8 +111,29 @@ export async function POST(req) {
           });
           await tg('answerCallbackQuery', { callback_query_id: id, text: 'Marked as sent!' });
         }
+      } else if (data.startsWith('dnc:')) {
+        const userId = data.slice(4);
+        if (!OUTREACH_STAFF.includes(String(tgUserId))) {
+          await tg('answerCallbackQuery', { callback_query_id: id, text: 'You don’t have access to outreach actions.', show_alert: true });
+          return Response.json({ ok: true });
+        }
+        await prisma.user.update({ where: { id: userId }, data: { outreachOptedOutAt: new Date() } });
+        const kb = message.reply_markup?.inline_keyboard || [];
+        const newKb = kb.map(row => {
+          const dncBtn = row.find(b => b.callback_data === data);
+          if (!dncBtn) return row;
+          const urlBtn = row.find(b => b.url);
+          const label = urlBtn?.text?.replace(/^\u{1F4AC}\s*/u, '') || 'User';
+          return [{ text: `\u{1F6AB} ${label} \u{2014} DNC`, callback_data: 'n' }];
+        });
+        await tg('editMessageReplyMarkup', {
+          chat_id: message.chat.id,
+          message_id: message.message_id,
+          reply_markup: { inline_keyboard: newKb },
+        });
+        await tg('answerCallbackQuery', { callback_query_id: id, text: 'Marked as Do Not Contact' });
       } else if (data === 'n') {
-        await tg('answerCallbackQuery', { callback_query_id: id, text: 'Already marked as sent' });
+        await tg('answerCallbackQuery', { callback_query_id: id, text: 'Already handled' });
       }
     }
 
@@ -130,7 +151,8 @@ export async function POST(req) {
             + '<b>How it works:</b>\n'
             + '1. Tap <b>\u{1F4AC} Send WhatsApp</b> to open WhatsApp with Ify\'s message pre-filled\n'
             + '2. Send the message\n'
-            + '3. Tap <b>\u{2705}</b> to mark it as sent\n\n'
+            + '3. Tap <b>\u{2705}</b> to mark it as sent\n'
+            + '4. Tap <b>\u{1F6AB}</b> if the customer says don\'t contact them\n\n'
             + '<b>Topics:</b>\n'
             + '\u{2022} <b>Day 1</b> \u{2014} signed up yesterday, no deposit\n'
             + '\u{2022} <b>Day 3</b> \u{2014} 3 days in, still no deposit\n'

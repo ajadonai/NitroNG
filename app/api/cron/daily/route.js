@@ -5,8 +5,7 @@ import { log } from '@/lib/logger';
 import { reportOperationalFailure } from '@/lib/monitoring';
 import { getBalance } from '@/lib/smm';
 import { sendEmail, emailWrap, emailRow, emailDataBox, sendNudgeIdleFunds, sendNudgeIdleBalance, sendAdActivationDay1, sendAdActivationDay3, sendAdActivationDay6, sendWinback30Email, sendWinback60Email } from '@/lib/email';
-import { tgProviderBalance, tgDailySummary, tgOutreach } from '@/lib/telegram';
-import { sendOutreach as ifySendOutreach } from '@/lib/ify/outreach';
+import { tgProviderBalance, tgDailySummary } from '@/lib/telegram';
 import { releaseHeldCommissions } from '@/lib/commissions';
 import { expireBonusCredits, grantWinbackCredit } from '@/lib/bonus-credit';
 import { getTierConfig } from '@/lib/affiliate-settings';
@@ -565,98 +564,9 @@ export async function GET(req) {
     results.balance.error = err.message;
   }
 
-  // ═══ OUTREACH: multi-touch WhatsApp activation + winback ═══
-  // TG queue is OFF for day1/3/7/winback until the new hire + Ify start together.
-  // Flip this to true to re-enable the Telegram queue for manual WhatsApp sending.
+  // ═══ OUTREACH ═══
+  // Day1/3/7/winback outreach moved to /api/cron/outreach-lists with staggered schedules.
   // First Deposit / First Order alerts are event-triggered elsewhere — not affected.
-  const TG_QUEUE_LIVE = false;
-  const outreachLive = new Date() >= new Date('2026-08-01T00:00:00Z');
-  const noDeposit = { transactions: { none: { type: 'deposit', status: 'Completed' } }, orders: { none: {} } };
-  const outreachTouches = [
-    { key: 'day1', field: 'outreachDay1SentAt', daysAgo: 1, label: 'Day 1 — new signups' },
-    { key: 'day3', field: 'outreachDay3SentAt', daysAgo: 3, label: 'Day 3 — follow up' },
-    { key: 'day7', field: 'outreachDay7SentAt', daysAgo: 7, label: 'Day 7 — last nudge' },
-  ];
-  if (outreachLive) {
-    for (const touch of outreachTouches) {
-      try {
-        const windowStart = new Date(Date.now() - (touch.daysAgo + 1) * 86400000);
-        const windowEnd = new Date(Date.now() - touch.daysAgo * 86400000);
-        const batch = await prisma.user.findMany({
-          where: {
-            status: 'Active',
-            [touch.field]: null,
-            createdAt: { gte: windowStart, lt: windowEnd },
-            ...noDeposit,
-          },
-          select: { id: true, name: true, phone: true },
-          take: 200,
-        });
-        if (batch.length > 0) {
-          if (TG_QUEUE_LIVE) {
-            await tgOutreach(batch, touch.key, { label: touch.label });
-          }
-          const stampDate = new Date();
-          for (const u of batch) {
-            prisma.user.update({ where: { id: u.id }, data: { [touch.field]: stampDate } }).catch(() => {});
-            ifySendOutreach({ user: u, trigger: touch.key }).catch(() => {});
-          }
-          log.info('Outreach', `${touch.key}: stamped ${batch.length}${TG_QUEUE_LIVE ? ' + TG' : ''}`);
-        }
-        results[`outreach_${touch.key}`] = { sent: batch.length };
-      } catch (err) {
-        log.error('Outreach', `${touch.key}: ${err.message}`);
-        results[`outreach_${touch.key}`] = { error: err.message };
-      }
-    }
-
-    // Winback: 30 days after last order, no recent orders
-    try {
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
-      const winbackBatch = await prisma.user.findMany({
-        where: {
-          status: 'Active',
-          outreachWinbackSentAt: null,
-          orders: {
-            some: { status: 'Completed', deletedAt: null },
-            none: { status: 'Completed', deletedAt: null, createdAt: { gt: thirtyDaysAgo } },
-          },
-          bonusCredits: { some: { source: 'winback', amountRemaining: { gt: 0 }, expiredAt: null, expiresAt: { gt: new Date() } } },
-        },
-        select: {
-          id: true, name: true, phone: true,
-          bonusCredits: {
-            where: { source: 'winback', amountRemaining: { gt: 0 }, expiredAt: null },
-            orderBy: { grantedAt: 'desc' },
-            take: 1,
-            select: { amountGranted: true },
-          },
-        },
-        take: 200,
-      });
-      if (winbackBatch.length > 0) {
-        const creditMap = new Map();
-        winbackBatch.forEach(u => {
-          const credit = u.bonusCredits?.[0]?.amountGranted;
-          if (credit) creditMap.set(u.id, credit / 100);
-        });
-        if (TG_QUEUE_LIVE) {
-          await tgOutreach(winbackBatch, 'winback', { label: 'Winback — 30 days inactive', creditMap });
-        }
-        const stampDate = new Date();
-        for (const u of winbackBatch) {
-          const creditNaira = creditMap.get(u.id) || 0;
-          prisma.user.update({ where: { id: u.id }, data: { outreachWinbackSentAt: stampDate } }).catch(() => {});
-          ifySendOutreach({ user: u, trigger: 'winback', extra: { creditNaira } }).catch(() => {});
-        }
-        log.info('Outreach', `winback: stamped ${winbackBatch.length}${TG_QUEUE_LIVE ? ' + TG' : ''}`);
-      }
-      results.outreach_winback = { sent: winbackBatch.length };
-    } catch (err) {
-      log.error('Outreach', `winback: ${err.message}`);
-      results.outreach_winback = { error: err.message };
-    }
-  }
 
   const summary = {};
   if (results.cleanup?.deleted) summary['Stale users cleaned'] = results.cleanup.deleted;
