@@ -1187,6 +1187,7 @@ model OutreachContact {
   id          String   @id @default(cuid())
   userId      String
   touchType   String
+  method      String?
   contactedAt DateTime @default(now())
   contactedBy String?
 
