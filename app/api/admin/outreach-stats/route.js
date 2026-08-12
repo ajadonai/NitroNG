@@ -17,11 +17,11 @@ export async function GET(req) {
   const [contacts, prevContacts] = await Promise.all([
     prisma.outreachContact.findMany({
       where: { contactedAt: { gte: since } },
-      select: { userId: true, touchType: true, contactedAt: true, contactedBy: true },
+      select: { userId: true, touchType: true, contactedAt: true, contactedBy: true, method: true },
     }),
     prisma.outreachContact.findMany({
       where: { contactedAt: { gte: prevSince, lt: since } },
-      select: { userId: true, touchType: true, contactedAt: true, contactedBy: true },
+      select: { userId: true, touchType: true, contactedAt: true, contactedBy: true, method: true },
     }),
   ]);
 
@@ -31,7 +31,7 @@ export async function GET(req) {
   const recentContacts = await prisma.outreachContact.findMany({
     where: { contactedAt: { gte: since } },
     select: {
-      id: true, touchType: true, contactedAt: true, contactedBy: true,
+      id: true, touchType: true, contactedAt: true, contactedBy: true, method: true,
       user: { select: { id: true, name: true, email: true } },
     },
     orderBy: { contactedAt: 'desc' },
@@ -52,17 +52,48 @@ export async function GET(req) {
     touchType: c.touchType,
     contactedAt: c.contactedAt,
     contactedBy: c.contactedBy ? staffName(c.contactedBy) : null,
+    method: c.method || null,
     userName: c.user?.name || c.user?.email?.split('@')[0] || 'User',
     userId: c.user?.id,
     revenue: orderMap[c.user?.id]?.revenue || 0,
     orders: orderMap[c.user?.id]?.count || 0,
   }));
 
-  return Response.json({ stats, prev, rows });
+  const tab = req.nextUrl.searchParams.get('tab');
+  let dnc = null;
+  if (tab === 'dnc') {
+    const dncUsers = await prisma.user.findMany({
+      where: { outreachOptedOutAt: { not: null } },
+      select: { id: true, name: true, email: true, phone: true, outreachOptedOutAt: true },
+      orderBy: { outreachOptedOutAt: 'desc' },
+      take: 100,
+    });
+    dnc = dncUsers.map(u => ({
+      id: u.id,
+      name: u.name || u.email?.split('@')[0] || 'User',
+      phone: u.phone || null,
+      since: u.outreachOptedOutAt,
+    }));
+  }
+  const dncCount = await prisma.user.count({ where: { outreachOptedOutAt: { not: null } } });
+
+  return Response.json({ stats, prev, rows, dnc, dncCount });
+}
+
+export async function POST(req) {
+  const { admin, error } = await requireAdmin('outreach');
+  if (error) return error;
+
+  const body = await req.json();
+  if (body.action === 'undnc' && body.userId) {
+    await prisma.user.update({ where: { id: body.userId }, data: { outreachOptedOutAt: null } });
+    return Response.json({ ok: true });
+  }
+  return Response.json({ error: 'Unknown action' }, { status: 400 });
 }
 
 async function buildStats(contacts, since) {
-  if (!contacts.length) return { contacts: 0, users: 0, converted: 0, revenue: 0, deposits: 0, byTouch: {}, byStaff: {} };
+  if (!contacts.length) return { contacts: 0, users: 0, converted: 0, revenue: 0, deposits: 0, byTouch: {}, byStaff: {}, byMethod: {} };
 
   const userIds = [...new Set(contacts.map(c => c.userId))];
   const byTouch = {};
@@ -71,6 +102,11 @@ async function buildStats(contacts, since) {
   for (const c of contacts) {
     const name = c.contactedBy ? staffName(c.contactedBy) : 'Unassigned';
     byStaff[name] = (byStaff[name] || 0) + 1;
+  }
+  const byMethod = {};
+  for (const c of contacts) {
+    const m = c.method || 'legacy';
+    byMethod[m] = (byMethod[m] || 0) + 1;
   }
 
   const earliestContact = {};
@@ -110,5 +146,5 @@ async function buildStats(contacts, since) {
     }
   }
 
-  return { contacts: contacts.length, users: userIds.length, converted: converted.size, revenue: totalRevenue, deposits: totalDeposits, byTouch, byStaff };
+  return { contacts: contacts.length, users: userIds.length, converted: converted.size, revenue: totalRevenue, deposits: totalDeposits, byTouch, byStaff, byMethod };
 }

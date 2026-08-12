@@ -1,9 +1,9 @@
 import prisma from '@/lib/prisma';
+import { OUTREACH_MESSAGES, OUTREACH_TOPIC_TO_TOUCH } from '@/lib/telegram';
 
 const TOKEN = process.env.OUTREACH_BOT_TOKEN;
 const SECRET = process.env.CRON_SECRET;
-
-const TOPIC_TO_TOUCH = { 8: 'day1', 9: 'day3', 10: 'day7', 11: 'winback', 13: 'firstDeposit', 14: 'firstOrder' };
+const SITE = 'https://nitro.ng';
 
 const OUTREACH_STAFF = ['8567146346', '8911494544'];
 const STAFF_NAMES = { '8567146346': 'Nitro', '1935066216': 'Soludo', '8911494544': 'Eshiema' };
@@ -20,17 +20,36 @@ function tg(method, body) {
   });
 }
 
-async function claimContact(userId, threadId, tgUserId) {
-  const touchType = TOPIC_TO_TOUCH[threadId] || 'unknown';
-  const existing = await prisma.outreachContact.findFirst({
-    where: { userId, touchType },
-    select: { contactedBy: true },
+function parseName(msg) {
+  const match = msg?.text?.match(/\d+\.\s*(.+)/);
+  return match?.[1]?.split('\n')[0]?.trim() || 'User';
+}
+
+function editMsg(chatId, messageId, text, replyMarkup) {
+  return tg('editMessageText', {
+    chat_id: chatId,
+    message_id: messageId,
+    text,
+    parse_mode: 'HTML',
+    reply_markup: replyMarkup,
   });
-  if (existing) return { claimed: false, by: existing.contactedBy };
-  await prisma.outreachContact.create({
-    data: { userId, touchType, contactedBy: tgUserId ? String(tgUserId) : null },
-  });
-  return { claimed: true };
+}
+
+async function sendChunked(send, header, lines, perPage = 25) {
+  for (let i = 0; i < lines.length; i += perPage) {
+    const chunk = lines.slice(i, i + perPage);
+    const page = Math.floor(i / perPage) + 1;
+    const pages = Math.ceil(lines.length / perPage);
+    const suffix = pages > 1 ? ` (${page}/${pages})` : '';
+    await send(`${header}${suffix}\n${chunk.join('\n')}`);
+  }
+}
+
+function buildWaUrl(phone, touchType, name, credit) {
+  const msgFn = OUTREACH_MESSAGES[touchType];
+  if (!msgFn) return `https://wa.me/${phone}`;
+  const waText = encodeURIComponent(msgFn(name || 'Hi \u{1F44B}', credit));
+  return `https://wa.me/${phone}?text=${waText}`;
 }
 
 export async function POST(req) {
@@ -51,87 +70,99 @@ export async function POST(req) {
       if (data !== 'n' && !OUTREACH_STAFF.includes(String(tgUserId))) {
         await tg('answerCallbackQuery', {
           callback_query_id: id,
-          text: 'You don’t have access to outreach actions.',
+          text: "You don't have access to outreach actions.",
           show_alert: true,
         });
         return Response.json({ ok: true });
       }
 
-      if (data === 'sent') {
-        await tg('editMessageReplyMarkup', {
-          chat_id: message.chat.id,
-          message_id: message.message_id,
-          reply_markup: { inline_keyboard: [[{ text: `\u{2705} ${clicker}`, callback_data: 'n' }]] },
-        });
-        await tg('answerCallbackQuery', { callback_query_id: id, text: 'Marked as sent!' });
-      } else if (data.startsWith('c:')) {
+      if (data.startsWith('r:')) {
         const userId = data.slice(2);
-        const result = await claimContact(userId, threadId, tgUserId);
-        if (!result.claimed) {
+        const touchType = OUTREACH_TOPIC_TO_TOUCH[threadId] || 'unknown';
+        const existing = await prisma.outreachContact.findFirst({
+          where: { userId, touchType },
+        });
+        if (existing) {
           await tg('answerCallbackQuery', {
             callback_query_id: id,
-            text: `Already contacted by ${staffName(result.by)}`,
+            text: `Already handled by ${staffName(existing.contactedBy)}`,
             show_alert: true,
           });
           return Response.json({ ok: true });
         }
-        await tg('editMessageReplyMarkup', {
-          chat_id: message.chat.id,
-          message_id: message.message_id,
-          reply_markup: { inline_keyboard: [[{ text: `\u{2705} ${clicker}`, callback_data: 'n' }]] },
+        await prisma.outreachContact.create({
+          data: { userId, touchType, contactedBy: String(tgUserId), method: 'call' },
         });
-        await tg('answerCallbackQuery', { callback_query_id: id, text: 'Marked as sent!' });
-      } else if (data.startsWith('s:')) {
-        const userId = data.slice(2);
-        let blocked = false;
-        if (userId.length > 5) {
-          const result = await claimContact(userId, threadId, tgUserId);
-          if (!result.claimed) {
-            await tg('answerCallbackQuery', {
-              callback_query_id: id,
-              text: `Already contacted by ${staffName(result.by)}`,
-              show_alert: true,
-            });
-            blocked = true;
-          }
-        }
-        if (!blocked) {
-          const kb = message.reply_markup?.inline_keyboard || [];
-          const newKb = kb.map(row => {
-            const cb = row.find(b => b.callback_data === data);
-            if (!cb) return row;
-            const urlBtn = row.find(b => b.url);
-            const label = urlBtn?.text?.replace(/^\u{1F4AC}\s*/u, '') || 'User';
-            return [{ text: `\u{2705} ${label} \u{2014} ${clicker}`, callback_data: 'n' }];
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { name: true, phone: true },
+        });
+        const phone = user?.phone?.replace('+', '') || '';
+        const userName = parseName(message);
+        const waUrl = phone ? buildWaUrl(phone, touchType, user?.name || userName) : null;
+        const buttons = waUrl
+          ? { inline_keyboard: [[{ text: 'Follow up on WhatsApp', url: waUrl }]] }
+          : undefined;
+        await editMsg(message.chat.id, message.message_id, `\u{2705} <b>${userName}</b> \u{2014} called by ${clicker}`, buttons);
+        await tg('answerCallbackQuery', { callback_query_id: id, text: 'Reached! Marked as called.' });
+
+      } else if (data.startsWith('na:')) {
+        const userId = data.slice(3);
+        const touchType = OUTREACH_TOPIC_TO_TOUCH[threadId] || 'unknown';
+        const existing = await prisma.outreachContact.findFirst({
+          where: { userId, touchType },
+        });
+        if (existing) {
+          await tg('answerCallbackQuery', {
+            callback_query_id: id,
+            text: `Already handled by ${staffName(existing.contactedBy)}`,
+            show_alert: true,
           });
-          await tg('editMessageReplyMarkup', {
-            chat_id: message.chat.id,
-            message_id: message.message_id,
-            reply_markup: { inline_keyboard: newKb },
-          });
-          await tg('answerCallbackQuery', { callback_query_id: id, text: 'Marked as sent!' });
-        }
-      } else if (data.startsWith('dnc:')) {
-        const userId = data.slice(4);
-        if (!OUTREACH_STAFF.includes(String(tgUserId))) {
-          await tg('answerCallbackQuery', { callback_query_id: id, text: 'You don’t have access to outreach actions.', show_alert: true });
           return Response.json({ ok: true });
         }
+        await prisma.outreachContact.create({
+          data: { userId, touchType, contactedBy: String(tgUserId), method: 'pending' },
+        });
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { name: true, phone: true },
+        });
+        const phone = user?.phone?.replace('+', '') || '';
+        const name = user?.name || '(no name)';
+        const short = name.length > 18 ? name.slice(0, 16) + '..' : name;
+        const waUrl = phone ? buildWaUrl(phone, touchType, name) : null;
+        const userName = parseName(message);
+        const buttons = waUrl
+          ? [
+              [{ text: `Send WhatsApp to ${short}`, url: waUrl }],
+              [{ text: 'Sent', callback_data: `ws:${userId}` }],
+            ]
+          : [[{ text: 'No phone on file', callback_data: 'n' }]];
+        await editMsg(
+          message.chat.id, message.message_id,
+          `<b>${userName}</b> \u{2014} no answer (${clicker})`,
+          { inline_keyboard: buttons },
+        );
+        await tg('answerCallbackQuery', { callback_query_id: id, text: 'No answer. Send WhatsApp now.' });
+
+      } else if (data.startsWith('ws:')) {
+        const userId = data.slice(3);
+        const touchType = OUTREACH_TOPIC_TO_TOUCH[threadId] || 'unknown';
+        await prisma.outreachContact.updateMany({
+          where: { userId, touchType, method: 'pending' },
+          data: { method: 'whatsapp' },
+        });
+        const wsName = parseName(message);
+        await editMsg(message.chat.id, message.message_id, `\u{2705} <b>${wsName}</b> \u{2014} WA by ${clicker}`);
+        await tg('answerCallbackQuery', { callback_query_id: id, text: 'WhatsApp sent! Done.' });
+
+      } else if (data.startsWith('dnc:')) {
+        const userId = data.slice(4);
         await prisma.user.update({ where: { id: userId }, data: { outreachOptedOutAt: new Date() } });
-        const kb = message.reply_markup?.inline_keyboard || [];
-        const newKb = kb.map(row => {
-          const dncBtn = row.find(b => b.callback_data === data);
-          if (!dncBtn) return row;
-          const urlBtn = row.find(b => b.url);
-          const label = urlBtn?.text?.replace(/^\u{1F4AC}\s*/u, '') || 'User';
-          return [{ text: `\u{1F6AB} ${label} \u{2014} DNC`, callback_data: 'n' }];
-        });
-        await tg('editMessageReplyMarkup', {
-          chat_id: message.chat.id,
-          message_id: message.message_id,
-          reply_markup: { inline_keyboard: newKb },
-        });
+        const dncName = parseName(message);
+        await editMsg(message.chat.id, message.message_id, `\u{1F6AB} <b>${dncName}</b> \u{2014} Do not contact`, { inline_keyboard: [] });
         await tg('answerCallbackQuery', { callback_query_id: id, text: 'Marked as Do Not Contact' });
+
       } else if (data === 'n') {
         await tg('answerCallbackQuery', { callback_query_id: id, text: 'Already handled' });
       }
@@ -141,31 +172,144 @@ export async function POST(req) {
       const cmd = body.message.text.split(/\s/)[0].replace(/@\w+$/, '');
       const chatId = body.message.chat.id;
       const threadId = body.message.message_thread_id;
+      const tgUserId = String(body.message.from?.id);
+
+      const isNitro = tgUserId === '8567146346';
+      const isStaff = OUTREACH_STAFF.includes(tgUserId);
+      if (!isStaff && cmd !== '/start' && cmd !== '/help') return Response.json({ ok: true });
+      if (!isNitro && cmd !== '/start' && cmd !== '/help' && cmd !== '/pending') return Response.json({ ok: true });
+
+      const send = (text) => tg('sendMessage', {
+        chat_id: chatId,
+        ...(threadId ? { message_thread_id: threadId } : {}),
+        text,
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
+      });
 
       if (cmd === '/start' || cmd === '/help') {
-        await tg('sendMessage', {
-          chat_id: chatId,
-          ...(threadId ? { message_thread_id: threadId } : {}),
-          text: '\u{1F4CB} <b>Nitro Outreach Bot</b>\n\n'
-            + 'I post outreach leads here automatically every day.\n\n'
-            + '<b>How it works:</b>\n'
-            + '1. Tap <b>\u{1F4AC} Send WhatsApp</b> to open WhatsApp with Ify\'s message pre-filled\n'
-            + '2. Send the message\n'
-            + '3. Tap <b>\u{2705}</b> to mark it as sent\n'
-            + '4. Tap <b>\u{1F6AB}</b> if the customer says don\'t contact them\n\n'
-            + '<b>Topics:</b>\n'
-            + '\u{2022} <b>Day 1</b> \u{2014} signed up yesterday, no deposit\n'
-            + '\u{2022} <b>Day 3</b> \u{2014} 3 days in, still no deposit\n'
-            + '\u{2022} <b>Day 7</b> \u{2014} last chance before sequence ends\n'
-            + '\u{2022} <b>Winback</b> \u{2014} inactive 30 days, has promo credit\n'
-            + '\u{2022} <b>First Deposit</b> \u{2014} just funded, nudge to first order\n'
-            + '\u{2022} <b>First Order</b> \u{2014} just ordered, explain what to expect\n\n'
-            + '\u{26A0}\u{FE0F} <i>Send 15\u{2013}20 WhatsApp messages per hour to avoid flagging.</i>',
-          parse_mode: 'HTML',
+        await send(
+          '\u{1F4CB} <b>Nitro Outreach Bot</b>\n\n'
+          + '<b>Workflow:</b>\n'
+          + '1. Call the customer first\n'
+          + '2. If reached, tap <b>\u{2705} Reached</b>\n'
+          + '3. If no answer, tap <b>\u{1F4F5} No answer</b>\n'
+          + '4. WhatsApp button appears \u{2014} send the message\n'
+          + '5. Tap <b>\u{2705} Sent</b> when done\n'
+          + '6. Tap <b>\u{1F6AB}</b> if they say don\'t contact me\n\n'
+          + '<b>Commands:</b>\n'
+          + '/pending \u{2014} contacts called but not WhatsApp\'d yet\n'
+          + '/dnc \u{2014} do-not-contact list\n'
+          + '/stats \u{2014} today\'s outreach summary\n'
+          + '/leaderboard \u{2014} staff performance\n',
+        );
+
+      } else if (cmd === '/pending') {
+        const [pending, totalPending] = await Promise.all([
+          prisma.outreachContact.findMany({
+            where: { method: 'pending' },
+            include: { user: { select: { name: true, phone: true } } },
+            orderBy: { contactedAt: 'desc' },
+            take: 100,
+          }),
+          prisma.outreachContact.count({ where: { method: 'pending' } }),
+        ]);
+        if (!pending.length) {
+          await send('No pending contacts. All caught up!');
+        } else {
+          const lines = pending.map((c, i) => {
+            const name = c.user?.name || '(no name)';
+            const phone = c.user?.phone?.replace('+', '') || 'no phone';
+            const by = staffName(c.contactedBy);
+            return `${i + 1}. <b>${name}</b> \u{2014} ${phone} (${c.touchType}, ${by})`;
+          });
+          const header = `<b>${totalPending} pending</b> (called, no answer)\n`;
+          await sendChunked(send, header, lines);
+        }
+
+      } else if (cmd === '/dnc') {
+        const [dnc, totalDnc] = await Promise.all([
+          prisma.user.findMany({
+            where: { outreachOptedOutAt: { not: null } },
+            select: { name: true, outreachOptedOutAt: true },
+            orderBy: { outreachOptedOutAt: 'desc' },
+            take: 100,
+          }),
+          prisma.user.count({ where: { outreachOptedOutAt: { not: null } } }),
+        ]);
+        if (!dnc.length) {
+          await send('No one on the DNC list.');
+        } else {
+          const lines = dnc.map((u, i) => {
+            const name = u.name || '(no name)';
+            const date = u.outreachOptedOutAt.toISOString().slice(0, 10);
+            return `${i + 1}. <b>${name}</b> \u{2014} since ${date}`;
+          });
+          const header = `<b>${totalDnc} on Do Not Contact list</b>\n`;
+          await sendChunked(send, header, lines);
+        }
+
+      } else if (cmd === '/stats') {
+        const todayStart = new Date();
+        todayStart.setUTCHours(0, 0, 0, 0);
+        const contacts = await prisma.outreachContact.findMany({
+          where: { contactedAt: { gte: todayStart } },
+          select: { method: true, contactedBy: true, touchType: true },
         });
+        const total = contacts.length;
+        const calls = contacts.filter(c => c.method === 'call').length;
+        const pending = contacts.filter(c => c.method === 'pending').length;
+        const whatsapp = contacts.filter(c => c.method === 'whatsapp').length;
+        const byStaff = {};
+        contacts.forEach(c => {
+          const name = staffName(c.contactedBy);
+          byStaff[name] = (byStaff[name] || 0) + 1;
+        });
+        const staffLines = Object.entries(byStaff).map(([name, count]) => `  ${name}: ${count}`).join('\n');
+        await send(
+          `<b>Today's outreach</b>\n\n`
+          + `Total: <b>${total}</b>\n`
+          + `Reached by call: <b>${calls}</b>\n`
+          + `Called, pending WA: <b>${pending}</b>\n`
+          + `WhatsApp sent: <b>${whatsapp}</b>\n\n`
+          + `<b>By staff:</b>\n${staffLines || '  (none yet)'}`,
+        );
+
+      } else if (cmd === '/leaderboard') {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const contacts = await prisma.outreachContact.findMany({
+          where: { contactedAt: { gte: thirtyDaysAgo } },
+          select: { contactedBy: true, method: true },
+        });
+        const board = {};
+        contacts.forEach(c => {
+          const name = staffName(c.contactedBy);
+          if (!board[name]) board[name] = { total: 0, call: 0, whatsapp: 0 };
+          board[name].total++;
+          if (c.method === 'call') board[name].call++;
+          if (c.method === 'whatsapp') board[name].whatsapp++;
+        });
+        const sorted = Object.entries(board).sort((a, b) => b[1].total - a[1].total);
+        if (!sorted.length) {
+          await send('No outreach activity in the last 30 days.');
+        } else {
+          const lines = sorted.map(([name, s], i) => {
+            return `${i + 1}. <b>${name}</b> \u{2014} ${s.total} total (${s.call} calls, ${s.whatsapp} WA)`;
+          });
+          await send(`<b>Leaderboard (30 days)</b>\n\n${lines.join('\n')}`);
+        }
       }
     }
-  } catch {}
+  } catch (err) {
+    console.error('Outreach webhook error:', err);
+    try {
+      await tg('sendMessage', {
+        chat_id: '8567146346',
+        text: `\u{26A0}\u{FE0F} Webhook error: ${err.message || err}`,
+      });
+    } catch {}
+  }
 
   return Response.json({ ok: true });
 }
