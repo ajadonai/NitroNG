@@ -7,6 +7,7 @@ const ALLOWED_KEYS = new Set([
   'markup_brackets', 'markup_margin_floor', 'markup_floor_ceiling', 'markup_ng_bonus',
   'markup_usd_rate', 'markup_usd_buffer', 'markup_usd_market', 'markup_fx_threshold',
   'markup_tier_multipliers',
+  'markup_provider_bonus_mtp', 'markup_provider_bonus_dao', 'markup_provider_bonus_jap',
   'min_deposit', 'min_order',
   'ref_enabled', 'ref_referrer_bonus', 'ref_invitee_bonus', 'ref_min_deposit',
   'loyalty_enabled', 'loyalty_tiers',

@@ -204,19 +204,20 @@ export function DateRangePicker({ dark, t, value, onChange, presets, defaultPres
 
   const displayText = presetLabel || formatRange(value?.start, value?.end);
 
+  const hasRange = !!(value?.start || value?.end);
   const btnStyle = {
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
     padding: "7px 12px",
-    borderRadius: 8,
+    borderRadius: 10,
     fontSize: 13,
-    fontWeight: 500,
+    fontWeight: 600,
     fontFamily: "inherit",
     cursor: "pointer",
-    border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}`,
-    background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)",
-    color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)",
+    border: `1px solid ${hasRange ? (t?.accent || '#c47d8e') : (dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.14)")}`,
+    background: dark ? "rgba(255,255,255,.08)" : "#fff",
+    color: "inherit",
     transition: "border-color .15s",
   };
 
@@ -373,14 +374,14 @@ export function FilterDropdown({ dark, t, value, onChange, options, icon, alert,
         alignItems: "center",
         gap: 6,
         padding: "7px 12px",
-        borderRadius: 8,
+        borderRadius: 10,
         fontSize: 13,
-        fontWeight: 500,
+        fontWeight: 600,
         fontFamily: "inherit",
         cursor: "pointer",
-        border: `1px solid ${dropdownBorder}`,
-        background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)",
-        color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)",
+        border: `1px solid ${(value && options.length > 0 && value !== options[0]?.value) ? (t?.accent || '#c47d8e') : dropdownBorder}`,
+        background: dark ? "rgba(255,255,255,.08)" : "#fff",
+        color: "inherit",
         transition: "border-color .15s",
       }}>
         {icon || null}

@@ -734,7 +734,7 @@ function AdminDashboardInner({ initialData }) {
       case "maintenance": return <AdminMaintenancePage dark={dark} t={t} />;
       case "api": return <AdminAPIPage dark={dark} t={t} />;
       case "acquisition": return <AdminAcquisitionPage dark={dark} t={t} />;
-      case "outreach": return <AdminOutreachPage dark={dark} />;
+      case "outreach": return <AdminOutreachPage dark={dark} t={t} />;
       case "issues": return <AdminIssuesPage dark={dark} t={t} />;
       case "crew": return <AdminCrewPage dark={dark} t={t} />;
       case "tasks": return <AdminTasksPage dark={dark} t={t} />;

@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import { OUTREACH_MESSAGES, OUTREACH_TOPIC_TO_TOUCH } from '@/lib/telegram';
+import { OUTREACH_TOPIC_TO_TOUCH, outreachWhatsAppMessage } from '@/lib/telegram';
 
 const TOKEN = process.env.OUTREACH_BOT_TOKEN;
 const SECRET = process.env.CRON_SECRET;
@@ -45,11 +45,10 @@ async function sendChunked(send, header, lines, perPage = 25) {
   }
 }
 
-function buildWaUrl(phone, touchType, name, credit) {
-  const msgFn = OUTREACH_MESSAGES[touchType];
-  if (!msgFn) return `https://wa.me/${phone}`;
-  const waText = encodeURIComponent(msgFn(name || 'Hi \u{1F44B}', credit));
-  return `https://wa.me/${phone}?text=${waText}`;
+function buildWaUrl(phone, touchType, name, { variant = 'noAnswer', creditNaira } = {}) {
+  const text = outreachWhatsAppMessage(touchType, name, { variant, creditNaira });
+  if (!text) return `https://wa.me/${phone}`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }
 
 export async function POST(req) {
@@ -99,7 +98,7 @@ export async function POST(req) {
         });
         const phone = user?.phone?.replace('+', '') || '';
         const userName = parseName(message);
-        const waUrl = phone ? buildWaUrl(phone, touchType, user?.name || userName) : null;
+        const waUrl = phone ? buildWaUrl(phone, touchType, user?.name || userName, { variant: 'reached' }) : null;
         const buttons = waUrl
           ? { inline_keyboard: [[{ text: 'Follow up on WhatsApp', url: waUrl }]] }
           : undefined;
@@ -130,7 +129,7 @@ export async function POST(req) {
         const phone = user?.phone?.replace('+', '') || '';
         const name = user?.name || '(no name)';
         const short = name.length > 18 ? name.slice(0, 16) + '..' : name;
-        const waUrl = phone ? buildWaUrl(phone, touchType, name) : null;
+        const waUrl = phone ? buildWaUrl(phone, touchType, name, { variant: 'noAnswer' }) : null;
         const userName = parseName(message);
         const buttons = waUrl
           ? [
@@ -162,6 +161,28 @@ export async function POST(req) {
         const dncName = parseName(message);
         await editMsg(message.chat.id, message.message_id, `\u{1F6AB} <b>${dncName}</b> \u{2014} Do not contact`, { inline_keyboard: [] });
         await tg('answerCallbackQuery', { callback_query_id: id, text: 'Marked as Do Not Contact' });
+
+      } else if (data.startsWith('wn:')) {
+        const userId = data.slice(3);
+        const touchType = OUTREACH_TOPIC_TO_TOUCH[threadId] || 'unknown';
+        const existing = await prisma.outreachContact.findFirst({
+          where: { userId, touchType },
+        });
+        if (existing) {
+          await tg('answerCallbackQuery', {
+            callback_query_id: id,
+            text: `Already handled by ${staffName(existing.contactedBy)}`,
+            show_alert: true,
+          });
+          return Response.json({ ok: true });
+        }
+        await prisma.outreachContact.create({
+          data: { userId, touchType, contactedBy: String(tgUserId), method: 'wrong_number' },
+        });
+        await prisma.user.update({ where: { id: userId }, data: { phone: null } });
+        const wnName = parseName(message);
+        await editMsg(message.chat.id, message.message_id, `\u{274C} <b>${wnName}</b> \u{2014} wrong number (${clicker})`);
+        await tg('answerCallbackQuery', { callback_query_id: id, text: 'Marked as wrong number. Phone cleared.' });
 
       } else if (data === 'n') {
         await tg('answerCallbackQuery', { callback_query_id: id, text: 'Already handled' });

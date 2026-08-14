@@ -8,34 +8,61 @@ export async function GET(req) {
   const { admin, error } = await requireAdmin('outreach');
   if (error) return error;
 
-  const period = req.nextUrl.searchParams.get('period') || 'week';
+  const from = req.nextUrl.searchParams.get('from');
+  const to = req.nextUrl.searchParams.get('to');
   const now = new Date();
-  const ms = period === 'month' ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
-  const since = new Date(now.getTime() - ms);
-  const prevSince = new Date(since.getTime() - ms);
 
-  const [contacts, prevContacts] = await Promise.all([
-    prisma.outreachContact.findMany({
-      where: { contactedAt: { gte: since } },
-      select: { userId: true, touchType: true, contactedAt: true, contactedBy: true, method: true },
-    }),
-    prisma.outreachContact.findMany({
-      where: { contactedAt: { gte: prevSince, lt: since } },
-      select: { userId: true, touchType: true, contactedAt: true, contactedBy: true, method: true },
-    }),
-  ]);
+  let since, prevSince;
+  if (from) {
+    since = new Date(from);
+    const end = to ? new Date(to + 'T23:59:59') : now;
+    const rangeMs = end.getTime() - since.getTime();
+    prevSince = new Date(since.getTime() - rangeMs);
+    var dateFilter = { gte: since, lte: end };
+    var prevFilter = { gte: prevSince, lt: since };
+  } else {
+    const period = req.nextUrl.searchParams.get('period') || 'week';
+    const msMap = { today: 24 * 60 * 60 * 1000, week: 7 * 24 * 60 * 60 * 1000, month: 30 * 24 * 60 * 60 * 1000, all: now.getTime() };
+    const ms = msMap[period] || msMap.week;
+    since = new Date(now.getTime() - ms);
+    prevSince = period === 'all' ? since : new Date(since.getTime() - ms);
+    var dateFilter = { gte: since };
+    var prevFilter = { gte: prevSince, lt: since };
+  }
 
-  const stats = await buildStats(contacts, since);
-  const prev = await buildStats(prevContacts, prevSince);
+  const staffParam = req.nextUrl.searchParams.get('staff');
+  const staffFilter = staffParam ? { contactedBy: staffParam } : {};
 
+  const skipStats = req.nextUrl.searchParams.get('skipStats') === '1';
+
+  let stats = null, prev = null;
+  if (!skipStats) {
+    const [contacts, prevContacts] = await Promise.all([
+      prisma.outreachContact.findMany({
+        where: { contactedAt: dateFilter, ...staffFilter },
+        select: { userId: true, touchType: true, contactedAt: true, contactedBy: true, method: true },
+      }),
+      prisma.outreachContact.findMany({
+        where: { contactedAt: prevFilter, ...staffFilter },
+        select: { userId: true, touchType: true, contactedAt: true, contactedBy: true, method: true },
+      }),
+    ]);
+    stats = await buildStats(contacts, since);
+    prev = await buildStats(prevContacts, prevSince);
+  }
+
+  const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1', 10));
+  const perPage = 15;
+  const totalContacts = await prisma.outreachContact.count({ where: { contactedAt: dateFilter, ...staffFilter } });
   const recentContacts = await prisma.outreachContact.findMany({
-    where: { contactedAt: { gte: since } },
+    where: { contactedAt: dateFilter, ...staffFilter },
     select: {
       id: true, touchType: true, contactedAt: true, contactedBy: true, method: true,
-      user: { select: { id: true, name: true, email: true } },
+      user: { select: { id: true, name: true, email: true, phone: true } },
     },
     orderBy: { contactedAt: 'desc' },
-    take: 50,
+    skip: (page - 1) * perPage,
+    take: perPage,
   });
 
   const recentUserIds = [...new Set(recentContacts.map(c => c.userId || c.user?.id))];
@@ -54,6 +81,8 @@ export async function GET(req) {
     contactedBy: c.contactedBy ? staffName(c.contactedBy) : null,
     method: c.method || null,
     userName: c.user?.name || c.user?.email?.split('@')[0] || 'User',
+    userEmail: c.user?.email || null,
+    userPhone: c.user?.phone || null,
     userId: c.user?.id,
     revenue: orderMap[c.user?.id]?.revenue || 0,
     orders: orderMap[c.user?.id]?.count || 0,
@@ -61,12 +90,17 @@ export async function GET(req) {
 
   const tab = req.nextUrl.searchParams.get('tab');
   let dnc = null;
+  const dncCount = await prisma.user.count({ where: { outreachOptedOutAt: { not: null } } });
+  let dncTotalPages = 1;
   if (tab === 'dnc') {
+    const dncPage = Math.max(1, parseInt(req.nextUrl.searchParams.get('dncPage') || '1', 10));
+    dncTotalPages = Math.ceil(dncCount / perPage);
     const dncUsers = await prisma.user.findMany({
       where: { outreachOptedOutAt: { not: null } },
       select: { id: true, name: true, email: true, phone: true, outreachOptedOutAt: true },
       orderBy: { outreachOptedOutAt: 'desc' },
-      take: 100,
+      skip: (dncPage - 1) * perPage,
+      take: perPage,
     });
     dnc = dncUsers.map(u => ({
       id: u.id,
@@ -75,9 +109,10 @@ export async function GET(req) {
       since: u.outreachOptedOutAt,
     }));
   }
-  const dncCount = await prisma.user.count({ where: { outreachOptedOutAt: { not: null } } });
 
-  return Response.json({ stats, prev, rows, dnc, dncCount });
+  const staffList = Object.entries(STAFF_NAMES).map(([id, name]) => ({ id, name }));
+
+  return Response.json({ stats, prev, rows, dnc, dncCount, dncTotalPages, page, totalPages: Math.ceil(totalContacts / perPage), totalContacts, staffList });
 }
 
 export async function POST(req) {
@@ -127,7 +162,7 @@ async function buildStats(contacts, since) {
     }),
   ]);
 
-  const BUFFER_MS = 3 * 60 * 60 * 1000;
+  const BUFFER_MS = 0;
   let totalRevenue = 0;
   let totalDeposits = 0;
   const converted = new Set();

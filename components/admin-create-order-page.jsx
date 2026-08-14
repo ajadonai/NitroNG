@@ -49,6 +49,7 @@ export function AdminCreateOrderPage({ dark, t }) {
   const [dripCurve, setDripCurve] = useState("even");
   const [dripPause, setDripPause] = useState(false);
   const [dripPauseDay, setDripPauseDay] = useState(1);
+  const [comments, setComments] = useState("");
   const [charge, setCharge] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [batchItems, setBatchItems] = useState([]);
@@ -100,7 +101,7 @@ export function AdminCreateOrderPage({ dark, t }) {
   });
   const groups = catalog.filter(g => g.enabled && g.platform === platform);
   const selectedGroup = groups.find(g => g.id === groupId);
-  const tiers = selectedGroup?.tiers || [];
+  const tiers = (selectedGroup?.tiers || []).filter(ti => ti.enabled);
   const selectedTier = tiers.find(ti => ti.id === tierId);
 
   const tierService = selectedTier?.service;
@@ -185,6 +186,7 @@ export function AdminCreateOrderPage({ dark, t }) {
         items: batchItems.map(it => ({ tierId: it.tierId, quantity: it.quantity, links: [it.link] })),
       } : {
         mode: effectiveDripDays >= 2 ? "drip" : "single", userId: user.id, tierId: selectedTier.id, quantity: qtyNum, charge, link: fullLink(link),
+        ...(comments.trim() ? { comments: comments.trim() } : {}),
         ...(effectiveDripDays >= 2 ? {
           dripDays: effectiveDripDays,
           ...(dripCurve !== "even" || dripPause || dripStart === "scheduled" || dripWindowOn ? {
@@ -203,7 +205,7 @@ export function AdminCreateOrderPage({ dark, t }) {
       const label = mode === "bulk" ? `${d.count || batchTotalOrders} orders created` : effectiveDripDays >= 2 ? `Drip order created (${effectiveDripDays} days)` : "Order created";
       const ids = d.orderIds || [];
       toast.success(label, ids.slice(0, 3).join(" · ") + (ids.length > 3 ? ` · +${ids.length - 3} more` : ""));
-      setLink(""); setQty(""); setDripOn(false); setDripDays(3); setDripStart("now"); setDripStartDate(""); setDripWindowOn(false); setDripCurve("even"); setDripPause(false); setDripPauseDay(1); setBatchItems([]);
+      setLink(""); setQty(""); setComments(""); setDripOn(false); setDripDays(3); setDripStart("now"); setDripStartDate(""); setDripWindowOn(false); setDripCurve("even"); setDripPause(false); setDripPauseDay(1); setBatchItems([]);
     } catch (err) { toast.error("Failed", err.message); }
     setSubmitting(false);
   };
@@ -552,6 +554,17 @@ export function AdminCreateOrderPage({ dark, t }) {
               {selectedTier ? `Min ${minQty.toLocaleString()} · Max ${maxQty.toLocaleString()}` : "Pick a tier to see limits"}
             </div>
           </div>
+
+          {/* comments */}
+          {selectedTier?.customComments && (
+            <div style={{ marginBottom: 16 }}>
+              <span style={lab}>Comments</span>
+              <textarea value={comments} onChange={e => setComments(e.target.value)} placeholder="One comment per line" rows={4} style={{ ...inp, resize: "vertical", minHeight: 70, lineHeight: 1.5 }} />
+              <div style={{ fontSize: 11.5, color: t.textMuted, marginTop: 5 }}>
+                {comments.trim() ? `${comments.split("\n").filter(l => l.trim()).length} comment${comments.split("\n").filter(l => l.trim()).length !== 1 ? "s" : ""}` : "Custom comments sent to the provider with this order"}
+              </div>
+            </div>
+          )}
 
           {/* drip panel */}
           {showDripPanel && mode !== "bulk" && qtyNum > 0 && (() => {

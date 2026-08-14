@@ -125,7 +125,7 @@ export async function POST(req) {
             name: derivedName,
             firstName: firstName || null,
             lastName: lastName || null,
-            phone: phone || null,
+            phone: normalizedPhone,
             email: email.toLowerCase().trim(),
             password: hashed,
             referralCode: refCode,
