@@ -660,7 +660,8 @@ export async function POST(req) {
       });
 
       await tgAnswerCallback(cb.id, 'Rejected');
-      await tgDeleteMessage(cb.message.message_id);
+      const originalText = cb.message.text.replace(/\n\n⚠️ .*$/, '');
+      await tgEditMessage(cb.message.message_id, `❌ <s>${originalText}</s>\n\n<b>Rejected</b> by ${adminLabel}`);
       log.info('TG Webhook', `Rejected manual deposit ${txId} for ${name}`);
     }
   } catch (err) {

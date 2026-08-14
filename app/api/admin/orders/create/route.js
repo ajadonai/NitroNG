@@ -194,7 +194,7 @@ export async function POST(req) {
     }
 
     // single or drip
-    const { tierId, quantity, link: rawLink, dripDays, dripConfig: rawDripConfig } = body;
+    const { tierId, quantity, link: rawLink, dripDays, dripConfig: rawDripConfig, comments: rawComments } = body;
     if (!tierId) return Response.json({ error: 'Tier is required' }, { status: 400 });
     if (!rawLink) return Response.json({ error: 'Link is required' }, { status: 400 });
 
@@ -296,6 +296,7 @@ export async function POST(req) {
           ...(nitroTierKey ? { nitroStatusAtPurchase: nitroTierKey } : {}),
           ...(blocker ? { queuedBehind: blocker.orderId } : {}),
           ...(dripSchedule ? { dripDays: dripNum || 1, ...(dripConfigObj ? { dripConfig: dripConfigObj } : {}) } : {}),
+          ...(rawComments?.trim() ? { comments: rawComments.trim() } : {}),
         },
       });
 

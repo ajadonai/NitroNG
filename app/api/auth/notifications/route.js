@@ -74,9 +74,9 @@ export async function POST(req) {
 
     // Phone number update
     if (typeof body.phone === 'string') {
-      const cleaned = body.phone.replace(/\D/g, '');
-      if (cleaned.length < 10 || cleaned.length > 15) return error('Enter a valid phone number', 400);
-      data.phone = body.phone.startsWith('+') ? body.phone : `+234${cleaned}`;
+      const cleaned = body.phone.replace(/\D/g, '').replace(/^234/, '').replace(/^0+/, '');
+      if (cleaned.length !== 10 || !/^[789]/.test(cleaned)) return error('Enter a valid Nigerian phone number', 400);
+      data.phone = `+234${cleaned}`;
     }
 
     // Clear all — set timestamp

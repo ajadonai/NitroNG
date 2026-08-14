@@ -3,13 +3,14 @@ import { log } from '@/lib/logger';
 import { tgOutreach } from '@/lib/telegram';
 import { sendOutreach as ifySendOutreach } from '@/lib/ify/outreach';
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const TOUCHES = {
   day1: { field: 'outreachDay1SentAt', daysAgo: 1, label: 'Day 1 — new signups' },
   day3: { field: 'outreachDay3SentAt', daysAgo: 3, label: 'Day 3 — follow up' },
   day7: { field: 'outreachDay7SentAt', daysAgo: 7, label: 'Day 7 — last nudge' },
   winback: { field: 'outreachWinbackSentAt', label: 'Winback — 30 days inactive' },
+  backlog: { field: 'outreachDay1SentAt', label: 'Backlog' },
 };
 
 export async function GET(req) {
@@ -53,7 +54,7 @@ export async function GET(req) {
             select: { amountGranted: true },
           },
         },
-        take: 200,
+        take: 100,
       });
 
       if (batch.length > 0) {
@@ -71,20 +72,79 @@ export async function GET(req) {
         }
       }
       results.sent = batch.length;
+    } else if (touch === 'backlog') {
+      const BACKLOG_CUTOFF = new Date('2026-08-16T00:00:00Z');
+      const BATCH_LIMIT = 70;
+      const baseWhere = {
+        status: 'Active',
+        outreachOptedOutAt: null,
+        outreachDay1SentAt: null,
+        phone: { not: null },
+        orders: { none: {} },
+        transactions: { none: { type: 'deposit', status: 'Completed' } },
+      };
+
+      const now = new Date();
+      const day = now.getUTCDay();
+      const daysSinceSat = (day + 1) % 7;
+      const lastSat = new Date(now);
+      lastSat.setUTCDate(lastSat.getUTCDate() - daysSinceSat);
+      lastSat.setUTCHours(0, 0, 0, 0);
+      const weekendEnd = new Date(lastSat);
+      weekendEnd.setUTCDate(weekendEnd.getUTCDate() + 2);
+
+      const weekendBatch = await prisma.user.findMany({
+        where: { ...baseWhere, createdAt: { gte: lastSat, lt: weekendEnd } },
+        select: { id: true, name: true, phone: true },
+        orderBy: { createdAt: 'desc' },
+        take: BATCH_LIMIT,
+      });
+
+      const remaining = BATCH_LIMIT - weekendBatch.length;
+      let oldBatch = [];
+      if (remaining > 0) {
+        oldBatch = await prisma.user.findMany({
+          where: { ...baseWhere, createdAt: { lt: BACKLOG_CUTOFF } },
+          select: { id: true, name: true, phone: true },
+          take: remaining,
+        });
+      }
+
+      const batch = [...weekendBatch, ...oldBatch];
+
+      if (batch.length > 0) {
+        await tgOutreach(batch, 'backlog', { label: config.label });
+        const stampDate = new Date();
+        for (const u of batch) {
+          prisma.user.update({ where: { id: u.id }, data: { outreachDay1SentAt: stampDate } }).catch(() => {});
+          ifySendOutreach({ user: u, trigger: 'day1' }).catch(() => {});
+        }
+      }
+      results.sent = batch.length;
+      results.weekend = weekendBatch.length;
+      results.old = oldBatch.length;
     } else {
-      const windowStart = new Date(Date.now() - (config.daysAgo + 1) * 86400000);
+      const isMonday = new Date().getUTCDay() === 1;
+      const extra = isMonday ? 2 : 0;
+      const windowStart = new Date(Date.now() - (config.daysAgo + 1 + extra) * 86400000);
       const windowEnd = new Date(Date.now() - config.daysAgo * 86400000);
+      const d1Start = new Date(Date.now() - (config.daysAgo + extra) * 86400000);
+      const d1End = new Date(Date.now() - (config.daysAgo - 1) * 86400000);
       const batch = await prisma.user.findMany({
         where: {
           status: 'Active',
           outreachOptedOutAt: null,
           [config.field]: null,
-          createdAt: { gte: windowStart, lt: windowEnd },
+          phone: { not: null },
+          OR: [
+            { createdAt: { gte: windowStart, lt: windowEnd } },
+            { outreachDay1SentAt: { gte: d1Start, lt: d1End } },
+          ],
           transactions: { none: { type: 'deposit', status: 'Completed' } },
           orders: { none: {} },
         },
         select: { id: true, name: true, phone: true },
-        take: 200,
+        take: 100,
       });
 
       if (batch.length > 0) {
