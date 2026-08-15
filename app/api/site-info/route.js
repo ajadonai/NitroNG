@@ -19,7 +19,7 @@ export async function GET() {
       uniquePlatforms = distinctPlatforms.length;
     } catch {}
 
-    const ORDER_BASE = 10000;
+    const ORDER_BASE = 8000;
     const PROCESSING_BASE = 20;
     const displayUsers = userCount;
     const displayOrders = orderCount + ORDER_BASE;
