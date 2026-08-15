@@ -157,7 +157,7 @@ async function buildStats(contacts, since) {
       select: { userId: true, charge: true, createdAt: true },
     }),
     prisma.transaction.findMany({
-      where: { userId: { in: userIds }, type: 'Deposit', status: 'Completed', createdAt: { gte: since } },
+      where: { userId: { in: userIds }, type: 'deposit', status: 'Completed', createdAt: { gte: since } },
       select: { userId: true, amount: true, createdAt: true },
     }),
   ]);
