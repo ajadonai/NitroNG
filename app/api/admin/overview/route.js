@@ -105,6 +105,7 @@ export async function GET() {
       yesterdayRevenueAgg, yesterdayDepositsAgg,
       partials,
       unreadTicketCount, pendingManualCount, pendingOrderCount, openIssueCount, pendingTaskReviewCount,
+      pendingRefillCount,
     ] = await Promise.all([
       prisma.user.count({ where: { emailVerified: true } }),
       prisma.order.count({ where: { deletedAt: null } }),
@@ -124,6 +125,8 @@ export async function GET() {
       prisma.order.count({ where: { status: { in: ['Pending', 'Processing'] }, deletedAt: null, queuedBehind: null } }).catch(() => 0),
       prisma.adminIssue?.findMany({ where: { status: 'open' }, select: { type: true }, distinct: ['type'] }).then(r => r.length).catch(() => 0) ?? Promise.resolve(0),
       prisma.taskSubmission.count({ where: { status: 'pending' } }).catch(() => 0),
+      // Refill requests waiting on an admin, for the sidebar badge.
+      prisma.order.count({ where: { refillRequestedAt: { not: null }, deletedAt: null } }),
     ]);
 
     const partialAll = partials;
@@ -201,6 +204,7 @@ export async function GET() {
       unreadTicketCount,
       pendingManualCount,
       pendingOrderCount,
+      pendingRefillCount,
       openIssueCount,
       pendingTaskReviewCount,
       openTickets: openTickets.map(tk => ({

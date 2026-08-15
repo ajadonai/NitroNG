@@ -69,9 +69,9 @@ function ServicePlatformInner({ platform, services, copy, nextPlatform, relatedL
               </div>
               <div className="divide-y" style={{ borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }}>
                 {services.map(s => (
-                  <div key={s.type} className="flex items-center justify-between py-4 px-6 max-md:px-4 max-md:py-3">
+                  <div key={s.type} className="flex items-center justify-between py-4 px-6 max-md:px-4 max-md:py-3" style={s.nigerian ? { background: dark ? "rgba(74,222,128,.06)" : "rgba(22,163,74,.04)" } : undefined}>
                     <div className="min-w-0 flex-1">
-                      <div className="text-[15px] max-md:text-[14px] font-medium" style={{ color: t.text }}>{s.type}</div>
+                      <div className="text-[15px] max-md:text-[14px] font-medium" style={{ color: s.nigerian ? (dark ? "#4ade80" : "#16a34a") : t.text }}>{s.type}</div>
                       <div className="flex items-center gap-3 mt-0.5 text-[12px] max-md:text-[11px]" style={{ color: t.textMuted }}>
                         {s.tiers > 1 && <span className="inline-flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>{s.tiers} tiers</span>}
                         {s.refill && <span className="inline-flex items-center gap-1 text-green-500"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>Refill</span>}

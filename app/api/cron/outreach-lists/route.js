@@ -2,13 +2,62 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { tgOutreach } from '@/lib/telegram';
 import { sendOutreach as ifySendOutreach } from '@/lib/ify/outreach';
+import { poolWhere } from '@/lib/outreach-pool';
 
 export const maxDuration = 300;
 
+// Per-touch caps, so no touch can starve the others. Follow-up and Final Nudge
+// sit on pools of 100+ and would take the whole budget between them if uncapped.
+//
+// The sequence is a pipeline: call 50 new people today and those same 50 need a
+// follow-up three days later, then a final nudge four days after that. Capping a
+// downstream touch below the one feeding it guarantees a queue that only grows,
+// so the caps taper with attrition rather than sitting flat.
+//
+// First Call is highest because it is the only touch with an expiry. Miss the
+// 1-4 day window and the lead leaves First Call permanently, landing in Backlog
+// to be called cold weeks later off a script written for someone who just signed
+// up. Backlog is precisely the accumulation of everyone who missed that window,
+// so headroom here is the only thing that stops it growing. It also cannot run
+// away with the budget: its pool is bounded by whoever signed up in a four-day
+// window, which at ~80 signups a day and roughly a third eligible is ~28.
+//
+// The caps must sum to less than DAILY_BUDGET, or Backlog is left with nothing.
+// Only Backlog is budget-aware; the priority touches take their cap regardless,
+// so an over-subscribed set of caps overspends the day and starves Backlog.
+// Sized against working time, not appetite. At the observed ~14 contacts an hour,
+// 50 First Call cards is three and a half hours of work and 15 Follow-up is one,
+// which is why the schedule spaces them that far apart. Handing out a list faster
+// than it can be worked is what left a third of every day unworked.
+//
+// day7 and winback are kept here but are no longer scheduled: neither had a single
+// card worked in 30 days, and winback duplicates an email that already goes out
+// with credit attached. Re-adding a cron line is all it takes to revive them.
+const TOUCH_CAP = {
+  day1: 50,
+  day3: 15,
+  day7: 30,
+  winback: 20,
+};
+
+// People who actually work cards. Deliberately not OUTREACH_STAFF, which also
+// carries admins for command access — one of whom has never worked a card.
+const CALLERS = 1;
+
+// One caller sustains about 110 contacts across a 7.5-hour day, so 100 is set just
+// under that: the day can genuinely be cleared, which makes "Left: 0" mean
+// something. Every additional caller adds another 100. Backlog runs last and
+// claims whatever the priority touches left unspent.
+const DAILY_BUDGET = 100 * CALLERS;
+
+// tgOutreach sleeps 3s per contact for Telegram's per-group rate limit, so a single
+// run cannot exceed ~95 contacts before hitting maxDuration. Hard ceiling per run.
+const MAX_RUN = 90;
+
 const TOUCHES = {
-  day1: { field: 'outreachDay1SentAt', daysAgo: 1, label: 'Day 1 — new signups' },
-  day3: { field: 'outreachDay3SentAt', daysAgo: 3, label: 'Day 3 — follow up' },
-  day7: { field: 'outreachDay7SentAt', daysAgo: 7, label: 'Day 7 — last nudge' },
+  day1: { field: 'outreachDay1SentAt', daysAgo: 1, label: 'First Call — new signups' },
+  day3: { field: 'outreachDay3SentAt', daysAgo: 3, label: 'Follow-up' },
+  day7: { field: 'outreachDay7SentAt', daysAgo: 7, label: 'Final Nudge' },
   winback: { field: 'outreachWinbackSentAt', label: 'Winback — 30 days inactive' },
   backlog: { field: 'outreachDay1SentAt', label: 'Backlog' },
 };
@@ -54,7 +103,7 @@ export async function GET(req) {
             select: { amountGranted: true },
           },
         },
-        take: 100,
+        take: TOUCH_CAP.winback,
       });
 
       if (batch.length > 0) {
@@ -63,26 +112,37 @@ export async function GET(req) {
           const credit = u.bonusCredits?.[0]?.amountGranted;
           if (credit) creditMap.set(u.id, credit / 100);
         });
-        await tgOutreach(batch, 'winback', { label: config.label, creditMap });
         const stampDate = new Date();
+        await Promise.allSettled(batch.map(u =>
+          prisma.user.update({ where: { id: u.id }, data: { [config.field]: stampDate } })
+        ));
+        await tgOutreach(batch, 'winback', { label: config.label, creditMap });
         for (const u of batch) {
           const creditNaira = creditMap.get(u.id) || 0;
-          prisma.user.update({ where: { id: u.id }, data: { [config.field]: stampDate } }).catch(() => {});
           ifySendOutreach({ user: u, trigger: 'winback', extra: { creditNaira } }).catch(() => {});
         }
       }
       results.sent = batch.length;
     } else if (touch === 'backlog') {
       const BACKLOG_CUTOFF = new Date('2026-08-16T00:00:00Z');
-      const BATCH_LIMIT = 70;
-      const baseWhere = {
-        status: 'Active',
-        outreachOptedOutAt: null,
-        outreachDay1SentAt: null,
-        phone: { not: null },
-        orders: { none: {} },
-        transactions: { none: { type: 'deposit', status: 'Completed' } },
-      };
+
+      // Backlog is the flex valve. Count what the priority touches already handed out
+      // today and claim the rest of the budget, capped by what one run can send.
+      const startOfToday = new Date();
+      startOfToday.setUTCHours(0, 0, 0, 0);
+      const sentToday = await prisma.user.count({
+        where: {
+          OR: [
+            { outreachDay1SentAt: { gte: startOfToday } },
+            { outreachDay3SentAt: { gte: startOfToday } },
+            { outreachDay7SentAt: { gte: startOfToday } },
+            { outreachWinbackSentAt: { gte: startOfToday } },
+          ],
+        },
+      });
+      const BATCH_LIMIT = Math.max(0, Math.min(DAILY_BUDGET - sentToday, MAX_RUN));
+
+      const baseWhere = poolWhere('backlog');
 
       const now = new Date();
       const day = now.getUTCDay();
@@ -93,12 +153,12 @@ export async function GET(req) {
       const weekendEnd = new Date(lastSat);
       weekendEnd.setUTCDate(weekendEnd.getUTCDate() + 2);
 
-      const weekendBatch = await prisma.user.findMany({
+      const weekendBatch = BATCH_LIMIT > 0 ? await prisma.user.findMany({
         where: { ...baseWhere, createdAt: { gte: lastSat, lt: weekendEnd } },
         select: { id: true, name: true, phone: true },
         orderBy: { createdAt: 'desc' },
         take: BATCH_LIMIT,
-      });
+      }) : [];
 
       const remaining = BATCH_LIMIT - weekendBatch.length;
       let oldBatch = [];
@@ -113,45 +173,51 @@ export async function GET(req) {
       const batch = [...weekendBatch, ...oldBatch];
 
       if (batch.length > 0) {
-        await tgOutreach(batch, 'backlog', { label: config.label });
         const stampDate = new Date();
+        await Promise.allSettled(batch.map(u =>
+          prisma.user.update({ where: { id: u.id }, data: { outreachDay1SentAt: stampDate } })
+        ));
+        await tgOutreach(batch, 'backlog', { label: config.label });
         for (const u of batch) {
-          prisma.user.update({ where: { id: u.id }, data: { outreachDay1SentAt: stampDate } }).catch(() => {});
           ifySendOutreach({ user: u, trigger: 'day1' }).catch(() => {});
         }
       }
       results.sent = batch.length;
       results.weekend = weekendBatch.length;
       results.old = oldBatch.length;
-    } else {
-      const isMonday = new Date().getUTCDay() === 1;
-      const extra = isMonday ? 2 : 0;
-      const windowStart = new Date(Date.now() - (config.daysAgo + 1 + extra) * 86400000);
-      const windowEnd = new Date(Date.now() - config.daysAgo * 86400000);
-      const d1Start = new Date(Date.now() - (config.daysAgo + extra) * 86400000);
-      const d1End = new Date(Date.now() - (config.daysAgo - 1) * 86400000);
+      results.budget = { spentByOtherTouches: sentToday, allocatedToBacklog: BATCH_LIMIT };
+    } else if (touch === 'day1') {
       const batch = await prisma.user.findMany({
-        where: {
-          status: 'Active',
-          outreachOptedOutAt: null,
-          [config.field]: null,
-          phone: { not: null },
-          OR: [
-            { createdAt: { gte: windowStart, lt: windowEnd } },
-            { outreachDay1SentAt: { gte: d1Start, lt: d1End } },
-          ],
-          transactions: { none: { type: 'deposit', status: 'Completed' } },
-          orders: { none: {} },
-        },
+        where: poolWhere('day1'),
         select: { id: true, name: true, phone: true },
-        take: 100,
+        take: TOUCH_CAP.day1,
       });
 
       if (batch.length > 0) {
-        await tgOutreach(batch, touch, { label: config.label });
         const stampDate = new Date();
+        await Promise.allSettled(batch.map(u =>
+          prisma.user.update({ where: { id: u.id }, data: { outreachDay1SentAt: stampDate } })
+        ));
+        await tgOutreach(batch, touch, { label: config.label });
         for (const u of batch) {
-          prisma.user.update({ where: { id: u.id }, data: { [config.field]: stampDate } }).catch(() => {});
+          ifySendOutreach({ user: u, trigger: touch }).catch(() => {});
+        }
+      }
+      results.sent = batch.length;
+    } else {
+      const batch = await prisma.user.findMany({
+        where: poolWhere(touch),
+        select: { id: true, name: true, phone: true },
+        take: TOUCH_CAP[touch],
+      });
+
+      if (batch.length > 0) {
+        const stampDate = new Date();
+        await Promise.allSettled(batch.map(u =>
+          prisma.user.update({ where: { id: u.id }, data: { [config.field]: stampDate } })
+        ));
+        await tgOutreach(batch, touch, { label: config.label });
+        for (const u of batch) {
           ifySendOutreach({ user: u, trigger: touch }).catch(() => {});
         }
       }

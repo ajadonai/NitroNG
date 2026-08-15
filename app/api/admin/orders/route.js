@@ -852,7 +852,14 @@ export async function POST(req) {
         if (!candidate) return Response.json({ error: 'No pending or failed batch to dispatch' }, { status: 400 });
 
         if (candidate.status === 'failed' && (candidate.lastError?.startsWith('[TIMEOUT]') || candidate.lastError?.startsWith('[VERIFY_STALE]'))) {
-          return Response.json({ error: `Batch ${candidate.batch} has an ambiguous provider state (${candidate.lastError.split(']')[0]}]). Check the provider dashboard and reconcile before redispatching.` }, { status: 409 });
+          const why = candidate.lastError.startsWith('[TIMEOUT]')
+            ? `${fullOrder.provider || 'The provider'} never replied when we sent batch ${candidate.batch}`
+            : `We lost track of batch ${candidate.batch} while checking it with ${fullOrder.provider || 'the provider'}`;
+          return Response.json({
+            error: `${why}, so we cannot tell whether they received it. Dispatching again risks sending it twice and paying twice. `
+              + `Search your ${fullOrder.provider || 'provider'} dashboard for this order: if it is running, leave it alone. `
+              + `If it is not there, use Reset.`,
+          }, { status: 409 });
         }
 
         // Lock parent then claim child — serializes with finalizer and reset
@@ -1433,6 +1440,33 @@ export async function POST(req) {
       }
     }
 
+    // A timed-out batch blocks both Dispatch and Reset, because we genuinely
+    // cannot tell whether the provider took it. Only a human looking at the
+    // provider dashboard can settle that, and until now there was no way to
+    // record having done so — the batch stayed stuck forever.
+    //
+    // Deliberately not inferred from a missing apiOrderId: a timeout means the
+    // request went out and no reply came back, so the provider may well have
+    // accepted it and we simply never received the id. Absence proves nothing.
+    if (action === 'reconcile_drip') {
+      const { dispatchId } = body;
+      if (!dispatchId) return Response.json({ error: 'Dispatch ID required' }, { status: 400 });
+
+      const dispatch = await prisma.dripDispatch.findUnique({ where: { id: dispatchId } });
+      if (!dispatch) return Response.json({ error: 'Dispatch not found' }, { status: 404 });
+      if (dispatch.orderId !== order.id) return Response.json({ error: 'Batch does not belong to this order' }, { status: 400 });
+
+      const err = String(dispatch.lastError || '');
+      if (!err.startsWith('[TIMEOUT]') && !err.startsWith('[VERIFY_STALE]')) {
+        return Response.json({ error: 'This batch is not stuck — nothing to reconcile' }, { status: 400 });
+      }
+
+      const stamp = `[RECONCILED] ${admin.name} confirmed absent at provider, ${new Date().toISOString().slice(0, 16)}`;
+      await prisma.dripDispatch.update({ where: { id: dispatchId }, data: { lastError: stamp } });
+      await logActivity(admin.name, `Reconciled drip batch ${dispatch.batch} on ${order.orderId} — confirmed not at provider`, 'order');
+      return Response.json({ success: true, message: `Batch ${dispatch.batch} cleared. You can now Reset or Dispatch it.` });
+    }
+
     if (action === 'reset_drip') {
       const { dispatchId, quantity } = body;
       if (!dispatchId) return Response.json({ error: 'Dispatch ID required' }, { status: 400 });
@@ -1475,7 +1509,13 @@ export async function POST(req) {
 
         const srcError = source.lastError ? String(source.lastError) : '';
         if (srcError.startsWith('[TIMEOUT]') || srcError.startsWith('[VERIFY_STALE]')) {
-          return { error: 'Source batch has ambiguous provider status — reconcile before resetting', code: 400 };
+          return {
+            error: `Batch ${source.batch} timed out, so we cannot tell whether the provider received it. `
+              + `Resetting now risks sending it twice. Search the provider dashboard for this order first. `
+              + `If it is genuinely not there, a developer needs to clear the flag before Reset will work \u{2014} `
+              + `there is no button for that yet.`,
+            code: 400,
+          };
         }
 
         const undelivered = source.remains != null ? Number(source.remains) : Number(source.quantity);

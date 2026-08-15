@@ -62,6 +62,10 @@ vi.mock('@/lib/admin', () => ({
   requireAdmin: (...args) => mocks.requireAdmin(...args),
   logActivity: (...args) => mocks.logActivity(...args),
   canSeeSensitive: () => true,
+  // The route gained this guard after the suite was written. Without it every
+  // case threw on import and returned 500, masking what was actually being
+  // tested. These tests are about queue safety, not permissions, so it allows.
+  canPerformAction: () => true,
   maskEmail: value => value,
   maskPhone: value => value,
 }));

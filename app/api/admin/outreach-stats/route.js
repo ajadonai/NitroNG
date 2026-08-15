@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
+import { STAFF_NAMES } from '@/lib/telegram';
 import { requireAdmin } from '@/lib/admin';
 
-const STAFF_NAMES = { '8567146346': 'Nitro', '1935066216': 'Soludo', '8911494544': 'Eshiema' };
 function staffName(tgId) { return STAFF_NAMES[String(tgId)] || `Staff ${String(tgId).slice(-4)}`; }
 
 export async function GET(req) {
@@ -58,7 +58,8 @@ export async function GET(req) {
     where: { contactedAt: dateFilter, ...staffFilter },
     select: {
       id: true, touchType: true, contactedAt: true, contactedBy: true, method: true,
-      user: { select: { id: true, name: true, email: true, phone: true } },
+      callbackAt: true, callbackAttempts: true,
+      user: { select: { id: true, name: true, email: true, phone: true, balance: true } },
     },
     orderBy: { contactedAt: 'desc' },
     skip: (page - 1) * perPage,
@@ -66,13 +67,22 @@ export async function GET(req) {
   });
 
   const recentUserIds = [...new Set(recentContacts.map(c => c.userId || c.user?.id))];
-  const recentOrders = recentUserIds.length ? await prisma.order.groupBy({
-    by: ['userId'],
-    where: { userId: { in: recentUserIds }, createdAt: { gte: since }, status: { not: 'Cancelled' } },
-    _sum: { charge: true },
-    _count: true,
-  }) : [];
+  const [recentOrders, recentDeposits] = recentUserIds.length ? await Promise.all([
+    prisma.order.groupBy({
+      by: ['userId'],
+      where: { userId: { in: recentUserIds }, createdAt: { gte: since }, status: { not: 'Cancelled' } },
+      _sum: { charge: true },
+      _count: true,
+    }),
+    prisma.transaction.groupBy({
+      by: ['userId'],
+      where: { userId: { in: recentUserIds }, type: 'deposit', status: 'Completed' },
+      _sum: { amount: true },
+      _count: true,
+    }),
+  ]) : [[], []];
   const orderMap = Object.fromEntries(recentOrders.map(o => [o.userId, { revenue: Number(o._sum.charge) || 0, count: o._count }]));
+  const depositMap = Object.fromEntries(recentDeposits.map(d => [d.userId, { total: Number(d._sum.amount) || 0, count: d._count }]));
 
   const rows = recentContacts.map(c => ({
     id: c.id,
@@ -80,12 +90,19 @@ export async function GET(req) {
     contactedAt: c.contactedAt,
     contactedBy: c.contactedBy ? staffName(c.contactedBy) : null,
     method: c.method || null,
+    // A scheduled callback or automatic retry. Without this it exists only inside
+    // Telegram, so nobody covering for the caller can see who is owed a call.
+    callbackAt: c.callbackAt || null,
+    callbackAttempts: c.callbackAttempts || 0,
     userName: c.user?.name || c.user?.email?.split('@')[0] || 'User',
     userEmail: c.user?.email || null,
     userPhone: c.user?.phone || null,
     userId: c.user?.id,
+    balance: Number(c.user?.balance) || 0,
     revenue: orderMap[c.user?.id]?.revenue || 0,
     orders: orderMap[c.user?.id]?.count || 0,
+    deposits: depositMap[c.user?.id]?.total || 0,
+    depositCount: depositMap[c.user?.id]?.count || 0,
   }));
 
   const tab = req.nextUrl.searchParams.get('tab');
@@ -157,7 +174,7 @@ async function buildStats(contacts, since) {
       select: { userId: true, charge: true, createdAt: true },
     }),
     prisma.transaction.findMany({
-      where: { userId: { in: userIds }, type: 'Deposit', status: 'Completed', createdAt: { gte: since } },
+      where: { userId: { in: userIds }, type: 'deposit', status: 'Completed', createdAt: { gte: since } },
       select: { userId: true, amount: true, createdAt: true },
     }),
   ]);
