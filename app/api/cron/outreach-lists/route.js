@@ -63,11 +63,11 @@ export async function GET(req) {
           const credit = u.bonusCredits?.[0]?.amountGranted;
           if (credit) creditMap.set(u.id, credit / 100);
         });
-        await tgOutreach(batch, 'winback', { label: config.label, creditMap });
         const stampDate = new Date();
         await Promise.allSettled(batch.map(u =>
           prisma.user.update({ where: { id: u.id }, data: { [config.field]: stampDate } })
         ));
+        await tgOutreach(batch, 'winback', { label: config.label, creditMap });
         for (const u of batch) {
           const creditNaira = creditMap.get(u.id) || 0;
           ifySendOutreach({ user: u, trigger: 'winback', extra: { creditNaira } }).catch(() => {});
@@ -115,11 +115,11 @@ export async function GET(req) {
       const batch = [...weekendBatch, ...oldBatch];
 
       if (batch.length > 0) {
-        await tgOutreach(batch, 'backlog', { label: config.label });
         const stampDate = new Date();
         await Promise.allSettled(batch.map(u =>
           prisma.user.update({ where: { id: u.id }, data: { outreachDay1SentAt: stampDate } })
         ));
+        await tgOutreach(batch, 'backlog', { label: config.label });
         for (const u of batch) {
           ifySendOutreach({ user: u, trigger: 'day1' }).catch(() => {});
         }
@@ -152,11 +152,11 @@ export async function GET(req) {
       });
 
       if (batch.length > 0) {
-        await tgOutreach(batch, touch, { label: config.label });
         const stampDate = new Date();
         await Promise.allSettled(batch.map(u =>
           prisma.user.update({ where: { id: u.id }, data: { [config.field]: stampDate } })
         ));
+        await tgOutreach(batch, touch, { label: config.label });
         for (const u of batch) {
           ifySendOutreach({ user: u, trigger: touch }).catch(() => {});
         }
