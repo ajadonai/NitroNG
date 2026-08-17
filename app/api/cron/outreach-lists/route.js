@@ -127,23 +127,42 @@ export async function GET(req) {
       results.sent = batch.length;
       results.weekend = weekendBatch.length;
       results.old = oldBatch.length;
+    } else if (touch === 'day1') {
+      const fourDaysAgo = new Date(Date.now() - 4 * 86400000);
+      const oneDayAgo = new Date(Date.now() - 86400000);
+      const batch = await prisma.user.findMany({
+        where: {
+          status: 'Active',
+          outreachOptedOutAt: null,
+          outreachDay1SentAt: null,
+          phone: { not: null },
+          createdAt: { gte: fourDaysAgo, lt: oneDayAgo },
+          transactions: { none: { type: 'deposit', status: 'Completed' } },
+          orders: { none: {} },
+        },
+        select: { id: true, name: true, phone: true },
+        take: 80,
+      });
+
+      if (batch.length > 0) {
+        const stampDate = new Date();
+        await Promise.allSettled(batch.map(u =>
+          prisma.user.update({ where: { id: u.id }, data: { outreachDay1SentAt: stampDate } })
+        ));
+        await tgOutreach(batch, touch, { label: config.label });
+        for (const u of batch) {
+          ifySendOutreach({ user: u, trigger: touch }).catch(() => {});
+        }
+      }
+      results.sent = batch.length;
     } else {
-      const isMonday = new Date().getUTCDay() === 1;
-      const extra = isMonday ? 2 : 0;
-      const windowStart = new Date(Date.now() - (config.daysAgo + 1 + extra) * 86400000);
-      const windowEnd = new Date(Date.now() - config.daysAgo * 86400000);
-      const d1Start = new Date(Date.now() - (config.daysAgo + extra) * 86400000);
-      const d1End = new Date(Date.now() - (config.daysAgo - 1) * 86400000);
+      const threshold = new Date(Date.now() - config.daysAgo * 86400000);
       const batch = await prisma.user.findMany({
         where: {
           status: 'Active',
           outreachOptedOutAt: null,
           [config.field]: null,
-          phone: { not: null },
-          OR: [
-            { createdAt: { gte: windowStart, lt: windowEnd } },
-            { outreachDay1SentAt: { gte: d1Start, lt: d1End } },
-          ],
+          outreachDay1SentAt: { not: null, lt: threshold },
           transactions: { none: { type: 'deposit', status: 'Completed' } },
           orders: { none: {} },
         },
