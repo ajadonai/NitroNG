@@ -174,7 +174,7 @@ function DripSection({ dispatches, dripConfig, dark, t, orderId, onRefresh }) {
                 try {
                   const res = await fetch("/api/admin/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reset_drip", orderId, dispatchId: resetTarget.id, quantity: Number(resetQty) }) });
                   const data = await res.json();
-                  if (data.success) { toast?.success?.(data.message || "Batch reset"); onRefresh?.(); } else { toast?.error?.(data.error || "Reset failed"); }
+                  if (data.success) { toast?.success?.(data.message || "Bulk reset"); onRefresh?.(); } else { toast?.error?.(data.error || "Reset failed"); }
                 } catch { toast?.error?.("Reset failed"); }
                 setResetLoading(false);
                 setResetTarget(null);
@@ -354,7 +354,7 @@ export default function AdminOrdersPage({ dark, t, admin }) {
     setBatchActionLoading(batchId);
     try {
       const res = await fetch(`/api/admin/orders?batchId=${encodeURIComponent(batchId)}`);
-      if (!res.ok) { toast.error("Batch load failed", "Could not fetch all orders in this batch"); setBatchActionLoading(null); return; }
+      if (!res.ok) { toast.error("Bulk load failed", "Could not fetch all orders in this bulk order"); setBatchActionLoading(null); return; }
       const data = await res.json();
       const batchOrders = data.orders || [];
       let checked = 0, updated = 0, cancelled = 0;
@@ -373,8 +373,8 @@ export default function AdminOrdersPage({ dark, t, admin }) {
           } catch {}
         }
       }
-      if (action === "check") toast.info("Batch checked", `Checked ${checked} orders · ${updated} updated`);
-      if (action === "cancel") toast.success("Batch cancelled", `${cancelled} orders cancelled`);
+      if (action === "check") toast.info("Bulk checked", `Checked ${checked} orders · ${updated} updated`);
+      if (action === "cancel") toast.success("Bulk cancelled", `${cancelled} orders cancelled`);
       fetchOrders(debouncedSearch, filter, page, perPage);
     } catch { toast.error("Request failed", "Check your connection"); }
     setBatchActionLoading(null);
@@ -548,9 +548,9 @@ export default function AdminOrdersPage({ dark, t, admin }) {
                   <div style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", borderTop: `2px solid ${dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)"}`, ...(activeOrders.length > 0 ? { borderLeft: `3px solid ${accentColor}` } : {}) }}>
                     {/* Batch action bar */}
                     <div className="flex items-center gap-2 py-2.5 px-4 desktop:px-5 flex-wrap" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-                      <span className="text-[11px] uppercase tracking-[1px] font-medium mr-auto" style={{ color: t.textMuted }}>Batch actions</span>
+                      <span className="text-[11px] uppercase tracking-[1px] font-medium mr-auto" style={{ color: t.textMuted }}>Bulk actions</span>
                       {checkable.length > 0 && <button onClick={() => doBatchAction(batch.batchId, "check")} disabled={isBatchLoading} className="adm-btn-sm text-[11px] flex items-center justify-center gap-1.5 min-w-[70px]" style={{ borderColor: dark ? "rgba(96,165,250,.25)" : "rgba(37,99,235,.2)", color: dark ? "#60a5fa" : "#2563eb", background: dark ? "rgba(96,165,250,.08)" : "rgba(37,99,235,.04)" }}>{isBatchLoading ? <Spinner size={11} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check all"}</button>}
-                      {activeOrders.length > 0 && <button onClick={async () => { const ok = await confirm({ title: "Cancel Batch", message: `Cancel all active orders in ${batch.batchId}? This may issue refunds.`, confirmLabel: "Cancel All", danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isBatchLoading} className="adm-btn-sm text-[11px]" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626", opacity: isBatchLoading ? .5 : 1 }}>Cancel all</button>}
+                      {activeOrders.length > 0 && <button onClick={async () => { const ok = await confirm({ title: "Cancel Bulk Order", message: `Cancel all active orders in ${batch.batchId}? This may issue refunds.`, confirmLabel: "Cancel All", danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isBatchLoading} className="adm-btn-sm text-[11px]" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626", opacity: isBatchLoading ? .5 : 1 }}>Cancel all</button>}
                     </div>
                     {batch.orders.map((o, i) => (
                       <div key={o.id}>

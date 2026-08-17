@@ -187,8 +187,12 @@ export async function POST(req) {
 
       if (totalCharge > 0) triggerPurchaseDelivery(`purchase_${batchId}`);
 
-      tgNewOrder(batchId, `Batch (${createdIds.length} orders) by ${admin.name}`, createdIds.length, totalCharge, user.name, null, null).catch(() => {});
-      logActivity(admin.name, `Created batch ${batchId} (${createdIds.length} orders, ${shouldCharge ? `₦${(totalCharge / 100).toLocaleString()} charged` : 'free'}) for ${user.name}`, 'order').catch(e => log.error('Admin Create Order logActivity', e.message));
+      for (let i = 0; i < orders.length; i++) {
+        const o = orders[i];
+        const svcLabel = `${o.snapshot.serviceNameAtPurchase || 'Service'}${o.snapshot.tierNameAtPurchase ? ` (${o.snapshot.tierNameAtPurchase})` : ''} by ${admin.name}`;
+        tgNewOrder(createdIds[i], svcLabel, o.quantity, o.charge, user.name, o.link, o.snapshot.platformAtPurchase).catch(() => {});
+      }
+      logActivity(admin.name, `Created bulk order ${batchId} (${createdIds.length} orders, ${shouldCharge ? `₦${(totalCharge / 100).toLocaleString()} charged` : 'free'}) for ${user.name}`, 'order').catch(e => log.error('Admin Create Order logActivity', e.message));
 
       return Response.json({ success: true, batchId, count: createdIds.length, orderIds: createdIds });
     }

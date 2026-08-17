@@ -752,7 +752,8 @@ export async function PATCH(req) {
         const tierName = `${o.offerSnapshot.serviceNameAtPurchase}${o.offerSnapshot.tierNameAtPurchase ? ` — ${o.offerSnapshot.tierNameAtPurchase}` : ''}`;
         tgNewOrder(o.orderId, tierName, o.qty, o.charge || 0, session.email, o.link, o.offerSnapshot?.platformAtPurchase || '');
       }
-      checkFirstOrder(session.id, 'batch order');
+      const svcNames = [...new Set(result.createdOrders.map(o => o.offerSnapshot.serviceNameAtPurchase).filter(Boolean))];
+      checkFirstOrder(session.id, svcNames.join(', ') || 'Bulk order');
 
       dispatchBatch(result.createdOrders, session.id, newBatchId, result.totalCharge).catch(e => log.error('Reorder dispatch', e.message));
 
@@ -1105,7 +1106,8 @@ export async function POST(req) {
     for (const o of result.createdOrders) {
       tgNewOrder(o.orderId, o.tierName, o.qty, o.finalCharge || o.charge, session.email, o.link, o.offerSnapshot?.platformAtPurchase || '');
     }
-    checkFirstOrder(session.id, result.createdOrders[0]?.tierName || 'batch order');
+    const svcNames = [...new Set(result.createdOrders.map(o => o.offerSnapshot?.serviceNameAtPurchase || o.tierName).filter(Boolean))];
+    checkFirstOrder(session.id, svcNames.join(', ') || 'Bulk order');
 
     const responseBody = {
       success: true,

@@ -500,17 +500,17 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
         <div style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", borderLeft: `3px solid ${accentColor}`, borderTop: `2px solid ${dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)"}` }}>
           {/* Batch action bar */}
           <div className="flex items-center gap-5 py-2.5 px-4 desktop:px-5" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-            <span className="text-[11px] uppercase tracking-[1px] font-medium mr-auto text-t-text-muted">Batch actions</span>
+            <span className="text-[11px] uppercase tracking-[1px] font-medium mr-auto text-t-text-muted">Bulk actions</span>
             {hasActive && (
               <button onClick={() => doBatchAction(batch.batchId, "check")} disabled={isLoading} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(165,180,252,.12)" : "rgba(79,70,229,.07)", color: dark ? "#a5b4fc" : "#4f46e5", opacity: isLoading ? .5 : 1 }}>
                 {isLoading ? <Spinner size={12} color={dark ? "#a5b4fc" : "#4f46e5"} /> : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}Check all
               </button>
             )}
             {hasCancellable && (
-              <button onClick={async () => { const ok = await confirm({ title: "Cancel Batch", message: `Cancel all pending orders in ${batch.batchId} that haven't been sent to providers yet? Your wallet will be refunded.`, confirmLabel: "Cancel All", danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isLoading} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: dark ? "#fca5a5" : "#dc2626", opacity: isLoading ? .5 : 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cancel all</button>
+              <button onClick={async () => { const ok = await confirm({ title: "Cancel Bulk Order", message: `Cancel all pending orders in ${batch.batchId} that haven't been sent to providers yet? Your wallet will be refunded.`, confirmLabel: "Cancel All", danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isLoading} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: dark ? "#fca5a5" : "#dc2626", opacity: isLoading ? .5 : 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cancel all</button>
             )}
             {hasReorderable && (
-              <button onClick={async () => { const ok = await confirm({ title: "Reorder Batch", message: `Reorder all completed/cancelled orders from ${batch.batchId}?`, confirmLabel: "Reorder All" }); if (ok) doBatchAction(batch.batchId, "reorder_completed"); }} disabled={isLoading} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5 text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", opacity: isLoading ? .5 : 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>Reorder all</button>
+              <button onClick={async () => { const ok = await confirm({ title: "Reorder Bulk", message: `Reorder all completed/cancelled orders from ${batch.batchId}?`, confirmLabel: "Reorder All" }); if (ok) doBatchAction(batch.batchId, "reorder_completed"); }} disabled={isLoading} className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5 text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", opacity: isLoading ? .5 : 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>Reorder all</button>
             )}
           </div>
 
@@ -691,9 +691,9 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       if (!res.ok) { toast.error("Action failed", data.error || "Something went wrong"); setBatchActionLoading(null); return; }
       await fetchOrders();
       onRefresh?.();
-      if (action === "check") toast.info("Batch checked", `Checked ${data.checked || 0} orders · ${data.updated || 0} updated`);
-      else if (action === "cancel") toast.success("Batch cancelled", `${data.cancelled || 0} cancelled${data.refunded ? ` · ${fN(data.refunded)} refunded` : ""}`);
-      else if (action === "reorder") toast.success("Batch retry", `Placed ${data.placed || 0} of ${data.retried || 0}`);
+      if (action === "check") toast.info("Bulk checked", `Checked ${data.checked || 0} orders · ${data.updated || 0} updated`);
+      else if (action === "cancel") toast.success("Bulk cancelled", `${data.cancelled || 0} cancelled${data.refunded ? ` · ${fN(data.refunded)} refunded` : ""}`);
+      else if (action === "reorder") toast.success("Bulk retry", `Placed ${data.placed || 0} of ${data.retried || 0}`);
       else if (action === "reorder_completed") toast.success("Reorder placed", `${data.placed || 0} orders · ${data.newBatchId || ""} · ${fN(data.totalCharge || 0)} charged`);
     } catch { toast.error("Request failed", "Check your connection and try again"); }
     setBatchActionLoading(null);
