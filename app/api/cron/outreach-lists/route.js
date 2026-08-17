@@ -54,7 +54,7 @@ export async function GET(req) {
             select: { amountGranted: true },
           },
         },
-        take: 100,
+        take: 50,
       });
 
       if (batch.length > 0) {
@@ -76,7 +76,7 @@ export async function GET(req) {
       results.sent = batch.length;
     } else if (touch === 'backlog') {
       const BACKLOG_CUTOFF = new Date('2026-08-16T00:00:00Z');
-      const BATCH_LIMIT = 70;
+      const BATCH_LIMIT = 50;
       const baseWhere = {
         status: 'Active',
         outreachOptedOutAt: null,
@@ -141,7 +141,7 @@ export async function GET(req) {
           orders: { none: {} },
         },
         select: { id: true, name: true, phone: true },
-        take: 80,
+        take: 50,
       });
 
       if (batch.length > 0) {
@@ -167,7 +167,7 @@ export async function GET(req) {
           orders: { none: {} },
         },
         select: { id: true, name: true, phone: true },
-        take: 80,
+        take: 50,
       });
 
       if (batch.length > 0) {
