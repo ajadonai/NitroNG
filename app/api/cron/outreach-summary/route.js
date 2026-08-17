@@ -123,7 +123,7 @@ export async function GET(req) {
     .map(([uid, rev], i) => {
       const u = userMap[uid];
       const name = u?.name || u?.email?.split('@')[0] || 'User';
-      return `${i + 1}. ${name} \u{2014} \u{20A6}${Number(rev).toLocaleString()}`;
+      return `${i + 1}. ${name} \u{2014} \u{20A6}${Math.round(Number(rev) / 100).toLocaleString()}`;
     })
     .join('\n');
 
@@ -134,8 +134,8 @@ export async function GET(req) {
     + `<b>Contacted:</b> ${contacts.length} touches across ${userIds.length} users\n`
     + touchBreakdown + '\n\n'
     + `<b>Converted:</b> ${converted.size} users (${convRate}%)\n`
-    + `<b>Deposits after contact:</b> \u{20A6}${Number(totalDeposits).toLocaleString()}\n`
-    + `<b>Revenue after contact:</b> \u{20A6}${Number(totalRevenue).toLocaleString()}`;
+    + `<b>Deposits after contact:</b> \u{20A6}${Math.round(totalDeposits / 100).toLocaleString()}\n`
+    + `<b>Revenue after contact:</b> \u{20A6}${Math.round(totalRevenue / 100).toLocaleString()}`;
 
   const byStaff = {};
   for (const c of contacts) {
