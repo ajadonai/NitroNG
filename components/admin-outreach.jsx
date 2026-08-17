@@ -7,6 +7,8 @@ const TOUCH_LABELS = { day1: 'Day 1', day3: 'Day 3', day7: 'Day 7', winback: 'Wi
 const METHOD_LABELS = { call: 'Called', pending: 'Pending WA', whatsapp: 'WhatsApp', wrong_number: 'Wrong #', legacy: 'Legacy' };
 const METHOD_COLORS = { call: '#4ade80', pending: '#facc15', whatsapp: '#60a5fa', wrong_number: '#f87171', legacy: '#a3a3a3' };
 
+const fN = (kobo) => `₦${Math.round(kobo / 100).toLocaleString()}`;
+
 function MethodBadge({ method }) {
   const label = METHOD_LABELS[method] || method || '—';
   const color = METHOD_COLORS[method] || '#a3a3a3';
@@ -33,6 +35,12 @@ const RESPONSIVE_CSS = `
   .otr-drawer{width:100vw!important}
   .otr-mob-sub{display:flex!important}
   .otr-table td,.otr-table th{padding:8px 10px!important;font-size:13px!important}
+}
+@media(max-width:767px){
+  .otr-hide-md{display:none!important}
+}
+@media(max-width:1023px){
+  .otr-hide-lg{display:none!important}
 }
 .otr-mob-sub{display:none}
 .otr-row:active{background:rgba(196,125,142,.06)}
@@ -188,6 +196,9 @@ function OverviewTab({ dark, t, data, loading, fetching, s, p, convRate, cardSty
     );
   }
 
+  const hoverBg = dark ? 'rgba(255,255,255,.03)' : 'rgba(0,0,0,.02)';
+  const borderColor = dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)';
+
   return (
     <>
       <div className="adm-stats">
@@ -225,41 +236,112 @@ function OverviewTab({ dark, t, data, loading, fetching, s, p, convRate, cardSty
             </div>
           )}
         </div>
-        <div style={{ overflowX: 'auto', opacity: fetching ? .5 : 1, transition: 'opacity .15s', pointerEvents: fetching ? 'none' : 'auto' }}>
-          <table className="otr-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-            <thead>
-              <tr style={{ borderBottom: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)'}` }}>
-                <Th>User</Th>
-                <Th className="otr-hide-mob">Method</Th>
-                <Th className="otr-hide-mob">Touch</Th>
-                <Th>Date</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {(data?.rows || []).map(r => (
-                <tr key={r.id} className="otr-row" onClick={() => setDrawer(r)} style={{ borderBottom: `1px solid ${dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.04)'}`, cursor: 'pointer' }}
-                  onMouseEnter={e => e.currentTarget.style.background = dark ? 'rgba(255,255,255,.03)' : 'rgba(0,0,0,.02)'}
-                  onMouseLeave={e => e.currentTarget.style.background = ''}
-                >
-                  <Td bold>
-                    {r.userName || '(no name)'}
+
+        {/* Column headers */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px',
+          borderBottom: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)'}`,
+          fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', opacity: .4,
+        }}>
+          <span style={{ flex: '1 1 0', minWidth: 0 }}>User</span>
+          <span className="otr-hide-mob" style={{ width: 90, textAlign: 'right' }}>Deposited</span>
+          <span className="otr-hide-mob" style={{ width: 80, textAlign: 'right' }}>Balance</span>
+          <span className="otr-hide-md" style={{ width: 50, textAlign: 'right' }}>Orders</span>
+          <span className="otr-hide-md" style={{ width: 70 }}>Touch</span>
+          <span className="otr-hide-lg" style={{ width: 80 }}>Method</span>
+          <span style={{ width: 70, textAlign: 'right' }}>Date</span>
+        </div>
+
+        <div style={{ opacity: fetching ? .5 : 1, transition: 'opacity .15s', pointerEvents: fetching ? 'none' : 'auto' }}>
+          {(data?.rows || []).map(r => {
+            const hasDeposit = r.deposits > 0;
+            return (
+              <div key={r.id} onClick={() => setDrawer(r)} style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', cursor: 'pointer',
+                borderBottom: `1px solid ${borderColor}`,
+              }}
+                onMouseEnter={e => e.currentTarget.style.background = hoverBg}
+                onMouseLeave={e => e.currentTarget.style.background = ''}
+              >
+                {/* Avatar + name + email */}
+                <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                    background: hasDeposit ? '#c47d8e' : dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: hasDeposit ? '#fff' : (dark ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.4)'),
+                    fontWeight: 700, fontSize: 13,
+                  }}>
+                    {initials(r.userName)}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {r.userName || '(no name)'}
+                      </span>
+                      {hasDeposit && (
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ade80', flexShrink: 0 }} />
+                      )}
+                    </div>
+                    <div style={{ fontSize: 11, opacity: .45, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {r.userEmail || r.userPhone || '—'}
+                    </div>
+                    {/* Mobile badges */}
                     <div className="otr-mob-sub" style={{ gap: 4, marginTop: 3 }}>
                       <MethodBadge method={r.method} />
                       <TouchBadge touch={r.touchType} />
+                      {hasDeposit && <span style={{ fontSize: 11, fontWeight: 600, color: '#4ade80' }}>{fN(r.deposits)}</span>}
                     </div>
-                  </Td>
-                  <Td className="otr-hide-mob"><MethodBadge method={r.method} /></Td>
-                  <Td className="otr-hide-mob"><TouchBadge touch={r.touchType} /></Td>
-                  <Td muted>{fmtShort(r.contactedAt)}</Td>
-                </tr>
-              ))}
-              {(!data?.rows?.length) && (
-                <tr><td colSpan={4}>
-                  <EmptyState dark={dark} title="No contacts recorded yet" subtitle="Contacts are tracked when staff tap buttons in Telegram" />
-                </td></tr>
-              )}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+
+                {/* Deposited */}
+                <div className="otr-hide-mob" style={{
+                  width: 90, textAlign: 'right', fontSize: 13, fontWeight: 600,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  color: hasDeposit ? '#4ade80' : (dark ? 'rgba(255,255,255,.2)' : 'rgba(0,0,0,.15)'),
+                }}>
+                  {hasDeposit ? fN(r.deposits) : '—'}
+                </div>
+
+                {/* Balance */}
+                <div className="otr-hide-mob" style={{
+                  width: 80, textAlign: 'right', fontSize: 13, fontWeight: 600,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  color: r.balance > 0 ? (t?.green || '#4ade80') : (dark ? 'rgba(255,255,255,.2)' : 'rgba(0,0,0,.15)'),
+                }}>
+                  {r.balance > 0 ? fN(r.balance) : '—'}
+                </div>
+
+                {/* Orders */}
+                <div className="otr-hide-md" style={{
+                  width: 50, textAlign: 'right', fontSize: 13, fontWeight: 500,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  color: r.orders > 0 ? 'inherit' : (dark ? 'rgba(255,255,255,.2)' : 'rgba(0,0,0,.15)'),
+                }}>
+                  {r.orders || '—'}
+                </div>
+
+                {/* Touch */}
+                <div className="otr-hide-md" style={{ width: 70 }}>
+                  <TouchBadge touch={r.touchType} />
+                </div>
+
+                {/* Method */}
+                <div className="otr-hide-lg" style={{ width: 80 }}>
+                  <MethodBadge method={r.method} />
+                </div>
+
+                {/* Date */}
+                <div style={{ width: 70, textAlign: 'right', fontSize: 12, opacity: .5, whiteSpace: 'nowrap' }}>
+                  {fmtShort(r.contactedAt)}
+                </div>
+              </div>
+            );
+          })}
+          {(!data?.rows?.length) && (
+            <EmptyState dark={dark} title="No contacts recorded yet" subtitle="Contacts are tracked when staff tap buttons in Telegram" />
+          )}
         </div>
         <Pagination dark={dark} page={page} totalPages={data?.totalPages || 1} total={data?.totalContacts || 0} setPage={setPage} />
       </div>
@@ -273,6 +355,7 @@ function ContactDrawer({ dark, t, row, onClose }) {
   const border = dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)';
   const softBg = dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.03)';
   const phone = row.userPhone?.replace('+', '') || '';
+  const hasDeposit = row.deposits > 0;
 
   return (
     <>
@@ -286,14 +369,17 @@ function ContactDrawer({ dark, t, row, onClose }) {
         <div style={{ padding: '20px 24px 16px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'flex-start', gap: 14 }}>
           <div style={{
             width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-            background: 'linear-gradient(135deg,#c47d8e,#8b5e6b)',
+            background: hasDeposit ? 'linear-gradient(135deg,#4ade80,#22c55e)' : 'linear-gradient(135deg,#c47d8e,#8b5e6b)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: '#fff', fontWeight: 700, fontSize: 16,
           }}>
             {initials(row.userName)}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.userName}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+              <span style={{ fontSize: 16, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.userName}</span>
+              {hasDeposit && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80', flexShrink: 0 }} />}
+            </div>
             {row.userEmail && <div style={{ fontSize: 13, opacity: .5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.userEmail}</div>}
             {row.userPhone && <div style={{ fontSize: 13, opacity: .5, fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>{row.userPhone}</div>}
           </div>
@@ -309,16 +395,26 @@ function ContactDrawer({ dark, t, row, onClose }) {
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
           {/* Detail grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+            <DetailCell label="Deposited" dark={dark} softBg={softBg}>
+              <span style={{ fontSize: 18, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: hasDeposit ? '#4ade80' : 'inherit' }}>
+                {hasDeposit ? fN(row.deposits) : '—'}
+              </span>
+            </DetailCell>
+            <DetailCell label="Balance" dark={dark} softBg={softBg}>
+              <span style={{ fontSize: 18, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: row.balance > 0 ? (t?.green || '#4ade80') : 'inherit' }}>
+                {row.balance > 0 ? fN(row.balance) : '—'}
+              </span>
+            </DetailCell>
+            <DetailCell label="Orders" dark={dark} softBg={softBg}><span style={{ fontSize: 18, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{row.orders || 0}</span></DetailCell>
+            <DetailCell label="Revenue" dark={dark} softBg={softBg}>
+              <span style={{ fontSize: 18, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: row.revenue > 0 ? '#4ade80' : 'inherit' }}>
+                {row.revenue > 0 ? fN(row.revenue) : '—'}
+              </span>
+            </DetailCell>
             <DetailCell label="Touch" dark={dark} softBg={softBg}><TouchBadge touch={row.touchType} /></DetailCell>
             <DetailCell label="Method" dark={dark} softBg={softBg}><MethodBadge method={row.method} /></DetailCell>
             <DetailCell label="Contacted by" dark={dark} softBg={softBg}><span style={{ fontSize: 14, fontWeight: 500 }}>{row.contactedBy || '—'}</span></DetailCell>
             <DetailCell label="Date" dark={dark} softBg={softBg}><span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace" }}>{fmtDateTime(row.contactedAt)}</span></DetailCell>
-            <DetailCell label="Orders" dark={dark} softBg={softBg}><span style={{ fontSize: 18, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{row.orders || 0}</span></DetailCell>
-            <DetailCell label="Revenue" dark={dark} softBg={softBg}>
-              <span style={{ fontSize: 18, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: row.revenue > 0 ? '#4ade80' : 'inherit' }}>
-                {row.revenue > 0 ? `₦${Math.round(row.revenue / 100).toLocaleString()}` : '—'}
-              </span>
-            </DetailCell>
           </div>
 
           {/* Actions */}
@@ -449,6 +545,7 @@ function SkeletonRows({ dark }) {
     <div style={{ marginTop: 16 }}>
       {Array.from({ length: 6 }, (_, i) => (
         <div key={i} style={{ display: 'flex', gap: 16, padding: '12px 14px', borderBottom: `1px solid ${dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.04)'}` }}>
+          <div className={bone} style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0 }} />
           <div className={bone} style={{ width: 120, height: 14, borderRadius: 4, flex: '1 1 auto' }} />
           <div className={bone} style={{ width: 60, height: 14, borderRadius: 4 }} />
           <div className={bone} style={{ width: 50, height: 14, borderRadius: 4 }} />
