@@ -148,7 +148,7 @@ export async function GET(req) {
           orders: { none: {} },
         },
         select: { id: true, name: true, phone: true },
-        take: 100,
+        take: 80,
       });
 
       if (batch.length > 0) {
