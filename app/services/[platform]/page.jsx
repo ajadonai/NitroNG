@@ -371,6 +371,7 @@ async function getPlatformData(platformName, dbPlatform) {
         maxPrice: Number(g.tiers[g.tiers.length - 1].sellPer1k) / 100,
         tiers: g.tiers.length,
         refill: g.tiers.some(t => t.refill),
+        nigerian: g.nigerian,
       });
     }
   }

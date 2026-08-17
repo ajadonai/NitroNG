@@ -87,10 +87,13 @@ export async function POST(req) {
       const { name, platform, type, nigerian } = body;
       if (!name || !platform) return Response.json({ error: 'Name and platform required' }, { status: 400 });
 
+      let finalName = name.trim();
+      if (nigerian && !finalName.includes('\u{1F1F3}\u{1F1EC}')) finalName += ' \u{1F1F3}\u{1F1EC}';
+
       const maxSort = await prisma.serviceGroup.aggregate({ _max: { sortOrder: true } });
       const group = await prisma.serviceGroup.create({
         data: {
-          name: name.trim(),
+          name: finalName,
           platform: platform.trim(),
           type: type || 'Standard',
           nigerian: !!nigerian,
@@ -111,7 +114,13 @@ export async function POST(req) {
       if (updates.name !== undefined) data.name = updates.name.trim();
       if (updates.platform !== undefined) data.platform = updates.platform.trim();
       if (updates.type !== undefined) data.type = updates.type;
-      if (updates.nigerian !== undefined) data.nigerian = !!updates.nigerian;
+      if (updates.nigerian !== undefined) {
+        data.nigerian = !!updates.nigerian;
+        const nameToCheck = data.name || (await prisma.serviceGroup.findUnique({ where: { id: groupId }, select: { name: true } }))?.name || '';
+        if (data.nigerian && !nameToCheck.includes('\u{1F1F3}\u{1F1EC}')) {
+          data.name = nameToCheck.trim() + ' \u{1F1F3}\u{1F1EC}';
+        }
+      }
       if (updates.enabled !== undefined) data.enabled = !!updates.enabled;
       if (updates.sortOrder !== undefined) data.sortOrder = Number(updates.sortOrder);
       if (updates.description !== undefined) data.description = updates.description?.trim() || null;
