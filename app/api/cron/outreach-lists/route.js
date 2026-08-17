@@ -65,9 +65,11 @@ export async function GET(req) {
         });
         await tgOutreach(batch, 'winback', { label: config.label, creditMap });
         const stampDate = new Date();
+        await Promise.allSettled(batch.map(u =>
+          prisma.user.update({ where: { id: u.id }, data: { [config.field]: stampDate } })
+        ));
         for (const u of batch) {
           const creditNaira = creditMap.get(u.id) || 0;
-          prisma.user.update({ where: { id: u.id }, data: { [config.field]: stampDate } }).catch(() => {});
           ifySendOutreach({ user: u, trigger: 'winback', extra: { creditNaira } }).catch(() => {});
         }
       }
@@ -115,8 +117,10 @@ export async function GET(req) {
       if (batch.length > 0) {
         await tgOutreach(batch, 'backlog', { label: config.label });
         const stampDate = new Date();
+        await Promise.allSettled(batch.map(u =>
+          prisma.user.update({ where: { id: u.id }, data: { outreachDay1SentAt: stampDate } })
+        ));
         for (const u of batch) {
-          prisma.user.update({ where: { id: u.id }, data: { outreachDay1SentAt: stampDate } }).catch(() => {});
           ifySendOutreach({ user: u, trigger: 'day1' }).catch(() => {});
         }
       }
@@ -150,8 +154,10 @@ export async function GET(req) {
       if (batch.length > 0) {
         await tgOutreach(batch, touch, { label: config.label });
         const stampDate = new Date();
+        await Promise.allSettled(batch.map(u =>
+          prisma.user.update({ where: { id: u.id }, data: { [config.field]: stampDate } })
+        ));
         for (const u of batch) {
-          prisma.user.update({ where: { id: u.id }, data: { [config.field]: stampDate } }).catch(() => {});
           ifySendOutreach({ user: u, trigger: touch }).catch(() => {});
         }
       }

@@ -82,14 +82,14 @@ export async function GET(req) {
   const deposits = await prisma.transaction.findMany({
     where: {
       userId: { in: userIds },
-      type: 'Deposit',
+      type: 'deposit',
       status: 'Completed',
       createdAt: { gte: since },
     },
     select: { userId: true, amount: true, createdAt: true },
   });
 
-  const BUFFER_MS = 3 * 60 * 60 * 1000;
+  const BUFFER_MS = 0;
   let totalRevenue = 0;
   let totalDeposits = 0;
   const converted = new Set();
