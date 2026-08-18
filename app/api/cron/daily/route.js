@@ -186,23 +186,29 @@ export async function GET(req) {
     return Math.min(Math.max(raw, minNaira * 100), capNaira * 100);
   }
 
-  // Spacing guard: no marketing email of any kind within 10 days
+  // Spacing guard: no marketing email of any kind within 10 days.
+  //
+  // Written as AND-of-(unset OR old enough), NOT as NOT(OR of recent). In SQL
+  // `NULL > date` is NULL rather than false, so the NOT form collapsed to
+  // NOT(NULL) = NULL for anyone with an unset stamp and silently dropped them.
+  // Since almost nobody has all ten stamps set, it excluded essentially everyone
+  // — which is why winback30 and winback60, the only two branches using this
+  // guard, had never sent a single email.
   const tenDaysAgo = new Date(Date.now() - 10 * 86400000);
+  const MARKETING_STAMPS = [
+    'nudgeIdleFundsSentAt',
+    'nudgeComebackSentAt',
+    'nudgeLapsedSentAt',
+    'nudgeIdleBalanceSentAt',
+    'winbackSentAt',
+    'winback30SentAt',
+    'winback60SentAt',
+    'adActivationDay1SentAt',
+    'adActivationDay3SentAt',
+    'adActivationDay6SentAt',
+  ];
   const spacingGuard = {
-    NOT: {
-      OR: [
-        { nudgeIdleFundsSentAt: { gt: tenDaysAgo } },
-        { nudgeComebackSentAt: { gt: tenDaysAgo } },
-        { nudgeLapsedSentAt: { gt: tenDaysAgo } },
-        { nudgeIdleBalanceSentAt: { gt: tenDaysAgo } },
-        { winbackSentAt: { gt: tenDaysAgo } },
-        { winback30SentAt: { gt: tenDaysAgo } },
-        { winback60SentAt: { gt: tenDaysAgo } },
-        { adActivationDay1SentAt: { gt: tenDaysAgo } },
-        { adActivationDay3SentAt: { gt: tenDaysAgo } },
-        { adActivationDay6SentAt: { gt: tenDaysAgo } },
-      ],
-    },
+    AND: MARKETING_STAMPS.map(f => ({ OR: [{ [f]: null }, { [f]: { lte: tenDaysAgo } }] })),
   };
 
   // Retry markers: Date(1) = 1st fail, Date(2) = 2nd fail, Date(0) = permanent give-up
