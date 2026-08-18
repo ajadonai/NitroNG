@@ -1,12 +1,16 @@
 import prisma from '@/lib/prisma';
-import { OUTREACH_TOPIC_TO_TOUCH, outreachWhatsAppMessage } from '@/lib/telegram';
+import { OUTREACH_TOPIC_TO_TOUCH, outreachWhatsAppMessage, outreachButtons, tgOutreachReplacement, STAFF_NAMES } from '@/lib/telegram';
+import { callbackOptions, watWhen, scheduleRetry, nextWorkingMorning } from '@/lib/outreach-time';
+import { pullReplacements } from '@/lib/outreach-pool';
+
+// "Switched off" this many times and the phone is cleared for good.
+const UNREACHABLE_STRIKE_LIMIT = 2;
 
 const TOKEN = process.env.OUTREACH_BOT_TOKEN;
 const SECRET = process.env.CRON_SECRET;
 const SITE = 'https://nitro.ng';
 
 const OUTREACH_STAFF = ['8567146346', '8911494544'];
-const STAFF_NAMES = { '8567146346': 'Nitro', '1935066216': 'Soludo', '8911494544': 'Eshiema' };
 
 function staffName(tgId) {
   return STAFF_NAMES[String(tgId)] || `Staff ${String(tgId).slice(-4)}`;
@@ -20,9 +24,14 @@ function tg(method, body) {
   });
 }
 
+// The name always sits on the first line, but the shape differs by card: batch
+// cards read "12. Name", while callback and replacement cards read
+// "CALL BACK — Name" / "REPLACEMENT — Name" behind an emoji.
 function parseName(msg) {
-  const match = msg?.text?.match(/\d+\.\s*(.+)/);
-  return match?.[1]?.split('\n')[0]?.trim() || 'User';
+  const line = msg?.text?.split('\n')[0]?.trim() || '';
+  const m = line.match(/^\d+\.\s*(.+)$/)
+    || line.match(/(?:CALL BACK|REPLACEMENT)\s*[–—-]\s*(.+)$/);
+  return m?.[1]?.trim() || 'User';
 }
 
 function editMsg(chatId, messageId, text, replyMarkup) {
@@ -51,6 +60,51 @@ function buildWaUrl(phone, touchType, name, { variant = 'noAnswer', creditNaira 
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }
 
+// A contact is still open while a callback or an automatic no-answer retry is
+// pending, so its re-posted card can be actioned. Anything else is a finished
+// outcome and stays with whoever logged it.
+async function claim(userId, touchType, callbackId) {
+  const existing = await prisma.outreachContact.findFirst({ where: { userId, touchType } });
+  const open = existing && (existing.callbackAt !== null || existing.method === 'callback');
+  if (existing && !open) {
+    await tg('answerCallbackQuery', {
+      callback_query_id: callbackId,
+      text: `Already handled by ${staffName(existing.contactedBy)}`,
+      show_alert: true,
+    });
+    return { blocked: true };
+  }
+  return { blocked: false, existing };
+}
+
+// Writes the outcome. Upserts on the (userId, touchType) unique key so two staff
+// tapping at the same instant cannot produce two rows for one contact.
+function recordContact(_existing, { userId, touchType, tgUserId, method, callbackAt = null }) {
+  const data = { method, contactedBy: String(tgUserId), callbackAt };
+  return prisma.outreachContact.upsert({
+    where: { userId_touchType: { userId, touchType } },
+    create: { userId, touchType, ...data },
+    update: data,
+  });
+}
+
+// A contact that can never be worked costs the day a slot, so pull a fresh one
+// from the same pool and post it to the same topic. Best effort: if the pool is
+// dry there is simply nothing to give back.
+async function replaceSlot(touchType) {
+  try {
+    const fresh = await pullReplacements(touchType, 1);
+    if (fresh.length) await tgOutreachReplacement(fresh, touchType);
+    return fresh.length;
+  } catch {
+    return 0;
+  }
+}
+
+// Appends the replacement outcome to a toast. Worded so it reads the same whether
+// the pool ran dry or, as with winback, replacements never applied.
+const withReplacement = (text, filled) => `${text}${filled ? ' Replacement sent.' : ' No replacement available.'}`;
+
 export async function POST(req) {
   const secret = req.headers.get('x-telegram-bot-api-secret-token');
   if (!SECRET || secret !== SECRET) {
@@ -78,19 +132,13 @@ export async function POST(req) {
       if (data.startsWith('r:')) {
         const userId = data.slice(2);
         const touchType = OUTREACH_TOPIC_TO_TOUCH[threadId] || 'unknown';
-        const existing = await prisma.outreachContact.findFirst({
-          where: { userId, touchType },
-        });
-        if (existing) {
-          await tg('answerCallbackQuery', {
-            callback_query_id: id,
-            text: `Already handled by ${staffName(existing.contactedBy)}`,
-            show_alert: true,
-          });
-          return Response.json({ ok: true });
-        }
-        await prisma.outreachContact.create({
-          data: { userId, touchType, contactedBy: String(tgUserId), method: 'call' },
+        const { blocked, existing } = await claim(userId, touchType, id);
+        if (blocked) return Response.json({ ok: true });
+        await recordContact(existing, { userId, touchType, tgUserId, method: 'call' });
+        // Reaching them proves the phone works, so any "switched off" strikes go.
+        await prisma.user.updateMany({
+          where: { id: userId, unreachableStrikes: { gt: 0 } },
+          data: { unreachableStrikes: 0 },
         });
         const user = await prisma.user.findUnique({
           where: { id: userId },
@@ -108,20 +156,12 @@ export async function POST(req) {
       } else if (data.startsWith('na:')) {
         const userId = data.slice(3);
         const touchType = OUTREACH_TOPIC_TO_TOUCH[threadId] || 'unknown';
-        const existing = await prisma.outreachContact.findFirst({
-          where: { userId, touchType },
-        });
-        if (existing) {
-          await tg('answerCallbackQuery', {
-            callback_query_id: id,
-            text: `Already handled by ${staffName(existing.contactedBy)}`,
-            show_alert: true,
-          });
-          return Response.json({ ok: true });
-        }
-        await prisma.outreachContact.create({
-          data: { userId, touchType, contactedBy: String(tgUserId), method: 'pending' },
-        });
+        const { blocked, existing } = await claim(userId, touchType, id);
+        if (blocked) return Response.json({ ok: true });
+        // A valid number that did not pick up is worth another call. Without this
+        // the only exit is the WhatsApp button, which dead-ends while on penalty.
+        const retryAt = scheduleRetry(3);
+        await recordContact(existing, { userId, touchType, tgUserId, method: 'pending', callbackAt: retryAt });
         const user = await prisma.user.findUnique({
           where: { id: userId },
           select: { name: true, phone: true },
@@ -139,17 +179,18 @@ export async function POST(req) {
           : [[{ text: 'No phone on file', callback_data: 'n' }]];
         await editMsg(
           message.chat.id, message.message_id,
-          `<b>${userName}</b> \u{2014} no answer (${clicker})`,
+          `<b>${userName}</b> \u{2014} no answer, retry ${watWhen(retryAt)} (${clicker})`,
           { inline_keyboard: buttons },
         );
-        await tg('answerCallbackQuery', { callback_query_id: id, text: 'No answer. Send WhatsApp now.' });
+        await tg('answerCallbackQuery', { callback_query_id: id, text: `No answer. Retrying ${watWhen(retryAt)}.` });
 
       } else if (data.startsWith('ws:')) {
         const userId = data.slice(3);
         const touchType = OUTREACH_TOPIC_TO_TOUCH[threadId] || 'unknown';
+        // WhatsApp went out, so the automatic call retry is no longer needed.
         await prisma.outreachContact.updateMany({
           where: { userId, touchType, method: 'pending' },
-          data: { method: 'whatsapp' },
+          data: { method: 'whatsapp', callbackAt: null },
         });
         const wsName = parseName(message);
         await editMsg(message.chat.id, message.message_id, `\u{2705} <b>${wsName}</b> \u{2014} WA by ${clicker}`);
@@ -157,7 +198,16 @@ export async function POST(req) {
 
       } else if (data.startsWith('dnc:')) {
         const userId = data.slice(4);
+        const touchType = OUTREACH_TOPIC_TO_TOUCH[threadId] || 'unknown';
         await prisma.user.update({ where: { id: userId }, data: { outreachOptedOutAt: new Date() } });
+        // Record it as an outcome. Without a row, opt-outs are invisible in stats
+        // and the weekly summary, so nobody can see how many people are asking to
+        // be left alone. DNC is deliberately not gated on the claim check: someone
+        // can ask to be dropped after they have already been reached.
+        await recordContact(null, { userId, touchType, tgUserId, method: 'dnc' });
+        // Cancel any callback or retry already queued, so someone who just asked
+        // not to be contacted cannot be re-posted by the callbacks cron.
+        await prisma.outreachContact.updateMany({ where: { userId }, data: { callbackAt: null } });
         const dncName = parseName(message);
         await editMsg(message.chat.id, message.message_id, `\u{1F6AB} <b>${dncName}</b> \u{2014} Do not contact`, { inline_keyboard: [] });
         await tg('answerCallbackQuery', { callback_query_id: id, text: 'Marked as Do Not Contact' });
@@ -165,24 +215,137 @@ export async function POST(req) {
       } else if (data.startsWith('wn:')) {
         const userId = data.slice(3);
         const touchType = OUTREACH_TOPIC_TO_TOUCH[threadId] || 'unknown';
-        const existing = await prisma.outreachContact.findFirst({
-          where: { userId, touchType },
-        });
-        if (existing) {
-          await tg('answerCallbackQuery', {
-            callback_query_id: id,
-            text: `Already handled by ${staffName(existing.contactedBy)}`,
-            show_alert: true,
-          });
-          return Response.json({ ok: true });
-        }
-        await prisma.outreachContact.create({
-          data: { userId, touchType, contactedBy: String(tgUserId), method: 'wrong_number' },
-        });
+        const { blocked, existing } = await claim(userId, touchType, id);
+        if (blocked) return Response.json({ ok: true });
+        await recordContact(existing, { userId, touchType, tgUserId, method: 'wrong_number' });
         await prisma.user.update({ where: { id: userId }, data: { phone: null } });
         const wnName = parseName(message);
         await editMsg(message.chat.id, message.message_id, `\u{274C} <b>${wnName}</b> \u{2014} wrong number (${clicker})`);
-        await tg('answerCallbackQuery', { callback_query_id: id, text: 'Marked as wrong number. Phone cleared.' });
+        const wnFilled = await replaceSlot(touchType);
+        await tg('answerCallbackQuery', {
+          callback_query_id: id,
+          text: withReplacement('Wrong number. Phone cleared.', wnFilled),
+        });
+
+      } else if (data.startsWith('ur:')) {
+        const userId = data.slice(3);
+        const touchType = OUTREACH_TOPIC_TO_TOUCH[threadId] || 'unknown';
+        const { blocked } = await claim(userId, touchType, id);
+        if (blocked) return Response.json({ ok: true });
+        // Nigerian networks play different messages for a handset that is off and
+        // a line that was never allocated, so staff can tell them apart. The two
+        // deserve opposite treatment, hence the second tap.
+        await editMsg(
+          message.chat.id, message.message_id,
+          `\u{1F4F5} <b>${parseName(message)}</b> \u{2014} what happened?`,
+          { inline_keyboard: [
+            [{ text: 'Switched off', callback_data: `uro:${userId}` },
+             { text: 'Not in service', callback_data: `urn:${userId}` }],
+            [{ text: '\u{2190} Back', callback_data: `cbx:${userId}` }],
+          ] },
+        );
+        await tg('answerCallbackQuery', { callback_query_id: id, text: 'Which one?' });
+
+      } else if (data.startsWith('uro:')) {
+        const userId = data.slice(4);
+        const touchType = OUTREACH_TOPIC_TO_TOUCH[threadId] || 'unknown';
+        const { blocked, existing } = await claim(userId, touchType, id);
+        if (blocked) return Response.json({ ok: true });
+        // Name comes from the record, not the card: the "what happened?" edit has
+        // already replaced the text parseName would have read.
+        const before = await prisma.user.findUnique({ where: { id: userId }, select: { unreachableStrikes: true, name: true } });
+        const strikes = (before?.unreachableStrikes || 0) + 1;
+        const spent = strikes >= UNREACHABLE_STRIKE_LIMIT;
+        await prisma.user.update({
+          where: { id: userId },
+          data: spent ? { unreachableStrikes: strikes, phone: null } : { unreachableStrikes: strikes },
+        });
+        // First strike goes to the back of the queue for tomorrow. Second gives up
+        // and clears the phone, the same end state as a wrong number.
+        const retryAt = spent ? null : nextWorkingMorning();
+        await recordContact(existing, { userId, touchType, tgUserId, method: 'unreachable', callbackAt: retryAt });
+        const uroName = before?.name || '(no name)';
+        await editMsg(
+          message.chat.id, message.message_id,
+          spent
+            ? `\u{1F4F5} <b>${uroName}</b> \u{2014} switched off ${strikes}\u{00D7}, given up (${clicker})`
+            : `\u{1F4F5} <b>${uroName}</b> \u{2014} switched off, retry ${watWhen(retryAt)} (${clicker})`,
+        );
+        const uroFilled = await replaceSlot(touchType);
+        await tg('answerCallbackQuery', {
+          callback_query_id: id,
+          text: withReplacement(
+            spent ? `Strike ${strikes}. Phone cleared.` : `Strike ${strikes}. Retrying ${watWhen(retryAt)}.`,
+            uroFilled,
+          ),
+        });
+
+      } else if (data.startsWith('urn:')) {
+        const userId = data.slice(4);
+        const touchType = OUTREACH_TOPIC_TO_TOUCH[threadId] || 'unknown';
+        const { blocked, existing } = await claim(userId, touchType, id);
+        if (blocked) return Response.json({ ok: true });
+        // The line does not exist, so no retry will ever help. Same end state as
+        // a wrong number: clear the phone so every later touch skips them.
+        await recordContact(existing, { userId, touchType, tgUserId, method: 'not_in_service' });
+        // Read the name before clearing, and from the record rather than the card,
+        // whose text the "what happened?" edit has already replaced.
+        const urnUser = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+        await prisma.user.update({ where: { id: userId }, data: { phone: null } });
+        const urnName = urnUser?.name || '(no name)';
+        await editMsg(message.chat.id, message.message_id, `\u{274C} <b>${urnName}</b> \u{2014} not in service (${clicker})`);
+        const urnFilled = await replaceSlot(touchType);
+        await tg('answerCallbackQuery', {
+          callback_query_id: id,
+          text: withReplacement('Not in service. Phone cleared.', urnFilled),
+        });
+
+      } else if (data.startsWith('cb:')) {
+        const userId = data.slice(3);
+        const touchType = OUTREACH_TOPIC_TO_TOUCH[threadId] || 'unknown';
+        const { blocked } = await claim(userId, touchType, id);
+        if (blocked) return Response.json({ ok: true });
+        const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+        const cbName = user?.name || parseName(message);
+        // Options carry the absolute time, so a slow tap cannot drift the callback.
+        const opts = callbackOptions();
+        const rows = [];
+        for (let i = 0; i < opts.length; i += 3) {
+          rows.push(opts.slice(i, i + 3).map(o => ({
+            text: o.label,
+            callback_data: `cbt:${userId}:${Math.floor(o.at.getTime() / 60000)}`,
+          })));
+        }
+        rows.push([{ text: '\u{2190} Back', callback_data: `cbx:${userId}` }]);
+        await editMsg(message.chat.id, message.message_id, `\u{23F0} <b>${cbName}</b> \u{2014} when?`, { inline_keyboard: rows });
+        await tg('answerCallbackQuery', { callback_query_id: id, text: 'Pick a time' });
+
+      } else if (data.startsWith('cbt:')) {
+        const [, userId, mins] = data.split(':');
+        const touchType = OUTREACH_TOPIC_TO_TOUCH[threadId] || 'unknown';
+        const { blocked, existing } = await claim(userId, touchType, id);
+        if (blocked) return Response.json({ ok: true });
+        const at = new Date(Number(mins) * 60000);
+        await recordContact(existing, { userId, touchType, tgUserId, method: 'callback', callbackAt: at });
+        const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+        const when = watWhen(at);
+        await editMsg(
+          message.chat.id, message.message_id,
+          `\u{23F0} <b>${user?.name || '(no name)'}</b> \u{2014} call back ${when} (${clicker})`,
+        );
+        await tg('answerCallbackQuery', { callback_query_id: id, text: `Call back set for ${when}` });
+
+      } else if (data.startsWith('cbx:')) {
+        const userId = data.slice(4);
+        const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, phone: true } });
+        const cbxName = user?.name || '(no name)';
+        const cbxPhone = user?.phone?.replace('+', '') || '';
+        await editMsg(
+          message.chat.id, message.message_id,
+          cbxPhone ? `<b>${cbxName}</b>\n\u{1F4F1} +${cbxPhone}` : `<b>${cbxName}</b> \u{2014} no phone`,
+          { inline_keyboard: outreachButtons(userId) },
+        );
+        await tg('answerCallbackQuery', { callback_query_id: id, text: 'Cancelled' });
 
       } else if (data === 'n') {
         await tg('answerCallbackQuery', { callback_query_id: id, text: 'Already handled' });

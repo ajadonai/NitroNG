@@ -89,6 +89,10 @@ model User {
   outreachDay7SentAt     DateTime?
   outreachWinbackSentAt  DateTime?
   outreachOptedOutAt     DateTime?
+  // Counts "switched off" outcomes across every touch. A handset that is off may
+  // answer later, so the phone survives the first strike and is cleared on the
+  // second. Lives on the user, not the contact row, so strikes carry across touches.
+  unreachableStrikes     Int       @default(0)
   status                 String    @default("Active")
   deletedAt              DateTime?
   deletedName            String?
@@ -1191,10 +1195,20 @@ model OutreachContact {
   contactedAt DateTime @default(now())
   contactedBy String?
 
+  // Set when staff pick "Call back", and when "No answer" schedules its automatic
+  // retry. The callbacks cron posts a fresh card at callbackAt, then clears it and
+  // bumps attempts. Two attempts, then it stops.
+  callbackAt       DateTime?
+  callbackAttempts Int       @default(0)
+
   user User @relation(fields: [userId], references: [id])
 
+  // One outcome per person per touch. Without this, two staff tapping the same
+  // card at once each pass the "already handled" check and both write a row.
+  @@unique([userId, touchType])
   @@index([userId])
   @@index([contactedAt])
+  @@index([callbackAt])
   @@map("outreach_contacts")
 }
 
