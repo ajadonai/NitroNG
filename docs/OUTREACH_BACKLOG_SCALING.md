@@ -63,11 +63,16 @@ in `vercel.json`.
 | --- | --- | --- |
 | 07:00 | Recycle (no cards sent) | `0 6 * * 2-6` |
 | 09:00 | First Call | `0 8 * * 2-6` |
-| 10:00 | Winback | `0 9 * * 2-6` |
-| 11:00 | Follow-up | `0 10 * * 2-6` |
-| 12:00 | Final Nudge | `0 11 * * 2-6` |
-| 14:00 | Backlog #1 | `0 13 * * 2-6` |
+| 11:00 | Winback | `0 10 * * 2-6` |
+| 12:00 | Follow-up | `0 11 * * 2-6` |
+| 14:00 | Final Nudge | `0 13 * * 2-6` |
+| 15:00 | Backlog #1 | `0 14 * * 2-6` |
 | 16:00 | Backlog #2 | `0 15 * * 2-6` |
+
+Winback sits at 11:00 WAT because the `daily` cron grants its credits at 09:00
+UTC and the list is only eligible once they exist. Built any earlier it sees an
+empty pool — which is exactly what happened on 19 Aug, when both ran at 09:00
+UTC and the credits landed 60 seconds after the list went out.
 
 Nothing fires between 13:00 and 14:00 WAT. The priority touches sit in the
 morning block so both Backlog runs see the full picture of what was spent.
