@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { OUTREACH_TOPIC_TO_TOUCH, outreachWhatsAppMessage, outreachButtons, tgOutreachReplacement, STAFF_NAMES } from '@/lib/telegram';
-import { callbackOptions, watWhen, scheduleRetry, nextWorkingMorning, tooLateForReplacement } from '@/lib/outreach-time';
+import { callbackOptions, watWhen, watLabel, scheduleRetry, nextWorkingMorning, tooLateForReplacement } from '@/lib/outreach-time';
 import { pullReplacements } from '@/lib/outreach-pool';
 
 // "Switched off" this many times and the phone is cleared for good.
@@ -95,7 +95,11 @@ async function claim(userId, touchType, callbackId) {
 // Writes the outcome. Upserts on the (userId, touchType) unique key so two staff
 // tapping at the same instant cannot produce two rows for one contact.
 function recordContact(_existing, { userId, touchType, tgUserId, method, callbackAt = null }) {
-  const data = { method, contactedBy: String(tgUserId), callbackAt };
+  // contactedAt is stamped on update too: a recycled or released row already
+  // exists, and every reader treats this column as when the work happened.
+  // Left at its default it would keep the old date and today's stats would
+  // count the card as still open.
+  const data = { method, contactedBy: String(tgUserId), callbackAt, contactedAt: new Date() };
   return prisma.outreachContact.upsert({
     where: { userId_touchType: { userId, touchType } },
     create: { userId, touchType, ...data },
@@ -408,6 +412,7 @@ export async function POST(req) {
           + 'to fill the slot, so your list does not shrink.\n\n'
           + '<b>Commands:</b>\n'
           + '/pending \u{2014} what is still open today\n'
+          + '/callbacks \u{2014} call backs due today, for the topic you ask in\n'
           + '/stats \u{2014} today\u{2019}s numbers\n'
           + '/dnc \u{2014} do-not-contact count\n'
           + '/leaderboard \u{2014} staff, last 30 days\n',
@@ -451,6 +456,54 @@ export async function POST(req) {
             `\u{1F4CB} <b>${open} still open</b> of ${sent} handed out today\n\n${lines}\n\n`
             + 'Open the topic and tap an outcome. Anything left untouched for 3 days '
             + 'goes back into the pool by itself.',
+          );
+        }
+
+      } else if (cmd === '/callbacks') {
+        // Names and times, unlike /pending: each of these is owed to a specific
+        // person at a specific time, so the detail is the point.
+        // Asked inside a touch topic, it answers for that touch only — a Winback
+        // call back has no business showing up in First Call. Asked in General
+        // (or a non-touch topic like Summary) it answers for the whole day.
+        const scope = TOUCH_LABEL[OUTREACH_TOPIC_TO_TOUCH[threadId]]
+          ? OUTREACH_TOPIC_TO_TOUCH[threadId]
+          : null;
+        const dayEnd = new Date();
+        dayEnd.setUTCHours(23, 59, 59, 999);
+        const due = await prisma.outreachContact.findMany({
+          where: {
+            callbackAt: { not: null, lte: dayEnd },
+            method: { in: ['callback', 'pending'] },
+            ...(scope ? { touchType: scope } : {}),
+            user: { status: 'Active', outreachOptedOutAt: null, phone: { not: null } },
+          },
+          select: {
+            callbackAt: true, touchType: true, contactedBy: true, method: true,
+            user: { select: { name: true, phone: true } },
+          },
+          orderBy: { callbackAt: 'asc' },
+          take: 25,
+        });
+        if (!due.length) {
+          await send(scope
+            ? `\u{23F0} No ${TOUCH_LABEL[scope]} call backs due today.`
+            : '\u{23F0} No call backs due today.');
+        } else {
+          const now = new Date();
+          const lines = due.map(c => {
+            const overdue = c.callbackAt < now ? ' \u{26A0}' : '';
+            const kind = c.method === 'pending' ? 'retry' : 'asked';
+            const phone = c.user?.phone?.replace('+', '') || 'no phone';
+            const touch = scope ? '' : `${TOUCH_LABEL[c.touchType] || c.touchType} \u{00B7} `;
+            return `<b>${watLabel(c.callbackAt)}</b>${overdue}  ${c.user?.name || '(no name)'} \u{2014} ${phone}\n`
+              + `      ${touch}${kind} \u{00B7} ${staffName(c.contactedBy)}`;
+          });
+          const late = due.filter(c => c.callbackAt < now).length;
+          await send(
+            `\u{23F0} <b>${due.length} ${scope ? `${TOUCH_LABEL[scope]} ` : ''}call back${due.length === 1 ? '' : 's'} due today</b>`
+            + (late ? ` \u{2014} ${late} overdue \u{26A0}` : '')
+            + `\n\n${lines.join('\n')}\n\n`
+            + 'Cards re-post by themselves at the time. This is just the day ahead.',
           );
         }
 

@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { STAMP_FIELD } from '@/lib/outreach-pool';
+import { CALLBACK_MAX_ATTEMPTS } from '@/lib/outreach-time';
 
 export const maxDuration = 60;
 
@@ -58,6 +59,42 @@ export async function GET(req) {
       });
       results[touch] = stale.length;
     }
+
+    // Second pass: call back chains that ran out of postings with nobody ever
+    // working them. Someone who asked to be called is worth more than a cold
+    // card, but the row they carry hides them from the pass above, which only
+    // matches contacts with no row at all. Drop the stamp so they return to the
+    // pool, then expire the row — that expiry is the tombstone, since the next
+    // run no longer matches an expired method.
+    //
+    // Stamp first, row second: a crash between the two leaves them in the pool
+    // with the chain still recorded, so the next run finishes the job. The other
+    // order would strand them — expired to this query, still stamped to the one
+    // above, and matched by neither.
+    const dead = await prisma.outreachContact.findMany({
+      where: {
+        method: { in: ['callback', 'pending'] },
+        callbackAt: null,
+        callbackAttempts: { gte: CALLBACK_MAX_ATTEMPTS },
+        contactedAt: { lt: cutoff },
+      },
+      select: { id: true, userId: true, touchType: true },
+      take: PER_TOUCH,
+    });
+    if (dead.length) {
+      const byTouch = {};
+      for (const c of dead) (byTouch[c.touchType] ||= []).push(c.userId);
+      for (const [touch, ids] of Object.entries(byTouch)) {
+        const field = STAMP_FIELD[touch];
+        if (!field) continue;
+        await prisma.user.updateMany({ where: { id: { in: ids } }, data: { [field]: null } });
+      }
+      await prisma.outreachContact.updateMany({
+        where: { id: { in: dead.map(c => c.id) } },
+        data: { method: 'expired' },
+      });
+    }
+    results.callbacks = dead.length;
 
     const total = Object.values(results).reduce((a, b) => a + b, 0);
     if (total) log.info('Outreach Recycle', `released ${total}: ${JSON.stringify(results)}`);

@@ -1,13 +1,13 @@
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { tgOutreachCallback } from '@/lib/telegram';
-import { nextWorkingMorning, watWhen } from '@/lib/outreach-time';
+import { nextWorkingMorning, watWhen, CALLBACK_MAX_ATTEMPTS } from '@/lib/outreach-time';
 
 export const maxDuration = 60;
 
 // A callback that posts and is never actioned re-posts the next working morning.
-// After this many postings it stops, so nobody gets chased indefinitely.
-const MAX_ATTEMPTS = 2;
+// After CALLBACK_MAX_ATTEMPTS postings the chain stops. The recycler then hands
+// the person back to the ordinary pool rather than retiring them for good.
 
 // tgOutreachCallback sleeps 3s per card for Telegram's per-group rate limit.
 // Anything beyond this waits for the next run, which is 15 minutes away.
@@ -60,7 +60,7 @@ export async function GET(req) {
         where: { id: c.id },
         data: {
           callbackAttempts: attempts,
-          callbackAt: attempts >= MAX_ATTEMPTS ? null : nextWorkingMorning(),
+          callbackAt: attempts >= CALLBACK_MAX_ATTEMPTS ? null : nextWorkingMorning(),
         },
       });
     }));
