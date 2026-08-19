@@ -121,7 +121,9 @@ export default function AdminRefillsPage({ dark, t }) {
                 {/* Service */}
                 <div className="min-w-0">
                   <div className="text-[13px] text-t-text truncate">{r.serviceName}</div>
-                  <div className="text-[11px] text-t-text-muted">{r.serviceCategory}</div>
+                  <div className="text-[11px] text-t-text-muted truncate">
+                    {r.serviceCategory}{r.tierLabel ? ` · ${r.tierLabel}` : ""}
+                  </div>
                 </div>
 
                 {/* Status */}
