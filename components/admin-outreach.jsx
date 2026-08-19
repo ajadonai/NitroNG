@@ -413,6 +413,13 @@ function ContactDrawer({ dark, t, row, onClose }) {
             </DetailCell>
             <DetailCell label="Touch" dark={dark} softBg={softBg}><TouchBadge touch={row.touchType} /></DetailCell>
             <DetailCell label="Method" dark={dark} softBg={softBg}><MethodBadge method={row.method} /></DetailCell>
+            {row.callbackAt && (
+              <DetailCell label="Call back due" dark={dark} softBg={softBg}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#fb923c', fontFamily: "'JetBrains Mono', monospace" }}>
+                  {fmtDateTime(row.callbackAt)}{row.callbackAttempts > 0 ? ` · try ${row.callbackAttempts + 1}` : ''}
+                </span>
+              </DetailCell>
+            )}
             <DetailCell label="Contacted by" dark={dark} softBg={softBg}><span style={{ fontSize: 14, fontWeight: 500 }}>{row.contactedBy || '—'}</span></DetailCell>
             <DetailCell label="Date" dark={dark} softBg={softBg}><span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace" }}>{fmtDateTime(row.contactedAt)}</span></DetailCell>
           </div>

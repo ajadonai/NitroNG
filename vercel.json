@@ -27,6 +27,7 @@
     { "path": "/api/cron/outreach-lists?touch=day7", "schedule": "0 13 * * 2-6" },
     { "path": "/api/cron/outreach-lists?touch=backlog", "schedule": "0 14 * * 2-6" },
     { "path": "/api/cron/outreach-lists?touch=backlog", "schedule": "0 15 * * 2-6" },
-    { "path": "/api/cron/outreach-callbacks", "schedule": "*/15 8-17 * * 2-6" }
+    { "path": "/api/cron/outreach-callbacks", "schedule": "*/15 8-17 * * 2-6" },
+    { "path": "/api/cron/outreach-watchdog", "schedule": "0 16 * * 2-6" }
   ]
 }

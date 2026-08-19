@@ -58,6 +58,7 @@ export async function GET(req) {
     where: { contactedAt: dateFilter, ...staffFilter },
     select: {
       id: true, touchType: true, contactedAt: true, contactedBy: true, method: true,
+      callbackAt: true, callbackAttempts: true,
       user: { select: { id: true, name: true, email: true, phone: true, balance: true } },
     },
     orderBy: { contactedAt: 'desc' },
@@ -89,6 +90,10 @@ export async function GET(req) {
     contactedAt: c.contactedAt,
     contactedBy: c.contactedBy ? staffName(c.contactedBy) : null,
     method: c.method || null,
+    // A scheduled callback or automatic retry. Without this it exists only inside
+    // Telegram, so nobody covering for the caller can see who is owed a call.
+    callbackAt: c.callbackAt || null,
+    callbackAttempts: c.callbackAttempts || 0,
     userName: c.user?.name || c.user?.email?.split('@')[0] || 'User',
     userEmail: c.user?.email || null,
     userPhone: c.user?.phone || null,

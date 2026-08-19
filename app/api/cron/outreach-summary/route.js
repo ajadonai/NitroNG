@@ -4,9 +4,21 @@ import { sendOutreach, OUTREACH_TOPICS } from '@/lib/telegram';
 export const maxDuration = 60;
 
 const TOUCH_LABELS = {
-  day1: 'Day 1', day3: 'Day 3', day7: 'Day 7',
-  winback: 'Winback', firstDeposit: 'First Deposit', firstOrder: 'First Order',
+  day1: 'First Call', day3: 'Follow-up', day7: 'Final Nudge',
+  winback: 'Winback', backlog: 'Backlog',
+  firstDeposit: 'First Deposit', firstOrder: 'First Order',
 };
+
+const METHOD_LABELS = {
+  call: 'Reached', callback: 'Call back', pending: 'No answer',
+  whatsapp: 'WhatsApp sent', unreachable: 'Switched off',
+  not_in_service: 'Not in service', wrong_number: 'Wrong number',
+  dnc: 'Do not contact',
+};
+
+// Written by the recycler rather than by a person, so it must never count as
+// work done or dilute the reach rate.
+const NOT_HUMAN_WORK = 'expired';
 
 const STAFF_NAMES = { '8567146346': 'Nitro', '1935066216': 'Soludo', '8911494544': 'Eshiema' };
 function staffName(tgId) { return STAFF_NAMES[String(tgId)] || `Staff ${String(tgId).slice(-4)}`; }
@@ -37,8 +49,8 @@ export async function GET(req) {
   const label = isMonthly ? 'Monthly' : 'Weekly';
 
   const contacts = await prisma.outreachContact.findMany({
-    where: { contactedAt: { gte: since } },
-    select: { userId: true, touchType: true, contactedAt: true, contactedBy: true },
+    where: { contactedAt: { gte: since }, method: { not: NOT_HUMAN_WORK } },
+    select: { userId: true, touchType: true, contactedAt: true, contactedBy: true, method: true },
   });
 
   if (!contacts.length) {
@@ -117,6 +129,47 @@ export async function GET(req) {
     .map(([k, v]) => `  ${TOUCH_LABELS[k] || k}: ${v}`)
     .join('\n');
 
+  const byMethod = {};
+  for (const c of contacts) byMethod[c.method] = (byMethod[c.method] || 0) + 1;
+  const methodBreakdown = Object.entries(METHOD_LABELS)
+    .filter(([k]) => byMethod[k])
+    .map(([k, label]) => `  ${label}: ${byMethod[k]}`)
+    .join('\n');
+
+  // A conversion rate on its own says nothing — you cannot tell persuasion from
+  // the fact that these people were going to deposit anyway. The control group
+  // is everyone handed out in the same window whose card nobody ever worked:
+  // same pipeline, same eligibility, no human contact. The gap between the two
+  // is the closest thing to a read on whether calling actually does anything.
+  const reachedIds = [...new Set(contacts.filter(c => c.method === 'call').map(c => c.userId))];
+  const controls = await prisma.user.findMany({
+    where: {
+      OR: [
+        { outreachDay1SentAt: { gte: since } },
+        { outreachDay3SentAt: { gte: since } },
+        { outreachDay7SentAt: { gte: since } },
+        { outreachWinbackSentAt: { gte: since } },
+      ],
+      // Only rows the recycler wrote, or none at all: nobody worked these.
+      outreachContacts: { none: { method: { not: NOT_HUMAN_WORK } } },
+    },
+    select: { id: true },
+  });
+
+  const depositorsIn = async (ids) => {
+    if (!ids.length) return { n: 0, dep: 0, sum: 0 };
+    const rows = await prisma.transaction.groupBy({
+      by: ['userId'],
+      where: { userId: { in: ids }, type: 'deposit', status: 'Completed', createdAt: { gte: since } },
+      _sum: { amount: true },
+    });
+    return { n: ids.length, dep: rows.length, sum: rows.reduce((a, r) => a + Number(r._sum.amount || 0), 0) };
+  };
+  const reachedStats = await depositorsIn(reachedIds);
+  const controlStats = await depositorsIn(controls.map(u => u.id));
+  const pct = (s) => (s.n ? (s.dep / s.n) * 100 : 0);
+  const lift = pct(controlStats) > 0 ? pct(reachedStats) / pct(controlStats) : null;
+
   const topConverters = Object.entries(perUser)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
@@ -129,13 +182,26 @@ export async function GET(req) {
 
   const convRate = userIds.length > 0 ? Math.round((converted.size / userIds.length) * 100) : 0;
 
+  const naira = (k) => `\u{20A6}${Math.round(k / 100).toLocaleString()}`;
+  const perHead = reachedStats.n ? (reachedStats.sum / reachedStats.n) - (controlStats.n ? controlStats.sum / controlStats.n : 0) : 0;
+
   let text = `\u{1F4CA} <b>${label} Outreach Summary</b>\n`
     + `<i>${fmt(since)} \u{2013} ${fmt(now)}</i>\n\n`
-    + `<b>Contacted:</b> ${contacts.length} touches across ${userIds.length} users\n`
+    + `<b>Worked:</b> ${contacts.length} touches across ${userIds.length} users\n`
     + touchBreakdown + '\n\n'
-    + `<b>Converted:</b> ${converted.size} users (${convRate}%)\n`
-    + `<b>Deposits after contact:</b> \u{20A6}${Math.round(totalDeposits / 100).toLocaleString()}\n`
-    + `<b>Revenue after contact:</b> \u{20A6}${Math.round(totalRevenue / 100).toLocaleString()}`;
+    + `<b>Outcomes:</b>\n${methodBreakdown || '  (none)'}\n\n`
+    + `<b>Did calling help?</b>\n`
+    + `  Reached: ${reachedStats.dep}/${reachedStats.n} deposited (${pct(reachedStats).toFixed(1)}%) \u{2014} ${naira(reachedStats.sum)}\n`
+    + `  Not worked: ${controlStats.dep}/${controlStats.n} deposited (${pct(controlStats).toFixed(1)}%) \u{2014} ${naira(controlStats.sum)}\n`
+    + (lift ? `  Lift: <b>${lift.toFixed(1)}\u{00D7}</b>, about ${naira(perHead)} extra per person reached\n` : '')
+    // Keyed off deposits, not people: a few hundred contacts still yields only a
+    // handful of deposits, and that handful is what the whole comparison rests on.
+    + (reachedStats.dep + controlStats.dep < 40
+      ? `  <i>Only ${reachedStats.dep + controlStats.dep} deposits between both groups — a hint, not a result.</i>\n`
+      : '')
+    + `\n<b>Converted:</b> ${converted.size} users (${convRate}%)\n`
+    + `<b>Deposits after contact:</b> ${naira(totalDeposits)}\n`
+    + `<b>Revenue after contact:</b> ${naira(totalRevenue)}`;
 
   const byStaff = {};
   for (const c of contacts) {
