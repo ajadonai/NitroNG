@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { OUTREACH_TOPIC_TO_TOUCH, outreachWhatsAppMessage, outreachButtons, tgOutreachReplacement, STAFF_NAMES } from '@/lib/telegram';
-import { callbackOptions, watWhen, scheduleRetry, nextWorkingMorning } from '@/lib/outreach-time';
+import { callbackOptions, watWhen, scheduleRetry, nextWorkingMorning, tooLateForReplacement } from '@/lib/outreach-time';
 import { pullReplacements } from '@/lib/outreach-pool';
 
 // "Switched off" this many times and the phone is cleared for good.
@@ -107,6 +107,9 @@ function recordContact(_existing, { userId, touchType, tgUserId, method, callbac
 // from the same pool and post it to the same topic. Best effort: if the pool is
 // dry there is simply nothing to give back.
 async function replaceSlot(touchType) {
+  // Late in the day a fresh card cannot be worked before close, so the slot is
+  // left as a gap and rolls into tomorrow rather than piling up unworked.
+  if (tooLateForReplacement()) return 'late';
   try {
     const fresh = await pullReplacements(touchType, 1);
     if (fresh.length) await tgOutreachReplacement(fresh, touchType);
@@ -116,9 +119,12 @@ async function replaceSlot(touchType) {
   }
 }
 
-// Appends the replacement outcome to a toast. Worded so it reads the same whether
-// the pool ran dry or, as with winback, replacements never applied.
-const withReplacement = (text, filled) => `${text}${filled ? ' Replacement sent.' : ' No replacement available.'}`;
+// Appends the replacement outcome to a toast. Distinguishes a dry pool from the
+// end-of-day cutoff, so staff are not left wondering why nothing arrived.
+const withReplacement = (text, filled) =>
+  filled === 'late' ? `${text} Too late for a replacement — it rolls to tomorrow.`
+  : filled ? `${text} Replacement sent.`
+  : `${text} No replacement available.`;
 
 export async function POST(req) {
   const secret = req.headers.get('x-telegram-bot-api-secret-token');
