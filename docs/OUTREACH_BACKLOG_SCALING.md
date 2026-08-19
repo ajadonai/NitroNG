@@ -9,16 +9,38 @@ Volume is a single shared budget, not a per-touch quota.
 
 | Constant | Value | Meaning |
 | --- | --- | --- |
-| `DAILY_BUDGET` | 200 | Total contacts handed to staff per day |
-| `BATCH_SIZE` | 30 | Cap for each of the four priority touches |
+| `DAILY_BUDGET` | 150 | Total contacts handed to staff per day |
+| `TOUCH_CAP` | see below | Per-touch ceiling |
 | `MAX_RUN` | 90 | Ceiling on a single run |
 
-All three live in `app/api/cron/outreach-lists/route.js`.
+All three live in `app/api/cron/outreach-lists/route.js`. `TOUCH_CAP` is:
 
-The four priority touches — First Call, Winback, Follow-up, Final Nudge — take
-up to `BATCH_SIZE` each, so at most 120. **Backlog runs last and claims whatever
-they left unspent.** It counts what has already been stamped today and takes the
-remainder, capped by `MAX_RUN`.
+| Touch | Cap |
+| --- | --- |
+| First Call | 50 |
+| Follow-up | 35 |
+| Final Nudge | 30 |
+| Winback | 20 |
+
+The caps sum to 135, which **must** stay below `DAILY_BUDGET`: only Backlog is
+budget-aware, so an over-subscribed set of caps overspends the day and leaves
+Backlog nothing. **Backlog runs last and claims whatever they left unspent** —
+never less than 15, and considerably more on a day when Winback is empty or
+Final Nudge is thin. It counts what has already been stamped
+today and takes the remainder, capped by `MAX_RUN`.
+
+The caps taper deliberately. The sequence is a pipeline: call 50 new people today
+and those same 50 need a follow-up three days later, then a final nudge four days
+after that. Capping a downstream touch below the one feeding it guarantees a queue
+that only grows, so each step sits just below its predecessor, matching attrition
+as people deposit, opt out or turn out to be wrong numbers.
+
+First Call is highest because it is the only touch with an expiry. Miss the 1–4
+day window and the lead leaves First Call permanently. Since Backlog is precisely
+the accumulation of everyone who missed that window, headroom here is the only
+thing that stops Backlog growing. It also cannot run away with the budget: its
+pool is bounded by whoever signed up in a four-day window, which at ~80 signups a
+day and roughly a third eligible is ~28.
 
 This is the whole point of the design. Under fixed per-touch quotas, a day with
 only 15 new signups threw away the other 15 First Call slots while thousands sat
@@ -29,7 +51,7 @@ per-group rate limit. At 90 contacts that is 270s against a `maxDuration` of 300
 Do not raise it without also raising `maxDuration`.
 
 Two Backlog runs are scheduled precisely because one cannot exceed `MAX_RUN`.
-Together they can absorb the full remainder of a 200 budget.
+Together they can absorb the full remainder of the budget.
 
 ## Schedule
 
@@ -74,11 +96,13 @@ Change `DAILY_BUDGET`. That is the only number that sets total daily load.
 
 Sizing is throughput-based: about 2.7 minutes per contact blended across answered
 and unanswered calls, against roughly 7 working hours once the break is removed.
-One caller sustains ~150/day. The 200 figure assumes some headroom from calls
-that fail fast.
+One caller sustains ~150/day, which is where the budget sits. Headline
+throughput reads higher than that, but only because unreachable numbers clear in
+seconds — those are not conversations, so do not size the budget off them.
 
-Raising `BATCH_SIZE` shifts the mix toward the priority touches and away from
-Backlog; it does not change the total. Raising `MAX_RUN` above 90 risks a
+Raising a `TOUCH_CAP` entry shifts the mix toward that touch and away from
+Backlog; it does not change the total. Keep the caps summing below
+`DAILY_BUDGET`. Raising `MAX_RUN` above 90 risks a
 timeout — see above.
 
 ## Recycling unworked contacts

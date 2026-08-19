@@ -6,16 +6,38 @@ import { poolWhere } from '@/lib/outreach-pool';
 
 export const maxDuration = 300;
 
-// Per-touch cap for the four priority touches, so none can starve the others.
-const BATCH_SIZE = 30;
+// Per-touch caps, so no touch can starve the others. Follow-up and Final Nudge
+// sit on pools of 100+ and would take the whole budget between them if uncapped.
+//
+// The sequence is a pipeline: call 50 new people today and those same 50 need a
+// follow-up three days later, then a final nudge four days after that. Capping a
+// downstream touch below the one feeding it guarantees a queue that only grows,
+// so the caps taper with attrition rather than sitting flat.
+//
+// First Call is highest because it is the only touch with an expiry. Miss the
+// 1-4 day window and the lead leaves First Call permanently, landing in Backlog
+// to be called cold weeks later off a script written for someone who just signed
+// up. Backlog is precisely the accumulation of everyone who missed that window,
+// so headroom here is the only thing that stops it growing. It also cannot run
+// away with the budget: its pool is bounded by whoever signed up in a four-day
+// window, which at ~80 signups a day and roughly a third eligible is ~28.
+//
+// The caps must sum to less than DAILY_BUDGET, or Backlog is left with nothing.
+// Only Backlog is budget-aware; the priority touches take their cap regardless,
+// so an over-subscribed set of caps overspends the day and starves Backlog.
+const TOUCH_CAP = {
+  day1: 50,
+  day3: 35,
+  day7: 30,
+  winback: 20,
+};
 
-// Total contacts handed to staff across all touches in a day. Raised to 200 because
-// a large share of numbers are unreachable and clear in seconds, so headline
-// throughput overstates conversation capacity — more volume is needed to surface the
-// same number of real conversations. Backlog runs after the priority touches and
-// claims whatever they left unspent, so a slow signup day clears old contacts
-// instead of idling staff. Two backlog runs, because MAX_RUN caps a single one.
-const DAILY_BUDGET = 200;
+// Total contacts handed to staff across all touches in a day. Sized to what one
+// caller sustains in a 9-6 day with an hour break, at roughly 2.7 min per contact
+// blended across answered and unanswered calls. Backlog runs after the priority
+// touches and claims whatever they left unspent, so a slow signup day clears old
+// contacts instead of idling staff. Two backlog runs, because MAX_RUN caps one.
+const DAILY_BUDGET = 150;
 
 // tgOutreach sleeps 3s per contact for Telegram's per-group rate limit, so a single
 // run cannot exceed ~95 contacts before hitting maxDuration. Hard ceiling per run.
@@ -70,7 +92,7 @@ export async function GET(req) {
             select: { amountGranted: true },
           },
         },
-        take: BATCH_SIZE,
+        take: TOUCH_CAP.winback,
       });
 
       if (batch.length > 0) {
@@ -157,7 +179,7 @@ export async function GET(req) {
       const batch = await prisma.user.findMany({
         where: poolWhere('day1'),
         select: { id: true, name: true, phone: true },
-        take: BATCH_SIZE,
+        take: TOUCH_CAP.day1,
       });
 
       if (batch.length > 0) {
@@ -175,7 +197,7 @@ export async function GET(req) {
       const batch = await prisma.user.findMany({
         where: poolWhere(touch),
         select: { id: true, name: true, phone: true },
-        take: BATCH_SIZE,
+        take: TOUCH_CAP[touch],
       });
 
       if (batch.length > 0) {
