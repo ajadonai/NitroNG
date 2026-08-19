@@ -83,6 +83,7 @@ function DripSection({ dispatches, dripConfig, dark, t, orderId, onRefresh }) {
   const [resetQty, setResetQty] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const toast = useToast();
+  const confirm = useConfirm();
   const allIds = dispatches.filter(d => d.apiOrderId).map(d => d.apiOrderId);
   const doneCount = dispatches.filter(d => d.status === "completed" || d.status === "partial").length;
   const days = {};
@@ -142,7 +143,23 @@ function DripSection({ dispatches, dripConfig, dark, t, orderId, onRefresh }) {
                       <span className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold" style={{ background: sBg(statusLabel(d.status), dark), color: sClr(statusLabel(d.status), dark) }}>{d.status}</span>
                       {d.error?.startsWith('reset:') && <span className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)", color: t.accent }}>retry</span>}
                       {d.apiOrderId ? <CopyId value={d.apiOrderId} dark={dark} size="sm" /> : <span style={{ color: t.textMuted }}>—</span>}
-                      {(bPartial || bFailed) && <button onClick={() => { setResetTarget(d); setResetQty(String(d.remains != null ? d.remains : d.qty)); }} className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)", color: t.accent }}>Reset</button>}
+                      {/* A timed-out batch blocks Reset and Dispatch alike, since we cannot
+                          tell whether the provider took it. Reconcile is how an admin records
+                          having checked the provider dashboard and found it absent. */}
+                      {(d.error?.startsWith("[TIMEOUT]") || d.error?.startsWith("[VERIFY_STALE]")) ? (
+                        <button onClick={async () => {
+                          const ok = await confirm({
+                            title: "Confirm with provider",
+                            message: `Batch #${d.batch} timed out, so we cannot tell whether the provider received it.\n\nOnly continue if you have searched the provider dashboard and this order is NOT there. If it is there, cancel and let it run — resetting would send it twice.`,
+                            confirmLabel: "It's not there",
+                          });
+                          if (!ok) return;
+                          const res = await fetch("/api/admin/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reconcile_drip", orderId, dispatchId: d.id }) });
+                          const data = await res.json().catch(() => ({}));
+                          if (res.ok) { toast.success(data.message || "Batch cleared"); onRefresh?.(); }
+                          else toast.error(data.error || "Could not reconcile");
+                        }} className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.08)", color: dark ? "#fcd34d" : "#d97706" }}>Reconcile</button>
+                      ) : (bPartial || bFailed) && <button onClick={() => { setResetTarget(d); setResetQty(String(d.remains != null ? d.remains : d.qty)); }} className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)", color: t.accent }}>Reset</button>}
                       <span className="ml-auto shrink-0" style={{ color: t.textMuted }}>{d.scheduled ? new Date(d.scheduled).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", ...(dripConfig?.timezone ? { timeZone: dripConfig.timezone } : {}) }) : ""}</span>
                     </div>
                     {!bPending && (
