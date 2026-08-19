@@ -6,6 +6,28 @@ import { pullReplacements } from '@/lib/outreach-pool';
 // "Switched off" this many times and the phone is cleared for good.
 const UNREACHABLE_STRIKE_LIMIT = 2;
 
+// Display names for the command output. Kept in the order outcomes are worth
+// reading, not alphabetically.
+const METHOD_LABEL = {
+  call: 'Reached',
+  callback: 'Call back',
+  pending: 'No answer',
+  whatsapp: 'WhatsApp sent',
+  unreachable: 'Switched off',
+  not_in_service: 'Not in service',
+  wrong_number: 'Wrong number',
+  dnc: 'Do not contact',
+  expired: 'Never worked',
+};
+
+const TOUCH_LABEL = {
+  day1: 'First Call',
+  winback: 'Winback',
+  day3: 'Follow-up',
+  day7: 'Final Nudge',
+  backlog: 'Backlog',
+};
+
 const TOKEN = process.env.OUTREACH_BOT_TOKEN;
 const SECRET = process.env.CRON_SECRET;
 const SITE = 'https://nitro.ng';
@@ -42,16 +64,6 @@ function editMsg(chatId, messageId, text, replyMarkup) {
     parse_mode: 'HTML',
     reply_markup: replyMarkup,
   });
-}
-
-async function sendChunked(send, header, lines, perPage = 25) {
-  for (let i = 0; i < lines.length; i += perPage) {
-    const chunk = lines.slice(i, i + perPage);
-    const page = Math.floor(i / perPage) + 1;
-    const pages = Math.ceil(lines.length / perPage);
-    const suffix = pages > 1 ? ` (${page}/${pages})` : '';
-    await send(`${header}${suffix}\n${chunk.join('\n')}`);
-  }
 }
 
 function buildWaUrl(phone, touchType, name, { variant = 'noAnswer', creditNaira } = {}) {
@@ -377,88 +389,131 @@ export async function POST(req) {
       if (cmd === '/start' || cmd === '/help') {
         await send(
           '\u{1F4CB} <b>Nitro Outreach Bot</b>\n\n'
-          + '<b>Workflow:</b>\n'
-          + '1. Call the customer first\n'
-          + '2. If reached, tap <b>\u{2705} Reached</b>\n'
-          + '3. If no answer, tap <b>\u{1F4F5} No answer</b>\n'
-          + '4. WhatsApp button appears \u{2014} send the message\n'
-          + '5. Tap <b>\u{2705} Sent</b> when done\n'
-          + '6. Tap <b>\u{1F6AB}</b> if they say don\'t contact me\n\n'
+          + '<b>Call first, then tap what happened:</b>\n\n'
+          + '\u{2705} <b>Reached</b> \u{2014} you spoke to them\n'
+          + '\u{1F4F5} <b>No answer</b> \u{2014} rang out. Retries by itself in 3h\n'
+          + '\u{23F0} <b>Call back</b> \u{2014} they asked for a time. Pick it and the card comes back then\n'
+          + '\u{1F4F4} <b>Unreachable</b> \u{2014} then choose:\n'
+          + '      <i>Switched off</i> \u{2014} returns tomorrow, twice, then stops\n'
+          + '      <i>Not in service</i> \u{2014} dead line, dropped for good\n'
+          + '\u{274C} <b>Wrong number</b> \u{2014} someone else answered\n'
+          + '\u{1F6AB} <b>DNC</b> \u{2014} they asked to be left alone\n\n'
+          + 'Unreachable, Not in service and Wrong number each pull a fresh contact '
+          + 'to fill the slot, so your list does not shrink.\n\n'
           + '<b>Commands:</b>\n'
-          + '/pending \u{2014} contacts called but not WhatsApp\'d yet\n'
-          + '/dnc \u{2014} do-not-contact list\n'
-          + '/stats \u{2014} today\'s outreach summary\n'
-          + '/leaderboard \u{2014} staff performance\n',
+          + '/pending \u{2014} what is still open today\n'
+          + '/stats \u{2014} today\u{2019}s numbers\n'
+          + '/dnc \u{2014} do-not-contact count\n'
+          + '/leaderboard \u{2014} staff, last 30 days\n',
         );
 
       } else if (cmd === '/pending') {
-        const [pending, totalPending] = await Promise.all([
-          prisma.outreachContact.findMany({
-            where: { method: 'pending' },
-            include: { user: { select: { name: true, phone: true } } },
-            orderBy: { contactedAt: 'desc' },
-            take: 100,
+        // A count per topic, not a name dump. The cards live in the topics with
+        // their buttons, so a list of names in a message is not actionable — and
+        // the old version ran to four chunked pages of it.
+        const todayStart = new Date();
+        todayStart.setUTCHours(0, 0, 0, 0);
+        const [sent, worked] = await Promise.all([
+          prisma.user.count({
+            where: {
+              OR: [
+                { outreachDay1SentAt: { gte: todayStart } },
+                { outreachDay3SentAt: { gte: todayStart } },
+                { outreachDay7SentAt: { gte: todayStart } },
+                { outreachWinbackSentAt: { gte: todayStart } },
+              ],
+            },
           }),
-          prisma.outreachContact.count({ where: { method: 'pending' } }),
+          prisma.outreachContact.groupBy({
+            by: ['touchType'],
+            where: { contactedAt: { gte: todayStart } },
+            _count: true,
+          }),
         ]);
-        if (!pending.length) {
-          await send('No pending contacts. All caught up!');
+        const done = worked.reduce((a, r) => a + r._count, 0);
+        const open = Math.max(0, sent - done);
+        if (!sent) {
+          await send('Nothing handed out yet today. The first list lands at 09:00.');
+        } else if (!open) {
+          await send(`\u{2705} All ${sent} worked. Nothing open.`);
         } else {
-          const lines = pending.map((c, i) => {
-            const name = c.user?.name || '(no name)';
-            const phone = c.user?.phone?.replace('+', '') || 'no phone';
-            const by = staffName(c.contactedBy);
-            return `${i + 1}. <b>${name}</b> \u{2014} ${phone} (${c.touchType}, ${by})`;
-          });
-          const header = `<b>${totalPending} pending</b> (called, no answer)\n`;
-          await sendChunked(send, header, lines);
+          const byTouch = Object.fromEntries(worked.map(r => [r.touchType, r._count]));
+          const lines = Object.entries(TOUCH_LABEL)
+            .map(([k, label]) => `  ${label} \u{2014} ${byTouch[k] || 0} done`)
+            .join('\n');
+          await send(
+            `\u{1F4CB} <b>${open} still open</b> of ${sent} handed out today\n\n${lines}\n\n`
+            + 'Open the topic and tap an outcome. Anything left untouched for 3 days '
+            + 'goes back into the pool by itself.',
+          );
         }
 
       } else if (cmd === '/dnc') {
-        const [dnc, totalDnc] = await Promise.all([
+        const [total, recent] = await Promise.all([
+          prisma.user.count({ where: { outreachOptedOutAt: { not: null } } }),
           prisma.user.findMany({
             where: { outreachOptedOutAt: { not: null } },
             select: { name: true, outreachOptedOutAt: true },
             orderBy: { outreachOptedOutAt: 'desc' },
-            take: 100,
+            take: 5,
           }),
-          prisma.user.count({ where: { outreachOptedOutAt: { not: null } } }),
         ]);
-        if (!dnc.length) {
-          await send('No one on the DNC list.');
+        if (!total) {
+          await send('Nobody on the do-not-contact list.');
         } else {
-          const lines = dnc.map((u, i) => {
-            const name = u.name || '(no name)';
-            const date = u.outreachOptedOutAt.toISOString().slice(0, 10);
-            return `${i + 1}. <b>${name}</b> \u{2014} since ${date}`;
-          });
-          const header = `<b>${totalDnc} on Do Not Contact list</b>\n`;
-          await sendChunked(send, header, lines);
+          const lines = recent
+            .map(u => `  ${u.name || '(no name)'} \u{2014} ${u.outreachOptedOutAt.toISOString().slice(0, 10)}`)
+            .join('\n');
+          await send(
+            `\u{1F6AB} <b>${total} on do-not-contact</b>\n\n<b>Most recent:</b>\n${lines}\n\n`
+            + 'They are excluded from every list automatically.',
+          );
         }
 
       } else if (cmd === '/stats') {
         const todayStart = new Date();
         todayStart.setUTCHours(0, 0, 0, 0);
-        const contacts = await prisma.outreachContact.findMany({
-          where: { contactedAt: { gte: todayStart } },
-          select: { method: true, contactedBy: true, touchType: true },
-        });
-        const total = contacts.length;
-        const calls = contacts.filter(c => c.method === 'call').length;
-        const pending = contacts.filter(c => c.method === 'pending').length;
-        const whatsapp = contacts.filter(c => c.method === 'whatsapp').length;
+        // Handed out vs worked is the number that matters: for a long time most
+        // of what went out was never touched, and nothing surfaced that.
+        const [sent, contacts] = await Promise.all([
+          prisma.user.count({
+            where: {
+              OR: [
+                { outreachDay1SentAt: { gte: todayStart } },
+                { outreachDay3SentAt: { gte: todayStart } },
+                { outreachDay7SentAt: { gte: todayStart } },
+                { outreachWinbackSentAt: { gte: todayStart } },
+              ],
+            },
+          }),
+          prisma.outreachContact.findMany({
+            where: { contactedAt: { gte: todayStart } },
+            select: { method: true, contactedBy: true },
+          }),
+        ]);
+        const worked = contacts.length;
+        const pct = sent ? Math.round((worked / sent) * 100) : 0;
+        const counts = {};
+        contacts.forEach(c => { counts[c.method] = (counts[c.method] || 0) + 1; });
+        const outcomes = Object.entries(METHOD_LABEL)
+          .filter(([k]) => counts[k])
+          .map(([k, label]) => `  ${label} \u{2014} ${counts[k]}`)
+          .join('\n');
         const byStaff = {};
         contacts.forEach(c => {
-          const name = staffName(c.contactedBy);
-          byStaff[name] = (byStaff[name] || 0) + 1;
+          const n = staffName(c.contactedBy);
+          byStaff[n] = (byStaff[n] || 0) + 1;
         });
-        const staffLines = Object.entries(byStaff).map(([name, count]) => `  ${name}: ${count}`).join('\n');
+        const staffLines = Object.entries(byStaff)
+          .sort((a, b) => b[1] - a[1])
+          .map(([n, c]) => `  ${n} \u{2014} ${c}`)
+          .join('\n');
         await send(
-          `<b>Today's outreach</b>\n\n`
-          + `Total: <b>${total}</b>\n`
-          + `Reached by call: <b>${calls}</b>\n`
-          + `Called, pending WA: <b>${pending}</b>\n`
-          + `WhatsApp sent: <b>${whatsapp}</b>\n\n`
+          `\u{1F4CA} <b>Today</b>\n\n`
+          + `Handed out \u{2014} <b>${sent}</b>\n`
+          + `Worked \u{2014} <b>${worked}</b> (${pct}%)\n`
+          + `Still open \u{2014} <b>${Math.max(0, sent - worked)}</b>\n\n`
+          + `<b>Outcomes:</b>\n${outcomes || '  (none yet)'}\n\n`
           + `<b>By staff:</b>\n${staffLines || '  (none yet)'}`,
         );
 
@@ -466,25 +521,27 @@ export async function POST(req) {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const contacts = await prisma.outreachContact.findMany({
-          where: { contactedAt: { gte: thirtyDaysAgo } },
+          // "expired" is written by the recycler, not by a person, so it would
+          // otherwise credit staff with work nobody did.
+          where: { contactedAt: { gte: thirtyDaysAgo }, method: { not: 'expired' } },
           select: { contactedBy: true, method: true },
         });
         const board = {};
         contacts.forEach(c => {
           const name = staffName(c.contactedBy);
-          if (!board[name]) board[name] = { total: 0, call: 0, whatsapp: 0 };
+          if (!board[name]) board[name] = { total: 0, reached: 0 };
           board[name].total++;
-          if (c.method === 'call') board[name].call++;
-          if (c.method === 'whatsapp') board[name].whatsapp++;
+          if (c.method === 'call') board[name].reached++;
         });
         const sorted = Object.entries(board).sort((a, b) => b[1].total - a[1].total);
         if (!sorted.length) {
           await send('No outreach activity in the last 30 days.');
         } else {
           const lines = sorted.map(([name, s], i) => {
-            return `${i + 1}. <b>${name}</b> \u{2014} ${s.total} total (${s.call} calls, ${s.whatsapp} WA)`;
+            const rate = s.total ? Math.round((s.reached / s.total) * 100) : 0;
+            return `${i + 1}. <b>${name}</b> \u{2014} ${s.total} worked, ${s.reached} reached (${rate}%)`;
           });
-          await send(`<b>Leaderboard (30 days)</b>\n\n${lines.join('\n')}`);
+          await send(`\u{1F3C6} <b>Leaderboard (30 days)</b>\n\n${lines.join('\n')}`);
         }
       }
     }
