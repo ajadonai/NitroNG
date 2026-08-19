@@ -65,7 +65,10 @@ function buildWaUrl(phone, touchType, name, { variant = 'noAnswer', creditNaira 
 // outcome and stays with whoever logged it.
 async function claim(userId, touchType, callbackId) {
   const existing = await prisma.outreachContact.findFirst({ where: { userId, touchType } });
-  const open = existing && (existing.callbackAt !== null || existing.method === 'callback');
+  // "expired" means the recycler released a card nobody worked. If it comes round
+  // again it must be actionable, otherwise the second chance is not one.
+  const open = existing
+    && (existing.callbackAt !== null || existing.method === 'callback' || existing.method === 'expired');
   if (existing && !open) {
     await tg('answerCallbackQuery', {
       callback_query_id: callbackId,

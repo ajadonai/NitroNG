@@ -4,8 +4,8 @@ import { DateRangePicker, FilterDropdown } from './date-range-picker';
 import { SegPill } from './seg-pill';
 
 const TOUCH_LABELS = { day1: 'First Call', day3: 'Follow-up', day7: 'Final Nudge', winback: 'Winback', backlog: 'Backlog', firstDeposit: 'First Deposit', firstOrder: 'First Order' };
-const METHOD_LABELS = { call: 'Called', pending: 'No answer', whatsapp: 'WhatsApp', callback: 'Call back', unreachable: 'Switched off', not_in_service: 'Not in service', wrong_number: 'Wrong #', dnc: 'Do not contact', legacy: 'Legacy' };
-const METHOD_COLORS = { call: '#4ade80', pending: '#facc15', whatsapp: '#60a5fa', callback: '#fb923c', unreachable: '#a78bfa', not_in_service: '#f87171', wrong_number: '#f87171', dnc: '#94a3b8', legacy: '#a3a3a3' };
+const METHOD_LABELS = { call: 'Called', pending: 'No answer', whatsapp: 'WhatsApp', callback: 'Call back', unreachable: 'Switched off', not_in_service: 'Not in service', wrong_number: 'Wrong #', dnc: 'Do not contact', expired: 'Never worked', legacy: 'Legacy' };
+const METHOD_COLORS = { call: '#4ade80', pending: '#facc15', whatsapp: '#60a5fa', callback: '#fb923c', unreachable: '#a78bfa', not_in_service: '#f87171', wrong_number: '#f87171', dnc: '#94a3b8', expired: '#64748b', legacy: '#a3a3a3' };
 
 const fN = (kobo) => `₦${Math.round(kobo / 100).toLocaleString()}`;
 

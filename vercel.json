@@ -20,6 +20,7 @@
     { "path": "/api/cron/cohort-stats", "schedule": "0 1 * * *" },
     { "path": "/api/cron/outreach-summary", "schedule": "0 19 * * 0" },
     { "path": "/api/cron/outreach-summary?period=month", "schedule": "0 20 28-31 * *" },
+    { "path": "/api/cron/outreach-recycle", "schedule": "0 6 * * 2-6" },
     { "path": "/api/cron/outreach-lists?touch=day1", "schedule": "0 8 * * 2-6" },
     { "path": "/api/cron/outreach-lists?touch=winback", "schedule": "0 9 * * 2-6" },
     { "path": "/api/cron/outreach-lists?touch=day3", "schedule": "0 10 * * 2-6" },
