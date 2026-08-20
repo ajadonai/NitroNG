@@ -25,19 +25,30 @@ export const maxDuration = 300;
 // The caps must sum to less than DAILY_BUDGET, or Backlog is left with nothing.
 // Only Backlog is budget-aware; the priority touches take their cap regardless,
 // so an over-subscribed set of caps overspends the day and starves Backlog.
+// Sized against working time, not appetite. At the observed ~14 contacts an hour,
+// 50 First Call cards is three and a half hours of work and 15 Follow-up is one,
+// which is why the schedule spaces them that far apart. Handing out a list faster
+// than it can be worked is what left a third of every day unworked.
+//
+// day7 and winback are kept here but are no longer scheduled: neither had a single
+// card worked in 30 days, and winback duplicates an email that already goes out
+// with credit attached. Re-adding a cron line is all it takes to revive them.
 const TOUCH_CAP = {
   day1: 50,
-  day3: 35,
+  day3: 15,
   day7: 30,
   winback: 20,
 };
 
-// Total contacts handed to staff across all touches in a day. Sized to what one
-// caller sustains in a 9-6 day with an hour break, at roughly 2.7 min per contact
-// blended across answered and unanswered calls. Backlog runs after the priority
-// touches and claims whatever they left unspent, so a slow signup day clears old
-// contacts instead of idling staff. Two backlog runs, because MAX_RUN caps one.
-const DAILY_BUDGET = 150;
+// People who actually work cards. Deliberately not OUTREACH_STAFF, which also
+// carries admins for command access — one of whom has never worked a card.
+const CALLERS = 1;
+
+// One caller sustains about 110 contacts across a 7.5-hour day, so 100 is set just
+// under that: the day can genuinely be cleared, which makes "Left: 0" mean
+// something. Every additional caller adds another 100. Backlog runs last and
+// claims whatever the priority touches left unspent.
+const DAILY_BUDGET = 100 * CALLERS;
 
 // tgOutreach sleeps 3s per contact for Telegram's per-group rate limit, so a single
 // run cannot exceed ~95 contacts before hitting maxDuration. Hard ceiling per run.

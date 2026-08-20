@@ -1,32 +1,19 @@
 import prisma from '@/lib/prisma';
 import { OUTREACH_TOPIC_TO_TOUCH, outreachWhatsAppMessage, outreachButtons, tgOutreachReplacement, STAFF_NAMES } from '@/lib/telegram';
 import { callbackOptions, watWhen, watLabel, scheduleRetry, nextWorkingMorning, tooLateForReplacement } from '@/lib/outreach-time';
-import { pullReplacements } from '@/lib/outreach-pool';
+import { pullReplacements, poolWhere } from '@/lib/outreach-pool';
+import {
+  TOUCH_LABEL, message, block, row, outcomeRows, touchRows, staffRows, pct, naira,
+} from '@/lib/outreach-format';
 
 // "Switched off" this many times and the phone is cleared for good.
 const UNREACHABLE_STRIKE_LIMIT = 2;
 
-// Display names for the command output. Kept in the order outcomes are worth
-// reading, not alphabetically.
-const METHOD_LABEL = {
-  call: 'Reached',
-  callback: 'Call back',
-  pending: 'No answer',
-  whatsapp: 'WhatsApp sent',
-  unreachable: 'Switched off',
-  not_in_service: 'Not in service',
-  wrong_number: 'Wrong number',
-  dnc: 'Do not contact',
-  expired: 'Never worked',
-};
+const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-const TOUCH_LABEL = {
-  day1: 'First Call',
-  winback: 'Winback',
-  day3: 'Follow-up',
-  day7: 'Final Nudge',
-  backlog: 'Backlog',
-};
+// The recycler stamps released contacts "expired" with no staff against them.
+// Counting those as work is how a morning with 89 real calls reported 389.
+const HUMAN_WORK = { method: { not: 'expired' } };
 
 const TOKEN = process.env.OUTREACH_BOT_TOKEN;
 const SECRET = process.env.CRON_SECRET;
@@ -378,7 +365,9 @@ export async function POST(req) {
     }
 
     if (body.message?.text?.startsWith('/')) {
-      const cmd = body.message.text.split(/\s/)[0].replace(/@\w+$/, '');
+      const parts = body.message.text.trim().split(/\s+/);
+      const cmd = parts[0].replace(/@\w+$/, '');
+      const arg = parts.slice(1).join(' ');
       const chatId = body.message.chat.id;
       const threadId = body.message.message_thread_id;
       const tgUserId = String(body.message.from?.id);
@@ -413,7 +402,7 @@ export async function POST(req) {
           + '<b>Commands:</b>\n'
           + '/pending \u{2014} what is still open today\n'
           + '/callbacks \u{2014} call backs due today, for the topic you ask in\n'
-          + '/stats \u{2014} today\u{2019}s numbers\n'
+          + '/stats \u{2014} today\u{2019}s numbers, or /stats <i>name</i> for one person\n'
           + '/dnc \u{2014} do-not-contact count\n'
           + '/leaderboard \u{2014} staff, last 30 days\n',
         );
@@ -424,39 +413,53 @@ export async function POST(req) {
         // the old version ran to four chunked pages of it.
         const todayStart = new Date();
         todayStart.setUTCHours(0, 0, 0, 0);
-        const [sent, worked] = await Promise.all([
-          prisma.user.count({
-            where: {
-              OR: [
-                { outreachDay1SentAt: { gte: todayStart } },
-                { outreachDay3SentAt: { gte: todayStart } },
-                { outreachDay7SentAt: { gte: todayStart } },
-                { outreachWinbackSentAt: { gte: todayStart } },
-              ],
-            },
-          }),
+        // Handed out per stamp, so open work can be traced back to a topic. Backlog
+        // reuses day1's stamp, so those two can only ever be counted together.
+        const stamped = (field) => prisma.user.count({ where: { [field]: { gte: todayStart } } });
+        const [handed, worked] = await Promise.all([
+          Promise.all([
+            stamped('outreachDay1SentAt'), stamped('outreachDay3SentAt'),
+            stamped('outreachDay7SentAt'), stamped('outreachWinbackSentAt'),
+          ]),
           prisma.outreachContact.groupBy({
             by: ['touchType'],
-            where: { contactedAt: { gte: todayStart } },
+            where: { contactedAt: { gte: todayStart }, ...HUMAN_WORK },
             _count: true,
           }),
         ]);
+        const sent = handed.reduce((a, b) => a + b, 0);
         const done = worked.reduce((a, r) => a + r._count, 0);
         const open = Math.max(0, sent - done);
         if (!sent) {
-          await send('Nothing handed out yet today. The first list lands at 09:00.');
+          await send('\u{1F4CB} <b>Outreach \u{2014} today</b>\n\nNothing out yet. The first list lands at 09:00.');
         } else if (!open) {
-          await send(`\u{2705} All ${sent} worked. Nothing open.`);
+          await send(`\u{2705} <b>Outreach \u{2014} today</b>\n\nAll ${sent} contacted. Nothing left.`);
         } else {
           const byTouch = Object.fromEntries(worked.map(r => [r.touchType, r._count]));
-          const lines = Object.entries(TOUCH_LABEL)
-            .map(([k, label]) => `  ${label} \u{2014} ${byTouch[k] || 0} done`)
-            .join('\n');
-          await send(
-            `\u{1F4CB} <b>${open} still open</b> of ${sent} handed out today\n\n${lines}\n\n`
-            + 'Open the topic and tap an outcome. Anything left untouched for 3 days '
-            + 'goes back into the pool by itself.',
-          );
+          const [d1, d3, d7, wb] = handed;
+          // Which topic to open, which is the only thing this command is for. The
+          // old version showed what had been worked, which answers the opposite
+          // question.
+          const openRows = [
+            ['First Call + Backlog', d1 - (byTouch.day1 || 0) - (byTouch.backlog || 0)],
+            ['Follow-up', d3 - (byTouch.day3 || 0)],
+            ['Final Nudge', d7 - (byTouch.day7 || 0)],
+            ['Winback', wb - (byTouch.winback || 0)],
+          ]
+            .filter(([, n]) => n > 0)
+            .sort((a, b) => b[1] - a[1])
+            .map(([labelText, n]) => row('', labelText, n));
+          // The three numbers first, on their own, before anything else. This is
+          // the question the command exists to answer.
+          await send(message(
+            '\u{1F4CB} <b>Outreach \u{2014} today</b>',
+            [
+              row('\u{1F4C7}', 'Total', sent),
+              row('\u{2705}', 'Contacted', done, `${pct(done, sent)}%`),
+              row('\u{23F3}', 'Left', open),
+            ].join('\n'),
+            block('Left by touch', openRows),
+          ));
         }
 
       } else if (cmd === '/callbacks') {
@@ -495,16 +498,15 @@ export async function POST(req) {
             const kind = c.method === 'pending' ? 'retry' : 'asked';
             const phone = c.user?.phone?.replace('+', '') || 'no phone';
             const touch = scope ? '' : `${TOUCH_LABEL[c.touchType] || c.touchType} \u{00B7} `;
-            return `<b>${watLabel(c.callbackAt)}</b>${overdue}  ${c.user?.name || '(no name)'} \u{2014} ${phone}\n`
-              + `      ${touch}${kind} \u{00B7} ${staffName(c.contactedBy)}`;
+            return `<b>${watLabel(c.callbackAt)}</b>${overdue} \u{2014} ${c.user?.name || '(no name)'}\n`
+              + `  \u{1F4F1} ${phone} \u{00B7} ${touch}${kind} \u{00B7} ${staffName(c.contactedBy)}`;
           });
           const late = due.filter(c => c.callbackAt < now).length;
-          await send(
-            `\u{23F0} <b>${due.length} ${scope ? `${TOUCH_LABEL[scope]} ` : ''}call back${due.length === 1 ? '' : 's'} due today</b>`
-            + (late ? ` \u{2014} ${late} overdue \u{26A0}` : '')
-            + `\n\n${lines.join('\n')}\n\n`
-            + 'Cards re-post by themselves at the time. This is just the day ahead.',
-          );
+          await send(message(
+            `\u{23F0} <b>Call backs \u{2014} ${due.length} due today${scope ? `, ${TOUCH_LABEL[scope]}` : ''}</b>`
+            + (late ? `\n${row('\u{26A0}', 'Overdue', late)}` : ''),
+            lines.join('\n'),
+          ));
         }
 
       } else if (cmd === '/dnc') {
@@ -520,13 +522,71 @@ export async function POST(req) {
         if (!total) {
           await send('Nobody on the do-not-contact list.');
         } else {
-          const lines = recent
-            .map(u => `  ${u.name || '(no name)'} \u{2014} ${u.outreachOptedOutAt.toISOString().slice(0, 10)}`)
-            .join('\n');
+          await send(message(
+            `\u{1F6AB} <b>Do not contact \u{2014} ${total} ${total === 1 ? 'person' : 'people'}</b>`,
+            block('Most recent', recent.map(u => row(
+              '\u{1F464}',
+              u.name || '(no name)',
+              u.outreachOptedOutAt.toISOString().slice(0, 10),
+            ))),
+          ));
+        }
+
+      } else if (cmd === '/stats' && arg) {
+        // One staff member at a time. /stats is already Nitro-only by the guard
+        // above, so this needs no permission check of its own.
+        const target = Object.entries(STAFF_NAMES).find(
+          ([tgId, name]) => name.toLowerCase() === arg.toLowerCase() || tgId === arg,
+        );
+        if (!target) {
           await send(
-            `\u{1F6AB} <b>${total} on do-not-contact</b>\n\n<b>Most recent:</b>\n${lines}\n\n`
-            + 'They are excluded from every list automatically.',
+            `No staff called <b>${esc(arg)}</b>.\n\nTry: `
+            + Object.values(STAFF_NAMES).map(n => n.toLowerCase()).join(', '),
           );
+        } else {
+          const [staffId, name] = target;
+          const todayStart = new Date();
+          todayStart.setUTCHours(0, 0, 0, 0);
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+          const dayEnd = new Date();
+          dayEnd.setUTCHours(23, 59, 59, 999);
+          const [today, month, owed] = await Promise.all([
+            prisma.outreachContact.findMany({
+              where: { contactedAt: { gte: todayStart }, contactedBy: staffId, ...HUMAN_WORK },
+              select: { method: true, touchType: true },
+            }),
+            prisma.outreachContact.findMany({
+              where: { contactedAt: { gte: thirtyDaysAgo }, contactedBy: staffId, ...HUMAN_WORK },
+              select: { method: true },
+            }),
+            // Only what is actually due: counting every future call back as well
+            // turns an actionable number into a standing total nobody can clear.
+            prisma.outreachContact.count({
+              where: { contactedBy: staffId, callbackAt: { not: null, lte: dayEnd } },
+            }),
+          ]);
+          const counts = {};
+          const touches = {};
+          today.forEach(c => {
+            counts[c.method] = (counts[c.method] || 0) + 1;
+            touches[c.touchType] = (touches[c.touchType] || 0) + 1;
+          });
+          const reachedToday = counts.call || 0;
+          const reachedMonth = month.filter(c => c.method === 'call').length;
+          await send(message(
+            `\u{1F4CA} <b>${name} \u{2014} today, ${watLabel(new Date())} WAT</b>`,
+            block('Today', [
+              row('\u{1F4C7}', 'Worked', today.length),
+              row('\u{2705}', 'Reached', reachedToday, today.length ? `${pct(reachedToday, today.length)}%` : null),
+              owed ? row('\u{23F0}', 'Call backs due', owed) : null,
+            ]),
+            block('Outcomes', outcomeRows(counts)),
+            block('By touch', touchRows(touches)),
+            block('Last 30 days', [
+              row('\u{1F4C7}', 'Worked', month.length),
+              row('\u{2705}', 'Reached', reachedMonth, month.length ? `${pct(reachedMonth, month.length)}%` : null),
+            ]),
+          ));
         }
 
       } else if (cmd === '/stats') {
@@ -546,35 +606,54 @@ export async function POST(req) {
             },
           }),
           prisma.outreachContact.findMany({
-            where: { contactedAt: { gte: todayStart } },
+            where: { contactedAt: { gte: todayStart }, ...HUMAN_WORK },
             select: { method: true, contactedBy: true },
           }),
         ]);
         const worked = contacts.length;
-        const pct = sent ? Math.round((worked / sent) * 100) : 0;
         const counts = {};
         contacts.forEach(c => { counts[c.method] = (counts[c.method] || 0) + 1; });
-        const outcomes = Object.entries(METHOD_LABEL)
-          .filter(([k]) => counts[k])
-          .map(([k, label]) => `  ${label} \u{2014} ${counts[k]}`)
-          .join('\n');
         const byStaff = {};
         contacts.forEach(c => {
           const n = staffName(c.contactedBy);
           byStaff[n] = (byStaff[n] || 0) + 1;
         });
-        const staffLines = Object.entries(byStaff)
-          .sort((a, b) => b[1] - a[1])
-          .map(([n, c]) => `  ${n} \u{2014} ${c}`)
-          .join('\n');
-        await send(
-          `\u{1F4CA} <b>Today</b>\n\n`
-          + `Handed out \u{2014} <b>${sent}</b>\n`
-          + `Worked \u{2014} <b>${worked}</b> (${pct}%)\n`
-          + `Still open \u{2014} <b>${Math.max(0, sent - worked)}</b>\n\n`
-          + `<b>Outcomes:</b>\n${outcomes || '  (none yet)'}\n\n`
-          + `<b>By staff:</b>\n${staffLines || '  (none yet)'}`,
+
+        // A rate with nothing beside it is not a reading. Yesterday is the closest
+        // fair comparison: same staff, same shift, same kind of list.
+        const yStart = new Date(todayStart.getTime() - 86400000);
+        const yesterday = await prisma.outreachContact.findMany({
+          where: { contactedAt: { gte: yStart, lt: todayStart }, ...HUMAN_WORK },
+          select: { method: true },
+        });
+        const yReached = yesterday.filter(c => c.method === 'call').length;
+        const reached = counts.call || 0;
+
+        // How many people are left to call. A touch at zero means tomorrow's list
+        // for that topic will be empty, which is worth knowing before it happens.
+        const pools = await Promise.all(
+          ['day1', 'day3', 'day7', 'backlog'].map(t =>
+            prisma.user.count({ where: { ...poolWhere(t), phone: { not: null } } })),
         );
+
+        await send(message(
+          `\u{1F4CA} <b>Outreach \u{2014} today, ${watLabel(new Date())} WAT</b>`,
+          [
+            row('\u{1F4C7}', 'Total', sent),
+            row('\u{2705}', 'Contacted', worked, yesterday.length ? `${yesterday.length} yesterday` : null),
+            row('\u{23F3}', 'Left', Math.max(0, sent - worked)),
+            row('\u{1F3AF}', 'Reach rate', `${pct(reached, worked)}%`,
+              yesterday.length ? `${pct(yReached, yesterday.length)}% yesterday` : null),
+          ].join('\n'),
+          block('Outcomes', outcomeRows(counts)),
+          block('Staff', staffRows(byStaff)),
+          block('Pool left', [
+            row('', 'First Call', pools[0].toLocaleString()),
+            row('', 'Follow-up', pools[1].toLocaleString()),
+            row('', 'Final Nudge', pools[2].toLocaleString()),
+            row('', 'Backlog', pools[3].toLocaleString()),
+          ]),
+        ));
 
       } else if (cmd === '/leaderboard') {
         const thirtyDaysAgo = new Date();
@@ -582,25 +661,55 @@ export async function POST(req) {
         const contacts = await prisma.outreachContact.findMany({
           // "expired" is written by the recycler, not by a person, so it would
           // otherwise credit staff with work nobody did.
-          where: { contactedAt: { gte: thirtyDaysAgo }, method: { not: 'expired' } },
-          select: { contactedBy: true, method: true },
+          where: { contactedAt: { gte: thirtyDaysAgo }, ...HUMAN_WORK },
+          select: { contactedBy: true, method: true, userId: true, contactedAt: true },
         });
+
+        // Volume and reach rate say who works hard, not whose calls earn anything.
+        // Only deposits landing after the call are counted, so someone who was
+        // always going to pay is not credited to whoever happened to ring them.
+        const reachedIds = [...new Set(contacts.filter(c => c.method === 'call').map(c => c.userId))];
+        const deposits = reachedIds.length
+          ? await prisma.transaction.findMany({
+            where: {
+              userId: { in: reachedIds }, type: 'deposit', status: 'Completed',
+              createdAt: { gte: thirtyDaysAgo },
+            },
+            select: { userId: true, amount: true, createdAt: true },
+          })
+          : [];
+        const depositsBy = {};
+        for (const d of deposits) (depositsBy[d.userId] ||= []).push(d);
+
         const board = {};
+        const credited = new Set();
         contacts.forEach(c => {
           const name = staffName(c.contactedBy);
-          if (!board[name]) board[name] = { total: 0, reached: 0 };
+          if (!board[name]) board[name] = { total: 0, reached: 0, converted: 0, sum: 0 };
           board[name].total++;
-          if (c.method === 'call') board[name].reached++;
+          if (c.method !== 'call') return;
+          board[name].reached++;
+          const after = (depositsBy[c.userId] || []).filter(d => d.createdAt >= c.contactedAt);
+          // One person can be reached on more than one touch; count them once.
+          if (after.length && !credited.has(c.userId)) {
+            credited.add(c.userId);
+            board[name].converted++;
+            board[name].sum += after.reduce((a, d) => a + Number(d.amount || 0), 0);
+          }
         });
         const sorted = Object.entries(board).sort((a, b) => b[1].total - a[1].total);
         if (!sorted.length) {
           await send('No outreach activity in the last 30 days.');
         } else {
-          const lines = sorted.map(([name, s], i) => {
-            const rate = s.total ? Math.round((s.reached / s.total) * 100) : 0;
-            return `${i + 1}. <b>${name}</b> \u{2014} ${s.total} worked, ${s.reached} reached (${rate}%)`;
-          });
-          await send(`\u{1F3C6} <b>Leaderboard (30 days)</b>\n\n${lines.join('\n')}`);
+          await send(message(
+            '\u{1F3C6} <b>Leaderboard \u{2014} last 30 days</b>',
+            block('Worked', sorted.map(([name, st]) => row(
+              '\u{1F464}', name, st.total, `${st.reached} reached, ${pct(st.reached, st.total)}%`,
+            ))),
+            block('Deposits after their call', sorted
+              .filter(([, st]) => st.converted)
+              .map(([name, st]) => row('\u{1F464}', name, st.converted, naira(st.sum)))),
+          ));
         }
       }
     }

@@ -1,20 +1,10 @@
 import prisma from '@/lib/prisma';
 import { sendOutreach, OUTREACH_TOPICS } from '@/lib/telegram';
+import {
+  message, block, row, outcomeRows, touchRows, staffRows, naira,
+} from '@/lib/outreach-format';
 
 export const maxDuration = 60;
-
-const TOUCH_LABELS = {
-  day1: 'First Call', day3: 'Follow-up', day7: 'Final Nudge',
-  winback: 'Winback', backlog: 'Backlog',
-  firstDeposit: 'First Deposit', firstOrder: 'First Order',
-};
-
-const METHOD_LABELS = {
-  call: 'Reached', callback: 'Call back', pending: 'No answer',
-  whatsapp: 'WhatsApp sent', unreachable: 'Switched off',
-  not_in_service: 'Not in service', wrong_number: 'Wrong number',
-  dnc: 'Do not contact',
-};
 
 // Written by the recycler rather than by a person, so it must never count as
 // work done or dilute the reach rate.
@@ -46,7 +36,9 @@ export async function GET(req) {
   const since = isMonthly
     ? new Date(now.getFullYear(), now.getMonth(), 1)
     : new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const label = isMonthly ? 'Monthly' : 'Weekly';
+  const window = isMonthly
+    ? since.toLocaleDateString('en-NG', { month: 'long', year: 'numeric', timeZone: 'Africa/Lagos' })
+    : `${fmt(since)}\u{2013}${fmt(now)}`;
 
   const contacts = await prisma.outreachContact.findMany({
     where: { contactedAt: { gte: since }, method: { not: NOT_HUMAN_WORK } },
@@ -55,9 +47,8 @@ export async function GET(req) {
 
   if (!contacts.length) {
     await sendOutreach(
-      `\u{1F4CA} <b>${label} Outreach Summary</b>\n\n`
-      + `<i>${fmt(since)} \u{2013} ${fmt(now)}</i>\n\n`
-      + `No outreach contacts recorded this ${isMonthly ? 'month' : 'week'}.`,
+      `\u{1F4CA} <b>Outreach \u{2014} ${window}</b>\n\n`
+      + `Nothing worked this ${isMonthly ? 'month' : 'week'}.`,
       OUTREACH_TOPICS.summary,
     );
     return Response.json({ ok: true, contacts: 0, period });
@@ -124,17 +115,8 @@ export async function GET(req) {
     }
   }
 
-  const touchBreakdown = Object.entries(byTouch)
-    .sort((a, b) => b[1] - a[1])
-    .map(([k, v]) => `  ${TOUCH_LABELS[k] || k}: ${v}`)
-    .join('\n');
-
   const byMethod = {};
   for (const c of contacts) byMethod[c.method] = (byMethod[c.method] || 0) + 1;
-  const methodBreakdown = Object.entries(METHOD_LABELS)
-    .filter(([k]) => byMethod[k])
-    .map(([k, label]) => `  ${label}: ${byMethod[k]}`)
-    .join('\n');
 
   // A conversion rate on its own says nothing — you cannot tell persuasion from
   // the fact that these people were going to deposit anyway. The control group
@@ -173,51 +155,50 @@ export async function GET(req) {
   const topConverters = Object.entries(perUser)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
-    .map(([uid, rev], i) => {
+    .map(([uid, rev]) => {
       const u = userMap[uid];
-      const name = u?.name || u?.email?.split('@')[0] || 'User';
-      return `${i + 1}. ${name} \u{2014} \u{20A6}${Math.round(Number(rev) / 100).toLocaleString()}`;
-    })
-    .join('\n');
+      return row('\u{1F464}', u?.name || u?.email?.split('@')[0] || 'User', naira(Number(rev)));
+    });
 
   const convRate = userIds.length > 0 ? Math.round((converted.size / userIds.length) * 100) : 0;
 
-  const naira = (k) => `\u{20A6}${Math.round(k / 100).toLocaleString()}`;
   const perHead = reachedStats.n ? (reachedStats.sum / reachedStats.n) - (controlStats.n ? controlStats.sum / controlStats.n : 0) : 0;
-
-  let text = `\u{1F4CA} <b>${label} Outreach Summary</b>\n`
-    + `<i>${fmt(since)} \u{2013} ${fmt(now)}</i>\n\n`
-    + `<b>Worked:</b> ${contacts.length} touches across ${userIds.length} users\n`
-    + touchBreakdown + '\n\n'
-    + `<b>Outcomes:</b>\n${methodBreakdown || '  (none)'}\n\n`
-    + `<b>Did calling help?</b>\n`
-    + `  Reached: ${reachedStats.dep}/${reachedStats.n} deposited (${pct(reachedStats).toFixed(1)}%) \u{2014} ${naira(reachedStats.sum)}\n`
-    + `  Not worked: ${controlStats.dep}/${controlStats.n} deposited (${pct(controlStats).toFixed(1)}%) \u{2014} ${naira(controlStats.sum)}\n`
-    + (lift ? `  Lift: <b>${lift.toFixed(1)}\u{00D7}</b>, about ${naira(perHead)} extra per person reached\n` : '')
-    // Keyed off deposits, not people: a few hundred contacts still yields only a
-    // handful of deposits, and that handful is what the whole comparison rests on.
-    + (reachedStats.dep + controlStats.dep < 40
-      ? `  <i>Only ${reachedStats.dep + controlStats.dep} deposits between both groups — a hint, not a result.</i>\n`
-      : '')
-    + `\n<b>Converted:</b> ${converted.size} users (${convRate}%)\n`
-    + `<b>Deposits after contact:</b> ${naira(totalDeposits)}\n`
-    + `<b>Revenue after contact:</b> ${naira(totalRevenue)}`;
 
   const byStaff = {};
   for (const c of contacts) {
     const name = c.contactedBy ? staffName(c.contactedBy) : 'Unassigned';
     byStaff[name] = (byStaff[name] || 0) + 1;
   }
-  const staffBreakdown = Object.entries(byStaff)
-    .sort((a, b) => b[1] - a[1])
-    .map(([name, count]) => `  ${name}: ${count}`)
-    .join('\n');
 
-  text += '\n\n<b>By staff:</b>\n' + staffBreakdown;
-
-  if (topConverters) {
-    text += '\n\n<b>Top conversions:</b>\n' + topConverters;
-  }
+  // Money first. The old order opened with how many touches were made, which is
+  // effort, not result \u{2014} you had to read to the bottom to find whether any of
+  // it earned anything.
+  const text = message(
+    `\u{1F4CA} <b>Outreach \u{2014} ${window}</b>`,
+    block('Result', [
+      row('\u{1F4B0}', 'Deposits', naira(totalDeposits)),
+      row('\u{1F4C8}', 'Revenue', naira(totalRevenue)),
+      row('\u{1F3AF}', 'Converted', converted.size, `${convRate}% of ${userIds.length}`),
+    ]),
+    block('Did calling help?', [
+      row('\u{2705}', 'Reached', `${pct(reachedStats).toFixed(1)}%`, `${reachedStats.dep} of ${reachedStats.n}, ${naira(reachedStats.sum)}`),
+      row('\u{26AA}', 'Not worked', `${pct(controlStats).toFixed(1)}%`, `${controlStats.dep} of ${controlStats.n}, ${naira(controlStats.sum)}`),
+      lift ? row('\u{1F4C8}', 'Lift', `${lift.toFixed(1)}\u{00D7}`, `about ${naira(perHead)} per person reached`) : null,
+      // Keyed off deposits, not people: a few hundred contacts still yields only a
+      // handful of deposits, and that handful is what the whole comparison rests on.
+      reachedStats.dep + controlStats.dep < 40
+        ? `  <i>Only ${reachedStats.dep + controlStats.dep} deposits between both groups \u{2014} a hint, not a result.</i>`
+        : null,
+    ]),
+    block('Worked', [
+      row('\u{1F4C7}', 'Touches', contacts.length),
+      row('\u{1F465}', 'People', userIds.length),
+    ]),
+    block('By touch', touchRows(byTouch)),
+    block('Outcomes', outcomeRows(byMethod)),
+    block('Staff', staffRows(byStaff)),
+    block('Top conversions', topConverters),
+  );
 
   await sendOutreach(text, OUTREACH_TOPICS.summary);
 
