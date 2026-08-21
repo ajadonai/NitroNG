@@ -99,8 +99,15 @@ export async function GET(req) {
     results.logRetention = { error: err.message };
   }
 
-  // ═══ AD ACTIVATION: 3-touch sequence for ad signups who haven't deposited ═══
-  const AD_SOURCES = ['alabi-ad'];
+  // ═══ ACTIVATION: 3-touch sequence for signups who haven't deposited ═══
+  // This used to be gated to signupSource 'alabi-ad', which was the only campaign
+  // running when it was written. Four campaigns launched afterwards and none were
+  // ever added, so 375 people sat outside it. It now goes to every signup.
+  //
+  // The window is a floor-and-ceiling three days wide rather than a single day, so
+  // a batch that overflows its cap is picked up on the next run instead of the
+  // missed users ageing past the band and never receiving that touch at all.
+  const WINDOW_DAYS = 3;
   const activationTouches = [
     { day: 1, field: 'adActivationDay1SentAt', send: sendAdActivationDay1, label: 'Day1' },
     { day: 3, field: 'adActivationDay3SentAt', send: sendAdActivationDay3, label: 'Day3' },
@@ -108,7 +115,7 @@ export async function GET(req) {
   ];
   for (const touch of activationTouches) {
     try {
-      const windowStart = new Date(Date.now() - (touch.day + 1) * 24 * 60 * 60 * 1000);
+      const windowStart = new Date(Date.now() - (touch.day + WINDOW_DAYS) * 24 * 60 * 60 * 1000);
       const windowEnd = new Date(Date.now() - touch.day * 24 * 60 * 60 * 1000);
       let sent = 0;
       const batch = await prisma.user.findMany({
@@ -116,22 +123,32 @@ export async function GET(req) {
           status: 'Active',
           notifPromo: true,
           [touch.field]: null,
-          signupSource: { in: AD_SOURCES },
           createdAt: { gte: windowStart, lte: windowEnd },
           transactions: { none: { type: 'deposit', status: 'Completed' } },
         },
         select: { id: true, name: true, email: true },
-        take: 50,
+        orderBy: { createdAt: 'asc' },
+        // Comfortably above the ~62/day of eligible signups, but low enough that
+        // the first run after opening the gate does not send a month of backlog at
+        // once. Oldest first, and the three-day window carries the remainder into
+        // the next run.
+        take: 80,
       });
-      for (const user of batch) {
-        try {
-          await touch.send(user.name || 'there', user.email);
-          await prisma.user.update({ where: { id: user.id }, data: { [touch.field]: new Date() } });
-          sent++;
-        } catch (e) {
-          log.warn(`AdActivation${touch.label}`, `Failed: ${user.email}: ${e.message}`);
-          await prisma.user.update({ where: { id: user.id }, data: { [touch.field]: new Date(0) } }).catch(() => {});
-        }
+      // Sent in chunks rather than one at a time: opening the gate roughly doubled
+      // the daily volume, and this route shares a 60s budget with the winback and
+      // nudge batches below. A sequential loop would run out of time part-way and
+      // leave the rest of the batch unsent.
+      for (let i = 0; i < batch.length; i += 8) {
+        await Promise.allSettled(batch.slice(i, i + 8).map(async (user) => {
+          try {
+            await touch.send(user.name || 'there', user.email);
+            await prisma.user.update({ where: { id: user.id }, data: { [touch.field]: new Date() } });
+            sent++;
+          } catch (e) {
+            log.warn(`AdActivation${touch.label}`, `Failed: ${user.email}: ${e.message}`);
+            await prisma.user.update({ where: { id: user.id }, data: { [touch.field]: new Date(0) } }).catch(() => {});
+          }
+        }));
       }
       if (sent > 0) log.info(`AdActivation${touch.label}`, `Sent ${sent} of ${batch.length}`);
       results[`adActivation${touch.label}`] = { sent, total: batch.length };
