@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
+import { STAFF_NAMES } from '@/lib/telegram';
 import { requireAdmin } from '@/lib/admin';
 
-const STAFF_NAMES = { '8567146346': 'Nitro', '1935066216': 'Soludo', '8911494544': 'Eshiema' };
 function staffName(tgId) { return STAFF_NAMES[String(tgId)] || `Staff ${String(tgId).slice(-4)}`; }
 
 export async function GET(req) {

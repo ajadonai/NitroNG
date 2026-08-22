@@ -162,6 +162,23 @@ Tasks to complete on or before launch day:
 - [x] Wire user notification preferences to order/email paths — fixed: admin refund + leaderboard reward emails now check `notifOrders`
 - [x] LCP optimisation — admin dashboard now receives `initialData` from server (skips skeleton). User dashboard already had this.
 
+## Providers
+
+Three upstream SMM providers supply the catalogue:
+
+| Key | Name | Services | Orders to date | Status |
+|---|---|---|---|---|
+| `mtp` | MoreThanPanel | 4,839 | 6,050 | primary |
+| `dao` | DaoSMM | 6,224 | 1,045 | secondary |
+| `jap` | Just Another Panel | 5,981 | 22 | barely used, being dropped |
+
+`jap` was never adopted properly but 14 curated tiers still point at it, so it
+cannot simply be deleted. Retire those tiers before removing the provider.
+
+**Never expose provider names or their raw service names to resellers or users.**
+Provider service names carry a recognisable house style (emoji, pipe-delimited
+speed and refill fields) that identifies the source on sight.
+
 ## Git conventions
 
 All commits and deploys are authored as `Trip <devbyadonai@gmail.com>`. Set `git config user.name "Trip"` and `git config user.email "devbyadonai@gmail.com"` before committing. **Do not** add `Co-Authored-By` trailers or any other attribution — `devbyadonai@gmail.com` is the sole contributor on every commit.

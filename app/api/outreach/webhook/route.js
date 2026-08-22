@@ -19,7 +19,9 @@ const TOKEN = process.env.OUTREACH_BOT_TOKEN;
 const SECRET = process.env.CRON_SECRET;
 const SITE = 'https://nitro.ng';
 
-const OUTREACH_STAFF = ['8567146346', '8911494544'];
+// Eshiema handed over to Ify on 22 Aug; her ID stays in STAFF_NAMES so past
+// contacts still read as hers, but it no longer grants access.
+const OUTREACH_STAFF = ['8567146346', '8939794301'];
 
 function staffName(tgId) {
   return STAFF_NAMES[String(tgId)] || `Staff ${String(tgId).slice(-4)}`;

@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { STAFF_NAMES } from '@/lib/telegram';
 import { sendOutreach, OUTREACH_TOPICS } from '@/lib/telegram';
 import {
   message, block, row, outcomeRows, touchRows, staffRows, naira,
@@ -10,7 +11,6 @@ export const maxDuration = 60;
 // work done or dilute the reach rate.
 const NOT_HUMAN_WORK = 'expired';
 
-const STAFF_NAMES = { '8567146346': 'Nitro', '1935066216': 'Soludo', '8911494544': 'Eshiema' };
 function staffName(tgId) { return STAFF_NAMES[String(tgId)] || `Staff ${String(tgId).slice(-4)}`; }
 
 export async function GET(req) {
