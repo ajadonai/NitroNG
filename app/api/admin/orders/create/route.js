@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { requireAdmin, logActivity } from '@/lib/admin';
 import { cleanLink } from '@/lib/clean-link';
+import { validateTrafficConfig } from '@/lib/order-create-input.server';
 import { validateDripConfig, calculateIntradayDrip, calculateMultiDayDrip, getDripConfig, checkDripFeasibility, validateIntradayDuration } from '@/lib/drip-feed';
 import { buildOrderOfferSnapshot } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder } from '@/lib/order-queue';
@@ -89,6 +90,9 @@ export async function POST(req) {
         const tier = tierMap[it.tierId];
         if (!tier) return Response.json({ error: `Tier ${it.tierId} not found or disabled` }, { status: 400 });
         if (!tier.group?.enabled) return Response.json({ error: `Service group for tier ${it.tierId} is disabled` }, { status: 400 });
+        // Bulk rows carry no targeting fields, so a traffic tier here would ship
+        // untargeted — the exact bug the single path just fixed. Refuse it.
+        if (tier.trafficTargeting) return Response.json({ error: 'Traffic services need targeting — create them one at a time' }, { status: 400 });
         if (!tier.service?.enabled) return Response.json({ error: `Service for tier ${it.tierId} is disabled` }, { status: 400 });
 
         const qty = Number(it.quantity) || 0;
@@ -198,7 +202,16 @@ export async function POST(req) {
     }
 
     // single or drip
-    const { tierId, quantity, link: rawLink, dripDays, dripConfig: rawDripConfig, comments: rawComments } = body;
+    const { tierId, quantity, link: rawLink, dripDays, dripConfig: rawDripConfig, comments: rawComments, trafficConfig: rawTrafficConfig } = body;
+    // Website-traffic tiers carry targeting the provider needs at dispatch. The
+    // user order path has always sent it; this door dropped it silently, which is
+    // why admin traffic orders went out untargeted.
+    let trafficConfig = null;
+    if (rawTrafficConfig != null) {
+      const checked = validateTrafficConfig(rawTrafficConfig);
+      if (!checked.ok) return Response.json({ error: checked.error }, { status: 400 });
+      trafficConfig = checked.value;
+    }
     if (!tierId) return Response.json({ error: 'Tier is required' }, { status: 400 });
     if (!rawLink) return Response.json({ error: 'Link is required' }, { status: 400 });
 
@@ -210,6 +223,11 @@ export async function POST(req) {
       include: { service: true, group: { select: { name: true, platform: true, type: true, enabled: true, tags: true } } },
     });
     if (!tier || !tier.enabled) return Response.json({ error: 'Tier not found or disabled' }, { status: 400 });
+    // Traffic tiers cannot ship untargeted: the provider needs country, device
+    // and traffic type at dispatch, exactly as the user order form collects.
+    if (tier.trafficTargeting && !trafficConfig) {
+      return Response.json({ error: 'This service needs traffic targeting \u2014 country, device and traffic type' }, { status: 400 });
+    }
     if (!tier.group?.enabled) return Response.json({ error: 'Service group disabled' }, { status: 400 });
     if (!tier.service?.enabled) return Response.json({ error: 'Service disabled' }, { status: 400 });
 
@@ -301,6 +319,7 @@ export async function POST(req) {
           ...(blocker ? { queuedBehind: blocker.orderId } : {}),
           ...(dripSchedule ? { dripDays: dripNum || 1, ...(dripConfigObj ? { dripConfig: dripConfigObj } : {}) } : {}),
           ...(rawComments?.trim() ? { comments: rawComments.trim() } : {}),
+          ...(trafficConfig ? { trafficConfig } : {}),
         },
       });
 
