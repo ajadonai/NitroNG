@@ -16,7 +16,7 @@
     { "path": "/api/cron/drip", "schedule": "5,15,25,35,45,55 * * * *" },
     { "path": "/api/cron/digest", "schedule": "0 5,11,17 * * *" },
     { "path": "/api/cron/digest-eod", "schedule": "59 22 * * *" },
-    { "path": "/api/cron/sync-services", "schedule": "0,30 1,2,3,4 * * 0,3" },
+    { "path": "/api/cron/sync-services", "schedule": "0,30 1,2,3 * * *" },
     { "path": "/api/cron/cohort-stats", "schedule": "0 1 * * *" },
     { "path": "/api/cron/outreach-summary", "schedule": "0 19 * * 0" },
     { "path": "/api/cron/outreach-summary?period=month", "schedule": "0 20 28-31 * *" },

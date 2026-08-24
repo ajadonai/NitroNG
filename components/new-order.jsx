@@ -523,7 +523,6 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
             speed: tier.speed || "0-2 hrs",
             min: tier.min,
             max: tier.max,
-            provider: tier.provider || "mtp",
             apiType: tier.apiType || "Default",
             customComments: tier.customComments || false,
             trafficTargeting: tier.trafficTargeting || false,

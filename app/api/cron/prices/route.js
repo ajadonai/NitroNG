@@ -44,9 +44,13 @@ export async function GET(req) {
       }
     }
 
+    // Everything we stock, plus everything the provider still lists. The stale
+    // majority — disabled services whose sellPer1k predates every price change
+    // since they were imported — is exactly what the reseller full catalogue
+    // reads, and some of those prices sat a thousandfold below cost.
     const services = await prisma.service.findMany({
-      where: { enabled: true },
-      select: { id: true, name: true, apiId: true, costPer1k: true, sellPer1k: true, provider: true, category: true, dripfeed: true, apiType: true, tiers: { where: { enabled: true }, select: { id: true, tier: true, sellPer1k: true, pricePinned: true, group: { select: { nigerian: true } } } } },
+      where: { OR: [{ enabled: true }, { providerListedAt: { not: null } }] },
+      select: { id: true, name: true, apiId: true, enabled: true, costPer1k: true, sellPer1k: true, provider: true, category: true, dripfeed: true, apiType: true, tiers: { where: { enabled: true }, select: { id: true, tier: true, sellPer1k: true, pricePinned: true, group: { select: { nigerian: true } } } } },
     });
 
     const ops = [];
@@ -65,7 +69,10 @@ export async function GET(req) {
       if (Object.keys(fieldUpdates).length > 0) {
         ops.push(prisma.service.update({ where: { id: s.id }, data: fieldUpdates }));
       }
-      if (rateMap && s.apiId && liveCost === undefined) {
+      // Only stocked services raise the dead alert: a provider dropping one of
+      // the thousands we never sold is routine churn, and listing it would bury
+      // the alert for the ones customers actually order.
+      if (rateMap && s.apiId && liveCost === undefined && s.enabled) {
         deadServices.push({ serviceId: s.id, name: s.name, apiId: s.apiId, provider: pid, category: s.category });
       }
       const cost = liveCost !== undefined ? liveCost : Number(s.costPer1k);
@@ -145,7 +152,16 @@ export async function GET(req) {
     stats.revived = revivedServices.length;
 
     if (ops.length > 0) {
+      const writeDeadline = Date.now() + 40_000;
       for (let i = 0; i < ops.length; i += 50) {
+        if (Date.now() > writeDeadline) {
+          // The first widened pass reprices thousands of rows. Stop cleanly and
+          // let the next run finish — every op is derived from current state, so
+          // whatever remains stale is simply recomputed then.
+          stats.deferredWrites = ops.length - i;
+          log.warn('PriceSync', `write budget reached, ${stats.deferredWrites} updates deferred to next run`);
+          break;
+        }
         await prisma.$transaction(ops.slice(i, i + 50));
       }
     }

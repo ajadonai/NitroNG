@@ -210,6 +210,16 @@ model Service {
   max       Int      @default(50000)
   refill    Boolean  @default(false)
   dripfeed  Boolean  @default(false)
+  // Whether the provider supports the cancel action on this service. Returned by
+  // every provider, ignored until the reseller API needed it: a reseller must
+  // know before ordering whether an order can be pulled back.
+  cancel    Boolean  @default(false)
+
+  // Stamped every time the provider's live catalogue still lists this service.
+  // Kept separate from `enabled`, which records whether Nitro chose to sell it —
+  // conflating the two made "the provider retired this" indistinguishable from
+  // "we don't stock this", and the reseller catalogue needs exactly that split.
+  providerListedAt DateTime?
   tags      String[] @default([])
   apiType   String   @default("Default")
   avgTime   String   @default("0-2 hrs")
@@ -1181,6 +1191,19 @@ model ResellerProfile {
   apiKey    String   @unique
   catalog   String   @default("curated") // "curated" | "full"
   enabled   Boolean  @default(true)
+
+  // Who granted wholesale pricing, when, and on what basis. Without this a
+  // reseller found in three months has no traceable reason for the discount.
+  // Revoking sets enabled false and keeps the row, so the trail survives.
+  approvedBy String?
+  approvedAt DateTime?
+  notes      String?
+
+  // Per-reseller discount, overriding markup_reseller_discount when set. Null
+  // means "use the global rate", so high-volume resellers can be rewarded without
+  // every other reseller becoming a row to maintain.
+  discountPct Int?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1217,8 +1240,19 @@ model ResellerServiceMap {
   tierId    String?      @unique
   serviceId String?      @unique
 
-  tier    ServiceTier? @relation(fields: [tierId], references: [id])
-  service Service?     @relation(fields: [serviceId], references: [id])
+  // A reseller-facing ID is a permanent commitment: once hardcoded into someone's
+  // panel it must answer forever. Rows are therefore never deleted — a service
+  // that goes away is stamped retired, and the ID reports "discontinued" instead
+  // of a 404 nobody can distinguish from a typo.
+  retiredAt DateTime?
 
+  // Restrict, not the default SetNull: deleting a tier must fail loudly while a
+  // reseller ID still points at it, never silently orphan the mapping.
+  tier    ServiceTier? @relation(fields: [tierId], references: [id], onDelete: Restrict)
+  service Service?     @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  // A CHECK constraint in the migration (not expressible in Prisma) enforces that
+  // a LIVE row has exactly one of tierId/serviceId set; a retired row holds only
+  // its ID and date. A live row pointing at nothing is unrepresentable.
   @@map("reseller_service_map")
 }
