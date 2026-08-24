@@ -94,7 +94,11 @@ export async function GET(req) {
     const toCreate = [];
 
     const parse = (svc) => {
-      const rawCost = Math.round(parseFloat(svc.rate) * 100);
+      // Package services quote per package, not per 1000 — the same 1000x
+      // adjustment the prices cron applies. Without it a package service is
+      // created a thousandfold too cheap.
+      const isPackage = svc.type && String(svc.type).toLowerCase().includes('package');
+      const rawCost = Math.round(parseFloat(svc.rate) * 100 * (isPackage ? 1000 : 1));
       if (!Number.isFinite(rawCost) || rawCost < 0 || rawCost > 2000000000) return null;
       return {
         costPer1k: rawCost,
@@ -147,6 +151,7 @@ export async function GET(req) {
           dripfeed: f.dripfeed,
           cancel: f.cancel,
           avgTime: f.avgTime,
+          apiType: svc.type || 'Default',
           // Off by default: nothing untested goes on the storefront on its own.
           // It is still provider-listed, so the reseller full catalogue sees it.
           enabled: false,

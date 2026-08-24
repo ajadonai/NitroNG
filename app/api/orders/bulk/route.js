@@ -1035,7 +1035,8 @@ export async function POST(req) {
         const bulkBonusUsed = await trackBonusConsumption(tx, session.id, order.id, o.finalCharge);
         if (nitroTier) {
           const bulkEligibleCharge = o.finalCharge - bulkBonusUsed;
-          await awardOrderPoints(tx, { userId: session.id, orderId, orderDbId: order.id, chargeKobo: bulkEligibleCharge, tier: nitroTier });
+          // Wholesale replaces retail incentives — no loyalty accrual for resellers.
+          if (!bulkTerms) await awardOrderPoints(tx, { userId: session.id, orderId, orderDbId: order.id, chargeKobo: bulkEligibleCharge, tier: nitroTier });
         }
         if (o.dripSchedule) {
           await tx.dripDispatch.createMany({
