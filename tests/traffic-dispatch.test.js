@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { trafficProviderParams } from '@/lib/traffic-targets';
 
 const smm = { placeOrder: vi.fn() };
 vi.mock('@/lib/smm', () => smm);
@@ -18,11 +19,38 @@ beforeEach(() => {
   process.env.NODE_ENV = 'test';
 });
 
-// Two separate bugs sent every traffic order out with a blank country: the
-// payload builder dropped the field, and every dispatch caller rebuilt the
-// order object without trafficConfig. This asserts the whole chain.
-describe('web traffic dispatch', () => {
-  it('sends country, device and keyword through to the provider', async () => {
+// The provider names these fields differently from every other service type and
+// expects numbers where our UI uses words. Sending our own vocabulary produced
+// "device_type.blank" regardless of value, because nothing was being read.
+describe('traffic parameters match the provider spec', () => {
+  it('maps a keyword order to their exact field names and codes', () => {
+    expect(trafficProviderParams({ country: 'US', device: 'all', trafficType: 'keyword', keyword: 'breaking news' }))
+      .toEqual({ country: 'US', device: 5, type_of_traffic: 1, google_keyword: 'breaking news' });
+  });
+
+  it('maps a referrer order to referring_url, not referrer', () => {
+    expect(trafficProviderParams({ country: 'UK', device: 'desktop', trafficType: 'referrer', referrer: 'https://x.com' }))
+      .toEqual({ country: 'UK', device: 1, type_of_traffic: 2, referring_url: 'https://x.com' });
+  });
+
+  it('sends no keyword or referrer for blank-referrer traffic', () => {
+    expect(trafficProviderParams({ country: 'WW', device: 'ios', trafficType: 'blank' }))
+      .toEqual({ country: 'WW', device: 3, type_of_traffic: 3 });
+  });
+
+  it('maps every device our forms offer to a provider code', () => {
+    for (const [ours, code] of [['all', 5], ['desktop', 1], ['mobile', 4], ['android', 2], ['ios', 3]]) {
+      expect(trafficProviderParams({ country: 'US', device: ours, trafficType: 'blank' }).device).toBe(code);
+    }
+  });
+
+  it('returns null when an order has no targeting', () => {
+    expect(trafficProviderParams(null)).toBeNull();
+  });
+});
+
+describe('dispatch carries the translated parameters', () => {
+  it('sends the provider spec end to end', async () => {
     await placeWithProvider({
       id: 'o1',
       service: { apiId: 7593, provider: 'dao', apiType: 'Web Traffic' },
@@ -31,32 +59,18 @@ describe('web traffic dispatch', () => {
       trafficConfig: { country: 'US', device: 'all', trafficType: 'keyword', keyword: 'breaking news' },
     });
     const [, , , , extra] = smm.placeOrder.mock.calls[0];
-    expect(extra.country).toBe('US');
-    expect(extra.device).toBe('all');
-    expect(extra.keywords).toBe('breaking news');
+    expect(extra).toMatchObject({ country: 'US', device: 5, type_of_traffic: 1, google_keyword: 'breaking news' });
   });
 
-  it('sends a referrer when that is the traffic type', async () => {
+  it('leaves ordinary orders untouched', async () => {
     await placeWithProvider({
       id: 'o2',
-      service: { apiId: 7593, provider: 'dao', apiType: 'Web Traffic' },
-      link: 'https://example.com/',
-      quantity: 100,
-      trafficConfig: { country: 'WW', device: 'mobile', trafficType: 'referrer', referrer: 'https://x.com' },
-    });
-    const [, , , , extra] = smm.placeOrder.mock.calls[0];
-    expect(extra.country).toBe('WW');
-    expect(extra.referrer).toBe('https://x.com');
-  });
-
-  it('sends nothing extra for an ordinary order', async () => {
-    await placeWithProvider({
-      id: 'o3',
       service: { apiId: 100, provider: 'mtp', apiType: 'Default' },
       link: 'https://instagram.com/x',
       quantity: 100,
     });
     const [, , , , extra] = smm.placeOrder.mock.calls[0];
     expect(extra.country).toBeUndefined();
+    expect(extra.type_of_traffic).toBeUndefined();
   });
 });
