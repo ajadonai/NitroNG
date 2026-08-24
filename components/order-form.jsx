@@ -1,4 +1,5 @@
 'use client';
+import { TRAFFIC_COUNTRIES, TRAFFIC_CONTINENTS } from '@/lib/traffic-targets';
 import { useEffect, useState } from "react";
 import { BONUS_PRESETS, bonusForNaira } from "../lib/welcome-bonus";
 import { calculateOrderPrice, formatOrderQuantity, getDripSchedule, getLinkPlaceholder, LINK_EXAMPLES, LINK_HINTS, MULTIDAY_THRESHOLD, validateOrderLink } from "../lib/order-form-core";
@@ -244,8 +245,17 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
               <span className="text-[12px] font-semibold" style={{ color: dark ? "#60a5fa" : "#2563eb" }}>Traffic Targeting</span>
             </div>
             <div className="mb-2.5">
-              <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[5px]" style={{ color: t.textMuted }}>Country <span className="font-normal normal-case tracking-normal">(2-letter code)</span></label>
-              <input type="text" maxLength={3} disabled={orderLoading} placeholder="US" value={trafficConfig.country} onChange={e => setTrafficConfig(c => ({ ...c, country: e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) }))} className="w-full py-2 px-3 rounded-lg border border-solid text-[14px] outline-none box-border font-[inherit] disabled:opacity-50 uppercase tracking-wider" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text }} />
+              <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[5px]" style={{ color: t.textMuted }}>Country <span className="font-normal normal-case tracking-normal">(where the visitors come from)</span></label>
+              <select disabled={orderLoading} value={trafficConfig.country} onChange={e => setTrafficConfig(c => ({ ...c, country: e.target.value }))} className="w-full py-2 px-3 rounded-lg border border-solid text-[14px] outline-none box-border font-[inherit] disabled:opacity-50 cursor-pointer" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text }}>
+                <option value="">Choose a target…</option>
+                <option value="WW">Worldwide</option>
+                <optgroup label="Continent">
+                  {Object.entries(TRAFFIC_CONTINENTS).map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+                </optgroup>
+                <optgroup label="Country">
+                  {Object.entries(TRAFFIC_COUNTRIES).filter(([code]) => code !== "WW").map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+                </optgroup>
+              </select>
             </div>
             <div className="mb-2.5">
               <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[5px]" style={{ color: t.textMuted }}>Device</label>

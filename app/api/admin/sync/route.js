@@ -368,7 +368,7 @@ export async function POST(req) {
         });
         if (claimed.count === 0) continue;
         try {
-          const apiOrderId = await placeWithProvider({ id: order.id, service: order.service, tier: order.tier, link: order.link, quantity: order.quantity, comments: order.comments });
+          const apiOrderId = await placeWithProvider({ id: order.id, service: order.service, tier: order.tier, link: order.link, quantity: order.quantity, comments: order.comments, trafficConfig: order.trafficConfig });
           if (apiOrderId) {
             const recorded = await prisma.order.findUnique({
               where: { id: order.id },

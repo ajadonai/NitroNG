@@ -413,7 +413,7 @@ export async function GET(req) {
         }
 
         try {
-          const apiOrderId = await placeWithProvider({ id: order.id, service: order.service, tier: order.tier, link: order.link, quantity: order.quantity, comments: order.comments });
+          const apiOrderId = await placeWithProvider({ id: order.id, service: order.service, tier: order.tier, link: order.link, quantity: order.quantity, comments: order.comments, trafficConfig: order.trafficConfig });
           stats.retried++;
           if (apiOrderId) {
             stats.retryPlaced++;
@@ -455,6 +455,23 @@ export async function GET(req) {
             });
             log.warn(`Cron retry ${order.orderId}`, `Failed — held as Dispatching for manual check`);
             {
+              // Rejections the provider will never accept on retry: a bad
+              // country, link or quantity is fatal until a human edits the
+              // order. Without an issue these sit in Dispatching silently with
+              // the customer already charged — NTR-7468 sat unnoticed that way.
+              if (/error\.(country|link|quantity)\.|invalid (country|link)/i.test(err.message)) {
+                prisma.adminIssue.create({
+                  data: {
+                    type: 'order_failure',
+                    title: `Order ${order.orderId} rejected — needs correcting`,
+                    message: `${(order.service?.provider || 'mtp').toUpperCase()} rejected this order and will keep rejecting it until the details change.\n\n`
+                      + `Error: ${err.message.slice(0, 200)}\n`
+                      + `Link: ${order.link}\n\n`
+                      + `Fix the order and Retry, or Cancel to refund.`,
+                    metadata: JSON.stringify({ orderId: order.orderId, reason: err.message.slice(0, 200), link: order.link }),
+                  },
+                }).catch(() => {});
+              }
               if (/incorrect service|invalid service/i.test(err.message)) {
                 const svc = order.service;
                 prisma.adminIssue.findFirst({

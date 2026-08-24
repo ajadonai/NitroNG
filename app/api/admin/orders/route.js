@@ -1032,7 +1032,7 @@ export async function POST(req) {
       if (!claimed) return Response.json({ error: 'This account is pending deletion and cannot dispatch orders' }, { status: 409 });
       if (claimed.count === 0) return Response.json({ error: 'Order was claimed by another process or is still in flight' }, { status: 409 });
       try {
-        const apiOrderId = await placeWithProvider({ id: fullOrder.id, service: fullOrder.service, tier: fullOrder.tier, link: fullOrder.link, quantity: fullOrder.quantity, comments: fullOrder.comments });
+        const apiOrderId = await placeWithProvider({ id: fullOrder.id, service: fullOrder.service, tier: fullOrder.tier, link: fullOrder.link, quantity: fullOrder.quantity, comments: fullOrder.comments, trafficConfig: fullOrder.trafficConfig });
         if (!apiOrderId) {
           await prisma.order.updateMany({ where: { id: fullOrder.id, status: 'Dispatching', apiOrderId: null }, data: { status: 'Pending', dispatchedAt: null } });
           return Response.json({ error: 'Provider returned no order ID' }, { status: 502 });
