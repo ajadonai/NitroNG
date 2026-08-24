@@ -223,7 +223,11 @@ describe('createRateLimiter Redis mode', () => {
   });
 });
 
-describe('fail-closed production behavior', () => {
+// Production FAILS OPEN onto the memory limiter. The old fail-closed contract
+// blocked every order for real customers when the Redis quota ran out — the
+// protection cost more than the abuse it prevented. The alert still fires, so
+// an outage is visible without being customer-facing.
+describe('fail-open production behavior', () => {
   it.each([
     ['both missing', {}],
     ['URL only', { UPSTASH_REDIS_REST_URL: 'https://redis.example.test' }],
@@ -232,7 +236,7 @@ describe('fail-closed production behavior', () => {
       UPSTASH_REDIS_REST_URL: 'https://redis.example.test',
       UPSTASH_REDIS_REST_TOKEN: '   ',
     }],
-  ])('returns unavailable and never touches memory when %s', async (_label, config) => {
+  ])('serves from the memory limiter when %s', async (_label, config) => {
     const memoryStore = new Map();
     const redisFactory = vi.fn();
     const limit = createRateLimiter({
@@ -245,18 +249,14 @@ describe('fail-closed production behavior', () => {
 
     const result = await limit(mockReq(), { maxAttempts: 3 });
 
-    expect(result).toEqual({
-      limited: true,
-      unavailable: true,
-      remaining: 0,
-      resetAt: null,
-      retryAfter: 5,
-    });
-    expect(memoryStore.size).toBe(0);
+    // A real request must go through — never the blocked-unavailable shape.
+    expect(result.limited).toBe(false);
+    expect(result.unavailable).toBeFalsy();
+    expect(memoryStore.size).toBe(1);
     expect(redisFactory).not.toHaveBeenCalled();
   });
 
-  it('never falls back to memory when Redis throws in production', async () => {
+  it('falls back to memory when Redis throws in production, and still alerts', async () => {
     const memoryStore = new Map();
     const logger = silentLogger();
     const monitor = vi.fn();
@@ -272,8 +272,8 @@ describe('fail-closed production behavior', () => {
 
     const result = await limit(mockReq(), { maxAttempts: 3 });
 
-    expect(result).toMatchObject({ limited: true, unavailable: true, retryAfter: 5 });
-    expect(memoryStore.size).toBe(0);
+    expect(result.limited).toBe(false);
+    expect(memoryStore.size).toBe(1);
     expect(logger.error).toHaveBeenCalledWith(
       '[RateLimit] Distributed rate limiting unavailable',
       { reason: 'redis_request_failed' },
@@ -283,6 +283,24 @@ describe('fail-closed production behavior', () => {
       dedupeKey: 'redis_unavailable:redis_request_failed',
       throttleMs: 5 * 60 * 1000,
     });
+  });
+
+  it('still limits over-limit bursts through the memory fallback', async () => {
+    const memoryStore = new Map();
+    const redis = { eval: vi.fn().mockRejectedValue(new Error('redis down')) };
+    const limit = createRateLimiter({
+      redis,
+      env: { NODE_ENV: 'production' },
+      memoryStore,
+      now: () => 0,
+      logger: silentLogger(),
+      monitor: vi.fn(),
+    });
+
+    await limit(mockReq(), { maxAttempts: 2 });
+    await limit(mockReq(), { maxAttempts: 2 });
+    const third = await limit(mockReq(), { maxAttempts: 2 });
+    expect(third.limited).toBe(true);
   });
 
   it('never logs raw Redis errors, keys, credentials, or account identifiers', async () => {
@@ -302,7 +320,7 @@ describe('fail-closed production behavior', () => {
 
     await expect(limit(mockReq(), {
       key: accountRateLimitKey('person@example.test', 'user-login'),
-    })).resolves.toMatchObject({ unavailable: true });
+    })).resolves.toMatchObject({ limited: false });
 
     const logged = JSON.stringify(logger.error.mock.calls);
     expect(logged).toContain('redis_request_failed');
@@ -311,7 +329,7 @@ describe('fail-closed production behavior', () => {
     expect(logged).not.toContain('command');
   });
 
-  it('returns unavailable when default Redis client construction fails', async () => {
+  it('serves from memory when default Redis client construction fails', async () => {
     const memoryStore = new Map();
     const limit = createRateLimiter({
       env: {
@@ -325,11 +343,8 @@ describe('fail-closed production behavior', () => {
       logger: silentLogger(),
     });
 
-    await expect(limit(mockReq())).resolves.toMatchObject({
-      limited: true,
-      unavailable: true,
-    });
-    expect(memoryStore.size).toBe(0);
+    await expect(limit(mockReq())).resolves.toMatchObject({ limited: false });
+    expect(memoryStore.size).toBe(1);
   });
 
   it('uses memory after a Redis failure outside production', async () => {
