@@ -512,7 +512,9 @@ export async function PATCH(req) {
             comments: order.comments,
             ...(order.trafficConfig ? { trafficConfig: order.trafficConfig } : {}),
             loyaltyDiscount: reorderLoyaltyDiscount,
-            nitroStatusAtPurchase: reorderNitroTier?.key || null,
+            // Wholesale replaces retail incentives: a reseller order accrues no
+            // loyalty points, which this null enforces at completion time.
+            nitroStatusAtPurchase: reorderTerms ? null : (reorderNitroTier?.key || null),
             ...reorderSnapshot,
             campaignDiscount: reorderPromoDiscount,
             campaignPercent: reorderPromoPercent,
@@ -967,7 +969,8 @@ export async function POST(req) {
               comments: comments ? comments.split('\n').map(l => l.trim().replace(/^[“”””]+|[“”””]+$/g, '').trim()).filter(Boolean).join('\n').slice(0, 5000) : null,
               ...(trafficConfig ? { trafficConfig } : {}),
               loyaltyDiscount,
-              nitroStatusAtPurchase: nitroTier?.key || null,
+              // Null for resellers: wholesale orders accrue no loyalty points.
+              nitroStatusAtPurchase: resellerTerms ? null : (nitroTier?.key || null),
               ...offerSnapshot,
               nitroPointsRedeemedKobo: pointsDiscountKobo,
               campaignDiscount: promoDiscount,
