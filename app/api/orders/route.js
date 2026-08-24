@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { getResellerTerms, getMarkupSettings, wholesaleOf } from '@/lib/reseller';
 import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { placeOrder, checkOrder } from '@/lib/smm';
@@ -437,13 +438,20 @@ export async function PATCH(req) {
         return Response.json({ error: 'Service pricing not configured' }, { status: 400 });
       }
 
+      // Same rule as a fresh order: wholesale instead of the retail discounts,
+      // never alongside them.
+      const reorderTerms = await getResellerTerms(session.id);
+      if (reorderTerms) {
+        charge = wholesaleOf(charge, reorderTerms, await getMarkupSettings());
+      }
+
       // Apply Nitro Status discount to reorder
       let reorderLoyaltyDiscount = 0;
       let reorderNitroTier = null;
       try {
         const spendKobo = await getEligibleSpendKoboTx(prisma, session.id);
         reorderNitroTier = getNitroStatus(Math.floor(spendKobo / 100));
-        reorderLoyaltyDiscount = computeNitroDiscount(charge, reorderNitroTier);
+        reorderLoyaltyDiscount = reorderTerms ? 0 : computeNitroDiscount(charge, reorderNitroTier);
         if (reorderLoyaltyDiscount > 0) {
           charge = Math.max(100, Math.ceil((charge - reorderLoyaltyDiscount) / 100) * 100);
         }
@@ -456,7 +464,7 @@ export async function PATCH(req) {
       let reorderPromoType = null;
       let reorderPromoLabel = null;
       try {
-        const activePromo = await getActivePromotion();
+        const activePromo = reorderTerms ? null : await getActivePromotion();
         if (activePromo) {
           const { type, promotion: promo } = activePromo;
           reorderPromoDiscount = applyPromotionDiscount(charge, promo, promo.maxDiscountPerOrder);
@@ -837,26 +845,35 @@ export async function POST(req) {
     if (!offerInput.ok) return Response.json({ error: offerInput.error }, { status: 400 });
     const { apiType, needsUsernames, needsAnswer, needsKeywords } = offerInput.value;
 
+    // Wholesale, computed server-side from the tier price. Never trusted from the
+    // client, and it replaces the retail discounts below rather than stacking:
+    // a wholesale rate compounded with loyalty and a promotion is the one path
+    // that reaches below cost.
+    const resellerTerms = await getResellerTerms(session.id);
+    if (resellerTerms) {
+      charge = wholesaleOf(charge, resellerTerms, await getMarkupSettings());
+    }
+
     // Apply Nitro Status discount based on eligible lifetime spend
     let loyaltyDiscount = 0;
     let nitroTier = null;
     try {
       const spendKobo = await getEligibleSpendKoboTx(prisma, session.id);
       nitroTier = getNitroStatus(Math.floor(spendKobo / 100));
-      loyaltyDiscount = computeNitroDiscount(charge, nitroTier);
+      loyaltyDiscount = resellerTerms ? 0 : computeNitroDiscount(charge, nitroTier);
       if (loyaltyDiscount > 0) {
         charge = Math.max(100, Math.ceil((charge - loyaltyDiscount) / 100) * 100);
       }
     } catch (err) { log.warn('Nitro Status discount', err.message); }
 
-    // Apply promotion discount (stacks with loyalty)
+    // Apply promotion discount (stacks with loyalty, but never with wholesale)
     let promoDiscount = 0;
     let promoPercent = null;
     let activePromoId = null;
     let activePromoType = null;
     let promoLabel = null;
     try {
-      const activePromo = await getActivePromotion();
+      const activePromo = resellerTerms ? null : await getActivePromotion();
       if (activePromo) {
         const { type, promotion: promo } = activePromo;
         promoDiscount = applyPromotionDiscount(charge, promo, promo.maxDiscountPerOrder);

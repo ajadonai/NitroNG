@@ -254,6 +254,29 @@ export async function POST(req) {
       const existing = await prisma.serviceTier.findUnique({ where: { id: tierIdToDelete }, include: { group: true } });
       if (!existing) return Response.json({ error: 'Tier not found' }, { status: 404 });
 
+      // A reseller-facing ID pointing at this tier is a promise already made:
+      // someone may have it hardcoded in their panel. The FK would refuse the
+      // delete anyway (onDelete: Restrict) — this turns that refusal into an
+      // instruction. Retiring stamps the mapping and detaches it, so the ID keeps
+      // answering "discontinued" forever instead of dangling.
+      const mapping = await prisma.resellerServiceMap.findUnique({ where: { tierId: tierIdToDelete } });
+      if (mapping && !body.retireMapping) {
+        return Response.json({
+          error: `Reseller service #${mapping.apiId} points at this tier. Retire the mapping first, or resend with retireMapping: true.`,
+        }, { status: 409 });
+      }
+      if (mapping) {
+        // Keep the row and its ID; drop the target so the delete can proceed. A
+        // retired mapping holds only its ID and date — repointing it at the
+        // tier's service could collide with that service's own full-catalogue
+        // mapping, which serviceId's unique constraint forbids.
+        await prisma.resellerServiceMap.update({
+          where: { apiId: mapping.apiId },
+          data: { retiredAt: new Date(), tierId: null },
+        });
+        await logActivity(admin.name, `Retired reseller service #${mapping.apiId} (tier deleted)`, 'service');
+      }
+
       await prisma.serviceTier.delete({ where: { id: tierIdToDelete } });
 
       await logActivity(admin.name, `Deleted ${existing.tier} tier from "${existing.group.name}"`, 'service');

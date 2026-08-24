@@ -13,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   userFindUnique: vi.fn(),
   serviceTierFindUnique: vi.fn(),
   settingFindUnique: vi.fn(),
+  settingFindMany: vi.fn(),
+  resellerProfileFindUnique: vi.fn(),
   prismaTransaction: vi.fn(),
   queryRaw: vi.fn(),
   executeRaw: vi.fn(),
@@ -51,7 +53,11 @@ const prisma = {
   transaction: { create: (...args) => mocks.transactionCreate(...args) },
   user: { findUnique: (...args) => mocks.userFindUnique(...args) },
   serviceTier: { findUnique: (...args) => mocks.serviceTierFindUnique(...args) },
-  setting: { findUnique: (...args) => mocks.settingFindUnique(...args) },
+  setting: {
+    findUnique: (...args) => mocks.settingFindUnique(...args),
+    findMany: (...args) => mocks.settingFindMany(...args),
+  },
+  resellerProfile: { findUnique: (...args) => mocks.resellerProfileFindUnique(...args) },
   idempotencyKey: {
     findUnique: vi.fn(),
     create: vi.fn(),
@@ -190,6 +196,9 @@ beforeEach(() => {
   mocks.transactionCreate.mockResolvedValue({ id: 'tx-1' });
   mocks.userFindUnique.mockResolvedValue({ balance: 1_000_000 });
   mocks.settingFindUnique.mockResolvedValue({ value: '1600' });
+  mocks.settingFindMany.mockResolvedValue([{ key: 'markup_reseller_discount', value: '20' }]);
+  // Retail by default; individual tests opt into wholesale.
+  mocks.resellerProfileFindUnique.mockResolvedValue(null);
   mocks.placeOrder.mockResolvedValue({ order: 4_200_000 });
   mocks.checkOrder.mockResolvedValue({ status: 'Processing', remains: 409 });
   mocks.getCurrentUser.mockResolvedValue({ id: 'user-1', email: 'user@example.test' });

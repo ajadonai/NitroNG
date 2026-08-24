@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { placeOrder, checkOrder } from '@/lib/smm';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
+import { getResellerTerms, getMarkupSettings, wholesaleOf } from '@/lib/reseller';
 import { sendEmail, batchPlacementEmail } from '@/lib/email';
 import { getWhatsAppChannelUrl } from '@/lib/settings';
 import { cleanLink } from '@/lib/clean-link';
@@ -959,15 +960,26 @@ export async function POST(req) {
         nitroTier = getNitroStatus(Math.floor(spendKobo / 100));
       } catch (err) { log.warn('Bulk Nitro Status discount', err.message); }
 
+      // Wholesale terms, resolved once for the whole batch rather than per row.
+      // Same rule as single orders: it replaces the retail discounts below.
+      const bulkTerms = await getResellerTerms(session.id);
+      const bulkMarkup = bulkTerms ? await getMarkupSettings() : null;
+
       // Check for active promotion
       let activePromo = null;
       let promoType = null;
-      try { const ap = await getActivePromotion(); if (ap) { activePromo = ap.promotion; promoType = ap.type; } } catch {}
+      if (!bulkTerms) {
+        try { const ap = await getActivePromotion(); if (ap) { activePromo = ap.promotion; promoType = ap.type; } } catch {}
+      }
 
-      // Apply Nitro Status + promotion discounts and compute total
+      // Apply wholesale, or the Nitro Status + promotion discounts, and total up
       const orderData = resolved.map(r => {
+        if (bulkTerms) {
+          const finalCharge = Math.max(100, wholesaleOf(r.charge, bulkTerms, bulkMarkup));
+          return { ...r, discount: 0, promoDiscount: 0, finalCharge };
+        }
         const discount = computeNitroDiscount(r.charge, nitroTier);
-        let afterLoyalty = discount > 0 ? Math.max(100, Math.round((r.charge - discount) / 100) * 100) : r.charge;
+        const afterLoyalty = discount > 0 ? Math.max(100, Math.round((r.charge - discount) / 100) * 100) : r.charge;
         const promoDiscount = activePromo ? applyPromotionDiscount(afterLoyalty, activePromo, activePromo.maxDiscountPerOrder) : 0;
         const finalCharge = Math.max(100, Math.round((afterLoyalty - promoDiscount) / 100) * 100);
         return { ...r, discount, promoDiscount, finalCharge };

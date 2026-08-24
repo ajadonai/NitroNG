@@ -2,6 +2,7 @@ import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { getPublicServiceLabel } from '@/lib/public-service-label';
+import { getResellerTerms, getMarkupSettings, wholesaleOf } from '@/lib/reseller';
 
 export async function GET() {
   try {
@@ -18,13 +19,16 @@ export async function GET() {
       },
     });
 
+    const terms = await getResellerTerms(session.id);
+    const settings = terms ? await getMarkupSettings() : null;
+
     return Response.json({
       services: services.map(s => ({
         id: s.id,
         name: getPublicServiceLabel(s.name, s.category),
         category: s.category,
         platform: s.category.toLowerCase().replace('twitter/x', 'twitter'),
-        rate: Number(s.sellPer1k) / 100,
+        rate: wholesaleOf(Number(s.sellPer1k), terms, settings) / 100,
         min: s.min,
         max: s.max,
         refill: s.refill,

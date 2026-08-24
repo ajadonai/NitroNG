@@ -78,6 +78,7 @@ export default function AdminPricingPage({ dark, t }) {
   const [floorPct, setFloorPct] = useState(50);
   const [floorCeiling, setFloorCeiling] = useState(5000);
   const [ngBonus, setNgBonus] = useState(25);
+  const [resellerDiscount, setResellerDiscount] = useState(20);
   const [usdMarket, setUsdMarket] = useState(0);
   const [usdBuffer, setUsdBuffer] = useState(200);
   const [fxThreshold, setFxThreshold] = useState(20);
@@ -99,6 +100,7 @@ export default function AdminPricingPage({ dark, t }) {
       if (s.markup_margin_floor) setFloorPct(Number(s.markup_margin_floor));
       if (s.markup_floor_ceiling) setFloorCeiling(Number(s.markup_floor_ceiling));
       if (s.markup_ng_bonus) setNgBonus(Number(s.markup_ng_bonus));
+      if (s.markup_reseller_discount) setResellerDiscount(Number(s.markup_reseller_discount));
       if (s.markup_usd_market) setUsdMarket(Number(s.markup_usd_market));
       if (s.markup_usd_buffer) setUsdBuffer(Number(s.markup_usd_buffer));
       if (s.markup_fx_threshold) setFxThreshold(Number(s.markup_fx_threshold));
@@ -108,7 +110,7 @@ export default function AdminPricingPage({ dark, t }) {
   }, []);
 
   const usdRate = usdMarket + usdBuffer;
-  const pack = () => ({ markup_brackets: JSON.stringify(brackets), markup_margin_floor: String(floorPct), markup_floor_ceiling: String(floorCeiling), markup_ng_bonus: String(ngBonus), markup_usd_buffer: String(usdBuffer), markup_fx_threshold: String(fxThreshold), markup_usd_rate: String(usdRate), markup_tier_multipliers: JSON.stringify(tierMults), markup_provider_bonus_mtp: String(provBonuses.mtp), markup_provider_bonus_dao: String(provBonuses.dao), markup_provider_bonus_jap: String(provBonuses.jap) });
+  const pack = () => ({ markup_brackets: JSON.stringify(brackets), markup_margin_floor: String(floorPct), markup_floor_ceiling: String(floorCeiling), markup_ng_bonus: String(ngBonus), markup_usd_buffer: String(usdBuffer), markup_fx_threshold: String(fxThreshold), markup_usd_rate: String(usdRate), markup_tier_multipliers: JSON.stringify(tierMults), markup_reseller_discount: String(resellerDiscount), markup_provider_bonus_mtp: String(provBonuses.mtp), markup_provider_bonus_dao: String(provBonuses.dao), markup_provider_bonus_jap: String(provBonuses.jap) });
 
   const save = async () => {
     setSaving(true);
@@ -219,6 +221,22 @@ export default function AdminPricingPage({ dark, t }) {
           <Row dark={dark} label="Bonus markup" hint="Added on top of the bracket sell price">
             <NumInput dark={dark} value={ngBonus} onChange={setNgBonus} min={0} max={200} fallback={25} width={64} />
             <span className="text-sm" style={{ color: t.textMuted }}>%</span>
+          </Row>
+        </div>
+
+        <div className="adm-card p-5" style={cardS}>
+          <div className="set-card-title" style={{ color: t.textMuted }}>Reseller discount</div>
+          <div className="set-card-desc" style={{ color: t.textMuted }}>What whitelisted resellers pay, against the finished price.</div>
+          <div className="set-card-divider" style={divS} />
+          <Tip dark={dark} green>Taken off last, after brackets, tier and bonuses — so it can only ever remove this much of the price, never approach cost.</Tip>
+          <Row dark={dark} label="Discount" hint="Applies to both the curated and full catalogues">
+            <NumInput dark={dark} value={resellerDiscount} onChange={setResellerDiscount} min={0} max={90} fallback={20} width={64} />
+            <span className="text-sm" style={{ color: t.textMuted }}>%</span>
+          </Row>
+          <Row dark={dark} label="Reseller pays" hint="Standard tier on the simulated service above">
+            <span className="text-sm" style={{ color: dark ? "#4ade80" : "#16a34a", fontWeight: 600 }}>
+              {"\u20A6"}{Math.ceil(simStandard * (1 - resellerDiscount / 100)).toLocaleString()}
+            </span>
           </Row>
         </div>
 

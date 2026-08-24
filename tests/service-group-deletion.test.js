@@ -14,6 +14,11 @@ const prisma = {
     update: vi.fn(),
     delete: vi.fn(),
   },
+  // No mapping by default: deleting an unmapped tier must stay a plain delete.
+  resellerServiceMap: {
+    findUnique: vi.fn().mockResolvedValue(null),
+    update: vi.fn(),
+  },
   serviceTier: {
     findUnique: vi.fn(),
     createMany: vi.fn(),
@@ -208,5 +213,34 @@ describe('admin duplicate-group', () => {
 
     expect(response.status).toBe(200);
     expect(prisma.serviceTier.createMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('reseller mapping protection on tier deletion', () => {
+  // A reseller ID is a promise already made: someone may have it hardcoded in
+  // their panel. Deleting its tier must be an explicit two-step, never silent.
+  it('refuses to delete a mapped tier without explicit retirement', async () => {
+    prisma.serviceTier.findUnique.mockResolvedValue({ id: 't1', tier: 'Standard', serviceId: 'svc1', group: { name: 'IG Followers' } });
+    prisma.resellerServiceMap.findUnique.mockResolvedValue({ apiId: 42, tierId: 't1' });
+
+    const response = await mutation({ action: 'delete-tier', tierIdToDelete: 't1' });
+    expect(response.status).toBe(409);
+    expect((await response.json()).error).toContain('#42');
+    expect(prisma.serviceTier.delete).not.toHaveBeenCalled();
+  });
+
+  it('retires the mapping and deletes when explicitly told to', async () => {
+    prisma.serviceTier.findUnique.mockResolvedValue({ id: 't1', tier: 'Standard', serviceId: 'svc1', group: { name: 'IG Followers' } });
+    prisma.resellerServiceMap.findUnique.mockResolvedValue({ apiId: 42, tierId: 't1' });
+    prisma.serviceTier.delete.mockResolvedValue({});
+
+    const response = await mutation({ action: 'delete-tier', tierIdToDelete: 't1', retireMapping: true });
+    expect(response.status).toBe(200);
+    // The row keeps its ID forever; only the target and the date change.
+    expect(prisma.resellerServiceMap.update).toHaveBeenCalledWith({
+      where: { apiId: 42 },
+      data: { retiredAt: expect.any(Date), tierId: null },
+    });
+    expect(prisma.serviceTier.delete).toHaveBeenCalled();
   });
 });
