@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req) {
   let limit;
   try {
-    limit = await rateLimit(req, { maxAttempts: 8, windowMs: 60_000 });
+    limit = await rateLimit(req, { maxAttempts: 8, windowMs: 60_000, distributed: false });
   } catch {
     return withInternalDashboardNoStore(rateLimitUnavailable());
   }

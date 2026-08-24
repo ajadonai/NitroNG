@@ -40,6 +40,7 @@ export async function POST(req) {
     limit = await rateLimit(req, {
       maxAttempts: HEARTBEAT_RATE_LIMIT_MAX,
       windowMs: HEARTBEAT_RATE_LIMIT_WINDOW_MS,
+      distributed: false,
     });
   } catch {
     return rateLimitUnavailable('Heartbeat protection is temporarily unavailable.');
@@ -103,6 +104,7 @@ export async function POST(req) {
           maxAttempts: HEARTBEAT_NEW_PRESENCE_MAX,
           windowMs: HEARTBEAT_NEW_PRESENCE_WINDOW_MS,
           key: heartbeatAdmissionKey(req, identityScope),
+          distributed: false,
         });
       } catch {
         return rateLimitUnavailable('Heartbeat identity protection is temporarily unavailable.');

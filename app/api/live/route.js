@@ -25,7 +25,7 @@ export async function GET(req) {
     // Live polls every few seconds. Keep the unauthenticated guard broad enough
     // for several legitimate tabs behind the same office/mobile NAT while
     // still bounding abusive traffic before any session or data lookup.
-    limit = await rateLimit(req, { maxAttempts: 120, windowMs: 60_000 });
+    limit = await rateLimit(req, { maxAttempts: 120, windowMs: 60_000, distributed: false });
   } catch {
     return withInternalDashboardNoStore(rateLimitUnavailable());
   }

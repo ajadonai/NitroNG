@@ -29,7 +29,12 @@ function categorize(cat) {
   if (c.includes('soundcloud')) return 'SoundCloud';
   if (c.includes('reddit')) return 'Reddit';
   if (c.includes('quora')) return 'Quora';
-  return cat.split(' ')[0] || 'Other';
+  // The fallback used to take the provider category's first word verbatim,
+  // which minted categories literally named after suppliers — 436 services
+  // carried "MoreThanPanel" as their category. Anything smelling of a provider
+  // collapses to Other.
+  const word = cat.split(' ')[0] || 'Other';
+  return /morethanpanel|daosmm|panel|\bjap\b|\bmtp\b|\bdao\b/i.test(word) ? 'Other' : word;
 }
 
 const SETTING_KEY = 'cron_sync_services_state';
