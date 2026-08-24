@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useToast } from "./toast";
 import { useConfirm } from "./confirm-dialog";
 
@@ -20,6 +20,8 @@ export default function AdminResellersPage({ dark, t }) {
   const [rateDraft, setRateDraft] = useState({});
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
+  const [section, setSection] = useState("resellers");
+  const searchTimer = useRef(null);
 
   const load = useCallback((q = "") => {
     const url = q ? `/api/admin/resellers?q=${encodeURIComponent(q)}` : "/api/admin/resellers";
@@ -31,13 +33,21 @@ export default function AdminResellersPage({ dark, t }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const search = async (e) => {
-    e?.preventDefault();
-    if (!query.trim() || searching) return;
-    setSearching(true);
-    await load(query.trim());
-    setSearching(false);
-  };
+  // Search-as-you-type, same 350ms debounce the users page uses. The form's
+  // submit stays for people who hit enter out of habit.
+  useEffect(() => {
+    clearTimeout(searchTimer.current);
+    if (section !== "grant") return undefined;
+    if (query.trim().length < 2) return undefined;
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true);
+      await load(query.trim());
+      setSearching(false);
+    }, 350);
+    return () => clearTimeout(searchTimer.current);
+  }, [query, section, load]);
+
+  const search = (e) => e?.preventDefault();
 
   const act = async (userId, action, extra = {}, key = action) => {
     if (busy) return;
@@ -59,11 +69,26 @@ export default function AdminResellersPage({ dark, t }) {
     }
   };
 
+  // The lead sentence stays prose; the evidence becomes a stat strip. Numbers
+  // buried mid-sentence are what the eye needs most and finds last.
+  const confirmBody = (lead, orders, spend) => (
+    <div className="mb-5">
+      <div className="text-sm leading-[1.65] mb-3" style={{ color: dark ? "#a09b95" : "#555250" }}>{lead}</div>
+      <div className="flex gap-2">
+        {[["Orders", orders.toLocaleString()], ["Spend", naira(spend)], ["Window", `${data.windowDays}d`]].map(([label, value]) => (
+          <div key={label} className="flex-1 rounded-[10px] py-2 px-3" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.07)" }}>
+            <div className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: dark ? "#a09b95" : "#8a8580" }}>{label}</div>
+            <div className="text-[15px] font-semibold" style={{ color: dark ? "#efece8" : "#25211e", fontFamily: "'JetBrains Mono', monospace" }}>{value}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   const grant = async (u) => {
     const ok = await confirm({
       title: `Make ${u.name || u.email} a reseller?`,
-      message: "They will pay wholesale prices on every order from now on. "
-        + `${u.orders} orders, ${naira(u.spend)} in the last ${data.windowDays} days.`,
+      body: confirmBody("They will pay wholesale prices on every order from now on.", u.orders, u.spend),
       confirmLabel: "Grant access",
     });
     if (ok) act(u.userId, "approve", { catalog: "curated" });
@@ -72,8 +97,7 @@ export default function AdminResellersPage({ dark, t }) {
   const restore = async (r) => {
     const ok = await confirm({
       title: `Restore ${r.name || r.email}?`,
-      message: "Wholesale pricing resumes on their next order. "
-        + `${r.recentOrders} orders, ${naira(r.recentSpend)} in the last ${data.windowDays} days.`,
+      body: confirmBody("Wholesale pricing resumes on their next order.", r.recentOrders, r.recentSpend),
       confirmLabel: "Restore",
     });
     if (ok) act(r.userId, "approve");
@@ -126,6 +150,19 @@ export default function AdminResellersPage({ dark, t }) {
         ))}
       </div>
 
+      {/* One section at a time: managing existing resellers and granting new
+          access are different jobs, and stacking them made both harder to read. */}
+      <div className="inline-flex rounded-full p-1 mb-5" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)" }}>
+        {[["resellers", `Resellers${data.resellers.length ? ` (${data.resellers.length})` : ""}`], ["grant", "Grant access"]].map(([id, label]) => (
+          <button key={id} onClick={() => setSection(id)}
+            className="py-1.5 px-4 rounded-full text-[12.5px] font-semibold border-none cursor-pointer transition-colors"
+            style={{ background: section === id ? t.accent : "none", color: section === id ? "#fff" : t.textMuted }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {section === "resellers" && (<>
       {/* Active + revoked */}
       <div className="rounded-[14px] overflow-hidden mb-6" style={cardS}>
         <div className="hidden md:grid grid-cols-[1.2fr_90px_80px_1fr_1fr_100px_110px] gap-3 py-2.5 px-4 text-[11px] font-semibold uppercase tracking-wide text-t-text-muted" style={headS}>
@@ -218,7 +255,9 @@ export default function AdminResellersPage({ dark, t }) {
         ))}
       </div>
 
-      {/* Grant access */}
+      </>)}
+
+      {section === "grant" && (<>
       <div className="adm-header">
         <div className="adm-title text-t-text" style={{ fontSize: 18 }}>Grant access</div>
         <div className="adm-subtitle text-t-text-muted">
@@ -230,18 +269,11 @@ export default function AdminResellersPage({ dark, t }) {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by name or email"
+          placeholder="Type a name or email\u2026"
           className="flex-1 md:max-w-[360px] py-2 px-3 rounded-[10px] text-[13px] border-none outline-none"
           style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.textSoft }}
         />
-        <button
-          type="submit"
-          disabled={!query.trim() || searching}
-          className="py-2 px-4 rounded-[10px] text-[13px] font-semibold cursor-pointer border-none transition-opacity disabled:opacity-40"
-          style={{ background: t.accent, color: "#fff" }}
-        >
-          {searching ? <Spinner size={13} color="#fff" /> : "Search"}
-        </button>
+        {searching && <Spinner size={15} color={t.accent} />}
       </form>
 
       {data.query && (
@@ -277,6 +309,7 @@ export default function AdminResellersPage({ dark, t }) {
           ))}
         </div>
       )}
+      </>)}
     </>
   );
 }

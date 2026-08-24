@@ -1,0 +1,318 @@
+'use client';
+import { useState, useEffect, useRef, useCallback } from "react";
+
+// Read-only catalogue for granted resellers. Browse and copy IDs here; ordering
+// happens on the New Order page (curated) or through the API (either list).
+const GRADE_META = {
+  premium: { dot: "#3b82f6", label: "Premium" },
+  standard: { dot: "#22c55e", label: "Standard" },
+  basic: { dot: "#eab308", label: "Basic" },
+};
+
+function Spinner({ size = 16, color = "currentColor" }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="animate-spin"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="3" strokeLinecap="round" opacity=".25" /><path d="M12 2a10 10 0 0 1 10 10" stroke={color} strokeWidth="3" strokeLinecap="round" /></svg>;
+}
+
+const naira = (n) => `₦${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+
+const ROW_CSS = `
+.cat-row { transition: background .12s; }
+.cat-row:hover { background: rgba(196,125,142,.06) !important; }
+.cat-chev { transition: transform .18s; display: inline-block; }
+.cat-chev.open { transform: rotate(90deg); }
+`;
+
+export default function ResellerCataloguePage({ dark, t }) {
+  const [state, setState] = useState({ status: "loading" });
+  const [view, setView] = useState("curated");
+  const [openCats, setOpenCats] = useState({});
+  const [catRows, setCatRows] = useState({});
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState(null);
+  const [drawer, setDrawer] = useState(null);
+  const searchTimer = useRef(null);
+
+  const border = dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)";
+  const cardBg = dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)";
+  const softBg = dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)";
+
+  const load = useCallback((v) => {
+    setState({ status: "loading" });
+    fetch(`/api/reseller/catalogue?view=${v}`)
+      .then(r => r.json().then(d => ({ ok: r.ok, status: r.status, d })))
+      .then(({ ok, status, d }) => {
+        if (!ok) { setState({ status: status === 403 ? "denied" : "error", error: d.error }); return; }
+        setState({ status: "ready", data: d });
+      })
+      .catch(() => setState({ status: "error" }));
+  }, []);
+
+  useEffect(() => { load(view); setResults(null); setQuery(""); setOpenCats({}); setCatRows({}); }, [view, load]);
+
+  // Instant search, same 350ms debounce the rest of Nitro uses.
+  useEffect(() => {
+    if (view !== "full") return undefined;
+    clearTimeout(searchTimer.current);
+    if (!query.trim() || query.trim().length < 2) { setResults(null); return undefined; }
+    searchTimer.current = setTimeout(() => {
+      fetch(`/api/reseller/catalogue?view=full&q=${encodeURIComponent(query.trim())}`)
+        .then(r => r.json())
+        .then(d => setResults(d.services || []))
+        .catch(() => setResults([]));
+    }, 350);
+    return () => clearTimeout(searchTimer.current);
+  }, [query, view]);
+
+  const fetchCat = (name, offset = 0) => {
+    fetch(`/api/reseller/catalogue?view=full&category=${encodeURIComponent(name)}&offset=${offset}`)
+      .then(r => r.json())
+      .then(d => setCatRows(p => ({
+        ...p,
+        [name]: {
+          rows: offset ? [...(p[name]?.rows || []), ...(d.services || [])] : (d.services || []),
+          hasMore: !!d.hasMore,
+          loadingMore: false,
+        },
+      })))
+      .catch(() => setCatRows(p => ({ ...p, [name]: { rows: p[name]?.rows || [], hasMore: false, loadingMore: false } })));
+  };
+
+  const toggleCat = (name) => {
+    setOpenCats(p => ({ ...p, [name]: !p[name] }));
+    if (!catRows[name]) fetchCat(name, 0);
+  };
+
+  const loadMore = (name) => {
+    const cur = catRows[name];
+    if (!cur || cur.loadingMore) return;
+    setCatRows(p => ({ ...p, [name]: { ...p[name], loadingMore: true } }));
+    fetchCat(name, cur.rows.length);
+  };
+
+  if (state.status === "loading") return <div className="flex items-center justify-center py-20"><Spinner size={22} color={t.accent} /></div>;
+
+  if (state.status === "denied") {
+    return (
+      <div className="p-10 rounded-2xl text-center" style={{ background: cardBg, border: `1px solid ${border}` }}>
+        <div className="text-base font-semibold mb-2" style={{ color: t.text }}>Reseller access required</div>
+        <div className="text-sm max-w-[420px] mx-auto" style={{ color: t.textMuted }}>
+          The catalogue is for approved resellers. Message our support on WhatsApp and tell us about your business to get set up.
+        </div>
+      </div>
+    );
+  }
+  if (state.status === "error") {
+    return <div className="p-10 rounded-2xl text-center text-sm" style={{ background: cardBg, border: `1px solid ${border}`, color: t.textMuted }}>Could not load the catalogue. Refresh to try again.</div>;
+  }
+
+  const { data } = state;
+  const hasFull = data.catalog === "full";
+
+  const gradeDot = (grade) => grade
+    ? <span title={GRADE_META[grade].label} style={{ width: 8, height: 8, borderRadius: 99, background: GRADE_META[grade].dot, display: "inline-block", flexShrink: 0 }} />
+    : <span style={{ width: 8, height: 8, borderRadius: 99, border: `1.5px solid ${dark ? "rgba(255,255,255,.25)" : "rgba(0,0,0,.2)"}`, display: "inline-block", flexShrink: 0 }} />;
+
+  const idChip = (id) => (
+    <span className="py-0.5 px-1.5 rounded-md text-[11px] font-semibold"
+      style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", color: t.textSoft, fontFamily: "'JetBrains Mono', monospace" }}>#{id}</span>
+  );
+
+  const fullRow = (s, i) => (
+    <button key={s.id} onClick={() => setDrawer(s)}
+      className="cat-row w-full flex items-center gap-3 py-3 px-4 text-left cursor-pointer border-none"
+      style={{ background: "none", borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)"}` : "none" }}>
+      {gradeDot(s.grade)}
+      <span className="flex-1 min-w-0">
+        <span className="block text-[13px] font-medium truncate mb-0.5" style={{ color: t.text }}>{s.label}</span>
+        <span className="flex items-center gap-2 text-[11px]" style={{ color: t.textMuted }}>
+          {idChip(s.id)}
+          <span>{s.min.toLocaleString()}–{s.max.toLocaleString()}</span>
+          {s.refill && <span className="py-px px-1.5 rounded-full text-[10px] font-semibold" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)", color: dark ? "#6ee7b7" : "#059669" }}>refill</span>}
+          {s.cancel && <span className="hidden md:inline py-px px-1.5 rounded-full text-[10px] font-semibold" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", color: t.textMuted }}>cancel</span>}
+        </span>
+      </span>
+      <span className="text-right flex-shrink-0">
+        <span className="block text-[13.5px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{naira(s.price)}</span>
+        <span className="text-[10px]" style={{ color: t.textMuted }}>per 1k</span>
+      </span>
+      <svg className="flex-shrink-0 max-md:hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
+  );
+
+  return (
+    <>
+      <style>{ROW_CSS}</style>
+      <div className="mb-5">
+        <div className="text-[20px] font-semibold" style={{ color: t.text }}>Catalogue</div>
+        <div className="text-[13px]" style={{ color: t.textMuted }}>
+          Browse and copy service IDs. Order curated services from New Order, or anything here through the API.
+        </div>
+      </div>
+
+      {/* colour legend — and the sentence that stops ungraded reading as bad */}
+      <div className="rounded-[16px] p-4 md:p-5 mb-5" style={{ background: softBg, border: `1px solid ${border}` }}>
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <span className="text-[10.5px] font-bold uppercase tracking-[1.5px] mr-1" style={{ color: t.accent }}>Quality grades</span>
+          {[...Object.entries(GRADE_META).map(([k, m]) => ({ k, dot: m.dot, label: m.label, tint: `${m.dot}1f` })),
+            { k: "none", dot: null, label: "Not graded", tint: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }].map(c => (
+            <span key={c.k} className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-[11.5px] font-semibold"
+              style={{ background: c.tint, color: t.textSoft, border: `1px solid ${c.dot ? `${c.dot}55` : border}` }}>
+              {c.dot
+                ? <span style={{ width: 7, height: 7, borderRadius: 99, background: c.dot, display: "inline-block", boxShadow: `0 0 0 3px ${c.dot}26` }} />
+                : <span style={{ width: 7, height: 7, borderRadius: 99, border: `1.5px solid ${dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.25)"}`, display: "inline-block" }} />}
+              {c.label}
+            </span>
+          ))}
+        </div>
+        <div className="text-[12px] leading-relaxed max-w-[640px]" style={{ color: t.textMuted }}>
+          Not every service carries a grade — an ungraded service is <span style={{ color: t.textSoft, fontWeight: 600 }}>not a lesser one</span>,
+          grading just isn&rsquo;t available across the whole catalogue. Judge ungraded services on refill terms and price;
+          many are among the strongest performers.
+        </div>
+      </div>
+
+      {/* view toggle */}
+      {hasFull && (
+        <div className="inline-flex rounded-full p-1 mb-5" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)" }}>
+          {[["curated", "Curated"], ["full", "Full catalogue"]].map(([v, label]) => (
+            <button key={v} onClick={() => setView(v)}
+              className="py-1.5 px-4 rounded-full text-[12.5px] font-semibold border-none cursor-pointer transition-colors"
+              style={{ background: view === v ? t.accent : "none", color: view === v ? "#fff" : t.textMuted }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {view === "curated" ? (
+        <div className="flex flex-col gap-2.5">
+          {(data.groups || []).map(g => (
+            <div key={g.name} className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: `1px solid ${border}` }}>
+              <button onClick={() => setOpenCats(p => ({ ...p, [g.name]: !p[g.name] }))}
+                className="cat-row w-full flex items-center gap-3 py-3.5 px-4 cursor-pointer border-none text-left" style={{ background: "none" }}>
+                <svg className={`cat-chev${openCats[g.name] ? " open" : ""}`} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-[13.5px] font-semibold truncate" style={{ color: t.text }}>{g.name}</span>
+                  <span className="text-[11px]" style={{ color: t.textMuted }}>{g.platform}</span>
+                </span>
+                <span className="py-0.5 px-2 rounded-full text-[10.5px] font-semibold flex-shrink-0" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", color: t.textMuted }}>{g.tiers.length} tier{g.tiers.length === 1 ? "" : "s"}</span>
+              </button>
+              {openCats[g.name] && g.tiers.map((tier, i) => (
+                <div key={tier.apiId || i} className="flex items-center gap-3 py-3 px-4"
+                  style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)"}` }}>
+                  <span className="py-0.5 px-2 rounded-full text-[10.5px] font-bold flex-shrink-0"
+                    style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)", color: t.accent }}>{tier.tier}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="flex items-center gap-2 text-[11px]" style={{ color: t.textMuted }}>
+                      {idChip(tier.apiId ?? "—")}
+                      <span>{tier.min.toLocaleString()}–{tier.max.toLocaleString()}</span>
+                      {tier.speed && <span className="max-md:hidden">{tier.speed}</span>}
+                      {tier.refill && <span className="py-px px-1.5 rounded-full text-[10px] font-semibold" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)", color: dark ? "#6ee7b7" : "#059669" }}>{tier.refill}</span>}
+                    </span>
+                  </span>
+                  <span className="text-right flex-shrink-0">
+                    <span className="block text-[13.5px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{naira(tier.price)}</span>
+                    <span className="text-[10px]" style={{ color: t.textMuted }}>per 1k</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Search by name or service ID…"
+            className="w-full md:max-w-[420px] py-2.5 px-3.5 rounded-[10px] text-[13px] outline-none mb-4"
+            style={{ background: cardBg, border: `1px solid ${border}`, color: t.text }}
+          />
+          {results !== null ? (
+            <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: `1px solid ${border}` }}>
+              {results.length === 0
+                ? <div className="py-8 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>Nothing matches &ldquo;{query.trim()}&rdquo;.</div>
+                : results.map(fullRow)}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {(data.categories || []).map(c => (
+                <div key={c.name} className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: `1px solid ${border}` }}>
+                  <button onClick={() => toggleCat(c.name)}
+                    className="cat-row w-full flex items-center gap-3 py-3.5 px-4 cursor-pointer border-none text-left" style={{ background: "none" }}>
+                    <svg className={`cat-chev${openCats[c.name] ? " open" : ""}`} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+                    <span className="flex-1 text-[13.5px] font-semibold truncate" style={{ color: t.text }}>{c.name}</span>
+                    <span className="py-0.5 px-2 rounded-full text-[10.5px] font-semibold flex-shrink-0" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", color: t.textMuted }}>{c.count.toLocaleString()}</span>
+                  </button>
+                  {openCats[c.name] && (catRows[c.name]
+                    ? (<>
+                      {catRows[c.name].rows.length
+                        ? catRows[c.name].rows.map(fullRow)
+                        : <div className="py-6 px-4 text-[12px]" style={{ color: t.textMuted }}>Nothing available in this category right now.</div>}
+                      {catRows[c.name].hasMore && (
+                        <button onClick={() => loadMore(c.name)} disabled={catRows[c.name].loadingMore}
+                          className="w-full py-3 text-[12px] font-semibold cursor-pointer border-none"
+                          style={{ background: dark ? "rgba(196,125,142,.07)" : "rgba(196,125,142,.05)", color: t.accent, borderTop: `1px solid ${dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)"}` }}>
+                          {catRows[c.name].loadingMore ? <Spinner size={13} color={t.accent} /> : `Show more (${catRows[c.name].rows.length.toLocaleString()} of ${c.count.toLocaleString()})`}
+                        </button>
+                      )}
+                    </>)
+                    : <div className="py-6 flex justify-center"><Spinner color={t.accent} /></div>)}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* detail drawer */}
+      {drawer && (
+        <div className="fixed inset-0 z-[300]" onClick={() => setDrawer(null)}>
+          <div className="absolute inset-0" style={{ background: "rgba(0,0,0,.45)" }} />
+          <div onClick={e => e.stopPropagation()}
+            className="absolute right-0 top-0 bottom-0 w-full max-w-[400px] p-6 overflow-y-auto"
+            style={{ background: dark ? "#16121a" : "#fdfcfb", borderLeft: `1px solid ${border}` }}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">{gradeDot(drawer.grade)}<span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: t.textMuted }}>{drawer.grade ? GRADE_META[drawer.grade].label : "Not graded"}</span></div>
+              <button onClick={() => setDrawer(null)} className="border-none cursor-pointer text-[18px]" style={{ background: "none", color: t.textMuted }}>×</button>
+            </div>
+
+            <div className="text-[16px] font-semibold mb-4 leading-snug" style={{ color: t.text }}>{drawer.label}</div>
+
+            {/* the thing they came for */}
+            <div className="rounded-[12px] p-4 mb-4" style={{ background: softBg }}>
+              <div className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: t.textMuted }}>Service ID — use this in API calls</div>
+              <div className="flex items-center justify-between">
+                <span className="text-[26px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{drawer.id}</span>
+                <button onClick={() => { navigator.clipboard?.writeText(String(drawer.id)); }}
+                  className="py-1.5 px-3 rounded-lg text-[11px] font-semibold border-none cursor-pointer" style={{ background: t.accent, color: "#fff" }}>Copy</button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {[["Price / 1k", naira(drawer.price)], ["Min – Max", `${drawer.min.toLocaleString()} – ${drawer.max.toLocaleString()}`],
+                ["Refill", drawer.refill ? "Supported" : "Not offered"], ["Cancel", drawer.cancel ? "Supported" : "Not offered"]].map(([label, value]) => (
+                <div key={label} className="rounded-[10px] py-2.5 px-3" style={{ background: cardBg, border: `1px solid ${border}` }}>
+                  <div className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: t.textMuted }}>{label}</div>
+                  <div className="text-[13px] font-semibold" style={{ color: t.text }}>{value}</div>
+                </div>
+              ))}
+            </div>
+
+            {drawer.attrs?.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {drawer.attrs.map(a => (
+                  <span key={a} className="py-1 px-2.5 rounded-full text-[11px] font-medium" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", color: t.textSoft }}>{a}</span>
+                ))}
+              </div>
+            )}
+
+            <div className="text-[12px] leading-relaxed" style={{ color: t.textMuted }}>
+              Full-catalogue services carry the provider&rsquo;s own terms{drawer.refill ? "" : " and no refill guarantee"}. Order through the API using the ID above.
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

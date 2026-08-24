@@ -109,6 +109,7 @@ const LeaderboardPage = dynamic(() => import("./leaderboard-page").then(m => m.d
 const LeaderboardCard = dynamic(() => import("./leaderboard-page").then(m => m.LeaderboardCard), { ssr: false });
 const EarnPage = dynamic(() => import("./earn-page").then(m => m.default), { ssr: false });
 const ResellerLabPage = dynamic(() => import("./reseller-lab-page").then(m => m.ResellerLabDashboard), { ssr: false });
+const ResellerCataloguePage = dynamic(() => import("./reseller-catalogue"), { ssr: false });
 const ResellerLabSidebar = dynamic(() => import("./reseller-lab-page").then(m => m.ResellerLabSidebar), { ssr: false });
 const TasksPage = dynamic(() => import("./tasks-page").then(m => m.default), { ssr: false });
 
@@ -129,6 +130,7 @@ const I = {
   earn: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M15.5 9.5c0-1.38-1.57-2.5-3.5-2.5s-3.5 1.12-3.5 2.5S10.07 12 12 12s3.5 1.12 3.5 2.5-1.57 2.5-3.5 2.5-3.5-1.12-3.5-2.5"/></svg>,
   tasks: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg>,
   lab: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 3h6v7l5 8a1 1 0 01-.85 1.52H4.85A1 1 0 014 18l5-8V3z"/><line x1="9" y1="3" x2="15" y2="3"/></svg>,
+  catalogue: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/><line x1="6" y1="8" x2="9" y2="8"/><line x1="6" y1="12" x2="9" y2="12"/></svg>,
   changelog: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>,
   leaderboard: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg>,
   instagram: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>,
@@ -424,6 +426,12 @@ function DashboardInner({ initialData }) {
     return u;
   });
   const [orders, setOrders] = useState(initialData?.orders || []);
+  // Whether this account has reseller access — decides if the Catalogue tab
+  // shows. One lightweight probe; non-resellers get a 403 and no tab.
+  const [isReseller, setIsReseller] = useState(false);
+  useEffect(() => {
+    fetch("/api/reseller/catalogue?probe=1").then(r => { if (r.ok) setIsReseller(true); }).catch(() => {});
+  }, []);
   const [activeOrders, setActiveOrders] = useState(initialData?.activeOrders || []);
   const [ordersTotal, setOrdersTotal] = useState(initialData?.ordersTotal ?? initialData?.orders?.length ?? 0);
   const [orderSummary, setOrderSummary] = useState(initialData?.orderSummary || {
@@ -1084,6 +1092,8 @@ function DashboardInner({ initialData }) {
         return <TasksPage dark={dark} t={t} />;
       case "lab":
         return <ResellerLabPage dark={dark} t={t} onNavigate={setActive} />;
+      case "catalogue":
+        return <ResellerCataloguePage dark={dark} t={t} />;
       default:
         return (
           <div className="p-10 rounded-2xl flex flex-col items-center justify-center min-h-[300px]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
@@ -1163,7 +1173,9 @@ function DashboardInner({ initialData }) {
 
             {/* ── Nav items — grouped on desktop, flat on mobile ── */}
             <>
-              {NAV_ITEMS.map((item, i) => {
+              {(isReseller
+                ? [...NAV_ITEMS.slice(0, 2), { id: "catalogue", label: "Catalogue" }, ...NAV_ITEMS.slice(2)]
+                : NAV_ITEMS).map((item, i) => {
                 const processingCount = item.id === "orders" ? orderSummary.active : 0;
                 const isSupportItem = item.id === "support";
                 const isTasksItem = item.id === "tasks";
@@ -1221,7 +1233,7 @@ function DashboardInner({ initialData }) {
               <span className="px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 m text-center" style={{ background: activePromotion.bannerColor || '#10b981', color: '#fff' }}>{activePromotion.discountPercent}% OFF{activePromotion.maxDiscountPerOrder ? <><br /><span className="font-medium opacity-90" style={{ fontSize: 10 }}>up to ₦{(activePromotion.maxDiscountPerOrder / 100).toLocaleString()}</span></> : ''}</span>
             </div>
           )}
-          {!isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isGuide && !isLeaderboard && !isAudit && !isCleanup && !isEarn && !isLab && !isTasks && <div className="pb-6 max-md:pb-4">
+          {!isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isGuide && !isLeaderboard && !isAudit && !isCleanup && !isEarn && !isLab && !isTasks && active !== "catalogue" && <div className="pb-6 max-md:pb-4">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xl max-md:text-lg font-semibold mb-0.5 text-t-text">Welcome back, {firstName}</div>
@@ -1315,7 +1327,7 @@ function DashboardInner({ initialData }) {
       {moreOpen && <div className="dash-more-overlay" onClick={() => setMoreOpen(false)} />}
       {moreOpen && (
         <div className="dash-more-popup" style={{ background: dark ? "#161b2e" : "#fff", border: `1.5px solid ${dark ? "rgba(196,125,142,.31)" : "rgba(196,125,142,.28)"}` }}>
-          {MORE_ITEMS.map(item => {
+          {(isReseller ? [{ id: "catalogue", label: "Catalogue" }, ...MORE_ITEMS] : MORE_ITEMS).map(item => {
             if (item.id === "logout") {
               return (
                 <button key={item.id} onClick={() => { setMoreOpen(false); handleLogout(); }} className="dash-more-item" style={{ background: dark ? "rgba(220,38,38,.06)" : "rgba(220,38,38,.03)", color: dark ? "#fca5a5" : "#dc2626", fontWeight: 500 }}>

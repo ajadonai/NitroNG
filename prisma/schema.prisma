@@ -1074,7 +1074,7 @@ model Task {
 }
 
 model TaskSubmission {
-  id              String    @id
+  id              String    @id @default(cuid())
   taskId          String
   userId          String
   proof           String

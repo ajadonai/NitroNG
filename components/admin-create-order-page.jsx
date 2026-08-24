@@ -50,6 +50,8 @@ export function AdminCreateOrderPage({ dark, t }) {
   const [dripPause, setDripPause] = useState(false);
   const [dripPauseDay, setDripPauseDay] = useState(1);
   const [comments, setComments] = useState("");
+  // Website-traffic targeting, mirroring the user order form field-for-field.
+  const [traffic, setTraffic] = useState({ country: "", device: "all", trafficType: "keyword", keyword: "", referrer: "" });
   const [charge, setCharge] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [batchItems, setBatchItems] = useState([]);
@@ -141,6 +143,13 @@ export function AdminCreateOrderPage({ dark, t }) {
   const totalCost = costPer1kNgn * qtyNum / 1000 * nLinks;
   const margin = totalCost > 0 ? Math.round((totalCharge - totalCost) / totalCost * 100) : 0;
 
+  const showTraffic = !!selectedTier?.trafficTargeting;
+  const trafficValid = !showTraffic || (
+    traffic.country.trim().length >= 2 && traffic.country.trim().length <= 3 && traffic.device &&
+    (traffic.trafficType === "blank" ||
+      (traffic.trafficType === "keyword" && traffic.keyword.trim()) ||
+      (traffic.trafficType === "referrer" && traffic.referrer.trim()))
+  );
   const canAddToBatch = mode === "bulk" && selectedTier && validQty && link.trim() && linkValid;
   const batchTotalCharge = batchItems.reduce((s, it) => s + it.sellPer1k * it.quantity / 1000, 0);
   const batchTotalCost = batchItems.reduce((s, it) => s + it.costNgn * it.quantity / 1000, 0);
@@ -155,7 +164,7 @@ export function AdminCreateOrderPage({ dark, t }) {
   const scheduledDatePast = hasDripSchedule && dripStart === "scheduled" && dripStartDate &&
     new Date(`${dripStartDate}T${dripStartTime || "09:00"}`) < new Date();
   const ready = user && !submitting && !scheduledDateMissing && !scheduledDatePast && (
-    mode === "single" ? (selectedTier && validQty && !!link) :
+    mode === "single" ? (selectedTier && validQty && !!link && trafficValid) :
     batchItems.length > 0
   );
 
@@ -187,6 +196,11 @@ export function AdminCreateOrderPage({ dark, t }) {
       } : {
         mode: effectiveDripDays >= 2 ? "drip" : "single", userId: user.id, tierId: selectedTier.id, quantity: qtyNum, charge, link: fullLink(link),
         ...(comments.trim() ? { comments: comments.trim() } : {}),
+        ...(showTraffic ? { trafficConfig: {
+          country: traffic.country.trim().toUpperCase(), device: traffic.device, trafficType: traffic.trafficType,
+          ...(traffic.trafficType === "keyword" ? { keyword: traffic.keyword.trim() } : {}),
+          ...(traffic.trafficType === "referrer" ? { referrer: traffic.referrer.trim() } : {}),
+        } } : {}),
         ...(effectiveDripDays >= 2 ? {
           dripDays: effectiveDripDays,
           ...(dripCurve !== "even" || dripPause || dripStart === "scheduled" || dripWindowOn ? {
@@ -563,6 +577,49 @@ export function AdminCreateOrderPage({ dark, t }) {
               <div style={{ fontSize: 11.5, color: t.textMuted, marginTop: 5 }}>
                 {comments.trim() ? `${comments.split("\n").filter(l => l.trim()).length} comment${comments.split("\n").filter(l => l.trim()).length !== 1 ? "s" : ""}` : "Custom comments sent to the provider with this order"}
               </div>
+            </div>
+          )}
+
+          {/* traffic targeting — same fields the user order form shows */}
+          {showTraffic && (
+            <div style={{ marginBottom: 16, borderRadius: 13, border: `1.5px solid ${trafficValid ? (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)") : t.accent}`, padding: "12px 14px" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 10 }}>Traffic targeting</div>
+              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                <div style={{ flex: 1 }}>
+                  <span style={lab}>Country</span>
+                  <input value={traffic.country} onChange={e => setTraffic(p => ({ ...p, country: e.target.value.replace(/[^a-zA-Z]/g, "").slice(0, 3) }))} placeholder="NG" style={inpM} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <span style={lab}>Device</span>
+                  <select value={traffic.device} onChange={e => setTraffic(p => ({ ...p, device: e.target.value }))} style={{ ...inpM, appearance: "none", cursor: "pointer" }}>
+                    <option value="all">All devices</option>
+                    <option value="desktop">Desktop</option>
+                    <option value="mobile">Mobile</option>
+                    <option value="android">Android</option>
+                    <option value="ios">iOS</option>
+                  </select>
+                </div>
+              </div>
+              <div style={{ marginBottom: traffic.trafficType === "blank" ? 0 : 10 }}>
+                <span style={lab}>Traffic type</span>
+                <select value={traffic.trafficType} onChange={e => setTraffic(p => ({ ...p, trafficType: e.target.value }))} style={{ ...inpM, appearance: "none", cursor: "pointer" }}>
+                  <option value="keyword">From Google search (keyword)</option>
+                  <option value="referrer">From a custom referrer</option>
+                  <option value="blank">Direct (no referrer)</option>
+                </select>
+              </div>
+              {traffic.trafficType === "keyword" && (
+                <div>
+                  <span style={lab}>Google keyword</span>
+                  <input value={traffic.keyword} onChange={e => setTraffic(p => ({ ...p, keyword: e.target.value }))} placeholder="best smm panel nigeria" style={inpM} />
+                </div>
+              )}
+              {traffic.trafficType === "referrer" && (
+                <div>
+                  <span style={lab}>Referrer URL</span>
+                  <input value={traffic.referrer} onChange={e => setTraffic(p => ({ ...p, referrer: e.target.value }))} placeholder="https://twitter.com" style={inpM} />
+                </div>
+              )}
             </div>
           )}
 
