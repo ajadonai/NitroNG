@@ -1,4 +1,5 @@
 'use client';
+import { TRAFFIC_COUNTRIES, TRAFFIC_CONTINENTS } from "../lib/traffic-targets";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useToast } from "./toast";
@@ -586,8 +587,17 @@ export function AdminCreateOrderPage({ dark, t }) {
               <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 10 }}>Traffic targeting</div>
               <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                 <div style={{ flex: 1 }}>
-                  <span style={lab}>Country</span>
-                  <input value={traffic.country} onChange={e => setTraffic(p => ({ ...p, country: e.target.value.replace(/[^a-zA-Z]/g, "").slice(0, 3) }))} placeholder="NG" style={inpM} />
+                  <span style={lab}>Target</span>
+                  <select value={traffic.country} onChange={e => setTraffic(p => ({ ...p, country: e.target.value }))} style={{ ...inpM, appearance: "none", cursor: "pointer" }}>
+                    <option value="">Choose…</option>
+                    <option value="WW">Worldwide</option>
+                    <optgroup label="Continent">
+                      {Object.entries(TRAFFIC_CONTINENTS).map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+                    </optgroup>
+                    <optgroup label="Country">
+                      {Object.entries(TRAFFIC_COUNTRIES).filter(([code]) => code !== "WW").map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+                    </optgroup>
+                  </select>
                 </div>
                 <div style={{ flex: 1 }}>
                   <span style={lab}>Device</span>
