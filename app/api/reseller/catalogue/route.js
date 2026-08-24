@@ -16,6 +16,17 @@ const SEARCH_LIMIT = 50;
 // the rest on demand.
 const PAGE_SIZE = 120;
 
+// Platform order for the whole catalogue: the platforms Nitro actually sells,
+// biggest first (Instagram does more volume than the next five combined), then
+// everything else alphabetically. A reseller should hit the money platforms
+// without scrolling.
+const PLATFORM_PRIORITY = ['instagram', 'tiktok', 'facebook', 'telegram', 'twitter/x', 'youtube', 'spotify', 'whatsapp', 'audiomack'];
+const platformRank = (name) => {
+  const i = PLATFORM_PRIORITY.indexOf(String(name || '').toLowerCase());
+  return i === -1 ? PLATFORM_PRIORITY.length : i;
+};
+const byPlatform = (a, b) => platformRank(a) - platformRank(b) || String(a).localeCompare(String(b));
+
 const fullWhere = {
   provider: { in: ['mtp', 'dao'] },
   providerListedAt: { not: null },
@@ -56,7 +67,7 @@ export async function GET(req) {
         select: { apiId: true, tierId: true },
       });
       const idByTier = Object.fromEntries(maps.map(m => [m.tierId, m.apiId]));
-      const groups = catalogue.groups.map(g => ({
+      const groups = [...catalogue.groups].sort((a, b) => byPlatform(a.platform, b.platform) || a.name.localeCompare(b.name)).map(g => ({
         name: g.name,
         platform: g.platform,
         tiers: g.tiers.map(t => ({
@@ -78,8 +89,8 @@ export async function GET(req) {
         by: ['category'],
         where: fullWhere,
         _count: true,
-        orderBy: { _count: { category: 'desc' } },
       });
+      cats.sort((a, b) => byPlatform(a.category, b.category));
       return Response.json({ view, catalog: terms.catalog, categories: cats.map(c => ({ name: c.category, count: c._count })) });
     }
 

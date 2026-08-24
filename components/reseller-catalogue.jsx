@@ -15,6 +15,45 @@ function Spinner({ size = 16, color = "currentColor" }) {
 
 const naira = (n) => `₦${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
+// The legend content, shared by the mobile collapsible and the desktop sidebar.
+function GradeLegendBody({ dark, t }) {
+  const border = dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)";
+  return (
+    <>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {[...Object.entries(GRADE_META).map(([k, m]) => ({ k, dot: m.dot, label: m.label, tint: `${m.dot}1f` })),
+          { k: "none", dot: null, label: "Not graded", tint: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }].map(c => (
+          <span key={c.k} className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-[11.5px] font-semibold"
+            style={{ background: c.tint, color: dark ? "#cfc9c2" : "#555250", border: `1px solid ${c.dot ? `${c.dot}55` : border}` }}>
+            {c.dot
+              ? <span style={{ width: 7, height: 7, borderRadius: 99, background: c.dot, display: "inline-block", boxShadow: `0 0 0 3px ${c.dot}26` }} />
+              : <span style={{ width: 7, height: 7, borderRadius: 99, border: `1.5px solid ${dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.25)"}`, display: "inline-block" }} />}
+            {c.label}
+          </span>
+        ))}
+      </div>
+      <div className="text-[12px] leading-relaxed" style={{ color: t.textMuted }}>
+        Not every service carries a grade — an ungraded service is <span style={{ fontWeight: 600, color: dark ? "#cfc9c2" : "#555250" }}>not a lesser one</span>,
+        grading just isn&rsquo;t available across the whole catalogue. Judge ungraded services on refill terms and price;
+        many are among the strongest performers.
+      </div>
+    </>
+  );
+}
+
+// Rendered by the dashboard's right rail on desktop, matching the other pages'
+// sidebar pattern.
+export function ResellerCatalogueSidebar({ dark, t }) {
+  return (
+    <div className="flex flex-col gap-0">
+      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Quality grades</div>
+      <div className="py-2.5 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.02)" }}>
+        <GradeLegendBody dark={dark} t={t} />
+      </div>
+    </div>
+  );
+}
+
 const ROW_CSS = `
 .cat-row { transition: background .12s; }
 .cat-row:hover { background: rgba(196,125,142,.06) !important; }
@@ -30,6 +69,7 @@ export default function ResellerCataloguePage({ dark, t }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(null);
   const [drawer, setDrawer] = useState(null);
+  const [legendOpen, setLegendOpen] = useState(false);
   const searchTimer = useRef(null);
 
   const border = dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)";
@@ -142,33 +182,26 @@ export default function ResellerCataloguePage({ dark, t }) {
   return (
     <>
       <style>{ROW_CSS}</style>
-      <div className="mb-5">
-        <div className="text-[20px] font-semibold" style={{ color: t.text }}>Catalogue</div>
-        <div className="text-[13px]" style={{ color: t.textMuted }}>
+      <div className="pb-2 desktop:pb-3.5 mb-3">
+        <div className="text-lg desktop:text-[22px] font-semibold" style={{ color: t.text }}>Catalogue</div>
+        <div className="text-sm desktop:text-[15px] max-md:text-xs mt-0.5" style={{ color: t.textMuted }}>
           Browse and copy service IDs. Order curated services from New Order, or anything here through the API.
         </div>
+        <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {/* colour legend — and the sentence that stops ungraded reading as bad */}
-      <div className="rounded-[16px] p-4 md:p-5 mb-5" style={{ background: softBg, border: `1px solid ${border}` }}>
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <span className="text-[10.5px] font-bold uppercase tracking-[1.5px] mr-1" style={{ color: t.accent }}>Quality grades</span>
-          {[...Object.entries(GRADE_META).map(([k, m]) => ({ k, dot: m.dot, label: m.label, tint: `${m.dot}1f` })),
-            { k: "none", dot: null, label: "Not graded", tint: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }].map(c => (
-            <span key={c.k} className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-[11.5px] font-semibold"
-              style={{ background: c.tint, color: t.textSoft, border: `1px solid ${c.dot ? `${c.dot}55` : border}` }}>
-              {c.dot
-                ? <span style={{ width: 7, height: 7, borderRadius: 99, background: c.dot, display: "inline-block", boxShadow: `0 0 0 3px ${c.dot}26` }} />
-                : <span style={{ width: 7, height: 7, borderRadius: 99, border: `1.5px solid ${dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.25)"}`, display: "inline-block" }} />}
-              {c.label}
-            </span>
-          ))}
-        </div>
-        <div className="text-[12px] leading-relaxed max-w-[640px]" style={{ color: t.textMuted }}>
-          Not every service carries a grade — an ungraded service is <span style={{ color: t.textSoft, fontWeight: 600 }}>not a lesser one</span>,
-          grading just isn&rsquo;t available across the whole catalogue. Judge ungraded services on refill terms and price;
-          many are among the strongest performers.
-        </div>
+      {/* Mobile only: the legend as a collapsible, like "How Our Services Work"
+          on the order page. Desktop reads it in the right sidebar instead. */}
+      <div className="desktop:hidden mb-4 rounded-[14px] overflow-hidden" style={{ background: softBg, border: `1px solid ${border}` }}>
+        <button onClick={() => setLegendOpen(v => !v)}
+          className="w-full flex items-center justify-between py-3 px-4 cursor-pointer border-none text-left" style={{ background: "none" }}>
+          <span className="text-sm font-semibold inline-flex items-center gap-1.5" style={{ color: t.text }}>
+            <span className="flex gap-0.5">{Object.values(GRADE_META).map(m => <span key={m.dot} style={{ width: 7, height: 7, borderRadius: 99, background: m.dot, display: "inline-block" }} />)}</span>
+            Quality grades
+          </span>
+          <svg className={`cat-chev${legendOpen ? " open" : ""}`} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        {legendOpen && <div className="px-4 pb-4"><GradeLegendBody dark={dark} t={t} /></div>}
       </div>
 
       {/* view toggle */}
