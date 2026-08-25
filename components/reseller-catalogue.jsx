@@ -69,6 +69,20 @@ export default function ResellerCataloguePage({ dark, t }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(null);
   const [drawer, setDrawer] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  // Escape closes the drawer. Without it a keyboard user can open the panel and
+  // has no way back out, since the close control is the only exit.
+  useEffect(() => {
+    if (!drawer) return undefined;
+    const onKey = e => { if (e.key === "Escape") setDrawer(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [drawer]);
+
+  // Reset the copy confirmation per service, so a stale "Copied" never greets
+  // the next drawer that opens.
+  useEffect(() => { setCopied(false); }, [drawer]);
   const [legendOpen, setLegendOpen] = useState(false);
   const searchTimer = useRef(null);
 
@@ -193,7 +207,7 @@ export default function ResellerCataloguePage({ dark, t }) {
       {/* Mobile only: the legend as a collapsible, like "How Our Services Work"
           on the order page. Desktop reads it in the right sidebar instead. */}
       <div className="desktop:hidden mb-4 rounded-[14px] overflow-hidden" style={{ background: softBg, border: `1px solid ${border}` }}>
-        <button onClick={() => setLegendOpen(v => !v)}
+        <button onClick={() => setLegendOpen(v => !v)} aria-expanded={legendOpen}
           className="w-full flex items-center justify-between py-3 px-4 cursor-pointer border-none text-left" style={{ background: "none" }}>
           <span className="text-sm font-semibold inline-flex items-center gap-1.5" style={{ color: t.text }}>
             <span className="flex gap-0.5">{Object.values(GRADE_META).map(m => <span key={m.dot} style={{ width: 7, height: 7, borderRadius: 99, background: m.dot, display: "inline-block" }} />)}</span>
@@ -221,7 +235,7 @@ export default function ResellerCataloguePage({ dark, t }) {
         <div className="flex flex-col gap-2.5">
           {(data.groups || []).map(g => (
             <div key={g.name} className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: `1px solid ${border}` }}>
-              <button onClick={() => setOpenCats(p => ({ ...p, [g.name]: !p[g.name] }))}
+              <button onClick={() => setOpenCats(p => ({ ...p, [g.name]: !p[g.name] }))} aria-expanded={!!openCats[g.name]}
                 className="cat-row w-full flex items-center gap-3 py-3.5 px-4 cursor-pointer border-none text-left" style={{ background: "none" }}>
                 <svg className={`cat-chev${openCats[g.name] ? " open" : ""}`} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
                 <span className="flex-1 min-w-0">
@@ -257,8 +271,12 @@ export default function ResellerCataloguePage({ dark, t }) {
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
+            aria-label="Search the catalogue by service name or ID"
+            type="search"
+            autoComplete="off"
+            spellCheck={false}
             placeholder="Search by name or service ID…"
-            className="w-full md:max-w-[420px] py-2.5 px-3.5 rounded-[10px] text-[13px] outline-none mb-4"
+            className="w-full md:max-w-[420px] py-2.5 px-3.5 rounded-[10px] text-[13px] outline-none mb-4 focus-visible:ring-2 focus-visible:ring-[#c47d8e]/40"
             style={{ background: cardBg, border: `1px solid ${border}`, color: t.text }}
           />
           {results !== null ? (
@@ -300,14 +318,16 @@ export default function ResellerCataloguePage({ dark, t }) {
 
       {/* detail drawer */}
       {drawer && (
-        <div className="fixed inset-0 z-[300]" onClick={() => setDrawer(null)}>
-          <div className="absolute inset-0" style={{ background: "rgba(0,0,0,.45)" }} />
-          <div onClick={e => e.stopPropagation()}
+        <div className="fixed inset-0 z-[300]">
+          <button type="button" aria-label="Close service details"
+            className="absolute inset-0 border-none cursor-default"
+            style={{ background: "rgba(0,0,0,.45)" }} onClick={() => setDrawer(null)} />
+          <div role="dialog" aria-modal="true" aria-label={`${drawer.label} details`}
             className="absolute right-0 top-0 bottom-0 w-full max-w-[400px] p-6 overflow-y-auto"
-            style={{ background: dark ? "#16121a" : "#fdfcfb", borderLeft: `1px solid ${border}` }}>
+            style={{ background: dark ? "#16121a" : "#fdfcfb", borderLeft: `1px solid ${border}`, overscrollBehavior: "contain" }}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">{gradeDot(drawer.grade)}<span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: t.textMuted }}>{drawer.grade ? GRADE_META[drawer.grade].label : "Not graded"}</span></div>
-              <button onClick={() => setDrawer(null)} className="border-none cursor-pointer text-[18px]" style={{ background: "none", color: t.textMuted }}>×</button>
+              <button onClick={() => setDrawer(null)} aria-label="Close" className="border-none cursor-pointer text-[18px]" style={{ background: "none", color: t.textMuted }}>×</button>
             </div>
 
             <div className="text-[16px] font-semibold mb-4 leading-snug" style={{ color: t.text }}>{drawer.label}</div>
@@ -317,8 +337,8 @@ export default function ResellerCataloguePage({ dark, t }) {
               <div className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: t.textMuted }}>Service ID — use this in API calls</div>
               <div className="flex items-center justify-between">
                 <span className="text-[26px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{drawer.id}</span>
-                <button onClick={() => { navigator.clipboard?.writeText(String(drawer.id)); }}
-                  className="py-1.5 px-3 rounded-lg text-[11px] font-semibold border-none cursor-pointer" style={{ background: t.accent, color: "#fff" }}>Copy</button>
+                <button onClick={() => { navigator.clipboard?.writeText(String(drawer.id)); setCopied(true); }}
+                  className="py-1.5 px-3 rounded-lg text-[11px] font-semibold border-none cursor-pointer transition-colors" style={{ background: copied ? "#16a34a" : t.accent, color: "#fff" }}>{copied ? "Copied" : "Copy"}</button>
               </div>
             </div>
 
