@@ -192,3 +192,9 @@ Commit messages use a semantic prefix that reflects the significance of the chan
 - **`v2.1.1:`** — casual fixes (bug fixes, polish, plumbing, admin UX tweaks, refactors)
 
 The milestone counter increments on each milestone (`v2.1`, `v2.2`, `v2.3`, …). The patch counter increments within the current milestone (`v2.1.1`, `v2.1.2`, …) and resets when a new milestone ships. When deciding which prefix to use, ask: "Does this change what users can do?" If yes, it's at least a milestone. If no, it's a casual fix.
+
+**The patch number tracks the issue, not the push.** While the same problem is still being worked on, every commit keeps the same number — the first attempt, the fix that didn't land, the follow-up after testing on a real device, the polish afterwards. Only a genuinely different piece of work increments it.
+
+Trip reports a bug, the fix ships, it still misbehaves, the real cause is found and shipped: that is **one** number across all of it, not three. Repeating a number is the signal that a problem took more than one attempt, which is true and worth recording. Incrementing per push hides that and inflates the history.
+
+When unsure, ask: "is this the same thing Trip asked about?" If yes, reuse the number.
