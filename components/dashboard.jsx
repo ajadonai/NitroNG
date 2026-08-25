@@ -230,7 +230,7 @@ function WaitlistPage({ feature, dark, t }) {
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your email" className="w-full py-2.5 px-3 rounded-[10px] text-sm font-[inherit] outline-none box-border text-t-text" style={{ background: dark ? "rgba(255,255,255,.09)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}` }} />
             </div>
             <button type="submit" disabled={submitting || !email.trim()} className="w-full py-2.5 rounded-[10px] text-sm font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px bg-accent text-white" style={{ opacity: submitting || !email.trim() ? 0.5 : 1 }}>
-              {submitting ? "Joining..." : "Join the waitlist"}
+              {submitting ? "Joining…" : "Join the waitlist"}
             </button>
           </form>
         )}
@@ -1447,7 +1447,7 @@ function DashboardInner({ initialData }) {
                 color: /^[789]\d{9}$/.test(phonePromptVal.replace(/^0+/, "")) ? "#fff" : t.textMuted,
                 opacity: phonePromptSaving ? 0.7 : 1,
               }}
-            >{phonePromptSaving ? "Saving..." : "Save"}</button>
+            >{phonePromptSaving ? "Saving…" : "Save"}</button>
             </>}
           </div>
         </div>

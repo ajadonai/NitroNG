@@ -108,9 +108,16 @@
     padding: 0;
   }
 
-  /* Visible focus for keyboard users on inputs/textareas with outline-none */
+  /* Visible focus for keyboard users on any control that clears its outline.
+     Covers select, button and links too: the rule previously stopped at inputs
+     and textareas, so a keyboard user tabbing through dropdowns or icon buttons
+     lost all sense of position. */
   input.outline-none:focus-visible,
-  textarea.outline-none:focus-visible {
+  textarea.outline-none:focus-visible,
+  select.outline-none:focus-visible,
+  button.outline-none:focus-visible,
+  a.outline-none:focus-visible,
+  [tabindex].outline-none:focus-visible {
     box-shadow: 0 0 0 2px rgba(196,125,142,.45);
   }
 

@@ -275,16 +275,16 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         {/* ── PASSWORD MODAL ── */}
         <SettingsModal open={pwModalOpen} onClose={() => setPwModalOpen(false)} title="Change password" dark={dark} t={t}>
           <div className="mb-3">
-            <label className="text-[13px] font-medium block mb-[5px] text-t-text-muted">Current password</label>
-            <input type="password" value={curPw} onChange={e => setCurPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg border-[0.5px] text-[15px] outline-none box-border text-t-text" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", background: dark ? "rgba(255,255,255,.12)" : "#fff" }} />
+            <label htmlFor="pw-current" className="text-[13px] font-medium block mb-[5px] text-t-text-muted">Current password</label>
+            <input type="password" id="pw-current" autoComplete="current-password" value={curPw} onChange={e => setCurPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg border-[0.5px] text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-[#c47d8e]/40 box-border text-t-text" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", background: dark ? "rgba(255,255,255,.12)" : "#fff" }} />
           </div>
           <div className="mb-3">
-            <label className="text-[13px] font-medium block mb-[5px] text-t-text-muted">New password</label>
-            <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg border-[0.5px] text-[15px] outline-none box-border text-t-text" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", background: dark ? "rgba(255,255,255,.12)" : "#fff" }} />
+            <label htmlFor="pw-new" className="text-[13px] font-medium block mb-[5px] text-t-text-muted">New password</label>
+            <input type="password" id="pw-new" autoComplete="new-password" value={newPw} onChange={e => setNewPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg border-[0.5px] text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-[#c47d8e]/40 box-border text-t-text" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", background: dark ? "rgba(255,255,255,.12)" : "#fff" }} />
           </div>
           <div className="mb-3">
-            <label className="text-[13px] font-medium block mb-[5px] text-t-text-muted">Confirm new password</label>
-            <input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg border-[0.5px] text-[15px] outline-none box-border text-t-text" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", background: dark ? "rgba(255,255,255,.12)" : "#fff" }} />
+            <label htmlFor="pw-confirm" className="text-[13px] font-medium block mb-[5px] text-t-text-muted">Confirm new password</label>
+            <input type="password" id="pw-confirm" autoComplete="new-password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg border-[0.5px] text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-[#c47d8e]/40 box-border text-t-text" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", background: dark ? "rgba(255,255,255,.12)" : "#fff" }} />
           </div>
           <button onClick={changePassword} disabled={pwLoading} className="py-2.5 px-7 rounded-lg bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-sm font-semibold border-none cursor-pointer mt-1 transition-[transform,box-shadow] duration-200 ease-in-out hover:translate-y-[-1px] hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ opacity: curPw && newPw && confirmPw && !pwLoading ? 1 : .4 }}>{pwLoading ? "Updating..." : "Update password"}</button>
         </SettingsModal>
@@ -368,9 +368,9 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
             <div className="text-[13px] mb-3.5 text-t-text-muted">Schedule your account for deletion. You have 30 days to change your mind.</div>
             {showDelete ? (
               <div className="mt-3">
-                <div className="text-[13px] mb-1.5 text-t-text-muted">Enter your password to confirm</div>
+                <label htmlFor="delete-account-password" className="block text-[13px] mb-1.5 text-t-text-muted">Enter your password to confirm</label>
                 <div className="flex gap-2 flex-wrap max-md:flex-wrap">
-                  <input type="password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} placeholder="Your password" className="flex-1 min-w-40 py-2.5 px-3.5 rounded-lg text-sm outline-none text-t-text" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(252,165,165,.24)" : "rgba(220,38,38,.19)"}` }} />
+                  <input type="password" id="delete-account-password" autoComplete="current-password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} placeholder="Your password" className="flex-1 min-w-40 py-2.5 px-3.5 rounded-lg text-sm outline-none text-t-text" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(252,165,165,.24)" : "rgba(220,38,38,.19)"}` }} />
                   <button onClick={async () => {
                     if (!deletePassword) return;
                     const ok = await confirm({ title: "Delete Your Account", message: "Your account will be scheduled for deletion in 30 days. During this period you cannot log in or sign up with this email. Contact support@nitro.ng before the deadline to cancel. After 30 days, your personal details will be permanently removed and the account cannot be restored. Financial records required for legal and accounting purposes are retained without your contact details.", confirmLabel: "Delete Account", danger: true, requireType: "DELETE" });
