@@ -551,7 +551,7 @@ function Pagination({ total, page, setPage, perPage, setPerPage, t }) {
     <div className="flex justify-between items-center mt-3.5 flex-wrap gap-2">
       <div className="flex items-center gap-2 text-[13px] desktop:text-sm">
         <span className="text-t-text-muted">Show</span>
-        <select value={perPage} onChange={e => { const v = Number(e.target.value); setPerPage(v); setPage(1); try { localStorage.setItem("nitro-per-page", String(v)); } catch {} fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ perPagePreference: v }) }).catch(() => {}); }} className="m py-1 px-2 rounded-md text-sm outline-none border bg-t-card-bg border-t-card-border text-t-text">
+        <select aria-label="Orders per page" value={perPage} onChange={e => { const v = Number(e.target.value); setPerPage(v); setPage(1); try { localStorage.setItem("nitro-per-page", String(v)); } catch {} fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ perPagePreference: v }) }).catch(() => {}); }} className="m py-1 px-2 rounded-md text-sm outline-none border bg-t-card-bg border-t-card-border text-t-text">
           {PER_PAGE_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
         </select>
         <span className="text-t-text-muted">{total} total</span>
@@ -757,7 +757,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       <div className="flex items-center gap-2 desktop:gap-3 mb-2 desktop:mb-3 flex-nowrap desktop:flex-wrap min-w-0">
         <div className="flex-1 min-w-0 desktop:min-w-[200px]">
           <div className="relative">
-            <input aria-label="Search orders" placeholder="Search orders..." value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="w-full min-w-0 py-2 desktop:py-2.5 px-3 desktop:px-3.5 pr-8 rounded-[10px] border border-t-card-border text-[13px] desktop:text-sm font-[inherit] outline-none box-border text-t-text" style={{ background: dark ? "rgba(255,255,255,.09)" : "#fff" }} />
+            <input aria-label="Search orders" placeholder="Search orders…" value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="w-full min-w-0 py-2 desktop:py-2.5 px-3 desktop:px-3.5 pr-8 rounded-[10px] border border-t-card-border text-[13px] desktop:text-sm font-[inherit] outline-none box-border text-t-text" style={{ background: dark ? "rgba(255,255,255,.09)" : "#fff" }} />
             {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setOPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
           </div>
           {searchTooShort && <div className="text-[11px] desktop:text-xs mt-1 text-t-text-muted">Type at least 2 characters to search.</div>}
