@@ -349,10 +349,10 @@ function RefundFeed({ refunds }) {
 
 // ─── Live feed ──────────────────────────────────────────────────
 function cancelLabel(reason) {
-  if (!reason) return 'by provider';
+  if (!reason) return 'by system';
   if (reason === 'user_cancelled') return 'by user';
   if (reason === 'admin_cancelled') return 'by admin';
-  return 'by provider';
+  return 'by system';
 }
 
 function LiveFeed({ orders }) {

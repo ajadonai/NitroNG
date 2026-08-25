@@ -46,7 +46,7 @@ export async function POST(req) {
     log.warn(`User refill ${order.orderId}`, err.message);
     const msg = err.message || '';
     if (msg.includes('Incorrect order') || msg.includes('not found')) {
-      return Response.json({ error: 'This order cannot be refilled by the provider.' }, { status: 400 });
+      return Response.json({ error: 'This order cannot be refilled.' }, { status: 400 });
     }
     if (msg.includes('Refill already')) {
       await prisma.order.update({ where: { id: order.id }, data: { refillRequestedAt: new Date() } });
