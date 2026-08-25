@@ -143,7 +143,42 @@ export default function ResellerCataloguePage({ dark, t }) {
     fetchCat(name, cur.rows.length);
   };
 
-  if (state.status === "loading") return <div className="flex items-center justify-center py-20"><Spinner size={22} color={t.accent} /></div>;
+  // A skeleton in the shape of the page it is replacing, matching the house
+  // pattern used on Tasks and the dashboard. A centred spinner told you nothing
+  // about what was coming and made the page appear to jump when it arrived.
+  if (state.status === "loading") {
+    const sk = `skel-bone ${dark ? "skel-dark" : "skel-light"}`;
+    return (
+      <div aria-busy="true" aria-live="polite" aria-label="Loading catalogue">
+        {/* legend */}
+        <div className="rounded-xl mb-4 py-3 px-4 flex items-center justify-between" style={{ background: cardBg, border: `1px solid ${border}` }}>
+          <div className={`${sk} w-[120px] h-[13px]`} />
+          <div className={`${sk} w-[13px] h-[13px] rounded-full`} />
+        </div>
+        {/* view toggle */}
+        <div className="flex gap-2 mb-4">
+          <div className={`${sk} w-[110px] h-[32px] rounded-full`} />
+          <div className={`${sk} w-[110px] h-[32px] rounded-full`} />
+        </div>
+        {/* search */}
+        <div className={`${sk} w-full md:max-w-[420px] h-[40px] rounded-[10px] mb-4`} />
+        {/* rows */}
+        <div className="rounded-2xl overflow-hidden" style={{ background: cardBg, border: `1px solid ${border}` }}>
+          {[0, 1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="flex items-center gap-3 py-3 px-4"
+              style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)"}` : "none" }}>
+              <div className={`${sk} w-[9px] h-[9px] rounded-full shrink-0`} />
+              <div className="flex-1 min-w-0">
+                <div className={`${sk} h-[13px] mb-1.5`} style={{ width: `${52 + ((i * 13) % 34)}%` }} />
+                <div className={`${sk} w-[130px] h-[10px]`} />
+              </div>
+              <div className={`${sk} w-[64px] h-[13px] shrink-0`} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (state.status === "denied") {
     return (
@@ -308,7 +343,19 @@ export default function ResellerCataloguePage({ dark, t }) {
                         </button>
                       )}
                     </>)
-                    : <div className="py-6 flex justify-center"><Spinner color={t.accent} /></div>)}
+                    : <div aria-busy="true" aria-label={`Loading ${c.name}`}>
+                      {[0, 1, 2].map(i => (
+                        <div key={i} className="flex items-center gap-3 py-3 px-4"
+                          style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)"}` }}>
+                          <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[9px] h-[9px] rounded-full shrink-0`} />
+                          <div className="flex-1 min-w-0">
+                            <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[13px] mb-1.5`} style={{ width: `${58 + ((i * 15) % 28)}%` }} />
+                            <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[120px] h-[10px]`} />
+                          </div>
+                          <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[60px] h-[13px] shrink-0`} />
+                        </div>
+                      ))}
+                    </div>)}
                 </div>
               ))}
             </div>
