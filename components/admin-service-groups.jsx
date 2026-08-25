@@ -572,7 +572,9 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                           {tier.trafficTargeting && <span className="inline-flex items-center gap-1 text-[9.5px] font-semibold py-[2px] px-[6px] rounded-[4px]" style={{ color: dark ? "#93c5fd" : "#2563eb", background: dark ? "rgba(147,197,253,.1)" : "rgba(37,99,235,.07)" }}>Traffic</span>}
                         </div></div>}
                         <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end", gap: "6px", paddingTop: "4px", borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
+                          <button onClick={() => act({ action: "update-tier", tierIdToUpdate: tier.id, enabled: !tier.enabled })} className="adm-btn-sm text-[11px]" style={{ borderColor: t.cardBorder, color: tier.enabled ? (dark ? "#fbbf24" : "#d97706") : (dark ? "#6ee7b7" : "#059669") }}>{tier.enabled ? "Disable" : "Enable"}</button>
                           <button onClick={() => setEditTier({ id: tier.id, price: (tier.sellPer1k / 100).toFixed(2), pricePinned: !!tier.pricePinned, customComments: !!tier.customComments, trafficTargeting: !!tier.trafficTargeting })} className="adm-btn-sm text-[11px]" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Edit</button>
+                          <button onClick={async () => { if (await confirm({ title: "Delete Tier", message: `Delete the ${tier.tier} tier from "${g.name}"? This cannot be undone.`, confirmLabel: "Delete", danger: true })) act({ action: "delete-tier", tierIdToDelete: tier.id }); }} className="adm-btn-sm text-[11px]" style={{ borderColor: t.cardBorder, color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
                         </div>
                       </div>
                     </div>

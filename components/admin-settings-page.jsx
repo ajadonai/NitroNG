@@ -55,7 +55,7 @@ function CleanupButton({ dark, t }) {
 
 export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, setDark, onLogout, notifPrefs, updateNotifPref }) {
   const confirm = useConfirm();
-  const [social, setSocial] = useState({ social_instagram: "", social_twitter: "", social_whatsapp_support: "", social_whatsapp_channel: "", social_telegram_support: "", social_tiktok: "" });
+  const [social, setSocial] = useState({ social_instagram: "", social_twitter: "", social_whatsapp_support: "", social_whatsapp_channel: "", social_telegram_support: "", social_tiktok: "", discord_bot_url: "" });
   const [emails, setEmails] = useState({ site_email_general: "", site_email_support: "" });
   const [socialLoading, setSocialLoading] = useState(true);
   const [socialSaving, setSocialSaving] = useState(false);
@@ -74,7 +74,9 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
   useEffect(() => {
     fetch("/api/admin/settings").then(r => r.json()).then(d => {
       if (d.settings) {
-        setSocial(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("social_"))) }));
+        // Filtering on the social_ prefix alone would drop discord_bot_url, which
+        // shares this form and save path — it would save and then reload blank.
+        setSocial(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("social_") || k === "discord_bot_url")) }));
         setEmails(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("site_email_"))) }));
         setWinback(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("winback"))) }));
       }
@@ -364,6 +366,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
           ["social_whatsapp_support", "WhatsApp Number", "2348012345678", "Any format — spaces, dashes, + prefix all stripped automatically"],
           ["social_whatsapp_channel", "WhatsApp Channel URL", "https://whatsapp.com/channel/...", "Full URL to your WhatsApp channel page"],
           ["social_telegram_support", "Telegram Handle", "TheNitroNG", "Handle, @handle, or full URL — all work"],
+          ["discord_bot_url", "Discord Bot Link", "https://nowon.tools", "Shown in the Discord order setup steps. Providers change this bot without notice — update it here when it changes."],
         ].map(([key, label, placeholder, hint]) => (
           <div key={key} className="mb-3">
             <label className="text-sm block mb-0.5" style={{ color: t.textMuted }}>{label}</label>

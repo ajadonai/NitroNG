@@ -18,7 +18,7 @@ const TRAFFIC_TYPES = [
   { value: 'blank', label: 'Blank Referrer' },
 ];
 
-export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible, pointsRedeemable = false, pointsBalance = 0, redeemPoints = false, setRedeemPoints, trafficConfig, setTrafficConfig, tierStyles = {} }) {
+export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible, pointsRedeemable = false, pointsBalance = 0, redeemPoints = false, setRedeemPoints, trafficConfig, setTrafficConfig, tierStyles = {}, socialLinks = {} }) {
   const minQty = selTier?.min || 100;
   const maxQty = selTier?.max || 50000;
   const isPackage = minQty === maxQty;
@@ -184,8 +184,10 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
 
       {/* ── Discord setup instructions ── */}
       {selTier && platform === "discord" && (selSvc?.type === "followers" || selSvc?.type === "engagement") && (() => {
-        const isBoost = selSvc.type === "engagement";
-        const botUrl = isBoost || selTier.provider === "dao" ? "https://nowon.tools" : "https://ysecret.com.br/apple";
+        // Admin-editable: the bot changes without warning and used to require a
+        // code change, which meant customers followed a dead link until someone
+        // noticed. Settings → Discord bot link.
+        const botUrl = socialLinks?.discord_bot_url || "https://nowon.tools";
         return (
           <div className="mx-5 max-md:mx-3.5 mt-3 rounded-lg overflow-hidden" style={{ border: `1px solid ${dark ? "rgba(88,101,242,.25)" : "rgba(88,101,242,.18)"}`, background: dark ? "rgba(88,101,242,.06)" : "rgba(88,101,242,.04)" }}>
             <button type="button" onClick={() => setDiscordOpen(o => !o)} className="w-full flex items-center justify-between gap-2 py-2.5 px-3 border-0 cursor-pointer" style={{ background: "transparent", color: dark ? "#818cf8" : "#5865F2" }}>

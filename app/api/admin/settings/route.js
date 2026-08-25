@@ -14,6 +14,7 @@ const ALLOWED_KEYS = new Set([
   'leaderboard_auto_reward', 'leaderboard_reward_announcement',
   'gateway_manual', 'coupons',
   'tos_version', 'maintenance',
+  'discord_bot_url',
   'social_instagram', 'social_twitter',
   'social_whatsapp_support', 'social_whatsapp_channel', 'social_telegram_support',
   'site_email_general', 'site_email_support',
