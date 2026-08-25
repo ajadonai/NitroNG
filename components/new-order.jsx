@@ -364,15 +364,16 @@ export function OrderForm(props) {
 /* ═══ NEW ORDER PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
 /**
- * "Not sure what you need?" — the escape hatch for customers who cannot name
- * what they want. Pre-fills the message with whatever they were looking at, so
- * support opens on context instead of "hi".
+ * The concierge offer, matching the changelog: we place the order for them. The
+ * point is not "ask a question" but "you do not have to do this yourself", which
+ * is the thing customers stall on. Pre-fills with whatever they were looking at,
+ * so support opens on context instead of "hi".
  */
 function NotSureHelp({ waNumber, dark, t, context }) {
   if (!waNumber) return null;
   const msg = context
-    ? `Hi! I'm looking at ${context} on Nitro but I'm not sure which service I need. Can you help?`
-    : "Hi! I'm not sure which service I need. Can you help?";
+    ? `Hi! I want to order ${context} on Nitro. Can you help me place it?`
+    : "Hi! I'd like to place an order on Nitro. Can you help me?";
   return (
     <a
       href={`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`}
@@ -382,7 +383,7 @@ function NotSureHelp({ waNumber, dark, t, context }) {
       style={{ color: dark ? "#4ade80" : "#16a34a" }}
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="shrink-0"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.14-.13.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.1 4.49.71.3 1.27.49 1.7.63.72.23 1.37.2 1.88.12.58-.09 1.76-.72 2-1.42.25-.7.25-1.3.18-1.42-.08-.13-.28-.2-.58-.35zM12.05 21.8h-.01a9.87 9.87 0 01-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.85 9.85 0 01-1.51-5.26c0-5.45 4.44-9.88 9.9-9.88a9.83 9.83 0 016.99 2.9 9.82 9.82 0 012.9 7c0 5.45-4.45 9.87-9.9 9.87z"/></svg>
-      Not sure what you need? Ask us on WhatsApp
+      Don&rsquo;t want to do it yourself? We&rsquo;ll place the order for you &mdash; message us on WhatsApp
     </a>
   );
 }
