@@ -1148,7 +1148,7 @@ function DashboardInner({ initialData }) {
             </div>
           </button>
           {/* Support — mobile/tablet only (replaces theme toggle) */}
-          <button onClick={() => { if (socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); } }} className="hidden max-desktop:flex items-center gap-1 h-[30px] px-2.5 rounded-[8px] cursor-pointer border-none relative" aria-label="Support" style={{ background: dark ? "rgba(37,211,102,.15)" : "rgba(37,211,102,.1)", color: "#25d366" }}>
+          <button onClick={() => { if (socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); } }} className="hidden max-desktop:flex items-center gap-1 h-[30px] px-2.5 rounded-[8px] cursor-pointer border-none relative" aria-label="Support" style={{ background: "#25d366", color: "#fff" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-3-.2-.3A8.2 8.2 0 1112 20.2zm4.6-6.1c-.3-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.2-.3.2-.5.1a6.7 6.7 0 01-2-1.2 7.5 7.5 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5v-.5c0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 .6.3 1.1.4 1.5.6.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.4z"/></svg>
             <span className="text-[11.5px] font-bold">Help</span>
           </button>
