@@ -140,7 +140,7 @@ export async function POST(req) {
     },
   });
 
-  tgTaskSubmission(user.name, user.email, task.title, normalizedProof, task.platform).catch(() => {});
+  tgTaskSubmission(user.name, user.email, task.title, normalizedProof, task.platform, submission.id, task.reward).catch(() => {});
 
   return ok({ ok: true, submissionId: submission.id });
 }

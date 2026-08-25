@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { approveSubmission, rejectSubmission } from '@/lib/task-review';
 import { log } from '@/lib/logger';
 import { requireAdmin, logActivity } from '@/lib/admin';
 
@@ -161,42 +162,16 @@ export async function POST(req) {
     if (action === 'approve') {
       const { id } = params;
       if (!id) return Response.json({ error: 'id required' }, { status: 400 });
-      const sub = await prisma.taskSubmission.findUnique({ where: { id }, include: { task: true } });
-      if (!sub) return Response.json({ error: 'Submission not found' }, { status: 404 });
-      if (sub.status !== 'pending') return Response.json({ error: 'Already reviewed' }, { status: 400 });
-
-      const amount = sub.task.reward;
-      const expiryRow = await prisma.setting.findUnique({ where: { key: 'task_credit_expiry_days' } });
-      const expiryDays = expiryRow ? parseInt(expiryRow.value, 10) || 14 : 14;
-      const expiresAt = new Date(Date.now() + expiryDays * 86400000);
-
-      const ops = [
-        prisma.taskSubmission.update({
-          where: { id },
-          data: { status: 'approved', creditedAmount: amount, reviewedAt: new Date(), reviewedBy: admin.name || admin.email },
-        }),
-        prisma.user.update({ where: { id: sub.userId }, data: { balance: { increment: amount } } }),
-        prisma.bonusCredit.create({
-          data: { userId: sub.userId, source: 'task', amountGranted: amount, amountRemaining: amount, expiresAt },
-        }),
-        prisma.transaction.create({
-          data: { userId: sub.userId, type: 'bonus', amount, status: 'Completed', note: `Task reward: ₦${(amount / 100).toLocaleString()}` },
-        }),
-      ];
-      await prisma.$transaction(ops);
+      const res = await approveSubmission(id, admin.name || admin.email);
+      if (!res.ok) return Response.json({ error: res.error }, { status: res.alreadyReviewed ? 400 : 404 });
       return Response.json({ ok: true });
     }
 
     if (action === 'reject') {
       const { id, reason } = params;
       if (!id) return Response.json({ error: 'id required' }, { status: 400 });
-      const sub = await prisma.taskSubmission.findUnique({ where: { id } });
-      if (!sub) return Response.json({ error: 'Submission not found' }, { status: 404 });
-      if (sub.status !== 'pending') return Response.json({ error: 'Already reviewed' }, { status: 400 });
-      await prisma.taskSubmission.update({
-        where: { id },
-        data: { status: 'rejected', rejectionReason: reason || null, reviewedAt: new Date(), reviewedBy: admin.name || admin.email },
-      });
+      const res = await rejectSubmission(id, admin.name || admin.email, reason);
+      if (!res.ok) return Response.json({ error: res.error }, { status: res.alreadyReviewed ? 400 : 404 });
       return Response.json({ ok: true });
     }
 

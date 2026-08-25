@@ -3,6 +3,7 @@ import { log } from '@/lib/logger';
 import { finalizeDeposit } from '@/lib/deposit-finalization';
 import { notifyDepositFinalized } from '@/lib/deposit-notifications';
 import { tgAnswerCallback, tgEditMessage, tgDeleteMessage } from '@/lib/telegram';
+import { approveSubmission, rejectSubmission } from '@/lib/task-review';
 import { watBounds } from '@/lib/format';
 import { getBalance, PROVIDER_IDS, getProviderName, isProviderConfigured } from '@/lib/smm';
 
@@ -580,8 +581,32 @@ export async function POST(req) {
     return Response.json({ ok: true });
   }
 
-  const [action, txId] = cb.data.split(':');
-  if (!txId) return Response.json({ ok: true });
+  const [action, targetId] = cb.data.split(':');
+  if (!targetId) return Response.json({ ok: true });
+
+  if (action === 'ta' || action === 'tr') {
+    const who = ADMIN_TG_NAMES[String(cb.from?.id)] || 'admin';
+    const res = action === 'ta'
+      ? await approveSubmission(targetId, who)
+      : await rejectSubmission(targetId, who);
+
+    if (!res.ok && !res.alreadyReviewed) {
+      await tgAnswerCallback(cb.id, res.error || 'Failed');
+      return Response.json({ ok: true });
+    }
+    // Two admins tapping the same card is expected, so the second one is told
+    // what happened rather than shown a failure.
+    const label = res.alreadyReviewed
+      ? `${res.status === 'approved' ? '✅ Already approved' : '❌ Already rejected'}${res.reviewedBy ? ` by ${res.reviewedBy}` : ''}`
+      : action === 'ta'
+        ? `✅ Approved by ${who}${res.amount ? ` — ${naira(res.amount)} credited` : ''}`
+        : `❌ Rejected by ${who}`;
+    await tgAnswerCallback(cb.id, label);
+    await tgEditMessage(cb.message.message_id, `${cb.message.text}\n\n${label}`, { reply_markup: { inline_keyboard: [] } });
+    return Response.json({ ok: true });
+  }
+
+  const txId = targetId;
 
   try {
     const tx = await prisma.transaction.findUnique({ where: { id: txId } });
