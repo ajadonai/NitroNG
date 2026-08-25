@@ -369,7 +369,7 @@ export function OrderForm(props) {
  * is the thing customers stall on. Pre-fills with whatever they were looking at,
  * so support opens on context instead of "hi".
  */
-function NotSureHelp({ waNumber, dark, t, context }) {
+export function NotSureHelp({ waNumber, dark, t, context }) {
   if (!waNumber) return null;
   const msg = context
     ? `Hi! I want to order ${context} on Nitro. Can you help me place it?`

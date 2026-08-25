@@ -5,6 +5,7 @@ import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
 import { fN, fD } from "../lib/format";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
+import { NotSureHelp } from "./new-order";
 import NitroLoader from "./nitro-loader";
 
 function CopyId({ value, dark, mono = true }) {
@@ -829,7 +830,8 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
             ) : (
               <>
                 <div className="text-base font-semibold mb-1 text-t-text-soft">No orders yet</div>
-                <div className="text-[14px] text-t-text-muted">Your orders will show up here once you start boosting</div>
+                <div className="text-[14px] text-t-text-muted mb-3">Your orders will show up here once you start boosting</div>
+                <NotSureHelp waNumber={waNum} dark={dark} t={t} />
               </>
             )}
           </div>
