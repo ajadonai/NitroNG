@@ -363,6 +363,30 @@ export function OrderForm(props) {
 /* ═══════════════════════════════════════════ */
 /* ═══ NEW ORDER PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
+/**
+ * "Not sure what you need?" — the escape hatch for customers who cannot name
+ * what they want. Pre-fills the message with whatever they were looking at, so
+ * support opens on context instead of "hi".
+ */
+function NotSureHelp({ waNumber, dark, t, context }) {
+  if (!waNumber) return null;
+  const msg = context
+    ? `Hi! I'm looking at ${context} on Nitro but I'm not sure which service I need. Can you help?`
+    : "Hi! I'm not sure which service I need. Can you help?";
+  return (
+    <a
+      href={`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1.5 text-[12.5px] font-medium no-underline transition-opacity hover:opacity-80"
+      style={{ color: dark ? "#4ade80" : "#16a34a" }}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="shrink-0"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.14-.13.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.1 4.49.71.3 1.27.49 1.7.63.72.23 1.37.2 1.88.12.58-.09 1.76-.72 2-1.42.25-.7.25-1.3.18-1.42-.08-.13-.28-.2-.58-.35zM12.05 21.8h-.01a9.87 9.87 0 01-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.85 9.85 0 01-1.51-5.26c0-5.45 4.44-9.88 9.9-9.88a9.83 9.83 0 016.99 2.9 9.82 9.82 0 012.9 7c0 5.45-4.45 9.87-9.9 9.87z"/></svg>
+      Not sure what you need? Ask us on WhatsApp
+    </a>
+  );
+}
+
 export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrders, onTopUp, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, catModal, setCatModal, tourActive, activePromotion, rewards, socialLinks, refreshRewards }) {
   const toast = useToast();
   const [filterType, setFilterType] = useState("all");
@@ -382,6 +406,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     : { card: "#ffffff", hair: "#eee7de", text: "#2a2723", muted: "#98918a", money: "#0a7d54", waTint: "#eaf7ef", wa: "#1faa59", waHover: "#128c46" };
 
   const waChannelUrl = socialLinks?.social_whatsapp_channel || 'https://whatsapp.com/channel/0029Vb8hC6rJ3jv7Ig2m3D3Q';
+  const waSupportNumber = (socialLinks?.social_whatsapp_support || '2347071656156').replace(/\D/g, '');
   const igHandle = (socialLinks?.social_instagram || 'Nitro.ng').replace(/^(https?:\/\/)?(www\.)?(instagram\.com)\/?/i, '').replace(/^@/, '').replace(/\/$/, '');
   const [promoSlide, setPromoSlide] = useState(() => Math.floor(Math.random() * PROMO_SLIDES.length));
   const [promoPaused, setPromoPaused] = useState(false);
@@ -948,7 +973,19 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       {/* ═══ SERVICE CARDS ═══ */}
       <div className="flex flex-col gap-2" data-tour="no-service-list" ref={listRef}>
         {filtered.map(svc => <ServiceCard key={svc.id} svc={svc} selSvc={selSvc} selTier={selTier} onPickService={pickService} onPickTier={pickTier} dark={dark} t={t} orderMode={orderMode} activePromotion={activePromotion} />)}
-        {filtered.length === 0 && <div className="py-10 text-center text-[15px]" style={{ color: t.textMuted }}>Coming soon.</div>}
+        {filtered.length > 0 && (
+          <div className="pt-1 pb-2 text-center">
+            <NotSureHelp waNumber={waSupportNumber} dark={dark} t={t} context={activePlat?.label} />
+          </div>
+        )}
+        {filtered.length === 0 && (
+          <div className="py-10 text-center px-5">
+            <div className="text-[15px] mb-1.5" style={{ color: t.textMuted }}>
+              {search.trim() ? `Nothing matching "${search.trim()}".` : "Coming soon."}
+            </div>
+            <NotSureHelp waNumber={waSupportNumber} dark={dark} t={t} context={search.trim() || activePlat?.label} />
+          </div>
+        )}
       </div>
 
       {/* Fixed bottom bar — mobile/tablet — single mode only */}
@@ -1096,7 +1133,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 </div>
               </div>
             ) : (
-              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => { setOrderModal(false); setRedeemPoints(false); }} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} welcomeBonusEligible={user?.welcomeBonusEligible} pointsRedeemable={rewards?.points?.redeemable || false} pointsBalance={rewards?.points?.balance || 0} redeemPoints={redeemPoints} setRedeemPoints={setRedeemPoints} trafficConfig={trafficConfig} setTrafficConfig={setTrafficConfig} />
+              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => { setOrderModal(false); setRedeemPoints(false); }} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} welcomeBonusEligible={user?.welcomeBonusEligible} pointsRedeemable={rewards?.points?.redeemable || false} pointsBalance={rewards?.points?.balance || 0} redeemPoints={redeemPoints} setRedeemPoints={setRedeemPoints} trafficConfig={trafficConfig} setTrafficConfig={setTrafficConfig} socialLinks={socialLinks} />
             )}
           </div>
         </div>
