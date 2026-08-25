@@ -405,16 +405,20 @@ export function OrderForMeCard({ waNumber, dark, context }) {
       onClick={e => e.stopPropagation()}
       className="mt-2.5 flex items-center gap-2.5 rounded-[11px] py-2 px-3 no-underline transition-transform duration-150 hover:-translate-y-px"
       style={{
-        background: dark ? "rgba(37,211,102,.09)" : "rgba(37,211,102,.07)",
-        border: `1px solid ${dark ? "rgba(37,211,102,.22)" : "rgba(37,211,102,.2)"}`,
+        // Nitro accent, not WhatsApp green: the picker already uses green for
+        // Nigerian services, so a green card read as another category instead of
+        // an action. Green survives only on the icon, where it identifies the
+        // channel without claiming the card.
+        background: dark ? "rgba(196,125,142,.13)" : "rgba(196,125,142,.09)",
+        border: `1px solid ${dark ? "rgba(196,125,142,.4)" : "rgba(196,125,142,.32)"}`,
       }}
     >
-      <span className="flex items-center justify-center w-[26px] h-[26px] rounded-full shrink-0" style={{ background: dark ? "rgba(37,211,102,.16)" : "rgba(37,211,102,.13)", color: dark ? "#4ade80" : "#16a34a" }}>{WA_ICON}</span>
+      <span className="flex items-center justify-center w-[26px] h-[26px] rounded-full shrink-0" style={{ background: "#25d366", color: "#fff" }}>{WA_ICON}</span>
       <span className="min-w-0">
-        <span className="block text-[12.5px] font-semibold leading-tight" style={{ color: dark ? "#4ade80" : "#15803d" }}>We can order for you</span>
-        <span className="block text-[11px] leading-tight mt-[1px]" style={{ color: dark ? "rgba(74,222,128,.72)" : "rgba(21,128,61,.72)" }}>Send your link on WhatsApp, we handle it</span>
+        <span className="block text-[12.5px] font-semibold leading-tight" style={{ color: dark ? "#e8b4c0" : "#a0616e" }}>We can order for you</span>
+        <span className="block text-[11px] leading-tight mt-[1px]" style={{ color: dark ? "rgba(232,180,192,.7)" : "rgba(160,97,110,.75)" }}>Send your link on WhatsApp, we handle it</span>
       </span>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="ml-auto shrink-0" style={{ color: dark ? "rgba(74,222,128,.6)" : "rgba(21,128,61,.5)" }}><polyline points="9 18 15 12 9 6"/></svg>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="ml-auto shrink-0" style={{ color: dark ? "rgba(232,180,192,.6)" : "rgba(160,97,110,.5)" }}><polyline points="9 18 15 12 9 6"/></svg>
     </a>
   );
 }
