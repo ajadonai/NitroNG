@@ -110,6 +110,9 @@ export default function AdminServiceGroupsPage({ dark, t }) {
 
   /* Inline tier editing — saves through the existing update-tier action */
   const [editTier, setEditTier] = useState(null); // { id, price, pricePinned, customComments }
+  // Mobile card expansion. Was imperative DOM manipulation, which React undid on
+  // the next render — so opening the editor collapsed the card that held it.
+  const [openTiers, setOpenTiers] = useState({});
   const [savingTier, setSavingTier] = useState(false);
 
   const load = async () => {
@@ -400,10 +403,10 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                 )}
               </div>
               <div className="flex gap-2.5 flex-wrap mb-2.5">
-                <select value={tierLevel} onChange={e => { setTierLevel(e.target.value); if (tierSvcId) { const svc = services.find(s => s.id === tierSvcId); if (svc) { const suggested = calculateTierPrice(svc.costPer1k, e.target.value, markupSettings); setTierPrice((suggested / 100).toFixed(2)); } } }} className={`${inputCls} w-[110px] appearance-none cursor-pointer bg-no-repeat bg-[position:right_8px_center]`} style={selectSt}>
+                <select value={tierLevel} onChange={e => { setTierLevel(e.target.value); if (tierSvcId) { const svc = services.find(s => s.id === tierSvcId); if (svc) { const suggested = calculateTierPrice(svc.costPer1k, e.target.value, markupSettings); setTierPrice((suggested / 100).toFixed(2)); } } }} className={`${inputCls} w-[110px] max-md:w-full appearance-none cursor-pointer bg-no-repeat bg-[position:right_8px_center]`} style={selectSt}>
                   <option>Budget</option><option>Standard</option><option>Premium</option>
                 </select>
-                <input placeholder="Sell price ₦/1k" value={tierPrice} onChange={e => setTierPrice(e.target.value.replace(/[^0-9.]/g, ""))} className={`${inputCls} w-[130px]`} style={inputStyle} />
+                <input placeholder="Sell price ₦/1k" value={tierPrice} onChange={e => setTierPrice(e.target.value.replace(/[^0-9.]/g, ""))} className={`${inputCls} w-[130px] max-md:w-full`} style={inputStyle} />
                 {g.type?.toLowerCase() === 'comments' && <label className="flex items-center gap-1.5 text-[13px] cursor-pointer" style={{ color: t.textSoft }}>
                   <button type="button" onClick={() => setTierCustomComments(v => !v)} className="relative w-[28px] h-[16px] rounded-full border-none cursor-pointer shrink-0 transition-colors duration-150" style={{ background: tierCustomComments ? (dark ? "rgba(110,231,183,.18)" : "rgba(5,150,105,.15)") : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)") }}>
                     <span className="absolute top-[2px] w-[12px] h-[12px] rounded-full transition-all duration-150" style={{ left: tierCustomComments ? 14 : 2, background: tierCustomComments ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#666" : "#999") }} />
@@ -551,7 +554,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                   const low = cKobo != null && lowMargin(tier.sellPer1k, cKobo);
                   return (
                     <div key={tier.id} style={{ borderBottom: i < g.tiers.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}` : "none", opacity: tier.enabled ? 1 : .45 }}>
-                      <button type="button" onClick={e => { const det = e.currentTarget.nextElementSibling; const chev = e.currentTarget.querySelector('.m-chev'); if (det) { const show = det.style.display === 'none'; det.style.display = show ? 'grid' : 'none'; if (chev) chev.style.transform = show ? 'rotate(180deg)' : 'none'; } }} className="w-full flex items-center justify-between py-2.5 px-3.5 gap-2 border-none cursor-pointer" style={{ background: "transparent" }}>
+                      <button type="button" onClick={() => setOpenTiers(o => ({ ...o, [tier.id]: !o[tier.id] }))} className="w-full flex items-center justify-between py-2.5 px-3.5 gap-2 border-none cursor-pointer" style={{ background: "transparent" }}>
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="inline-flex items-center text-[10.5px] font-bold py-[2px] px-2 rounded-full shrink-0" style={{ color: TIER_COLORS[tier.tier] || t.text, background: TIER_BG[tier.tier] || (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)") }}>{tier.tier}</span>
                           <span className="text-[12px] truncate" style={{ color: t.text }}>{tier.service?.name?.slice(0, 30) || "Unlinked"}</span>
@@ -559,10 +562,10 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                         <div className="flex items-center gap-2 shrink-0">
                           {m != null && <span className="font-bold text-[12px]" style={{ fontFamily: "'JetBrains Mono',monospace", color: low ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{m}%</span>}
                           {low && <span className="text-[8px] font-extrabold tracking-[.5px] py-[1px] px-1.5 rounded-full" style={{ background: dark ? "rgba(252,165,165,.14)" : "rgba(220,38,38,.1)", color: dark ? "#fca5a5" : "#dc2626" }}>LOW</span>}
-                          <svg className="m-chev shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: "transform .15s" }}><polyline points="6 9 12 15 18 9"/></svg>
+                          <svg className="m-chev shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: "transform .15s", transform: openTiers[tier.id] ? "rotate(180deg)" : "none" }}><polyline points="6 9 12 15 18 9"/></svg>
                         </div>
                       </button>
-                      <div style={{ display: "none", gridTemplateColumns: "1fr 1fr", gap: "8px", padding: "0 14px 12px" }}>
+                      <div style={{ display: (openTiers[tier.id] || editTier?.id === tier.id) ? "grid" : "none", gridTemplateColumns: "1fr 1fr", gap: "8px", padding: "0 14px 12px" }}>
                         <div><div className="text-[9px] font-semibold uppercase tracking-[.5px]" style={{ color: t.textMuted }}>Service</div><div className="text-[12px]" style={{ color: t.text }}><ProvTag provider={tier.service?.provider} /><span className="text-[10px]" style={{ fontFamily: "'JetBrains Mono',monospace", color: t.textMuted }}>#{tier.service?.apiId}</span></div></div>
                         <div><div className="text-[9px] font-semibold uppercase tracking-[.5px]" style={{ color: t.textMuted }}>Sell / Cost</div><div className="text-[12px]" style={{ fontFamily: "'JetBrains Mono',monospace", color: t.text }}>₦{(tier.sellPer1k / 100).toFixed(2)} <span style={{ color: t.textMuted, fontSize: "10px" }}>/ {cKobo != null ? formatNaira(Math.round(cKobo / 100)) : "—"}</span></div></div>
                         {(tier.refill || tier.pricePinned || tier.customComments || tier.trafficTargeting) && <div style={{ gridColumn: "1 / -1" }}><div className="text-[9px] font-semibold uppercase tracking-[.5px] mb-1" style={{ color: t.textMuted }}>Flags</div><div className="flex flex-wrap gap-1">
@@ -571,11 +574,35 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                           {tier.customComments && <span className="inline-flex items-center gap-1 text-[9.5px] font-semibold py-[2px] px-[6px] rounded-[4px]" style={{ color: dark ? "#c4b5fd" : "#7c3aed", background: dark ? "rgba(196,181,253,.1)" : "rgba(124,58,237,.07)" }}>Custom</span>}
                           {tier.trafficTargeting && <span className="inline-flex items-center gap-1 text-[9.5px] font-semibold py-[2px] px-[6px] rounded-[4px]" style={{ color: dark ? "#93c5fd" : "#2563eb", background: dark ? "rgba(147,197,253,.1)" : "rgba(37,99,235,.07)" }}>Traffic</span>}
                         </div></div>}
-                        <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end", gap: "6px", paddingTop: "4px", borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
-                          <button onClick={() => act({ action: "update-tier", tierIdToUpdate: tier.id, enabled: !tier.enabled })} className="adm-btn-sm text-[11px]" style={{ borderColor: t.cardBorder, color: tier.enabled ? (dark ? "#fbbf24" : "#d97706") : (dark ? "#6ee7b7" : "#059669") }}>{tier.enabled ? "Disable" : "Enable"}</button>
-                          <button onClick={() => setEditTier({ id: tier.id, price: (tier.sellPer1k / 100).toFixed(2), pricePinned: !!tier.pricePinned, customComments: !!tier.customComments, trafficTargeting: !!tier.trafficTargeting })} className="adm-btn-sm text-[11px]" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Edit</button>
-                          <button onClick={async () => { if (await confirm({ title: "Delete Tier", message: `Delete the ${tier.tier} tier from "${g.name}"? This cannot be undone.`, confirmLabel: "Delete", danger: true })) act({ action: "delete-tier", tierIdToDelete: tier.id }); }} className="adm-btn-sm text-[11px]" style={{ borderColor: t.cardBorder, color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
-                        </div>
+                        {editTier?.id === tier.id ? (
+                          <div style={{ gridColumn: "1 / -1", paddingTop: "8px", borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
+                            <div className="text-[9px] font-semibold uppercase tracking-[.5px] mb-1" style={{ color: t.textMuted }}>Sell price per 1k</div>
+                            <div className="flex items-center gap-1.5 mb-2.5">
+                              <span className="text-[13px]" style={{ color: t.textMuted }}>&#8358;</span>
+                              <input aria-label="Sell price" inputMode="decimal" value={editTier.price} onChange={e => setEditTier({ ...editTier, price: e.target.value.replace(/[^0-9.]/g, "") })} className="flex-1 py-2 px-2.5 rounded-md text-[14px] outline-none font-[inherit]" style={{ ...inputStyle, borderColor: dark ? "rgba(196,125,142,.4)" : "rgba(196,125,142,.35)", fontFamily: "'JetBrains Mono',monospace" }} />
+                            </div>
+                            <div className="flex flex-wrap gap-3 mb-2.5">
+                              {[["pricePinned", "Pinned"], ...(g.type?.toLowerCase() === 'comments' ? [["customComments", "Custom"]] : []), ...(g.platform === 'Website' ? [["trafficTargeting", "Traffic"]] : [])].map(([key, label]) => (
+                                <label key={key} className="flex items-center gap-1.5 text-[12px] cursor-pointer" style={{ color: t.textSoft }}>
+                                  <button type="button" onClick={() => setEditTier({ ...editTier, [key]: !editTier[key] })} className="relative w-[32px] h-[18px] rounded-full border-none cursor-pointer shrink-0 transition-colors duration-150" style={{ background: editTier[key] ? (dark ? "rgba(110,231,183,.18)" : "rgba(5,150,105,.15)") : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)") }}>
+                                    <span className="absolute top-[2px] w-[14px] h-[14px] rounded-full transition-all duration-150" style={{ left: editTier[key] ? 16 : 2, background: editTier[key] ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#666" : "#999") }} />
+                                  </button>
+                                  {label}
+                                </label>
+                              ))}
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={saveTierEdit} className="adm-btn-primary flex-1 text-[12px] py-2">Save</button>
+                              <button onClick={() => setEditTier(null)} className="adm-btn-sm flex-1 text-[12px] py-2" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Cancel</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ gridColumn: "1 / -1", display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "6px", paddingTop: "4px", borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
+                            <button onClick={() => act({ action: "update-tier", tierIdToUpdate: tier.id, enabled: !tier.enabled })} className="adm-btn-sm text-[11px]" style={{ borderColor: t.cardBorder, color: tier.enabled ? (dark ? "#fbbf24" : "#d97706") : (dark ? "#6ee7b7" : "#059669") }}>{tier.enabled ? "Disable" : "Enable"}</button>
+                            <button onClick={() => setEditTier({ id: tier.id, price: (tier.sellPer1k / 100).toFixed(2), pricePinned: !!tier.pricePinned, customComments: !!tier.customComments, trafficTargeting: !!tier.trafficTargeting })} className="adm-btn-sm text-[11px]" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Edit</button>
+                            <button onClick={async () => { if (await confirm({ title: "Delete Tier", message: `Delete the ${tier.tier} tier from "${g.name}"? This cannot be undone.`, confirmLabel: "Delete", danger: true })) act({ action: "delete-tier", tierIdToDelete: tier.id }); }} className="adm-btn-sm text-[11px]" style={{ borderColor: t.cardBorder, color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

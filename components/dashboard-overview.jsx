@@ -16,6 +16,8 @@ const ReferralIcon = (
 
 /* Dashboard home content and its desktop right rail live together so the shell
  * only owns navigation, data refresh, and cross-page state. */
+import { NotSureHelp } from './new-order';
+
 export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t, setActive, a2hs, socialLinks, rewards }) {
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [tipsOpen, setTipsOpen] = useState(false);
@@ -212,6 +214,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
             <div className="text-sm mb-4 leading-[1.5] max-w-[320px] text-t-text-muted">Choose a platform, pick a service, and place your first order.</div>
             <button onClick={() => setActive("services")} className="cursor-pointer py-2.5 px-6 rounded-[10px] text-sm font-semibold border-none transition-transform duration-200 hover:-translate-y-px mb-2 bg-accent text-white">Place first order</button>
             <button onClick={() => setActive("guide")} className="cursor-pointer py-2 px-4 rounded-[10px] text-[13px] font-medium border-none transition-transform duration-200 hover:-translate-y-px bg-transparent text-t-text-muted">View blog</button>
+            <div className="mt-3"><NotSureHelp waNumber={(socialLinks?.social_whatsapp_support || "").replace(/\D/g, "")} dark={dark} t={t} /></div>
           </div>
         )}
       </div>
