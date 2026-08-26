@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ThemeProvider, useTheme } from "../shared-nav";
+import { ThemeProvider, useTheme, ThemeToggle } from "../shared-nav";
 import { NitroWordmark } from "../nitro-logo";
 
 function Inner({ token }) {
@@ -118,9 +118,7 @@ function Inner({ token }) {
           </button>
         </form>
       </div>
-      <button onClick={toggleTheme} className="mt-5 w-[44px] h-6 rounded-xl border-none relative cursor-pointer transition-colors duration-300" style={{ background: dark ? t.accent : "rgba(0,0,0,.08)" }}>
-        <span className="absolute w-[18px] h-[18px] rounded-full bg-white top-[3px] shadow-[0_1px_4px_rgba(0,0,0,.2)] transition-[left] duration-300" style={{ left: dark ? 23 : 3 }} />
-      </button>
+      <ThemeToggle dark={dark} onToggle={toggleTheme} className="mt-5" />
     </div>
   );
 }

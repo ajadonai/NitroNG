@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { ThemeProvider, useTheme } from "./shared-nav";
+import { ThemeProvider, useTheme, ThemeToggle } from "./shared-nav";
 
 const MARK = "M4.8 44.98 L4.8 26.8 A9.61 9.61 0 0 1 24.02 26.8 L24.02 39.15 A9.6 9.6 0 0 0 43.22 39.15 L43.22 6.82";
 const ROUTES = ["dashboard","about","blog","changelog","contact","faq","help","lagos","live","login","pricing","privacy","pulse","quality","refund","reseller","reviews","services","signup","terms"];
@@ -104,11 +104,7 @@ function NotFoundInner() {
           </div>
           <span className="text-[15px] font-semibold tracking-[2px]" style={{ color: text }}>NITRO</span>
         </a>
-        <button onClick={toggleTheme} aria-label="Toggle theme" className="w-10 h-[22px] rounded-[11px] relative cursor-pointer" style={{ background: dark ? "rgba(99,102,241,.28)" : "rgba(0,0,0,.12)", border: `0.5px solid ${dark ? "rgba(99,102,241,.24)" : "rgba(0,0,0,.14)"}` }}>
-          <div className="w-4 h-4 rounded-full absolute flex items-center justify-center transition-[left] duration-400 ease-[cubic-bezier(.4,0,.2,1)]" style={{ background: dark ? "#1e1b4b" : "#fff", top: 2.5, left: dark ? 20.5 : 2.5, boxShadow: dark ? "none" : "0 1px 4px rgba(0,0,0,.15)" }}>
-            {dark ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2"><circle cx="12" cy="12" r="5"/></svg>}
-          </div>
-        </button>
+        <ThemeToggle dark={dark} onToggle={toggleTheme} />
       </nav>
 
       {/* Main */}
