@@ -4,9 +4,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 // Read-only catalogue for granted resellers. Browse and copy IDs here; ordering
 // happens on the New Order page (curated) or through the API (either list).
 const GRADE_META = {
-  premium: { dot: "#3b82f6", label: "Premium" },
-  standard: { dot: "#22c55e", label: "Standard" },
-  basic: { dot: "#eab308", label: "Basic" },
+  premium: { dot: "#3b82f6", label: "Premium", letter: "P" },
+  standard: { dot: "#22c55e", label: "Standard", letter: "S" },
+  basic: { dot: "#eab308", label: "Basic", letter: "B" },
 };
 
 function Spinner({ size = 16, color = "currentColor" }) {
@@ -21,12 +21,12 @@ function GradeLegendBody({ dark, t }) {
   return (
     <>
       <div className="flex flex-wrap gap-2 mb-3">
-        {[...Object.entries(GRADE_META).map(([k, m]) => ({ k, dot: m.dot, label: m.label, tint: `${m.dot}1f` })),
+        {[...Object.entries(GRADE_META).map(([k, m]) => ({ k, dot: m.dot, label: m.label, letter: m.letter, tint: `${m.dot}1f` })),
           { k: "none", dot: null, label: "Not graded", tint: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }].map(c => (
           <span key={c.k} className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-[11px] font-semibold"
             style={{ background: c.tint, color: dark ? "#cfc9c2" : "#555250", border: `1px solid ${c.dot ? `${c.dot}55` : border}` }}>
             {c.dot
-              ? <span style={{ width: 7, height: 7, borderRadius: 99, background: c.dot, display: "inline-block", boxShadow: `0 0 0 3px ${c.dot}26` }} />
+              ? <span className="inline-flex items-center justify-center text-[11px] font-bold" style={{ width: 16, height: 16, borderRadius: 4, background: `${c.dot}22`, color: c.dot, border: `1px solid ${c.dot}55` }}>{c.letter}</span>
               : <span style={{ width: 7, height: 7, borderRadius: 99, border: `1.5px solid ${dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.25)"}`, display: "inline-block" }} />}
             {c.label}
           </span>
@@ -197,9 +197,31 @@ export default function ResellerCataloguePage({ dark, t }) {
   const { data } = state;
   const hasFull = data.catalog === "full";
 
-  const gradeDot = (grade) => grade
-    ? <span title={GRADE_META[grade].label} style={{ width: 8, height: 8, borderRadius: 99, background: GRADE_META[grade].dot, display: "inline-block", flexShrink: 0 }} />
-    : <span style={{ width: 8, height: 8, borderRadius: 99, border: `1.5px solid ${dark ? "rgba(255,255,255,.25)" : "rgba(0,0,0,.2)"}`, display: "inline-block", flexShrink: 0 }} />;
+  // A lettered chip rather than a coloured dot: colour alone fails on mobile,
+  // where there is no hover for the title and the legend is collapsed by
+  // default, and blue/green/yellow is the first pairing colour-blind users lose.
+  // The letter carries the grade; the colour reinforces it.
+  const gradeDot = (grade) => {
+    const m = grade && GRADE_META[grade];
+    if (!m) {
+      return (
+        <span aria-label="Ungraded" title="Ungraded"
+          className="inline-flex items-center justify-center text-[11px] font-bold shrink-0"
+          style={{
+            width: 18, height: 18, borderRadius: 5,
+            border: `1.5px dashed ${dark ? "rgba(255,255,255,.25)" : "rgba(0,0,0,.2)"}`,
+            color: dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.3)",
+          }}>–</span>
+      );
+    }
+    return (
+      <span aria-label={`${m.label} grade`} title={m.label}
+        className="inline-flex items-center justify-center text-[11px] font-bold shrink-0"
+        style={{ width: 18, height: 18, borderRadius: 5, background: `${m.dot}22`, color: m.dot, border: `1px solid ${m.dot}55` }}>
+        {m.letter}
+      </span>
+    );
+  };
 
   const idChip = (id) => (
     <span className="py-0.5 px-1.5 rounded-md text-[11px] font-semibold"
@@ -257,12 +279,40 @@ export default function ResellerCataloguePage({ dark, t }) {
       {hasFull && (
         <div className="inline-flex rounded-full p-1 mb-5" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)" }}>
           {[["curated", "Curated"], ["full", "Full catalogue"]].map(([v, label]) => (
-            <button key={v} onClick={() => setView(v)}
+            <button key={v} onClick={() => setView(v)} aria-pressed={view === v}
               className="py-1.5 px-4 rounded-full text-[13px] font-semibold border-none cursor-pointer transition-colors"
               style={{ background: view === v ? t.accent : "none", color: view === v ? "#fff" : t.textMuted }}>
               {label}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* The two catalogues carry different promises and used to look identical,
+          so a reseller who toggled once and forgot could assume a guarantee that
+          was never there. The banner states which promise is live and changes
+          with the view. */}
+      {hasFull && (
+        <div className="flex items-start gap-2.5 rounded-[12px] py-2.5 px-3.5 mb-4" aria-live="polite"
+          style={{
+            background: view === "curated"
+              ? (dark ? "rgba(34,197,94,.09)" : "rgba(22,163,74,.07)")
+              : (dark ? "rgba(234,179,8,.09)" : "rgba(202,138,4,.07)"),
+            border: `1px solid ${view === "curated"
+              ? (dark ? "rgba(34,197,94,.22)" : "rgba(22,163,74,.2)")
+              : (dark ? "rgba(234,179,8,.24)" : "rgba(202,138,4,.22)")}`,
+          }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"
+            stroke={view === "curated" ? (dark ? "#4ade80" : "#16a34a") : (dark ? "#facc15" : "#ca8a04")} aria-hidden="true">
+            {view === "curated"
+              ? <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></>
+              : <><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></>}
+          </svg>
+          <span className="text-[13px] leading-snug" style={{ color: t.textSoft }}>
+            {view === "curated"
+              ? <>Covered by Nitro&rsquo;s refill guarantee. Order these from New Order or the API.</>
+              : <>Sold as listed. Each service carries only its own refill and cancel terms, shown on every row. API only.</>}
+          </span>
         </div>
       )}
 
