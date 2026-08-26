@@ -279,6 +279,22 @@ export async function GET(req) {
       dayMap[day].newUsers++;
     });
 
+    // Today, hour by hour in WAT, midnight to now: the lines under Pulse's figures.
+    const toHour = (d) => new Date(new Date(d).getTime() + 60 * 60 * 1000).getUTCHours();
+    const nowHour = toHour(now);
+    const todayHours = Array.from({ length: nowHour + 1 }, (_, hour) => ({ hour, orders: 0, revenue: 0, profit: 0, deposits: 0, newUsers: 0 }));
+    const inToday = (d) => new Date(d) >= todayStart;
+    chartOrders.forEach(o => {
+      if (!inToday(o.createdAt)) return;
+      const h = todayHours[Math.min(toHour(o.createdAt), nowHour)];
+      h.orders++;
+      if (o.status !== 'Cancelled') { h.revenue += effCharge(o) / 100; h.profit += (effCharge(o) - effCost(o)) / 100; }
+    });
+    chartDeposits.forEach(tx => { if (inToday(tx.createdAt)) todayHours[Math.min(toHour(tx.createdAt), nowHour)].deposits += (tx.amount || 0) / 100; });
+    chartUsers.forEach(u => { if (inToday(u.createdAt)) todayHours[Math.min(toHour(u.createdAt), nowHour)].newUsers++; });
+    todayHours.forEach(h => { h.revenue = Math.round(h.revenue); h.profit = Math.round(h.profit); h.deposits = Math.round(h.deposits); });
+    const newUsersYesterday = await prisma.user.count({ where: { createdAt: { gte: yesterdayStart, lt: todayStart } } });
+
     const todayKey = toDay(now);
     const chartData = [];
     const d = new Date(thirtyDaysAgo);
@@ -320,6 +336,9 @@ export async function GET(req) {
       monthRepeatUsers: monthRepeatResult[0]?.count || 0,
       idleUsersWithBalance: idleUsers,
       chartData,
+      todayHours,
+      nowHour,
+      newUsersYesterday,
       topPlatforms,
       byStatus: ordersByStatus.map(s => ({ status: s.status, count: s._count })),
       recentOrders: recentOrders.map(o => {
@@ -357,6 +376,7 @@ export async function GET(req) {
             status: o.status,
             quantity: o.quantity,
             remains: o.remains || 0,
+            reason: o.lastError || null,
             refundedAt: o.refundedAt.toISOString(),
           };
         });
