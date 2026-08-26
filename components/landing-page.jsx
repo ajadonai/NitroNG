@@ -8,6 +8,7 @@ import { SITE } from "../lib/site";
 import AnnouncementBanner from "./announcement-banner";
 import { trackViewContent } from "./capi-tracker";
 import InlineAlert from "./inline-alert";
+import { PublicNavSheet } from "./public-nav-sheet";
 
 const AuthModal = dynamic(() => import("./auth-modal"), { ssr: false });
 const BelowFold = dynamic(() => import('./landing-below-fold'), { ssr: true });
@@ -45,6 +46,7 @@ function LandingInner({ initialAuthQuery }){
   const initialVia=initialAuthQuery?.via||"";
   const initialRef=initialAuthQuery?.ref||"";
   const [modal,setModal]=useState(initialAuthQuery?.initialModal||null);
+  const [navOpen,setNavOpen]=useState(false);
   const resetToken=initialAuthQuery?.resetToken||null;
   const [heroAuth,setHeroAuth]=useState(initialAuthQuery?.initialHeroAuth||"login");
   const [heroMethod,setHeroMethod]=useState("email");
@@ -164,7 +166,7 @@ function LandingInner({ initialAuthQuery }){
           </button>
           <div className="nav-right flex items-center gap-2.5">
             <div className="flex max-desktop:hidden gap-1 items-center mr-1.5">
-              {["Services","Pricing","Testimonials"].map(l=><button key={l} onClick={()=>document.getElementById(l.toLowerCase())?.scrollIntoView({behavior:"smooth",block:"start"})} className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{color:dark?"rgba(255,255,255,.75)":"rgba(255,255,255,.75)"}}>{l}</button>)}
+              {["Services","Pricing","Testimonials"].map(l=><button key={l} onClick={()=>document.getElementById(l.toLowerCase())?.scrollIntoView({behavior:"smooth",block:"start"})} className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{color:dark?"rgba(255,255,255,.75)":"rgba(255,255,255,.75)"}}>{l}</button>)}<a href="/resellers" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:dark?"rgba(255,255,255,.75)":"rgba(255,255,255,.75)"}}>Resellers</a><a href="/blog" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:dark?"rgba(255,255,255,.75)":"rgba(255,255,255,.75)"}}>Blog</a>
             </div>
             <button onClick={toggleTheme} aria-label={dark?"Switch to light":"Switch to dark"} className="theme-toggle w-[44px] h-[24px] rounded-xl relative shrink-0" style={{background:dark?"rgba(99,102,241,.28)":"rgba(255,255,255,.24)",transition:"background .8s ease",border:`0.5px solid ${dark?"rgba(99,102,241,.24)":"rgba(255,255,255,.28)"}`}}>
               <div className="w-[18px] h-[18px] rounded-full absolute flex items-center justify-center" style={{background:dark?"#1e1b4b":"#fff",top:2.5,left:dark?22.5:2.5,transition:"left .8s cubic-bezier(.4,0,.2,1), background .8s ease"}}>
@@ -173,9 +175,10 @@ function LandingInner({ initialAuthQuery }){
               </div>
             </button>
             <button onClick={()=>setModal("login")} className="nav-login-btn py-[7px] px-5 rounded-lg text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{background:dark?"rgba(255,255,255,.16)":"rgba(255,255,255,.19)",border:`0.5px solid ${dark?"rgba(255,255,255,.18)":"rgba(255,255,255,.28)"}`,color:dark?"rgba(255,255,255,.8)":"#fff"}}>Log in</button>
-            <button onClick={()=>setModal("signup")} className="nav-signup-btn max-desktop:!hidden py-[7px] px-5 rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{background:"#fff",color:"#1a1a1a"}}>Get started</button>
+            <button type="button" onClick={()=>setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen} className="desktop:hidden w-9 h-9 rounded-lg border-none cursor-pointer flex items-center justify-center" style={{background:"rgba(255,255,255,.14)",color:"#fff"}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><button onClick={()=>setModal("signup")} className="nav-signup-btn max-desktop:!hidden py-[7px] px-5 rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{background:"#fff",color:"#1a1a1a"}}>Get started</button>
           </div>
       </nav>
+      <PublicNavSheet open={navOpen} onClose={()=>setNavOpen(false)} dark={dark} toggleTheme={toggleTheme} onLogin={()=>{setNavOpen(false);setModal("login")}} onSignup={()=>{setNavOpen(false);setModal("signup")}} />
 
       <div ref={scrollRef} className="snap-container flex-1 overflow-y-auto overflow-x-hidden relative">
 
