@@ -84,6 +84,31 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
 
         <div className="flex items-center gap-3 max-md:gap-2.5 px-[60px] max-desktop:px-10 max-md:px-5" style={{background:t.bgAlt}}><div className="flex-1 h-px" style={{background:`linear-gradient(90deg,transparent,${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"},transparent)`}}/><div className="w-1.5 h-1.5 max-md:w-[5px] max-md:h-[5px] rounded-full opacity-50 shrink-0" style={{background:t.accent}}/><div className="flex-1 h-px" style={{background:`linear-gradient(90deg,transparent,${dark?"rgba(196,125,142,.2)":"rgba(196,125,142,.15)"},transparent)`}}/></div>
 
+        {/* ━━━ SECTION 2b: RESELLER FORK ━━━ */}
+        <section id="resellers" className="py-16 px-[60px] max-desktop:py-12 max-desktop:px-10 max-md:py-10 max-md:px-5" style={{background:t.bgAlt}}>
+          <div className="max-w-[1200px] mx-auto grid grid-cols-[1.1fr_1fr] max-desktop:grid-cols-1 gap-12 max-desktop:gap-8 items-center">
+            <div className="max-desktop:text-center">
+              <div data-reveal className="mb-3"><span className="m text-[13px] max-md:text-xs font-semibold tracking-[3px] uppercase" style={{color:t.accent}}>For resellers</span></div>
+              <h2 data-reveal="1" className="text-4xl max-desktop:text-[30px] max-md:text-[26px] font-semibold leading-[1.1] -tracking-[0.5px] mb-4" style={{color:t.text}}>Run a panel, or buy for clients?</h2>
+              <p data-reveal="2" className="text-[15px] max-md:text-[13px] leading-[1.65] max-w-[460px] max-desktop:mx-auto mb-6" style={{color:t.textSoft}}>
+                Get wholesale prices on everything we sell. Same services, same naira wallet, lower rates, and the margin stays with you. Message us on WhatsApp and we set your account up.
+              </p>
+              <div data-reveal="3" className="flex gap-3 max-desktop:justify-center flex-wrap">
+                <a href="/resellers" className="py-3 px-7 rounded-xl text-[15px] font-semibold no-underline transition-transform duration-200 hover:-translate-y-px" style={{background:t.accent,color:"#fff"}}>See reseller pricing</a>
+              </div>
+            </div>
+            <figure data-reveal="2" className="m-0 rounded-2xl p-6 max-md:p-5" style={{background:t.bg,border:`1px solid ${dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.08)"}`}}>
+              <blockquote className="m-0 text-[18px] max-md:text-[15px] leading-[1.5] serif italic" style={{color:t.text}}>
+                &ldquo;I manage social media for 12 clients. Nitro&rsquo;s bulk pricing saves me at least &#8358;50K monthly.&rdquo;
+              </blockquote>
+              <figcaption className="mt-4 flex items-center gap-3">
+                <span className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0" style={{background:"#a5b4fc",color:"#1e1b4b"}}>EN</span>
+                <span><span className="block text-[13px] font-semibold" style={{color:t.text}}>Emeka N.</span><span className="block text-[11px]" style={{color:t.textMuted}}>Digital Marketer, 12 client accounts</span></span>
+              </figcaption>
+            </figure>
+          </div>
+        </section>
+
         {/* ━━━ SECTION 3: PRICING ━━━ */}
         <div className="relative overflow-hidden" style={{background:t.bg}}>
           <Waves dark={dark} />
@@ -222,7 +247,7 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
 
               {/* Trust strip */}
               <div data-reveal="4" className="flex justify-center gap-3 flex-wrap">
-                {[["M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z","Trusted by creators"],["M12 12m-10 0a10 10 0 1020 0 10 10 0 10-20 0M12 6v6l4 2","Fast delivery"],["M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z","Human support"]].map(([path,label])=>(
+                {[["M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z","Refill guarantee on curated services"],["M12 12m-10 0a10 10 0 1020 0 10 10 0 10-20 0M12 6v6l4 2","Delivery starts in minutes"],["M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z","Human support"]].map(([path,label])=>(
                   <div key={label} className="flex items-center gap-1.5 text-[11px] font-medium py-1.5 px-3.5 rounded-full" style={{color:dark?"rgba(255,255,255,.6)":"rgba(255,255,255,.85)",background:dark?"rgba(255,255,255,.09)":"rgba(255,255,255,.16)",border:`0.5px solid ${dark?"rgba(255,255,255,.12)":"rgba(255,255,255,.18)"}`}}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d={path}/></svg>
                     {label}
