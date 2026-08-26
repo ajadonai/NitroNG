@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { sendOutreach } from '@/lib/telegram';
 import { row, pct } from '@/lib/outreach-format';
+import { isOutreachPaused } from '@/lib/outreach-pause';
 
 export const maxDuration = 60;
 
@@ -31,6 +32,7 @@ export async function GET(req) {
   if (!secret || (token !== secret && authHeader !== `Bearer ${secret}`)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  if (await isOutreachPaused()) return Response.json({ ok: true, paused: true });
 
   const wat = new Date(Date.now() + 3600000);
   const mins = wat.getUTCHours() * 60 + wat.getUTCMinutes();

@@ -48,6 +48,18 @@ const RESPONSIVE_CSS = `
 
 export default function AdminOutreachPage({ dark, t }) {
   const [tab, setTab] = useState('overview');
+  // The whole outreach machine hangs on one setting; flipping it here answers
+  // every outreach cron with { paused: true } until it is flipped back.
+  const [paused, setPaused] = useState(null);
+  useEffect(() => { fetch('/api/admin/settings').then(r => r.ok ? r.json() : null).then(d => setPaused(d?.settings?.outreach_paused === 'true')).catch(() => setPaused(false)); }, []);
+  const togglePause = async () => {
+    const next = !paused;
+    const ok = next || window.confirm('Resume outreach? Lists start posting again on the next weekday run.');
+    if (!ok) return;
+    setPaused(next);
+    const res = await fetch('/api/admin/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ settings: { outreach_paused: String(next) } }) }).catch(() => null);
+    if (!res?.ok) setPaused(!next);
+  };
   const [dateRange, setDateRange] = useState(null);
   const [staffFilter, setStaffFilter] = useState('');
   const [page, setPage] = useState(1);
@@ -111,9 +123,15 @@ export default function AdminOutreachPage({ dark, t }) {
         <div className="adm-header-row">
           <div>
             <div className="adm-title" style={{ color: t?.text }}>Outreach</div>
-            <div className="adm-subtitle" style={{ color: t?.textMuted }}>Call-first workflow performance and contacts</div>
+            <div className="adm-subtitle" style={{ color: t?.textMuted }}>{paused ? 'Paused: no lists, callbacks or reminders go out until you resume' : 'Call-first workflow performance and contacts'}</div>
           </div>
-          <SegPill value={tab} options={[{ value: 'overview', label: 'Overview' }, { value: 'dnc', label: dncLabel }]} onChange={v => { setTab(v); setPage(1); setDncPage(1); }} dark={dark} t={t} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <button type="button" onClick={togglePause} disabled={paused === null}
+              style={{ padding: '7px 12px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${paused ? (dark ? 'rgba(251,191,36,.45)' : 'rgba(217,119,6,.4)') : (t?.cardBorder || 'rgba(0,0,0,.12)')}`, background: paused ? (dark ? 'rgba(251,191,36,.14)' : 'rgba(251,191,36,.16)') : 'transparent', color: paused ? (dark ? '#fcd34d' : '#b45309') : (t?.text || 'inherit') }}>
+              {paused === null ? '…' : paused ? 'Paused · Resume outreach' : 'Pause outreach'}
+            </button>
+            <SegPill value={tab} options={[{ value: 'overview', label: 'Overview' }, { value: 'dnc', label: dncLabel }]} onChange={v => { setTab(v); setPage(1); setDncPage(1); }} dark={dark} t={t} />
+          </div>
         </div>
         <div className="page-divider" style={{ background: t?.cardBorder }} />
       </div>

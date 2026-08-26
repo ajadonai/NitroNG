@@ -4,6 +4,7 @@ import { sendOutreach, OUTREACH_TOPICS } from '@/lib/telegram';
 import {
   message, block, row, outcomeRows, touchRows, staffRows, naira,
 } from '@/lib/outreach-format';
+import { isOutreachPaused } from '@/lib/outreach-pause';
 
 export const maxDuration = 60;
 
@@ -20,6 +21,7 @@ export async function GET(req) {
   if (!secret || (token !== secret && authHeader !== `Bearer ${secret}`)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  if (await isOutreachPaused()) return Response.json({ ok: true, paused: true });
 
   const period = req.nextUrl.searchParams.get('period') || 'week';
 

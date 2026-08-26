@@ -3,6 +3,7 @@ import { log } from '@/lib/logger';
 import { tgOutreach } from '@/lib/telegram';
 import { sendOutreach as ifySendOutreach } from '@/lib/ify/outreach';
 import { poolWhere } from '@/lib/outreach-pool';
+import { isOutreachPaused } from '@/lib/outreach-pause';
 
 export const maxDuration = 300;
 
@@ -90,6 +91,7 @@ export async function GET(req) {
   if (!secret || (token !== secret && authHeader !== `Bearer ${secret}`)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  if (await isOutreachPaused()) return Response.json({ ok: true, paused: true });
 
   const touch = req.nextUrl.searchParams.get('touch');
   if (!touch || !TOUCHES[touch]) {

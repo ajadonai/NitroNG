@@ -15,6 +15,7 @@ const ALLOWED_KEYS = new Set([
   'gateway_manual', 'coupons',
   'tos_version', 'maintenance',
   'discord_bot_url',
+  'outreach_paused',
   'social_instagram', 'social_twitter',
   'social_whatsapp_support', 'social_whatsapp_channel', 'social_telegram_support',
   'site_email_general', 'site_email_support',
