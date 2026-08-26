@@ -1,9 +1,10 @@
 // The reseller API: POST /api/v2, form-encoded, the SMM-panel convention.
 //
-// It is a second door to the same shop. Auth is the reseller's key, the
-// catalogue is whatever that reseller sees on the site (curated or full, decided
-// by their terms), prices are the same wholesale numbers, and an order goes
-// through the exact function the web route uses, stamped source: "api".
+// It is a second door to the same shop. Any verified account holds a key; the
+// catalogue is what that account sees on the site (curated, or full once
+// approved), prices are what that account pays (retail, or wholesale once
+// approved), and an order goes through the exact function the web route uses,
+// stamped source: "api".
 //
 // Errors follow the convention third-party panels parse: HTTP 200 with
 // { "error": "..." }. Only a bad key answers 401.
@@ -46,15 +47,15 @@ async function readParams(req) {
   }
 }
 
-/** The reseller behind a key, or null. Disabled profiles do not authenticate. */
-async function resellerForKey(key) {
+/** The account behind a key, or null. Every verified account may hold one. */
+async function userForKey(key) {
   if (typeof key !== 'string' || key.length < 8) return null;
-  const profile = await prisma.resellerProfile.findUnique({
+  const user = await prisma.user.findUnique({
     where: { apiKey: key },
-    select: { userId: true, enabled: true, user: { select: { id: true, email: true, phone: true, name: true, balance: true } } },
+    select: { id: true, email: true, phone: true, name: true, balance: true, emailVerified: true },
   });
-  if (!profile || !profile.enabled || !profile.user) return null;
-  return profile.user;
+  if (!user || !user.emailVerified) return null;
+  return user;
 }
 
 /**
@@ -79,7 +80,7 @@ async function resolveVisible(apiId, terms) {
     return { tierId: map.tier.id };
   }
   if (map.service) {
-    if (terms.catalog !== 'full') return { error: 'Incorrect service ID' };
+    if (terms?.catalog !== 'full') return { error: 'Incorrect service ID' };
     const s = map.service;
     if (!s.enabled || !s.providerListedAt || !['mtp', 'dao'].includes(s.provider) || !(Number(s.costPer1k) > 0)) return { error: 'Service not available' };
     return { serviceId: s.id };
@@ -114,7 +115,7 @@ async function listServices(terms) {
       });
     }
   }
-  if (terms.catalog !== 'full') return out;
+  if (terms?.catalog !== 'full') return out;
   // The full list, priced on the service, with the same labels the catalogue uses.
   const usdSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
   const usdRate = Number(usdSetting?.value || 1600);
@@ -175,13 +176,13 @@ const parseIds = (value) => String(value || '').split(',').map(v => v.trim()).fi
 
 export async function POST(req) {
   const p = await readParams(req);
-  const user = await resellerForKey(p.key);
+  const user = await userForKey(p.key);
   if (!user) return err('Invalid API key', 401);
   const limit = await rateLimit(req, { maxAttempts: 60, windowMs: 60 * 1000, key: `rl:api:${user.id}` });
   if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
   if (limit.limited) return tooManyRequests('Too many requests. Slow down.', limit.retryAfter);
+  // Null terms means retail: wholesaleOf returns the retail price untouched.
   const terms = await getResellerTerms(user.id);
-  if (!terms) return err('Invalid API key', 401);
   const session = { id: user.id, email: user.email, phone: user.phone, name: user.name };
 
   switch (String(p.action || '').toLowerCase()) {

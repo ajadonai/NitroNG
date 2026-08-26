@@ -51,7 +51,7 @@ const SECTIONS = [
 ];
 
 const ERRORS = [
-  ['Invalid API key', "The key is wrong, or was rotated. The current one is in Reseller HQ and in Settings."],
+  ['Invalid API key', "The key is wrong, or was rotated. The current one is in Settings."],
   ['Incorrect service ID', 'The service isn\'t in your current catalog. Re-sync services.'],
   ['Not enough funds', 'Wallet can\'t cover the charge. Nothing was queued. Top up and resend.'],
   ['Quantity out of range', 'Outside the service min and max. Check the service entry.'],
@@ -326,7 +326,7 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
                 {/* Authentication */}
                 <div className="rad-sec" id="auth">
                   <h2>Authentication</h2>
-                  <div className="rad-desc">Your key is in <b style={{ color: t.text }}>Reseller HQ</b> and in Settings once your account is approved. It identifies your account, applies your reseller rates, and charges your Nitro wallet. Keep it server-side and never in client code or public repos. Regenerating from the Lab kills the old key immediately.</div>
+                  <div className="rad-desc">Your key is in <b style={{ color: t.text }}>Settings</b> on every verified account; wholesale rates arrive by approval. It identifies your account, applies your reseller rates, and charges your Nitro wallet. Keep it server-side and never in client code or public repos. Regenerating from the Lab kills the old key immediately.</div>
                   <Callout variant="rose"><b>Orders are never delayed by gradual delivery.</b> API orders run at full natural provider speed. Keep your wallet funded ahead of your sales and fulfilment starts the moment an order lands.</Callout>
                 </div>
 
@@ -469,7 +469,7 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
                 <div className="rad-foot">
                   <div>
                     <h3>Key not generated yet?</h3>
-                    <p>Message support to become a reseller; once approved, your key is in Reseller HQ and Settings, wholesale from the first order.</p>
+                    <p>Your key is already in Settings. Message support for wholesale; once approved, the same key returns lower rates.</p>
                   </div>
                   <button className="rad-foot-btn" onClick={() => onNavigate ? onNavigate('lab') : null}>Open Reseller HQ</button>
                 </div>

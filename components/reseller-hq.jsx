@@ -31,7 +31,7 @@ const P = {
   book: <path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 006.5 22H20V2H6.5A2.5 2.5 0 004 4.5z"/>,
 };
 
-const WA_TEXT = "Hi! I'd like to become a Nitro reseller. Here's what my business does:";
+const WA_TEXT = "Hi! I'd like wholesale prices on my Nitro account. Here's what my business does:";
 const WA_FULL = "Hi! I'm a Nitro reseller and I'd like the full catalogue on my account.";
 
 function Styles({ dark, t }) {
@@ -99,10 +99,10 @@ function Catalogues({ full, waLink }) {
 }
 
 const FAQ = [
-  ['Which services can my key order?', 'Whatever your account sees: the curated tiers, or the full list once we switch you. An ID outside your catalogue answers "Incorrect service ID".'],
+  ['Which services can my key order?', 'Whatever your account sees: the curated tiers, at retail or at wholesale once approved, or the full list once we switch you. An ID outside your catalogue answers "Incorrect service ID".'],
   ['Do API orders run gradual delivery?', 'No. API orders go at natural speed; you set expectations with your own customers.'],
   ['What happens to orders that cannot deliver?', 'They refund to your wallet automatically.'],
-  ['How do I get a better rate?', 'Consistent volume. We set a personal rate on your account and it applies to every order after.'],
+  ['How do I get wholesale?', 'Message us on WhatsApp about your business. Once approved, the same key returns wholesale rates; consistent volume earns a personal rate on top.'],
   ['Is there a rate limit?', 'Sixty requests a minute per key. Normal panel traffic never touches it.'],
 ];
 
@@ -129,7 +129,7 @@ function ProspectInner() {
       <div className="min-h-dvh flex flex-col" style={{ background: t.bg, color: t.text }}>
         <SharedNav />
         <main className="flex-1 w-full max-w-[960px] mx-auto px-4 sm:px-6 pb-16">
-          <div className="rhq-hero"><div className="rhq-glow" /><span className="rhq-pill">Reseller HQ</span><h1 className="rhq-h1">Build your business on Nitro</h1><p className="rhq-lead">One wallet, wholesale on everything, and an <b>API</b> for the panel you already run. No forms: message us on WhatsApp and we switch your account on.</p><div className="rhq-checks"><span>{I(P.chk, 12, 2.5)}Wholesale on the whole catalogue</span><span>{I(P.chk, 12, 2.5)}API in the format every panel speaks</span><span>{I(P.chk, 12, 2.5)}Everything settles in naira</span></div><Wa /></div>
+          <div className="rhq-hero"><div className="rhq-glow" /><span className="rhq-pill">Reseller HQ</span><h1 className="rhq-h1">Build your business on Nitro</h1><p className="rhq-lead">Every account gets an <b>API key</b> and the same catalogue at retail, today. Message us on WhatsApp and we switch your account to <b>wholesale</b>.</p><div className="rhq-checks"><span>{I(P.chk, 12, 2.5)}Wholesale on the whole catalogue</span><span>{I(P.chk, 12, 2.5)}A key for every account, in Settings</span><span>{I(P.chk, 12, 2.5)}Everything settles in naira</span></div><Wa /></div>
           <SecHead label="What you get" sub="The same shop, lower prices" />
           <div className="rhq-feats">
             <Feat icon={P.naira} tone="accent" title="Naira in, naira out" body="Opay, PalmPay, Kuda or bank transfer. No dollar cards, no FX to watch." />
@@ -142,9 +142,9 @@ function ProspectInner() {
           <SecHead label="Catalogues" sub="Curated by default, full on request" />
           <Catalogues full={false} waLink={waLink} />
           <SecHead label="How to join" sub="Three steps, no forms" />
-          <Steps items={[['Message us on WhatsApp', 'Tell us about your business: your panel, your clients, or the volume you push. Two sentences is enough.'], ['We switch your account on', 'Your existing Nitro account starts seeing wholesale prices, and your API key appears in Settings.'], ['Order like you always did', 'Same order page, same wallet, same history. Only the price changes.']]} />
+          <Steps items={[['Grab your key in Settings', 'Every verified account has one. Point your panel at nitro.ng/api/v2 and order the curated list at the price you already see.'], ['Message us for wholesale', 'Tell us about your business: your panel, your clients, or the volume you push. We switch your account, and the same key starts returning lower rates.'], ['Order like you always did', 'Same order page, same wallet, same history. Only the price changes.']]} />
           <div className="rhq-honest"><span className="rhq-sec-label">The honest bit</span><p>Reseller pricing replaces retail perks: loyalty discounts, promo codes and Nitro Points do not stack on top. Wholesale is the deal. Full-catalogue services carry the provider's own terms, shown on every row.</p></div>
-          <div className="rhq-closer"><div><h3>Start where you are.</h3><p>Got a panel? Get a key. Don't? Order from the site at wholesale.</p></div><Wa /></div>
+          <div className="rhq-closer"><div><h3>Start where you are.</h3><p>Your key is already in Settings. Wholesale is one message away.</p></div><Wa /></div>
         </main>
         <SharedFooter />
       </div>
@@ -160,8 +160,9 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
   const [shown, setShown] = useState(false);
   const [rates, setRates] = useState([]);
   const [rotating, setRotating] = useState(false);
+  const [wholesale, setWholesale] = useState(false);
   useEffect(() => {
-    fetch('/api/reseller/key').then(r => r.ok ? r.json() : null).then(d => { if (d?.apiKey) { setKey(d.apiKey); setCatalog(d.catalog || 'curated'); } }).catch(() => {});
+    fetch('/api/reseller/key').then(r => r.ok ? r.json() : null).then(d => { if (d?.apiKey) { setKey(d.apiKey); setCatalog(d.catalog || 'curated'); setWholesale(!!d.wholesale); } }).catch(() => {});
     fetch('/api/reseller/catalogue?view=curated').then(r => r.ok ? r.json() : null).then(d => {
       const rows = [];
       for (const g of d?.groups || []) for (const tier of g.tiers || []) if (rows.length < 3 && tier.retail && tier.price && tier.retail > tier.price) rows.push([`${g.name} · ${tier.tier}`, tier.retail, tier.price]);
@@ -169,7 +170,7 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
     }).catch(() => {});
   }, []);
   const waNum = (socialLinks?.social_whatsapp_support || FALLBACK_WA).replace(/\D/g, '');
-  const waLink = `https://wa.me/${waNum}?text=${encodeURIComponent(WA_FULL)}`;
+  const waLink = `https://wa.me/${waNum}?text=${encodeURIComponent(wholesale ? WA_FULL : WA_TEXT)}`;
   const masked = key ? `${key.slice(0, 8)}${'•'.repeat(12)}${key.slice(-4)}` : '';
   const copyKey = () => { if (!key) return; try { navigator.clipboard?.writeText(key); toast.success('API key copied'); } catch {} };
   const rotate = async () => {
@@ -187,7 +188,7 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
   return (
     <div>
       <Styles dark={dark} t={t} />
-      <div className="rhq-phead"><div><span className="rhq-pill">Reseller HQ</span><h1 className="rhq-h1" style={{ fontSize: 22, margin: '8px 0 2px' }}>Wholesale is on.</h1><p>Everything you need, in one place.</p></div><span className="rhq-badge-sm big">{full ? 'FULL CATALOGUE' : 'CURATED'}</span></div>
+      <div className="rhq-phead"><div><span className="rhq-pill">Reseller HQ</span><h1 className="rhq-h1" style={{ fontSize: 22, margin: '8px 0 2px' }}>{wholesale ? 'Wholesale is on.' : 'Your API is ready.'}</h1><p>{wholesale ? 'Everything you need, in one place.' : 'Retail prices today. Wholesale is one message away.'}</p></div><span className="rhq-badge-sm big">{wholesale ? (full ? 'FULL CATALOGUE' : 'WHOLESALE') : 'RETAIL'}</span></div>
       <div className="rhq-keystrip">
         <span className="rhq-kicon">{I(P.key, 14)}</span><span className="rhq-klabel">API key</span>
         <code className="m">{key ? (shown ? key : masked) : 'Loading…'}</code>
@@ -201,16 +202,21 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
       <SecHead label="Quick start" sub="Three calls and you are selling" />
       <Steps items={[['Add Nitro as a provider', 'Set the API URL to nitro.ng/api/v2 in your panel and paste your key.'], ['Pull the services', 'Your panel calls services and gets your catalogue, your prices, our IDs.'], ['Place an order', 'add with a service ID, link and quantity. Track it with status.']]} />
       <div className="rhq-acts"><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="rhq-btn-p blue">{I(P.book, 13)} Read the docs</a><button type="button" className="rhq-btn-g" onClick={() => onNavigate?.('catalogue')}>Browse the catalogue</button></div>
-      <SecHead label="Your catalogue" sub={full ? 'Curated and the full list' : 'Curated today, full on request'} />
+      {!wholesale && <>
+        <SecHead label="Wholesale" sub="By approval, one message" />
+        <div className="rhq-feat"><span className="rhq-feat-ico accent">{I(P.chart, 15)}</span><span><h4>Lower rates on the same key</h4><p>Tell us about your business on WhatsApp. Once we switch your account, every services call returns wholesale and every add is charged at it. Nothing to re-map.</p></span></div>
+        <div className="rhq-acts"><a href={waLink} target="_blank" rel="noopener noreferrer" className="rhq-btn-p wa">{WA_ICON}Message us for wholesale</a></div>
+      </>}
+      <SecHead label="Your catalogue" sub={full ? 'Curated and the full list' : wholesale ? 'Curated today, full on request' : 'Curated, at retail'} />
       <Catalogues full={full} waLink={waLink} />
-      {!full && <div className="rhq-acts"><a href={waLink} target="_blank" rel="noopener noreferrer" className="rhq-btn-g" style={{ color: dark ? '#4ade80' : '#16a34a' }}>{WA_ICON} Ask for the full list</a></div>}
+      {wholesale && !full && <div className="rhq-acts"><a href={waLink} target="_blank" rel="noopener noreferrer" className="rhq-btn-g" style={{ color: dark ? '#4ade80' : '#16a34a' }}>{WA_ICON} Ask for the full list</a></div>}
       {rates.length > 0 && <>
         <SecHead label="Your rates today" sub="Per 1,000 · retail struck through" />
         <div className="rhq-rates">{rates.map(([name, retail, price]) => <div key={name} className="rhq-rate"><span>{name}</span><b><s>₦{Number(retail).toLocaleString()}</s>₦{Number(price).toLocaleString()}</b></div>)}</div>
       </>}
       <SecHead label="Questions" sub="The ones that matter" />
       <Faq items={FAQ} />
-      <div className="rhq-closer"><div><h3>Key's live. Go sell.</h3><p>Docs cover all six actions with copy-paste examples.</p></div><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="rhq-btn-p white">Read the docs</a></div>
+      <div className="rhq-closer"><div><h3>{wholesale ? "Key's live. Go sell." : "Key's live. Go build."}</h3><p>Docs cover all six actions with copy-paste examples.</p></div><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="rhq-btn-p white">Read the docs</a></div>
     </div>
   );
 }
@@ -219,7 +225,7 @@ export function ResellerHQSidebar({ dark, t, onNavigate }) {
   return (
     <div className="flex flex-col gap-0">
       <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.08)' }}>Quick reference</div>
-      {[['Base URL', 'https://nitro.ng/api/v2'], ['Actions', 'services · add · status · refill · balance · cancel'], ['Your key', 'At the top of this page, and in Settings'], ['Catalogue', 'Curated by default, full on request']].map(([k, v]) => (
+      {[['Base URL', 'https://nitro.ng/api/v2'], ['Actions', 'services · add · status · refill · balance · cancel'], ['Your key', 'At the top of this page, and in Settings'], ['Prices', 'Retail for every account, wholesale by approval']].map(([k, v]) => (
         <div key={k} className="py-2.5 px-2.5 rounded-lg mb-1.5" style={{ background: t.cardBg }}>
           <div className="text-[11px] uppercase tracking-[.5px] mb-0.5 text-t-text-muted">{k}</div>
           <div className="text-[13px] font-medium break-words text-t-text">{v}</div>

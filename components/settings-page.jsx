@@ -100,9 +100,10 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
     fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ [key]: value }) }).catch(() => {});
   };
   const [showDelete, setShowDelete] = useState(false);
-  // Resellers see their API key here; everyone else sees the row as "Soon".
+  // Every verified account has an API key; wholesale shows when the account has reseller terms.
   const [apiKey, setApiKey] = useState(null);
-  useEffect(() => { fetch("/api/reseller/key").then(r => r.ok ? r.json() : null).then(d => { if (d?.apiKey) setApiKey(d.apiKey); }).catch(() => {}); }, []);
+  const [apiWholesale, setApiWholesale] = useState(false);
+  useEffect(() => { fetch("/api/reseller/key").then(r => r.ok ? r.json() : null).then(d => { if (d?.apiKey) { setApiKey(d.apiKey); setApiWholesale(!!d.wholesale); } }).catch(() => {}); }, []);
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteError, setDeleteError] = useState("");
 
@@ -222,7 +223,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <SectionHead>More</SectionHead>
         <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
           {apiKey
-            ? <Row id="set-api" first icon={I_KEY} title="API access" sub={<span className="m">{`${apiKey.slice(0, 8)}••••${apiKey.slice(-4)}`} · nitro.ng/api/v2</span>} onClick={() => { try { navigator.clipboard?.writeText(apiKey); toast.success("API key copied"); } catch {} }} right={<span className="flex items-center gap-2"><span className="w-6 h-6 rounded-[7px] flex items-center justify-center text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{I_COPY}</span><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[12px] font-semibold no-underline text-accent">Docs</a></span>} dark={dark} t={t} />
+            ? <Row id="set-api" first icon={I_KEY} title="API access" sub={<span><span className="m">{`${apiKey.slice(0, 9)}••••${apiKey.slice(-4)}`}</span> · {apiWholesale ? "wholesale on" : "retail prices"} · nitro.ng/api/v2</span>} onClick={() => { try { navigator.clipboard?.writeText(apiKey); toast.success("API key copied"); } catch {} }} right={<span className="flex items-center gap-2"><span className="w-6 h-6 rounded-[7px] flex items-center justify-center text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{I_COPY}</span><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[12px] font-semibold no-underline text-accent">Docs</a></span>} dark={dark} t={t} />
             : <Row id="set-api" first icon={I_KEY} title="API access" sub="Use Nitro from your own platform" right={<span className="text-[10.5px] font-bold uppercase tracking-[.5px] py-[2px] px-2 rounded-md text-accent" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)" }}>Soon</span>} dark={dark} t={t} />}
           <Row id="set-status" icon={I_PULSE} title="System status" sub="Check that every Nitro service is running" href={SITE.status} right={<span className="w-[9px] h-[9px] rounded-full" style={{ background: "#059669", boxShadow: "0 0 0 3px rgba(5,150,105,.15)" }} />} dark={dark} t={t} />
         </div>

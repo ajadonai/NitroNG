@@ -31,8 +31,11 @@ Money is NGN as a decimal string with two places; `rate` is per 1,000.
 
 ## Design decisions
 
-**Auth.** `ResellerProfile.apiKey`, already on every reseller. Key in the body,
-never the query string. A key with no profile, or a retired profile, gets 401.
+**Auth.** `User.apiKey`: every verified account holds a key (minted on first
+read in Settings, rotatable). Wholesale is a property of the account, not the
+key: `getResellerTerms` returns null for retail accounts and `wholesaleOf`
+returns retail untouched, so approval simply lowers the rates the same key
+sees. Key in the body, never the query string. Unknown or unverified: 401.
 
 **IDs.** `ResellerServiceMap.apiId` is the only ID a reseller ever sees. Minting:
 a one-off backfill mints an ID for every service and tier a reseller can see
