@@ -6,6 +6,7 @@ import { useToast } from "./toast";
 import { fN } from "../lib/format";
 import { SITE } from "../lib/site";
 import { Avatar } from "./avatar";
+import { copyText } from '@/lib/clipboard';
 
 function SettingsModal({ open, onClose, title, dark, t, children }) {
   return (
@@ -166,7 +167,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
   const initials = user ? ((user.firstName?.[0] || "") + (user.lastName?.[0] || "")).toUpperCase() || user.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "";
 
   const card = { background: t.cardBg, border: `1px solid ${t.cardBorder}` };
-  const copyCode = () => { if (!user?.refCode) return; try { navigator.clipboard?.writeText(user.refCode); toast.success("Copied", user.refCode); } catch {} };
+  const copyCode = () => { if (!user?.refCode) return; try { copyText(user.refCode); toast.success("Copied", user.refCode); } catch {} };
   const themeBtn = (id, label, icon) => (
     <button key={id} onClick={() => applyTheme(id)} aria-pressed={themeMode === id} className="inline-flex items-center gap-1 h-[26px] px-2.5 rounded-full border-none font-[inherit] text-[11.5px] font-semibold cursor-pointer" style={themeMode === id ? { background: dark ? "#161b2e" : "#fff", color: t.text, boxShadow: "0 1px 3px rgba(0,0,0,.12)" } : { background: "transparent", color: t.textMuted }}>{icon}{label}</button>
   );
@@ -223,7 +224,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <SectionHead>More</SectionHead>
         <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
           {apiKey
-            ? <Row id="set-api" first icon={I_KEY} title="API access" sub={<span className="flex flex-col gap-[3px]"><span className="flex items-center gap-2 flex-wrap"><span className="m" style={{ color: t.text }}>{`${apiKey.slice(0, 9)}••••${apiKey.slice(-4)}`}</span><span className="text-[9.5px] font-bold uppercase tracking-[.5px] py-[1px] px-[6px] rounded-md" style={apiWholesale ? { color: dark ? "#4ade80" : "#15803d", background: dark ? "rgba(74,222,128,.14)" : "rgba(22,163,74,.1)" } : { color: t.textMuted, background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)" }}>{apiWholesale ? "Wholesale" : "Retail"}</span></span><span>POST nitro.ng/api/v2</span></span>} onClick={() => { try { navigator.clipboard?.writeText(apiKey); toast.success("API key copied"); } catch {} }} right={<span className="flex items-center gap-2"><span className="w-6 h-6 rounded-[7px] flex items-center justify-center text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{I_COPY}</span><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[12px] font-semibold no-underline text-accent">Docs</a></span>} dark={dark} t={t} />
+            ? <Row id="set-api" first icon={I_KEY} title="API access" sub={<span className="flex flex-col gap-[3px]"><span className="flex items-center gap-2 flex-wrap"><span className="m" style={{ color: t.text }}>{`${apiKey.slice(0, 9)}••••${apiKey.slice(-4)}`}</span><span className="text-[9.5px] font-bold uppercase tracking-[.5px] py-[1px] px-[6px] rounded-md" style={apiWholesale ? { color: dark ? "#4ade80" : "#15803d", background: dark ? "rgba(74,222,128,.14)" : "rgba(22,163,74,.1)" } : { color: t.textMuted, background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)" }}>{apiWholesale ? "Wholesale" : "Retail"}</span></span><span>POST nitro.ng/api/v2</span></span>} onClick={() => { try { copyText(apiKey); toast.success("API key copied"); } catch {} }} right={<span className="flex items-center gap-2"><span className="w-6 h-6 rounded-[7px] flex items-center justify-center text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{I_COPY}</span><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[12px] font-semibold no-underline text-accent">Docs</a></span>} dark={dark} t={t} />
             : <Row id="set-api" first icon={I_KEY} title="API access" sub="Use Nitro from your own platform" right={<span className="text-[10.5px] font-bold uppercase tracking-[.5px] py-[2px] px-2 rounded-md text-accent" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)" }}>Soon</span>} dark={dark} t={t} />}
           <Row id="set-status" icon={I_PULSE} title="System status" sub="Check that every Nitro service is running" href={SITE.status} right={<span className="w-[9px] h-[9px] rounded-full" style={{ background: "#059669", boxShadow: "0 0 0 3px rgba(5,150,105,.15)" }} />} dark={dark} t={t} />
         </div>

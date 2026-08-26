@@ -4,6 +4,7 @@ import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter } from './shared-nav';
 import { fD, readTime } from '@/lib/markdown';
 import { Avatar } from "./avatar";
+import { copyText } from '@/lib/clipboard';
 
 function useTrackView(slug) {
   const sent = useRef(false);
@@ -22,7 +23,7 @@ function ShareButtons({ post, dark, size = 34 }) {
   const [copied, setCopied] = useState(false);
   const url = typeof window !== "undefined" ? window.location.href : `https://nitro.ng/blog/${post.slug}`;
   const text = post.title;
-  const copy = () => { navigator.clipboard?.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2000); };
+  const copy = () => { copyText(url); setCopied(true); setTimeout(() => setCopied(false), 2000); };
   const linkStyle = { background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", border: `0.5px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)"}`, color: "#c47d8e" };
   const xStyle = { background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `0.5px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)"}`, color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.45)" };
   const waStyle = { background: dark ? "rgba(37,211,102,.08)" : "rgba(37,211,102,.05)", border: `0.5px solid ${dark ? "rgba(37,211,102,.18)" : "rgba(37,211,102,.12)"}`, color: "#25d366" };

@@ -7,6 +7,7 @@ import { fN } from "../lib/format";
 import { getLinkPlaceholder } from "../lib/order-form-core";
 import { distributeByCurve } from "../lib/drip-feed";
 import { cleanLink } from "@/lib/clean-link";
+import { copyText } from '@/lib/clipboard';
 
 const TIER_CLR_ORDER = { Budget: "#f59e0b", Standard: "#3b82f6", Premium: "#a855f7" };
 const DRIP_DAILY_CAP = { followers: 5000, likes: 10000, views: 75000, plays: 75000, comments: 1000, reviews: 100, engagement: 15000 };
@@ -305,7 +306,7 @@ export function AdminCreateOrderPage({ dark, t }) {
               <div style={{ fontSize: 12, color: t.soft, marginBottom: 8 }}>Payment link generated. Copy and send to the user.</div>
               <div style={{ display: "flex", gap: 6 }}>
                 <input readOnly value={topUpLink} style={{ flex: 1, padding: "8px 10px", borderRadius: 8, fontSize: 12, background: dark ? "rgba(19,23,40,1)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)"}`, color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
-                <button onClick={() => { navigator.clipboard.writeText(topUpLink); toast.success("Copied", "Payment link copied"); }} style={{ padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: t.accent, color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>Copy</button>
+                <button onClick={() => { copyText(topUpLink); toast.success("Copied", "Payment link copied"); }} style={{ padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: t.accent, color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>Copy</button>
               </div>
               <button onClick={resetTopUp} style={{ width: "100%", marginTop: 8, padding: 8, borderRadius: 8, fontSize: 12, fontWeight: 600, background: "none", color: t.textMuted, border: "none", cursor: "pointer" }}>Done</button>
             </div>
@@ -319,7 +320,7 @@ export function AdminCreateOrderPage({ dark, t }) {
               <div style={{ padding: 10, borderRadius: 9, background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.025)", marginBottom: 10 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <span style={{ fontSize: 10.5, fontWeight: 600, color: t.textMuted }}>{topUpBank.bankName}</span>
-                  <button onClick={() => { navigator.clipboard.writeText(topUpBank.accountNumber); toast.success("Copied", "Account number copied"); }} style={{ fontSize: 10, fontWeight: 600, color: t.accent, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Copy</button>
+                  <button onClick={() => { copyText(topUpBank.accountNumber); toast.success("Copied", "Account number copied"); }} style={{ fontSize: 10, fontWeight: 600, color: t.accent, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Copy</button>
                 </div>
                 <div className="m" style={{ fontSize: 16, fontWeight: 800, color: t.text, letterSpacing: 1 }}>{topUpBank.accountNumber}</div>
                 <div style={{ fontSize: 11, color: t.soft, marginTop: 2 }}>{topUpBank.accountName}</div>

@@ -16,7 +16,7 @@ function mockReq(ip = '127.0.0.1', path = '/api/test') {
 }
 
 function silentLogger() {
-  return { error: vi.fn() };
+  return { error: vi.fn(), warn: vi.fn() };
 }
 
 describe('accountRateLimitKey', () => {
@@ -274,14 +274,15 @@ describe('fail-open production behavior', () => {
 
     expect(result.limited).toBe(false);
     expect(memoryStore.size).toBe(1);
-    expect(logger.error).toHaveBeenCalledWith(
+    expect(logger.warn).toHaveBeenCalledWith(
       '[RateLimit] Distributed rate limiting unavailable',
       { reason: 'redis_request_failed' },
     );
     expect(monitor).toHaveBeenCalledWith('redis_unavailable', {
+      level: 'warning',
       data: { reason: 'redis_request_failed' },
       dedupeKey: 'redis_unavailable:redis_request_failed',
-      throttleMs: 5 * 60 * 1000,
+      throttleMs: 15 * 60 * 1000,
     });
   });
 
@@ -322,7 +323,7 @@ describe('fail-open production behavior', () => {
       key: accountRateLimitKey('person@example.test', 'user-login'),
     })).resolves.toMatchObject({ limited: false });
 
-    const logged = JSON.stringify(logger.error.mock.calls);
+    const logged = JSON.stringify(logger.warn.mock.calls);
     expect(logged).toContain('redis_request_failed');
     expect(logged).not.toContain('secret-token');
     expect(logged).not.toContain('person@example.test');

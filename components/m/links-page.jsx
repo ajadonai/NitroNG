@@ -4,6 +4,7 @@ import { EmptyState, Modal } from "./kit";
 import { useTheme } from "../shared-nav";
 import { useToast } from "../toast";
 import { useHeaderAction } from "./shell";
+import { copyText } from '@/lib/clipboard';
 
 function fmtDate(d) {
   return new Date(d).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
@@ -490,7 +491,7 @@ export default function LinksPage({ initialData }) {
   };
 
   const copyLink = (linkSlug) => {
-    navigator.clipboard.writeText(`https://nitro.ng/?via=${linkSlug}`);
+    copyText(`https://nitro.ng/?via=${linkSlug}`);
     setCopied(linkSlug);
     setTimeout(() => setCopied(null), 2000);
   };

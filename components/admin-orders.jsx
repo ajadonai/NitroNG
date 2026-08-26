@@ -5,6 +5,7 @@ import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
 import { fN, fD, fT } from "../lib/format";
 import { FilterDropdown } from "./date-range-picker";
+import { copyText } from '@/lib/clipboard';
 
 const DRIP_CONFIG = {
   followers:  { batchSize: 200,  intervalHours: 2 },
@@ -54,7 +55,7 @@ function CopyId({ value, dark, mono = true, size = "sm" }) {
       className={`${fs} font-semibold cursor-pointer inline-flex items-center gap-1 transition-opacity hover:opacity-70`}
       style={{ color: copied ? (dark ? "#4ade80" : "#16a34a") : (dark ? "#e5e0db" : "#1a1a1a"), fontFamily: mono ? "var(--font-mono, monospace)" : "inherit" }}
       title="Click to copy"
-      onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(String(value)); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+      onClick={e => { e.stopPropagation(); copyText(String(value)); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
     >
       {value}
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: copied ? 1 : 0.4 }}>
@@ -70,7 +71,7 @@ function CopyAllIds({ ids, dark }) {
   if (!ids || ids.length === 0) return null;
   return (
     <button
-      onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(ids.join(", ")); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+      onClick={e => { e.stopPropagation(); copyText(ids.join(", ")); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
       className="text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1 px-2.5 transition-all duration-200 hover:-translate-y-px"
       style={{ background: copied ? (dark ? "rgba(74,222,128,.15)" : "rgba(22,163,74,.1)") : (dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)"), color: copied ? (dark ? "#4ade80" : "#16a34a") : (dark ? "#60a5fa" : "#2563eb") }}
     >{copied ? "Copied!" : `Copy all ${ids.length} IDs`}</button>

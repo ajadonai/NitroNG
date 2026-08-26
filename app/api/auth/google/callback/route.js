@@ -6,7 +6,7 @@ import { generateReferralCode } from '@/lib/utils';
 import { sendWelcomeEmail } from '@/lib/email';
 import { isDisposableEmail } from '@/lib/validate';
 import { cookies, headers } from 'next/headers';
-import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
+import { enqueueMetaEvent, scheduleQueuedMetaEventDelivery, parseFbCookies } from '@/lib/meta-capi';
 import { tgNewUser } from '@/lib/telegram';
 import { notifyCrewSignup } from '@/lib/commissions';
 import { resolveSignupAttribution } from '@/lib/link-ownership';
@@ -204,16 +204,23 @@ export async function GET(req) {
       const eventId = `reg_${user.id}`;
       const hdrs2 = await headers();
       const { fbp, fbc } = parseFbCookies(hdrs2.get('cookie'));
-      sendEvent('CompleteRegistration', {
-        eventId,
-        email,
-        externalId: user.id,
-        clientIp: hdrs2.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs2.get('x-real-ip'),
-        userAgent: hdrs2.get('user-agent'),
-        fbp, fbc,
-        sourceUrl: `${APP_URL}/`,
-        customData: { content_name: 'google_signup', status: true },
-      });
+      // Durable: the outbox retries with backoff if Meta is slow, and the
+      // signup response never waits on Meta.
+      try {
+        await enqueueMetaEvent(prisma, 'CompleteRegistration', {
+          eventId,
+          email,
+          externalId: user.id,
+          clientIp: hdrs2.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs2.get('x-real-ip'),
+          userAgent: hdrs2.get('user-agent'),
+          fbp, fbc,
+          sourceUrl: `${APP_URL}/`,
+          customData: { content_name: 'google_signup', status: true },
+        });
+        scheduleQueuedMetaEventDelivery(eventId);
+      } catch (err) {
+        log.warn('MetaCAPI', `CompleteRegistration could not be queued (${eventId}): ${err?.message || err}`);
+      }
       return NextResponse.redirect(`${APP_URL}/dashboard?new_user=1&eid=${eventId}`);
     }
     return NextResponse.redirect(`${APP_URL}/dashboard`);

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { copyText } from '@/lib/clipboard';
 
 // ── Modal ──
 export function Modal({ open, onClose, title, subtitle, dark, t, children }) {
@@ -187,7 +188,7 @@ function LinkSelector({ links, dark, t }) {
   const multi = links.length > 1;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(url);
+    copyText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

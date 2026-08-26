@@ -7,7 +7,7 @@ import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-lim
 import { validateEmail, validatePassword, validateName, sanitizeEmail, sanitizeString, isDisposableEmail } from '@/lib/validate';
 import { headers } from 'next/headers';
 import { sendWelcomeEmail } from '@/lib/email';
-import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
+import { enqueueMetaEvent, scheduleQueuedMetaEventDelivery, parseFbCookies } from '@/lib/meta-capi';
 import { tgNewUser } from '@/lib/telegram';
 import { notifyCrewSignup } from '@/lib/commissions';
 import { resolveSignupAttribution } from '@/lib/link-ownership';
@@ -167,16 +167,23 @@ export async function POST(req) {
 
     const eventId = `reg_${user.id}`;
     const { fbp, fbc } = parseFbCookies(hdrs.get('cookie'));
-    sendEvent('CompleteRegistration', {
-      eventId,
-      email,
-      externalId: user.id,
-      clientIp: ip,
-      userAgent: ua,
-      fbp, fbc,
-      sourceUrl: hdrs.get('referer'),
-      customData: { content_name: 'signup', status: true },
-    });
+    // Durable: the outbox retries with backoff if Meta is slow, and the
+    // signup response never waits on Meta.
+    try {
+      await enqueueMetaEvent(prisma, 'CompleteRegistration', {
+        eventId,
+        email,
+        externalId: user.id,
+        clientIp: ip,
+        userAgent: ua,
+        fbp, fbc,
+        sourceUrl: hdrs.get('referer'),
+        customData: { content_name: 'signup', status: true },
+      });
+      scheduleQueuedMetaEventDelivery(eventId);
+    } catch (err) {
+      log.warn('MetaCAPI', `CompleteRegistration could not be queued (${eventId}): ${err?.message || err}`);
+    }
 
     return ok({
       eventId,
