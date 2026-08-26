@@ -51,7 +51,7 @@ const SECTIONS = [
 ];
 
 const ERRORS = [
-  ['Invalid API key', "The key is wrong, or was regenerated. Grab the current one from the Reseller Lab."],
+  ['Invalid API key', "The key is wrong, or was rotated. The current one is in Reseller HQ and in Settings."],
   ['Incorrect service ID', 'The service isn\'t in your current catalog. Re-sync services.'],
   ['Not enough funds', 'Wallet can\'t cover the charge. Nothing was queued. Top up and resend.'],
   ['Quantity out of range', 'Outside the service min and max. Check the service entry.'],
@@ -273,7 +273,7 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
             <div className="rad-topbar">
               <span className="rad-wm">nitro<span>API documentation</span></span>
               <div className="flex gap-2.5 items-center">
-                <button className="rad-pill-link" onClick={() => onNavigate ? onNavigate('lab') : null}>Reseller Lab</button>
+                <button className="rad-pill-link" onClick={() => onNavigate ? onNavigate('lab') : null}>Reseller HQ</button>
                 <button className="rad-pill-link primary" onClick={() => onNavigate ? onNavigate('overview') : null}>Dashboard</button>
               </div>
             </div>
@@ -326,14 +326,14 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
                 {/* Authentication */}
                 <div className="rad-sec" id="auth">
                   <h2>Authentication</h2>
-                  <div className="rad-desc">Your key is generated in the <b style={{ color: t.text }}>Reseller Lab</b>, free and instant. It identifies your account, applies your reseller rates, and charges your Nitro wallet. Keep it server-side and never in client code or public repos. Regenerating from the Lab kills the old key immediately.</div>
+                  <div className="rad-desc">Your key is in <b style={{ color: t.text }}>Reseller HQ</b> and in Settings once your account is approved. It identifies your account, applies your reseller rates, and charges your Nitro wallet. Keep it server-side and never in client code or public repos. Regenerating from the Lab kills the old key immediately.</div>
                   <Callout variant="rose"><b>Orders are never delayed by gradual delivery.</b> API orders run at full natural provider speed. Keep your wallet funded ahead of your sales and fulfilment starts the moment an order lands.</Callout>
                 </div>
 
                 {/* Catalogs */}
                 <div className="rad-sec" id="catalogs">
                   <h2>Catalogs &amp; rates</h2>
-                  <div className="rad-desc">Your key serves one of two lists, chosen by you in the Reseller Lab and switchable anytime: <b style={{ color: t.text }}>Nitro Curated</b> ({curatedCount ? `${curatedCount} tested` : 'tested'} services in Budget, Standard and Premium tiers) or the <b style={{ color: t.text }}>Full Catalogue</b> (thousands of raw provider services). The <code>services</code> action always returns your current list at your current reseller rates. Rates improve automatically as your monthly volume climbs the ladder.</div>
+                  <div className="rad-desc">Your key serves the catalogue on your account, curated by default and the full list on request: <b style={{ color: t.text }}>Nitro Curated</b> ({curatedCount ? `${curatedCount} tested` : 'tested'} services in Budget, Standard and Premium tiers) or the <b style={{ color: t.text }}>Full Catalogue</b> (thousands of raw provider services). The <code>services</code> action always returns your current list at your current reseller rates. Rates improve automatically as your monthly volume climbs the ladder.</div>
                 </div>
 
                 {/* services */}
@@ -469,9 +469,9 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
                 <div className="rad-foot">
                   <div>
                     <h3>Key not generated yet?</h3>
-                    <p>It&apos;s free and instant in the Reseller Lab, reseller rates from the first order.</p>
+                    <p>Message support to become a reseller; once approved, your key is in Reseller HQ and Settings, wholesale from the first order.</p>
                   </div>
-                  <button className="rad-foot-btn" onClick={() => onNavigate ? onNavigate('lab') : null}>Open Reseller Lab</button>
+                  <button className="rad-foot-btn" onClick={() => onNavigate ? onNavigate('lab') : null}>Open Reseller HQ</button>
                 </div>
               </div>
             </div>
