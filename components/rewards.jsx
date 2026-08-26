@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { Modal } from './ui-primitives';
 // ─────────────────────────────────────────────────────────────────
 // Nitro Rewards UI — Nitro Status + Nitro Points + Tasks strip,
 // detail modals, and the Wallet compact card.
@@ -200,19 +201,16 @@ export function ChannelLane({ dark, t, socialLinks }) {
 /* ── modal shell (matches the How-it-works popup exactly) ── */
 
 function ModalShell({ open, onClose, dark, t, title, children }) {
-  if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={onClose} style={{ background: 'rgba(0,0,0,.45)' }}>
-      <div role="dialog" aria-modal="true" className="w-full max-w-[420px] rounded-2xl overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? '#0e1120' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}`, boxShadow: dark ? '0 20px 60px rgba(0,0,0,.4)' : '0 20px 60px rgba(0,0,0,.1)' }}>
-        <div className="py-4 px-5 flex items-center justify-between" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.06)', borderBottom: `1px solid ${dark ? 'rgba(196,125,142,.15)' : 'rgba(196,125,142,.1)'}` }}>
-          <div className="text-[15px] font-semibold" style={{ color: t.text }}>{title}</div>
-          <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent" style={{ borderColor: dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)', color: t.textSoft }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-        <div className="py-5 px-5 max-h-[70vh] overflow-y-auto">{children}</div>
+    <Modal open={open} onClose={onClose} dark={dark} maxWidth={420} title={title} bare>
+      <div className="py-4 px-5 flex items-center justify-between shrink-0" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.06)', borderBottom: `1px solid ${dark ? 'rgba(196,125,142,.15)' : 'rgba(196,125,142,.1)'}` }}>
+        <div className="text-[15px] font-semibold" style={{ color: t.text }}>{title}</div>
+        <button onClick={onClose} aria-label="Close" className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent" style={{ borderColor: dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)', color: t.textSoft }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
       </div>
-    </div>
+      <div className="py-5 px-5 overflow-y-auto min-h-0">{children}</div>
+    </Modal>
   );
 }
 

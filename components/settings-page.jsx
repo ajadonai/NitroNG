@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import { Modal } from "./ui-primitives";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { fN } from "../lib/format";
@@ -7,23 +8,16 @@ import { SITE } from "../lib/site";
 import { Avatar } from "./avatar";
 
 function SettingsModal({ open, onClose, title, dark, t, children }) {
-  useEffect(() => {
-    if (open) document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, [open]);
-  if (!open) return null;
   return (
-    <div onClick={onClose} className="fixed inset-0 z-[200] flex items-center justify-center bg-black/55 backdrop-blur-[6px]">
-      <div onClick={e => e.stopPropagation()} className="w-full max-w-[480px] mx-4 rounded-2xl max-h-[85vh] overflow-y-auto" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, boxShadow: "0 24px 48px rgba(0,0,0,.35)" }}>
-        <div className="flex items-center justify-between py-4 px-5" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
-          <div className="text-[15px] font-bold text-t-text">{title}</div>
-          <button onClick={onClose} className="border-none cursor-pointer p-1 bg-transparent text-t-text-muted">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-        <div className="px-5 py-4">{children}</div>
+    <Modal open={open} onClose={onClose} dark={dark} maxWidth={480} title={title} bare>
+      <div className="flex items-center justify-between py-4 px-5 shrink-0" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
+        <div className="text-[15px] font-bold text-t-text">{title}</div>
+        <button onClick={onClose} aria-label="Close" className="border-none cursor-pointer p-1 bg-transparent text-t-text-muted">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
       </div>
-    </div>
+      <div className="px-5 py-4 overflow-y-auto min-h-0">{children}</div>
+    </Modal>
   );
 }
 
