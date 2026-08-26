@@ -21,7 +21,8 @@ export const FOCUS_RING = "outline-none focus-visible:ring-2 focus-visible:ring-
  * moves into the panel on open and returns where it came from on close, and
  * scrolling inside it does not drag the page behind.
  */
-export function Modal({ open, onClose, title, children, dark, maxWidth = 480, labelledBy }) {
+export function Modal({ open, onClose, title, children, dark, maxWidth = 480, labelledBy, variant = "dialog" }) {
+  const sheet = variant === "sheet";
   const panelRef = useRef(null);
   const restoreRef = useRef(null);
 
@@ -41,7 +42,7 @@ export function Modal({ open, onClose, title, children, dark, maxWidth = 480, la
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+    <div className={sheet ? "fixed inset-0 z-[300]" : "fixed inset-0 z-[300] flex items-center justify-center p-4"}>
       <button type="button" aria-label="Close dialog" onClick={onClose}
         className="absolute inset-0 border-none cursor-default" style={{ background: "rgba(0,0,0,.5)" }} />
       <div
@@ -51,9 +52,11 @@ export function Modal({ open, onClose, title, children, dark, maxWidth = 480, la
         aria-modal="true"
         aria-label={labelledBy ? undefined : title}
         aria-labelledby={labelledBy}
-        className={`relative w-full rounded-2xl p-5 max-h-[85vh] overflow-y-auto ${FOCUS_RING}`}
+        className={sheet
+          ? `absolute inset-0 w-full h-full overflow-y-auto flex flex-col ${FOCUS_RING}`
+          : `relative w-full rounded-2xl p-5 max-h-[85vh] overflow-y-auto ${FOCUS_RING}`}
         style={{
-          maxWidth,
+          maxWidth: sheet ? undefined : maxWidth,
           overscrollBehavior: "contain",
           background: dark ? "#16121a" : "#fdfcfb",
           border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`,
