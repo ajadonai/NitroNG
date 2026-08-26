@@ -358,6 +358,14 @@ function DashboardInner({ initialData }) {
   const [leftOpen, setLeftOpen] = useState(false);
   const [avOpen, setAvOpen] = useState(false);
   const [dockChat, setDockChat] = useState(false);
+  // Onboarding funnel: tell the server the first time Wallet and New Order are opened.
+  const seenSurfaces = useRef(new Set());
+  useEffect(() => {
+    const surface = active === "add-funds" ? "wallet" : active === "services" ? "new_order" : null;
+    if (!surface || seenSurfaces.current.has(surface)) return;
+    seenSurfaces.current.add(surface);
+    fetch("/api/telemetry/first-seen", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ surface }) }).catch(() => {});
+  }, [active]);
   const [dockMsg, setDockMsg] = useState("");
   const dockInputRef = useRef(null);
   const avRef = useRef(null);
