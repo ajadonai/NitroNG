@@ -60,6 +60,11 @@ function txRowClr(tx, dk) {
 function txStatusMeta(tx, dk) {
   const paymentState = txPaymentState(tx);
   const status = paymentState || tx.status;
+  // A Flutterwave checkout the user closed before paying never becomes a
+  // transaction on their side. That is not a failure, and red is the wrong colour for it.
+  if (status === "Failed" && /provider_not_found/.test(tx.note || "")) {
+    return { label: "Not completed", color: dk ? "#a1a1aa" : "#71717a", bg: dk ? "rgba(161,161,170,.12)" : "rgba(113,113,122,.08)" };
+  }
   const styles = {
     [PAYMENT_STATES.VERIFYING]: { label: "Verifying", color: dk ? "#a5b4fc" : "#4f46e5", bg: dk ? "rgba(165,180,252,.12)" : "rgba(79,70,229,.08)" },
     [PAYMENT_STATES.PROVIDER_PENDING]: { label: "Pending", color: dk ? "#fcd34d" : "#d97706", bg: dk ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)" },
