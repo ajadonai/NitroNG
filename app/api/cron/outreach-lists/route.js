@@ -53,6 +53,27 @@ const DAILY_BUDGET = 100 * CALLERS;
 // tgOutreach sleeps 3s per contact for Telegram's per-group rate limit, so a single
 // run cannot exceed ~95 contacts before hitting maxDuration. Hard ceiling per run.
 const MAX_RUN = 90;
+// Backlog is guaranteed this many sends a day. The priority touches are
+// budget-aware: each takes its cap or what is left above the floor, whichever
+// is smaller, so an over-subscribed set of caps can no longer starve Backlog.
+const BACKLOG_FLOOR = 15;
+async function sentTodayCount() {
+  const startOfToday = new Date();
+  startOfToday.setUTCHours(0, 0, 0, 0);
+  return prisma.user.count({
+    where: {
+      OR: [
+        { outreachDay1SentAt: { gte: startOfToday } },
+        { outreachDay3SentAt: { gte: startOfToday } },
+        { outreachDay7SentAt: { gte: startOfToday } },
+        { outreachWinbackSentAt: { gte: startOfToday } },
+      ],
+    },
+  });
+}
+function priorityTake(cap, sentToday) {
+  return Math.max(0, Math.min(cap, DAILY_BUDGET - BACKLOG_FLOOR - sentToday));
+}
 
 const TOUCHES = {
   day1: { field: 'outreachDay1SentAt', daysAgo: 1, label: 'First Call — new signups' },
@@ -103,7 +124,7 @@ export async function GET(req) {
             select: { amountGranted: true },
           },
         },
-        take: TOUCH_CAP.winback,
+        take: priorityTake(TOUCH_CAP.winback, await sentTodayCount()),
       });
 
       if (batch.length > 0) {
@@ -128,18 +149,7 @@ export async function GET(req) {
 
       // Backlog is the flex valve. Count what the priority touches already handed out
       // today and claim the rest of the budget, capped by what one run can send.
-      const startOfToday = new Date();
-      startOfToday.setUTCHours(0, 0, 0, 0);
-      const sentToday = await prisma.user.count({
-        where: {
-          OR: [
-            { outreachDay1SentAt: { gte: startOfToday } },
-            { outreachDay3SentAt: { gte: startOfToday } },
-            { outreachDay7SentAt: { gte: startOfToday } },
-            { outreachWinbackSentAt: { gte: startOfToday } },
-          ],
-        },
-      });
+      const sentToday = await sentTodayCount();
       const BATCH_LIMIT = Math.max(0, Math.min(DAILY_BUDGET - sentToday, MAX_RUN));
 
       const baseWhere = poolWhere('backlog');
@@ -190,7 +200,7 @@ export async function GET(req) {
       const batch = await prisma.user.findMany({
         where: poolWhere('day1'),
         select: { id: true, name: true, phone: true },
-        take: TOUCH_CAP.day1,
+        take: priorityTake(TOUCH_CAP.day1, await sentTodayCount()),
       });
 
       if (batch.length > 0) {
@@ -208,7 +218,7 @@ export async function GET(req) {
       const batch = await prisma.user.findMany({
         where: poolWhere(touch),
         select: { id: true, name: true, phone: true },
-        take: TOUCH_CAP[touch],
+        take: priorityTake(TOUCH_CAP[touch], await sentTodayCount()),
       });
 
       if (batch.length > 0) {
