@@ -23,7 +23,7 @@ function GradeLegendBody({ dark, t }) {
       <div className="flex flex-wrap gap-2 mb-3">
         {[...Object.entries(GRADE_META).map(([k, m]) => ({ k, dot: m.dot, label: m.label, tint: `${m.dot}1f` })),
           { k: "none", dot: null, label: "Not graded", tint: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }].map(c => (
-          <span key={c.k} className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-[11.5px] font-semibold"
+          <span key={c.k} className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-[11px] font-semibold"
             style={{ background: c.tint, color: dark ? "#cfc9c2" : "#555250", border: `1px solid ${c.dot ? `${c.dot}55` : border}` }}>
             {c.dot
               ? <span style={{ width: 7, height: 7, borderRadius: 99, background: c.dot, display: "inline-block", boxShadow: `0 0 0 3px ${c.dot}26` }} />
@@ -32,7 +32,7 @@ function GradeLegendBody({ dark, t }) {
           </span>
         ))}
       </div>
-      <div className="text-[12px] leading-relaxed" style={{ color: t.textMuted }}>
+      <div className="text-[13px] leading-relaxed" style={{ color: t.textMuted }}>
         Not every service carries a grade — an ungraded service is <span style={{ fontWeight: 600, color: dark ? "#cfc9c2" : "#555250" }}>not a lesser one</span>,
         grading just isn&rsquo;t available across the whole catalogue. Judge ungraded services on refill terms and price;
         many are among the strongest performers.
@@ -203,7 +203,7 @@ export default function ResellerCataloguePage({ dark, t }) {
 
   const idChip = (id) => (
     <span className="py-0.5 px-1.5 rounded-md text-[11px] font-semibold"
-      style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", color: t.textSoft, fontFamily: "'JetBrains Mono', monospace" }}>#{id}</span>
+      style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", color: t.textSoft, fontVariantNumeric: "tabular-nums", fontFamily: "'JetBrains Mono', monospace" }}>#{id}</span>
   );
 
   const fullRow = (s, i) => (
@@ -216,13 +216,13 @@ export default function ResellerCataloguePage({ dark, t }) {
         <span className="flex items-center gap-2 text-[11px]" style={{ color: t.textMuted }}>
           {idChip(s.id)}
           <span>{s.min.toLocaleString()}–{s.max.toLocaleString()}</span>
-          {s.refill && <span className="py-px px-1.5 rounded-full text-[10px] font-semibold" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)", color: dark ? "#6ee7b7" : "#059669" }}>refill</span>}
-          {s.cancel && <span className="hidden md:inline py-px px-1.5 rounded-full text-[10px] font-semibold" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", color: t.textMuted }}>cancel</span>}
+          {s.refill && <span className="py-px px-1.5 rounded-full text-[11px] font-semibold" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)", color: dark ? "#6ee7b7" : "#059669" }}>refill</span>}
+          {s.cancel && <span className="hidden md:inline py-px px-1.5 rounded-full text-[11px] font-semibold" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", color: t.textMuted }}>cancel</span>}
         </span>
       </span>
-      <span className="text-right flex-shrink-0">
-        <span className="block text-[13.5px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{naira(s.price)}</span>
-        <span className="text-[10px]" style={{ color: t.textMuted }}>per 1k</span>
+      <span className="text-right flex-shrink-0 w-[86px]">
+        <span className="block text-[15px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: "tabular-nums" }}>{naira(s.price)}</span>
+        <span className="text-[11px]" style={{ color: t.textMuted }}>per 1k</span>
       </span>
       <svg className="flex-shrink-0 max-md:hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
     </button>
@@ -258,7 +258,7 @@ export default function ResellerCataloguePage({ dark, t }) {
         <div className="inline-flex rounded-full p-1 mb-5" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)" }}>
           {[["curated", "Curated"], ["full", "Full catalogue"]].map(([v, label]) => (
             <button key={v} onClick={() => setView(v)}
-              className="py-1.5 px-4 rounded-full text-[12.5px] font-semibold border-none cursor-pointer transition-colors"
+              className="py-1.5 px-4 rounded-full text-[13px] font-semibold border-none cursor-pointer transition-colors"
               style={{ background: view === v ? t.accent : "none", color: view === v ? "#fff" : t.textMuted }}>
               {label}
             </button>
@@ -274,27 +274,27 @@ export default function ResellerCataloguePage({ dark, t }) {
                 className="cat-row w-full flex items-center gap-3 py-3.5 px-4 cursor-pointer border-none text-left" style={{ background: "none" }}>
                 <svg className={`cat-chev${openCats[g.name] ? " open" : ""}`} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
                 <span className="flex-1 min-w-0">
-                  <span className="block text-[13.5px] font-semibold truncate" style={{ color: t.text }}>{g.name}</span>
+                  <span className="block text-[15px] font-semibold truncate" style={{ color: t.text }}>{g.name}</span>
                   <span className="text-[11px]" style={{ color: t.textMuted }}>{g.platform}</span>
                 </span>
-                <span className="py-0.5 px-2 rounded-full text-[10.5px] font-semibold flex-shrink-0" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", color: t.textMuted }}>{g.tiers.length} tier{g.tiers.length === 1 ? "" : "s"}</span>
+                <span className="py-0.5 px-2 rounded-full text-[11px] font-semibold flex-shrink-0" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", color: t.textMuted }}>{g.tiers.length} tier{g.tiers.length === 1 ? "" : "s"}</span>
               </button>
               {openCats[g.name] && g.tiers.map((tier, i) => (
                 <div key={tier.apiId || i} className="flex items-center gap-3 py-3 px-4"
                   style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)"}` }}>
-                  <span className="py-0.5 px-2 rounded-full text-[10.5px] font-bold flex-shrink-0"
+                  <span className="py-0.5 px-2 rounded-full text-[11px] font-bold flex-shrink-0"
                     style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)", color: t.accent }}>{tier.tier}</span>
                   <span className="flex-1 min-w-0">
                     <span className="flex items-center gap-2 text-[11px]" style={{ color: t.textMuted }}>
                       {idChip(tier.apiId ?? "—")}
                       <span>{tier.min.toLocaleString()}–{tier.max.toLocaleString()}</span>
                       {tier.speed && <span className="max-md:hidden">{tier.speed}</span>}
-                      {tier.refill && <span className="py-px px-1.5 rounded-full text-[10px] font-semibold" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)", color: dark ? "#6ee7b7" : "#059669" }}>{tier.refill}</span>}
+                      {tier.refill && <span className="py-px px-1.5 rounded-full text-[11px] font-semibold" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)", color: dark ? "#6ee7b7" : "#059669" }}>{tier.refill}</span>}
                     </span>
                   </span>
-                  <span className="text-right flex-shrink-0">
-                    <span className="block text-[13.5px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{naira(tier.price)}</span>
-                    <span className="text-[10px]" style={{ color: t.textMuted }}>per 1k</span>
+                  <span className="text-right flex-shrink-0 w-[86px]">
+                    <span className="block text-[15px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: "tabular-nums" }}>{naira(tier.price)}</span>
+                    <span className="text-[11px]" style={{ color: t.textMuted }}>per 1k</span>
                   </span>
                 </div>
               ))}
@@ -327,17 +327,17 @@ export default function ResellerCataloguePage({ dark, t }) {
                   <button onClick={() => toggleCat(c.name)}
                     className="cat-row w-full flex items-center gap-3 py-3.5 px-4 cursor-pointer border-none text-left" style={{ background: "none" }}>
                     <svg className={`cat-chev${openCats[c.name] ? " open" : ""}`} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
-                    <span className="flex-1 text-[13.5px] font-semibold truncate" style={{ color: t.text }}>{c.name}</span>
-                    <span className="py-0.5 px-2 rounded-full text-[10.5px] font-semibold flex-shrink-0" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", color: t.textMuted }}>{c.count.toLocaleString()}</span>
+                    <span className="flex-1 text-[15px] font-semibold truncate" style={{ color: t.text }}>{c.name}</span>
+                    <span className="py-0.5 px-2 rounded-full text-[11px] font-semibold flex-shrink-0" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", color: t.textMuted }}>{c.count.toLocaleString()}</span>
                   </button>
                   {openCats[c.name] && (catRows[c.name]
                     ? (<>
                       {catRows[c.name].rows.length
                         ? catRows[c.name].rows.map(fullRow)
-                        : <div className="py-6 px-4 text-[12px]" style={{ color: t.textMuted }}>Nothing available in this category right now.</div>}
+                        : <div className="py-6 px-4 text-[13px]" style={{ color: t.textMuted }}>Nothing available in this category right now.</div>}
                       {catRows[c.name].hasMore && (
                         <button onClick={() => loadMore(c.name)} disabled={catRows[c.name].loadingMore}
-                          className="w-full py-3 text-[12px] font-semibold cursor-pointer border-none"
+                          className="w-full py-3 text-[13px] font-semibold cursor-pointer border-none"
                           style={{ background: dark ? "rgba(196,125,142,.07)" : "rgba(196,125,142,.05)", color: t.accent, borderTop: `1px solid ${dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)"}` }}>
                           {catRows[c.name].loadingMore ? <Spinner size={13} color={t.accent} /> : `Show more (${catRows[c.name].rows.length.toLocaleString()} of ${c.count.toLocaleString()})`}
                         </button>
@@ -374,14 +374,14 @@ export default function ResellerCataloguePage({ dark, t }) {
             style={{ background: dark ? "#16121a" : "#fdfcfb", borderLeft: `1px solid ${border}`, overscrollBehavior: "contain" }}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">{gradeDot(drawer.grade)}<span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: t.textMuted }}>{drawer.grade ? GRADE_META[drawer.grade].label : "Not graded"}</span></div>
-              <button onClick={() => setDrawer(null)} aria-label="Close" className="border-none cursor-pointer text-[18px]" style={{ background: "none", color: t.textMuted }}>×</button>
+              <button onClick={() => setDrawer(null)} aria-label="Close" className="border-none cursor-pointer text-[15px]" style={{ background: "none", color: t.textMuted }}>×</button>
             </div>
 
-            <div className="text-[16px] font-semibold mb-4 leading-snug" style={{ color: t.text }}>{drawer.label}</div>
+            <div className="text-[15px] font-semibold mb-4 leading-snug" style={{ color: t.text }}>{drawer.label}</div>
 
             {/* the thing they came for */}
             <div className="rounded-[12px] p-4 mb-4" style={{ background: softBg }}>
-              <div className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: t.textMuted }}>Service ID — use this in API calls</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: t.textMuted }}>Service ID — use this in API calls</div>
               <div className="flex items-center justify-between">
                 <span className="text-[26px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{drawer.id}</span>
                 <button onClick={() => { navigator.clipboard?.writeText(String(drawer.id)); setCopied(true); }}
@@ -393,7 +393,7 @@ export default function ResellerCataloguePage({ dark, t }) {
               {[["Price / 1k", naira(drawer.price)], ["Min – Max", `${drawer.min.toLocaleString()} – ${drawer.max.toLocaleString()}`],
                 ["Refill", drawer.refill ? "Supported" : "Not offered"], ["Cancel", drawer.cancel ? "Supported" : "Not offered"]].map(([label, value]) => (
                 <div key={label} className="rounded-[10px] py-2.5 px-3" style={{ background: cardBg, border: `1px solid ${border}` }}>
-                  <div className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: t.textMuted }}>{label}</div>
+                  <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: t.textMuted }}>{label}</div>
                   <div className="text-[13px] font-semibold" style={{ color: t.text }}>{value}</div>
                 </div>
               ))}
@@ -407,7 +407,7 @@ export default function ResellerCataloguePage({ dark, t }) {
               </div>
             )}
 
-            <div className="text-[12px] leading-relaxed" style={{ color: t.textMuted }}>
+            <div className="text-[13px] leading-relaxed" style={{ color: t.textMuted }}>
               Full-catalogue services carry the provider&rsquo;s own terms{drawer.refill ? "" : " and no refill guarantee"}. Order through the API using the ID above.
             </div>
           </div>
