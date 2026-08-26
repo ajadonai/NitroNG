@@ -85,9 +85,10 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
   return (
     <>
       {/* ── Greeting ── */}
-      <div className="mb-3">
-        <div className="text-lg desktop:text-[22px] font-semibold text-t-text">{greet}, {firstName}</div>
-        <div className="text-sm text-t-text-muted">{today}</div>
+      <div className="pb-2 desktop:pb-3 mb-3">
+        <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">{greet}, {firstName}</div>
+        <div className="text-sm desktop:text-[15px] text-t-text-muted">{today}</div>
+        <div className="page-divider bg-t-card-border" />
       </div>
 
       {/* ── Balance: the biggest number on the page, and the two things you do with it ── */}
