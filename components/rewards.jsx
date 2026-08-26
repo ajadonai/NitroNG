@@ -124,63 +124,21 @@ export function RewardsStrip({ rewards, dark, t, onStatus, onPoints, onTasks }) 
   const heroClr = curTier.key === 'spark' ? '#c47d8e' : curTier.color;
   const barClr = nextTier ? nextTier.color : heroClr;
   const gold = dark ? '#fbbf24' : '#d97706';
-
+  const blue = dark ? '#60a5fa' : '#2563eb';
+  // Three cards in the colours the strip always had: the tier's own for Status, gold for Points, blue for Tasks.
+  const Card = ({ clr, grad, onClick, label, glyph, value, hint, pct, barTo }) => (
+    <button onClick={onClick} className="relative overflow-hidden flex flex-col items-start gap-[2px] rounded-xl py-2.5 px-2.5 min-w-0 text-left border border-solid cursor-pointer font-[inherit] transition-transform duration-150 hover:-translate-y-px" style={{ background: dark ? `${clr}1f` : `${clr}14`, borderColor: `${clr}${dark ? '4d' : '40'}` }}>
+      <span className="inline-flex items-center gap-2 mb-1"><ChipIcon gradient={grad} shadow={`0 3px 10px ${clr}30`} size={28} radius={9}>{glyph}</ChipIcon><span className="text-[11px] font-bold uppercase tracking-[.8px]" style={{ color: clr, opacity: .7 }}>{label}</span></span>
+      <span className="text-[16px] font-extrabold truncate max-w-full" style={{ color: clr }}>{value}</span>
+      <span className="text-[10.5px] truncate max-w-full" style={{ color: t.textMuted }}>{hint}</span>
+      {pct != null && <span className="absolute left-0 right-0 bottom-0 h-[3px]" style={{ background: `${clr}20` }}><span className="block h-full" style={{ width: `${Math.max(3, Math.min(100, pct))}%`, background: `linear-gradient(90deg, ${clr}, ${barTo || clr})` }} /></span>}
+    </button>
+  );
   return (
-    <div className="grid grid-cols-2 gap-2.5 mb-5 max-md:mb-4">
-
-      {/* Nitro Status */}
-      <button onClick={onStatus} className="flex flex-col rounded-2xl max-md:rounded-xl p-3.5 max-md:p-3 min-w-0 text-left border border-solid cursor-pointer bg-transparent font-[inherit] transition-transform duration-150 hover:-translate-y-px" style={{ background: dark ? `${heroClr}20` : `${heroClr}18`, borderColor: `${heroClr}${dark ? '40' : '35'}` }}>
-        <div className="flex items-center gap-2 mb-3">
-          <ChipIcon gradient={`linear-gradient(135deg,${heroClr},${heroClr}cc)`} shadow={`0 3px 10px ${heroClr}30`} size={28} radius={9}><CrownGlyph s={14} /></ChipIcon>
-          <div className="text-[11px] font-bold uppercase tracking-[.8px]" style={{ color: heroClr, opacity: .7 }}>Status</div>
-        </div>
-        <div className="text-[18px] max-md:text-[18px] font-extrabold leading-none truncate" style={{ color: heroClr }}>{status.name}</div>
-        <div className="text-[11px] mt-1.5 truncate" style={{ color: t.textMuted }}>
-          {fmtCompactNaira(status.eligibleSpend)} spent
-        </div>
-        <div className="h-[5px] rounded-full overflow-hidden mt-2.5" style={{ background: `${heroClr}20` }}>
-          <div className="h-full rounded-full" style={{ width: `${Math.max(3, status.progressPct)}%`, background: `linear-gradient(90deg, ${heroClr}, ${barClr})` }} />
-        </div>
-        {nextTier && <div className="text-[11px] mt-1.5" style={{ color: barClr, opacity: .8 }}>{fmtCompactNaira(status.remainingToNext)} to {nextTier.name}</div>}
-        <div className="flex-1" />
-        <div className="mt-2.5 flex items-center gap-1 text-[11px] font-semibold" style={{ color: heroClr }}>
-          Details <Chevron />
-        </div>
-      </button>
-
-      {/* Nitro Points */}
-      <button onClick={onPoints} className="flex flex-col rounded-2xl max-md:rounded-xl p-3.5 max-md:p-3 min-w-0 text-left border border-solid cursor-pointer bg-transparent font-[inherit] transition-transform duration-150 hover:-translate-y-px" style={{ background: dark ? 'rgba(251,191,36,.14)' : 'rgba(251,191,36,.12)', borderColor: dark ? 'rgba(251,191,36,.35)' : 'rgba(217,119,6,.3)' }}>
-        <div className="flex items-center gap-2 mb-3">
-          <ChipIcon gradient="linear-gradient(135deg,#fbbf24,#d97706)" shadow="0 3px 10px rgba(217,119,6,.25)" size={28} radius={9}><CoinGlyph s={14} /></ChipIcon>
-          <div className="text-[11px] font-bold uppercase tracking-[.8px]" style={{ color: gold, opacity: .7 }}>Points</div>
-        </div>
-        <div className="m text-[18px] max-md:text-[18px] font-extrabold leading-none truncate" style={{ color: gold }}>{points.balance.toLocaleString()} <span className="text-[13px]">pts</span></div>
-        <div className="text-[11px] mt-1.5 truncate">
-          {points.redeemable
-            ? <span className="font-semibold" style={{ color: dark ? '#6ee7b7' : '#059669' }}>≈ ₦{points.valueNaira.toLocaleString()} ready</span>
-            : <span style={{ color: t.textMuted }}>{points.neededToRedeem.toLocaleString()} more to spend</span>}
-        </div>
-        {!points.redeemable && (
-          <div className="h-[5px] rounded-full overflow-hidden mt-2.5" style={{ background: dark ? 'rgba(251,191,36,.2)' : 'rgba(217,119,6,.15)' }}>
-            <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.round(points.balance / points.minRedeem * 100))}%`, background: gold }} />
-          </div>
-        )}
-        <div className="flex-1" />
-        <div className="mt-2.5 flex items-center gap-1 text-[11px] font-semibold" style={{ color: gold }}>
-          View <Chevron />
-        </div>
-      </button>
-
-      {TASKS_ENABLED && tasks && (
-        <button onClick={onTasks} className="col-span-2 flex items-center gap-3 rounded-2xl max-md:rounded-xl p-3.5 max-md:p-3 min-w-0 text-left border border-solid cursor-pointer bg-transparent font-[inherit] transition-transform duration-150 hover:-translate-y-px" style={{ background: dark ? 'rgba(96,165,250,.08)' : 'rgba(96,165,250,.05)', borderColor: dark ? 'rgba(96,165,250,.2)' : 'rgba(96,165,250,.12)' }}>
-          <ChipIcon gradient="linear-gradient(135deg,#60a5fa,#2563eb)" shadow="0 3px 10px rgba(37,99,235,.25)" size={28} radius={9}><TaskGlyph s={14} /></ChipIcon>
-          <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-bold" style={{ color: t.text }}><span className="m">{tasks.available}</span> tasks available</div>
-            <div className="text-[11px]" style={{ color: t.textMuted }}>Up to ₦{tasks.topReward.toLocaleString()} credit</div>
-          </div>
-          <div className="flex items-center gap-1 text-[11px] font-semibold" style={{ color: '#60a5fa' }}>Go <Chevron /></div>
-        </button>
-      )}
+    <div className={`grid gap-1.5 mb-[18px] ${TASKS_ENABLED && tasks ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      <Card clr={heroClr} grad={`linear-gradient(135deg,${heroClr},${heroClr}cc)`} barTo={barClr} onClick={onStatus} label="Status" glyph={<CrownGlyph s={14} />} value={status.name} hint={nextTier ? `${fmtCompactNaira(status.remainingToNext)} to ${nextTier.name}` : `${fmtCompactNaira(status.eligibleSpend)} spent`} pct={nextTier ? status.progressPct : 100} />
+      <Card clr={gold} grad="linear-gradient(135deg,#fbbf24,#d97706)" onClick={onPoints} label="Points" glyph={<CoinGlyph s={14} />} value={<span className="m">{points.balance.toLocaleString()} <span className="text-[11px] font-semibold">pts</span></span>} hint={points.redeemable ? `≈ ₦${points.valueNaira.toLocaleString()} ready` : `${points.neededToRedeem.toLocaleString()} more to spend`} pct={points.redeemable ? null : Math.round(points.balance / points.minRedeem * 100)} />
+      {TASKS_ENABLED && tasks && <Card clr={blue} grad="linear-gradient(135deg,#60a5fa,#2563eb)" onClick={onTasks} label="Tasks" glyph={<TaskGlyph s={14} />} value={<span><span className="m">{tasks.available}</span> open</span>} hint={`up to ₦${tasks.topReward.toLocaleString()} credit`} />}
     </div>
   );
 }
