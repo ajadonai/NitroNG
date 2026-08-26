@@ -1,10 +1,10 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Fragment } from "react";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
 import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
-import { WalletPointsCard, PointsModal } from "./rewards";
+import { PointsModal } from "./rewards";
 import NitroLoader from "./nitro-loader";
 import { PAYMENT_STATES, isCreditedPaymentResult, paymentStateFromTransactionStatus } from "../lib/payment-state";
 import {
@@ -446,16 +446,16 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       )}
       {welcomeEligible && (
         <>
-          <div className="grid grid-cols-3 gap-2.5 max-md:gap-2 mb-3">
+          <div className="grid grid-cols-3 gap-2 mb-3 pt-2">
             {BONUS_PRESETS.map(p => {
               const sel = numAmount === p.amount;
               const total = p.amount + p.bonus;
               return (
-                <button key={p.amount} onClick={() => setAmount(String(p.amount))} className="m relative pt-[18px] pb-3 max-md:pt-4 max-md:pb-2.5 rounded-[12px] text-center cursor-pointer transition-[border-color,background-color,box-shadow,transform] duration-150 hover:translate-y-[-1px]" style={{ border: `1.5px solid ${sel ? t.accent : (p.tag ? (dark ? 'rgba(196,125,142,.25)' : 'rgba(196,125,142,.18)') : t.cardBorder)}`, background: sel ? (dark ? 'rgba(196,125,142,.14)' : 'rgba(196,125,142,.08)') : 'transparent', boxShadow: sel ? '0 0 14px rgba(196,125,142,.12)' : 'none' }}>
-                  {p.tag && <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[11px] font-bold py-0.5 px-2.5 rounded-full text-white whitespace-nowrap" style={{ background: 'linear-gradient(135deg,#c47d8e,#a3586b)', boxShadow: '0 2px 8px rgba(196,125,142,.3)', letterSpacing: .3 }}>{p.tag}</span>}
-                  <div className="text-lg max-md:text-base font-extrabold" style={{ color: sel ? t.accent : t.text, letterSpacing: -.3 }}>₦{p.amount.toLocaleString()}</div>
-                  <div className="inline-flex items-center gap-1 mt-1 py-0.5 px-2 rounded-md text-[11px] max-md:text-[11px] font-bold" style={{ background: sel ? (dark ? 'rgba(110,231,183,.15)' : 'rgba(5,150,105,.1)') : (dark ? 'rgba(110,231,183,.07)' : 'rgba(5,150,105,.05)'), color: sel ? (dark ? '#6ee7b7' : '#059669') : (dark ? 'rgba(110,231,183,.6)' : 'rgba(5,150,105,.5)') }}>+₦{p.bonus.toLocaleString()} free</div>
-                  <div className="text-[11px] max-md:text-[11px] mt-1 text-t-text-muted">₦{total.toLocaleString()} to spend</div>
+                <button key={p.amount} onClick={() => setAmount(String(p.amount))} aria-pressed={sel} className="relative flex flex-col items-start gap-[2px] pt-3 pb-2.5 px-2.5 rounded-xl text-left cursor-pointer font-[inherit] min-w-0" style={{ border: `1.5px solid ${sel ? t.accent : t.cardBorder}`, background: sel ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)") : (dark ? "rgba(255,255,255,.04)" : "#fff"), boxShadow: sel ? `0 0 0 2px ${t.accent}` : "none" }}>
+                  {p.tag && <span className="absolute -top-2 left-2 text-[9.5px] font-bold uppercase tracking-[.04em] py-[2px] px-1.5 rounded-full text-white whitespace-nowrap" style={{ background: t.accent }}>{p.tag}</span>}
+                  <div className="m text-[15px] font-bold" style={{ color: t.text }}>₦{p.amount.toLocaleString()}</div>
+                  <div className="text-[12px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+₦{p.bonus.toLocaleString()} free</div>
+                  <div className="text-[10.5px] text-t-text-muted">₦{total.toLocaleString()} to spend</div>
                 </button>
               );
             })}
@@ -467,7 +467,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           </div>
         </>
       )}
-      {!welcomeEligible && <div className="text-sm font-semibold uppercase tracking-[1px] mb-2.5 text-t-text-soft">Amount to deposit</div>}
+      <div className="flex items-baseline justify-between mb-1.5"><span className="text-[12.5px] font-semibold text-t-text">Amount</span><span className="text-[11px] text-t-text-muted">min ₦1,000</span></div>
       <div className="flex items-center gap-1 py-3.5 px-[18px] max-desktop:py-3 max-desktop:px-4 max-md:py-3 max-md:px-3.5 rounded-xl mb-4 max-md:mb-3" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${amount ? t.accent : t.cardBorder}` }}>
         <span className="m text-[28px] max-desktop:text-[22px] max-md:text-xl font-semibold" style={{ color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.4)" }}>₦</span>
         <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" className="m border-none text-[28px] max-desktop:text-[28px] max-md:text-2xl font-semibold w-full outline-none bg-transparent placeholder:opacity-[.12] text-t-text" />
@@ -511,15 +511,13 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           </div>
         );
       })()}
-      <div className="min-h-6 mt-2.5 flex items-center">
+      <div className="min-h-0 mt-1 flex items-center">
         {numAmount > 0 && numAmount < 1000 ? (
           <div className="text-sm font-medium flex items-center gap-1.5" style={{ color: dark ? "#fcd34d" : "#d97706" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             Minimum deposit is ₦1,000
           </div>
-        ) : !valid && (
-          <div className="text-[11px] text-t-text-muted">Minimum deposit is ₦1,000</div>
-        )}
+        ) : null}
       </div>
     </>
   );
@@ -633,19 +631,12 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       </div>
 
       {/* ═══ DESKTOP + TABLET: side by side ═══ */}
-      <div className="flex flex-col flex-1 max-md:!hidden">
-        {/* Balance hero */}
-        <div className="mb-4 overflow-hidden rounded-[14px]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-          <div className="h-[52px]" style={{ background: "linear-gradient(135deg, #c47d8e 0%, #a3586b 50%, #8b5e6b 100%)" }} />
-          <div className="px-5 pb-4 -mt-5">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-lg border-[3px] mb-2.5" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)", borderColor: dark ? "#0e1225" : "#f3f0ec" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            </div>
-            <div className="flex items-baseline justify-between">
-              <div className="text-[11px] uppercase tracking-[1.5px] text-t-text-muted">Current Balance</div>
-              <div className="text-[28px] font-bold text-t-green">{fN(balance)}</div>
-            </div>
-            {lastFunded && <div className="text-[11px] mt-1 text-t-text-muted">Last funded {fD(lastFunded.date, true)}</div>}
+      {/* ── Balance ── */}
+      <div className="rounded-[14px] p-4 mb-2" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
+        <div className="text-[10.5px] font-semibold uppercase tracking-[1px] text-t-text-muted">Balance</div>
+        <div className="m text-[30px] desktop:text-[34px] font-bold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.01em" }}>{fN(balance)}</div>
+        {lastFunded && <div className="text-[11px] mt-1.5 text-t-text-muted">Last funded {fD(lastFunded.date, true)}</div>}
+        <div className="px-0">
             {user?.bonusCredit?.amount > 0 && (() => {
               const daysLeft = Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000));
               return (
@@ -668,206 +659,83 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                 </div>
               );
             })()}
+        </div>
+      </div>
+      {rewards?.points && (() => { const p = rewards.points; return (
+        <div className="flex items-center gap-2.5 rounded-xl py-2.5 px-3" style={{ background: dark ? "#2d2210" : "#fef7ed", border: `1px solid ${dark ? "#5a4020" : "#e8d5b8"}`, color: dark ? "#e0a458" : "#854F0B" }}>
+          <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-white" style={{ background: "linear-gradient(135deg,#fbbf24,#d97706)" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/></svg></span>
+          <span className="flex flex-col gap-px flex-1 min-w-0"><b className="text-[13px] font-semibold"><span className="m">{(p.balance || 0).toLocaleString()}</span> Nitro Points</b><small className="text-[11px] opacity-80 truncate">{p.redeemable ? `≈ ₦${(p.valueNaira || 0).toLocaleString()} ready to spend on your next order` : `${(p.neededToRedeem || 0).toLocaleString()} more to spend`}</small></span>
+          <button onClick={() => setPointsOpen(true)} className="bg-transparent border-none cursor-pointer text-[12px] font-semibold p-0 font-[inherit]" style={{ color: "inherit" }}>View</button>
+        </div>
+      ); })()}
+
+      {/* ── The flow: amount, then pay. Two steps on a phone, side by side on desktop. ── */}
+      <div className="desktop:grid desktop:grid-cols-2 desktop:gap-4 desktop:items-start mt-4">
+        <div className={mobileStep === 2 ? "max-desktop:hidden" : ""}>
+          <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-0.5 pb-1.5 text-t-text-muted">Add funds</div>
+          <div className="rounded-[14px] p-4" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
+            {amountInput}
+            {couponSection}
+            <div className="mt-3"><AcceptedRow /></div>
+          </div>
+          <div className="desktop:hidden mt-3">
+            <PayButton onClick={() => { if (valid) setMobileStep(2); }} disabled={!valid} text={valid ? "Continue" : "Enter an amount"} />
           </div>
         </div>
 
-        {/* Nitro Points (compact) */}
-        <WalletPointsCard rewards={rewards} dark={dark} t={t} onView={() => setPointsOpen(true)} />
-
-        {/* Two columns */}
-        <div className="flex gap-4 flex-1 items-stretch">
-          {/* LEFT — Amount + Presets + Coupon */}
-          <div className="flex-1 min-w-0 flex">
-            <div className="flex-1 flex flex-col rounded-[14px] p-[22px]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-              {amountInput}
-              <div className="flex-1" />
-              {couponSection}
-              <div className="mt-3">
-                <AcceptedRow />
-              </div>
-            </div>
+        <div className={mobileStep === 1 ? "max-desktop:hidden" : ""}>
+          <button onClick={() => setMobileStep(1)} className="desktop:hidden inline-flex items-center gap-1.5 bg-transparent border-none text-[12.5px] font-semibold cursor-pointer p-0 mb-2.5 text-accent font-[inherit]">← Change amount</button>
+          <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-0.5 pb-1.5 text-t-text-muted">Pay with</div>
+          <div className="rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
+            {gatewaysLoading ? (
+              [1, 2, 3].map(i => (
+                <div key={i} className="flex items-center gap-3 py-3 px-3.5" style={{ borderTop: i > 1 ? `1px solid ${t.cardBorder}` : "none" }}>
+                  <div className={`skel-bone w-[34px] h-[34px] rounded-[10px] shrink-0 ${dark ? "skel-dark" : "skel-light"}`} />
+                  <div className="flex-1"><div className={`skel-bone w-[110px] h-[11px] mb-1.5 ${dark ? "skel-dark" : "skel-light"}`} /><div className={`skel-bone w-[150px] h-[9px] ${dark ? "skel-dark" : "skel-light"}`} /></div>
+                </div>
+              ))
+            ) : gateways.map((g, i) => { const sel = method === g.id; const meta = GW_META[g.id] || {}; return (
+              <button key={g.id} onClick={() => setMethod(g.id)} aria-pressed={sel} className="w-full flex items-center gap-3 py-3 px-3.5 text-left cursor-pointer border-none font-[inherit]" style={{ background: sel ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)") : "transparent", borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}>
+                <div className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)" }}>
+                  {g.id === "flutterwave" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> : g.id === "crypto" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.767 19.089c4.924.868 6.14-6.025 1.216-6.894m-1.216 6.894L5.86 18.047m5.908 1.042-.347 1.97m1.563-8.864c4.924.869 6.14-6.025 1.215-6.893m-1.215 6.893-6.083-1.072m6.083 1.072.347-1.969M7.116 16.676l-2.576-.454M9.21 4.835l-.347 1.97m0 0-2.576-.455"/></svg> : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13.5px] font-semibold" style={{ color: sel ? t.accent : t.text }}>{g.name}</div>
+                  <div className="text-[11.5px] text-t-text-muted">{[meta.desc, meta.speed].filter(Boolean).join(" · ")}</div>
+                </div>
+                <span className="w-[18px] h-[18px] rounded-full shrink-0" style={{ border: `2px solid ${sel ? t.accent : t.cardBorder}`, background: sel ? t.accent : "transparent", boxShadow: sel ? `inset 0 0 0 4px ${dark ? "#161b2e" : "#fff"}` : "none" }} />
+              </button>
+            ); })}
           </div>
-
-          {/* RIGHT — Summary + Method + Pay */}
-          <div className="w-[280px] shrink-0 flex">
-            <div className="flex-1 flex flex-col rounded-[14px] p-[22px]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-              {(() => { const wb = welcomeEligible && valid ? bonusForNaira(numAmount) : 0; return (<>
-              <div className="flex justify-between mb-3.5 text-[15px]"><span className="text-t-text-muted">Deposit</span><span style={{ color: valid ? t.text : t.textMuted, fontWeight: 600 }}>{valid ? fN(numAmount) : "₦0"}</span></div>
-              <div className="flex justify-between mb-3.5 text-[15px]"><span className="text-t-text-muted">Fee</span><span className="text-t-green font-semibold">Free</span></div>
-              {couponApplied && discount > 0 && (
-                <div className="flex justify-between mb-3.5 text-[15px]"><span className="text-t-text-muted">Coupon bonus</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+{fN(discount / 100)}</span></div>
-              )}
-              {wb > 0 && (
-                <div className="flex justify-between mb-3.5 text-[15px]"><span className="text-t-text-muted">Welcome bonus</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+₦{wb.toLocaleString()}</span></div>
-              )}
-              <div className="h-px my-1 mb-3.5 bg-t-card-border" />
-              <div className="flex justify-between items-baseline mb-7">
-                <span className="text-[11px] font-semibold uppercase tracking-[1.5px] text-t-text-muted">{(couponApplied && discount > 0) || wb > 0 ? "Wallet credit" : "Total"}</span>
-                <span className="text-[28px] font-bold" style={{ color: valid ? t.accent : t.textMuted }}>{valid ? fN(numAmount + (discount > 0 ? discount / 100 : 0) + wb) : "—"}</span>
-              </div>
-              </>); })()}
-
-              <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1.5 text-t-text-muted">Payment method</div>
-              {gatewaysLoading ? (
-                <div className="flex flex-col gap-1">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="flex items-center gap-2 py-2.5 px-2.5 rounded-lg" style={{ border: `1.5px solid ${t.cardBorder}` }}>
-                      <div className={`skel-bone w-7 h-7 rounded-md shrink-0 ${dark ? "skel-dark" : "skel-light"}`} />
-                      <div className="flex-1">
-                        <div className={`skel-bone w-[90px] h-[11px] mb-1 ${dark ? "skel-dark" : "skel-light"}`} />
-                        <div className={`skel-bone w-[130px] h-[9px] ${dark ? "skel-dark" : "skel-light"}`} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col gap-1">
-                  {gateways.map(g => { const sel = method === g.id; const meta = GW_META[g.id] || {}; return (
-                    <button key={g.id} onClick={() => setMethod(g.id)} className="w-full flex items-center gap-2 py-2.5 px-2.5 rounded-lg text-left cursor-pointer transition-all duration-150" style={{ background: sel ? `linear-gradient(135deg, ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)"}, ${dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)"})` : "transparent", border: `1.5px solid ${sel ? t.accent : t.cardBorder}`, fontFamily: "inherit" }}>
-                      <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0" style={{ background: sel ? (dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.18)") : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)") }}>
-                        {g.id === "flutterwave" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> : g.id === "crypto" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.767 19.089c4.924.868 6.14-6.025 1.216-6.894m-1.216 6.894L5.86 18.047m5.908 1.042-.347 1.97m1.563-8.864c4.924.869 6.14-6.025 1.215-6.893m-1.215 6.893-6.083-1.072m6.083 1.072.347-1.969M7.116 16.676l-2.576-.454M9.21 4.835l-.347 1.97m0 0-2.576-.455"/></svg> : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[11px] font-semibold leading-tight" style={{ color: sel ? t.accent : t.text }}>{g.name}</div>
-                        {meta.desc && <div className="text-[11px] leading-tight text-t-text-muted">{meta.desc}</div>}
-                      </div>
-                      {sel ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> : meta.speed ? <span className="text-[11px] font-medium py-px px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)" }}>{meta.speed}</span> : null}
-                    </button>
-                  ); })}
-                </div>
-              )}
-              {method === "flutterwave" && gateways.some(g => g.id === "manual") && (
+          {method === "flutterwave" && gateways.some(g => g.id === "manual") && (
                 <div className="flex items-start gap-1.5 mt-1.5 py-1.5 px-2 text-t-text-muted">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                   <span className="text-[11px] leading-snug">If our bank isn't on your app, try <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold text-accent bg-transparent border-none p-0 font-[inherit] text-[inherit]">Manual Transfer</button> as a backup.</span>
                 </div>
               )}
 
-              <div className="flex-1 min-h-4" />
-
-              <PayButton onClick={handlePay} disabled={!valid || loading} loading={loading} text={loading ? "Processing..." : valid ? `Pay ${fN(numAmount)} Now` : "Enter an amount"} />
-              <div className="flex items-center justify-center gap-1.5 mt-2.5 text-xs text-t-text-muted">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                Encrypted & secure
+          {(() => { const wb = welcomeEligible && valid ? bonusForNaira(numAmount) : 0; const extra = (discount > 0 ? discount / 100 : 0) + wb; return (
+            <div className="rounded-[14px] px-3.5 mt-3" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
+              {[
+                ["Deposit", <b key="d" className="m text-[13px] font-semibold text-t-text">{valid ? fN(numAmount) : "₦0"}</b>],
+                ["Fee", <b key="f" className="text-[13px] font-semibold text-t-text">Free</b>],
+                couponApplied && discount > 0 ? ["Coupon bonus", <b key="c" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{fN(discount / 100)}</b>] : null,
+                wb > 0 ? ["Welcome bonus", <b key="w" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+₦{wb.toLocaleString()}</b>] : null,
+              ].filter(Boolean).map(([label, val], i) => (
+                <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-muted" style={{ borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}><span>{label}</span>{val}</div>
+              ))}
+              <div className="flex items-center justify-between gap-3 py-3" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
+                <span className="text-[13px] font-semibold text-t-text">{extra > 0 ? "You get" : "Total"}</span>
+                <b className="m text-[18px] font-bold" style={{ color: valid ? t.text : t.textMuted }}>{valid ? fN(numAmount + extra) : "—"}</b>
               </div>
             </div>
+          ); })()}
+          <div className="mt-3">
+            <PayButton onClick={handlePay} disabled={!valid || loading} loading={loading} text={loading ? "Processing..." : valid ? `Pay ${fN(numAmount)}` : "Enter an amount"} />
           </div>
+          <div className="text-center text-[11.5px] mt-2 text-t-text-muted">Payments are 100% secure. Your balance updates the moment it clears.</div>
         </div>
       </div>
-
-      {/* ═══ MOBILE: two-step flow ═══ */}
-      <div className="hidden max-md:!block">
-        {mobileStep === 1 && (
-          <>
-            {/* Balance hero */}
-            <div className="mb-3 overflow-hidden rounded-xl" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-              <div className="h-11" style={{ background: "linear-gradient(135deg, #c47d8e 0%, #a3586b 50%, #8b5e6b 100%)" }} />
-              <div className="px-4 pb-3.5 -mt-4">
-                <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 shadow-md border-[2.5px] mb-2" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)", borderColor: dark ? "#0e1225" : "#f3f0ec" }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                </div>
-                <div className="flex items-baseline justify-between">
-                  <div className="text-[11px] uppercase tracking-[1.5px] text-t-text-muted">Current Balance</div>
-                  <div className="text-[22px] font-semibold text-t-green">{fN(balance)}</div>
-                </div>
-                {user?.bonusCredit?.amount > 0 && (() => {
-                  const daysLeft = Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000));
-                  return (
-                    <div className="flex items-center gap-1.5 mt-1.5 py-2 px-2 rounded-lg text-[11px]" style={{ background: dark ? "rgba(240,171,252,.06)" : "rgba(168,85,247,.04)", border: `1px solid ${dark ? "rgba(240,171,252,.14)" : "rgba(168,85,247,.1)"}`, color: dark ? "#f0abfc" : "#a855f7" }}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/></svg>
-                      <span>{fN(user.bonusCredit.amount / 100)} bonus — expires in {daysLeft}d</span>
-                    </div>
-                  );
-                })()}
-                {pendingDeposits.length > 0 && (() => {
-                  const awaitingTx = pendingDeposits.find(tx => tx.awaitingConfirmation);
-                  return (
-                    <div className="flex items-center gap-1.5 mt-1.5 py-2 px-2 rounded-lg text-[11px]" style={{ background: dark ? "rgba(252,211,77,.06)" : "rgba(217,119,6,.04)", border: `1px solid ${dark ? "rgba(252,211,77,.14)" : "rgba(217,119,6,.1)"}`, color: dark ? "#fcd34d" : "#d97706" }}>
-                      <div className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ background: dark ? "#fcd34d" : "#d97706" }} />
-                      <span className="flex-1">{pendingSummaryText}</span>
-                      {awaitingTx && <>
-                        <button onClick={async () => { try { await fetch("/api/payments/manual", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: awaitingTx.reference }) }); } catch {} onRefresh?.(); }} className="py-0.5 px-2 rounded-md text-[11px] font-semibold cursor-pointer shrink-0 border-none" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>
-                        <button onClick={() => { setConfirmModal(awaitingTx); setSenderName(""); }} className="py-0.5 px-2 rounded-md text-[11px] font-semibold cursor-pointer shrink-0 border-none" style={{ background: dark ? "rgba(252,211,77,.15)" : "rgba(217,119,6,.12)", color: dark ? "#fcd34d" : "#d97706" }}>Sent</button>
-                      </>}
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-
-            {/* Nitro Points (compact) */}
-            <WalletPointsCard rewards={rewards} dark={dark} t={t} onView={() => setPointsOpen(true)} />
-
-            {/* Amount card */}
-            <div className="rounded-xl p-4" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-              {amountInput}
-              {couponSection}
-              <PayButton onClick={() => { if (valid) setMobileStep(2); }} disabled={!valid} text={valid ? "Proceed →" : "Enter amount"} className="mt-2" />
-              <AcceptedRow centered />
-            </div>
-          </>
-        )}
-
-        {mobileStep === 2 && (
-          <>
-            {/* Back button */}
-            <button onClick={() => setMobileStep(1)} className="flex items-center gap-1.5 bg-transparent border-none text-sm font-medium cursor-pointer pb-3 transition-transform duration-200 hover:-translate-y-px text-t-text-muted font-[inherit]">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
-              Back
-            </button>
-
-            {/* Summary + Payment method — single card */}
-            <div className="rounded-xl py-3.5 px-4 mb-2.5" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-              {(() => { const wb = welcomeEligible ? bonusForNaira(numAmount) : 0; return (<>
-              <div className="flex justify-between mb-2.5 text-sm"><span className="text-t-text-muted">Deposit</span><span className="text-t-text font-semibold">{fN(numAmount)}</span></div>
-              <div className="flex justify-between mb-2.5 text-sm"><span className="text-t-text-muted">Fee</span><span className="text-t-green font-semibold">Free</span></div>
-              {couponApplied && discount > 0 && (
-                <div className="flex justify-between mb-2.5 text-sm"><span className="text-t-text-muted">Coupon ({couponApplied.code})</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+{fN(discount / 100)} bonus</span></div>
-              )}
-              {wb > 0 && (
-                <div className="flex justify-between mb-2.5 text-sm"><span className="text-t-text-muted">Welcome bonus</span><span style={{ color: dark ? "#6ee7b7" : "#059669", fontWeight: 600 }}>+₦{wb.toLocaleString()}</span></div>
-              )}
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-[11px] font-semibold uppercase tracking-[1.5px] text-t-text-muted">{(couponApplied && discount > 0) || wb > 0 ? "Wallet credit" : "Total"}</span>
-                <span className="text-lg font-semibold text-accent">{fN(numAmount + (discount > 0 ? discount / 100 : 0) + wb)}</span>
-              </div>
-              </>); })()}
-              <div className="h-px mb-3 bg-t-card-border" />
-              <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1.5 text-t-text-muted">Payment method</div>
-              {gateways.length > 0 ? (
-                <div className="flex flex-col gap-1">
-                  {gateways.map(g => { const sel = method === g.id; const meta = GW_META[g.id] || {}; return (
-                    <button key={g.id} onClick={() => setMethod(g.id)} className="w-full flex items-center gap-2 py-2.5 px-2.5 rounded-lg text-left cursor-pointer transition-all duration-150" style={{ background: sel ? `linear-gradient(135deg, ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)"}, ${dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)"})` : "transparent", border: `1.5px solid ${sel ? t.accent : t.cardBorder}`, fontFamily: "inherit" }}>
-                      <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0" style={{ background: sel ? (dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.18)") : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)") }}>
-                        {g.id === "flutterwave" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> : g.id === "crypto" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.767 19.089c4.924.868 6.14-6.025 1.216-6.894m-1.216 6.894L5.86 18.047m5.908 1.042-.347 1.97m1.563-8.864c4.924.869 6.14-6.025 1.215-6.893m-1.215 6.893-6.083-1.072m6.083 1.072.347-1.969M7.116 16.676l-2.576-.454M9.21 4.835l-.347 1.97m0 0-2.576-.455"/></svg> : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[11px] font-semibold leading-tight" style={{ color: sel ? t.accent : t.text }}>{g.name}</div>
-                        {meta.desc && <div className="text-[11px] leading-tight text-t-text-muted">{meta.desc}</div>}
-                      </div>
-                      {sel ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> : meta.speed ? <span className="text-[11px] font-medium py-px px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)" }}>{meta.speed}</span> : null}
-                    </button>
-                  ); })}
-                </div>
-              ) : (
-                <div className="py-3 text-center text-sm text-t-text-muted">No payment methods available</div>
-              )}
-              {method === "flutterwave" && gateways.some(g => g.id === "manual") && (
-                <div className="flex items-start gap-1.5 mt-1.5 py-1.5 px-2 text-t-text-muted">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                  <span className="text-[11px] leading-snug">If our bank isn't on your app, try <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold text-accent bg-transparent border-none p-0 font-[inherit] text-[inherit]">Manual Transfer</button> as a backup.</span>
-                </div>
-              )}
-              <PayButton onClick={handlePay} disabled={loading} loading={loading} text={loading ? "Processing..." : `Pay ${fN(numAmount)} Now`} className="mt-3" />
-              <div className="flex items-center justify-center gap-1.5 mt-2.5 text-xs text-t-text-muted">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                Encrypted & secure
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
       {/* ═══ CRYPTO PAYMENT MODAL ═══ */}
       {cryptoModal && (
         <div onClick={() => { if (cryptoIsTerminal) { stopCryptoPolling(); setCryptoModal(null); } }} onKeyDown={e=>{if(e.key==='Escape'&&cryptoIsTerminal){stopCryptoPolling();setCryptoModal(null)}}} className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease] bg-black/45 overflow-y-auto">
@@ -1070,6 +938,17 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 /* ═══════════════════════════════════════════ */
 /* ═══ WALLET HISTORY                      ═══ */
 /* ═══════════════════════════════════════════ */
+function dayKeyWallet(iso) {
+  if (!iso) return null;
+  const d = new Date(iso); if (Number.isNaN(d.getTime())) return null;
+  const now = new Date();
+  const same = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  if (same(d, now)) return "Today";
+  const y = new Date(now); y.setDate(now.getDate() - 1);
+  if (same(d, y)) return "Yesterday";
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
 function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, dark, t, onRefresh, setConfirmModal, setSenderName }) {
   const [filter, setFilter] = useState("all");
   const [dateRange, setDateRange] = useState(null);
@@ -1153,10 +1032,12 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
       {/* Transaction list */}
       <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
         {historyTxs.length > 0 ? historyTxs.map((tx, i) => {
+          const dk = dayKeyWallet(tx.date); const prev = i > 0 ? dayKeyWallet(historyTxs[i - 1].date) : null;
+          const dayLabel = dk && dk !== prev ? <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-3.5 pt-3 pb-1 text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}>{dk}</div> : null;
           const statusMeta = txStatusMeta(tx, dark);
           const rowColor = txRowClr(tx, dark);
           return (
-            <div key={tx.id} className="flex items-center gap-2.5 desktop:gap-3.5 py-3 px-3.5 desktop:py-3.5 desktop:px-[18px]" style={{ borderBottom: i < historyTxs.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: statusMeta ? `${rowColor}${dark ? "0a" : "08"}` : (tx.orderStatus && !["Completed","Cancelled"].includes(tx.orderStatus)) ? (dark ? "rgba(252,211,77,.04)" : "rgba(217,119,6,.03)") : "transparent" }}>
+            <Fragment key={tx.id}>{dayLabel}<div className="flex items-center gap-2.5 desktop:gap-3.5 py-3 px-3.5 desktop:py-3.5 desktop:px-[18px]" style={{ borderBottom: i < historyTxs.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: statusMeta ? `${rowColor}${dark ? "0a" : "08"}` : (tx.orderStatus && !["Completed","Cancelled"].includes(tx.orderStatus)) ? (dark ? "rgba(252,211,77,.04)" : "rgba(217,119,6,.03)") : "transparent" }}>
               <div className="w-8 h-8 desktop:w-9 desktop:h-9 rounded-[10px] flex items-center justify-center text-base font-semibold shrink-0" style={{ background: dark ? `${rowColor}15` : `${rowColor}10`, color: rowColor }}>{txIcon(tx.type)}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
@@ -1172,7 +1053,7 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
                 </div>
                 <div className="text-[11px] mt-0.5 text-t-text-muted">{tx.date ? fD(tx.date, true) : ""}</div>
               </div>
-            </div>
+            </div></Fragment>
           );
         }) : (
           <div className="p-10 text-center text-[15px] text-t-text-muted">
