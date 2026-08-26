@@ -208,7 +208,7 @@ function WaitlistPage({ feature, dark, t }) {
   if (loading) return <div className="flex justify-center py-20"><div className={`skel-bone w-48 h-6 rounded-lg ${dark ? "skel-dark" : "skel-light"}`} /></div>;
 
   return (
-    <div className="rounded-[14px] max-md:rounded-xl overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+    <div className="rounded-[14px] max-md:rounded-xl overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
       <div className="py-10 px-6 max-md:py-8 max-md:px-4 flex flex-col items-center text-center">
         <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}>
           <span className="scale-[1.8]">{meta.icon}</span>
@@ -1069,7 +1069,7 @@ function DashboardInner({ initialData }) {
             <div className={`${skBone} w-[200px] h-3.5 mb-6`} />
             <div className="grid grid-cols-4 gap-3 mb-6">
               {[1,2,3,4].map(i => (
-                <div key={i} className="p-5 rounded-2xl" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
+                <div key={i} className="p-5 rounded-2xl" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
                   <div className={`${skBone} w-[60%] h-2.5 mb-2.5`} />
                   <div className={`${skBone} w-[45%] h-6 mb-2`} />
                   <div className={`${skBone} w-[70%] h-[9px]`} />
@@ -1140,7 +1140,7 @@ function DashboardInner({ initialData }) {
         return <ResellerCataloguePage dark={dark} t={t} />;
       default:
         return (
-          <div className="p-10 rounded-2xl flex flex-col items-center justify-center min-h-[300px]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
+          <div className="p-10 rounded-2xl flex flex-col items-center justify-center min-h-[300px]" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
             <div className="text-base font-medium text-t-text-muted">{active.charAt(0).toUpperCase() + active.slice(1).replace("-", " ")}</div>
             <div className="text-sm opacity-50 mt-1 text-t-text-muted">Coming soon</div>
           </div>
@@ -1310,7 +1310,7 @@ function DashboardInner({ initialData }) {
                 <div className="text-xl max-md:text-lg font-semibold mb-0.5 text-t-text">Welcome back, {firstName}</div>
                 <div className="text-sm text-t-text-muted">{orderSummary.total === 0 ? "Place your first order in under a minute." : "Here's your dashboard at a glance."}</div>
               </div>
-              <div className="shrink-0 ml-4 py-1.5 px-3 max-md:py-1 max-md:px-2.5 rounded-xl text-right" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+              <div className="shrink-0 ml-4 py-1.5 px-3 max-md:py-1 max-md:px-2.5 rounded-xl text-right" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
                 <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">Balance</div>
                 <div className="m text-lg max-md:text-base font-semibold text-t-green">{fN(user?.balance || 0)}</div>
                 {user?.bonusCredit && <div className="text-[11px] mt-0.5 text-accent">₦{(user.bonusCredit.amount / 100).toLocaleString()} bonus — expires in {Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))}d</div>}

@@ -843,7 +843,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       ); })()}
 
       {/* Order list */}
-      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
         {pagedGroups.length > 0 ? pagedGroups.map((item, i) => {
           const createdOf = (g) => g ? (g.type === "batch" ? g.orders[0]?.created : g.order.created) : null;
           const dk = dayKey(createdOf(item));

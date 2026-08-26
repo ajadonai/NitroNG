@@ -72,7 +72,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
   const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const today = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
   const showNext = isNew;
-  const card = { background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` };
+  const card = { background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` };
   const recent = (() => {
     const items = []; const batches = {};
     for (const o of orders) {
@@ -95,10 +95,10 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       <div className="flex items-end justify-between gap-3 rounded-2xl p-4 mb-4" style={card}>
         <div className="min-w-0">
           <div className="text-[10.5px] font-semibold uppercase tracking-[1px] text-t-text-muted">Balance</div>
-          <div className="m text-[30px] desktop:text-[34px] font-bold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.01em" }}>{fN(balance)}</div>
+          <div className="m text-[32px] desktop:text-[36px] font-extrabold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.03em" }}>{fN(balance)}</div>
         </div>
         <div className="flex max-md:flex-col gap-1.5 shrink-0">
-          <button onClick={() => setActive("add-funds")} className="h-[34px] px-3.5 rounded-[10px] border-none text-[13px] font-semibold cursor-pointer text-white inline-flex items-center gap-1.5 justify-center" style={{ background: t.accent, boxShadow: "0 6px 16px rgba(196,125,142,.3)" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Top up</button>
+          <button onClick={() => setActive("add-funds")} className="h-[34px] px-3.5 rounded-[10px] border-none text-[13px] font-semibold cursor-pointer text-white inline-flex items-center gap-1.5 justify-center" style={{ background: t.accent, boxShadow: "0 10px 24px rgba(196,125,142,.45)" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Top up</button>
           <button onClick={() => setActive("services")} className="h-[34px] px-3.5 rounded-[10px] text-[13px] font-semibold cursor-pointer border border-solid inline-flex items-center justify-center text-t-text" style={{ background: "transparent", borderColor: t.cardBorder }}>New order</button>
         </div>
       </div>

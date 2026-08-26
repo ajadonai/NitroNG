@@ -124,7 +124,7 @@ export function AdminActivityPage({ dark, t }) {
           </div>
         </div>
 
-        <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+        <div className="adm-card" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
           {loading ? (
             <div className="adm-empty">{[1,2,3,4,5].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-10 rounded-md mb-1.5`} />)}</div>
           ) : adminPaged.length > 0 ? adminPaged.map((l, i) => (
@@ -181,7 +181,7 @@ export function AdminActivityPage({ dark, t }) {
           ]} />
         </div>
 
-        <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+        <div className="adm-card" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
           {sysLoading ? (
             <div className="adm-empty">{[1,2,3,4,5].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-10 rounded-md mb-1.5`} />)}</div>
           ) : sysPaged.length > 0 ? sysPaged.map((ev, i) => {
@@ -365,7 +365,7 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
   const canManage = currentAdmin?.role === "owner" || currentAdmin?.role === "superadmin";
   const inputCls = "w-full py-2.5 px-3.5 rounded-lg border border-solid text-[15px] outline-none box-border font-[inherit]";
   const inputStyle = { borderColor: t.cardBorder, background: dark ? "#131728" : "#fff", color: t.text };
-  const cardBg = dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)";
+  const cardBg = t.cardBg;
   const cardBd = `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`;
   const headerBg = dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)";
   const headerBorder = `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`;
@@ -1054,7 +1054,7 @@ export function AdminNotificationsPage({ dark, t }) {
       </div>
 
       {/* Compose */}
-      <div className="adm-card mt-4 mb-5 rounded-[14px]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.31)" : "0 4px 20px rgba(0,0,0,.08)" }}>
+      <div className="adm-card mt-4 mb-5 rounded-[14px]" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.31)" : "0 4px 20px rgba(0,0,0,.08)" }}>
         <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
           <div className="set-card-title" style={{ color: t.textMuted }}>Compose Notification</div>
         </div>
@@ -1086,7 +1086,7 @@ export function AdminNotificationsPage({ dark, t }) {
       </div>
 
       {/* History */}
-      <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+      <div className="adm-card" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
         <div className="set-card-header flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
           <div className="set-card-title" style={{ color: t.textMuted }}>Sent history</div>
           {history.length > 0 && <button onClick={async () => { const ok = await confirm({ title: "Clear History", message: "Clear all notification history? This cannot be undone.", confirmLabel: "Clear", danger: true }); if (ok) { fetch("/api/admin/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clearHistory: true }) }).then(r => r.json()).then(() => setHistory([])).catch(() => {}); } }} className="bg-transparent border-none text-[12px] cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Clear all</button>}
@@ -1293,7 +1293,7 @@ export function AdminAPIPage({ dark, t }) {
           const pResult = result?.id === p.id ? result : null;
 
           return (
-            <div key={p.id} className="adm-card mb-3 rounded-[14px]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.31)" : "0 4px 20px rgba(0,0,0,.08)" }}>
+            <div key={p.id} className="adm-card mb-3 rounded-[14px]" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.31)" : "0 4px 20px rgba(0,0,0,.08)" }}>
               <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
                 <div className="adm-header-row">
                   <div>

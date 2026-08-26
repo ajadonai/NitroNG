@@ -8,7 +8,7 @@
 
 /* ── Auto-switching theme tokens ── */
 :root {
-  --t-bg: #f0ede8;
+  --t-bg: #e8e2d9;
   --t-text: #1c1b19;
   --t-soft: #555250;
   --t-muted: #757170;
@@ -19,7 +19,7 @@
   --t-surface: rgba(255,255,255,.6);
   --t-surface-brd: rgba(0,0,0,.1);
   --t-surface-border: rgba(0,0,0,.18);
-  --t-sidebar-bg: rgba(240,237,232,.95);
+  --t-sidebar-bg: rgba(232,226,217,.95);
   --t-input-bg: #fff;
   --t-input-border: rgba(0,0,0,.18);
   --t-btn-primary: linear-gradient(135deg, #c47d8e, #a3586b);
@@ -34,13 +34,13 @@
   --t-text-soft: #555250;
   --t-text-muted: #757170;
   --t-accent-light: rgba(196,125,142,.08);
-  --t-card-bg: rgba(255,255,255,.8);
-  --t-card-border: rgba(0,0,0,.1);
+  --t-card-bg: #ffffff;
+  --t-card-border: rgba(28,27,25,.11);
   --t-nav-active: rgba(196,125,142,.08);
   --t-sidebar-border: rgba(0,0,0,.18);
 }
 .dark {
-  --t-bg: #090c15;
+  --t-bg: #070911;
   --t-text: #f5f3f0;
   --t-soft: #a09b95;
   --t-muted: #8a8580;
@@ -63,8 +63,8 @@
   --t-text-soft: #a09b95;
   --t-text-muted: #8a8580;
   --t-accent-light: rgba(196,125,142,.12);
-  --t-card-bg: rgba(255,255,255,.07);
-  --t-card-border: rgba(255,255,255,.14);
+  --t-card-bg: #141930;
+  --t-card-border: rgba(255,255,255,.15);
   --t-nav-active: rgba(196,125,142,.12);
   --t-sidebar-border: rgba(255,255,255,.18);
 }

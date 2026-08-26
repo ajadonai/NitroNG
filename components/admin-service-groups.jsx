@@ -198,7 +198,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
   const marginPct = (sellKobo, cKobo) => cKobo > 0 ? Math.round(((sellKobo - cKobo) / cKobo) * 100) : 0;
   const lowMargin = (sellKobo, cKobo) => sellKobo > 0 && sellKobo < Math.ceil(cKobo * 1.5);
 
-  const cardBg = dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)";
+  const cardBg = t.cardBg;
   const cardBd = `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`;
   const headerBg = dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)";
   const headerBorder = `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`;

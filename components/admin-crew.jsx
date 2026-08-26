@@ -251,7 +251,7 @@ export function AdminCrewPage({ dark, t }) {
 
   const PAYOUT_COLORS = { pending: "#F59E0B", processing: "#3B82F6", completed: "#059669", rejected: "#EF4444" };
   const filteredPayouts = payoutFilter === "all" ? payouts : payouts.filter(p => p.status === payoutFilter);
-  const cardBg = dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)";
+  const cardBg = t.cardBg;
   const cardBd = `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`;
   const hair = dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)";
   const shadow = dark ? "none" : "0 1px 2px rgba(0,0,0,.035),0 5px 14px rgba(0,0,0,.04)";

@@ -126,7 +126,7 @@ function AdminOverview({ data, dark, t, setActive }) {
       {/* Two column — Recent Orders + Recent Users */}
       <div className="adm-grid-2">
         <div>
-          <div className="rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+          <div className="rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
             <div className="py-3 px-[18px] flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
               <span className="text-sm font-semibold tracking-wide uppercase text-t-text-muted">Recent orders</span>
               <button onClick={() => setActive("orders")} className="text-xs font-medium bg-transparent border-none cursor-pointer font-[inherit] text-accent">View all →</button>
@@ -192,7 +192,7 @@ function AdminOverview({ data, dark, t, setActive }) {
         </div>
 
         <div>
-          <div className="rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+          <div className="rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
             <div className="py-3 px-[18px] flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
               <span className="text-sm font-semibold tracking-wide uppercase text-t-text-muted">New users</span>
               <button onClick={() => setActive("users")} className="text-xs font-medium bg-transparent border-none cursor-pointer font-[inherit] text-accent">View all →</button>

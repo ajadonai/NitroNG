@@ -121,7 +121,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
   const modalBoxCls = "rounded-2xl p-6 w-full max-w-[420px] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]";
   const modalBox = { background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" };
   const accentHdr = { background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.10)" };
-  const cardBg = { background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)" };
+  const cardBg = { background: t.cardBg };
 
   return (
     <>

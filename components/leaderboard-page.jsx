@@ -256,7 +256,7 @@ export function LeaderboardCard({ dark, t, onViewAll }) {
   const month = new Date().toLocaleDateString("en-US", { month: "long" });
   const medals = ["🥇", "🥈", "🥉"];
   return (
-    <div className="rounded-[14px] p-4 border" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)" }}>
+    <div className="rounded-[14px] p-4 border" style={{ background: t.cardBg, borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)" }}>
       <div className="text-xs font-semibold uppercase tracking-[1.5px] mb-3 py-2 px-3 rounded-lg flex items-center gap-2 text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21V12H2v9h6z"/><path d="M22 21V8h-6v13h6z"/><path d="M15 21V4H9v17h6z"/></svg>
         <span>Top Spenders · {month}</span>

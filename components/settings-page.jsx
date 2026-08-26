@@ -167,7 +167,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
 
   const initials = user ? ((user.firstName?.[0] || "") + (user.lastName?.[0] || "")).toUpperCase() || user.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "";
 
-  const card = { background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` };
+  const card = { background: t.cardBg, border: `1px solid ${t.cardBorder}` };
   const copyCode = () => { if (!user?.refCode) return; try { navigator.clipboard?.writeText(user.refCode); toast.success("Copied", user.refCode); } catch {} };
   const themeBtn = (id, label, icon) => (
     <button key={id} onClick={() => applyTheme(id)} aria-pressed={themeMode === id} className="inline-flex items-center gap-1 h-[26px] px-2.5 rounded-full border-none font-[inherit] text-[11.5px] font-semibold cursor-pointer" style={themeMode === id ? { background: dark ? "#161b2e" : "#fff", color: t.text, boxShadow: "0 1px 3px rgba(0,0,0,.12)" } : { background: "transparent", color: t.textMuted }}>{icon}{label}</button>

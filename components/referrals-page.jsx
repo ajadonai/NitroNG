@@ -76,7 +76,7 @@ export default function ReferralsPage({ user, dark, t }) {
       )}
 
       {/* Share card */}
-      <div className="rounded-xl desktop:rounded-2xl p-3.5 desktop:p-5 mb-3 desktop:mb-4" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+      <div className="rounded-xl desktop:rounded-2xl p-3.5 desktop:p-5 mb-3 desktop:mb-4" style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
         <div className="text-sm mb-1.5 text-t-text-muted">Your Referral Link</div>
         <div className="flex items-center gap-2">
           <div className="m flex-1 py-2 px-3 rounded-lg border text-sm overflow-hidden text-ellipsis whitespace-nowrap text-t-text-soft" style={{ background: dark ? "#131728" : "#fff", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)" }}>{refLink}</div>
@@ -108,7 +108,7 @@ export default function ReferralsPage({ user, dark, t }) {
           ["Total Bonus", fN(totalEarnings), t.accent],
           ["Available", fN(totalEarnings), t.green],
         ].map(([label, val, color]) => (
-          <div key={label} className="p-3 desktop:p-3.5 rounded-[10px] desktop:rounded-xl" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+          <div key={label} className="p-3 desktop:p-3.5 rounded-[10px] desktop:rounded-xl" style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
             <div className="text-xs desktop:text-[13px] uppercase tracking-[0.5px] mb-1 text-t-text-muted">{label}</div>
             <div className="m text-base desktop:text-lg font-semibold" style={{ color }}>{val}</div>
           </div>
@@ -116,7 +116,7 @@ export default function ReferralsPage({ user, dark, t }) {
       </div>
 
       {/* Referral list */}
-      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
         <div className="py-3 px-[13px] desktop:px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
           <div className="text-sm font-semibold tracking-[0.3px] uppercase text-t-text-muted">Your referrals</div>
         </div>
