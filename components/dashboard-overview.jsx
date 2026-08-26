@@ -93,7 +93,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       </div>
 
       {/* ── Balance: the biggest number on the page, and the two things you do with it ── */}
-      <div className="flex items-end justify-between gap-3 rounded-2xl p-4 mb-4" style={card}>
+      <div className="flex items-center justify-between gap-3 rounded-2xl p-4 mb-4" style={card}>
         <div className="min-w-0">
           <div className="text-[10.5px] font-semibold uppercase tracking-[1px] text-t-text-muted">Balance</div>
           <div className="m text-[32px] desktop:text-[36px] font-extrabold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.03em" }}>{fN(balance)}</div>
