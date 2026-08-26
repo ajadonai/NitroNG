@@ -15,10 +15,6 @@ When pushing the drip changes, **restore these items that were removed in commit
 3. **`tests/user-orders-pagination.test.js`** — re-add the 2 `POST /api/orders — request boundary` tests (malformed JSON + typed-invalid body)
 4. **Push `components/admin-create-order-page.jsx`** and **`tests/admin-create-order-module.test.js`** alongside the above
 
-## ⛔ HARD GATE: Tasks page
-
-Before building or shipping ANYTHING related to the Tasks page, task rewards, or the tasks launch email: **read `docs/TASKS_LAUNCH_GATE.md` and ask Trip the questions in it first.** The launch email already promises users specific numbers; do not ship task amounts Trip has not confirmed in that conversation.
-
 ## ⛔ Support tickets moved to WhatsApp — DO NOT TOUCH
 
 Customer support is handled entirely through WhatsApp — there is no in-app ticket system. The admin `tickets` page, `SupportPage`, `admin-tickets.jsx`, and all ticket-related API routes exist only as legacy read-only views of old data. **Do not** build, fix, improve, refactor, or redesign any ticket-related code: no ticket sidebar widgets, no ticket notifications, no ticket status flows, no new ticket creation UI, no polling fixes, no cleanup of ticket polling intervals, no "while we're here" improvements. Leave ticket code exactly as-is — it will be removed entirely in a future cleanup pass. If a task mentions tickets, clarify with Trip first — the answer is almost certainly "that's handled on WhatsApp now."
