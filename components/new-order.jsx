@@ -114,28 +114,26 @@ const TIER_STACK = {
   Premium: { bestFor: "your main page", detail: "Best accounts · free lifetime refill · priority start" },
 };
 
-function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, waNumber, userEmail }) {
+function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, waNumber, userEmail, orderMode, cartCounts }) {
   const promoOff = activePromotion?.active ? activePromotion.discountPercent / 100 : 0;
+  const bulk = orderMode === "bulk";
   return (
     <div className="mt-3" data-tour="no-tier-select">
-      <div className="flex gap-2 flex-wrap">
+      <div className="text-[10.5px] font-semibold uppercase tracking-[1px] mb-1.5" style={{ color: "#8a8580" }}>{bulk ? "Tier · tap to add" : "Tier"}</div>
+      <div className="grid grid-cols-3 gap-1.5 md:gap-2">
         {svc.tiers.map(tier => {
           const s = TS[tier.tier];
           const isSel = selTier?.tier === tier.tier && selSvc?.id === svc.id;
           const displayPrice = promoOff > 0 ? Math.round(tier.price * (1 - promoOff)) : tier.price;
+          const inCart = bulk ? (cartCounts?.[`${svc.id}:${tier.tier}`] || 0) : 0;
           return (
-            <button key={tier.tier} onClick={e => onPickTier(tier, e)} aria-pressed={isSel} className="no-tier-chip relative inline-flex items-center gap-[7px] rounded-[11px] py-[5px] pr-[12px] pl-[7px] border-[1.5px] border-solid cursor-pointer font-[inherit] transition-all duration-150 ease-in-out text-left hover:-translate-y-px" style={{ background: dark ? s.bgD : s.bg, borderColor: isSel ? s.text : (dark ? s.borderD : s.border), boxShadow: isSel ? `0 4px 12px ${s.text}3d` : undefined, transform: isSel ? "translateY(-1px)" : undefined }}>
-              <span className="w-[15px] h-[15px] rounded-full flex items-center justify-center text-white shrink-0 relative" style={{ background: s.grad }}>
-                {s.label}
-                {isSel && (
-                  <span className="absolute -bottom-0.5 -right-0.5 w-[9px] h-[9px] rounded-full flex items-center justify-center" style={{ background: s.text, border: `1.5px solid ${dark ? "#1a1a2e" : "#fff"}` }}>
-                    <svg width="5" height="5" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  </span>
-                )}
-              </span>
-              <span className="flex flex-col items-start gap-[3px] leading-none">
-                <span className="text-[11px]" style={{ color: s.text, fontWeight: 800 }}>{tier.tier}</span>
-                <span className="m text-[11px] font-bold" style={{ color: dark ? "#f5f3f0" : "#1c1b19" }}>₦{displayPrice.toLocaleString()}</span>
+            <button key={tier.tier} onClick={e => onPickTier(tier, e)} aria-pressed={isSel} className="no-tier-chip relative flex items-center gap-2 min-w-0 rounded-xl py-2 px-2 md:px-2.5 border-[1.5px] border-solid cursor-pointer font-[inherit] text-left transition-all duration-150 ease-in-out" style={{ background: dark ? s.bgD : s.bg, borderColor: isSel ? s.text : (dark ? s.borderD : s.border), color: s.text, boxShadow: isSel ? `0 0 0 2px ${s.text}` : undefined }}>
+              <span className="w-5 h-5 rounded-full flex items-center justify-center text-white shrink-0" style={{ background: s.grad }}>{s.label}</span>
+              {inCart > 0 && <span className="absolute -top-[7px] -right-[6px] min-w-[20px] h-5 px-1.5 rounded-full text-[10.5px] font-bold flex items-center justify-center" style={{ background: dark ? "#f4f1ed" : "#1c1b19", color: dark ? "#0b0e1a" : "#fff", border: `2px solid ${dark ? "#161b2e" : "#fff"}` }}>×{inCart}</span>}
+              <span className="flex flex-col items-start gap-[2px] leading-none min-w-0">
+                <span className="text-[11px] md:text-[11.5px] font-semibold truncate max-w-full">{tier.tier}</span>
+                <span className="m text-[12px] md:text-[13px] font-bold whitespace-nowrap">{promoOff > 0 && <span className="line-through font-normal opacity-60 mr-1">₦{tier.price.toLocaleString()}</span>}₦{displayPrice.toLocaleString()}</span>
+                <span className="text-[10px] opacity-75 whitespace-nowrap">per {tier.per || "1K"}</span>
               </span>
             </button>
           );
@@ -208,7 +206,7 @@ function TierExplainer({ dark, t, selTier, narrow }) {
   );
 }
 
-function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t, orderMode, activePromotion, waNumber, userEmail }) {
+function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t, orderMode, activePromotion, waNumber, userEmail, first, cartCounts }) {
   const isSel = selSvc?.id === svc.id;
   const [explOpen, setExplOpen] = useState(false);
   const [narrow, setNarrow] = useState(false);
@@ -228,10 +226,10 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
   const handlePickTier = (tier, e) => { setExplOpen(false); onPickTier(tier, e); };
   const s = activeTier ? TS[activeTier.tier] : null;
   return (
-    <div ref={cardRef} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => onPickService(svc)} className={`no-svc-card rounded-xl desktop:rounded-[14px] py-3 px-3.5 md:py-3.5 md:px-4 desktop:py-4 desktop:px-5 cursor-pointer border border-solid transition-all duration-150 ease-in-out hover:border-[rgba(196,125,142,.19)]${isSel ? " relative z-[1]" : ""}`} style={{ borderColor: isSel ? (accent ? (dark ? accent.dark : accent.light) : t.accent) : t.cardBorder, borderLeftWidth: isSel ? 4 : accent ? 3 : undefined, borderLeftColor: isSel ? (accent ? (dark ? accent.dark : accent.light) : "#c47d8e") : accent ? (dark ? accent.dark : accent.light) : undefined, background: isSel ? (accent ? (dark ? accent.selBgD : accent.selBgL) : (dark ? "#2a1828" : "#f5e4e8")) : accent ? (dark ? accent.bgD : accent.bgL) : t.cardBg, opacity: selSvc && !isSel ? (dark ? .3 : .45) : 1, transform: isSel ? "scale(1.01)" : "scale(1)", boxShadow: isSel ? (accent ? `0 4px 20px rgba(${accent.shadow},.31), 0 0 0 1.5px rgba(${accent.shadow},.28)` : "0 4px 20px rgba(196,125,142,.38), 0 0 0 1.5px rgba(196,125,142,.31)") : undefined }}>
+    <div ref={cardRef} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => onPickService(svc)} className={`no-svc-card py-3 px-3.5 md:py-3.5 md:px-4 desktop:py-4 desktop:px-5 cursor-pointer transition-colors duration-150 ease-in-out${isSel ? " relative z-[1]" : ""}`} style={{ borderTop: (first || isSel) ? "none" : `1px solid ${t.cardBorder}`, ...(isSel ? { margin: "6px 8px", borderRadius: 14, border: `1.5px solid ${accent ? (dark ? accent.dark : accent.light) : t.accent}`, boxShadow: `0 6px 20px ${accent ? `rgba(${accent.shadow},.16)` : "rgba(196,125,142,.16)"}` } : {}), ...(!isSel && accent ? { boxShadow: `inset 3px 0 0 ${dark ? accent.dark : accent.light}` } : {}), background: isSel ? (accent ? (dark ? accent.selBgD : accent.selBgL) : (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)")) : accent ? (dark ? accent.bgD : accent.bgL) : "transparent", opacity: selSvc && !isSel ? (dark ? .45 : .6) : 1 }}>
       <div className="flex items-center justify-between gap-3 max-md:flex-wrap max-md:gap-1.5">
         <div className="flex-1 min-w-0 max-md:basis-[60%]">
-          <div className="text-sm md:text-[15px] desktop:text-base font-semibold mb-1" style={{ color: accent ? (dark ? accent.dark : accent.light) : t.text }}>{svc.name}</div>
+          <div className="text-sm md:text-[15px] desktop:text-base font-semibold mb-1" style={{ color: accent ? (dark ? accent.dark : accent.light) : (isSel ? t.accent : t.text) }}>{svc.name}</div>
           {svc.description && <div className="text-[11px] mb-1.5 leading-snug" style={{ color: t.textMuted }}>{svc.description}</div>}
         </div>
         {!isSel && (
@@ -242,7 +240,7 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
           </div>
         )}
       </div>
-      {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={handlePickTier} dark={dark} activePromotion={activePromotion} waNumber={waNumber} userEmail={userEmail} />}
+      {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={handlePickTier} dark={dark} activePromotion={activePromotion} waNumber={waNumber} userEmail={userEmail} orderMode={orderMode} cartCounts={cartCounts} />}
       {isSel && (
         <>
           <div className="mt-2.5 flex items-center gap-2 rounded-[9px] py-[7px] px-2.5 border border-solid transition-all duration-200" style={{ borderColor: s ? `${s.text}4d` : t.cardBorder, background: s ? (dark ? `${s.text}0f` : `${s.text}0a`) : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)") }}>
@@ -414,22 +412,11 @@ export function OrderForMeCard({ waNumber, dark, context, email }) {
       target="_blank"
       rel="noopener noreferrer"
       onClick={e => { e.stopPropagation(); openInPlaceOnPhone(e); }}
-      className="mt-2.5 flex items-center gap-2.5 rounded-[11px] py-2 px-3 no-underline transition-transform duration-150 hover:-translate-y-px"
-      style={{
-        // Nitro accent, not WhatsApp green: the picker already uses green for
-        // Nigerian services, so a green card read as another category instead of
-        // an action. Green survives only on the icon, where it identifies the
-        // channel without claiming the card.
-        background: dark ? "rgba(196,125,142,.13)" : "rgba(196,125,142,.09)",
-        border: `1px solid ${dark ? "rgba(196,125,142,.4)" : "rgba(196,125,142,.32)"}`,
-      }}
+      className="mt-2 inline-flex items-center gap-2 text-[12.5px] no-underline"
+      style={{ color: "#8a8580" }}
     >
-      <span className="flex items-center justify-center w-[26px] h-[26px] rounded-full shrink-0" style={{ background: "#25d366", color: "#fff" }}>{WA_ICON}</span>
-      <span className="min-w-0">
-        <span className="block text-[13px] font-semibold leading-tight" style={{ color: dark ? "#e8b4c0" : "#a0616e" }}>We can order for you</span>
-        <span className="block text-[11px] leading-tight mt-[1px]" style={{ color: dark ? "rgba(232,180,192,.7)" : "rgba(160,97,110,.75)" }}>Send your link on WhatsApp, we handle it</span>
-      </span>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="ml-auto shrink-0" style={{ color: dark ? "rgba(232,180,192,.6)" : "rgba(160,97,110,.5)" }}><polyline points="9 18 15 12 9 6"/></svg>
+      <span className="shrink-0 flex" style={{ color: "#25d366" }}>{WA_ICON}</span>
+      <span>Not sure? <b className="font-semibold" style={{ color: dark ? "#4ade80" : "#16a34a" }}>We can order for you</b></span>
     </a>
   );
 }
@@ -480,6 +467,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     trackViewContent({ content_name: 'order_form', content_type: 'product' });
   }, []);
   const [cartOpen, setCartOpen] = useState(false);
+  const cartCounts = useMemo(() => cartRows.reduce((m, r) => { const k = `${r.svcId}:${r.tier}`; m[k] = (m[k] || 0) + 1; return m; }, {}), [cartRows]);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkSuccess, setBulkSuccess] = useState(null);
   const [bulkError, setBulkError] = useState(null);
@@ -907,9 +895,9 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {/* Bulk mode banner */}
       {orderMode === "bulk" && (
-        <div className="flex items-center gap-2.5 rounded-[10px] py-3 px-4 mb-3 border border-solid" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.12)", borderColor: dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)" }}>
-          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: t.accent }} />
-          <span className="text-[13px] font-medium" style={{ color: t.accent }}>Bulk mode · Tap any tier chip to add it to your cart.</span>
+        <div className="flex items-center gap-2 mb-3 px-0.5 text-[12px]" style={{ color: t.textMuted }}>
+          <span className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: t.accent }} />
+          <span className="font-semibold" style={{ color: t.text }}>Bulk mode</span><span className="opacity-50">·</span>tap a tier to add it to your cart
         </div>
       )}
 
@@ -1018,8 +1006,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       </div>
 
       {/* ═══ SERVICE CARDS ═══ */}
-      <div className="flex flex-col gap-2" data-tour="no-service-list" ref={listRef}>
-        {filtered.map(svc => <ServiceCard key={svc.id} svc={svc} selSvc={selSvc} selTier={selTier} onPickService={pickService} onPickTier={pickTier} dark={dark} t={t} orderMode={orderMode} activePromotion={activePromotion} waNumber={waSupportNumber} userEmail={user?.email} />)}
+      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" data-tour="no-service-list" ref={listRef} style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+        {filtered.map((svc, i) => <ServiceCard key={svc.id} first={i === 0} cartCounts={cartCounts} svc={svc} selSvc={selSvc} selTier={selTier} onPickService={pickService} onPickTier={pickTier} dark={dark} t={t} orderMode={orderMode} activePromotion={activePromotion} waNumber={waSupportNumber} userEmail={user?.email} />)}
         {filtered.length > 0 && (
           <div className="pt-1 pb-2">
             <OrderForMeCard waNumber={waSupportNumber} dark={dark} context={activePlat?.label} email={user?.email} />
@@ -1054,8 +1042,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {/* Order modal — single mode only */}
       {orderMode === "single" && (orderModal || orderSuccess) && hasOrder && (
-        <div className="no-modal-overlay flex fixed inset-0 z-50 items-end justify-center px-3.5 pb-[70px] desktop:items-center desktop:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { setOrderModal(false); setOrderSuccess(null); setRedeemPoints(false); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null);setRedeemPoints(false);}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!orderSuccess&&!orderLoading){submitOrder()}}} style={{ background: "rgba(0,0,0,.45)" }}>
-          <div role="dialog" aria-modal="true" aria-label="Order summary" className={`w-full overflow-y-auto border border-solid max-h-[calc(100dvh-84px)] desktop:max-h-[90vh] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] ${orderSuccess ? "rounded-[26px] desktop:max-w-[460px]" : "rounded-2xl desktop:max-w-[420px]"}`} onClick={e => e.stopPropagation()} style={{ background: orderSuccess ? successChrome.card : (dark ? "#0e1120" : "#fff"), borderColor: orderSuccess ? "transparent" : (dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"), boxShadow: orderSuccess ? "0 30px 80px rgba(20,10,14,.35)" : (dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)") }}>
+        <div className="no-modal-overlay flex fixed inset-0 z-[95] items-end justify-center desktop:items-center desktop:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { setOrderModal(false); setOrderSuccess(null); setRedeemPoints(false); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null);setRedeemPoints(false);}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!orderSuccess&&!orderLoading){submitOrder()}}} style={{ background: "rgba(0,0,0,.45)" }}>
+          <div role="dialog" aria-modal="true" aria-label="Order summary" className={`w-full overflow-y-auto border border-solid max-h-[calc(100dvh-84px)] desktop:max-h-[90vh] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] ${orderSuccess ? "rounded-t-[26px] desktop:rounded-[26px] desktop:max-w-[460px]" : "rounded-t-[22px] desktop:rounded-[22px] desktop:max-w-[440px]"}`} onClick={e => e.stopPropagation()} style={{ background: orderSuccess ? successChrome.card : (dark ? "#0e1120" : "#fff"), borderColor: orderSuccess ? "transparent" : (dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"), boxShadow: orderSuccess ? "0 30px 80px rgba(20,10,14,.35)" : (dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)") }}>
             {orderSuccess ? (
               <div className="p-[30px] pb-[26px] max-md:p-5 max-md:pb-6">
                 {/* Header — calm success state */}
@@ -1337,13 +1325,13 @@ const BulkCartBar = forwardRef(function BulkCartBar({ rows, dark, t, menuData, b
   const bp = typeof window !== "undefined" && window.innerWidth < 640 ? "sm" : "lg";
 
   return (
-    <div ref={ref} role={empty ? undefined : "button"} tabIndex={empty ? undefined : 0} aria-expanded={cartOpen} aria-label={empty ? "Empty cart" : `${rows.length} orders in cart`} onClick={onClick} onKeyDown={e => { if (!empty && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onClick(); } }} className={`fixed rounded-[16px] py-3 px-4 max-md:py-2.5 max-md:px-3 flex items-center gap-5 max-md:gap-3 border-2 border-solid z-[50] transition-all duration-200 ${empty ? "opacity-85" : "cursor-pointer hover:-translate-y-px"}`} style={{ left: bounds.left, right: bounds.right, bottom: bounds.bottom, background: dark ? "#171d32" : "#fcfaf8", borderColor: dark ? "rgba(196,125,142,.35)" : "rgba(196,125,142,.38)", boxShadow: dark ? "0 -6px 32px rgba(0,0,0,.35), 0 0 0 1px rgba(196,125,142,.18)" : "0 -6px 32px rgba(0,0,0,.18), 0 0 0 1px rgba(196,125,142,.12), 0 4px 16px rgba(196,125,142,.14)" }}>
+    <div ref={ref} role={empty ? undefined : "button"} tabIndex={empty ? undefined : 0} aria-expanded={cartOpen} aria-label={empty ? "Empty cart" : `${rows.length} orders in cart`} onClick={onClick} onKeyDown={e => { if (!empty && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onClick(); } }} className={`fixed rounded-full py-2 pl-2 pr-4 max-md:py-1.5 max-md:pl-2 max-md:pr-3.5 flex items-center gap-4 max-md:gap-3 border border-solid z-[50] transition-all duration-200 ${empty ? "opacity-85" : "cursor-pointer hover:-translate-y-px"}`} style={{ left: bounds.left, right: bounds.right, bottom: bounds.bottom, background: dark ? "#161b2e" : "#fff", borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)", boxShadow: "0 18px 48px rgba(0,0,0,.22), 0 2px 6px rgba(0,0,0,.08)" }}>
       {/* Left — cart icon + count */}
       <div className="flex items-center gap-3 shrink-0">
-        <div className="w-[38px] h-[38px] max-md:w-[34px] max-md:h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: t.accent, color: "#fff" }}><CartIcon /></div>
+        <div className="relative w-[42px] h-[42px] max-md:w-[40px] max-md:h-[40px] rounded-full flex items-center justify-center shrink-0" style={{ background: t.accent, color: "#fff" }}><CartIcon />{!empty && <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10.5px] font-bold flex items-center justify-center" style={{ background: dark ? "#f4f1ed" : "#1c1b19", color: dark ? "#0b0e1a" : "#fff", border: `2px solid ${dark ? "#161b2e" : "#fff"}` }}>{rows.length}</span>}</div>
         <div className="flex flex-col gap-px">
           <span className="text-[13px] font-semibold leading-tight" style={{ color: empty ? t.textMuted : t.text }}>{empty ? "Your cart" : `${rows.length} ${rows.length === 1 ? "order" : "orders"}`}</span>
-          <span className="text-[11px] leading-tight" style={{ color: t.textMuted }}>{empty ? "Tap a tier chip to add an order" : "in cart"}</span>
+          <span className="text-[11px] leading-tight" style={{ color: t.textMuted }}>{empty ? "Tap a tier to add an order" : "in cart"}</span>
         </div>
       </div>
 
@@ -1457,7 +1445,8 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
   return (
     <>
     <div className="fixed inset-0 z-[55]" onClick={onClose} style={{ background: dark ? "rgba(0,0,0,.45)" : "rgba(0,0,0,.2)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }} />
-    <div role="dialog" aria-modal="true" aria-label="Bulk order cart" aria-busy={loading} className={`fixed max-h-[85vh] max-md:max-h-[75vh] border border-solid flex flex-col z-[60] overflow-hidden ${bulkSuccess ? "rounded-[26px]" : "rounded-[14px]"}`} style={{ left: bounds.left, right: bounds.right, bottom: bounds.bottom, background: bulkSuccess ? bulkChrome.card : (dark ? "#12172a" : "#fff"), borderColor: bulkSuccess ? "transparent" : "rgba(196,125,142,.28)", boxShadow: bulkSuccess ? "0 30px 80px rgba(20,10,14,.35)" : "0 -16px 48px rgba(0,0,0,.22), 0 -4px 12px rgba(0,0,0,.12)" }}>
+    <div role="dialog" aria-modal="true" aria-label="Bulk order cart" aria-busy={loading} className={`fixed max-h-[85vh] max-md:max-h-[78vh] border border-solid flex flex-col z-[60] overflow-hidden ${bulkSuccess ? "rounded-[26px]" : "rounded-[22px]"}`} style={{ left: bounds.left, right: bounds.right, bottom: bounds.bottom, background: bulkSuccess ? bulkChrome.card : (dark ? "#12172a" : "#fff"), borderColor: bulkSuccess ? "transparent" : "rgba(196,125,142,.28)", boxShadow: bulkSuccess ? "0 30px 80px rgba(20,10,14,.35)" : "0 -16px 48px rgba(0,0,0,.22), 0 -4px 12px rgba(0,0,0,.12)" }}>
+      {!bulkSuccess && <div className="md:hidden w-[38px] h-1 rounded-sm mx-auto mt-2.5 -mb-1 shrink-0" style={{ background: "rgba(127,127,127,.35)" }} />}
       <input ref={fileInputRef} type="file" accept=".txt,text/plain" className="hidden" onChange={handleTxtUpload} aria-label="Upload comments file" />
 
       {/* Header */}
@@ -1687,22 +1676,15 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
       </div>
       )}
 
-      {/* Footer */}
+      {/* Footer: one line, so on a short phone the rows keep the height */}
       {!bulkSuccess && rows.length > 0 && (
-        <div className="py-3.5 px-[18px] max-md:py-3 max-md:px-3.5 border-t border-solid shrink-0" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}>
-          <div className="flex justify-between text-[13px] mb-1.5" style={{ color: t.textMuted }}>
-            <span>{rows.length} order{rows.length !== 1 ? "s" : ""} subtotal</span><span>₦{subtotal.toLocaleString()}</span>
+        <div className="py-2.5 px-[18px] max-md:px-3.5 border-t border-solid shrink-0 flex items-center gap-3" style={{ borderColor: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)" }}>
+          <div className="flex flex-col min-w-0 flex-1 leading-tight">
+            <span className="text-[10.5px] uppercase tracking-[1px] font-semibold" style={{ color: t.textMuted }}>Total · {rows.length} order{rows.length !== 1 ? "s" : ""}</span>
+            <span className="text-[18px] font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{total.toLocaleString()}</span>
+            {discount > 0 && <span className="text-[10.5px]" style={{ color: dark ? "#b4db7a" : "#27500A" }}>Nitro Status discount ({loyaltyDiscount}%) · −₦{discount.toLocaleString()}</span>}
           </div>
-          {discount > 0 && (
-            <div className="flex justify-between text-[13px] mb-1.5" style={{ color: dark ? "#b4db7a" : "#27500A" }}>
-              <span>Nitro Status discount ({loyaltyDiscount}%)</span><span>−₦{discount.toLocaleString()}</span>
-            </div>
-          )}
-          <div className="flex justify-between items-baseline my-2.5">
-            <span className="text-[11px] uppercase tracking-[2px] font-medium" style={{ color: t.textMuted }}>Total</span>
-            <span className="text-[22px] font-medium" style={{ color: t.accent }}>₦{total.toLocaleString()}</span>
-          </div>
-          <button onClick={onPlace} disabled={loading} className="w-full py-3 rounded-[10px] border-none text-[15px] font-semibold cursor-pointer font-[inherit] bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: loading ? .5 : 1 }}>
+          <button onClick={onPlace} disabled={loading} className="shrink-0 h-[42px] px-4 rounded-[12px] border-none text-[14px] font-semibold cursor-pointer font-[inherit] bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
             {loading && <NitroLoader size={16} mono ariaHidden />}
             {loading ? "Placing orders..." : `Place ${rows.length} order${rows.length !== 1 ? "s" : ""}`}
           </button>
