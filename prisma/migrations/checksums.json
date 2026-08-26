@@ -57,7 +57,8 @@
     "20260824064808_provider_listing_and_reseller_rate": "7d77d26bbdcad8ad936ce2adfba1a204465457ab5fd3518a8ff5dc3f37f14433",
     "20260824073904_reseller_map_hardening": "18156cc9c89b0fa0c3bb38d7d5cb3ccdc6ec8209511e133d1599be5ba989ed1c",
     "20260824074013_reseller_map_retired_targets": "578c2f4ca8058f1b9789092e0afad02710e1b20b1ea20178bb5b9d734d5a3c94",
-    "20260824074550_service_cancel_flag": "2e9244a9b3cd2c12a1823f2e669e70c4c55ebb758246343815a33a092b6c8f6b"
+    "20260824074550_service_cancel_flag": "2e9244a9b3cd2c12a1823f2e669e70c4c55ebb758246343815a33a092b6c8f6b",
+    "20260826080708_user_first_seen_surfaces": "abded5cbc59d8cd2d9c6da9ac6bdc4ee938eb3773bb90cdc1b818f519435d36e"
   },
   "appliedOverrides": {
     "0_init": "c864f484fce76fd7b8db286181967d98cdb91559be1081e34df0fd65cc60b7c5",

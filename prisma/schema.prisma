@@ -115,6 +115,9 @@ model User {
   taskSubmissions  TaskSubmission[]
   outreachContacts OutreachContact[]
   nitroPointLedger NitroPointLedger[]
+  // Onboarding funnel: the first time each surface was opened. Set once, never updated.
+  firstSeenWalletAt    DateTime?
+  firstSeenNewOrderAt  DateTime?
   resellerProfile  ResellerProfile?
 
   @@index([signupIp])
