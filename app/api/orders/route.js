@@ -245,11 +245,17 @@ export async function GET(req) {
 }
 
 export async function PATCH(req) {
-  try {
-    const session = await getCurrentUser();
-    if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
+  const session = await getCurrentUser();
+  if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
+  let body;
+  try { body = await req.json(); } catch { return Response.json({ error: 'Invalid request body' }, { status: 400 }); }
+  return patchOrderForSession(session, body, req);
+}
 
-    const { action, orderId } = await req.json();
+/** check / cancel / reorder on one of the session's orders; shared with the reseller API. */
+export async function patchOrderForSession(session, body, req) {
+  try {
+    const { action, orderId } = body || {};
     if (!orderId) return Response.json({ error: 'Order ID required' }, { status: 400 });
 
     const order = await prisma.order.findFirst({
@@ -753,21 +759,27 @@ export async function PATCH(req) {
 }
 
 export async function POST(req) {
+  const limit = await rateLimit(req, { maxAttempts: 10, windowMs: 60 * 1000 });
+  if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
+  if (limit.limited) return tooManyRequests('Too many orders. Slow down.', limit.retryAfter);
+  const session = await getCurrentUser();
+  if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
+  let body;
   try {
-    const limit = await rateLimit(req, { maxAttempts: 10, windowMs: 60 * 1000 });
-    if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
-    if (limit.limited) return tooManyRequests('Too many orders. Slow down.', limit.retryAfter);
+    body = await req.json();
+  } catch {
+    return Response.json({ error: 'Invalid request body' }, { status: 400 });
+  }
+  return createOrderForSession(session, body, req, { source: 'web' });
+}
 
-    const session = await getCurrentUser();
-    if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
-
-    let body;
-    try {
-      body = await req.json();
-    } catch {
-      return Response.json({ error: 'Invalid request body' }, { status: 400 });
-    }
-
+/**
+ * The one order path. The web route and the reseller API both come through
+ * here: the same validation, pricing, wholesale, balance debit, creation and
+ * provider placement. `source` is stamped on the order so admin can tell them apart.
+ */
+export async function createOrderForSession(session, body, req, { source = 'web' } = {}) {
+  try {
     const parsedInput = parseCreateOrderInput(body);
     if (!parsedInput.ok) return Response.json({ error: parsedInput.error }, { status: 400 });
     const {
@@ -978,6 +990,7 @@ export async function POST(req) {
               platformCampaignId: activePromoType === 'platform' ? activePromoId : null,
               recurringCampaignId: activePromoType === 'recurring' ? activePromoId : null,
               status: 'Pending',
+              source,
               apiOrderId: null,
               ...(activeForLink ? { queuedBehind: activeForLink.orderId } : {}),
               ...(dripSchedule ? { dripDays: validDripDays || 1 } : {}),

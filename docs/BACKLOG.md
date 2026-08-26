@@ -9,8 +9,9 @@ never gets picked up twice. Update this in the same commit as the work.
   customer dashboard: admin sidebar sections with separators, Reseller HQ
   ("Full providers" labels, analytics tiles), admin Tasks review queue, Users
   list (show the Reseller chip there too).
-- **Reseller API** — `POST /api/v2`. Brief at `docs/v2/reseller_api_brief.md`,
-  awaiting Trip's approval. Includes the ID backfill for `ResellerServiceMap`.
+- **Reseller API follow-ups** (v2 of the API, not started): drip-feed and
+  multi-day parameters, comment and mention services, webhooks, per-key IP
+  allowlists. Brief: `docs/v2/reseller_api_brief.md`.
 - **Onboarding funnel, second read** — after ~30 days of `firstSeenWalletAt` /
   `firstSeenNewOrderAt` data (from 26 Aug 2026), rerun the funnel and see where
   the 74% who never pay actually stop.
@@ -22,7 +23,8 @@ never gets picked up twice. Update this in the same commit as the work.
 ## Closed
 
 | Date | Item | Commit |
-|---|---|---|
+| --- | --- | --- |
+| 2026-08-26 | Reseller API: `POST /api/v2` in the SMM convention, one order path for web and API (`createOrderForSession`, `patchOrderForSession`, `refillOrderForSession`), curated vs full decided by the key, 584 missing IDs minted (map now 9,806) | `34177d29` v2.3 |
 | 2026-08-26 | Backlog starvation in outreach: priority touches are budget-aware, Backlog keeps a floor of 15 | `bfdd3aca` v2.2.36 |
 | 2026-08-26 | Failed deposits: 373/30d were abandoned checkouts (`provider_not_found`), now read "Not completed"; real rejections stay red | `8973164e` v2.2.37 |
 | 2026-08-26 | Hand-built modals (Rewards, Settings, Home popups) moved onto the `Modal` primitive | `ec78db34` v2.2.38 |

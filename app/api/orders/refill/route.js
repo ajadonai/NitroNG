@@ -6,8 +6,13 @@ import { log } from '@/lib/logger';
 export async function POST(req) {
   const session = await getCurrentUser();
   if (!session?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  let body;
+  try { body = await req.json(); } catch { return Response.json({ error: 'Invalid request body' }, { status: 400 }); }
+  return refillOrderForSession(session, body?.orderId);
+}
 
-  const { orderId } = await req.json();
+/** Request a provider refill on one of the session's completed orders; shared with the reseller API. */
+export async function refillOrderForSession(session, orderId) {
   if (!orderId) return Response.json({ error: 'Missing orderId' }, { status: 400 });
 
   const order = await prisma.order.findFirst({
