@@ -134,8 +134,8 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, wa
                 )}
               </span>
               <span className="flex flex-col items-start gap-[3px] leading-none">
-                <span className="text-[10.5px]" style={{ color: s.text, fontWeight: 800 }}>{tier.tier}</span>
-                <span className="m text-[10.5px] font-bold" style={{ color: dark ? "#f5f3f0" : "#1c1b19" }}>₦{displayPrice.toLocaleString()}</span>
+                <span className="text-[11px]" style={{ color: s.text, fontWeight: 800 }}>{tier.tier}</span>
+                <span className="m text-[11px] font-bold" style={{ color: dark ? "#f5f3f0" : "#1c1b19" }}>₦{displayPrice.toLocaleString()}</span>
               </span>
             </button>
           );
@@ -159,14 +159,14 @@ function TierExplainer({ dark, t, selTier, narrow }) {
               <div key={name} className="flex items-start gap-2 py-2 px-2.5" style={{ borderBottom: i < 2 ? `1px solid ${t.cardBorder}` : undefined, background: selName === name ? (dark ? s.bgD : s.bg) : undefined }}>
                 <span className="w-[17px] h-[17px] rounded-full flex items-center justify-center text-white shrink-0 mt-px" style={{ background: s.grad }}>{s.label}</span>
                 <span>
-                  <span className="text-[10.5px] block" style={{ fontWeight: 800, color: s.text }}>{name} <span className="text-[10px] font-bold" style={{ color: dark ? "#8a8580" : "#757170" }}>· best for {st.bestFor}</span></span>
-                  <span className="block text-[10px] mt-px leading-[1.45]" style={{ color: dark ? "#c9c5c0" : "#4a4744" }}>{st.detail}</span>
+                  <span className="text-[11px] block" style={{ fontWeight: 800, color: s.text }}>{name} <span className="text-[11px] font-bold" style={{ color: dark ? "#8a8580" : "#757170" }}>· best for {st.bestFor}</span></span>
+                  <span className="block text-[11px] mt-px leading-[1.45]" style={{ color: dark ? "#c9c5c0" : "#4a4744" }}>{st.detail}</span>
                 </span>
               </div>
             );
           })}
         </div>
-        <div className="text-[10.5px] leading-[1.5] mx-2.5 mt-2 mb-2.5" style={{ color: dark ? "#8a8580" : "#757170" }}>
+        <div className="text-[11px] leading-[1.5] mx-2.5 mt-2 mb-2.5" style={{ color: dark ? "#8a8580" : "#757170" }}>
           Small drops are normal — platforms clear out inactive accounts. Refill means we top yours back up for free.
           <div className="mt-1 font-bold" style={{ color: "#c47d8e" }}>Building something long term? Go Standard or Premium.</div>
         </div>
@@ -182,7 +182,7 @@ function TierExplainer({ dark, t, selTier, narrow }) {
           return (
             <div key={name} className="text-center" style={{ padding: "6px 4px 5px", borderBottom: `1px solid ${t.cardBorder}`, borderRight: i < 2 ? `1px solid ${t.cardBorder}` : undefined, background: selName === name ? (dark ? s.bgD : s.bg) : undefined }}>
               <span className="w-[17px] h-[17px] rounded-full flex items-center justify-center text-white mx-auto mb-0.5" style={{ background: s.grad }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{s.label.props.children}</svg></span>
-              <span className="text-[10px] block" style={{ fontWeight: 800, color: s.text }}>{name}</span>
+              <span className="text-[11px] block" style={{ fontWeight: 800, color: s.text }}>{name}</span>
             </div>
           );
         })}
@@ -190,17 +190,17 @@ function TierExplainer({ dark, t, selTier, narrow }) {
           const isLast = ri === TIER_COMPARE.length - 1;
           const isBold = row.label === "Best for";
           return [
-            <div key={`lab-${ri}`} className="flex items-center" style={{ padding: "6px 5px", fontSize: 9, fontWeight: 800, letterSpacing: ".3px", textTransform: "uppercase", color: dark ? "#8a8580" : "#757170", borderBottom: isLast ? undefined : `1px solid ${t.cardBorder}`, borderRight: `1px solid ${t.cardBorder}` }}>{row.label}</div>,
+            <div key={`lab-${ri}`} className="flex items-center" style={{ padding: "6px 5px", fontSize: 11, fontWeight: 800, letterSpacing: ".3px", textTransform: "uppercase", color: dark ? "#8a8580" : "#757170", borderBottom: isLast ? undefined : `1px solid ${t.cardBorder}`, borderRight: `1px solid ${t.cardBorder}` }}>{row.label}</div>,
             ...TIER_NAMES.map((name, ci) => {
               const s = TS[name];
               return (
-                <div key={`${ri}-${ci}`} className="text-center" style={{ padding: "6px 5px", fontSize: 10.5, lineHeight: 1.35, color: isBold ? (dark ? "#f5f3f0" : "#1c1b19") : (dark ? "#c9c5c0" : "#4a4744"), fontWeight: isBold ? 800 : undefined, borderBottom: isLast ? undefined : `1px solid ${t.cardBorder}`, borderRight: ci < 2 ? `1px solid ${t.cardBorder}` : undefined, background: selName === name ? (dark ? s.bgD : s.bg) : undefined }}>{row[name]}</div>
+                <div key={`${ri}-${ci}`} className="text-center" style={{ padding: "6px 5px", fontSize: 11, lineHeight: 1.35, color: isBold ? (dark ? "#f5f3f0" : "#1c1b19") : (dark ? "#c9c5c0" : "#4a4744"), fontWeight: isBold ? 800 : undefined, borderBottom: isLast ? undefined : `1px solid ${t.cardBorder}`, borderRight: ci < 2 ? `1px solid ${t.cardBorder}` : undefined, background: selName === name ? (dark ? s.bgD : s.bg) : undefined }}>{row[name]}</div>
               );
             }),
           ];
         })}
       </div>
-      <div className="text-[10.5px] leading-[1.5] mx-2.5 mt-2 mb-2.5" style={{ color: dark ? "#8a8580" : "#757170" }}>
+      <div className="text-[11px] leading-[1.5] mx-2.5 mt-2 mb-2.5" style={{ color: dark ? "#8a8580" : "#757170" }}>
         Small drops are normal — platforms clear out inactive accounts. Refill means we top yours back up for free.
         <div className="mt-1 font-bold" style={{ color: "#c47d8e" }}>Building something long term? Go Standard or Premium.</div>
       </div>
@@ -236,8 +236,8 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
         </div>
         {!isSel && (
           <div className="text-right shrink-0">
-            <div className="text-[10px] desktop:text-[11px] mb-0.5" style={{ color: t.textMuted }}>from</div>
-            {activePromotion?.active && <div className="m text-[12px] font-normal line-through" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>₦{lowestPrice.toLocaleString()}</div>}
+            <div className="text-[11px] desktop:text-[11px] mb-0.5" style={{ color: t.textMuted }}>from</div>
+            {activePromotion?.active && <div className="m text-[11px] font-normal line-through" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>₦{lowestPrice.toLocaleString()}</div>}
             <div className="m text-[15px] md:text-base desktop:text-lg font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{Math.round(lowestPrice * (1 - (activePromotion?.active ? activePromotion.discountPercent / 100 : 0))).toLocaleString()}</div>
           </div>
         )}
@@ -256,7 +256,7 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
                 Pick a tier to continue
               </div>
             )}
-            <button onClick={e => { e.stopPropagation(); setExplOpen(!explOpen); }} aria-expanded={explOpen} aria-label="What do the tiers mean?" className="shrink-0 inline-flex items-center gap-1 text-[10.5px] font-bold rounded-full py-[3px] px-[9px] border border-solid cursor-pointer font-[inherit] transition-all duration-150 hover:-translate-y-px" style={{ color: dark ? "#8a8580" : "#757170", background: dark ? "rgba(255,255,255,.06)" : "#fff", borderColor: t.cardBorder }}>
+            <button onClick={e => { e.stopPropagation(); setExplOpen(!explOpen); }} aria-expanded={explOpen} aria-label="What do the tiers mean?" className="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold rounded-full py-[3px] px-[9px] border border-solid cursor-pointer font-[inherit] transition-all duration-150 hover:-translate-y-px" style={{ color: dark ? "#8a8580" : "#757170", background: dark ? "rgba(255,255,255,.06)" : "#fff", borderColor: t.cardBorder }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
               {explOpen ? "Close" : "Which tier?"}
             </button>
@@ -381,7 +381,7 @@ export function NotSureHelp({ waNumber, dark, t, context }) {
       href={waHelpLink(waNumber, context)}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1.5 text-[12.5px] font-medium no-underline transition-opacity hover:opacity-80"
+      className="inline-flex items-center gap-1.5 text-[13px] font-medium no-underline transition-opacity hover:opacity-80"
       style={{ color: dark ? "#4ade80" : "#16a34a" }}
     >
       {WA_ICON}
@@ -415,7 +415,7 @@ export function OrderForMeCard({ waNumber, dark, context }) {
     >
       <span className="flex items-center justify-center w-[26px] h-[26px] rounded-full shrink-0" style={{ background: "#25d366", color: "#fff" }}>{WA_ICON}</span>
       <span className="min-w-0">
-        <span className="block text-[12.5px] font-semibold leading-tight" style={{ color: dark ? "#e8b4c0" : "#a0616e" }}>We can order for you</span>
+        <span className="block text-[13px] font-semibold leading-tight" style={{ color: dark ? "#e8b4c0" : "#a0616e" }}>We can order for you</span>
         <span className="block text-[11px] leading-tight mt-[1px]" style={{ color: dark ? "rgba(232,180,192,.7)" : "rgba(160,97,110,.75)" }}>Send your link on WhatsApp, we handle it</span>
       </span>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="ml-auto shrink-0" style={{ color: dark ? "rgba(232,180,192,.6)" : "rgba(160,97,110,.5)" }}><polyline points="9 18 15 12 9 6"/></svg>
@@ -996,7 +996,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       {/* ═══ SECTION HEADER ═══ */}
       <div className="flex items-center gap-2 mb-3 pb-2.5 border-b border-solid" style={{ borderBottomColor: t.cardBorder }}>
         <div className="flex items-center justify-center" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.55)" }}>{activePlat?.icon}</div>
-        <span className="text-[17px] font-semibold" style={{ color: t.text }}>{activePlat?.label}</span>
+        <span className="text-[18px] font-semibold" style={{ color: t.text }}>{activePlat?.label}</span>
         <span className="text-[13px] ml-auto" style={{ color: t.textMuted }}>{filtered.length} service{filtered.length !== 1 ? "s" : ""}</span>
       </div>
 
@@ -1054,9 +1054,9 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-xl font-extrabold tracking-[-.2px]" style={{ color: successChrome.text }}>{orderSuccess.queued ? "Order queued" : "Order placed"}</div>
-                    <div className="text-[13.5px] mt-[3px] flex items-center gap-[7px] min-w-0 flex-wrap" style={{ color: successChrome.muted }}>
+                    <div className="text-[13px] mt-[3px] flex items-center gap-[7px] min-w-0 flex-wrap" style={{ color: successChrome.muted }}>
                       <span className="font-semibold truncate max-w-full" style={{ color: successChrome.text }}>{orderSuccess.service.replace(/\s*\((?:Budget|Standard|Premium)\)\s*$/i, '')}</span>
-                      {successTierClr && orderSuccess.tier && <span className="text-[10px] font-extrabold tracking-[.6px] uppercase px-2 py-[2.5px] rounded-full shrink-0" style={{ background: successTierClr.bg, color: successTierClr.text }}>{orderSuccess.tier}</span>}
+                      {successTierClr && orderSuccess.tier && <span className="text-[11px] font-extrabold tracking-[.6px] uppercase px-2 py-[2.5px] rounded-full shrink-0" style={{ background: successTierClr.bg, color: successTierClr.text }}>{orderSuccess.tier}</span>}
                     </div>
                   </div>
                 </div>
@@ -1073,30 +1073,30 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 {/* Stats row */}
                 <div className="flex flex-wrap border-y border-solid py-3.5 mb-3.5" style={{ borderColor: successChrome.hair }}>
                   <div className="flex-1 basis-1/3 min-w-0 pr-3">
-                    <div className="text-[10px] font-extrabold tracking-[1.1px] uppercase" style={{ color: successChrome.muted }}>Qty</div>
-                    <div className="mt-1 text-[16.5px] font-bold truncate" style={{ color: successChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{(orderSuccess.quantity || 0).toLocaleString()}</div>
+                    <div className="text-[11px] font-extrabold tracking-[1.1px] uppercase" style={{ color: successChrome.muted }}>Qty</div>
+                    <div className="mt-1 text-[15px] font-bold truncate" style={{ color: successChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{(orderSuccess.quantity || 0).toLocaleString()}</div>
                   </div>
                   <div className="flex-1 basis-1/3 min-w-0 border-l border-solid px-[18px] max-[380px]:pr-0" style={{ borderColor: successChrome.hair }}>
-                    <div className="text-[10px] font-extrabold tracking-[1.1px] uppercase" style={{ color: successChrome.muted }}>Charged</div>
-                    <div className="mt-1 text-[16.5px] font-bold truncate" style={{ color: successChrome.money, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>₦{(orderSuccess.charge || 0).toLocaleString()}</div>
+                    <div className="text-[11px] font-extrabold tracking-[1.1px] uppercase" style={{ color: successChrome.muted }}>Charged</div>
+                    <div className="mt-1 text-[15px] font-bold truncate" style={{ color: successChrome.money, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>₦{(orderSuccess.charge || 0).toLocaleString()}</div>
                   </div>
                   <div className="flex-1 basis-1/3 min-w-0 border-l border-solid pl-[18px] max-[380px]:basis-full max-[380px]:border-l-0 max-[380px]:border-t max-[380px]:pt-3 max-[380px]:mt-3 max-[380px]:pl-0" style={{ borderColor: successChrome.hair }}>
-                    <div className="text-[10px] font-extrabold tracking-[1.1px] uppercase" style={{ color: successChrome.muted }}>Balance</div>
-                    <div className="mt-1 text-[16.5px] font-bold truncate" style={{ color: successChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{orderSuccess.balanceAfter != null ? `₦${orderSuccess.balanceAfter.toLocaleString()}` : "—"}</div>
+                    <div className="text-[11px] font-extrabold tracking-[1.1px] uppercase" style={{ color: successChrome.muted }}>Balance</div>
+                    <div className="mt-1 text-[15px] font-bold truncate" style={{ color: successChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{orderSuccess.balanceAfter != null ? `₦${orderSuccess.balanceAfter.toLocaleString()}` : "—"}</div>
                   </div>
                 </div>
 
                 {/* Meta rows */}
-                <div className="flex items-center justify-between gap-4 py-[3px] text-[12.5px]" style={{ color: successChrome.muted }}>
+                <div className="flex items-center justify-between gap-4 py-[3px] text-[13px]" style={{ color: successChrome.muted }}>
                   <span>Order ID</span>
                   <span className="font-semibold min-w-0 truncate" style={{ color: successChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>#{orderSuccess.id}</span>
                 </div>
-                <div className="flex items-center justify-between gap-4 py-[3px] text-[12.5px]" style={{ color: successChrome.muted }}>
+                <div className="flex items-center justify-between gap-4 py-[3px] text-[13px]" style={{ color: successChrome.muted }}>
                   <span>Est. delivery</span>
                   <span className="font-semibold text-right min-w-0 truncate" style={{ color: successChrome.text }}>{orderSuccess.queued ? "Starts when active order completes" : formatDeliverySpeed(orderSuccess.speed)}</span>
                 </div>
                 {orderSuccess.pointsRedeemed > 0 && (
-                  <div className="flex items-center justify-between gap-4 py-[3px] text-[12.5px]" style={{ color: successChrome.muted }}>
+                  <div className="flex items-center justify-between gap-4 py-[3px] text-[13px]" style={{ color: successChrome.muted }}>
                     <span>Points used</span>
                     <span className="font-semibold min-w-0 truncate" style={{ color: dark ? "#fbbf24" : "#92400e", fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>₦{orderSuccess.pointsRedeemed.toLocaleString()}</span>
                   </div>
@@ -1116,9 +1116,9 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-3-.2-.3A8.2 8.2 0 1112 20.2zm4.6-6.1c-.3-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.2-.3.2-.5.1a6.7 6.7 0 01-2-1.2 7.5 7.5 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5v-.5c0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 .6.3 1.1.4 1.5.6.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.4z"/></svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[13.5px] font-bold" style={{ color: successChrome.text }}>Updates on WhatsApp</div>
+                        <div className="text-[13px] font-bold" style={{ color: successChrome.text }}>Updates on WhatsApp</div>
                       </div>
-                      <a href={waChannelUrl} target="_blank" rel="noopener" className="shrink-0 text-white text-[12.5px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap" style={{ background: "#128c46" }}>Follow</a>
+                      <a href={waChannelUrl} target="_blank" rel="noopener" className="shrink-0 text-white text-[13px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap" style={{ background: "#128c46" }}>Follow</a>
                     </div>
                   ) : PROMO_SLIDES[promoSlide] === "ig" ? (
                     <div className="rounded-2xl p-[15px] pr-4 flex items-center gap-[13px] max-[380px]:items-start" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)" }}>
@@ -1126,9 +1126,9 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[13.5px] font-bold" style={{ color: successChrome.text }}>We're on Instagram</div>
+                        <div className="text-[13px] font-bold" style={{ color: successChrome.text }}>We're on Instagram</div>
                       </div>
-                      <a href={`https://instagram.com/${igHandle}`} target="_blank" rel="noopener" className="shrink-0 text-white text-[12.5px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap" style={{ background: t.accent }}>Follow</a>
+                      <a href={`https://instagram.com/${igHandle}`} target="_blank" rel="noopener" className="shrink-0 text-white text-[13px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap" style={{ background: t.accent }}>Follow</a>
                     </div>
                   ) : PROMO_SLIDES[promoSlide] === "tasks" ? (
                     <div className="rounded-2xl p-[15px] pr-4 flex items-center gap-[13px] max-[380px]:items-start" style={{ background: dark ? "rgba(224,164,88,.09)" : "rgba(217,119,6,.06)" }}>
@@ -1136,10 +1136,10 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                         <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[13.5px] font-bold" style={{ color: successChrome.text }}>Earn while it delivers</div>
-                        <div className="text-[11.5px] mt-0.5" style={{ color: successChrome.soft || (dark ? "rgba(244,241,237,.55)" : "rgba(28,27,25,.55)") }}>Quick tasks, real promo credit.</div>
+                        <div className="text-[13px] font-bold" style={{ color: successChrome.text }}>Earn while it delivers</div>
+                        <div className="text-[11px] mt-0.5" style={{ color: successChrome.soft || (dark ? "rgba(244,241,237,.55)" : "rgba(28,27,25,.55)") }}>Quick tasks, real promo credit.</div>
                       </div>
-                      <a href={TASKS_SLIDE_HREF} className="shrink-0 text-white text-[12.5px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap" style={{ background: "#d97706" }}>See tasks</a>
+                      <a href={TASKS_SLIDE_HREF} className="shrink-0 text-white text-[13px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap" style={{ background: "#d97706" }}>See tasks</a>
                     </div>
                   ) : (
                     <div className="rounded-2xl p-[15px] pr-4 flex items-center gap-[13px] max-[380px]:items-start" style={{ background: dark ? "rgba(96,165,250,.09)" : "rgba(37,99,235,.06)" }}>
@@ -1147,10 +1147,10 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                         <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2v6.31L4.72 17.7A2 2 0 0 0 6.46 21h11.08a2 2 0 0 0 1.74-3.3L14 8.31V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[13.5px] font-bold" style={{ color: successChrome.text }}>Ordering for clients?</div>
-                        <div className="text-[11.5px] mt-0.5" style={{ color: successChrome.soft || (dark ? "rgba(244,241,237,.55)" : "rgba(28,27,25,.55)") }}>Reseller rates and your own panel.</div>
+                        <div className="text-[13px] font-bold" style={{ color: successChrome.text }}>Ordering for clients?</div>
+                        <div className="text-[11px] mt-0.5" style={{ color: successChrome.soft || (dark ? "rgba(244,241,237,.55)" : "rgba(28,27,25,.55)") }}>Reseller rates and your own panel.</div>
                       </div>
-                      <a href={RESELLER_SLIDE_HREF} className="shrink-0 text-white text-[12.5px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap" style={{ background: "#2563eb" }}>Open Lab</a>
+                      <a href={RESELLER_SLIDE_HREF} className="shrink-0 text-white text-[13px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap" style={{ background: "#2563eb" }}>Open Lab</a>
                     </div>
                   )}
                   <div className="flex justify-center gap-1.5 mt-2.5">
@@ -1186,13 +1186,13 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 </div>
                 <div className="text-base font-semibold" style={{ color: t.text }}>Heads up about TikTok</div>
               </div>
-              <div className="text-[13.5px] leading-[1.65] mb-1" style={{ color: t.textMuted }}>
+              <div className="text-[13px] leading-[1.65] mb-1" style={{ color: t.textMuted }}>
                 TikTok services are unstable due to frequent platform changes. Orders may deliver slowly, partially, or experience drops after delivery.
               </div>
-              <div className="text-[13.5px] leading-[1.65] mb-1 font-semibold" style={{ color: t.text }}>
+              <div className="text-[13px] leading-[1.65] mb-1 font-semibold" style={{ color: t.text }}>
                 Drops are not covered by refill.
               </div>
-              <div className="text-[13.5px] leading-[1.65] mb-4" style={{ color: t.textMuted }}>
+              <div className="text-[13px] leading-[1.65] mb-4" style={{ color: t.textMuted }}>
                 We recommend starting with a small order to test. By placing a TikTok order, you accept this risk.
               </div>
               <button onClick={() => { try { localStorage.setItem('nitro_tiktok_disclaimer', String(Date.now())); } catch {} setTiktokDisclaimer(false); }} className="w-full py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>I understand</button>
@@ -1212,10 +1212,10 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 </div>
                 <div className="text-base font-semibold" style={{ color: t.text }}>About YouTube subscribers</div>
               </div>
-              <div className="text-[13.5px] leading-[1.65] mb-1" style={{ color: t.textMuted }}>
+              <div className="text-[13px] leading-[1.65] mb-1" style={{ color: t.textMuted }}>
                 YouTube subscriber orders are fulfilled by real people completing tasks, not bots. This means delivery is slower than other services and may take several days to complete.
               </div>
-              <div className="text-[13.5px] leading-[1.65] mb-4" style={{ color: t.textMuted }}>
+              <div className="text-[13px] leading-[1.65] mb-4" style={{ color: t.textMuted }}>
                 Please allow extra time for subscriber orders to process.
               </div>
               <button onClick={() => { try { localStorage.setItem('nitro_youtube_disclaimer', String(Date.now())); } catch {} setYoutubeDisclaimer(false); }} className="w-full py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>Got it</button>
@@ -1234,7 +1234,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 </div>
                 <div className="text-base font-semibold" style={{ color: t.text }}>Duplicate order</div>
               </div>
-              <div className="text-[13.5px] leading-[1.65] mb-4" style={{ color: t.textMuted }}>
+              <div className="text-[13px] leading-[1.65] mb-4" style={{ color: t.textMuted }}>
                 {duplicateConfirm.message}
               </div>
               <div className="flex gap-2.5">
@@ -1331,8 +1331,8 @@ const BulkCartBar = forwardRef(function BulkCartBar({ rows, dark, t, menuData, b
       <div className="flex items-center gap-3 shrink-0">
         <div className="w-[38px] h-[38px] max-md:w-[34px] max-md:h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: t.accent, color: "#fff" }}><CartIcon /></div>
         <div className="flex flex-col gap-px">
-          <span className="text-[13.5px] font-semibold leading-tight" style={{ color: empty ? t.textMuted : t.text }}>{empty ? "Your cart" : `${rows.length} ${rows.length === 1 ? "order" : "orders"}`}</span>
-          <span className="text-[10.5px] leading-tight" style={{ color: t.textMuted }}>{empty ? "Tap a tier chip to add an order" : "in cart"}</span>
+          <span className="text-[13px] font-semibold leading-tight" style={{ color: empty ? t.textMuted : t.text }}>{empty ? "Your cart" : `${rows.length} ${rows.length === 1 ? "order" : "orders"}`}</span>
+          <span className="text-[11px] leading-tight" style={{ color: t.textMuted }}>{empty ? "Tap a tier chip to add an order" : "in cart"}</span>
         </div>
       </div>
 
@@ -1361,8 +1361,8 @@ const BulkCartBar = forwardRef(function BulkCartBar({ rows, dark, t, menuData, b
       <div className="flex items-center gap-3.5 shrink-0">
         {!empty && (
           <div className="flex flex-col items-end gap-px">
-            <span className="text-[10px] uppercase tracking-[1.5px] font-medium hidden desktop:block" style={{ color: t.textMuted }}>Total</span>
-            <span className="text-[17px] max-md:text-[15px] font-semibold whitespace-nowrap" style={{ color: t.accent }}>{bp === "sm" ? compactPrice(total) : `₦${total.toLocaleString()}`}</span>
+            <span className="text-[11px] uppercase tracking-[1.5px] font-medium hidden desktop:block" style={{ color: t.textMuted }}>Total</span>
+            <span className="text-[18px] max-md:text-[15px] font-semibold whitespace-nowrap" style={{ color: t.accent }}>{bp === "sm" ? compactPrice(total) : `₦${total.toLocaleString()}`}</span>
           </div>
         )}
         <div className="w-[34px] h-[34px] max-md:w-[30px] max-md:h-[30px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: t.accent }}>
@@ -1453,12 +1453,12 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
       {!bulkSuccess && <div className="py-3.5 px-[18px] flex items-center gap-4 border-b border-solid select-none shrink-0" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}>
         <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: t.accent, color: "#fff" }}><CartIcon /></div>
         <div className="flex flex-col gap-px flex-1 min-w-0">
-          <span className="text-[13.5px] font-medium" style={{ color: t.text }}>{rows.length} {rows.length === 1 ? "order" : "orders"}</span>
-          <span className="text-[10.5px]" style={{ color: t.textMuted }}>in cart</span>
+          <span className="text-[13px] font-medium" style={{ color: t.text }}>{rows.length} {rows.length === 1 ? "order" : "orders"}</span>
+          <span className="text-[11px]" style={{ color: t.textMuted }}>in cart</span>
         </div>
         <button onClick={onClear} disabled={loading} className="py-1 px-2.5 rounded-md border border-solid text-[11px] font-medium cursor-pointer bg-transparent font-[inherit] hover:opacity-80 transition-opacity shrink-0 disabled:opacity-40 disabled:cursor-not-allowed" style={{ borderColor: dark ? "rgba(255,255,255,.19)" : "rgba(0,0,0,.18)", color: t.textMuted }}>Clear cart</button>
         <div className="flex items-center gap-3.5 shrink-0">
-          <span className="text-[17px] font-medium" style={{ color: t.accent }}>₦{total.toLocaleString()}</span>
+          <span className="text-[18px] font-medium" style={{ color: t.accent }}>₦{total.toLocaleString()}</span>
           <button onClick={onClose} disabled={loading} className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center cursor-pointer border-none p-0 disabled:opacity-40 disabled:cursor-not-allowed transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent }}>
             <span className="w-2 h-2 border-r-2 border-t-2 border-solid rotate-[135deg]" style={{ borderColor: "#fff" }} />
           </button>
@@ -1482,26 +1482,26 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
           {/* Stats row */}
           <div className="flex flex-wrap border-y border-solid py-3.5 my-[18px] mb-3.5" style={{ borderColor: bulkChrome.hair }}>
             <div className="flex-1 basis-1/3 min-w-0 pr-3">
-              <div className="text-[10px] font-extrabold tracking-[1.1px] uppercase" style={{ color: bulkChrome.muted }}>Orders</div>
-              <div className="mt-1 text-[16.5px] font-bold truncate" style={{ color: bulkChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{bulkSuccess.total}</div>
+              <div className="text-[11px] font-extrabold tracking-[1.1px] uppercase" style={{ color: bulkChrome.muted }}>Orders</div>
+              <div className="mt-1 text-[15px] font-bold truncate" style={{ color: bulkChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{bulkSuccess.total}</div>
             </div>
             <div className="flex-1 basis-1/3 min-w-0 border-l border-solid px-[18px] max-[380px]:pr-0" style={{ borderColor: bulkChrome.hair }}>
-              <div className="text-[10px] font-extrabold tracking-[1.1px] uppercase" style={{ color: bulkChrome.muted }}>Charged</div>
-              <div className="mt-1 text-[16.5px] font-bold truncate" style={{ color: bulkChrome.money, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>₦{(bulkSuccess.totalCharge || 0).toLocaleString()}</div>
+              <div className="text-[11px] font-extrabold tracking-[1.1px] uppercase" style={{ color: bulkChrome.muted }}>Charged</div>
+              <div className="mt-1 text-[15px] font-bold truncate" style={{ color: bulkChrome.money, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>₦{(bulkSuccess.totalCharge || 0).toLocaleString()}</div>
             </div>
             <div className="flex-1 basis-1/3 min-w-0 border-l border-solid pl-[18px] max-[380px]:basis-full max-[380px]:border-l-0 max-[380px]:border-t max-[380px]:pt-3 max-[380px]:mt-3 max-[380px]:pl-0" style={{ borderColor: bulkChrome.hair }}>
-              <div className="text-[10px] font-extrabold tracking-[1.1px] uppercase" style={{ color: bulkChrome.muted }}>Balance</div>
-              <div className="mt-1 text-[16.5px] font-bold truncate" style={{ color: bulkChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{bulkSuccess.newBalance != null ? `₦${bulkSuccess.newBalance.toLocaleString()}` : "—"}</div>
+              <div className="text-[11px] font-extrabold tracking-[1.1px] uppercase" style={{ color: bulkChrome.muted }}>Balance</div>
+              <div className="mt-1 text-[15px] font-bold truncate" style={{ color: bulkChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{bulkSuccess.newBalance != null ? `₦${bulkSuccess.newBalance.toLocaleString()}` : "—"}</div>
             </div>
           </div>
 
           {/* Meta rows */}
-          <div className="flex items-center justify-between gap-4 py-[3px] text-[12.5px]" style={{ color: bulkChrome.muted }}>
+          <div className="flex items-center justify-between gap-4 py-[3px] text-[13px]" style={{ color: bulkChrome.muted }}>
             <span>Batch ID</span>
             <span className="font-semibold min-w-0 truncate" style={{ color: bulkChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{bulkSuccess.batchId}</span>
           </div>
           {bulkSuccess.loyaltyDiscount > 0 && (
-            <div className="flex items-center justify-between gap-4 py-[3px] text-[12.5px]" style={{ color: bulkChrome.muted }}>
+            <div className="flex items-center justify-between gap-4 py-[3px] text-[13px]" style={{ color: bulkChrome.muted }}>
               <span>Nitro Status discount</span>
               <span className="font-semibold text-right min-w-0 truncate" style={{ color: bulkChrome.money }}>{bulkSuccess.loyaltyTier} · {bulkSuccess.loyaltyDiscount}%</span>
             </div>
@@ -1517,15 +1517,15 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                 <div key={i} className="flex items-center gap-2.5 py-3" style={{ borderTop: i > 0 ? `1px solid ${bulkChrome.hair}` : "none" }}>
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 [&_svg]:w-[17px] [&_svg]:h-[17px]" style={{ background: bulkChrome.soft, color: bulkChrome.muted }}>{plat?.icon || <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/></svg>}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[12.5px] font-semibold truncate" style={{ color: bulkChrome.text }}>{o.name || o.service || o.link}</div>
+                    <div className="text-[13px] font-semibold truncate" style={{ color: bulkChrome.text }}>{o.name || o.service || o.link}</div>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      {o.tier && <span className="text-[9px] font-semibold py-0.5 px-1.5 rounded-md shrink-0" style={{ background: dark ? TS[o.tier]?.bgD : TS[o.tier]?.bg, color: TS[o.tier]?.text }}>{o.tier}</span>}
-                      <span className="text-[10px]" style={{ color: bulkChrome.muted, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{(o.qty || 0).toLocaleString()}</span>
+                      {o.tier && <span className="text-[11px] font-semibold py-0.5 px-1.5 rounded-md shrink-0" style={{ background: dark ? TS[o.tier]?.bgD : TS[o.tier]?.bg, color: TS[o.tier]?.text }}>{o.tier}</span>}
+                      <span className="text-[11px]" style={{ color: bulkChrome.muted, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{(o.qty || 0).toLocaleString()}</span>
                     </div>
                   </div>
                   <span className="flex items-center gap-1.5 shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full" style={{ background: isProcessing ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fbbf24" : "#d97706") }} />
-                    <span className="text-[10px] font-semibold" style={{ color: bulkChrome.muted }}>{isProcessing ? "Processing" : "Pending"}</span>
+                    <span className="text-[11px] font-semibold" style={{ color: bulkChrome.muted }}>{isProcessing ? "Processing" : "Pending"}</span>
                   </span>
                 </div>
               );
@@ -1542,10 +1542,10 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
               <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-3-.2-.3A8.2 8.2 0 1112 20.2zm4.6-6.1c-.3-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.2-.3.2-.5.1a6.7 6.7 0 01-2-1.2 7.5 7.5 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5v-.5c0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 .6.3 1.1.4 1.5.6.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.4z"/></svg>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[13.5px] font-bold" style={{ color: bulkChrome.text }}>Follow The Nitro NG on WhatsApp</div>
+              <div className="text-[13px] font-bold" style={{ color: bulkChrome.text }}>Follow The Nitro NG on WhatsApp</div>
               <div className="text-xs leading-normal mt-0.5" style={{ color: bulkChrome.muted }}>Delivery updates, deal days and service news, straight from us.</div>
             </div>
-            <a href={waChannelUrl || 'https://whatsapp.com/channel/0029Vb8hC6rJ3jv7Ig2m3D3Q'} target="_blank" rel="noopener" className="shrink-0 text-white text-[12.5px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap hover:!bg-[#128c46]" style={{ background: bulkChrome.wa }}>Follow</a>
+            <a href={waChannelUrl || 'https://whatsapp.com/channel/0029Vb8hC6rJ3jv7Ig2m3D3Q'} target="_blank" rel="noopener" className="shrink-0 text-white text-[13px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap hover:!bg-[#128c46]" style={{ background: bulkChrome.wa }}>Follow</a>
           </div>
 
           {/* Action buttons */}
@@ -1561,9 +1561,9 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
         <div className="mx-[18px] max-md:mx-3.5 mt-3">
           <InlineAlert type={bulkError.type === "balance" ? "warning" : "error"} dark={dark} onDismiss={() => setBulkError(null)}>
             <div className="font-semibold mb-0.5">{bulkError.type === "balance" ? "Insufficient balance" : "Connection error"}</div>
-            <div className="text-[11.5px] font-normal" style={{ color: t.textMuted }}>{bulkError.type === "balance" ? `You need ₦${(bulkError.needed || 0).toLocaleString()} more to place these orders.` : bulkError.message}</div>
+            <div className="text-[11px] font-normal" style={{ color: t.textMuted }}>{bulkError.type === "balance" ? `You need ₦${(bulkError.needed || 0).toLocaleString()} more to place these orders.` : bulkError.message}</div>
             {bulkError.type === "balance" && onTopUp && (
-              <button onClick={() => { setBulkError(null); onClose(); onTopUp(); }} className="mt-2 py-1.5 px-3 rounded-lg text-[12px] font-semibold cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.08)", color: dark ? "#fbbf24" : "#d97706", border: `1px solid ${dark ? "rgba(251,191,36,.28)" : "rgba(217,119,6,.2)"}` }}>Top up wallet</button>
+              <button onClick={() => { setBulkError(null); onClose(); onTopUp(); }} className="mt-2 py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.08)", color: dark ? "#fbbf24" : "#d97706", border: `1px solid ${dark ? "rgba(251,191,36,.28)" : "rgba(217,119,6,.2)"}` }}>Top up wallet</button>
             )}
           </InlineAlert>
         </div>
@@ -1593,9 +1593,9 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
               <div className="flex items-center gap-2.5">
                 <span className="flex items-center justify-center w-5 h-5 shrink-0 [&_svg]:w-[18px] [&_svg]:h-[18px]" style={{ color: t.textMuted }}>{PLATFORMS.find(pl => pl.id === row.platform)?.icon}</span>
                 <div className="text-[13px] font-medium flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{row.name}</div>
-                <span className="text-[10.5px] font-medium py-0.5 px-2.5 rounded-full shrink-0" style={{ background: dark ? TS[row.tier]?.bgD : TS[row.tier]?.bg, color: TS[row.tier]?.text }}>{row.tier}</span>
+                <span className="text-[11px] font-medium py-0.5 px-2.5 rounded-full shrink-0" style={{ background: dark ? TS[row.tier]?.bgD : TS[row.tier]?.bg, color: TS[row.tier]?.text }}>{row.tier}</span>
                 <span className="text-[11px] max-w-[120px] truncate font-[JetBrains_Mono,monospace] hidden md:inline" style={{ color: t.textMuted }}>{linkPreview}</span>
-                <span className="text-[12.5px] font-medium shrink-0" style={{ color: t.textMuted }}>₦{rowPrice.toLocaleString()}</span>
+                <span className="text-[13px] font-medium shrink-0" style={{ color: t.textMuted }}>₦{rowPrice.toLocaleString()}</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
             </div>
@@ -1607,48 +1607,48 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
               <div className="flex items-center gap-2.5 mb-3">
                 <span className="flex items-center justify-center w-5 h-5 shrink-0 [&_svg]:w-[18px] [&_svg]:h-[18px]" style={{ color: t.textMuted }}>{PLATFORMS.find(pl => pl.id === row.platform)?.icon}</span>
                 <div className="text-[13px] font-medium flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{row.name}</div>
-                <span className="text-[10.5px] font-medium py-0.5 px-2.5 rounded-full shrink-0" style={{ background: dark ? TS[row.tier]?.bgD : TS[row.tier]?.bg, color: TS[row.tier]?.text }}>{row.tier}</span>
+                <span className="text-[11px] font-medium py-0.5 px-2.5 rounded-full shrink-0" style={{ background: dark ? TS[row.tier]?.bgD : TS[row.tier]?.bg, color: TS[row.tier]?.text }}>{row.tier}</span>
                 {hasValidLink && <button onClick={() => updateRow(idx, { expanded: false })} className="w-[24px] h-[24px] rounded-full bg-transparent border border-solid flex items-center justify-center shrink-0 p-0 cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>}
-                <button onClick={() => removeRow(idx)} disabled={loading} className="w-[24px] h-[24px] rounded-full bg-transparent border border-solid flex items-center justify-center text-[10px] shrink-0 p-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                <button onClick={() => removeRow(idx)} disabled={loading} className="w-[24px] h-[24px] rounded-full bg-transparent border border-solid flex items-center justify-center text-[11px] shrink-0 p-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
 
               {/* Link + qty */}
               <div className="flex gap-2 items-center mb-2.5">
                 <div className="flex rounded-lg overflow-hidden flex-1 min-w-0" style={{ border: `1px solid ${badLink ? (dark ? "#fca5a5" : "#dc2626") : emptyLink ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)")}`, background: emptyLink ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)") : (dark ? "#0f1322" : "#fff") }}>
                   <span className="inline-flex items-center px-2.5 text-[11px] font-semibold shrink-0 select-none" style={{ borderRight: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.textMuted }}>https://</span>
-                  <input aria-label="Link" disabled={loading} placeholder={getLinkPlaceholder(row.platform, row.name)} value={row.link} onChange={e => updateRow(idx, { link: e.target.value.replace(/^https?:\/\//i, "") })} className="flex-1 py-2 px-2.5 text-[12px] outline-none min-w-0 font-[JetBrains_Mono,monospace] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
+                  <input aria-label="Link" disabled={loading} placeholder={getLinkPlaceholder(row.platform, row.name)} value={row.link} onChange={e => updateRow(idx, { link: e.target.value.replace(/^https?:\/\//i, "") })} className="flex-1 py-2 px-2.5 text-[11px] outline-none min-w-0 font-[JetBrains_Mono,monospace] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
                 </div>
-                <input aria-label="Quantity" disabled={loading} type="number" min={1} step="1" value={row.qty} onChange={e => { const v = Math.min(row.max, Math.floor(Number(e.target.value)) || 0); updateRow(idx, { qty: v }); }} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="w-[76px] py-2 px-2.5 rounded-lg border border-solid text-[12px] font-medium text-right outline-none shrink-0 font-[JetBrains_Mono,monospace] disabled:opacity-50" style={{ background: dark ? "#0f1322" : "#fff", borderColor: qtyBad ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"), color: t.text }} />
+                <input aria-label="Quantity" disabled={loading} type="number" min={1} step="1" value={row.qty} onChange={e => { const v = Math.min(row.max, Math.floor(Number(e.target.value)) || 0); updateRow(idx, { qty: v }); }} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="w-[76px] py-2 px-2.5 rounded-lg border border-solid text-[11px] font-medium text-right outline-none shrink-0 font-[JetBrains_Mono,monospace] disabled:opacity-50" style={{ background: dark ? "#0f1322" : "#fff", borderColor: qtyBad ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"), color: t.text }} />
               </div>
 
               {/* Presets + price */}
               <div className="flex justify-between items-center gap-3">
                 <div className="flex gap-1 flex-wrap">
                   {getPresets(row.min, row.max).map(v => (
-                    <button key={v} onClick={() => updateRow(idx, { qty: v })} disabled={loading} className="py-[3px] px-2 rounded-full border border-solid text-[10.5px] font-medium cursor-pointer bg-transparent font-[inherit] disabled:opacity-40 transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: row.qty === v ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"), color: row.qty === v ? t.accent : t.textMuted }}>{fQty(v)}</button>
+                    <button key={v} onClick={() => updateRow(idx, { qty: v })} disabled={loading} className="py-[3px] px-2 rounded-full border border-solid text-[11px] font-medium cursor-pointer bg-transparent font-[inherit] disabled:opacity-40 transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: row.qty === v ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"), color: row.qty === v ? t.accent : t.textMuted }}>{fQty(v)}</button>
                   ))}
                 </div>
-                <span className="text-[12.5px] font-medium shrink-0" style={{ color: t.textMuted }}>₦{rowPrice.toLocaleString()}</span>
+                <span className="text-[13px] font-medium shrink-0" style={{ color: t.textMuted }}>₦{rowPrice.toLocaleString()}</span>
               </div>
 
               {/* Warnings */}
-              {dup && <div className="text-[10.5px] mt-1.5 flex items-center gap-1.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>● Duplicate — remove one or change the tier</div>}
-              {emptyLink && !dup && <div className="text-[10.5px] mt-1.5 flex items-center gap-1.5" style={{ color: t.accent }}>○ Paste a link for this row</div>}
-              {badLink && !dup && <div className="text-[10.5px] mt-1.5 flex items-center gap-1.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>● Enter a valid URL or @username</div>}
-              {qtyBad && !dup && <div className="text-[10.5px] mt-1.5" style={{ color: t.accent }}>{row.qty < row.min ? `Min ${row.min.toLocaleString()} for this service` : `Max ${row.max.toLocaleString()} for this service`}</div>}
-              {needsCommentsWarning && !dup && <div className="text-[10.5px] mt-1.5" style={{ color: t.accent }}>○ {row.needsPoll ? "Select a poll answer" : row.needsMentions ? "Enter usernames" : "This service needs at least one comment"}</div>}
+              {dup && <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>● Duplicate — remove one or change the tier</div>}
+              {emptyLink && !dup && <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: t.accent }}>○ Paste a link for this row</div>}
+              {badLink && !dup && <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>● Enter a valid URL or @username</div>}
+              {qtyBad && !dup && <div className="text-[11px] mt-1.5" style={{ color: t.accent }}>{row.qty < row.min ? `Min ${row.min.toLocaleString()} for this service` : `Max ${row.max.toLocaleString()} for this service`}</div>}
+              {needsCommentsWarning && !dup && <div className="text-[11px] mt-1.5" style={{ color: t.accent }}>○ {row.needsPoll ? "Select a poll answer" : row.needsMentions ? "Enter usernames" : "This service needs at least one comment"}</div>}
 
               {/* Comment/mention/poll section */}
               {(row.needsComments || row.needsMentions || row.needsPoll) && (
                 <div className="mt-2 pt-2 border-t border-dashed" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}>
                   {commentCount > 0 && !row.commentsOpen ? (
                     <>
-                      <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[5px] px-3 rounded-full border border-solid text-[11.5px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(127,184,74,.25)" : "#e4f3d9", borderColor: dark ? "#639922" : "#7fb84a", color: dark ? "#b4db7a" : "#27500A" }}>
+                      <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[5px] px-3 rounded-full border border-solid text-[11px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(127,184,74,.25)" : "#e4f3d9", borderColor: dark ? "#639922" : "#7fb84a", color: dark ? "#b4db7a" : "#27500A" }}>
                         <span className="w-[5px] h-[5px] rounded-full" style={{ background: dark ? "#b4db7a" : "#27500A" }} />
                         <span><b>{commentCount}</b> {row.needsPoll ? "answer" : row.needsMentions ? "username" : "comment"}{commentCount !== 1 ? "s" : ""}</span>
-                        <span className="text-[10.5px] underline ml-1" style={{ color: t.textMuted }}>edit</span>
+                        <span className="text-[11px] underline ml-1" style={{ color: t.textMuted }}>edit</span>
                       </button>
-                      <div className="text-[10.5px] mt-1.5" style={{ color: t.textMuted }}>We'll cycle through them to fill your order</div>
+                      <div className="text-[11px] mt-1.5" style={{ color: t.textMuted }}>We'll cycle through them to fill your order</div>
                     </>
                   ) : row.commentsOpen ? (
                     <div className="rounded-lg border border-solid p-2.5" style={{ background: dark ? "#0f1322" : "#fff", borderColor: t.accent }}>
@@ -1656,16 +1656,16 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                         <span className="text-[11px] font-medium" style={{ color: t.text }}>{row.needsPoll ? "Poll answer (number)" : row.needsMentions ? "Usernames — one per line" : "Seed comments — one per line"}</span>
                         <button onClick={() => updateRow(idx, { commentsOpen: false })} className="bg-transparent border-none text-[11px] cursor-pointer py-0.5 px-1.5 rounded font-[inherit] hover:bg-[rgba(0,0,0,.08)] transition-transform duration-200 hover:-translate-y-px" style={{ color: t.textMuted }}>Done</button>
                       </div>
-                      <textarea placeholder={row.needsPoll ? "1" : row.needsMentions ? "username1\nusername2\nusername3" : "Fire post\nLove this\nLegendary..."} value={row.comments} onChange={e => updateRow(idx, { comments: e.target.value })} rows={4} className="w-full min-h-[90px] rounded-md border border-solid py-2 px-2.5 text-[11.5px] font-[JetBrains_Mono,monospace] outline-none resize-y" style={{ background: dark ? "rgba(255,255,255,.09)" : "#f7f5f1", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.text }} />
-                      <div className="flex justify-between items-center mt-2 text-[10.5px] flex-wrap gap-2" style={{ color: t.textMuted }}>
+                      <textarea placeholder={row.needsPoll ? "1" : row.needsMentions ? "username1\nusername2\nusername3" : "Fire post\nLove this\nLegendary..."} value={row.comments} onChange={e => updateRow(idx, { comments: e.target.value })} rows={4} className="w-full min-h-[90px] rounded-md border border-solid py-2 px-2.5 text-[11px] font-[JetBrains_Mono,monospace] outline-none resize-y" style={{ background: dark ? "rgba(255,255,255,.09)" : "#f7f5f1", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.text }} />
+                      <div className="flex justify-between items-center mt-2 text-[11px] flex-wrap gap-2" style={{ color: t.textMuted }}>
                         <div className="flex items-center gap-1"><strong style={{ color: t.accent }}>{commentCount}</strong> {row.needsPoll ? "answer" : `seed ${row.needsMentions ? "username" : "comment"}${commentCount !== 1 ? "s" : ""}`}{row.needsPoll ? "" : ` · will cycle to fill ${row.qty.toLocaleString()}`}</div>
-                        {row.qty > 100 && <button onClick={() => { setUploadIdx(idx); fileInputRef.current?.click(); }} className="inline-flex items-center gap-1 py-1 px-2.5 rounded-md border border-solid text-[10.5px] font-medium cursor-pointer bg-transparent font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}>↑ Upload .txt</button>}
+                        {row.qty > 100 && <button onClick={() => { setUploadIdx(idx); fileInputRef.current?.click(); }} className="inline-flex items-center gap-1 py-1 px-2.5 rounded-md border border-solid text-[11px] font-medium cursor-pointer bg-transparent font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}>↑ Upload .txt</button>}
                       </div>
                     </div>
                   ) : (
                     <>
-                      <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[7px] px-3 rounded-lg border border-solid text-[11.5px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)", borderColor: t.accent, color: t.accent }}>+ Add {row.needsPoll ? "poll answer" : row.needsMentions ? "usernames" : "comments"}</button>
-                      {!row.needsPoll && <div className="text-[10.5px] mt-1.5" style={{ color: t.textMuted }}>We'll cycle through them to fill your order</div>}
+                      <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[7px] px-3 rounded-lg border border-solid text-[11px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)", borderColor: t.accent, color: t.accent }}>+ Add {row.needsPoll ? "poll answer" : row.needsMentions ? "usernames" : "comments"}</button>
+                      {!row.needsPoll && <div className="text-[11px] mt-1.5" style={{ color: t.textMuted }}>We'll cycle through them to fill your order</div>}
                     </>
                   )}
                 </div>
@@ -1679,16 +1679,16 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
       {/* Footer */}
       {!bulkSuccess && rows.length > 0 && (
         <div className="py-3.5 px-[18px] max-md:py-3 max-md:px-3.5 border-t border-solid shrink-0" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}>
-          <div className="flex justify-between text-[12.5px] mb-1.5" style={{ color: t.textMuted }}>
+          <div className="flex justify-between text-[13px] mb-1.5" style={{ color: t.textMuted }}>
             <span>{rows.length} order{rows.length !== 1 ? "s" : ""} subtotal</span><span>₦{subtotal.toLocaleString()}</span>
           </div>
           {discount > 0 && (
-            <div className="flex justify-between text-[12.5px] mb-1.5" style={{ color: dark ? "#b4db7a" : "#27500A" }}>
+            <div className="flex justify-between text-[13px] mb-1.5" style={{ color: dark ? "#b4db7a" : "#27500A" }}>
               <span>Nitro Status discount ({loyaltyDiscount}%)</span><span>−₦{discount.toLocaleString()}</span>
             </div>
           )}
           <div className="flex justify-between items-baseline my-2.5">
-            <span className="text-[10px] uppercase tracking-[2px] font-medium" style={{ color: t.textMuted }}>Total</span>
+            <span className="text-[11px] uppercase tracking-[2px] font-medium" style={{ color: t.textMuted }}>Total</span>
             <span className="text-[22px] font-medium" style={{ color: t.accent }}>₦{total.toLocaleString()}</span>
           </div>
           <button onClick={onPlace} disabled={loading} className="w-full py-3 rounded-[10px] border-none text-[15px] font-semibold cursor-pointer font-[inherit] bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: loading ? .5 : 1 }}>
@@ -1710,7 +1710,7 @@ export function ServicesSidebar({ dark, t }) {
     <div className="flex flex-col gap-3" style={{ fontSize: "103%" }}>
       <div className="text-[11px] font-semibold uppercase tracking-[1px] py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Quick Tips</div>
 
-      <div className="text-[12px] leading-[1.6]" style={{ color: t.textMuted }}>
+      <div className="text-[11px] leading-[1.6]" style={{ color: t.textMuted }}>
         <div className="mb-1">• Set profile to <b style={{ color: t.text }}>public</b> before ordering — no refunds for private profiles</div>
         <div className="mb-1">• <b style={{ color: t.text }}>Start small</b> — test a Budget tier first</div>
         <div>• Not sure which tier? Tap the <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"-1px"}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> for a quick breakdown</div>
@@ -1720,15 +1720,15 @@ export function ServicesSidebar({ dark, t }) {
 
       <div className="py-2 px-2.5 rounded-[10px] border border-solid" style={{ background: dark ? "rgba(74,222,128,.1)" : "rgba(22,163,74,.06)", borderColor: dark ? "rgba(74,222,128,.19)" : "rgba(22,163,74,.14)" }}>
         <div className="text-[13px] font-semibold mb-0.5" style={{ color: dark ? "#4ade80" : "#16a34a" }}>🇳🇬 Nigerian Services</div>
-        <div className="text-[12px] leading-[1.5]" style={{ color: t.textMuted }}>Look for the 🇳🇬 flag! Real local engagement for Naija creators and businesses.</div>
+        <div className="text-[11px] leading-[1.5]" style={{ color: t.textMuted }}>Look for the 🇳🇬 flag! Real local engagement for Naija creators and businesses.</div>
       </div>
 
       <div className="py-2 px-2.5 rounded-[10px] border border-solid" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderColor: dark ? "rgba(196,125,142,.19)" : "rgba(196,125,142,.14)" }}>
         <div className="text-[13px] font-semibold mb-0.5" style={{ color: "#c47d8e" }}>Bulk Orders</div>
-        <div className="text-[12px] leading-[1.5]" style={{ color: t.textMuted }}>Switch to <b style={{ color: t.text }}>Bulk</b> mode to place up to 50 orders in one checkout. Failed orders are retried and refunded automatically.</div>
+        <div className="text-[11px] leading-[1.5]" style={{ color: t.textMuted }}>Switch to <b style={{ color: t.text }}>Bulk</b> mode to place up to 50 orders in one checkout. Failed orders are retried and refunded automatically.</div>
       </div>
 
-      <button onClick={() => window.dispatchEvent(new CustomEvent("nitro-order-tour"))} className="py-2.5 px-0 w-full rounded-lg text-[12px] font-semibold cursor-pointer font-[inherit] flex items-center justify-center gap-1.5 border border-solid text-[#c47d8e] transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ borderColor: dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)", background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.06)" }}>
+      <button onClick={() => window.dispatchEvent(new CustomEvent("nitro-order-tour"))} className="py-2.5 px-0 w-full rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] flex items-center justify-center gap-1.5 border border-solid text-[#c47d8e] transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ borderColor: dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)", background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.06)" }}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         Need a walkthrough?
       </button>

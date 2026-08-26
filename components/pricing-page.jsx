@@ -87,7 +87,7 @@ function PricingInner({ platforms }) {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0018 8 6 6 0 006 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 018.91 14"/></svg>
             <div>
               <div className="text-[13px] font-semibold mb-0.5" style={{ color: t.text }}>Choosing the right tier matters</div>
-              <div className="text-[12px] leading-[1.55]" style={{ color: t.textSoft }}>Social platforms routinely clean up inactive accounts. <strong style={{ color: t.text }}>Budget</strong> is great for a quick boost but has no refill. <strong style={{ color: t.text }}>Standard</strong> includes a 30-day refill, and <strong style={{ color: t.text }}>Premium</strong> comes with lifetime refill.</div>
+              <div className="text-[11px] leading-[1.55]" style={{ color: t.textSoft }}>Social platforms routinely clean up inactive accounts. <strong style={{ color: t.text }}>Budget</strong> is great for a quick boost but has no refill. <strong style={{ color: t.text }}>Standard</strong> includes a 30-day refill, and <strong style={{ color: t.text }}>Premium</strong> comes with lifetime refill.</div>
             </div>
           </div>
 
@@ -145,11 +145,11 @@ function PricingInner({ platforms }) {
                           <Icon name={p.platform} color={isActive ? accent : (dark ? "rgba(255,255,255,.5)" : "rgba(0,0,0,.4)")} />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-[15px] max-md:text-[14px] font-semibold truncate" style={{ color: t.text }}>{p.platform}</div>
-                          <div className="text-[12px] max-md:text-[11px]" style={{ color: t.textMuted }}>{p.services.length} service{p.services.length !== 1 ? 's' : ''}</div>
+                          <div className="text-[15px] max-md:text-[13px] font-semibold truncate" style={{ color: t.text }}>{p.platform}</div>
+                          <div className="text-[11px] max-md:text-[11px]" style={{ color: t.textMuted }}>{p.services.length} service{p.services.length !== 1 ? 's' : ''}</div>
                         </div>
                       </div>
-                      <div className="text-[13px] max-md:text-[12px] font-semibold" style={{ color: accent }}>
+                      <div className="text-[13px] max-md:text-[11px] font-semibold" style={{ color: accent }}>
                         {minPrice >= 100000 ? `From ₦${Math.round(minPrice / 1000).toLocaleString()}/unit` : `From ₦${minPrice.toLocaleString()}/1K`}
                       </div>
                       {isActive && <div className="absolute -bottom-[9px] left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 rounded-[2px]" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.06)", borderRight: `1.5px solid ${accent}`, borderBottom: `1.5px solid ${accent}` }} />}
@@ -169,7 +169,7 @@ function PricingInner({ platforms }) {
                       </div>
                       <div>
                         <div className="text-lg font-semibold" style={{ color: t.text }}>{selected.platform}</div>
-                        <div className="text-[12px]" style={{ color: t.textMuted }}>{selected.services.length} services available</div>
+                        <div className="text-[11px]" style={{ color: t.textMuted }}>{selected.services.length} services available</div>
                       </div>
                     </div>
                     <button onClick={() => setActive(null)} className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `1px solid ${border}`, color: t.textMuted }}>
@@ -182,8 +182,8 @@ function PricingInner({ platforms }) {
                     {selected.services.map(s => (
                       <div key={s.type} className="flex items-center justify-between py-4 px-6 max-md:px-4 max-md:py-3">
                         <div className="min-w-0 flex-1">
-                          <div className="text-[15px] max-md:text-[14px] font-medium" style={{ color: t.text }}>{s.type}</div>
-                          <div className="flex items-center gap-3 mt-0.5 text-[12px] max-md:text-[11px]" style={{ color: t.textMuted }}>
+                          <div className="text-[15px] max-md:text-[13px] font-medium" style={{ color: t.text }}>{s.type}</div>
+                          <div className="flex items-center gap-3 mt-0.5 text-[11px] max-md:text-[11px]" style={{ color: t.textMuted }}>
                             {s.tiers > 1 && <span className="inline-flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>{s.tiers} tiers</span>}
                             {s.refill && <span className="inline-flex items-center gap-1 text-green-500"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>Refill</span>}
                           </div>
@@ -191,14 +191,14 @@ function PricingInner({ platforms }) {
                         <div className="text-right shrink-0 ml-4">
                           {s.minPrice >= 100000 ? (
                             <>
-                              <div className="text-[15px] max-md:text-[14px] font-bold" style={{ color: accent }}>
+                              <div className="text-[15px] max-md:text-[13px] font-bold" style={{ color: accent }}>
                                 {s.minPrice === s.maxPrice ? `₦${Math.round(s.minPrice / 1000).toLocaleString()}` : `₦${Math.round(s.minPrice / 1000).toLocaleString()} – ${Math.round(s.maxPrice / 1000).toLocaleString()}`}
                               </div>
                               <div className="text-[11px]" style={{ color: t.textMuted }}>per unit</div>
                             </>
                           ) : (
                             <>
-                              <div className="text-[15px] max-md:text-[14px] font-bold" style={{ color: accent }}>
+                              <div className="text-[15px] max-md:text-[13px] font-bold" style={{ color: accent }}>
                                 {s.minPrice === s.maxPrice ? `₦${s.minPrice.toLocaleString()}` : `₦${s.minPrice.toLocaleString()} – ${s.maxPrice.toLocaleString()}`}
                               </div>
                               <div className="text-[11px]" style={{ color: t.textMuted }}>per 1,000</div>
@@ -221,7 +221,7 @@ function PricingInner({ platforms }) {
               {!selected && (
                 <div className="mt-8 text-center py-8 rounded-2xl" style={{ background: dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.02)", border: `1px dashed ${border}` }}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="1.5" strokeLinecap="round" className="mx-auto mb-2 opacity-50"><path d="M15 15l-2 5L9 9l11 4-5 2z"/><path d="M5 5l10 10"/></svg>
-                  <p className="text-[14px]" style={{ color: t.textMuted }}>Select a platform above to see services and pricing</p>
+                  <p className="text-[13px]" style={{ color: t.textMuted }}>Select a platform above to see services and pricing</p>
                 </div>
               )}
             </>

@@ -129,14 +129,14 @@ function NotFoundInner() {
 
           <h1 className="nf-h1 nf-rise" style={{ color: text, animationDelay: ".2s" }}>This page doesn&#39;t exist.</h1>
 
-          <p className="nf-rise text-[13.5px] leading-[1.7] mx-auto mt-2.5" style={{ color: soft, maxWidth: 420, animationDelay: ".28s" }}>
+          <p className="nf-rise text-[13px] leading-[1.7] mx-auto mt-2.5" style={{ color: soft, maxWidth: 420, animationDelay: ".28s" }}>
             The link may be broken, or the page may have moved. Your account, orders and wallet are exactly where you left them.
           </p>
 
           <div className="nf-rise" style={{ animationDelay: ".36s" }}>
             <div className="inline-flex items-center gap-2 mt-[18px] rounded-full py-[7px] px-[14px] max-w-full" style={{ background: card, border: `1px solid ${hair}` }}>
-              <span className="shrink-0 font-extrabold text-[12px]" style={{ color: accent }}>&#10005;</span>
-              <span className="text-[12px] overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: soft, fontFamily: "'JetBrains Mono',monospace" }}>nitro.ng{pathname}</span>
+              <span className="shrink-0 font-extrabold text-[11px]" style={{ color: accent }}>&#10005;</span>
+              <span className="text-[11px] overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: soft, fontFamily: "'JetBrains Mono',monospace" }}>nitro.ng{pathname}</span>
               <button onClick={copyLink} aria-label="Copy link" className="shrink-0 flex transition-colors duration-150" style={{ color: copied ? green : muted }}>
                 {copied
                   ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -147,7 +147,7 @@ function NotFoundInner() {
 
           {suggestion && (
             <div className="nf-rise" style={{ animationDelay: ".44s" }}>
-              <a href={suggestion} className="inline-flex items-center gap-[7px] mt-3 rounded-full py-[7px] px-[15px] text-[12px] font-bold no-underline transition-transform duration-150 hover:-translate-y-px" style={{ color: accent, background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", border: `1px solid ${dark ? "rgba(196,125,142,.22)" : "rgba(196,125,142,.16)"}` }}>
+              <a href={suggestion} className="inline-flex items-center gap-[7px] mt-3 rounded-full py-[7px] px-[15px] text-[11px] font-bold no-underline transition-transform duration-150 hover:-translate-y-px" style={{ color: accent, background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", border: `1px solid ${dark ? "rgba(196,125,142,.22)" : "rgba(196,125,142,.16)"}` }}>
                 Did you mean <span style={{ fontFamily: "'JetBrains Mono',monospace" }}>{suggestion}</span>?
               </a>
             </div>
@@ -155,10 +155,10 @@ function NotFoundInner() {
 
           <div className="nf-ctas nf-rise" style={{ animationDelay: ".52s" }}>
             <a href="/dashboard" className="inline-flex items-center gap-2 text-[13px] font-extrabold py-3 px-[22px] rounded-[11px] no-underline text-white transition-transform duration-150 hover:-translate-y-px" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", boxShadow: "0 5px 16px rgba(196,125,142,.28)" }}>Back to dashboard</a>
-            <a href="/" className="inline-flex items-center gap-2 text-[12.5px] font-bold py-[11px] px-[18px] rounded-[11px] no-underline transition-transform duration-150 hover:-translate-y-px" style={{ color: soft, background: card, border: `1px solid ${border}` }}>Go home</a>
+            <a href="/" className="inline-flex items-center gap-2 text-[13px] font-bold py-[11px] px-[18px] rounded-[11px] no-underline transition-transform duration-150 hover:-translate-y-px" style={{ color: soft, background: card, border: `1px solid ${border}` }}>Go home</a>
           </div>
 
-          <div className="nf-rise flex gap-[18px] justify-center mt-[22px] text-[12px] flex-wrap" style={{ animationDelay: ".6s" }}>
+          <div className="nf-rise flex gap-[18px] justify-center mt-[22px] text-[11px] flex-wrap" style={{ animationDelay: ".6s" }}>
             <a href="/services" className="inline-flex items-center gap-1.5 font-semibold no-underline" style={{ color: muted }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
               Services

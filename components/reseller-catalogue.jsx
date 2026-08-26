@@ -433,7 +433,7 @@ export default function ResellerCataloguePage({ dark, t }) {
             <div className="rounded-[12px] p-4 mb-4" style={{ background: softBg }}>
               <div className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: t.textMuted }}>Service ID — use this in API calls</div>
               <div className="flex items-center justify-between">
-                <span className="text-[26px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{drawer.id}</span>
+                <span className="text-[28px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{drawer.id}</span>
                 <button onClick={() => { navigator.clipboard?.writeText(String(drawer.id)); setCopied(true); }}
                   className="py-1.5 px-3 rounded-lg text-[11px] font-semibold border-none cursor-pointer transition-colors" style={{ background: copied ? "#16a34a" : t.accent, color: "#fff" }}>{copied ? "Copied" : "Copy"}</button>
               </div>

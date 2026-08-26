@@ -72,7 +72,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-[13px] font-bold text-t-text">{primaryAction.label}</div>
-          <div className="text-[11.5px] mt-0.5 truncate text-t-text-muted">{primaryAction.sub}</div>
+          <div className="text-[11px] mt-0.5 truncate text-t-text-muted">{primaryAction.sub}</div>
         </div>
         <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 text-accent" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.13)" }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M9 6l6 6-6 6"/></svg>
@@ -88,7 +88,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
         ].map(q => (
           <button key={q.label} onClick={q.onClick} className="flex max-md:flex-col items-center gap-2.5 max-md:gap-[7px] py-[11px] px-3 max-md:py-3 max-md:px-1.5 rounded-xl border border-solid cursor-pointer text-left max-md:text-center font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.85)", borderColor: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)" }}>
             <div className="w-7 h-7 rounded-[9px] flex items-center justify-center shrink-0" style={{ background: q.gradient, boxShadow: "0 3px 8px rgba(0,0,0,.16)" }}>{q.icon}</div>
-            <div className="text-[12px] max-md:text-[11px] font-semibold truncate max-md:whitespace-normal max-md:leading-tight text-t-text">{q.label}</div>
+            <div className="text-[11px] max-md:text-[11px] font-semibold truncate max-md:whitespace-normal max-md:leading-tight text-t-text">{q.label}</div>
           </button>
         ))}
       </div>
@@ -119,10 +119,10 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
                 { step: "7", title: "Track delivery", desc: "Watch your order progress in real time from your dashboard." },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[12px] font-bold text-accent" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)" }}>{item.step}</div>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold text-accent" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)" }}>{item.step}</div>
                   <div className="pt-0.5">
                     <div className="text-[13px] font-semibold mb-0.5 text-t-text">{item.title}</div>
-                    <div className="text-[12px] leading-[1.55] text-t-text-muted">{item.desc}</div>
+                    <div className="text-[11px] leading-[1.55] text-t-text-muted">{item.desc}</div>
                   </div>
                 </div>
               ))}
@@ -150,7 +150,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: `${item.color}14`, color: item.color }}>{item.icon}</div>
                   <div>
                     <div className="text-[13px] font-semibold mb-0.5 text-t-text">{item.title}</div>
-                    <div className="text-[12px] leading-[1.55] text-t-text-muted">{item.desc}</div>
+                    <div className="text-[11px] leading-[1.55] text-t-text-muted">{item.desc}</div>
                   </div>
                 </div>
               ))}
@@ -267,7 +267,7 @@ export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setAct
               <div key={label} className="flex items-center gap-2.5 py-2.5 px-2.5 rounded-[10px]" style={{ background: dark ? "rgba(14,17,34,.6)" : "rgba(236,234,229,.5)" }}>
                 <div className="w-8 h-8 rounded-[9px] flex items-center justify-center shrink-0" style={{ background: iconBg }}>{icon}</div>
                 <div className="min-w-0">
-                  <div className="text-[10.5px] font-medium mb-0.5 text-t-text-muted tracking-[0.3px]">{label}</div>
+                  <div className="text-[11px] font-medium mb-0.5 text-t-text-muted tracking-[0.3px]">{label}</div>
                   <div className="text-[13px] font-semibold text-t-text tabular-nums">{value}</div>
                 </div>
               </div>
@@ -286,16 +286,16 @@ export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setAct
               <PlatformIcon platform={o.platform} dark={dark} size={36} />
               <div className="flex-1 min-w-0">
                 <div className="text-[13px] font-medium overflow-hidden text-ellipsis whitespace-nowrap text-t-text">{o.service}</div>
-                <div className="text-[11.5px] mt-0.5 text-t-text-muted">{o.tier ? `${o.tier} · ` : ""}{o.quantity?.toLocaleString() || 0} qty</div>
+                <div className="text-[11px] mt-0.5 text-t-text-muted">{o.tier ? `${o.tier} · ` : ""}{o.quantity?.toLocaleString() || 0} qty</div>
               </div>
-              <div className="flex items-center gap-1 text-[10.5px] font-semibold shrink-0 py-0.5 px-2 rounded-md" style={{ background: o.status === "Pending" ? (dark ? "rgba(165,180,252,.1)" : "rgba(79,70,229,.07)") : (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.07)"), color: o.status === "Pending" ? (dark ? "#a5b4fc" : "#4f46e5") : (dark ? "#fcd34d" : "#d97706"), letterSpacing: "0.3px" }}>
+              <div className="flex items-center gap-1 text-[11px] font-semibold shrink-0 py-0.5 px-2 rounded-md" style={{ background: o.status === "Pending" ? (dark ? "rgba(165,180,252,.1)" : "rgba(79,70,229,.07)") : (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.07)"), color: o.status === "Pending" ? (dark ? "#a5b4fc" : "#4f46e5") : (dark ? "#fcd34d" : "#d97706"), letterSpacing: "0.3px" }}>
                 <span className="w-[5px] h-[5px] rounded-full" style={{ background: "currentColor", animation: o.status !== "Pending" ? "sidebarPulse 2s ease-in-out infinite" : "none" }} />
                 {o.status === "Pending" ? "Pending" : "Active"}
               </div>
             </div>
           ))}
           {activeCount > 5 && (
-            <button onClick={() => setActive("orders")} className="w-full py-2 text-[12.5px] font-semibold text-center bg-none border-none cursor-pointer mt-0.5 transition-opacity duration-150 hover:opacity-70 text-accent" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` }}>View all {activeCount} active →</button>
+            <button onClick={() => setActive("orders")} className="w-full py-2 text-[13px] font-semibold text-center bg-none border-none cursor-pointer mt-0.5 transition-opacity duration-150 hover:opacity-70 text-accent" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` }}>View all {activeCount} active →</button>
           )}
         </div>
       </div>
@@ -305,16 +305,16 @@ export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setAct
         <div className="rounded-[14px] p-4 text-center relative overflow-hidden bg-t-card-bg" style={{ border: `1px solid ${dark ? "rgba(196,125,142,.22)" : "rgba(196,125,142,.15)"}` }}>
           <div className="absolute inset-0 pointer-events-none" style={{ background: `linear-gradient(135deg, ${dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)"} 0%, transparent 60%)` }} />
           <div className="relative">
-            <div className="text-[10px] font-semibold uppercase tracking-[2px] mb-1.5 text-t-text-muted">Referral Code</div>
+            <div className="text-[11px] font-semibold uppercase tracking-[2px] mb-1.5 text-t-text-muted">Referral Code</div>
             <div className="text-xl font-bold tracking-[3px] mb-2.5 text-accent">{user?.refCode || "—"}</div>
             <div className="flex justify-center gap-5">
               <div className="text-center">
                 <div className="text-base font-bold text-t-text tabular-nums">{user?.refs || 0}</div>
-                <div className="text-[10.5px] text-t-text-muted">Referrals</div>
+                <div className="text-[11px] text-t-text-muted">Referrals</div>
               </div>
               <div className="text-center">
                 <div className="text-base font-bold text-t-text tabular-nums">{fN(user?.earnings || 0)}</div>
-                <div className="text-[10.5px] text-t-text-muted">Earned</div>
+                <div className="text-[11px] text-t-text-muted">Earned</div>
               </div>
             </div>
           </div>

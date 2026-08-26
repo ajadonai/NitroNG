@@ -92,7 +92,7 @@ export default function ReferralsPage({ user, dark, t }) {
           {steps.map(([num, title, desc]) => (
             <div key={num} className="p-2.5 rounded-[10px] text-center" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", border: `0.5px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
               <div className="m w-6 h-6 rounded-md flex items-center justify-center text-xs font-semibold mx-auto mb-1.5 bg-t-nav-active text-accent">{num}</div>
-              <div className="text-[12px] font-semibold leading-tight mb-0.5 text-t-text">{title}</div>
+              <div className="text-[11px] font-semibold leading-tight mb-0.5 text-t-text">{title}</div>
               <div className="text-[11px] leading-tight text-t-text-muted">{desc}</div>
             </div>
           ))}
@@ -191,7 +191,7 @@ function HowItWorks({ steps, dark, t }) {
           <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-semibold shrink-0 bg-t-nav-active text-accent">{num}</div>
           <div>
             <div className="text-sm font-semibold mb-px text-t-text">{title}</div>
-            <div className="text-[12.5px] text-t-text-muted">{desc}</div>
+            <div className="text-[13px] text-t-text-muted">{desc}</div>
           </div>
         </div>
       ))}

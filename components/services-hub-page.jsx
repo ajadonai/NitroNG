@@ -83,16 +83,16 @@ function ServicesHubInner({ platforms }) {
           </section>
 
           <div className="flex flex-col sm:flex-row gap-3 mb-10">
-            <a href="/pricing" className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl no-underline text-[14px] font-semibold transition-colors duration-150" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.04)', border: `1px solid ${border}`, color: t.text }}>
+            <a href="/pricing" className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl no-underline text-[13px] font-semibold transition-colors duration-150" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.04)', border: `1px solid ${border}`, color: t.text }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
               Full pricing across all platforms
             </a>
-            <a href="/signup" className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl no-underline text-[14px] font-semibold text-white transition-[transform,box-shadow] duration-200 hover:-translate-y-px" style={{ background: 'linear-gradient(135deg, #c47d8e, #8b5e6b)' }}>
+            <a href="/signup" className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl no-underline text-[13px] font-semibold text-white transition-[transform,box-shadow] duration-200 hover:-translate-y-px" style={{ background: 'linear-gradient(135deg, #c47d8e, #8b5e6b)' }}>
               Create free account
             </a>
           </div>
 
-          <div className="text-center text-[12px] leading-[1.6]" style={{ color: t.textMuted }}>
+          <div className="text-center text-[11px] leading-[1.6]" style={{ color: t.textMuted }}>
             We accept bank transfer, debit/credit card, and crypto. Works with Opay, PalmPay, Kuda, Moniepoint, and all Nigerian banks.
           </div>
         </main>
@@ -117,8 +117,8 @@ function PlatformCard({ platform, dark, t, accent, border, cardBg }) {
         {icon || <span className="text-sm font-bold">{platform.name[0]}</span>}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[14px] font-semibold">{platform.name}</div>
-        <div className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>
+        <div className="text-[13px] font-semibold">{platform.name}</div>
+        <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>
           {platform.serviceCount} services · from ₦{platform.fromPrice.toLocaleString()}/1k
         </div>
       </div>
@@ -132,7 +132,7 @@ function TierRow({ name, desc, dark, t, accent }) {
     <div className="flex gap-4 items-start">
       <div className="w-2 h-2 rounded-full mt-2 shrink-0" style={{ background: accent }} />
       <div>
-        <div className="text-[14px] font-semibold" style={{ color: t.text }}>{name}</div>
+        <div className="text-[13px] font-semibold" style={{ color: t.text }}>{name}</div>
         <div className="text-[13px] leading-[1.6] mt-0.5" style={{ color: t.textMuted }}>{desc}</div>
       </div>
     </div>

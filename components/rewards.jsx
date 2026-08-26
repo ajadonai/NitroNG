@@ -107,7 +107,7 @@ const Chevron = () => (
 
 function CellLink({ t, onClick, children }) {
   return (
-    <button onClick={onClick} className="inline-flex items-center gap-1 text-[11.5px] font-semibold bg-transparent border-none cursor-pointer p-0 font-[inherit] hover:underline" style={{ color: t.accent }}>
+    <button onClick={onClick} className="inline-flex items-center gap-1 text-[11px] font-semibold bg-transparent border-none cursor-pointer p-0 font-[inherit] hover:underline" style={{ color: t.accent }}>
       {children}<Chevron />
     </button>
   );
@@ -132,16 +132,16 @@ export function RewardsStrip({ rewards, dark, t, onStatus, onPoints, onTasks }) 
       <button onClick={onStatus} className="flex flex-col rounded-2xl max-md:rounded-xl p-3.5 max-md:p-3 min-w-0 text-left border border-solid cursor-pointer bg-transparent font-[inherit] transition-transform duration-150 hover:-translate-y-px" style={{ background: dark ? `${heroClr}20` : `${heroClr}18`, borderColor: `${heroClr}${dark ? '40' : '35'}` }}>
         <div className="flex items-center gap-2 mb-3">
           <ChipIcon gradient={`linear-gradient(135deg,${heroClr},${heroClr}cc)`} shadow={`0 3px 10px ${heroClr}30`} size={28} radius={9}><CrownGlyph s={14} /></ChipIcon>
-          <div className="text-[9.5px] font-bold uppercase tracking-[.8px]" style={{ color: heroClr, opacity: .7 }}>Status</div>
+          <div className="text-[11px] font-bold uppercase tracking-[.8px]" style={{ color: heroClr, opacity: .7 }}>Status</div>
         </div>
-        <div className="text-[19px] max-md:text-[17px] font-extrabold leading-none truncate" style={{ color: heroClr }}>{status.name}</div>
+        <div className="text-[18px] max-md:text-[18px] font-extrabold leading-none truncate" style={{ color: heroClr }}>{status.name}</div>
         <div className="text-[11px] mt-1.5 truncate" style={{ color: t.textMuted }}>
           {fmtCompactNaira(status.eligibleSpend)} spent
         </div>
         <div className="h-[5px] rounded-full overflow-hidden mt-2.5" style={{ background: `${heroClr}20` }}>
           <div className="h-full rounded-full" style={{ width: `${Math.max(3, status.progressPct)}%`, background: `linear-gradient(90deg, ${heroClr}, ${barClr})` }} />
         </div>
-        {nextTier && <div className="text-[9.5px] mt-1.5" style={{ color: barClr, opacity: .8 }}>{fmtCompactNaira(status.remainingToNext)} to {nextTier.name}</div>}
+        {nextTier && <div className="text-[11px] mt-1.5" style={{ color: barClr, opacity: .8 }}>{fmtCompactNaira(status.remainingToNext)} to {nextTier.name}</div>}
         <div className="flex-1" />
         <div className="mt-2.5 flex items-center gap-1 text-[11px] font-semibold" style={{ color: heroClr }}>
           Details <Chevron />
@@ -152,9 +152,9 @@ export function RewardsStrip({ rewards, dark, t, onStatus, onPoints, onTasks }) 
       <button onClick={onPoints} className="flex flex-col rounded-2xl max-md:rounded-xl p-3.5 max-md:p-3 min-w-0 text-left border border-solid cursor-pointer bg-transparent font-[inherit] transition-transform duration-150 hover:-translate-y-px" style={{ background: dark ? 'rgba(251,191,36,.14)' : 'rgba(251,191,36,.12)', borderColor: dark ? 'rgba(251,191,36,.35)' : 'rgba(217,119,6,.3)' }}>
         <div className="flex items-center gap-2 mb-3">
           <ChipIcon gradient="linear-gradient(135deg,#fbbf24,#d97706)" shadow="0 3px 10px rgba(217,119,6,.25)" size={28} radius={9}><CoinGlyph s={14} /></ChipIcon>
-          <div className="text-[9.5px] font-bold uppercase tracking-[.8px]" style={{ color: gold, opacity: .7 }}>Points</div>
+          <div className="text-[11px] font-bold uppercase tracking-[.8px]" style={{ color: gold, opacity: .7 }}>Points</div>
         </div>
-        <div className="m text-[19px] max-md:text-[17px] font-extrabold leading-none truncate" style={{ color: gold }}>{points.balance.toLocaleString()} <span className="text-[13px]">pts</span></div>
+        <div className="m text-[18px] max-md:text-[18px] font-extrabold leading-none truncate" style={{ color: gold }}>{points.balance.toLocaleString()} <span className="text-[13px]">pts</span></div>
         <div className="text-[11px] mt-1.5 truncate">
           {points.redeemable
             ? <span className="font-semibold" style={{ color: dark ? '#6ee7b7' : '#059669' }}>≈ ₦{points.valueNaira.toLocaleString()} ready</span>
@@ -230,8 +230,8 @@ export function ChannelLane({ dark, t, socialLinks }) {
             </div>
           </div>
           <div className="relative mt-auto pt-2">
-            <div className="text-[13.5px] max-md:text-[12.5px] font-extrabold leading-snug">{c.title}</div>
-            <div className="text-[11px] max-md:text-[10.5px] font-medium mt-[2px] opacity-[.88]">{c.sub}</div>
+            <div className="text-[13px] max-md:text-[13px] font-extrabold leading-snug">{c.title}</div>
+            <div className="text-[11px] max-md:text-[11px] font-medium mt-[2px] opacity-[.88]">{c.sub}</div>
           </div>
         </a>
       ))}
@@ -277,8 +277,8 @@ export function StatusModal({ open, onClose, rewards, dark, t }) {
             <CrownGlyph s={20} color={heroColor} />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[20px] font-extrabold leading-none" style={{ color: heroColor }}>{status.name}</div>
-            <div className="text-[11.5px] mt-1" style={{ color: t.textMuted }}>
+            <div className="text-[18px] font-extrabold leading-none" style={{ color: heroColor }}>{status.name}</div>
+            <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>
               {status.discountPct > 0 ? <><span style={{ color: heroColor, fontWeight: 600 }}>{status.discountPct}% off</span> · </> : ''}{status.pointEarnPct}% points on every order
             </div>
           </div>
@@ -287,7 +287,7 @@ export function StatusModal({ open, onClose, rewards, dark, t }) {
 
       {status.nextName && (
         <div className="mt-4">
-          <div className="flex justify-between items-baseline text-[10.5px] font-bold uppercase tracking-[.6px] mb-1.5" style={{ color: t.textMuted }}>
+          <div className="flex justify-between items-baseline text-[11px] font-bold uppercase tracking-[.6px] mb-1.5" style={{ color: t.textMuted }}>
             <span>Progress to <span style={{ color: barColor, fontWeight: 700 }}>{status.nextName}</span></span>
             <span className="normal-case font-semibold tracking-normal" style={{ color: barColor }}>{fmtCompactNaira(status.remainingToNext)} to go</span>
           </div>
@@ -312,14 +312,14 @@ export function StatusModal({ open, onClose, rewards, dark, t }) {
             <button key={tier.key} onClick={() => setExpanded(isOpen ? null : tier.key)} className="w-full text-left bg-transparent border border-solid rounded-[10px] mb-[5px] cursor-pointer font-[inherit] transition-all duration-150 overflow-hidden" style={{ borderColor: cur ? `${tier.color}55` : (dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.06)'), background: cur ? `${tier.color}${dark ? '14' : '0a'}` : (dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.02)') }}>
               <div className="flex items-center gap-2.5 py-[7px] px-3">
                 <div className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: tier.color }} />
-                <span className="text-[12.5px] flex-1" style={{ color: tier.color, fontWeight: cur ? 700 : 600 }}>{tier.name}</span>
-                {cur && <span className="text-[8px] font-extrabold uppercase tracking-[.5px] rounded-full px-[6px] py-[1.5px] shrink-0" style={{ background: heroColor, color: '#fff' }}>You</span>}
+                <span className="text-[13px] flex-1" style={{ color: tier.color, fontWeight: cur ? 700 : 600 }}>{tier.name}</span>
+                {cur && <span className="text-[11px] font-extrabold uppercase tracking-[.5px] rounded-full px-[6px] py-[1.5px] shrink-0" style={{ background: heroColor, color: '#fff' }}>You</span>}
                 {passed && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={tier.color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>}
-                <span className="text-[10.5px] font-medium" style={{ color: t.textMuted }}>{tier.minLabel}</span>
+                <span className="text-[11px] font-medium" style={{ color: t.textMuted }}>{tier.minLabel}</span>
                 <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={tier.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ opacity: .6, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}><polyline points="6 9 12 15 18 9"/></svg>
               </div>
               {isOpen && (
-                <div className="px-3 pb-2.5 pt-1 flex gap-2 text-[10.5px]" style={{ borderTop: `1px solid ${tier.color}20` }}>
+                <div className="px-3 pb-2.5 pt-1 flex gap-2 text-[11px]" style={{ borderTop: `1px solid ${tier.color}20` }}>
                   <div className="flex-1 rounded-lg py-2 px-2.5" style={{ background: `${tier.color}${dark ? '12' : '08'}` }}>
                     <div style={{ color: t.textMuted }}>Discount</div>
                     <div className="text-[13px] font-bold mt-0.5" style={{ color: tier.discountPct > 0 ? tier.color : t.textMuted }}>{tier.discountPct > 0 ? `${tier.discountPct}% off` : '—'}</div>
@@ -353,8 +353,8 @@ export function PointsModal({ open, onClose, rewards, dark, t, onUse }) {
         <div className="flex items-center gap-3">
           <ChipIcon gradient="linear-gradient(135deg,#fbbf24,#d97706)" shadow="0 5px 12px rgba(217,119,6,.3)" size={40} radius={11}><CoinGlyph s={19} /></ChipIcon>
           <div className="flex-1 min-w-0">
-            <div className="m text-[22px] font-extrabold leading-none" style={{ color: gold }}>{points.balance.toLocaleString()} <span className="text-[14px]">pts</span></div>
-            <div className="text-[12px] mt-1" style={{ color: t.textMuted }}>
+            <div className="m text-[22px] font-extrabold leading-none" style={{ color: gold }}>{points.balance.toLocaleString()} <span className="text-[13px]">pts</span></div>
+            <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>
               ≈ ₦{points.valueNaira.toLocaleString()} · 1 pt = ₦1
             </div>
           </div>
@@ -367,25 +367,25 @@ export function PointsModal({ open, onClose, rewards, dark, t, onUse }) {
 
       <div className="mt-3.5 grid grid-cols-2 gap-2">
         <div className="rounded-lg py-2.5 px-3" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${brd}` }}>
-          <div className="text-[10px] font-bold uppercase tracking-[.5px]" style={{ color: t.textMuted }}>Earn rate</div>
-          <div className="text-[14px] font-bold mt-1" style={{ color: gold }}>{status?.pointEarnPct || 0.5}%</div>
-          <div className="text-[10px] mt-0.5" style={{ color: t.textMuted }}>of every order</div>
+          <div className="text-[11px] font-bold uppercase tracking-[.5px]" style={{ color: t.textMuted }}>Earn rate</div>
+          <div className="text-[13px] font-bold mt-1" style={{ color: gold }}>{status?.pointEarnPct || 0.5}%</div>
+          <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>of every order</div>
         </div>
         <div className="rounded-lg py-2.5 px-3" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${brd}` }}>
-          <div className="text-[10px] font-bold uppercase tracking-[.5px]" style={{ color: t.textMuted }}>Min. redeem</div>
-          <div className="text-[14px] font-bold mt-1" style={{ color: t.text }}>{points.minRedeem.toLocaleString()}</div>
-          <div className="text-[10px] mt-0.5" style={{ color: t.textMuted }}>points to spend</div>
+          <div className="text-[11px] font-bold uppercase tracking-[.5px]" style={{ color: t.textMuted }}>Min. redeem</div>
+          <div className="text-[13px] font-bold mt-1" style={{ color: t.text }}>{points.minRedeem.toLocaleString()}</div>
+          <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>points to spend</div>
         </div>
       </div>
 
       <div className="mt-4">
         {points.redeemable ? (
-          <button onClick={onUse} className="block w-full border-none rounded-xl text-white text-[13.5px] font-bold font-[inherit] py-[12px] px-4 cursor-pointer transition-transform duration-150 hover:-translate-y-px" style={{ background: 'linear-gradient(135deg,#fbbf24,#d97706)', boxShadow: '0 4px 12px rgba(217,119,6,.25)' }}>
+          <button onClick={onUse} className="block w-full border-none rounded-xl text-white text-[13px] font-bold font-[inherit] py-[12px] px-4 cursor-pointer transition-transform duration-150 hover:-translate-y-px" style={{ background: 'linear-gradient(135deg,#fbbf24,#d97706)', boxShadow: '0 4px 12px rgba(217,119,6,.25)' }}>
             Use on next order
           </button>
         ) : (
           <div className="rounded-lg py-3 px-3.5 text-center" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${brd}` }}>
-            <div className="text-[12px]" style={{ color: t.textSoft }}>
+            <div className="text-[11px]" style={{ color: t.textSoft }}>
               Earn <b style={{ color: gold }}>{points.neededToRedeem.toLocaleString()} more</b> points to start spending
             </div>
             <div className="h-1 rounded-full overflow-hidden mt-2" style={{ background: dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.06)' }}>
@@ -396,7 +396,7 @@ export function PointsModal({ open, onClose, rewards, dark, t, onUse }) {
       </div>
 
       <div className="mt-4 pt-3" style={{ borderTop: `1px solid ${brd}` }}>
-        <div className="text-[10.5px] font-bold uppercase tracking-[.7px] mb-2" style={{ color: t.textMuted }}>Recent activity</div>
+        <div className="text-[11px] font-bold uppercase tracking-[.7px] mb-2" style={{ color: t.textMuted }}>Recent activity</div>
         {history && history.length > 0 ? history.map((h, i) => {
           const isPositive = h.pts > 0;
           return (
@@ -407,16 +407,16 @@ export function PointsModal({ open, onClose, rewards, dark, t, onUse }) {
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[11.5px] font-medium truncate" style={{ color: t.text }}>{h.label}</div>
-                <div className="text-[10px]" style={{ color: t.textMuted }}>{h.ref}</div>
+                <div className="text-[11px] font-medium truncate" style={{ color: t.text }}>{h.label}</div>
+                <div className="text-[11px]" style={{ color: t.textMuted }}>{h.ref}</div>
               </div>
-              <div className="m text-[12px] font-bold whitespace-nowrap" style={{ color: isPositive ? greenClr : redClr }}>
+              <div className="m text-[11px] font-bold whitespace-nowrap" style={{ color: isPositive ? greenClr : redClr }}>
                 {isPositive ? '+' : ''}{fmtPoints(h.pts)}
               </div>
             </div>
           );
         }) : (
-          <div className="text-[12px] py-3 text-center rounded-lg" style={{ color: t.textMuted, background: dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.02)' }}>
+          <div className="text-[11px] py-3 text-center rounded-lg" style={{ color: t.textMuted, background: dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.02)' }}>
             Points activity will appear here after your first order.
           </div>
         )}
@@ -434,8 +434,8 @@ export function WalletPointsCard({ rewards, dark, t, onView }) {
     <div className="flex items-center gap-[11px] rounded-[14px] max-md:rounded-xl py-3.5 px-4 mb-4" style={cardStyle(dark)}>
       <ChipIcon gradient="linear-gradient(135deg,#fbbf24,#d97706)"><CoinGlyph /></ChipIcon>
       <div className="flex-1 min-w-0">
-        <div className="text-[10.5px] font-bold uppercase tracking-[.7px]" style={{ color: t.textMuted }}>Nitro Points</div>
-        <div className="m text-[14.5px] font-bold mt-[3px] truncate" style={{ color: t.text }}>
+        <div className="text-[11px] font-bold uppercase tracking-[.7px]" style={{ color: t.textMuted }}>Nitro Points</div>
+        <div className="m text-[15px] font-bold mt-[3px] truncate" style={{ color: t.text }}>
           {points.balance.toLocaleString()} pts{' '}
           <span className="font-semibold" style={{ color: points.redeemable ? t.green : t.textMuted }}>≈ ₦{points.valueNaira.toLocaleString()}</span>
         </div>

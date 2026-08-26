@@ -280,7 +280,7 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
           {eligible && (
             <div className="flex items-center gap-2 rounded-lg py-2 px-3 mb-3" style={{ background: greenBg, border: `1px solid ${greenBorder}` }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
-              <span className="text-[12px] font-semibold" style={{ color: green }}>Up to ₦3,000 free on your first deposit</span>
+              <span className="text-[11px] font-semibold" style={{ color: green }}>Up to ₦3,000 free on your first deposit</span>
             </div>
           )}
           <div className="flex flex-col gap-2.5">
@@ -302,11 +302,11 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
           <div className="flex items-center gap-2.5 mb-3">
             <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.07)", color: accent }}>{STEPS[step].icon}</div>
             <div className="flex-1">
-              <div className="text-[10px] font-bold tracking-[1.5px] uppercase" style={{ color: accent }}>Step {step + 1} of {STEPS.length}</div>
+              <div className="text-[11px] font-bold tracking-[1.5px] uppercase" style={{ color: accent }}>Step {step + 1} of {STEPS.length}</div>
             </div>
           </div>
           <div className="text-[15px] font-bold mb-1" style={{ color: text }}>{STEPS[step].title}</div>
-          <div className="text-[12px] leading-[1.6] mb-5" style={{ color: sub }}>{STEPS[step].desc}</div>
+          <div className="text-[11px] leading-[1.6] mb-5" style={{ color: sub }}>{STEPS[step].desc}</div>
 
           {/* Progress dots + actions */}
           <div className="flex items-center justify-between">

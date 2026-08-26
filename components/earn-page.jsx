@@ -79,11 +79,11 @@ export default function EarnPage({ dark, t }) {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
               </div>
               <div className="flex-1">
-                <div className="text-[14px] font-bold" style={{ color: t.text }}>Monthly Prize Pool</div>
+                <div className="text-[13px] font-bold" style={{ color: t.text }}>Monthly Prize Pool</div>
                 <div className="text-[11px] font-medium" style={{ color: t.textMuted }}>{monthLabel || 'This month'} — Top 5 win cash</div>
               </div>
               <div className="text-right">
-                <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: t.accent }}>Total</div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: t.accent }}>Total</div>
                 <div className="text-lg font-bold" style={{ color: t.accent }}>₦10,500</div>
               </div>
             </div>
@@ -103,8 +103,8 @@ export default function EarnPage({ dark, t }) {
                     : (dark ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.6)'),
                   border: `1px solid ${p.top ? (dark ? 'rgba(196,125,142,.3)' : 'rgba(196,125,142,.2)') : (dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)')}`,
                 }}>
-                  <span className="text-sm leading-none">{p.medal || <span className="text-[10px] font-bold" style={{ color: t.textMuted }}>{p.rank}</span>}</span>
-                  <span className="text-[10px] font-bold mt-1" style={{ color: p.top ? t.accent : t.text }}>{p.amount}</span>
+                  <span className="text-sm leading-none">{p.medal || <span className="text-[11px] font-bold" style={{ color: t.textMuted }}>{p.rank}</span>}</span>
+                  <span className="text-[11px] font-bold mt-1" style={{ color: p.top ? t.accent : t.text }}>{p.amount}</span>
                 </div>
               ))}
             </div>
@@ -147,7 +147,7 @@ export default function EarnPage({ dark, t }) {
                               border: `1px solid ${isFirst ? (dark ? 'rgba(196,125,142,.3)' : 'rgba(196,125,142,.15)') : (dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)')}`,
                             }}
                           >
-                            <span className="text-[12px] font-bold truncate max-w-[90%]" style={{ color: entry.isYou ? t.accent : t.text }}>
+                            <span className="text-[11px] font-bold truncate max-w-[90%]" style={{ color: entry.isYou ? t.accent : t.text }}>
                               {entry.isYou ? 'You' : entry.name.split(' ')[0]}
                             </span>
                             <span className="text-[11px] font-bold mt-0.5 tabular-nums" style={{ color: t.textMuted }}>{entry.score.toLocaleString()}</span>
@@ -177,7 +177,7 @@ export default function EarnPage({ dark, t }) {
                             {entry.isYou ? 'You' : entry.name}
                           </span>
                         </div>
-                        <span className="text-[12px] font-bold tabular-nums" style={{ color: t.text }}>{entry.score.toLocaleString()}</span>
+                        <span className="text-[11px] font-bold tabular-nums" style={{ color: t.text }}>{entry.score.toLocaleString()}</span>
                       </div>
                     ))}
                   </div>
@@ -208,12 +208,12 @@ export default function EarnPage({ dark, t }) {
                       <span className="text-sm">🏆</span>
                       <div>
                         <div className="text-[13px] font-semibold" style={{ color: t.text }}>{w.name}</div>
-                        <div className="text-[10px] font-medium" style={{ color: t.textMuted }}>
+                        <div className="text-[11px] font-medium" style={{ color: t.textMuted }}>
                           {new Date(w.monthKey + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} — {w.score.toLocaleString()} pts
                         </div>
                       </div>
                     </div>
-                    <span className="text-[12px] font-bold px-2 py-0.5 rounded-md" style={{ background: dark ? 'rgba(196,125,142,.12)' : 'rgba(196,125,142,.08)', color: t.accent }}>₦{(w.amount / 100).toLocaleString()}</span>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: dark ? 'rgba(196,125,142,.12)' : 'rgba(196,125,142,.08)', color: t.accent }}>₦{(w.amount / 100).toLocaleString()}</span>
                   </div>
                 ))}
               </div>

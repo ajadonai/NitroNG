@@ -432,7 +432,7 @@ export default function SupportPage({ dark, t }) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span className="text-[13px] font-semibold" style={{ color: dark ? "#a78bfa" : "#7c3aed" }}>Nitro Bot</span>
-                <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-px px-1.5 rounded" style={{ background: dark ? "rgba(167,139,250,.1)" : "rgba(124,58,237,.07)", color: dark ? "#a78bfa" : "#7c3aed" }}>AI</span>
+                <span className="text-[11px] font-bold uppercase tracking-[0.5px] py-px px-1.5 rounded" style={{ background: dark ? "rgba(167,139,250,.1)" : "rgba(124,58,237,.07)", color: dark ? "#a78bfa" : "#7c3aed" }}>AI</span>
               </div>
               <div className="text-xs truncate" style={{ color: t.textMuted }}>{msgs[msgs.length - 1]?.text?.slice(0, 45) || ""}</div>
             </div>

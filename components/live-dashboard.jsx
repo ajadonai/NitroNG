@@ -121,31 +121,31 @@ function SessionCard({ s, expanded, onToggle, isNew }) {
         onClick={onToggle}
         style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', userSelect: 'none' }}
       >
-        <div style={{ fontSize: 20, width: 36, textAlign: 'center', flexShrink: 0 }}>
+        <div style={{ fontSize: 18, width: 36, textAlign: 'center', flexShrink: 0 }}>
           {device.icon}
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {s.user?.name || 'Guest'}
             </span>
             <span style={{
-              fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 6,
+              fontSize: 11, fontWeight: 700, padding: '2px 6px', borderRadius: 6,
               color: signal.color, background: signal.bg, textTransform: 'uppercase', letterSpacing: .5, flexShrink: 0,
             }}>
               {signal.label}
             </span>
             {intent && (
               <span style={{
-                fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 6,
+                fontSize: 11, fontWeight: 700, padding: '2px 6px', borderRadius: 6,
                 color: intent.color, background: `${intent.color}18`, textTransform: 'uppercase', letterSpacing: .5, flexShrink: 0,
               }}>
                 {intent.label}
               </span>
             )}
           </div>
-          <div style={{ fontSize: 12, color: '#8a8580', display: 'flex', flexWrap: 'wrap', gap: '4px 12px' }}>
+          <div style={{ fontSize: 11, color: '#8a8580', display: 'flex', flexWrap: 'wrap', gap: '4px 12px' }}>
             <span>{pageName(s.page)}</span>
             <span>·</span>
             <span>{timeOnSite(s.firstSeen)} on site</span>
@@ -153,25 +153,25 @@ function SessionCard({ s, expanded, onToggle, isNew }) {
         </div>
 
         {s.user && !s.user.isAdmin && (
-          <div className="live-stats" style={{ display: 'flex', gap: 16, flexShrink: 0, fontSize: 12 }}>
+          <div className="live-stats" style={{ display: 'flex', gap: 16, flexShrink: 0, fontSize: 11 }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ color: s.user.balance > 0 ? '#6ee7b7' : '#8a8580', fontWeight: 700 }}>
                 ₦{s.user.balance.toLocaleString()}
               </div>
-              <div style={{ color: '#5a5550', fontSize: 10 }}>Balance</div>
+              <div style={{ color: '#5a5550', fontSize: 11 }}>Balance</div>
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontWeight: 700 }}>{s.user.orderCount}</div>
-              <div style={{ color: '#5a5550', fontSize: 10 }}>Orders</div>
+              <div style={{ color: '#5a5550', fontSize: 11 }}>Orders</div>
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontWeight: 700 }}>{timeAgo(s.user.lastOrder)}</div>
-              <div style={{ color: '#5a5550', fontSize: 10 }}>Last Order</div>
+              <div style={{ color: '#5a5550', fontSize: 11 }}>Last Order</div>
             </div>
           </div>
         )}
 
-        <div style={{ flexShrink: 0, color: '#5a5550', fontSize: 14, transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'rotate(0)' }}>
+        <div style={{ flexShrink: 0, color: '#5a5550', fontSize: 13, transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'rotate(0)' }}>
           ▾
         </div>
       </div>
@@ -182,7 +182,7 @@ function SessionCard({ s, expanded, onToggle, isNew }) {
           borderTop: '1px solid rgba(255,255,255,.06)',
           padding: '12px 16px 14px',
           display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px',
-          fontSize: 12, animation: 'expand-in .2s ease',
+          fontSize: 11, animation: 'expand-in .2s ease',
         }}>
           {s.user && !s.user.isAdmin ? (
             <>
@@ -194,7 +194,7 @@ function SessionCard({ s, expanded, onToggle, isNew }) {
 
               {s.user.recentOrders?.length > 0 && (
                 <div style={{ gridColumn: '1 / -1', marginTop: 4 }}>
-                  <div style={{ color: '#5a5550', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 6 }}>Recent Orders</div>
+                  <div style={{ color: '#5a5550', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 6 }}>Recent Orders</div>
                   {s.user.recentOrders.map(o => (
                     <div key={o.id} style={{
                       display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0',
@@ -203,7 +203,7 @@ function SessionCard({ s, expanded, onToggle, isNew }) {
                       <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.service}</span>
                       <span style={{ color: '#8a8580', flexShrink: 0 }}>₦{o.charge.toLocaleString()}</span>
                       <span style={{
-                        fontSize: 10, fontWeight: 700, padding: '1px 5px', borderRadius: 4,
+                        fontSize: 11, fontWeight: 700, padding: '1px 5px', borderRadius: 4,
                         color: STATUS_COLORS[o.status] || '#8a8580',
                         background: `${STATUS_COLORS[o.status] || '#8a8580'}18`,
                       }}>{o.status}</span>
@@ -233,7 +233,7 @@ function SessionCard({ s, expanded, onToggle, isNew }) {
 function Detail({ label, value }) {
   return (
     <div>
-      <div style={{ color: '#5a5550', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 2 }}>{label}</div>
+      <div style={{ color: '#5a5550', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 2 }}>{label}</div>
       <div style={{ color: '#f5f3f0', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</div>
     </div>
   );
@@ -264,12 +264,12 @@ function BadgeGuide() {
         onClick={() => setOpen(o => !o)}
         style={{
           background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)',
-          borderRadius: 10, padding: '8px 14px', color: '#8a8580', fontSize: 12,
+          borderRadius: 10, padding: '8px 14px', color: '#8a8580', fontSize: 11,
           cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600,
           fontFamily: 'inherit', width: '100%',
         }}
       >
-        <span style={{ fontSize: 14 }}>?</span>
+        <span style={{ fontSize: 13 }}>?</span>
         Badge Guide
         <span style={{ marginLeft: 'auto', transition: 'transform .2s', transform: open ? 'rotate(180deg)' : 'rotate(0)' }}>▾</span>
       </button>
@@ -282,12 +282,12 @@ function BadgeGuide() {
         }}>
           {BADGES.map(g => (
             <div key={g.section}>
-              <div style={{ fontSize: 10, color: '#5a5550', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 8 }}>{g.section}</div>
+              <div style={{ fontSize: 11, color: '#5a5550', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 8 }}>{g.section}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {g.items.map(b => (
                   <div key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 6, color: b.color, background: b.bg, textTransform: 'uppercase', letterSpacing: .5, flexShrink: 0, minWidth: 60, textAlign: 'center' }}>{b.label}</span>
-                    <span style={{ color: '#8a8580', fontSize: 12 }}>{b.desc}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 6px', borderRadius: 6, color: b.color, background: b.bg, textTransform: 'uppercase', letterSpacing: .5, flexShrink: 0, minWidth: 60, textAlign: 'center' }}>{b.label}</span>
+                    <span style={{ color: '#8a8580', fontSize: 11 }}>{b.desc}</span>
                   </div>
                 ))}
               </div>
@@ -400,11 +400,11 @@ export default function LiveDashboard() {
         {/* Active pages breakdown */}
         {topPages.length > 0 && (
           <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 12, padding: '12px 16px', marginBottom: 24 }}>
-            <div style={{ fontSize: 10, color: '#5a5550', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 8 }}>Active Pages</div>
+            <div style={{ fontSize: 11, color: '#5a5550', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 8 }}>Active Pages</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {topPages.map(([name, n]) => (
                 <span key={name} style={{
-                  fontSize: 12, padding: '4px 10px', borderRadius: 8,
+                  fontSize: 11, padding: '4px 10px', borderRadius: 8,
                   background: 'rgba(255,255,255,.05)', color: '#c4c0bc', fontWeight: 500,
                 }}>
                   {name} <span style={{ color: '#8a8580', fontWeight: 700 }}>{n}</span>

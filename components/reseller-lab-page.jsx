@@ -341,12 +341,12 @@ function ResellerHQInner({ dark: darkProp, t: tProp, embedded } = {}) {
           <div className="rhq-hero relative overflow-hidden text-center" style={{ padding: '48px 24px 56px' }}>
             <div className="absolute pointer-events-none" style={{ width: 560, height: 560, borderRadius: 99, top: -360, right: -140, background: `radial-gradient(circle, ${accentSoft2} 0%, transparent 66%)` }} />
             <div className="relative max-w-[700px] mx-auto">
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold tracking-[1.4px] uppercase rounded-full py-1 px-3" style={{ color: accent, background: accentSoft2 }}>Reseller HQ</span>
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold tracking-[1.4px] uppercase rounded-full py-1 px-3" style={{ color: accent, background: accentSoft2 }}>Reseller HQ</span>
               <h1 className="font-extrabold mt-3.5 leading-[1.15]" style={{ fontSize: 'clamp(26px, 5vw, 33px)', letterSpacing: '-.8px', color: t.text }}>Build your business on Nitro</h1>
-              <p className="text-[14.5px] leading-[1.7] max-w-[640px] mx-auto mt-2.5" style={{ color: muted }}>
+              <p className="text-[15px] leading-[1.7] max-w-[640px] mx-auto mt-2.5" style={{ color: muted }}>
                 Two products, one wallet. Plug our <b style={{ color: soft }}>API</b> into a panel you already run, or launch a <b style={{ color: soft }}>ready-made panel</b> on Nitro's system with your brand on the door. Reseller pricing on both.
               </p>
-              <div className="flex gap-4 flex-wrap mt-4 justify-center" style={{ fontSize: 11.5, color: muted }}>
+              <div className="flex gap-4 flex-wrap mt-4 justify-center" style={{ fontSize: 11, color: muted }}>
                 {['API access is free, no application', 'Panel unlocks instantly with wallet balance', 'Everything settles in Naira'].map(txt => (
                   <span key={txt} className="inline-flex items-center gap-1.5"><span style={{ color: green }}><Chk /></span>{txt}</span>
                 ))}
@@ -469,7 +469,7 @@ function ResellerHQInner({ dark: darkProp, t: tProp, embedded } = {}) {
           {/* Closer CTA */}
           <div className="mt-9 p-6 rounded-2xl text-white flex justify-between items-center gap-4 flex-wrap" style={{ background: grad }}>
             <div>
-              <h3 className="text-[17px] font-extrabold">{hasKey ? "Key's live. Go sell." : 'Start where you are.'}</h3>
+              <h3 className="text-[18px] font-extrabold">{hasKey ? "Key's live. Go sell." : 'Start where you are.'}</h3>
               <p className="text-xs opacity-90 mt-1">{hasKey ? 'Docs cover all six endpoints with copy-paste examples.' : "Got a panel? Grab a key. Don't? Fund the wallet and we'll build yours."}</p>
             </div>
             <div className="flex gap-2">
@@ -509,7 +509,7 @@ function ResellerHQInner({ dark: darkProp, t: tProp, embedded } = {}) {
             <p className="text-xs leading-[1.6] mb-3" style={{ color: muted }}>From {N(PANEL_STARTER)}/month (Starter) or {N(PANEL_PRO)}/month (Pro with gradual delivery). Auto-charged from your wallet. Usually live within 48 hours.</p>
             <div className="flex gap-1.5 mb-1">
               {[['sub', 'Free subdomain'], ['own', 'My own domain']].map(([m, l]) => (
-                <button key={m} onClick={() => setDomainMode(m)} className="flex-1 py-2 px-2 rounded-[9px] text-[11.5px] font-bold" style={{ border: `1px solid ${domainMode === m ? accent : border}`, color: domainMode === m ? accent : muted, background: domainMode === m ? accentSoft : 'none' }}>{l}</button>
+                <button key={m} onClick={() => setDomainMode(m)} className="flex-1 py-2 px-2 rounded-[9px] text-[11px] font-bold" style={{ border: `1px solid ${domainMode === m ? accent : border}`, color: domainMode === m ? accent : muted, background: domainMode === m ? accentSoft : 'none' }}>{l}</button>
               ))}
             </div>
             {domainMode === 'sub' ? (
@@ -560,8 +560,8 @@ function ApiBlock({ hasKey, keyShown, setKeyShown, catalog, setCatalog, buildMod
             <span className="text-[11px] font-extrabold py-1.5 px-3 rounded-full" style={{ background: greenSoft, color: green }}>● KEY ACTIVE</span>
           ) : (
             <>
-              <div className="text-[29px] font-extrabold m" style={{ letterSpacing: '-.5px', color: blue }}>Free</div>
-              <div className="text-[11.5px] mt-0.5" style={{ color: muted }}>no application · instant key</div>
+              <div className="text-[28px] font-extrabold m" style={{ letterSpacing: '-.5px', color: blue }}>Free</div>
+              <div className="text-[11px] mt-0.5" style={{ color: muted }}>no application · instant key</div>
             </>
           )}
         </div>
@@ -569,7 +569,7 @@ function ApiBlock({ hasKey, keyShown, setKeyShown, catalog, setCatalog, buildMod
       </div>
 
       <div className="rhq-keystrip" style={{ background: blueSoft }}>
-        <span className="text-[9.5px] font-extrabold tracking-[1.2px] shrink-0" style={{ color: blue }}>YOUR API KEY</span>
+        <span className="text-[11px] font-extrabold tracking-[1.2px] shrink-0" style={{ color: blue }}>YOUR API KEY</span>
         {hasKey ? (
           <>
             <div className="rhq-keyfield m" style={{ background: code, border: `1px solid ${border}`, color: soft }}>{keyShown ? MOCK_KEY : masked}</div>
@@ -608,12 +608,12 @@ function ApiBlock({ hasKey, keyShown, setKeyShown, catalog, setCatalog, buildMod
             <span className="text-xs" style={{ color: muted }}>Your key serves the list you pick here. Switch anytime.</span>
             <div className="flex gap-1 rounded-[10px] p-0.5" style={{ background: track }}>
               {[['curated', 'Curated tiers'], ['full', 'Full providers']].map(([id, label]) => (
-                <button key={id} onClick={() => setCatalog(id)} className="text-[10.5px] font-extrabold py-1.5 px-3 rounded-lg" style={{ color: catalog === id ? blue : muted, background: catalog === id ? panel : 'none', boxShadow: catalog === id ? '0 1px 3px rgba(0,0,0,.1)' : 'none' }}>{label}</button>
+                <button key={id} onClick={() => setCatalog(id)} className="text-[11px] font-extrabold py-1.5 px-3 rounded-lg" style={{ color: catalog === id ? blue : muted, background: catalog === id ? panel : 'none', boxShadow: catalog === id ? '0 1px 3px rgba(0,0,0,.1)' : 'none' }}>{label}</button>
               ))}
             </div>
           </div>
           <div className="rounded-[14px] overflow-hidden" style={{ border: `1px solid ${hair}`, background: panel }}>
-            <div className="grid grid-cols-[1fr_auto_auto] gap-3.5 px-4 py-2.5 text-[9.5px] font-extrabold uppercase tracking-[1px]" style={{ color: muted, borderBottom: `1px solid ${hair}` }}>
+            <div className="grid grid-cols-[1fr_auto_auto] gap-3.5 px-4 py-2.5 text-[11px] font-extrabold uppercase tracking-[1px]" style={{ color: muted, borderBottom: `1px solid ${hair}` }}>
               <span>Sample services · per 1,000</span><span>Retail</span><span className="text-right">Your rate</span>
             </div>
             {SAMPLE_RATES.map(([name, retail, reseller]) => (
@@ -623,7 +623,7 @@ function ApiBlock({ hasKey, keyShown, setKeyShown, catalog, setCatalog, buildMod
                 <span className="text-[13px] font-extrabold m text-right min-w-[86px]" style={{ color: blue }}>{N(reseller)}</span>
               </div>
             ))}
-            <div className="px-4 py-2.5 text-[11.5px]" style={{ color: muted }}>
+            <div className="px-4 py-2.5 text-[11px]" style={{ color: muted }}>
               {catalog === 'curated' ? 'Plus the rest of the curated list, ~140 tiered services.' : 'Plus 3,400+ raw provider services across 35+ platforms.'} Pull live prices with <code className="text-[11px] py-px px-1 rounded" style={{ background: track }}>services</code>
             </div>
           </div>
@@ -634,7 +634,7 @@ function ApiBlock({ hasKey, keyShown, setKeyShown, catalog, setCatalog, buildMod
               ['SCALE', '₦1m+ / month', 'Our best rates, plus priority support.'],
             ].map(([name, threshold, desc]) => (
               <div key={name} className="rhq-lad">
-                <span className="text-[9.5px] font-extrabold tracking-[1.2px]" style={{ color: blue }}>{name}</span>
+                <span className="text-[11px] font-extrabold tracking-[1.2px]" style={{ color: blue }}>{name}</span>
                 <b className="block text-[13px] font-extrabold mt-1" style={{ color: t.text }}>{threshold}</b>
                 <p>{desc}</p>
               </div>
@@ -660,11 +660,11 @@ function ApiBlock({ hasKey, keyShown, setKeyShown, catalog, setCatalog, buildMod
             <div className="p-4 min-w-0">
               {buildMode === 'std' ? (
                 <>
-                  <div className="text-[10px] font-extrabold tracking-[1px] uppercase mb-2.5" style={{ color: muted }}>Your panel's provider settings. That's the whole setup</div>
+                  <div className="text-[11px] font-extrabold tracking-[1px] uppercase mb-2.5" style={{ color: muted }}>Your panel's provider settings. That's the whole setup</div>
                   {[['API URL', 'https://nitro.ng/api/v2'], ['API Key', hasKey ? MOCK_KEY : 'ntr_live_ · · ·  generate yours above'], ['Then', 'Hit "sync services", set your margins, done.']].map(([label, value]) => (
                     <div key={label} className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 mb-2" style={{ background: code, border: `1px solid ${hair}` }}>
-                      <span className="w-16 shrink-0 text-[9.5px] font-extrabold tracking-[.8px] uppercase" style={{ color: label === 'Then' ? green : muted }}>{label}</span>
-                      <span className={`text-[11.5px] overflow-hidden text-ellipsis whitespace-nowrap ${label !== 'Then' ? 'm' : ''}`} style={{ color: soft }}>{value}</span>
+                      <span className="w-16 shrink-0 text-[11px] font-extrabold tracking-[.8px] uppercase" style={{ color: label === 'Then' ? green : muted }}>{label}</span>
+                      <span className={`text-[11px] overflow-hidden text-ellipsis whitespace-nowrap ${label !== 'Then' ? 'm' : ''}`} style={{ color: soft }}>{value}</span>
                     </div>
                   ))}
                   <div className="flex gap-1.5 flex-wrap mt-3">
@@ -675,9 +675,9 @@ function ApiBlock({ hasKey, keyShown, setKeyShown, catalog, setCatalog, buildMod
                 </>
               ) : (
                 <>
-                  <div className="text-[10px] font-extrabold tracking-[1px] uppercase mb-2.5" style={{ color: muted }}>Same key, full toolset</div>
-                  <div className="rounded-[11px] p-3 text-[11.5px] leading-[1.75] overflow-x-auto relative m" style={{ background: code, border: `1px solid ${hair}`, color: soft }}>
-                    <button onClick={() => showToast('Example copied')} className="absolute top-2 right-2 text-[10px] font-bold py-1 px-2.5 rounded-[7px]" style={{ background: track, color: muted, border: `1px solid ${hair}` }}>Copy</button>
+                  <div className="text-[11px] font-extrabold tracking-[1px] uppercase mb-2.5" style={{ color: muted }}>Same key, full toolset</div>
+                  <div className="rounded-[11px] p-3 text-[11px] leading-[1.75] overflow-x-auto relative m" style={{ background: code, border: `1px solid ${hair}`, color: soft }}>
+                    <button onClick={() => showToast('Example copied')} className="absolute top-2 right-2 text-[11px] font-bold py-1 px-2.5 rounded-[7px]" style={{ background: track, color: muted, border: `1px solid ${hair}` }}>Copy</button>
                     <pre className="m-0 whitespace-pre-wrap">
                       <span style={{ color: muted }}># place an order</span>{'\n'}
                       curl -X POST https://nitro.ng/api/v2 \{'\n'}
@@ -711,7 +711,7 @@ function ApiBlock({ hasKey, keyShown, setKeyShown, catalog, setCatalog, buildMod
               <div key={i} className="flex gap-3 items-start py-2.5" style={{ borderBottom: i < 3 ? `1px solid ${hair}` : 'none' }}>
                 <span className="text-[11px] font-extrabold shrink-0 w-5 text-center mt-px" style={{ color: blue }}>{i + 1}</span>
                 <div>
-                  <div className="text-[12.5px] font-extrabold" style={{ color: t.text }}>{title}</div>
+                  <div className="text-[13px] font-extrabold" style={{ color: t.text }}>{title}</div>
                   <div className="text-[11px] leading-[1.6] mt-0.5" style={{ color: muted }}>{desc}</div>
                 </div>
               </div>
@@ -737,7 +737,7 @@ function PanelBlock({ markup, setMarkup, showModal, showToast, dark, t, colors }
     <div className="rounded-b-[18px] overflow-hidden" style={{ border: `1px solid ${border}`, background: card }}>
       <div className="rhq-phead" style={{ background: `linear-gradient(135deg, ${accentSoft} 0%, transparent 55%)` }}>
         <div>
-          <div className="text-[11.5px] mt-0.5" style={{ color: muted }}>A white-label storefront on Nitro's system, with your name on it</div>
+          <div className="text-[11px] mt-0.5" style={{ color: muted }}>A white-label storefront on Nitro's system, with your name on it</div>
         </div>
       </div>
 
@@ -749,8 +749,8 @@ function PanelBlock({ markup, setMarkup, showModal, showToast, dark, t, colors }
         ].map(p => (
           <button key={p.id} onClick={() => setTier(p.id)} className="text-left rounded-[13px] p-4 transition-all duration-150" style={{ border: `1.5px solid ${tier === p.id ? accent : hair}`, background: tier === p.id ? accentSoft : 'none' }}>
             <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="text-[10px] font-extrabold tracking-[1.2px] uppercase" style={{ color: tier === p.id ? accent : muted }}>{p.name}</span>
-              {p.id === 'pro' && <span className="text-[9px] font-extrabold py-0.5 px-2 rounded-full" style={{ background: accentSoft2, color: accent }}>+ GRADUAL</span>}
+              <span className="text-[11px] font-extrabold tracking-[1.2px] uppercase" style={{ color: tier === p.id ? accent : muted }}>{p.name}</span>
+              {p.id === 'pro' && <span className="text-[11px] font-extrabold py-0.5 px-2 rounded-full" style={{ background: accentSoft2, color: accent }}>+ GRADUAL</span>}
             </div>
             <div className="text-[22px] font-extrabold m" style={{ color: tier === p.id ? accent : t.text, letterSpacing: '-.3px' }}>
               {N(p.price)}<span className="text-[11px] font-bold" style={{ color: muted }}>/mo</span>
@@ -775,7 +775,7 @@ function PanelBlock({ markup, setMarkup, showModal, showToast, dark, t, colors }
                 <div>
                   <h4>
                     {title}
-                    {badge && <span className="text-[9px] font-extrabold tracking-[.6px] py-0.5 px-1.5 rounded-full ml-1.5" style={{ background: accentSoft2, color: accent }}>{badge}</span>}
+                    {badge && <span className="text-[11px] font-extrabold tracking-[.6px] py-0.5 px-1.5 rounded-full ml-1.5" style={{ background: accentSoft2, color: accent }}>{badge}</span>}
                   </h4>
                   <p>{desc}</p>
                 </div>
@@ -788,10 +788,10 @@ function PanelBlock({ markup, setMarkup, showModal, showToast, dark, t, colors }
           <div className="rounded-[14px] p-4" style={{ border: `1px solid ${hair}`, background: panel }}>
             <div className="flex justify-between items-center gap-2.5 flex-wrap text-xs" style={{ color: muted }}>
               <span>Example: <b style={{ color: t.text }}>Instagram Followers</b> · fulfilment <b className="m" style={{ color: t.text }}>{N(EARN_COST)}</b>/1k</span>
-              <span className="rounded-full py-1 px-3 font-extrabold text-[11.5px] whitespace-nowrap" style={{ background: accentSoft2, color: accent }}>Markup <b className="m">{markup}%</b></span>
+              <span className="rounded-full py-1 px-3 font-extrabold text-[11px] whitespace-nowrap" style={{ background: accentSoft2, color: accent }}>Markup <b className="m">{markup}%</b></span>
             </div>
             <input type="range" min={10} max={100} step={5} value={markup} onChange={e => setMarkup(Number(e.target.value))} className="w-full mt-3" style={{ accentColor: accent }} />
-            <div className="flex justify-between text-[9.5px] mt-0.5" style={{ color: muted }}><span>10%</span><span>100%</span></div>
+            <div className="flex justify-between text-[11px] mt-0.5" style={{ color: muted }}><span>10%</span><span>100%</span></div>
             <div className="rhq-earn grid grid-cols-3 gap-2.5 mt-3">
               {[
                 ['Customer pays / 1k', N(EARN_COST * (1 + markup / 100)), t.text],
@@ -799,7 +799,7 @@ function PanelBlock({ markup, setMarkup, showModal, showToast, dark, t, colors }
                 ['You keep / 1k', N(EARN_COST * markup / 100), green],
               ].map(([label, value, color]) => (
                 <div key={label} className="rounded-[11px] p-3" style={{ background: card, border: `1px solid ${hair}` }}>
-                  <div className="text-[9.5px] font-extrabold tracking-[.8px] uppercase" style={{ color: muted }}>{label}</div>
+                  <div className="text-[11px] font-extrabold tracking-[.8px] uppercase" style={{ color: muted }}>{label}</div>
                   <div className="text-base font-extrabold mt-0.5 m" style={{ color }}>{value}</div>
                 </div>
               ))}
@@ -819,7 +819,7 @@ function PanelBlock({ markup, setMarkup, showModal, showToast, dark, t, colors }
               <div key={i} className="flex gap-3 items-start py-2.5" style={{ borderBottom: i < 3 ? `1px solid ${hair}` : 'none' }}>
                 <span className="text-[11px] font-extrabold shrink-0 w-5 text-center mt-px" style={{ color: accent }}>{i + 1}</span>
                 <div>
-                  <div className="text-[12.5px] font-extrabold" style={{ color: t.text }}>{title}</div>
+                  <div className="text-[13px] font-extrabold" style={{ color: t.text }}>{title}</div>
                   <div className="text-[11px] leading-[1.6] mt-0.5" style={{ color: muted }}>{desc}</div>
                 </div>
               </div>
