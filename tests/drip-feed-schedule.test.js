@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { calculateMultiDayDrip, calculateIntradayDrip, buildDripConfig, validateDripConfig, rescheduleRemaining, distributeByCurve, checkDripFeasibility, validateIntradayDuration, sliceCommentsForBatch } from '@/lib/drip-feed';
 
 const BASE = new Date('2026-07-23T09:00:00.000Z');
@@ -659,11 +659,23 @@ describe('checkDripFeasibility', () => {
     expect(result.error).toContain('spill');
   });
 
-  it('rejects schedule that spills beyond requested calendar dates', () => {
-    // 2000/2 days = 1000/day = 5 batches at 2h; 3h window only fits 2 batches → day 1 spills to day 2
+  it('fits a narrow window by sending fewer, larger batches', () => {
+    // 2000/2 days = 1000/day. A 3-hour window holds two batches at 2h spacing,
+    // so the day is sent as two batches of 500 rather than spilling to the next.
+    const config = { version: 1, startAt: '2026-08-01T09:00:00Z', window: { startHour: 9, endHour: 12 }, timezone: 'UTC' };
+    expect(checkDripFeasibility(2000, 2, config, 'followers', 'instagram', 50)).toEqual({ feasible: true });
+    const result = calculateMultiDayDrip(2000, 2, 50, new Date('2026-08-01T09:00:00Z'), 'followers', 'instagram', config);
+    const day1 = result.dispatches.filter(d => d.day === 1);
+    expect(day1).toHaveLength(2);
+    expect(day1.every(d => new Date(d.scheduledAt).getUTCHours() >= 9 && new Date(d.scheduledAt).getUTCHours() < 12)).toBe(true);
+    expect(totalQty(result)).toBe(2000);
+  });
+
+  it('rejects a start that falls outside the delivery window', () => {
+    // 18:00 is past a 09:00–12:00 window, so day 1 would deliver on day 2's date.
     const result = checkDripFeasibility(
       2000, 2,
-      { version: 1, startAt: '2026-08-01T09:00:00Z', window: { startHour: 9, endHour: 12 }, timezone: 'UTC' },
+      { version: 1, startAt: '2026-08-01T18:00:00Z', window: { startHour: 9, endHour: 12 }, timezone: 'UTC' },
       'followers', 'instagram', 50,
     );
     expect(result.feasible).toBe(false);
@@ -820,5 +832,73 @@ describe('sliceCommentsForBatch', () => {
     expect(overlap).toEqual([]);
     // All lines used exactly once across both batches
     expect([...b1Lines, ...b2Lines].sort()).toEqual(['a', 'b', 'c', 'd', 'e'].sort());
+  });
+});
+
+// ── Fitting inside a day ────────────────────────────────────
+//
+// A day used to mean a calendar square, while the scheduler chained batches at
+// a fixed interval with no ceiling: 10,000 followers over 3 days produced a
+// thirty-hour "day 1", and every order placed in the evening crossed midnight.
+// Both were rejected with "batches spill into a different calendar date".
+
+describe('a day holds its own batches', () => {
+  afterEach(() => { vi.useRealTimers(); });
+
+  const at = (iso, fn) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(iso));
+    try { return fn(); } finally { vi.useRealTimers(); }
+  };
+
+  it('an order placed in the evening is still feasible', () => {
+    const late = at('2026-07-23T21:30:00.000Z', () => checkDripFeasibility(2000, 3, { version: 1 }, TYPE, PLAT, MIN));
+    expect(late).toEqual({ feasible: true });
+  });
+
+  it('a large order is feasible at every hour of the day', () => {
+    for (let h = 0; h < 24; h++) {
+      const iso = `2026-07-23T${String(h).padStart(2, '0')}:30:00.000Z`;
+      const result = at(iso, () => checkDripFeasibility(10000, 3, { version: 1 }, TYPE, PLAT, MIN));
+      expect(result, `${h}:30 UTC`).toEqual({ feasible: true });
+    }
+  });
+
+  it('caps a day at fewer, larger batches instead of a longer tail', () => {
+    const result = calculateMultiDayDrip(10000, 3, MIN, BASE, TYPE, PLAT, { version: 1 });
+    const day1 = result.dispatches.filter(d => d.day === 1);
+    const spanHours = (day1[day1.length - 1].scheduledAt - day1[0].scheduledAt) / 3600000;
+    expect(spanHours).toBeLessThan(24);
+    expect(day1.length).toBeGreaterThan(1);
+    expect(totalQty(result)).toBe(10000);
+  });
+
+  it('every batch lands inside its own day, whatever the size or start', () => {
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    for (const qty of [2000, 10000, 50000]) {
+      for (const days of [2, 5, 12]) {
+        for (const hour of [0, 14, 21, 23]) {
+          const start = new Date(Date.UTC(2026, 6, 23, hour, 30, 0));
+          const result = calculateMultiDayDrip(qty, days, MIN, start, TYPE, PLAT, { version: 1 });
+          const anchor = result.dispatches[0].scheduledAt.getTime();
+          for (const d of result.dispatches) {
+            const offset = d.scheduledAt.getTime() - (anchor + (d.day - 1) * DAY_MS);
+            expect(offset, `${qty}/${days}d at ${hour}:30, day ${d.day}`).toBeGreaterThanOrEqual(-60000);
+            expect(offset, `${qty}/${days}d at ${hour}:30, day ${d.day}`).toBeLessThan(DAY_MS);
+          }
+          expect(totalQty(result)).toBe(qty);
+        }
+      }
+    }
+  });
+
+  it('the span budget shrinks the batch count but never the quantity', () => {
+    const free = calculateIntradayDrip(4000, MIN, BASE, TYPE, PLAT);
+    const capped = calculateIntradayDrip(4000, MIN, BASE, TYPE, PLAT, { maxSpanHours: 6 });
+    expect(capped.dispatches.length).toBeLessThan(free.dispatches.length);
+    expect(capped.dispatches.length).toBe(4);
+    const span = (capped.dispatches[3].scheduledAt - capped.dispatches[0].scheduledAt) / 3600000;
+    expect(span).toBeLessThanOrEqual(6);
+    expect(capped.dispatches.reduce((s, d) => s + d.quantity, 0)).toBe(4000);
   });
 });
