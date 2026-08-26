@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { ThemeProvider, useTheme } from "./shared-nav";
+import { ThemeProvider, useTheme, ThemeToggle } from "./shared-nav";
 import { NitroWordmark } from "./nitro-logo";
 import NitroLoader from "./nitro-loader";
 import { SITE } from "../lib/site";
@@ -168,12 +168,7 @@ function LandingInner({ initialAuthQuery }){
             <div className="flex max-desktop:hidden gap-1 items-center mr-1.5">
               {["Services","Pricing","Testimonials"].map(l=><button key={l} onClick={()=>document.getElementById(l.toLowerCase())?.scrollIntoView({behavior:"smooth",block:"start"})} className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{color:dark?"rgba(255,255,255,.75)":"rgba(255,255,255,.75)"}}>{l}</button>)}<a href="/resellers" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:dark?"rgba(255,255,255,.75)":"rgba(255,255,255,.75)"}}>Resellers</a><a href="/blog" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:dark?"rgba(255,255,255,.75)":"rgba(255,255,255,.75)"}}>Blog</a>
             </div>
-            <button onClick={toggleTheme} aria-label={dark?"Switch to light":"Switch to dark"} className="theme-toggle w-[44px] h-[24px] rounded-xl relative shrink-0" style={{background:dark?"rgba(99,102,241,.28)":"rgba(255,255,255,.24)",transition:"background .8s ease",border:`0.5px solid ${dark?"rgba(99,102,241,.24)":"rgba(255,255,255,.28)"}`}}>
-              <div className="w-[18px] h-[18px] rounded-full absolute flex items-center justify-center" style={{background:dark?"#1e1b4b":"#fff",top:2.5,left:dark?22.5:2.5,transition:"left .8s cubic-bezier(.4,0,.2,1), background .8s ease"}}>
-                {dark?<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-                :<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>}
-              </div>
-            </button>
+            <ThemeToggle dark={dark} onToggle={toggleTheme} />
             <button onClick={()=>setModal("login")} className="nav-login-btn py-[7px] px-5 rounded-lg text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{background:dark?"rgba(255,255,255,.16)":"rgba(255,255,255,.19)",border:`0.5px solid ${dark?"rgba(255,255,255,.18)":"rgba(255,255,255,.28)"}`,color:dark?"rgba(255,255,255,.8)":"#fff"}}>Log in</button>
             <button type="button" onClick={()=>setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen} className="desktop:hidden w-9 h-9 rounded-lg border-none cursor-pointer flex items-center justify-center" style={{background:"rgba(255,255,255,.14)",color:"#fff"}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><button onClick={()=>setModal("signup")} className="nav-signup-btn max-desktop:!hidden py-[7px] px-5 rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{background:"#fff",color:"#1a1a1a"}}>Get started</button>
           </div>

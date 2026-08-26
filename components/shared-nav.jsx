@@ -6,6 +6,22 @@ import { PublicNavSheet, PUBLIC_LINKS } from "./public-nav-sheet";
 // ── Theme context ──
 const ThemeCtx = createContext();
 
+const SUN = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>;
+const MOON = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>;
+
+/** The theme switch, the same everywhere: a pill whose knob carries a sun by day and a moon by night. */
+export function ThemeToggle({ dark, onToggle, size = "md", className = "" }) {
+  const lg = size === "lg";
+  const w = lg ? 52 : 46, h = lg ? 28 : 26, knob = h - 6;
+  return (
+    <button type="button" onClick={onToggle} role="switch" aria-checked={dark} aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} className={`relative shrink-0 rounded-full border-none cursor-pointer p-0 transition-colors duration-300 ${className}`} style={{ width: w, height: h, background: dark ? "#c47d8e" : "rgba(0,0,0,.14)" }}>
+      <span className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center text-[0px]" style={{ left: 8, color: "rgba(255,255,255,.9)", opacity: dark ? 1 : 0, transition: "opacity .2s" }}>{SUN}</span>
+      <span className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center" style={{ right: 8, color: "rgba(0,0,0,.45)", opacity: dark ? 0 : 1, transition: "opacity .2s" }}>{MOON}</span>
+      <span className="absolute top-[3px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.25)] flex items-center justify-center" style={{ width: knob, height: knob, left: dark ? w - knob - 3 : 3, color: dark ? "#c47d8e" : "#d97706", transition: "left .3s cubic-bezier(.2,.8,.2,1)" }}>{dark ? MOON : SUN}</span>
+    </button>
+  );
+}
+
 export function useTheme() {
   return useContext(ThemeCtx);
 }
@@ -148,16 +164,7 @@ export default function SharedNav({ action = "back" }) {
       <div className="flex items-center gap-3">
         <button type="button" onClick={() => setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen}
           className="desktop:hidden w-9 h-9 rounded-lg border-none cursor-pointer flex items-center justify-center bg-transparent" style={{ color: t.soft }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-        <button
-          onClick={toggleTheme}
-          className="w-11 h-6 rounded-xl relative transition-all duration-300 shrink-0"
-          style={{ background: dark ? "#c47d8e" : "rgba(0,0,0,0.08)" }}
-        >
-          <div
-            className="w-[18px] h-[18px] rounded-full bg-white absolute top-[3px] shadow-[0_1px_4px_rgba(0,0,0,.2)]"
-            style={{ left: dark ? 23 : 3, transition: "left .3s cubic-bezier(.2,.8,.2,1)" }}
-          />
-        </button>
+        <ThemeToggle dark={dark} onToggle={toggleTheme} />
         {action === "back" && (
           <a href="/" className="text-sm font-medium flex items-center gap-1" style={{ color: t.soft }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>

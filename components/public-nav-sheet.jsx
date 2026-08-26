@@ -1,5 +1,6 @@
 "use client";
 import { Modal } from "./ui-primitives";
+import { ThemeToggle } from "./shared-nav";
 
 // The public site's primary links, in one place so the landing bar, SharedNav
 // and the mobile sheet cannot drift apart.
@@ -39,12 +40,7 @@ export function PublicNavSheet({ open, onClose, dark, toggleTheme, onLogin, onSi
           ))}
         </nav>
         <div className="flex-1" />
-        <button type="button" onClick={toggleTheme} className="flex items-center gap-3 bg-transparent border-none cursor-pointer p-0 mb-4 text-[13px]" style={{ color: muted }}>
-          <span className="w-11 h-6 rounded-xl relative shrink-0" style={{ background: dark ? "#c47d8e" : "rgba(0,0,0,.12)" }}>
-            <span className="w-[18px] h-[18px] rounded-full bg-white absolute top-[3px]" style={{ left: dark ? 23 : 3, transition: "left .3s cubic-bezier(.2,.8,.2,1)" }} />
-          </span>
-          {dark ? "Dark theme" : "Light theme"}
-        </button>
+        <div className="flex items-center gap-3 mb-2"><ThemeToggle dark={dark} onToggle={toggleTheme} /><span className="text-[14px] font-medium">{dark ? "Dark mode" : "Light mode"}</span></div>
         {onSignup
           ? <button type="button" onClick={onSignup} className="w-full py-[14px] rounded-xl text-[15px] font-bold border-none cursor-pointer text-white" style={{ background: "#c47d8e", boxShadow: "0 10px 26px rgba(196,125,142,.35)" }}>Create free account</button>
           : <a href="/?signup=1" className="block w-full py-[14px] rounded-xl text-[15px] font-bold text-center text-white no-underline" style={{ background: "#c47d8e", boxShadow: "0 10px 26px rgba(196,125,142,.35)" }}>Create free account</a>}

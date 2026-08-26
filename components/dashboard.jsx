@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, useRef, useTransition, Fragment } from "react";
 import dynamic from "next/dynamic";
-import { ThemeProvider, useTheme } from "./shared-nav";
+import { ThemeProvider, useTheme, ThemeToggle } from "./shared-nav";
 import { NitroWordmark } from "./nitro-logo";
 import { ToastProvider } from "./toast";
 import { ConfirmProvider } from "./confirm-dialog";
@@ -331,6 +331,13 @@ export default function Dashboard({ initialData }) {
 
 function DashboardInner({ initialData }) {
   const { dark, setDark, toggleTheme, t: baseT, themeMode, setThemeMode } = useTheme();
+  const applyThemeMode = (mode) => {
+    setThemeMode(mode);
+    try { localStorage.setItem("nitro-theme", mode); } catch {}
+    if (mode === "day") setDark(false);
+    else if (mode === "night") setDark(true);
+    else { const h = new Date().getHours(), m = new Date().getMinutes(); setDark(h >= 19 || h < 6 || (h === 6 && m < 30) || (h === 18 && m >= 30)); }
+  };
   const [active, setActiveRaw] = useState("services");
   const [, startTransition] = useTransition();
   const setActive = (page) => { startTransition(() => { setActiveRaw(page); try { localStorage.setItem("nitro-page", page); } catch {} }); };
@@ -1211,12 +1218,12 @@ function DashboardInner({ initialData }) {
                 <button role="menuitem" onClick={() => { setAvOpen(false); if (socialLinks.social_whatsapp_support) window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); }} className="dash-av-item" style={{ color: "#25d366" }}>{I.support}Support on WhatsApp</button>
                 <div className="dash-av-foot" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
                   <div className="dash-seg" role="group" aria-label="Theme" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.09)" }}>
-                    <button onClick={() => { if (dark) toggleTheme(); }} aria-pressed={!dark} aria-label="Light theme" className="dash-seg-btn" style={!dark ? { background: dark ? "#131728" : "#fff", color: t.text, boxShadow: "0 1px 3px rgba(0,0,0,.15)" } : { color: t.textMuted }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-                    </button>
-                    <button onClick={() => { if (!dark) toggleTheme(); }} aria-pressed={dark} aria-label="Dark theme" className="dash-seg-btn" style={dark ? { background: "#131728", color: t.text, boxShadow: "0 1px 3px rgba(0,0,0,.35)" } : { color: t.textMuted }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-                    </button>
+                    <span className="text-[13px] font-medium mr-auto text-t-text">Theme</span>
+                    <span className="inline-flex p-[3px] rounded-full" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", border: `1px solid ${t.cardBorder}` }}>
+                      {[["auto", "Auto", <svg key="a" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 010 18z" fill="currentColor" stroke="none"/></svg>], ["day", "Light", <svg key="d" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>], ["night", "Dark", <svg key="n" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>]].map(([id, label, icon]) => (
+                        <button key={id} onClick={() => applyThemeMode(id)} aria-pressed={themeMode === id} className="inline-flex items-center gap-1 h-[26px] px-2.5 rounded-full border-none font-[inherit] text-[11.5px] font-semibold cursor-pointer" style={themeMode === id ? { background: dark ? "#161b2e" : "#fff", color: t.text, boxShadow: "0 1px 3px rgba(0,0,0,.12)" } : { background: "transparent", color: t.textMuted }}>{icon}{label}</button>
+                      ))}
+                    </span>
                   </div>
                   <button role="menuitem" onClick={handleLogout} className="dash-av-logout" style={{ color: t.textMuted }}>Log out</button>
                 </div>
@@ -1404,9 +1411,7 @@ function DashboardInner({ initialData }) {
               <div className="text-[13px] font-semibold truncate text-t-text">{user?.name || "Your account"}</div>
               <div className="text-[11px] truncate text-t-text-muted">{user?.email || ""}</div>
             </div>
-            <button onClick={toggleTheme} aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} className="w-11 h-6 rounded-xl relative shrink-0 border-none cursor-pointer" style={{ background: dark ? "#c47d8e" : "rgba(0,0,0,.12)" }}>
-              <span className="w-[18px] h-[18px] rounded-full bg-white absolute top-[3px]" style={{ left: dark ? 23 : 3, transition: "left .3s cubic-bezier(.2,.8,.2,1)" }} />
-            </button>
+            <ThemeToggle dark={dark} onToggle={toggleTheme} />
           </div>
           {(() => {
             const byId = Object.fromEntries(MORE_ITEMS.map(m => [m.id, m]));

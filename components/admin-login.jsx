@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import { ThemeToggle } from "./shared-nav";
 import InlineAlert from "./inline-alert";
 import { safeInternalDashboardDestination } from '@/lib/internal-dashboard-path';
 
@@ -66,12 +67,7 @@ export default function AdminLogin(){
   const q=QUOTES[quoteIdx];
 
   const ThemeToggleBtn=()=>(
-    <button onClick={toggleTheme} aria-label={dark?"Switch to light":"Switch to dark"} className="theme-toggle w-[52px] h-7 rounded-[14px] relative transition-[background] duration-[0.8s] ease shrink-0" style={{background:dark?"rgba(99,102,241,.31)":"rgba(255,255,255,.28)",border:`1px solid ${dark?"rgba(99,102,241,.28)":"rgba(255,255,255,.31)"}`}}>
-      <div className="w-[22px] h-[22px] rounded-full absolute top-0.5 flex items-center justify-center" style={{background:dark?"#1e1b4b":"#fff",left:dark?27:3,transition:"left .8s cubic-bezier(.4,0,.2,1), background .8s ease, box-shadow .8s ease",boxShadow:dark?"0 0 8px rgba(99,102,241,.3)":"0 1px 6px rgba(0,0,0,.15)"}}>
-        {dark?<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-        :<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>}
-      </div>
-    </button>
+    <ThemeToggle dark={dark} onToggle={toggleTheme} size="lg" />
   );
 
   return (
