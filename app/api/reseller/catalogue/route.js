@@ -74,6 +74,7 @@ export async function GET(req) {
           apiId: idByTier[t.id] || null,
           tier: t.tier,
           price: wholesaleOf(Math.round(t.price * 100), terms, settings) / 100,
+          retail: t.price,
           min: t.min,
           max: t.max,
           refill: t.refill,

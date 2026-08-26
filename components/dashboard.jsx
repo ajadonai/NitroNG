@@ -108,10 +108,10 @@ const GuideSidebar = dynamic(() => import("./guide-page").then(m => m.GuideSideb
 const LeaderboardPage = dynamic(() => import("./leaderboard-page").then(m => m.default), { ssr: false });
 const LeaderboardCard = dynamic(() => import("./leaderboard-page").then(m => m.LeaderboardCard), { ssr: false });
 const EarnPage = dynamic(() => import("./earn-page").then(m => m.default), { ssr: false });
-const ResellerLabPage = dynamic(() => import("./reseller-lab-page").then(m => m.ResellerLabDashboard), { ssr: false });
+const ResellerLabPage = dynamic(() => import("./reseller-hq").then(m => m.ResellerHQDashboard), { ssr: false });
 const ResellerCataloguePage = dynamic(() => import("./reseller-catalogue"), { ssr: false });
 const ResellerCatalogueSidebar = dynamic(() => import("./reseller-catalogue").then(m => m.ResellerCatalogueSidebar), { ssr: false });
-const ResellerLabSidebar = dynamic(() => import("./reseller-lab-page").then(m => m.ResellerLabSidebar), { ssr: false });
+const ResellerLabSidebar = dynamic(() => import("./reseller-hq").then(m => m.ResellerHQSidebar), { ssr: false });
 const TasksPage = dynamic(() => import("./tasks-page").then(m => m.default), { ssr: false });
 
 /* ═══════════════════════════════════════════ */
@@ -1143,7 +1143,7 @@ function DashboardInner({ initialData }) {
       case "tasks":
         return <TasksPage dark={dark} t={t} />;
       case "lab":
-        return <ResellerLabPage dark={dark} t={t} onNavigate={setActive} />;
+        return <ResellerLabPage dark={dark} t={t} onNavigate={setActive} socialLinks={socialLinks} />;
       case "catalogue":
         return <ResellerCataloguePage dark={dark} t={t} />;
       default:
@@ -1338,7 +1338,7 @@ function DashboardInner({ initialData }) {
           </div>}
           {isLab && <div className="pb-2 desktop:pb-3.5">
             <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">Reseller HQ</div>
-            <div className="text-sm desktop:text-[15px] text-t-text-muted">API access for your panel, or a white-label storefront we run for you</div>
+            <div className="text-sm desktop:text-[15px] text-t-text-muted">Your key, your catalogue, and the API for your panel</div>
             <div className="page-divider bg-t-card-border" />
           </div>}
           {isTasks && <div className="pb-2 desktop:pb-3.5">

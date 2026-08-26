@@ -1,4 +1,4 @@
-import ResellersLandingView from '@/components/resellers-landing';
+import ResellerHQView from '@/components/reseller-hq';
 
 export const metadata = {
   title: 'Reseller Pricing — Wholesale SMM Rates in Naira | Nitro NG',
@@ -25,7 +25,7 @@ export default function ResellersPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
-      <ResellersLandingView />
+      <ResellerHQView />
     </>
   );
 }

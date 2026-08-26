@@ -24,6 +24,7 @@ never gets picked up twice. Update this in the same commit as the work.
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-08-26 | Reseller HQ merged with the public resellers page: one component in two states, no child panel; key in HQ and Settings (`/api/reseller/key`, read + rotate); docs at `/resellers/docs`; catalogue points at both | `7ecebbe5` v2.3.1 |
 | 2026-08-26 | Reseller API: `POST /api/v2` in the SMM convention, one order path for web and API (`createOrderForSession`, `patchOrderForSession`, `refillOrderForSession`), curated vs full decided by the key, 584 missing IDs minted (map now 9,806) | `34177d29` v2.3 |
 | 2026-08-26 | Backlog starvation in outreach: priority touches are budget-aware, Backlog keeps a floor of 15 | `bfdd3aca` v2.2.36 |
 | 2026-08-26 | Failed deposits: 373/30d were abandoned checkouts (`provider_not_found`), now read "Not completed"; real rejections stay red | `8973164e` v2.2.37 |

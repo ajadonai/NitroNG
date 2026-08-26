@@ -259,6 +259,10 @@ export default function ResellerCataloguePage({ dark, t }) {
           Browse and copy service IDs. Order curated services from New Order, or anything here through the API.
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
+        <div className="flex items-center gap-2.5 mt-3 py-2 px-3 rounded-xl text-[12px]" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", border: "1px solid rgba(196,125,142,.3)", color: t.textSoft }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c47d8e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true"><path d="m21 2-2 2m-7.6 7.6a5.5 5.5 0 11-7.8 7.8 5.5 5.5 0 017.8-7.8zm0 0L19 3l2 2-3 3"/></svg>
+          <span>Ordering by API? Your key is in <b style={{ color: t.text }}>Settings</b>, the base URL is <b className="m" style={{ color: t.text }}>nitro.ng/api/v2</b>, and the <a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="font-semibold text-accent">docs</a> cover all six actions.</span>
+        </div>
       </div>
 
       {/* Mobile only: the legend as a collapsible, like "How Our Services Work"
