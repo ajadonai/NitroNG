@@ -289,7 +289,7 @@ const CSS = `
 .pl-list header,.pl-month header,.pl-bar header{display:flex;justify-content:space-between;align-items:baseline;padding:10px 14px 8px;border-bottom:1px solid var(--hair)}
 .pl-list h3,.pl-month h3,.pl-bar h3{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mu);font-weight:600}.pl-cnt{font-size:11px;color:var(--dim)}
 .pl-row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid var(--hair);font-size:12.5px;min-width:0}.pl-row:first-child{border-top:0}
-.pl-t{color:var(--dim);font-size:11px;width:28px;flex-shrink:0}.pl-who{font-weight:600;width:74px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-t{color:var(--dim);font-size:11px;width:28px;flex-shrink:0}.pl-who{font-weight:600;flex:0 0 auto;white-space:nowrap}
 .pl-what{flex:1;min-width:0;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pl-what em{display:block;font-style:normal;font-size:11px;color:var(--dim)}
 .pl-amt{flex-shrink:0;font-weight:600;font-size:12px}.pl-in{color:var(--ok)}.pl-out{color:var(--bad)}
 .pl-two{align-items:flex-start}.pl-two .pl-t,.pl-two .pl-who{padding-top:2px}
@@ -311,6 +311,6 @@ const CSS = `
   .pl-mid{grid-template-columns:1fr;flex:none}.pl-list{flex:none}.pl-rows{overflow:visible}
   .pl-bot{grid-template-columns:1fr}
   .pl-mfs{grid-template-columns:1fr 1fr}.pl-mf{border-left:0}.pl-mf:nth-child(even){border-left:1px solid var(--hair)}.pl-mf:nth-child(n+3){border-top:1px solid var(--hair)}
-  .pl-bars{grid-template-rows:none}.pl-who{width:64px}
+  .pl-bars{grid-template-rows:none}
 }
 `;
