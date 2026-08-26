@@ -68,7 +68,7 @@ export async function GET(req) {
     } : null;
 
     const include = {
-      user: { select: { name: true, email: true, phone: true, resellerProfile: { select: { id: true } } } },
+      user: { select: { name: true, email: true, phone: true, resellerProfile: { select: { enabled: true } } } },
       service: { select: { name: true, category: true, provider: true, apiId: true, costPer1k: true, enabled: true } },
       tier: { select: { tier: true, sellPer1k: true, enabled: true, serviceId: true, group: { select: { name: true, platform: true, type: true, enabled: true } }, service: { select: { apiId: true, costPer1k: true } } } },
       dripDispatches: { select: { id: true, day: true, batch: true, quantity: true, status: true, apiOrderId: true, scheduledAt: true, dispatchedAt: true, completedAt: true, lastError: true }, orderBy: { scheduledAt: 'asc' } },
@@ -166,7 +166,8 @@ export async function GET(req) {
         internalId: o.id,
         userId: o.userId,
         user: o.user?.name || 'Unknown',
-        isReseller: !!o.user?.resellerProfile,
+        isReseller: !!o.user?.resellerProfile?.enabled,
+        source: o.source || 'web',
         email: sensitive ? (o.user?.email || '') : maskEmail(o.user?.email),
         phone: sensitive ? (o.user?.phone || null) : maskPhone(o.user?.phone),
         service: offer.serviceName,

@@ -5,10 +5,6 @@ never gets picked up twice. Update this in the same commit as the work.
 
 ## Open
 
-- **Admin side, compact and clean** — same row-and-heading language as the
-  customer dashboard: admin sidebar sections with separators, Reseller HQ
-  ("Full providers" labels, analytics tiles), admin Tasks review queue, Users
-  list (show the Reseller chip there too).
 - **Reseller API follow-ups** (v2 of the API, not started): drip-feed and
   multi-day parameters, webhooks, per-key IP allowlists. Brief:
   `docs/v2/reseller_api_brief.md`.
@@ -26,6 +22,12 @@ never gets picked up twice. Update this in the same commit as the work.
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-08-27 | Admin side, compact and clean — every named piece is in place: sidebar sections with separators (`admin-dashboard.jsx`), reseller programme tiles including "On full catalogue" (`admin-resellers.jsx`), the Tasks submissions review queue with approve/reject (`admin-tasks.jsx`), the Users-list chip. Nothing further is specified; reopen with a named page if one still reads wrong | verified, `20cd8c59` |
+| 2026-08-26 | Reseller and API chips on admin orders and the users list, `Placed from` on the order facts; disabled profiles no longer count as resellers; changelog entry for the API launch | `20cd8c59` v2.4.5 |
+| 2026-08-26 | Six Sentry issues: Meta CAPI retry and classification, registration through the outbox, clipboard never throws, Prisma read retry, Redis outages are warnings | `7a7f85dd` v2.4.4 |
+| 2026-08-26 | Pulse and Live rebuilt: full viewport, fullscreen, people first, today's figures on their own day lines | `d81f7de1`, `8342a73d` v2.4.2–3 |
+| 2026-08-26 | Outreach paused with a switch every outreach cron honours (Admin → Outreach) | `ce5fea5a` v2.4.1 |
+| 2026-08-26 | Reseller API carries instructions: `description` and standard `type` on every service, `add` accepts comment lists and traffic targeting | `9acf854a`, `97039c60` v2.4 |
 | 2026-08-26 | Reseller API carries instructions: `description` (group note, Discord bot setup with the live link, traffic and comment parameters) and a standard `type` on every service; `add` accepts comments/usernames/keywords and traffic targeting | v2.4 |
 | 2026-08-26 | API keys for every verified account at retail; wholesale by approval on the same key; HQ tab in the nav for everyone | `27001ab9` v2.3.2 |
 | 2026-08-26 | Reseller HQ merged with the public resellers page: one component in two states, no child panel; key in HQ and Settings (`/api/reseller/key`, read + rotate); docs at `/resellers/docs`; catalogue points at both | `b0d4a6a3` v2.3.1 |
