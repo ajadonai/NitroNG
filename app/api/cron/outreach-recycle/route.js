@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { STAMP_FIELD } from '@/lib/outreach-pool';
 import { CALLBACK_MAX_ATTEMPTS } from '@/lib/outreach-time';
+import { isOutreachPaused } from '@/lib/outreach-pause';
 
 export const maxDuration = 60;
 
@@ -26,6 +27,7 @@ export async function GET(req) {
   if (!secret || (token !== secret && authHeader !== `Bearer ${secret}`)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  if (await isOutreachPaused()) return Response.json({ ok: true, paused: true });
 
   const cutoff = new Date(Date.now() - GRACE_DAYS * 86400000);
   const results = {};

@@ -16,7 +16,9 @@ never gets picked up twice. Update this in the same commit as the work.
   `firstSeenNewOrderAt` data (from 26 Aug 2026), rerun the funnel and see where
   the 74% who never pay actually stop.
 - **Outreach re-engagement** — the ~2,000 signups a month who never start a
-  payment. Trip: outreach handles this from next month.
+  payment. **Paused (26 Aug 2026): no staff.** The whole outreach machine is
+  off via Admin → Outreach → Pause (`outreach_paused` setting); resume there
+  when there is a team again, then pick this up.
 - **Cohort / ops** — anything the nightly cohort check surfaces (see the
   protected routes in CLAUDE.md).
 

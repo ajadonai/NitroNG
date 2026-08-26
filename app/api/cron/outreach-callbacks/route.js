@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { tgOutreachCallback } from '@/lib/telegram';
 import { nextWorkingMorning, watWhen, CALLBACK_MAX_ATTEMPTS } from '@/lib/outreach-time';
+import { isOutreachPaused } from '@/lib/outreach-pause';
 
 export const maxDuration = 60;
 
@@ -20,6 +21,7 @@ export async function GET(req) {
   if (!secret || (token !== secret && authHeader !== `Bearer ${secret}`)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  if (await isOutreachPaused()) return Response.json({ ok: true, paused: true });
 
   try {
     // Covers both an explicit "Call back" and the automatic retry set on no answer.
