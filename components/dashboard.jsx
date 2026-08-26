@@ -1255,6 +1255,7 @@ function DashboardInner({ initialData }) {
                 const specialClr = isSupportItem ? "#25d366" : isTasksItem ? (dark ? "#fbbf24" : "#d97706") : null;
                 return (
                   <Fragment key={item.id}>
+                    {item.first && i > 0 && <div className="h-px my-1 mx-3 bg-t-sidebar-border" />}
                     {item.first && <div className="dash-nav-eyebrow text-t-text-muted">{item.section}</div>}
                     <button data-nav={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (isSupportItem && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setLeftOpen(false); return; } setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: isActive ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : specialClr ? (dark ? `${specialClr}1e` : `${specialClr}14`) : "transparent", color: item.soon ? t.textMuted : (isActive ? t.accent : specialClr || t.textSoft), fontWeight: isActive || specialClr ? 600 : 450, opacity: item.soon ? 0.5 : 1, cursor: item.soon ? "default" : "pointer" }}>
                       <span className="shrink-0" style={{ opacity: isActive || specialClr ? 1 : .55, color: isActive ? (specialClr || t.accent) : specialClr || t.textMuted }}>{I[item.id]}</span>

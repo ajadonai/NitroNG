@@ -35,8 +35,8 @@ describe('order offer snapshot entrypoints', () => {
     expect(code).toContain('o.tierLabel');
     expect(code).toContain('o.offerDisabled');
     expect(code).toContain('>Disabled</span>');
-    expect(code).toContain('Provider</div>');
-    expect(code).toContain('Service ID</div>');
+    expect(code).toContain('["Provider", ');
+    expect(code).toContain('["Service ID", ');
   });
 
   it('masks the legacy direct-service catalogue endpoint', () => {

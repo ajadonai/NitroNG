@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Fragment } from "react";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
@@ -121,6 +121,43 @@ function txDesc(tx) {
   if (tx.type === "referral") return "Referral commission";
   if (tx.type === "admin_credit" || tx.type === "admin_gift") return (tx.description || "Credited by Nitro Team").replace(/\s*\[[^\]]+\]\s*/g, " ").trim();
   return tx.reference || "";
+}
+
+
+/** Today / Yesterday / "6 Aug" — the label a row sits under in the list. */
+function dayKey(iso) {
+  if (!iso) return null;
+  const d = new Date(iso); if (Number.isNaN(d.getTime())) return null;
+  const now = new Date();
+  const same = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  if (same(d, now)) return "Today";
+  const y = new Date(now); y.setDate(now.getDate() - 1);
+  if (same(d, y)) return "Yesterday";
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+function DayLabel({ label, dark }) {
+  return <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-3.5 pt-3 pb-1 text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)" }}>{label}</div>;
+}
+
+/** The summary as rows: label left, value right. Used by the header dropdown and the sidebar. */
+function SummaryRows({ orderSummary, dark, t }) {
+  const rows = [
+    ["Total orders", String(orderSummary?.total ?? 0), null],
+    ["Delivering now", String(orderSummary?.active || 0), dark ? "#a5b4fc" : "#4f46e5"],
+    (orderSummary?.attention || 0) > 0 ? ["Needs attention", String(orderSummary.attention), dark ? "#fdba74" : "#c2410c"] : null,
+    ["Completed", String(orderSummary?.completed || 0), dark ? "#6ee7b7" : "#059669"],
+    ["Total spent", fN(orderSummary?.spent || 0), t.accent],
+  ].filter(Boolean);
+  return (
+    <div>
+      {rows.map(([label, val, color], i) => (
+        <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-soft" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
+          <span className="flex items-center gap-2">{label === "Delivering now" && Number(val) > 0 && <span className="w-[7px] h-[7px] rounded-full animate-pulse" style={{ background: "#4f46e5" }} />}{label}</span>
+          <b className="m text-[15px] font-semibold" style={{ color: color || t.text }}>{val}</b>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function Badge({ status, dark }) {
@@ -249,9 +286,9 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
   const py = compact ? "py-3 px-3 desktop:py-3.5 desktop:px-4" : "py-3.5 px-3.5 desktop:py-4 desktop:px-[18px]";
   const waMessage = encodeURIComponent(`Hi *Nitro*, I need help with my order:\n\n*Order:* ${o.id}\n*Service:* ${o.service}${o.tier ? ' (' + o.tier + ')' : ''}\n*Quantity:* ${qty.toLocaleString()}\n*Delivered:* ${delivered.toLocaleString()} / ${qty.toLocaleString()}\n*Status:* ${o.status}\n*Date:* ${fD(o.created, true)}`);
   const reportIssueButton = waNum ? (
-    <a href={`https://wa.me/${waNum}?text=${waMessage}`} target="_blank" rel="noopener noreferrer" className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer no-underline border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(37,211,102,.12)" : "rgba(37,211,102,.07)", color: "#25d366" }}>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-      Get Help
+    <a href={`https://wa.me/${waNum}?text=${waMessage}`} target="_blank" rel="noopener noreferrer" className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer no-underline border-none rounded-lg py-1.5 px-3 text-white" style={{ background: "#25d366" }}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.14-.13.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.1 4.49.71.3 1.27.49 1.7.63.72.23 1.37.2 1.88.12.58-.09 1.76-.72 2-1.42.25-.7.25-1.3.18-1.42-.08-.13-.28-.2-.58-.35zM12.05 21.8h-.01a9.87 9.87 0 01-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.85 9.85 0 01-1.51-5.26c0-5.45 4.44-9.88 9.9-9.88a9.83 9.83 0 016.99 2.9 9.82 9.82 0 012.9 7c0 5.45-4.45 9.87-9.9 9.87z"/></svg>
+      Get help
     </a>
   ) : null;
 
@@ -410,24 +447,22 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         </div>);
       })()}
 
-      {/* Info grid */}
-      <div className="grid grid-cols-2 desktop:grid-cols-4 gap-2 mb-3">
-        <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-          <div className="text-[11px] uppercase tracking-[1px] mb-1 text-t-text-muted">Order No</div>
-          <CopyId value={o.id} dark={dark} />
-        </div>
-        <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-          <div className="text-[11px] uppercase tracking-[1px] mb-1 text-t-text-muted">Status</div>
-          <Badge status={isQueued ? "Queued" : o.status} dark={dark} />
-        </div>
-        <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-          <div className="text-[11px] uppercase tracking-[1px] mb-1 text-t-text-muted">{o.status === "Cancelled" ? "Refunded" : "Charge"}</div>
-          <div className="m text-sm font-semibold" style={{ color: o.status === "Cancelled" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{o.status === "Cancelled" ? "+" : "-"}{fN(o.charge)}</div>
-        </div>
-        <div className="py-2 px-2.5 rounded-lg text-center" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-          <div className="text-[11px] uppercase tracking-[1px] mb-1 text-t-text-muted">Start Count</div>
-          <div className="m text-sm font-semibold" style={{ color: o.startCount != null ? t.text : t.textMuted }}>{o.startCount != null ? o.startCount.toLocaleString() : "—"}</div>
-        </div>
+      {/* Facts, as rows */}
+      <div className="rounded-xl mb-3 px-3" style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.07)"}` }}>
+        {[
+          ["Order ID", <CopyId key="id" value={o.id} dark={dark} />],
+          isCancelled ? ["Quantity", <b key="q" className="m text-[13px] font-semibold text-t-text">{qty.toLocaleString()}</b>]
+            : (hasData && !isComplete) ? ["Delivered", <span key="d" className="m text-[13px] text-t-text-muted"><b className="font-semibold text-t-text">{delivered.toLocaleString()}</b> of {qty.toLocaleString()}</span>]
+            : ["Quantity", <b key="q" className="m text-[13px] font-semibold text-t-text">{qty.toLocaleString()}</b>],
+          [isCancelled ? "Refunded" : "Charge", <b key="c" className="m text-[13px] font-semibold" style={{ color: isCancelled ? (dark ? "#6ee7b7" : "#059669") : t.text }}>{fN(o.charge)}</b>],
+          ["Start count", o.startCount != null ? <b key="s" className="m text-[13px] font-semibold text-t-text">{o.startCount.toLocaleString()}</b> : <span key="s" className="text-[12.5px] text-t-text-muted">Not yet</span>],
+          o.link ? ["Link", <a key="l" href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="text-[12.5px] font-medium no-underline truncate max-w-[200px] desktop:max-w-[420px] text-t-text-soft">{o.link.replace(/^https?:\/\/(www\.)?/, "")}</a>] : null,
+        ].filter(Boolean).map(([label, val], i) => (
+          <div key={label} className="flex items-center justify-between gap-3 py-2 text-[12.5px] text-t-text-muted" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
+            <span>{label}</span>
+            <span className="flex items-center gap-1.5 min-w-0">{val}</span>
+          </div>
+        ))}
       </div>
 
       {/* Actions */}
@@ -581,7 +616,16 @@ function Pagination({ total, page, setPage, perPage, setPerPage, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ ORDERS PAGE                         ═══ */
 /* ═══════════════════════════════════════════ */
-export default function OrdersPage({ orders: initialOrders, initialTotal = initialOrders.length, txs, dark, t, onNavigate, onRefresh, waNum, email }) {
+export default function OrdersPage({ orders: initialOrders, initialTotal = initialOrders.length, orderSummary, txs, dark, t, onNavigate, onRefresh, waNum, email }) {
+  const [sumOpen, setSumOpen] = useState(false);
+  const sumRef = useRef(null);
+  useEffect(() => {
+    if (!sumOpen) return;
+    const onDown = (e) => { if (sumRef.current && !sumRef.current.contains(e.target)) setSumOpen(false); };
+    const onKey = (e) => { if (e.key === "Escape") setSumOpen(false); };
+    document.addEventListener("mousedown", onDown); document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [sumOpen]);
   const initialTotalCount = Number.isFinite(initialTotal) ? initialTotal : initialOrders.length;
   const confirm = useConfirm();
   const [orders, setOrders] = useState(initialOrders);
@@ -744,10 +788,22 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
     <>
       {/* Header */}
       <div className="pb-2 desktop:pb-3">
-        <div className="adm-header-row">
+        <div className="flex justify-between items-start gap-3">
           <div>
             <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">Orders</div>
             <div className="text-sm desktop:text-[15px] text-t-text-muted">Track delivery, refunds, and reorders</div>
+          </div>
+          {/* Summary, closed until asked for */}
+          <div ref={sumRef} className="relative shrink-0">
+            <button onClick={() => setSumOpen(v => !v)} aria-expanded={sumOpen} aria-controls="orders-summary" className="flex items-center gap-1.5 h-9 px-3 rounded-xl cursor-pointer text-[12.5px] font-medium text-t-text-soft" style={{ background: dark ? "rgba(255,255,255,.06)" : "#fff", border: `1px solid ${t.cardBorder}` }}>
+              Summary
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: sumOpen ? "rotate(180deg)" : "none", transition: "transform .2s" }}><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            {sumOpen && (
+              <div id="orders-summary" className="absolute right-0 top-11 z-20 w-[250px] rounded-2xl px-3.5 py-1" style={{ background: dark ? "#161b2e" : "#fff", border: `1px solid ${t.cardBorder}`, boxShadow: "0 18px 44px rgba(0,0,0,.18)" }}>
+                <SummaryRows orderSummary={orderSummary} dark={dark} t={t} />
+              </div>
+            )}
           </div>
         </div>
         <div className="page-divider bg-t-card-border" />
@@ -778,26 +834,27 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
         </div>
       )}
 
-      {/* Delivery notice — mobile (sidebar handles desktop) */}
-      {orders.some(o => o.status === "Processing" || o.status === "Pending") && (
-        <div className="desktop:hidden flex gap-2.5 items-start rounded-xl px-3.5 py-3 mb-3" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(251,191,36,.1)", border: `1px solid ${dark ? "rgba(251,191,36,.2)" : "rgba(217,119,6,.18)"}` }}>
-          <span className="text-base leading-none mt-px shrink-0">⏱</span>
-          <div className="text-[11px] leading-[1.55]" style={{ color: dark ? "#fbbf24" : "#92400e" }}>
-            <span className="font-semibold">Delivery: 0–6 hrs</span> (up to 24 hrs in some cases). We cannot act on speed requests within the first 6 hours.
-          </div>
+      {/* Delivery note — mobile, one line, only while something is running */}
+      {(() => { const n = orders.filter(o => o.status === "Processing" || o.status === "Pending").length; return n > 0 && (
+        <div className="desktop:hidden flex items-center gap-2 mb-2.5 px-0.5 text-[12px] text-t-text-muted">
+          <span className="w-[7px] h-[7px] rounded-full animate-pulse shrink-0" style={{ background: "#4f46e5" }} />
+          {n} order{n === 1 ? "" : "s"} delivering<span className="opacity-50">·</span>usually 0–6 hrs, up to 24
         </div>
-      )}
+      ); })()}
 
       {/* Order list */}
       <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
         {pagedGroups.length > 0 ? pagedGroups.map((item, i) => {
+          const createdOf = (g) => g ? (g.type === "batch" ? g.orders[0]?.created : g.order.created) : null;
+          const dk = dayKey(createdOf(item));
+          const dayLabel = dk && dk !== dayKey(createdOf(pagedGroups[i - 1])) ? <DayLabel label={dk} dark={dark} /> : null;
           if (item.type === "batch") {
-            return <BatchRow key={item.batchId} batch={item} dark={dark} t={t} expanded={expandedBatch === item.batchId} onToggle={(id) => { setExpandedBatch(expandedBatch === id ? null : id); setExpandedBatchOrder(null); setExpanded(null); }} expandedOrder={expandedBatchOrder} setExpandedOrder={setExpandedBatchOrder} doAction={doAction} actionLoading={actionLoading} doBatchAction={doBatchAction} batchActionLoading={batchActionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={setViewComments} doRefill={doRefill} refillLoading={refillLoading} />;
+            return <Fragment key={item.batchId}>{dayLabel}<BatchRow batch={item} dark={dark} t={t} expanded={expandedBatch === item.batchId} onToggle={(id) => { setExpandedBatch(expandedBatch === id ? null : id); setExpandedBatchOrder(null); setExpanded(null); }} expandedOrder={expandedBatchOrder} setExpandedOrder={setExpandedBatchOrder} doAction={doAction} actionLoading={actionLoading} doBatchAction={doBatchAction} batchActionLoading={batchActionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={setViewComments} doRefill={doRefill} refillLoading={refillLoading} /></Fragment>;
           }
           const o = item.order;
           const attn = isAttention(o);
           return (
-            <div key={o.id}>
+            <div key={o.id}>{dayLabel}
               <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => { setExpanded(expanded === o.id ? null : o.id); setExpandedBatch(null); setExpandedBatchOrder(null); }} className="flex items-center py-3 px-3.5 desktop:py-3.5 desktop:px-[18px] cursor-pointer gap-3 desktop:gap-4 transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.06)]" style={{ borderBottom: (i < pagedGroups.length - 1 || expanded === o.id) ? `1px solid ${t.cardBorder}` : "none", ...(attn && { borderLeft: `3px solid ${dark ? "#fbbf24" : "#d97706"}` }) }}>
                 <div className="shrink-0 flex items-center justify-center rounded-xl" style={{ width: 42, height: 42, background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                   <PlatformIcon platform={o.platform} dark={dark} size={26} />
@@ -873,20 +930,9 @@ export function OrdersSidebar({ orders, orderSummary, dark, t }) {
   return (
     <div className="flex flex-col gap-0">
       <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Order Summary</div>
-      <div className="grid grid-cols-2 gap-1.5 mb-3">
-        {[
-          ["Total", String(totalOrders), dark ? "#a5b4fc" : "#4f46e5"],
-          ["Active", String(activeCount), dark ? "#fcd34d" : "#d97706"],
-          ["Completed", String(completedCount), dark ? "#6ee7b7" : "#059669"],
-          ["Spent", fN(totalSpent), t.accent],
-        ].map(([label, val, color]) => (
-          <div key={label} className="p-3 rounded-[10px] bg-t-card-bg">
-            <div className="text-xs uppercase tracking-[0.5px] mb-1 text-t-text-muted">{label}</div>
-            <div className="text-base font-semibold" style={{ color }}>{val}</div>
-          </div>
-        ))}
+      <div className="rounded-xl mb-3 px-3" style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.07)"}` }}>
+        <SummaryRows orderSummary={orderSummary} dark={dark} t={t} />
       </div>
-
       {activeCount > 0 && (
         <div className="flex gap-2.5 items-start rounded-xl px-3.5 py-3 mb-3" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(251,191,36,.1)", border: `1px solid ${dark ? "rgba(251,191,36,.2)" : "rgba(217,119,6,.18)"}` }}>
           <span className="text-base leading-none mt-px shrink-0">⏱</span>
