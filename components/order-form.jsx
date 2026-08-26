@@ -18,7 +18,18 @@ const TRAFFIC_TYPES = [
   { value: 'blank', label: 'Blank Referrer' },
 ];
 
-export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible, pointsRedeemable = false, pointsBalance = 0, redeemPoints = false, setRedeemPoints, trafficConfig, setTrafficConfig, tierStyles = {}, socialLinks = {} }) {
+/** Five round numbers between min and max, for the quantity presets. */
+function presetsFor(min, max) {
+  const nice = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
+  const pool = nice.filter(v => v >= min && v <= max);
+  if (!pool.length || pool[0] !== min) pool.unshift(min);
+  if (pool[pool.length - 1] !== max) pool.push(max);
+  if (pool.length <= 5) return pool;
+  const step = (pool.length - 1) / 4;
+  return [0, 1, 2, 3, 4].map(i => pool[Math.round(i * step)]);
+}
+
+export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, inline, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible, pointsRedeemable = false, pointsBalance = 0, redeemPoints = false, setRedeemPoints, trafficConfig, setTrafficConfig, tierStyles = {}, socialLinks = {} }) {
   const minQty = selTier?.min || 100;
   const maxQty = selTier?.max || 50000;
   const isPackage = minQty === maxQty;
@@ -121,36 +132,17 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
 
   return (
-    <div>
-      {/* ── Service header card ── */}
-      <div className="p-5 pb-4 max-md:p-3.5 max-md:pb-3 rounded-t-[14px] desktop:rounded-t-2xl" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderBottom: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.12)"}` }}>
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <div className="text-[18px] font-semibold max-md:text-base" style={{ color: t.text }}>{selSvc?.name}</div>
-          {onClose && <button onClick={onClose} className="bg-transparent border border-solid rounded-lg w-7 h-7 flex items-center justify-center cursor-pointer shrink-0" style={{ borderColor: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)", color: t.textSoft }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
+    <div className="relative">
+      {!inline && (
+      <div className="flex items-center gap-3 px-4 pt-4 pb-3 max-md:px-3.5" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
+        <div className="md:hidden absolute left-1/2 -translate-x-1/2 top-2 w-[38px] h-1 rounded-sm" style={{ background: "rgba(127,127,127,.35)" }} />
+        <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+          <div className="text-[15px] font-semibold truncate" style={{ color: t.text }}>{selSvc?.name}</div>
+          {s && <span className="inline-flex items-center gap-1.5 self-start rounded-full py-[3px] pl-1.5 pr-2.5 text-[11px] font-semibold border border-solid" style={{ background: dark ? s.bgD : s.bg, borderColor: dark ? s.borderD : s.border, color: s.text }}><span className="w-[14px] h-[14px] rounded-full flex items-center justify-center text-white" style={{ background: s.grad }}>{s.label}</span>{selTier.tier}</span>}
         </div>
-        {s && <div className="flex items-center gap-1.5 flex-wrap">
-          <div className="inline-flex items-center gap-0 rounded-lg overflow-hidden" style={{ border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
-            <span className="inline-flex items-center gap-1 font-semibold py-1 px-2.5 text-[11px]" style={{ background: dark ? s.bgD : s.bg, color: s.text }}>{s.label} {selTier.tier}</span>
-            <span className="py-1 px-2.5 text-[11px] font-semibold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace", background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }}>₦{selTier.price.toLocaleString()}</span>
-          </div>
-          {selTier.tier === "Budget" ? (
-            <span className="inline-flex items-center gap-1 text-[11px] py-[3px] px-2 rounded-md" style={{ background: dark ? "rgba(239,68,68,.08)" : "rgba(239,68,68,.06)", color: dark ? "#fca5a5" : "#dc2626" }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              No refill
-            </span>
-          ) : selTier.tier === "Standard" ? (
-            <span className="inline-flex items-center gap-1 text-[11px] py-[3px] px-2 rounded-md" style={{ background: dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.06)", color: dark ? "#6ee7b7" : "#059669" }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              30-day refill
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-[11px] py-[3px] px-2 rounded-md" style={{ background: dark ? "rgba(167,139,250,.08)" : "rgba(167,139,250,.06)", color: dark ? "#c4b5fd" : "#7c3aed" }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
-              Lifetime refill
-            </span>
-          )}
-        </div>}
+        {onClose && <button onClick={onClose} aria-label="Close" className="bg-transparent border border-solid rounded-[10px] w-8 h-8 flex items-center justify-center cursor-pointer shrink-0" style={{ borderColor: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)", color: t.textSoft }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>}
       </div>
+      )}
 
       {/* ── Package note (verified comments etc.) ── */}
       {selTier && isPackage && selSvc?.type === "verified-comments" && (
@@ -213,7 +205,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
       })()}
 
       {/* ── Form fields ── */}
-      <div className="p-5 max-md:p-3.5">
+      <div className={inline ? "p-3.5 pt-3" : "p-5 max-md:p-3.5"}>
       {selTier && <>
         {dripStep === 1 ? (<>
         <div className="mb-3" data-tour="no-link-input">
@@ -322,57 +314,57 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>{(comments || "").split("\n").filter(l => l.trim()).length || 0} keywords entered</div>
           </div>
         )}
-        <div className="mb-3">
-          <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>Quantity</label>
+        <div className="mb-3 pt-3 border-t border-solid" style={{ borderColor: t.cardBorder }}>
+          <div className="flex items-baseline justify-between gap-2 mb-[6px]">
+            <label className="text-[11px] tracking-[0.5px] uppercase font-semibold" style={{ color: t.textMuted }}>Quantity</label>
+            {!isPackage && <span className="text-[11px]" style={{ color: t.textMuted }}>min {formatOrderQuantity(minQty)} · max {formatOrderQuantity(maxQty)}</span>}
+          </div>
           <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${qtyOutOfRange ? (dark ? "rgba(220,38,38,.4)" : "rgba(220,38,38,.38)") : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)")}`, background: dark ? "#131728" : "#fff" }}>
             <input type="number" aria-label="Quantity" disabled={orderLoading || isPackage} value={qty} onChange={e => setQty(e.target.value === "" ? "" : e.target.value)} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
-            {!isPackage && <span className="inline-flex items-center px-3 text-[11px] font-semibold shrink-0 select-none whitespace-nowrap" style={{ borderLeft: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>max<br/>{formatOrderQuantity(maxQty)}</span>}
             {isPackage && <span className="inline-flex items-center px-3 text-[11px] font-semibold shrink-0 select-none whitespace-nowrap" style={{ borderLeft: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>fixed</span>}
           </div>
           {qtyOutOfRange && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{qtyNum < minQty ? `Minimum: ${minQty.toLocaleString()}` : `Maximum: ${maxQty.toLocaleString()}`}</div>}
+          {!isPackage && (
+            <div className="flex gap-1.5 mt-2">
+              {presetsFor(minQty, maxQty).map(v => (
+                <button key={v} type="button" disabled={orderLoading} onClick={() => setQty(String(v))} className="flex-1 h-[30px] rounded-full text-[12px] font-semibold cursor-pointer font-[inherit] border border-solid" style={qtyNum === v ? { background: t.text, color: dark ? "#0b0e1a" : "#fff", borderColor: t.text } : { background: "transparent", color: t.textSoft, borderColor: t.cardBorder }}>{formatOrderQuantity(v)}</button>
+              ))}
+            </div>
+          )}
         </div>
-          {showMultiDay && (<>
-          <div className="rounded-xl mb-3 flex items-center gap-[10px] py-2.5 px-3 cursor-pointer select-none" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.12)"}`, WebkitTapHighlightColor: "transparent" }} onClick={() => setDripOn(v => !v)}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dripOn ? (dark ? "#4ade80" : "#16a34a") : (dark ? "#6e6a65" : "#918b85")} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            </svg>
-            <div className="flex-1">
-              <div className="text-[13px] font-semibold" style={{ color: dark ? "#a09b95" : "#555250" }}>Gradual delivery</div>
-              <div className="text-[11px]" style={{ color: dark ? "#6e6a65" : "#918b85", marginTop: 1 }}>Spread across multiple days for safety</div>
+          {(showMultiDay || (pointsRedeemable && priceBeforePoints > 0)) && (
+          <div className="rounded-xl mb-3 border border-solid overflow-hidden" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.04)" : "#fff" }}>
+            {showMultiDay && (
+            <div className="flex items-center gap-[10px] py-2.5 px-3 cursor-pointer select-none" onClick={() => setDripOn(!dripOn)}>
+              <div className="relative w-10 h-[22px] shrink-0" aria-hidden="true">
+                <div className="absolute inset-0 rounded-[11px] transition-colors duration-200" style={{ background: dripOn ? "#25d366" : (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.15)") }} />
+                <div className="absolute top-[2px] w-[18px] h-[18px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.2)] transition-[left] duration-200" style={{ left: dripOn ? 20 : 2 }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-semibold" style={{ color: t.text }}>Gradual delivery</div>
+                <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{dripOn ? "Spread across days, looks natural" : "Large delivery may flag the target account"}</div>
+              </div>
             </div>
-            <div className="relative w-10 h-[22px] shrink-0" aria-hidden="true">
-              <div className="absolute inset-0 rounded-[11px] transition-colors duration-200" style={{ background: dripOn ? "#c47d8e" : (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.15)") }} />
-              <div className="absolute top-[2px] w-[18px] h-[18px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.2)] transition-[left] duration-200" style={{ left: dripOn ? 20 : 2 }} />
+            )}
+            {pointsRedeemable && priceBeforePoints > 0 && (
+            <div className="flex items-center gap-[10px] py-2.5 px-3 cursor-pointer select-none" onClick={() => setRedeemPoints(!redeemPoints)} style={showMultiDay ? { borderTop: `1px solid ${t.cardBorder}` } : undefined}>
+              <div className="relative w-10 h-[22px] shrink-0" aria-hidden="true">
+                <div className="absolute inset-0 rounded-[11px] transition-colors duration-200" style={{ background: redeemPoints ? "#25d366" : (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.15)") }} />
+                <div className="absolute top-[2px] w-[18px] h-[18px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.2)] transition-[left] duration-200" style={{ left: redeemPoints ? 20 : 2 }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-semibold" style={{ color: t.text }}>Use Nitro Points</div>
+                <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{pointsBalance.toLocaleString()} pts available · saves ₦{Math.min(pointsBalance, priceBeforePoints).toLocaleString()}</div>
+              </div>
             </div>
+            )}
           </div>
-          {!dripOn && <div className="flex items-center justify-center gap-1.5 -mt-1.5 mb-3 text-[11px]" style={{ color: dark ? "#fcd34d" : "#b45309" }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            Large delivery may flag the target account
-          </div>}
-          </>)}
-        {pointsRedeemable && priceBeforePoints > 0 && (
-          <div className="flex items-center justify-between gap-3 rounded-[10px] p-2.5 mb-2 border border-solid cursor-pointer select-none" onClick={() => setRedeemPoints(!redeemPoints)} style={{ background: redeemPoints ? (dark ? "rgba(251,191,36,.08)" : "rgba(251,191,36,.07)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)"), borderColor: redeemPoints ? (dark ? "rgba(251,191,36,.25)" : "rgba(251,191,36,.35)") : t.cardBorder }}>
-            <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-semibold" style={{ color: redeemPoints ? (dark ? "#fbbf24" : "#92400e") : t.text }}>Use Nitro Points</div>
-              <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{pointsBalance.toLocaleString()} pts available · saves ₦{Math.min(pointsBalance, priceBeforePoints).toLocaleString()}</div>
-            </div>
-            <div className="relative w-10 h-[22px] shrink-0" aria-hidden="true">
-              <div className="absolute inset-0 rounded-[11px] transition-colors duration-200" style={{ background: redeemPoints ? "#fbbf24" : (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.15)") }} />
-              <div className="absolute top-[2px] w-[18px] h-[18px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.2)] transition-[left] duration-200" style={{ left: redeemPoints ? 20 : 2 }} />
-            </div>
-          </div>
-        )}
-        <div className="rounded-[10px] p-2.5 mb-3 border border-solid" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", borderColor: t.cardBorder }}>
-          {discountAmount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}><span>Nitro Status discount ({loyaltyDiscount}%)</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11 }}>-₦{discountAmount.toLocaleString()}</span></div>}
-          {cappedPromoDiscount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#f9a8d4" : "#be185d" }}><span>Discount ({activePromotion.discountPercent}%){cappedPromoDiscount < promoDiscountAmt ? ` · capped at ₦${cappedPromoDiscount.toLocaleString()}` : ''}</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11 }}>-₦{cappedPromoDiscount.toLocaleString()}</span></div>}
-          {pointsDiscount > 0 && <div className="flex justify-between mb-1 text-[13px]" style={{ color: dark ? "#fbbf24" : "#92400e" }}><span>Nitro Points</span><span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11 }}>-₦{pointsDiscount.toLocaleString()}</span></div>}
-          <div className={`flex justify-between items-baseline${(discountAmount > 0 || cappedPromoDiscount > 0 || pointsDiscount > 0) ? " border-t border-solid pt-2 mt-1" : ""}`} style={(discountAmount > 0 || cappedPromoDiscount > 0 || pointsDiscount > 0) ? { borderColor: t.cardBorder } : undefined}>
-            <span className="text-[13px] font-semibold" style={{ color: t.textMuted }}>Total</span>
-            <span className="font-bold text-[18px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>{(discountAmount > 0 || cappedPromoDiscount > 0 || pointsDiscount > 0) && <span className="text-[13px] font-normal line-through mr-1.5" style={{ color: t.textMuted }}>₦{basePrice.toLocaleString()}</span>}₦{price.toLocaleString()}</span>
-          </div>
-        </div>
-          {balance != null && qtyNum > 0 && price > balance ? (
-            welcomeBonusEligible ? (
+          )}
+        {(() => {
+          const short = balance != null && qtyNum > 0 && price > balance;
+          const hasCut = discountAmount > 0 || cappedPromoDiscount > 0 || pointsDiscount > 0;
+          return (<>
+          {short && welcomeBonusEligible && (
             <div className="rounded-xl p-3.5" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.18)" : "rgba(5,150,105,.12)"}` }}>
               <div className="text-[13px] font-semibold mb-1" style={{ color: t.text }}>Almost there — add funds to place this order</div>
               <div className="text-[11px] mb-2.5" style={{ color: t.textMuted }}>Your first deposit gets up to ₦3,000 free to spend.</div>
@@ -389,16 +381,23 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
               })()}
               <button onClick={onTopUp} className="w-full py-2.5 rounded-[10px] border-none text-[13px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(5,150,105,.3)]" style={{ background: dark ? "#059669" : "#059669", color: "#fff" }}>Add funds & claim bonus</button>
             </div>
-            ) : (
-            <button onClick={onTopUp} data-tour="no-submit-btn" className="w-full py-2.5 rounded-lg border border-solid text-[15px] font-semibold cursor-pointer flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(250,204,21,.08)" : "rgba(250,204,21,.1)", borderColor: dark ? "rgba(250,204,21,.25)" : "rgba(250,204,21,.35)", color: dark ? "#fcd34d" : "#b45309" }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              Insufficient balance · Top up
-            </button>
-            )
-          ) : (<>
-            <div className="text-[11px] mb-2 px-0.5" style={{ color: t.textMuted }}>Profile must be <b style={{ color: t.text }}>public</b>. No refunds for orders on private profiles.</div>
-            <button onClick={() => { if (dripOn && showMultiDay) { setDripStep(2); } else { onSubmit(dripOn && showMultiDay ? clampedDays : undefined); } }} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames || needsKeywords) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || !trafficValid || orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer || needsKeywords) || (comments || "").trim()) && !commentShort && trafficValid && !orderLoading ? 1 : .5 }}>{orderLoading ? <span className="inline-flex items-center justify-center gap-2"><NitroLoader size={16} mono ariaHidden />Placing...</span> : dripOn && showMultiDay ? "Next" : "Place Order"}</button>
-          </>)}
+          )}
+          {!short && <div className="text-[11px] mb-2 px-0.5" style={{ color: t.textMuted }}>Profile must be <b style={{ color: t.text }}>public</b>. No refunds for orders on private profiles.</div>}
+          <div className="flex items-center gap-3 pt-3 border-t border-solid" style={{ borderColor: t.cardBorder }}>
+            <div className="flex flex-col flex-1 min-w-0 leading-tight">
+              <span className="text-[10.5px] uppercase tracking-[1px] font-semibold" style={{ color: t.textMuted }}>Total</span>
+              <span className="text-[20px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{hasCut && <span className="text-[12px] font-normal line-through mr-1.5" style={{ color: t.textMuted }}>₦{basePrice.toLocaleString()}</span>}₦{price.toLocaleString()}</span>
+              {discountAmount > 0 && <span className="text-[11px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}>Nitro Status {loyaltyDiscount}% · −₦{discountAmount.toLocaleString()}</span>}
+              {cappedPromoDiscount > 0 && <span className="text-[11px]" style={{ color: dark ? "#f9a8d4" : "#be185d" }}>Discount {activePromotion.discountPercent}% · −₦{cappedPromoDiscount.toLocaleString()}</span>}
+              {pointsDiscount > 0 && <span className="text-[11px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}>₦{pointsDiscount.toLocaleString()} in points applied</span>}
+              {short && <span className="text-[11px]" style={{ color: dark ? "#fcd34d" : "#b45309" }}>Balance ₦{balance.toLocaleString()} · short by ₦{(price - balance).toLocaleString()}</span>}
+            </div>
+            {short
+              ? <button onClick={onTopUp} data-tour="no-submit-btn" className="shrink-0 h-[44px] px-5 rounded-[12px] border-none text-[14px] font-bold cursor-pointer font-[inherit] text-white" style={{ background: "#d97706" }}>Top up</button>
+              : <button onClick={() => { if (dripOn && showMultiDay) { setDripStep(2); } else { onSubmit(dripOn && showMultiDay ? clampedDays : undefined); } }} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames || needsKeywords) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || !trafficValid || orderLoading} className="shrink-0 h-[44px] px-5 rounded-[12px] border-none text-[14px] font-bold cursor-pointer font-[inherit] text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: t.accent, opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer || needsKeywords) || (comments || "").trim()) && !commentShort && trafficValid && !orderLoading ? 1 : .5 }}>{orderLoading ? <span className="inline-flex items-center justify-center gap-2"><NitroLoader size={16} mono ariaHidden />Placing...</span> : dripOn && showMultiDay ? "Next" : "Place Order"}</button>}
+          </div>
+          </>);
+        })()}
         </>) : (<>
           {/* Step 2: Drip config — replaces entire form body */}
           <div className="flex items-center gap-2 mb-3 cursor-pointer select-none" onClick={() => setDripStep(1)} style={{ WebkitTapHighlightColor: "transparent" }}>
