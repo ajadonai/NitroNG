@@ -93,6 +93,10 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ---
 
+## The backlog
+
+`docs/BACKLOG.md` is the one list of open and closed work. Before proposing "what's next", read it; when something ships, move it to Closed with its commit in the same push. Never re-propose a Closed item.
+
 ## Weekly changelog reminder
 
 At the start of each session, if it has been 7+ days since the last changelog entry was added, remind Adonai: "It has been a while since the last changelog entry. Want to add any updates from this week?" The changelog is managed via the admin panel (Admin > Marketing > Changelog) or the API at `/api/changelog`. Entries should be user-facing only, written in plain language a Nigerian user would understand. No technical jargon, no internal/admin changes.

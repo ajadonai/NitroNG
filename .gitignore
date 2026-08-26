@@ -41,3 +41,11 @@ yarn-error.log*
 .env*
 !.env.example
 !.env.ify.example
+
+# Agent tooling installed by skill managers (per machine, not source)
+.agents/
+.codex/
+.21st/
+.github/agents/
+.github/hooks/
+.github/skills/
