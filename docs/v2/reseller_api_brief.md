@@ -1,6 +1,7 @@
 # Reseller API — engineering brief
 
-Status: proposed, awaiting Trip's approval before any code.
+Status: approved and built — v2.3, commit `34177d29` (26 Aug 2026). The
+"Out of scope for v1" list below is the follow-up backlog.
 
 ## What it is
 
@@ -12,7 +13,7 @@ has promised this contract for weeks; nothing answers at that URL yet, and
 ## Contract (as already documented)
 
 | action | params | returns |
-|---|---|---|
+| --- | --- | --- |
 | `services` | `key` | `[{ service, name, category, rate, min, max, refill, cancel }]` |
 | `add` | `key, service, link, quantity` | `{ order }` |
 | `status` | `key, order` | `{ charge, start_count, status, remains, currency }` |
@@ -35,8 +36,8 @@ never the query string. A key with no profile, or a retired profile, gets 401.
 
 **IDs.** `ResellerServiceMap.apiId` is the only ID a reseller ever sees. Minting:
 a one-off backfill mints an ID for every service and tier a reseller can see
-today; from then on the `services` action mints for anything new before it
-answers. Retired rows answer `{ error: "Service discontinued" }`, not 404.
+today; from then on the sync-services cron mints for anything it lists for
+the first time, so a new service has its ID before any reseller can see it. Retired rows answer `{ error: "Service discontinued" }`, not 404.
 Provider IDs and provider names never appear — the house rule.
 
 **Pricing.** `wholesaleOf(retail, terms, settings)` — the same number the
@@ -98,5 +99,5 @@ Each is a clean follow-up once the base contract is live.
   script gets a dry run and a count check before it writes.
 - **Panels retry.** `add` must be idempotent per (key, service, link, quantity)
   within a short window, or a flaky panel places the same order three times.
-  The web route's existing same-link queueing covers most of this; the API adds
-  a 60-second idempotency key on the request body.
+  The API answers a retry inside sixty seconds (same key, service, link and
+  quantity) with the order it already placed, and never places again.

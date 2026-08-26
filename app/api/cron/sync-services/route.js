@@ -1,6 +1,7 @@
 export const maxDuration = 60;
 
 import prisma from '@/lib/prisma';
+import { mintMissingResellerIds } from '@/lib/reseller-ids';
 import { log } from '@/lib/logger';
 import { getServices, isProviderConfigured, getProviderName, PROVIDER_IDS } from '@/lib/smm';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
@@ -234,10 +235,13 @@ export async function GET(req) {
       + `${malformed ? `, ${malformed} malformed` : ''}${deferred ? `, ${deferred} new deferred to next run` : ''}`
       + ` (${state.done.length}/${configured.length} done for ${weekKey})`);
 
+    // Anything this sync listed for the first time gets its permanent reseller ID now.
+    const minted = await mintMissingResellerIds().catch(e => ({ error: e.message }));
     return Response.json({
       provider: next,
       providerName: getProviderName(next),
       total: providerServices.length,
+      minted,
       updated, unchanged, created, malformed, deferred, disabled,
       week: weekKey,
       done: state.done,
