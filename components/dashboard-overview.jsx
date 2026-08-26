@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from "react";
+import { Modal } from "./ui-primitives";
 import { PlatformIcon } from "./platform-icon";
 import { fN, fD } from "../lib/format";
 import { RewardsStrip, ChannelLane, StatusModal, PointsModal } from "./rewards";
@@ -207,8 +208,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
 
       {/* Tutorial popup */}
       {tutorialOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => setTutorialOpen(false)} style={{ background: "rgba(0,0,0,.45)" }}>
-          <div role="dialog" aria-modal="true" className="w-full max-w-[420px] rounded-2xl overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
+        <Modal open={tutorialOpen} onClose={() => setTutorialOpen(false)} dark={dark} maxWidth={420} bare>
             <div className="py-4 px-5 flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderBottom: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
               <div className="text-[15px] font-semibold text-t-text">How it works</div>
               <button onClick={() => setTutorialOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent text-t-text-soft" style={{ borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -232,14 +232,12 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
                 </div>
               ))}
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* What to Expect popup */}
       {tipsOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => setTipsOpen(false)} style={{ background: "rgba(0,0,0,.45)" }}>
-          <div role="dialog" aria-modal="true" className="w-full max-w-[420px] rounded-2xl overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
+        <Modal open={tipsOpen} onClose={() => setTipsOpen(false)} dark={dark} maxWidth={420} bare>
             <div className="py-4 px-5 flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderBottom: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
               <div className="text-[15px] font-semibold text-t-text">What to Expect</div>
               <button onClick={() => setTipsOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent text-t-text-soft" style={{ borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -260,8 +258,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
                 </div>
               ))}
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* ── Referral — phone and tablet; the sidebar has it on desktop ── */}

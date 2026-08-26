@@ -21,7 +21,7 @@ export const FOCUS_RING = "outline-none focus-visible:ring-2 focus-visible:ring-
  * moves into the panel on open and returns where it came from on close, and
  * scrolling inside it does not drag the page behind.
  */
-export function Modal({ open, onClose, title, children, dark, maxWidth = 480, labelledBy, variant = "dialog" }) {
+export function Modal({ open, onClose, title, children, dark, maxWidth = 480, labelledBy, variant = "dialog", bare = false }) {
   const sheet = variant === "sheet";
   const panelRef = useRef(null);
   const restoreRef = useRef(null);
@@ -54,7 +54,7 @@ export function Modal({ open, onClose, title, children, dark, maxWidth = 480, la
         aria-labelledby={labelledBy}
         className={sheet
           ? `absolute inset-0 w-full h-full overflow-y-auto flex flex-col ${FOCUS_RING}`
-          : `relative w-full rounded-2xl p-5 max-h-[85vh] overflow-y-auto ${FOCUS_RING}`}
+          : `relative w-full rounded-2xl max-h-[85vh] ${bare ? "overflow-hidden flex flex-col" : "p-5 overflow-y-auto"} ${FOCUS_RING}`}
         style={{
           maxWidth: sheet ? undefined : maxWidth,
           overscrollBehavior: "contain",
