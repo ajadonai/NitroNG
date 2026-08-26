@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useMemo, createContext, useContext } from "react";
 import { NitroWordmark } from "./nitro-logo";
 import { PublicNavSheet, PUBLIC_LINKS } from "./public-nav-sheet";
+import { usePathname } from "next/navigation";
 
 // ── Theme context ──
 const ThemeCtx = createContext();
@@ -131,6 +132,7 @@ export function ThemeProvider({ children, storageKey = "nitro-theme" }) {
 // action prop: "back" | "login" | "logout" | null
 export default function SharedNav({ action = "back" }) {
   const { dark, toggleTheme, t } = useTheme();
+  const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -159,7 +161,7 @@ export default function SharedNav({ action = "back" }) {
         <span className="max-md:hidden h-7 px-3 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span>
       </a>
       <nav aria-label="Primary" className="max-desktop:hidden flex items-center gap-1">
-        {PUBLIC_LINKS.map(l => <a key={l.href} href={l.href} className="text-sm font-medium py-1.5 px-3 rounded-lg no-underline" style={{ color: t.soft }}>{l.label}</a>)}
+        {PUBLIC_LINKS.map(l => <a key={l.href} href={l.href} aria-current={pathname === l.href || (l.href !== "/" && pathname?.startsWith(l.href + "/")) ? "page" : undefined} className="pub-link text-sm font-medium py-1.5 px-3 rounded-lg no-underline" style={{ color: t.soft }}>{l.label}</a>)}
       </nav>
       <div className="flex items-center gap-3">
         <button type="button" onClick={() => setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen}
