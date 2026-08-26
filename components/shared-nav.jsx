@@ -12,11 +12,11 @@ const MOON = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke=
 /** The theme switch, the same everywhere: a pill whose knob carries a sun by day and a moon by night. */
 export function ThemeToggle({ dark, onToggle, size = "md", className = "" }) {
   const lg = size === "lg";
-  const w = lg ? 52 : 46, h = lg ? 28 : 26, knob = h - 6;
+  const w = lg ? 64 : 56, h = lg ? 32 : 28, knob = h - 6;
   return (
     <button type="button" onClick={onToggle} role="switch" aria-checked={dark} aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} className={`relative shrink-0 rounded-full border-none cursor-pointer p-0 transition-colors duration-300 ${className}`} style={{ width: w, height: h, background: dark ? "#c47d8e" : "rgba(0,0,0,.14)" }}>
-      <span className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center text-[0px]" style={{ left: 8, color: "rgba(255,255,255,.9)", opacity: dark ? 1 : 0, transition: "opacity .2s" }}>{SUN}</span>
-      <span className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center" style={{ right: 8, color: "rgba(0,0,0,.45)", opacity: dark ? 0 : 1, transition: "opacity .2s" }}>{MOON}</span>
+      <span className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center text-[0px]" style={{ left: 9, color: "rgba(255,255,255,.9)", opacity: dark ? 1 : 0, transition: "opacity .2s" }}>{SUN}</span>
+      <span className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center" style={{ right: 9, color: "rgba(0,0,0,.45)", opacity: dark ? 0 : 1, transition: "opacity .2s" }}>{MOON}</span>
       <span className="absolute top-[3px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.25)] flex items-center justify-center" style={{ width: knob, height: knob, left: dark ? w - knob - 3 : 3, color: dark ? "#c47d8e" : "#d97706", transition: "left .3s cubic-bezier(.2,.8,.2,1)" }}>{dark ? MOON : SUN}</span>
     </button>
   );
