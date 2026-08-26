@@ -137,7 +137,23 @@ export async function GET(req) {
         refill: s.refill,
         cancel: s.cancel,
         dripfeed: s.dripfeed,
+        _raw: s.name,
       });
+    }
+    // Two rows in one category must not read the same. Where labels collide,
+    // add the next attributes; where they still collide, the scrubbed raw name.
+    const seen = new Map();
+    for (const r of rows) seen.set(`${r.category}|${r.label}`, (seen.get(`${r.category}|${r.label}`) || 0) + 1);
+    for (const r of rows) {
+      if (seen.get(`${r.category}|${r.label}`) > 1) {
+        const extra = (r.attrs || []).slice(3, 5);
+        // The tail is the raw name with flags, brackets and the words the label already says removed.
+        const said = new Set(r.label.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean));
+        const scrub = String(r._raw || '').replace(/[\p{Extended_Pictographic}\p{Regional_Indicator}\uFE0F]/gu, '').replace(/\[[^\]]*\]/g, ' ').replace(/[|~]/g, ' ');
+        const tail = extra.length ? extra.join(', ') : scrub.split(/\s+/).filter(w => w && !said.has(w.toLowerCase().replace(/[^a-z0-9]/g, ''))).join(' ').trim().slice(0, 36);
+        if (tail && !r.label.includes(tail)) r.label = `${r.label} \u{00B7} ${tail}`.slice(0, 80).replace(/[\s\u{00B7},-]+$/u, '');
+      }
+      delete r._raw;
     }
 
     // hasMore is judged on the fetched page, not a count query: one page over-
